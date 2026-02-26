@@ -17,29 +17,30 @@
 import pytest
 
 import pennylane.estimator as qre
+import pennylane.labs.estimator_beta as qre_exp
+from pennylane.allocation import AllocateState
 from pennylane.estimator import (
     GateCount,
 )
-
-from pennylane.allocation import AllocateState
-
-import pennylane.labs.estimator_beta as qre_exp
 from pennylane.labs.estimator_beta.wires_manager import (
-    _estimate_auxiliary_wires,  
+    Allocate,
+    Deallocate,
+    MarkClean,
+    _estimate_auxiliary_wires,
     _process_circuit_lst,
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
-    Allocate, 
-    Deallocate,
-    MarkClean,
 )
+
+any_state = AllocateState.ANY
 
 
 # Dummy Ops to use for testing:
 class AllocateOp(qre.ResourceOperator):
     """A dummy class whose decomposition allocates qubits"""
+
     resource_keys = {"allocate", "num_wires"}
-    
+
     def __init__(self, allocate, num_wires=0, wires=None):
         self.num_wires = num_wires
         self.allocate = allocate
@@ -48,12 +49,12 @@ class AllocateOp(qre.ResourceOperator):
     @property
     def resource_params(self):
         return {"num_wires": self.num_wires, "allocate": self.allocate}
-    
+
     @classmethod
     def resource_rep(cls, allocate, num_wires=0):
         params = {"num_wires": num_wires, "allocate": allocate}
         return qre.CompressedResourceOp(cls, num_wires, params)
-    
+
     @classmethod
     def resource_decomp(cls, allocate, num_wires=0):
         return [qre.GateCount(qre.Identity.resource_rep(), 3), allocate]
@@ -61,8 +62,9 @@ class AllocateOp(qre.ResourceOperator):
 
 class DeallocateOp(qre.ResourceOperator):
     """A dummy class whose decomposition de-allocates qubits"""
+
     resource_keys = {"deallocate", "num_wires"}
-    
+
     def __init__(self, deallocate, num_wires=0, wires=None):
         self.num_wires = num_wires
         self.deallocate = deallocate
@@ -71,12 +73,12 @@ class DeallocateOp(qre.ResourceOperator):
     @property
     def resource_params(self):
         return {"num_wires": self.num_wires, "deallocate": self.deallocate}
-    
+
     @classmethod
     def resource_rep(cls, deallocate, num_wires=0):
         params = {"num_wires": num_wires, "deallocate": deallocate}
         return qre.CompressedResourceOp(cls, num_wires, params)
-    
+
     @classmethod
     def resource_decomp(cls, deallocate, num_wires=0):
         return [qre.GateCount(qre.Identity.resource_rep()), deallocate]
@@ -84,8 +86,9 @@ class DeallocateOp(qre.ResourceOperator):
 
 class AlocOpFree(qre.ResourceOperator):
     """A dummy class whose decomposition allocates qubits, applies an operation and deallocates qubits"""
+
     resource_keys = {"num_wires", "allocate", "cmpr_op", "deallocate"}
-    
+
     def __init__(self, num_wires, allocate, op, deallocate=None, wires=None):
         self.num_wires = num_wires
         self.allocate = allocate
@@ -97,16 +100,33 @@ class AlocOpFree(qre.ResourceOperator):
 
     @property
     def resource_params(self):
-        return {"num_wires": self.num_wires, "allocate": self.allocate, "cmpr_op":self.cmpr_op, "deallocate": self.deallocate}
-    
+        return {
+            "num_wires": self.num_wires,
+            "allocate": self.allocate,
+            "cmpr_op": self.cmpr_op,
+            "deallocate": self.deallocate,
+        }
+
     @classmethod
-    def resource_rep(cls, num_wires, allocate, cmpr_op, deallocate):
-        params = {"num_wires": num_wires, "allocate": allocate, "cmpr_op":cmpr_op, "deallocate": deallocate}
+    def resource_rep(cls, num_wires, allocate, cmpr_op, deallocate=None):
+        deallocate = deallocate or Deallocate(allocated_register=allocate)
+        params = {
+            "num_wires": num_wires,
+            "allocate": allocate,
+            "cmpr_op": cmpr_op,
+            "deallocate": deallocate,
+        }
         return qre.CompressedResourceOp(cls, num_wires, params)
-    
+
     @classmethod
-    def resource_decomp(cls, num_wires, allocate, cmpr_op, deallocate):
-        return [qre.GateCount(qre.Identity.resource_rep()), allocate, qre.GateCount(cmpr_op), deallocate]
+    def resource_decomp(cls, num_wires, allocate, cmpr_op, deallocate=None):
+        deallocate = deallocate or Deallocate(allocated_register=allocate)
+        return [
+            qre.GateCount(qre.Identity.resource_rep()),
+            allocate,
+            qre.GateCount(cmpr_op),
+            deallocate,
+        ]
 
 
 def any_state_allocation1():
@@ -157,17 +177,47 @@ def any_state_allocation3():
     ]
 
 
-def nested_any_state_allocation1():  # QROM style
-    return []
-
-
 def nested_any_state_allocation1():
-    return []
+    z = qre.Z.resource_rep()
+    return [
+        GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
+        Allocate(5),
+        GateCount(AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
+        Deallocate(3),
+        GateCount(AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
+    ]
 
 
-def nested_any_state_allocation3():  # QROM + PrepSelPrep
-    return []
+def nested_any_state_allocation2():
+    z = qre.Z.resource_rep()
+    allocate = Allocate(2, any_state, True)
+    return [
+        allocate,
+        GateCount(qre.X.resource_rep(), 10),
+        GateCount(AlocOpFree.resource_rep(2, Allocate(5, any_state, restored=True), z), 5),
+        Deallocate(allocated_register=allocate),
+    ]
 
+
+def nested_any_state_allocation3():
+    z = qre.Z.resource_rep()
+    allocate = Allocate(2, any_state, True)
+    return [  # 2, 2
+        allocate,  # (2, 0, 2)
+        GateCount(qre.X.resource_rep(), 10),
+        GateCount(
+            AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5
+        ),  # (1, 0, 0) => (3, 0, 2)
+        Allocate(5),  # (7, 0, 7)
+        GateCount(
+            AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3
+        ),  # (0, 0, 0) => (7, 0, 7)
+        Deallocate(3),  # (7, 0, 4)
+        GateCount(
+            AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7
+        ),  # (2, 0, 0) => (7, 0, 4)
+        Deallocate(allocated_register=allocate),  # (7, 0, 2)
+    ]
 
 
 # ------- Tests: -------
@@ -175,12 +225,16 @@ class TestEstimateAuxiliaryWires:
     """Test the private helper functions"""
 
     def test_error_when_deallocating_any_state_without_allocation(self):
-        """Test that an error is raised when a circuit attempts to deallocate qubits in the 
+        """Test that an error is raised when a circuit attempts to deallocate qubits in the
         Any state before they were allocated."""
         allocate = Allocate(5, state=AllocateState.ANY, restored=True)
-        deallocate = Deallocate(5, allocated_register=allocate, state=AllocateState.ANY, restored=True)
+        deallocate = Deallocate(
+            5, allocated_register=allocate, state=AllocateState.ANY, restored=True
+        )
 
-        with pytest.raises(ValueError, match="Trying to deallocate an ANY state register before it was allocated"):
+        with pytest.raises(
+            ValueError, match="Trying to deallocate an ANY state register before it was allocated"
+        ):
             lst_actions = [
                 Allocate(5),  # Allocated in the zero state
                 GateCount(qre.Z.resource_rep(), 5),
@@ -191,29 +245,34 @@ class TestEstimateAuxiliaryWires:
                 allocate,
             ]
             _estimate_auxiliary_wires(
-                list_actions = lst_actions,
-                scalar = 3,
-                num_available_any_state_aux = 10,
-                num_active_qubits = 5,
+                list_actions=lst_actions,
+                scalar=3,
+                num_available_any_state_aux=10,
+                num_active_qubits=5,
             )
 
     def test_error_when_not_deallocating_any_state_allocation(self):
-        """Test that an error is raised when a circuit allocates an Any state to deallocate qubits in the 
+        """Test that an error is raised when a circuit allocates an Any state to deallocate qubits in the
         Any state before they were allocated."""
-        with pytest.raises(ValueError, match="Did NOT deallocate and restore all ANY state allocations as promised:"):
+        with pytest.raises(
+            ValueError,
+            match="Did NOT deallocate and restore all ANY state allocations as promised:",
+        ):
             lst_actions = [
                 Allocate(5),  # Allocated in the zero state
-                Allocate(5, state=AllocateState.ANY, restored=True),  # Allocate with a promise to restore
+                Allocate(
+                    5, state=AllocateState.ANY, restored=True
+                ),  # Allocate with a promise to restore
                 GateCount(qre.Z.resource_rep(), 5),
                 Deallocate(2),  # Deallocated in the zero state
                 GateCount(qre.X.resource_rep(), 3),
                 Allocate(3),
             ]
             _estimate_auxiliary_wires(
-                list_actions = lst_actions,
-                scalar = 3,
-                num_available_any_state_aux = 10,
-                num_active_qubits = 5,
+                list_actions=lst_actions,
+                scalar=3,
+                num_available_any_state_aux=10,
+                num_active_qubits=5,
             )
 
     @pytest.mark.parametrize(  # All expected results were computed by hand
@@ -223,10 +282,10 @@ class TestEstimateAuxiliaryWires:
                 [  # Plain example with no allocation
                     GateCount(qre.resource_rep(qre.X)),
                 ],
-                1,  # Scalar 
-                1,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (0, 0, 0)  # max alloc, max dealloc, total
+                1,  # Scalar
+                1,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (0, 0, 0),  # max alloc, max dealloc, total
             ),
             (
                 [  # Allocation only
@@ -235,10 +294,10 @@ class TestEstimateAuxiliaryWires:
                     Allocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                1,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (5, 0, 5)  # max alloc, max dealloc, total
+                1,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (5, 0, 5),  # max alloc, max dealloc, total
             ),
             (
                 [  # Allocation + Scaling
@@ -247,10 +306,10 @@ class TestEstimateAuxiliaryWires:
                     Allocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                7,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (35, 0, 35)  # max alloc, max dealloc, total
+                7,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (35, 0, 35),  # max alloc, max dealloc, total
             ),
             (
                 [  # Allocation and deallocation with scaling
@@ -259,10 +318,10 @@ class TestEstimateAuxiliaryWires:
                     Deallocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                5,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (7, 0, 5)  # max alloc, max dealloc, total
+                5,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (7, 0, 5),  # max alloc, max dealloc, total
             ),
             (
                 [  # Deallocation only
@@ -271,22 +330,22 @@ class TestEstimateAuxiliaryWires:
                     Deallocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                1,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (0, -6, -6)  # max alloc, max dealloc, total
+                1,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (0, -6, -6),  # max alloc, max dealloc, total
             ),
             (
-                [  # Deallocation + scaling 
+                [  # Deallocation + scaling
                     Deallocate(4),
                     GateCount(qre.resource_rep(qre.CNOT)),
                     Deallocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                4,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (0, -24, -24)  # max alloc, max dealloc, total
+                4,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (0, -24, -24),  # max alloc, max dealloc, total
             ),
             (
                 [  # Deallocation and Allocation
@@ -295,10 +354,10 @@ class TestEstimateAuxiliaryWires:
                     Allocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                1,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (0, -4, -2)  # max alloc, max dealloc, total
+                1,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (0, -4, -2),  # max alloc, max dealloc, total
             ),
             (
                 [  # Deallocation and Allocation + scaling
@@ -307,10 +366,10 @@ class TestEstimateAuxiliaryWires:
                     Allocate(2),
                     GateCount(qre.resource_rep(qre.Z), 2),
                 ],
-                6,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (0, -14, -12)  # max alloc, max dealloc, total
+                6,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (0, -14, -12),  # max alloc, max dealloc, total
             ),
             (
                 [  # Deallocation & Allocation with underflow
@@ -322,10 +381,10 @@ class TestEstimateAuxiliaryWires:
                     GateCount(qre.resource_rep(qre.X)),
                     Deallocate(1),
                 ],
-                1,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (3, -4, 2)  # max alloc, max dealloc, total
+                1,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (3, -4, 2),  # max alloc, max dealloc, total
             ),
             (
                 [  # Deallocation & Allocation with underflow + scaling
@@ -337,10 +396,10 @@ class TestEstimateAuxiliaryWires:
                     GateCount(qre.resource_rep(qre.X)),
                     Deallocate(1),
                 ],
-                3,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (7, -4, 6)  # max alloc, max dealloc, total
+                3,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (7, -4, 6),  # max alloc, max dealloc, total
             ),
             (
                 [  # Allocation & Deallocation with overflow
@@ -352,10 +411,10 @@ class TestEstimateAuxiliaryWires:
                     GateCount(qre.resource_rep(qre.X)),
                     Allocate(1),
                 ],
-                1,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (4, -3, -2)  # max alloc, max dealloc, total
+                1,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (4, -3, -2),  # max alloc, max dealloc, total
             ),
             (
                 [  # Allocation & Deallocation with overflow + scaling
@@ -367,130 +426,254 @@ class TestEstimateAuxiliaryWires:
                     GateCount(qre.resource_rep(qre.X)),
                     Allocate(1),
                 ],
-                3,  # Scalar 
-                2,  # number of active qubits 
-                0,  # number of any state auxiliaries, 
-                (4, -7, -6)  # max alloc, max dealloc, total
+                3,  # Scalar
+                2,  # number of active qubits
+                0,  # number of any state auxiliaries,
+                (4, -7, -6),  # max alloc, max dealloc, total
             ),
         ),
     )
-    def test_estimate_auxiliary_wires(self, list_actions, scalar, num_active, num_aux, expected_results):
-       """Test qubit tracking WITHOUT nested allocation and deallocation"""
-       results = _estimate_auxiliary_wires(
-           list_actions = list_actions,
-           scalar = scalar,
-           num_available_any_state_aux = num_aux,
-           num_active_qubits = num_active,
+    def test_estimate_auxiliary_wires(
+        self, list_actions, scalar, num_active, num_aux, expected_results
+    ):
+        """Test qubit tracking WITHOUT nested allocation and deallocation"""
+        results = _estimate_auxiliary_wires(
+            list_actions=list_actions,
+            scalar=scalar,
+            num_available_any_state_aux=num_aux,
+            num_active_qubits=num_active,
         )
-       assert results == expected_results
+        assert results == expected_results
 
     @pytest.mark.parametrize(  # All expected results were computed by hand
         "generate_actions, scalar, num_active, num_aux, expected_results",
         (
             (
-                any_state_allocation1, 1, 0, 0, (3, 0, 0),
+                any_state_allocation1,
+                1,
+                0,
+                0,
+                (3, 0, 0),
             ),
             (
-                any_state_allocation1, 1, 3, 3, (3, 0, 0),
+                any_state_allocation1,
+                1,
+                3,
+                3,
+                (3, 0, 0),
             ),
             (
-                any_state_allocation1, 1, 5, 8, (0, 0, 0),
+                any_state_allocation1,
+                1,
+                5,
+                8,
+                (0, 0, 0),
             ),
             (
-                any_state_allocation1, 1, 1, 5, (0, 0, 0),
+                any_state_allocation1,
+                1,
+                1,
+                5,
+                (0, 0, 0),
             ),
             (
-                any_state_allocation1, 1, 2, 4, (1, 0, 0),
+                any_state_allocation1,
+                1,
+                2,
+                4,
+                (1, 0, 0),
             ),
             (
-                any_state_allocation1, 5, 0, 0, (3, 0, 0),
+                any_state_allocation1,
+                5,
+                0,
+                0,
+                (3, 0, 0),
             ),
             (
-                any_state_allocation1, 5, 3, 3, (3, 0, 0),
+                any_state_allocation1,
+                5,
+                3,
+                3,
+                (3, 0, 0),
             ),
             (
-                any_state_allocation1, 5, 5, 8, (0, 0, 0),
+                any_state_allocation1,
+                5,
+                5,
+                8,
+                (0, 0, 0),
             ),
             (
-                any_state_allocation1, 5, 1, 5, (0, 0, 0),
+                any_state_allocation1,
+                5,
+                1,
+                5,
+                (0, 0, 0),
             ),
             (
-                any_state_allocation1, 5, 2, 4, (1, 0, 0),
+                any_state_allocation1,
+                5,
+                2,
+                4,
+                (1, 0, 0),
             ),
             # 2nd allocation function
             (
-                any_state_allocation2, 1, 0, 0, (5, -1, -1),
+                any_state_allocation2,
+                1,
+                0,
+                0,
+                (5, -1, -1),
             ),
             (
-                any_state_allocation2, 1, 3, 3, (5, -1, -1),
+                any_state_allocation2,
+                1,
+                3,
+                3,
+                (5, -1, -1),
             ),
             (
-                any_state_allocation2, 1, 5, 8, (2, -1, -1),
+                any_state_allocation2,
+                1,
+                5,
+                8,
+                (2, -1, -1),
             ),
             (
-                any_state_allocation2, 1, 1, 5, (2, -1, -1),
+                any_state_allocation2,
+                1,
+                1,
+                5,
+                (2, -1, -1),
             ),
             (
-                any_state_allocation2, 1, 2, 4, (3, -1, -1),
+                any_state_allocation2,
+                1,
+                2,
+                4,
+                (3, -1, -1),
             ),
             (
-                any_state_allocation2, 5, 0, 0, (5, -5, -5),
+                any_state_allocation2,
+                5,
+                0,
+                0,
+                (5, -5, -5),
             ),
             (
-                any_state_allocation2, 5, 3, 3, (5, -5, -5),
+                any_state_allocation2,
+                5,
+                3,
+                3,
+                (5, -5, -5),
             ),
             (
-                any_state_allocation2, 5, 5, 8, (2, -5, -5),
+                any_state_allocation2,
+                5,
+                5,
+                8,
+                (2, -5, -5),
             ),
             (
-                any_state_allocation2, 5, 1, 5, (2, -5, -5),
+                any_state_allocation2,
+                5,
+                1,
+                5,
+                (2, -5, -5),
             ),
             (
-                any_state_allocation2, 5, 2, 4, (3, -5, -5),
+                any_state_allocation2,
+                5,
+                2,
+                4,
+                (3, -5, -5),
             ),
             # 3rd allocation function
             (
-                any_state_allocation3, 1, 0, 0, (7, 0, 2),
+                any_state_allocation3,
+                1,
+                0,
+                0,
+                (7, 0, 2),
             ),
             (
-                any_state_allocation3, 1, 3, 3, (7, 0, 2),
+                any_state_allocation3,
+                1,
+                3,
+                3,
+                (7, 0, 2),
             ),
             (
-                any_state_allocation3, 1, 5, 8, (6, 0, 2),
+                any_state_allocation3,
+                1,
+                5,
+                8,
+                (6, 0, 2),
             ),
             (
-                any_state_allocation3, 1, 1, 5, (5, 0, 2),
+                any_state_allocation3,
+                1,
+                1,
+                5,
+                (5, 0, 2),
             ),
             (
-                any_state_allocation3, 1, 2, 4, (6, 0, 2),
+                any_state_allocation3,
+                1,
+                2,
+                4,
+                (6, 0, 2),
             ),
             (
-                any_state_allocation3, 5, 0, 0, (15, 0, 10),
+                any_state_allocation3,
+                5,
+                0,
+                0,
+                (15, 0, 10),
             ),
             (
-                any_state_allocation3, 5, 3, 3, (15, 0, 10),
+                any_state_allocation3,
+                5,
+                3,
+                3,
+                (15, 0, 10),
             ),
             (
-                any_state_allocation3, 5, 5, 8, (14, 0, 10),
+                any_state_allocation3,
+                5,
+                5,
+                8,
+                (14, 0, 10),
             ),
             (
-                any_state_allocation3, 5, 1, 5, (13, 0, 10),
+                any_state_allocation3,
+                5,
+                1,
+                5,
+                (13, 0, 10),
             ),
             (
-                any_state_allocation3, 5, 2, 4, (14, 0, 10),
+                any_state_allocation3,
+                5,
+                2,
+                4,
+                (14, 0, 10),
             ),
         ),
     )
-    def test_simple_any_state_allocation(self, generate_actions, scalar, num_active, num_aux, expected_results):
+    def test_simple_any_state_allocation(
+        self, generate_actions, scalar, num_active, num_aux, expected_results
+    ):
         """Test qubit tracking with Any state allocation WITHOUT nested allocation and deallocation"""
         results = _estimate_auxiliary_wires(
-           list_actions = generate_actions(),
-           scalar = scalar,
-           num_available_any_state_aux = num_aux,
-           num_active_qubits = num_active,
+            list_actions=generate_actions(),
+            scalar=scalar,
+            num_available_any_state_aux=num_aux,
+            num_active_qubits=num_active,
         )
         assert results == expected_results
-    
+
     @pytest.mark.parametrize(  # All expected results were computed by hand
         "lst_actions, scalar, num_aux, num_active, expected_results",
         (
@@ -525,8 +708,8 @@ class TestEstimateAuxiliaryWires:
                     ),
                     Deallocate(1),
                 ],
-                1, 
-                0, 
+                1,
+                0,
                 4,
                 (5, 0, 0),
             ),
@@ -561,8 +744,8 @@ class TestEstimateAuxiliaryWires:
                     ),
                     Deallocate(1),
                 ],
-                10, 
-                0, 
+                10,
+                0,
                 4,
                 (5, 0, 0),
             ),
@@ -577,9 +760,9 @@ class TestEstimateAuxiliaryWires:
                     GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),
                     GateCount(AllocateOp.resource_rep(allocate=Allocate(3))),
                 ],
-                1, 
-                0, 
-                6, 
+                1,
+                0,
+                6,
                 (9, -5, -2),
             ),
             (
@@ -593,30 +776,30 @@ class TestEstimateAuxiliaryWires:
                     GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),
                     GateCount(AllocateOp.resource_rep(allocate=Allocate(3))),
                 ],
-                10, 
-                0, 
-                6, 
+                10,
+                0,
+                6,
                 (9, -23, -20),
             ),
             (
                 [  # Nested allocation and deallocation with overflow
-                    Deallocate(5),                                                          # -5
+                    Deallocate(5),  # -5
                     GateCount(qre.CNOT.resource_rep(), 3),
-                    GateCount(AllocateOp.resource_rep(allocate=Allocate(2)), 5),           # +5
+                    GateCount(AllocateOp.resource_rep(allocate=Allocate(2)), 5),  # +5
                     GateCount(qre.Z.resource_rep(), 5),
-                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(2)), 2),      # +1
+                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(2)), 2),  # +1
                     GateCount(
-                        qre.Prod.resource_rep(                           # (+20, 0, +12)    # +21
+                        qre.Prod.resource_rep(  # (+20, 0, +12)    # +21
                             (
-                                (AllocateOp.resource_rep(allocate=Allocate(3)), 4),       #+12
+                                (AllocateOp.resource_rep(allocate=Allocate(3)), 4),  # +12
                                 (qre.Y.resource_rep(), 10),
-                                (DeallocateOp.resource_rep(deallocate=Deallocate(4)), 2), #-8
+                                (DeallocateOp.resource_rep(deallocate=Deallocate(4)), 2),  # -8
                             ),
                             num_wires=3,
                         ),
-                        count = 3,
+                        count=3,
                     ),
-                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),     # +16
+                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),  # +16
                 ],
                 1,
                 0,
@@ -625,23 +808,23 @@ class TestEstimateAuxiliaryWires:
             ),
             (
                 [  # Nested allocation and deallocation with overflow + scaling
-                    Deallocate(5),                                                          # -5
+                    Deallocate(5),  # -5
                     GateCount(qre.CNOT.resource_rep(), 3),
-                    GateCount(AllocateOp.resource_rep(allocate=Allocate(2)), 5),           # +5
+                    GateCount(AllocateOp.resource_rep(allocate=Allocate(2)), 5),  # +5
                     GateCount(qre.Z.resource_rep(), 5),
-                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(2)), 2),      # +1
+                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(2)), 2),  # +1
                     GateCount(
-                        qre.Prod.resource_rep(                           # (+20, 0, +12)    # +13
+                        qre.Prod.resource_rep(  # (+20, 0, +12)    # +13
                             (
-                                (AllocateOp.resource_rep(allocate=Allocate(3)), 4),       #+12
+                                (AllocateOp.resource_rep(allocate=Allocate(3)), 4),  # +12
                                 (qre.Y.resource_rep(), 10),
-                                (DeallocateOp.resource_rep(deallocate=Deallocate(4)), 2), #-8
+                                (DeallocateOp.resource_rep(deallocate=Deallocate(4)), 2),  # -8
                             ),
                             num_wires=3,
                         ),
-                        count = 3,
+                        count=3,
                     ),
-                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),     # +8
+                    GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),  # +8
                 ],
                 7,
                 0,
@@ -650,32 +833,41 @@ class TestEstimateAuxiliaryWires:
             ),
         ),
     )
-    def test_nested_allocation_and_deallocation(self, lst_actions, scalar, num_aux, num_active, expected_results):
+    def test_nested_allocation_and_deallocation(
+        self, lst_actions, scalar, num_aux, num_active, expected_results
+    ):
         """Test that qubit tracking works as expected for circuits with operators whos'
         decompositions require auxiliary qubits."""
         results = _estimate_auxiliary_wires(
-           list_actions = lst_actions,
-           scalar = scalar,
-           num_available_any_state_aux = num_aux,
-           num_active_qubits = num_active,
+            list_actions=lst_actions,
+            scalar=scalar,
+            num_available_any_state_aux=num_aux,
+            num_active_qubits=num_active,
         )
         assert results == expected_results
-
 
     @pytest.mark.parametrize(  # All expected results were computed by hand
         "generate_actions, scalar, num_active, num_aux, expected_results",
         (
-            (
-                any_state_allocation1, 1, 0, 0, (3, 0, 0),
-            ),
+            (nested_any_state_allocation1, 1, 2, 2, (6, 0, 2)),
+            (nested_any_state_allocation1, 1, 2, 4, (5, 0, 2)),
+            (nested_any_state_allocation1, 1, 2, 7, (5, 0, 2)),
+            (nested_any_state_allocation2, 1, 2, 2, (5, 0, 0)),
+            (nested_any_state_allocation2, 1, 2, 4, (3, 0, 0)),
+            (nested_any_state_allocation2, 1, 2, 7, (0, 0, 0)),
+            (nested_any_state_allocation3, 1, 2, 2, (7, 0, 2)),
+            (nested_any_state_allocation3, 1, 2, 4, (5, 0, 2)),
+            (nested_any_state_allocation3, 1, 2, 7, (5, 0, 2)),
         ),
     )
-    def test_simple_any_state_allocation(self, generate_actions, scalar, num_active, num_aux, expected_results):
+    def test_nested_any_state_allocation(
+        self, generate_actions, scalar, num_active, num_aux, expected_results
+    ):
         """Test qubit tracking with Any state allocation WITHOUT nested allocation and deallocation"""
         results = _estimate_auxiliary_wires(
-           list_actions = generate_actions(),
-           scalar = scalar,
-           num_available_any_state_aux = num_aux,
-           num_active_qubits = num_active,
+            list_actions=generate_actions(),
+            scalar=scalar,
+            num_available_any_state_aux=num_aux,
+            num_active_qubits=num_active,
         )
         assert results == expected_results

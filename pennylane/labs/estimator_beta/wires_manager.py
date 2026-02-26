@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
-import uuid
 import copy
+import uuid
 from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
@@ -108,9 +108,12 @@ def _estimate_auxiliary_wires(
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
 ) -> Iterable:
-    if scalar == 0: return 0, 0, 0
-    if config is None: config = ResourceConfig()
-    if gate_set is None: gate_set = DefaultGateSet
+    if scalar == 0:
+        return 0, 0, 0
+    if config is None:
+        config = ResourceConfig()
+    if gate_set is None:
+        gate_set = DefaultGateSet
 
     total = 0
     max_alloc = 0
@@ -133,8 +136,10 @@ def _estimate_auxiliary_wires(
                 num_active_qubits=action.gate.num_wires,
             )
 
-            if total + sub_max_dealloc < max_dealloc: max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
-            if total + sub_max_alloc > max_alloc: max_alloc = total + sub_max_alloc
+            if total + sub_max_dealloc < max_dealloc:
+                max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
+            if total + sub_max_alloc > max_alloc:
+                max_alloc = total + sub_max_alloc
             total += sub_total
             continue
 
@@ -169,8 +174,10 @@ def _estimate_auxiliary_wires(
             else:
                 total -= action.num_wires
 
-        if total > max_alloc: max_alloc = total
-        if total < max_dealloc: max_dealloc = total
+        if total > max_alloc:
+            max_alloc = total
+        if total < max_dealloc:
+            max_dealloc = total
 
     if len(any_state_aux_allocation) != 0:
         raise ValueError(
@@ -246,8 +253,8 @@ def estimate_wires_from_circuit(
 
     state_circuit_wires = {w: 1 for w in circuit_wires}  # 1: clean state, 0: any state
 
-    total = 0          # A running counter for the number of active (allocated but not freed) qubits 
-                       #   --> we assume that these are in Any state as they were likely used and not cleaned
+    total = 0  # A running counter for the number of active (allocated but not freed) qubits
+    #   --> we assume that these are in Any state as they were likely used and not cleaned
     max_alloc = 0
     max_dealloc = 0
 
@@ -261,9 +268,7 @@ def estimate_wires_from_circuit(
             for w in active_wires:
                 state_circuit_wires[w] = 0
 
-            num_clean_logical_wires = sum(
-                (state_circuit_wires[w_i] for w_i in circuit_wires)
-            )
+            num_clean_logical_wires = sum((state_circuit_wires[w_i] for w_i in circuit_wires))
             num_any_state_logical_wires = len(circuit_wires) - num_clean_logical_wires
 
             sub_max_alloc, sub_max_dealloc, sub_total = _estimate_auxiliary_wires(
@@ -271,17 +276,19 @@ def estimate_wires_from_circuit(
                 gate_set=gate_set,
                 config=config,
                 num_available_any_state_aux=num_any_state_logical_wires + total,
-                num_active_qubits = circuit_element.num_wires,  # Should be equivalent to len(active_wires)
+                num_active_qubits=circuit_element.num_wires,  # Should be equivalent to len(active_wires)
             )
 
             borrowable_qubits = sub_max_alloc - sub_total
             num_clean_aux_used = min(num_clean_logical_wires, borrowable_qubits)
             sub_max_alloc -= num_clean_aux_used
 
-            if total + sub_max_dealloc < max_dealloc: max_dealloc = total + sub_max_dealloc
+            if total + sub_max_dealloc < max_dealloc:
+                max_dealloc = total + sub_max_dealloc
             if total < 0:
                 raise ValueError("Deallocated more qubits than available to allocate.")
-            if total + sub_max_alloc > max_alloc: max_alloc = total + sub_max_alloc
+            if total + sub_max_alloc > max_alloc:
+                max_alloc = total + sub_max_alloc
 
             total += sub_total
 
