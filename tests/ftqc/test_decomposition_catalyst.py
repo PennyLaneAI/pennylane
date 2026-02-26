@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for the decomposition transforms in the FTQC module"""
+
 import pytest
 
 import pennylane as qml
@@ -31,12 +32,12 @@ pytestmark = pytest.mark.external
 @pytest.mark.parametrize(
     "pass_fn",
     [
-        (ppr_to_mbqc),
-        (decompose_clifford_ppr),
-        (decompose_non_clifford_ppr),
+        ppr_to_mbqc,
+        decompose_clifford_ppr,
+        decompose_non_clifford_ppr,
     ],
 )
-def test_converstion_to_mlir(pass_fn, pass_name):
+def test_converstion_to_mlir(pass_fn):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
@@ -50,4 +51,4 @@ def test_converstion_to_mlir(pass_fn, pass_name):
         qml.CNOT([0, 1])
         return qml.sample()
 
-    assert pass_name in circ.mlir
+    assert pass_fn.pass_name in circ.mlir
