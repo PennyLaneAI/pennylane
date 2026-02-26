@@ -133,16 +133,17 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     if bits.shape[1] == 1:
         # If there is a single column, we can make our life a bit easier
         return [0], bits[:1]
+
     selectors = list(range(len(bits)))
 
     while len(selectors) > 1:  # We will want to keep at least one row
         # compute weight of each row. We'll try to first remove rows with a
         # mean weight far away from 0.5
-        weights = np.mean(bits, axis=1)
-        ordering = np.argsort(np.abs(0.5 - weights))
+        weights = math.mean(bits, axis=1)
+        ordering = math.argsort(math.abs(0.5 - weights))
         for i in reversed(ordering):
             # Check whether the array with row ``i`` removed still has unique columns
-            new_bits = np.concatenate([bits[:i], bits[i + 1 :]])
+            new_bits = math.concatenate([bits[:i], bits[i + 1 :]])
             if _columns_differ(new_bits):
                 # If the columns remain unique, remove the row and the row index from selectors
                 del selectors[i]
@@ -183,7 +184,7 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
         set_M (np.ndarray): Set of ``n`` bitstrings of length ``r`` that are representable by
             all but the last basis bitstring in ``bits_basis``. Should have shape ``(r, n)``
         set_N (np.ndarray): Set of ``D-1-n`` bitstrings (where ``n`` is given by the shape of
-            ``set_M`` and ``D`` is the number of all Slaters in the SOS algorithm) that
+            ``set_M`` and ``D`` is the number of all Slater determinants in the SOS algorithm) that
             require the last basis bitstring in their representation in ``bits_basis``. Should have
             shape ``(r, D-1-n)``.
 
@@ -512,7 +513,7 @@ def compute_sos_encoding(bits):
         kernel dimension to be :math:`t` and :math:`\dim(\mathcal{W})=t`, this will imply
         :math:`\mathcal{W}=\ker U`.
 
-        .. admonition:: math comment
+        .. admonition:: Math comment
 
             To see that this strategy actually ensures :math:`U` to have the
             properties we are after, assume that :math:`U v_i=0` for some :math:`i` with
@@ -619,14 +620,174 @@ def compute_sos_encoding(bits):
 
 
 class SumOfSlatersPrep(Operation):
-    """Prepare a sum-of-Slaters state.
-    This operation implements the state preparation as introduced by
-    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
-    is tailored to sparse states.
+    r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
 
-    .. seealso:: :func:`~.compute_sos_encoding` for the required classical coprocessing.
+    This operation prepares an arbitrary state
+
+    .. math:: |\psi\rangle = \sum_{\ell \in \text{indices}} c_\ell |\ell\rangle,
+
+    where :math:`c_\ell` are the ``coefficients`` corresponding to the ``indices`` :math:`\ell`.
+    The states :math:`|\ell\rangle` are computational basis states, interpreted via the
+    binary representation of :math:`\ell`.
+
+    This state preparation technique was introduced in Sec. III A of
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__
+    and is tailored to sparse states.
+
+    .. seealso::
+
+        :func:`~.select_sos_rows` and :func:`~.compute_sos_encoding` for the required
+        classical coprocessing.
 
     Args:
+        coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
+            match that in ``indices``.
+        wires (qml.wires.WiresLike): Wires on which to prepare the state. All work wires will be
+            allocated dynamically with :func:`~.allocate`.
+        indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
+            that in ``coefficients``.
+
+    .. warning::
+
+        Note that we require ``coefficients`` to be treated as numerical data in the form of an
+        array, whereas the ``indices`` need to be hashable, and thus will be treated as static
+        information. This is because ``indices`` significantly impacts the structure and size of
+        the circuit that realizes the state preparation.
+
+    **Example**
+
+    Consider a sparse state specified by normalized coefficients and statevector
+    indices pointing to the populated computational basis states:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+
+        coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+        indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+        wires = qml.wires.Wires(range(5))
+
+    This is all the information we require to create the state
+    preparation: ``coefficients``, ``indices``, and ``wires``.
+    The ``indices`` correspond to the computational basis states interpreted
+    via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
+    or :math:`|3\rangle = |011\rangle` for three qubits).
+
+    .. code-block:: python
+
+        qml.decomposition.enable_graph()
+
+        gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+
+        @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+        @qml.decompose(gate_set=gate_set, num_work_wires=10)
+        @qml.qnode(qml.device("lightning.qubit", wires=13))
+        def circuit():
+            qml.SumOfSlatersPrep(coefficients, wires, indices)
+            return qml.state()
+
+    We can check that we prepared the right state:
+
+    >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
+    >>> where = np.where(prepared_state)
+    >>> print(where)
+    (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+    >>> print(prepared_state[where])
+    [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+     -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+
+    That looks exactly right! Internally, the state preparation looks like this:
+
+    >>> print(qml.draw(circuit, show_matrices=False)())
+     0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
+     1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
+     2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
+     3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
+     4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
+     5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
+     6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
+     7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
+     8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
+     9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+    10: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+    11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+    12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
+
+    .. details::
+        :title: Usage details
+
+        **Dynamic work wires**
+
+        Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an
+        initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
+        ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
+        a sequence of :class:`~.MultiControlledX` gates, some of which are
+        mediated with a caching qubit (qubit index ``12``) and :class:`~.CNOT` gates.
+
+        Note that we guessed the required number of work wires (``num_work_wires``) in
+        :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
+        integer wire labels to those dynamically allocated wires. If we want to know
+        the required wire register sizes ahead of time, they can be computed with
+        ``SumOfSlatersPrep.required_register_sizes``:
+
+        >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
+        >>> prep_op.required_register_sizes(**prep_op.resource_params)
+        {'wires': 5,
+         'enumeration_wires': 4,
+         'identification_wires': 0,
+         'qrom_work_wires': 3,
+         'mcx_cache_wires': 1}
+
+        .. note::
+
+            **Gotchas of reported work register sizes**
+
+            Note that these register sizes might be upper bounds in some scenarios, and that
+            further decomposing the circuit efficiently may require additional work wires, for
+            example for the ``MultiControlledX`` gates. In contrast, the QROM work wires are
+            explicitly accounted for, which is due to some internal technical limitation.
+
+        **Two encoding modes**
+
+        Depending on the encoding computed by :func:`~.compute_sos_encoding`, the state preparation
+        circuit requires an additional register of auxiliary qubits and two more layers of
+        :class:`~.CNOT` gates, or not. The example shown above did not require those, because
+        small examples tend to be particularly easy to encode.
+        We can force a more expensive encoding with ``indices`` that are powers of two on at least
+        seven qubits:
+
+        .. code-block:: python
+
+            coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, 0.5])
+            indices = tuple(2**i for i in range(7))
+            wires = qml.wires.Wires(range(7))
+
+            @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+            @qml.decompose(gate_set=gate_set, num_work_wires=10)
+            @qml.qnode(qml.device("null.qubit", wires=100))
+            def circuit():
+                qml.SumOfSlatersPrep(coefficients, wires, indices)
+                return qml.state()
+
+        >>> print(qml.draw(circuit, show_matrices=False)())
+         0: ──────╭QROM(M0)─╭●──────────────────────────────────────────────╭●───────────────────┤  State
+         1: ──────├QROM(M0)─│──╭●───────────────────────────────────────────│──╭●────────────────┤  State
+         2: ──────├QROM(M0)─│──│──╭●────────────────────────────────────────│──│──╭●─────────────┤  State
+         3: ──────├QROM(M0)─│──│──│──╭●─────────────────────────────────────│──│──│──╭●──────────┤  State
+         4: ──────├QROM(M0)─│──│──│──│─────╭●───────────────────────────────│──│──│──│─────╭●────┤  State
+         5: ──────├QROM(M0)─│──│──│──│──╭●─│──╭●────────────────────────────│──│──│──│──╭●─│──╭●─┤  State
+         6: ──────├QROM(M0)─│──│──│──│──│──│──│─────────────────────────────│──│──│──│──│──│──│──┤  State
+         7: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──────────────╭X─╭X────╭X────│──│──│──│──│──│──│──┤  State
+         8: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│─────╭X─╭X────│──│─────│──╭X─│──│──│──│──│──│──│──┤  State
+         9: ─╰|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──╭X─│──│──╭X─│──│──╭X─│──│──│──│──│──│──│──│──│──┤  State
+        10: ──────│─────────╰X─│──│──│──│──│──│──├○─├○─├○─├○─├○─├○─├○─├●─├●─╰X─│──│──│──│──│──│──┤  State
+        11: ──────│────────────╰X─│──│──│──│──│──├○─├○─├○─├○─├○─├●─├●─├○─├○────╰X─│──│──│──│──│──┤  State
+        12: ──────│───────────────╰X─│──│──│──│──├○─├○─├○─├○─├●─├○─├○─├○─├○───────╰X─│──│──│──│──┤  State
+        13: ──────│──────────────────╰X─╰X─│──│──├●─├○─├●─├●─├○─├○─├○─├○─├○──────────╰X─╰X─│──│──┤  State
+        14: ──────│────────────────────────╰X─╰X─╰●─╰●─╰○─╰○─╰○─╰○─╰○─╰○─╰○────────────────╰X─╰X─┤  State
+        15: ──────├QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
+        16: ──────╰QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
 
     """
 
@@ -635,18 +796,16 @@ class SumOfSlatersPrep(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    resource_keys = {"D", "num_bits", "num_wires"}
+    resource_keys = {"num_entries", "num_bits", "num_wires"}
 
     @property
     def resource_params(self):
         indices = self.hyperparameters["indices"]
         wires = self.hyperparameters["target_wires"]
-        D = len(indices)
         n = len(wires)
-        v_bits = _int_to_binary(np.array(indices), n)  # v_bits.shape = (n, D)
+        v_bits = math.int_to_binary(np.array(indices), n).T
         selector_ids, _ = select_sos_rows(v_bits)
-        r = len(selector_ids)
-        return {"D": D, "num_bits": r, "num_wires": n}
+        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": n}
 
     def __init__(
         self,
@@ -703,13 +862,13 @@ class SumOfSlatersPrep(Operation):
         return op_list
 
     @staticmethod
-    def required_register_sizes(D, num_bits, num_wires):
+    def required_register_sizes(num_entries, num_bits, num_wires):
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
-        numbers of bitstrings ``D``, of bits per bitstring (``num_bits``, already reduced via
-        ``select_sos_rows``) and target wires (``num_wires``).
+        numbers of bitstrings ``num_entries``, of bits per bitstring (``num_bits``, already
+        reduced via ``select_sos_rows``) and target wires (``num_wires``).
 
         Args:
-            D (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
+            num_entries (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
             num_bits (int): Number of bits per bitstring.
             num_wires (int): Number of target wires on which ``SumOfSlatersPrep`` will prepare
                 the state.
@@ -718,37 +877,58 @@ class SumOfSlatersPrep(Operation):
             dict[str, int]: Required register size per register name
 
         """
-        d = math.ceil_log2(D)
-        if num_bits <= 2 * d - 1:
-            # Identity encoding works
+        if num_entries == 1:
+            # Simple computational basis state preparation, does not require auxiliary qubits
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
+        d = math.ceil_log2(num_entries)
+        m = 2 * d - 1
+        if num_bits <= m:
+            # Identity encoding. We do not need the identification register but can use the
+            # (subselection of) system wires directly
             num_identification = 0
-            num_mcx_work = num_bits
         else:
-            m = 2 * d - 1
-            num_identification = num_mcx_work = m
+            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
+            num_identification = m
+
+        # If num_entries<=7, we only have encoded bits with bit count at most 2, so that we will not use
+        # a cache qubit for the MultiControlledX ops.
+        num_mcx_cache = int(num_entries > 7)
 
         return {
-            "target_wires": num_wires,
+            "wires": num_wires,
             "enumeration_wires": d,
             "identification_wires": num_identification,
             "qrom_work_wires": d - 1,
-            "mcx_work_wires": num_mcx_work,
+            "mcx_cache_wires": num_mcx_cache,
         }
 
 
-def _sos_state_prep_resources(D, num_bits, num_wires):
-    if D == 1:
+def _sos_state_prep_resources(num_entries, num_bits, num_wires):
+    """Compute the resources for _sos_state_prep. These are upper-bounded resources due to
+    the way MultiControlledX gates are accounted for at the moment.
+    We can remedy this once [sc-110068] is completed."""
+    if num_entries == 1:
         return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
-    d = math.ceil_log2(D)
+    d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
+
+    identity_encoding = num_bits == m
+
     resources = defaultdict(int)
 
-    # Step 1
+    # Step 1 in paper (p.7)
     resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
 
-    # Step 2
+    # Step 2 in paper (p.7)
     qrom_params = {
-        "num_bitstrings": D,
+        "num_bitstrings": num_entries,
         "num_control_wires": d,
         "num_target_wires": num_wires,
         "num_work_wires": d - 1,
@@ -756,8 +936,9 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     }
     resources[resource_rep(qml.QROM, **qrom_params)] += 1
 
-    ## Step 3 & 4:
-    resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+    if not identity_encoding:
+        ## Step 3 & 4 in paper (p.7)
+        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5:
     # TODO [dwierichs]: Revisit the following "hack" once [sc-110068] is completed.
@@ -774,23 +955,38 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
         "work_wire_type": "zeroed",
     }
     # We use two MultiControlledX operators per bitstring
-    resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 2 * D - m + 1
+    resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 2 * num_entries - m + 1
     for i in range(m):
         mcx_params["num_zero_control_values"] = i
         resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
-    # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
-    # However, as we actually count up from 0 to D, we know that overall we will have to flip each
-    # bit at most half of the time, so that we have an upper bound of d*D/2
-    resources[resource_rep(qml.CNOT)] += d * D // 2
+    # We use up to d CNOTs for any given bitstring, leading to d*num_entries CNOTs naively.
+    # However, as we actually count up from 0 to num_entries, we know that overall we will have to flip each
+    # bit at most half of the time, so that we have an upper bound of d*num_entries/2
+    resources[resource_rep(qml.CNOT)] += d * num_entries // 2
 
-    ## Step 6:
-    resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+    ## Step 6 in paper (p.7)
+    if not identity_encoding:
+        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     return resources
 
 
-def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
-    return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
+def _preprocess(v_bits, wires):
+    """Preprocess the bits for SumOfSlatersPrep and compute some characterizing integers."""
+    num_entries = v_bits.shape[1]
+    # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
+    selector_ids, vtilde_bits = select_sos_rows(v_bits)
+    selected_target_wires = [wires[idx] for idx in selector_ids]
+    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
+    u_bits, b_bits = compute_sos_encoding(vtilde_bits)
+
+    r = len(vtilde_bits)
+    d = math.ceil_log2(num_entries)
+    m = min(r, 2 * d - 1)
+    assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
+    assert b_bits.shape == (m, num_entries)
+
+    return selected_target_wires, u_bits, b_bits, d, m, r
 
 
 @register_resources(_sos_state_prep_resources, exact=False)
@@ -807,29 +1003,18 @@ def _sos_state_prep(
 ):  # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = len(target_wires)
-    D = len(indices)
-    v_bits = _int_to_binary(np.array(indices), n)  # Shape (n, D)
-    if D == 1:
+    num_entries = len(indices)
+    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+    if num_entries == 1:
         qml.BasisState(v_bits[:, 0], wires=target_wires)
         return
-    assert v_bits.shape == (n, D)
+    assert v_bits.shape == (n, num_entries)
 
-    # if selector_ids has length r, vtilde_bits has shape (r, D)
-    selector_ids, vtilde_bits = select_sos_rows(v_bits)
-    selected_target_wires = [target_wires[idx] for idx in selector_ids]
-    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, D)
-    u_bits, b_bits = compute_sos_encoding(vtilde_bits)  # u_bits has shape
-    identity_encoding = np.allclose(u_bits, np.eye(len(u_bits)))
-
-    r = len(selector_ids)
-    d = math.ceil_log2(D)
-    m = min(r, 2 * d - 1)
-    assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
-    assert b_bits.shape == (m, D)
+    selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, wires)
+    identity_encoding = r == m
 
     # Step 1: Dense state preparation in enumeration register
     # Need to add work wires and correct decomposition
-    # qml.MottonenStatePreparation(coefficients, wires=enumeration_wires)
     qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
     # Step 2: QROM to load v_bits into system register
@@ -840,19 +1025,21 @@ def _sos_state_prep(
         work_wires=qrom_work_wires,
     )
 
-    # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
-    @for_loop(m)
-    def encoding(i):
-        u = u_bits[i]
-
-        @for_loop(r)
-        def inner_loop(j):
-            qml.cond(u[j], qml.CNOT)([selected_target_wires[j], identification_wires[i]])
-
-        inner_loop()
-
     if not identity_encoding:
-        encoding(u_bits)
+        # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
+        # register. Note that we skip this step if identity_encoding=True, because the encoding
+        # is trivial in this case. This is an additional optimization compared to the paper.
+        @for_loop(m)
+        def encoding(i):
+            u = u_bits[i]
+
+            @for_loop(r)
+            def inner_loop(j):
+                qml.cond(u[j], qml.CNOT)([selected_target_wires[j], identification_wires[i]])
+
+            inner_loop()
+
+        encoding()
 
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
@@ -901,7 +1088,7 @@ def _sos_state_prep(
 
         qml.MultiControlledX(**mcx_kwargs)
 
-    @for_loop(1, D)
+    @for_loop(1, num_entries)
     def uncompute_enumeration(k):
         bits = list(map(int, b_bits[:, k]))
         bit_count = np.bitwise_count(k)
@@ -915,7 +1102,6 @@ def _sos_state_prep(
     uncompute_enumeration()
 
     # Step 6): Uncompute the b_i in the identification register (self-adjoint)
-    # encoding(u_bits, selector_ids)
     if not identity_encoding:
         encoding()
 
