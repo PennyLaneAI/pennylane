@@ -11,5 +11,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
-"""Tests for functions that implement the core qubit tracking algorithm"""
+import pytest
+
+import pennylane.estimator as qre
+import pennylane.labs.estimator_beta as qre_exp
+from pennylane.allocation import AllocateState
+from pennylane.estimator import (
+    GateCount,
+)
+from pennylane.labs.estimator_beta.wires_manager import (
+    Allocate,
+    Deallocate,
+    MarkClean,
+    _estimate_auxiliary_wires,
+    _process_circuit_lst,
+    estimate_wires_from_circuit,
+    estimate_wires_from_resources,
+)
+
+
+class TestAllocate:
+    pass
+
+
+class TestDeallocate:
+    pass
+
+
+class TestMarkClean:
+    pass
+

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
-import copy
 import uuid
 from collections.abc import Iterable
 
@@ -20,7 +19,7 @@ from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import GateCount, ResourceOperator, Resources
+from pennylane.estimator.resource_operator import GateCount, ResourceOperator, CompressedResourceOp
 from pennylane.estimator.resources_base import DefaultGateSet
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
@@ -301,8 +300,45 @@ def estimate_wires_from_circuit(
 
 
 def estimate_wires_from_resources(
-    resources_as_lst: Resources,
+    gate_counts: dict[CompressedResourceOp, int],
     gate_set: set,
     config: dict,
+    algo: int,
+    zeroed: int = 0,
+    any_state: int = 0,
 ):
-    return
+    if config is None: config = ResourceConfig()
+    if gate_set is None: gate_set = DefaultGateSet
+    list_actions = [GateCount(gate, count) for gate, count in gate_counts.items()]
+
+    total = any_state
+    max_alloc = zeroed
+    max_dealloc = 0
+
+    for action in list_actions:
+        if action.gate.name in gate_set:
+            continue
+
+        resource_decomp = _get_resource_decomposition(action.gate, config)
+        sub_max_alloc, sub_max_dealloc, sub_total = _estimate_auxiliary_wires(
+            resource_decomp,
+            action.count,
+            gate_set,
+            config,
+            num_available_any_state_aux = algo + total,
+            num_active_qubits=action.gate.num_wires,
+        )
+
+        if total + sub_max_dealloc < max_dealloc:
+            max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
+        if total + sub_max_alloc > max_alloc:
+            max_alloc = total + sub_max_alloc
+        total += sub_total
+
+
+    if total < 0 or max_dealloc < 0:
+        raise ValueError("Deallocated more qubits than available to allocate.")
+
+    final_any_state = total
+    final_zeroed = max_alloc - total
+    return final_any_state, final_zeroed

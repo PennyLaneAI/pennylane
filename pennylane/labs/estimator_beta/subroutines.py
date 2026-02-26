@@ -29,7 +29,7 @@ from .wires_manager import Allocate, Deallocate
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
 
-
+# TODO: Add QROM + MCX
 class QROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 

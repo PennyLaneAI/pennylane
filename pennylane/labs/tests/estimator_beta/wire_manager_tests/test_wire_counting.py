@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Tests for the base classes used when tracking qubits for resource estimation."""
+r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
 import pytest
 
@@ -221,8 +220,12 @@ def nested_any_state_allocation3():
 
 
 # ------- Tests: -------
+class TestProcessCircuitLst:
+    pass
+
+
 class TestEstimateAuxiliaryWires:
-    """Test the private helper functions"""
+    """Test the private helper function _estimate_auxiliary_wires"""
 
     def test_error_when_deallocating_any_state_without_allocation(self):
         """Test that an error is raised when a circuit attempts to deallocate qubits in the
@@ -871,3 +874,11 @@ class TestEstimateAuxiliaryWires:
             num_active_qubits=num_active,
         )
         assert results == expected_results
+
+
+class TestEstimateWiresFromCircuit:
+    pass
+
+
+class TestEstimateWiresFromResources:
+    pass

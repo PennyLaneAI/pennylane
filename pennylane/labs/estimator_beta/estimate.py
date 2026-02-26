@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource estimation logic."""
-import uuid
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from functools import singledispatch, wraps
 
 from pennylane.estimator.estimate import (
@@ -22,19 +21,15 @@ from pennylane.estimator.estimate import (
     _ops_to_compressed_reps,
     _update_counts_from_compressed_res_op,
 )
-from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
-from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResourceManager
-from pennylane.measurements.measurements import MeasurementProcess
-from pennylane.operation import Operation, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.wires import Wires
+from pennylane.operation import Operation
+from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
-from .wires_manager import estimate_wires_from_circuit
+from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_resources
 
 # pylint: disable=too-many-arguments
 
@@ -291,22 +286,24 @@ def _resources_from_resource(
     """Further process resources from a Resources object (i.e. a Resources object that
     contains high-level operators can be analyzed with respect to a lower-level gate set)."""
 
-    wire_manager = WireResourceManager(zeroed, any_state, workflow.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
     for cmpr_rep_op, count in workflow.gate_types.items():
         _update_counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
-            wire_manager=wire_manager,
             gate_set=gate_set,
             scalar=count,
             config=config,
         )
 
+    new_any_state, new_zeroed = estimate_wires_from_resources(
+        workflow.gate_types, gate_set, config, workflow.algo_wires, zeroed, any_state,
+    )
+
     return Resources(
-        zeroed_wires=wire_manager.zeroed,
-        any_state_wires=wire_manager.any_state,
-        algo_wires=wire_manager.algo_wires,
+        zeroed_wires=new_zeroed,
+        any_state_wires=new_any_state,
+        algo_wires=workflow.algo_wires,
         gate_types=gate_counts,
     )
 
@@ -381,11 +378,7 @@ def _resources_from_qfunc(
                 cmp_rep_op, gate_counts, gate_set=gate_set, config=config
             )
 
-        algo_qubits, any_state, zeroed = estimate_wires_from_circuit(
-            q.queue,
-            gate_set,
-            config,
-        )
+        algo_qubits, any_state, zeroed = estimate_wires_from_circuit(q.queue, gate_set, config)
         return Resources(
             zeroed_wires=zeroed,
             any_state_wires=any_state,
