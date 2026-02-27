@@ -403,7 +403,7 @@ def get_catalyst_docstrings():
     - pennylane.drawer
     """
 
-    # add to this list as more entry-point groups are added to Catalyst
+    # add to this list as more entry-point groups are added
     groups = ["pennylane.transforms", "pennylane.drawer"]
 
     docs_dict = {}

@@ -421,6 +421,72 @@ your code easy to follow and understand, keeping to the following guidelines.
   directly. In addition, avoid complex formatting such as tables---these are difficult
   to maintain and modify.
 
+Making Catalyst functionality callable from PennyLane
+-----------------------------------------------------
+
+Our goal is for PennyLane to be the frontend for Catalyst, meaning that you 
+should not have to import functionality from the ``catalyst`` package since it 
+should be accessible from PennyLane directly. In anticipation of this goal, we
+provide a way for desired Catalyst frontend features to be automatically
+accessible from PennyLane while ensuring that such features' documentation is 
+properly sourced from Catalyst and hosted on PennyLane's documentation (the same
+documentation is hosted in Catalyst's documentation, as well). 
+
+In the ``setup.py`` file in Catalyst's root directory, there is a dictionary 
+named ``entry_points`` whose keys are "groups" and whose values are lists of 
+Catalyst features that are desired to be accessible from PennyLane. Generally, 
+the convention for the names of groups should be the module path in PennyLane 
+that the Catalyst feature is desired to be callable from. For example: 
+
+.. code-block:: python3
+
+    entry_points = {
+        "pennylane.drawer": ["draw_graph = catalyst:draw_graph"]
+    }
+
+This indicates that we want the ``catalyst.draw_graph`` function to be callable
+from the ``pennylane.drawer`` module. If you are adding an entry point to a 
+feature in Catalyst and a group name in the ``entry_points`` dictionary doesn't 
+exist yet, you may add a group name with the associated features in a list as 
+shown above. If the desired group name does exist, simply add the entry-point to 
+the specific feature(s) to the list.
+
+In PennyLane's source code, open ``doc/confy.py``, find the 
+``get_catalyst_docstrings`` function, and add any new group names to the 
+``groups`` variable. 
+
+.. code-block:: python3
+
+    def get_catalyst_docstrings():
+        # add to this list as more entry-point groups are added
+        groups = ["pennylane.transforms", "pennylane.drawer"]
+
+        ...
+
+If no new group name was added in the previous steps (only individual features 
+were added to existing groups), nothing more needs to be done; the feature(s) 
+added should be accessible from ``pennylane.<module_path>`` and from top-level.
+If a new group name was indeed added in previous steps, navigate to the module 
+in which the Catalyst functionality is desired to be accessed from in PennyLane 
+and open ``__init__.py``. Import the ``_setup_entry_points`` function from 
+``pennylane._entry_point_utils.py`` and assign the ``__all__``, ``__getattr__``, 
+and ``__dir__`` dunder methods similar to the example below from 
+``pennylane/drawer/__init__.py``:
+
+.. code-block:: python3
+
+    from .._entry_points_utils import _setup_entry_points
+
+    __all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.drawer")
+
+If the features therein are also desired to be accessible from top-level, open
+``pennylane/__init__.py`` and add the group name to the ``_entry_point_groups`` 
+variable.
+
+Once all steps above are completed, the desired features from Catalyst should be 
+accessible from PennyLane and the documentation that is part of the feature's 
+source code in Catalyst will also render on PennyLane's documentation.
+
 
 Contributing documentation
 --------------------------
@@ -524,3 +590,5 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
     To build the interfaces documentation, PyTorch will need to
     be installed, see :ref:`install_interfaces`.
+
+
