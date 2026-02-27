@@ -399,12 +399,12 @@ def get_catalyst_docstrings():
     Finds docstrings for Catalyst functionality. This can be extended in the future to other entry-point
     groups if needed. Current entry-point groups:
 
-    - catalyst.compilation_passes
+    - pennylane.transforms
     - pennylane.drawer
     """
 
     # add to this list as more entry-point groups are added to Catalyst
-    groups = ["catalyst.compilation_passes", "pennylane.drawer"]
+    groups = ["pennylane.transforms", "pennylane.drawer"]
 
     docs_dict = {}
     for group in groups:

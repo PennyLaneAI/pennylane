@@ -167,6 +167,7 @@ from pennylane import pulse
 from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
+from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
     from_pyquil,
@@ -202,8 +203,6 @@ from pennylane import qnn
 
 from pennylane import estimator
 
-from pennylane.drawer import draw, draw_mpl
-
 # pylint:disable=wrong-import-order
 from importlib import import_module
 from importlib.metadata import version as _metadata_version
@@ -224,11 +223,11 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-from ._catalyst_entry_points_utils import _setup_entry_points_from_catalyst
+from ._entry_points_utils import _setup_entry_points
 
 _entry_point_groups = ["pennylane.drawer"]
 
-__all__, __getattr__, __dir__ = _setup_entry_points_from_catalyst(__name__, _entry_point_groups)
+__all__, __getattr__, __dir__ = _setup_entry_points(__name__, _entry_point_groups)
 
 def version():
     """Returns the PennyLane version number."""

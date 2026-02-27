@@ -2,7 +2,7 @@ import sys
 from importlib import metadata
 from typing import List, Callable, Tuple
 
-def _setup_entry_points_from_catalyst(module_name: str, group_name):
+def _setup_entry_points(module_name, group_name):
     """Returns dunder methods required to import group elements from an entry-point. Entry-point 
     elements are lazy-loaded.
 
@@ -14,13 +14,12 @@ def _setup_entry_points_from_catalyst(module_name: str, group_name):
         Tuple(Callable): 
             The module's modified __all__, __getattr__, and __dir__ methods.
     """
-    if len(group_name) > 0:
+    # Get entry points from the given group name (or group names)
+    if isinstance(group_name, list):
         eps = metadata.entry_points(group=group_name[0])
         for i in range(1, len(group_name)):
             eps += metadata.entry_points(group=group_name[i])
     else:
-        # dist = metadata.distribution(module_name.split('.')[0])
-        # eps = [ep for ep in dist.entry_points if ep.group == group_name]
         eps = metadata.entry_points(group=group_name)
     
     ep_dict = {ep.name: ep for ep in eps}
@@ -28,21 +27,31 @@ def _setup_entry_points_from_catalyst(module_name: str, group_name):
 
     current_module = sys.modules[module_name]
 
+    # all public functions and classes
     current_module_funcs = [
         name for name, obj in current_module.__dict__.items()
         if callable(obj) and not name.startswith("_")
     ]
 
-    module_all = list(current_module_funcs + ep_names)
-
     def module_getattr(name):
         """The new __getattr__ method for the current_module"""
         if name in ep_dict:
-            func = ep_dict[name].load()
-            func.__module__ = module_name
+            func = ep_dict[name].load() # lazy load the entry point
+            func.__module__ = module_name 
             setattr(current_module, name, func)
             return func
+        
+        if current_module == "pennylane":
+            if name == "plugin_devices":
+                # pylint: disable=import-outside-toplevel
+                from pennylane.devices.device_constructor import plugin_devices
+
+                return plugin_devices
+
         raise AttributeError(f"module '{module_name}' has no attribute '{name}'")
+
+    # add entry points to the module
+    module_all = list(current_module_funcs + ep_names)
 
     def module_dir():
         """The new __dir__ method for the current_module"""
