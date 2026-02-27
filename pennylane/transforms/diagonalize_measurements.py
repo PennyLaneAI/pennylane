@@ -31,7 +31,7 @@ from pennylane.transforms.core import transform
 _default_supported_obs = (qml.Z, qml.Identity)
 
 
-def diagonalize_measurements_setup_inputs(
+def diagonalize_final_measurements_setup_inputs(
     supported_base_obs: tuple[str] = ("PauliZ", "Identity"), to_eigvals: bool = False
 ):
     "Docstring for my_transform."
@@ -47,8 +47,8 @@ def null_postprocessing(results):
 
 @partial(
     transform,
-    pass_name="diagonalize-measurements",
-    setup_inputs=diagonalize_measurements_setup_inputs,
+    pass_name="diagonalize-final-measurements",
+    setup_inputs=diagonalize_final_measurements_setup_inputs,
 )
 def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
     """Diagonalize a set of measurements into the standard basis. Raises an error if the
