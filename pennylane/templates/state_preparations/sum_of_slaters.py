@@ -624,10 +624,11 @@ class SumOfSlatersPrep(Operation):
 
     This operation prepares an arbitrary state
 
-    .. math:: |\psi\rangle = \sum_{\ell \in \text{indices}} c_\ell |\ell\rangle,
+    .. math:: |\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle,
 
-    where :math:`c_\ell` are the ``coefficients`` corresponding to the ``indices`` :math:`\ell`.
-    The states :math:`|\ell\rangle` are computational basis states, interpreted via the
+    where :math:`L` denotes the set of ``indices`` and :math:`c_\ell` is the ``coefficient``
+    corresponding to the index :math:`\ell\in L`.
+    The state :math:`|\ell\rangle` is a computational basis state, interpreted via the
     binary representation of :math:`\ell`.
 
     This state preparation technique was introduced in Sec. III A of
@@ -678,9 +679,11 @@ class SumOfSlatersPrep(Operation):
 
         qml.decomposition.enable_graph()
 
-        gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+        gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT", "X"}
 
-        @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+        first_free_wire = max(wires)+1
+
+        @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)
         @qml.decompose(gate_set=gate_set, num_work_wires=10)
         @qml.qnode(qml.device("lightning.qubit", wires=13))
         def circuit():
@@ -700,26 +703,27 @@ class SumOfSlatersPrep(Operation):
     That looks exactly right! Internally, the state preparation looks like this:
 
     >>> print(qml.draw(circuit, show_matrices=False)())
-     0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
-     1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
-     2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
-     3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
-     4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
-     5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
-     6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
-     7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
-     8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
-     9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-    10: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-    11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-    12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
+     0: ──────╭QROM(M0)──X─╭●────╭●────╭●─╭●────╭●──X─╭●─╭●────╭●─╭●────╭●──────────╭●────╭●────╭●─╭●────┤  State
+     1: ──────├QROM(M0)──X─├●────├●──X─├●─├●────├●──X─├●─├●────├●─├●────├●──────────├●────├●──X─├●─├●────┤  State
+     2: ──────├QROM(M0)──X─├●──X─├●────├●─├●────├●──X─├●─├●────├●─├●──X─├●──────────├●────├●──X─├●─├●──X─┤  State
+     3: ──────├QROM(M0)──X─├●────├●────├●─├●──X─├●──X─├●─├●──X─├●─├●────├●──────────├●────├●──X─├●─├●──X─┤  State
+     4: ──────├QROM(M0)────├●──X─├●──X─├●─├●──X─├●──X─├●─├●────├●─├●──X─├●──────────├●──X─├●────├●─├●────┤  State
+     5: ─╭|Ψ⟩─├QROM(M0)────│─────│─────│──│─────│─────│──│─────│──│─────│───────────│─────╰X────╰X─│─────┤  State
+     6: ─├|Ψ⟩─├QROM(M0)────│─────│─────│──│─────╰X────╰X─│─────╰X─│─────│──╭X───────│──────────────│─────┤  State
+     7: ─├|Ψ⟩─├QROM(M0)────│─────╰X────╰X─│──────────────│────────╰X────│──│──╭X────│──────────────│─────┤  State
+     8: ─╰|Ψ⟩─├QROM(M0)────╰X─────────────╰X─────────────╰X─────────────│──│──│──╭X─│──────────────╰X────┤  State
+     9: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+    10: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+    11: ──────╰QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+    12: ────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────┤  State
 
     .. details::
         :title: Usage details
 
         **Dynamic work wires**
 
-        Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an
+        Note that in the example above, wires with labels ``5`` to ``12`` were dynamically
+        allocated. We can see an
         initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
         ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
         a sequence of :class:`~.MultiControlledX` gates, some of which are
@@ -900,13 +904,20 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
         ## Step 3 & 4 in paper (p.7)
         resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
-    mcx_params = {
-        "num_work_wires": 0,  # Work wires will be allocated by MCX itself
-        "work_wire_type": "borrowed",
-        "num_control_wires": m,
-        "num_zero_control_values": m,
-    }
-    mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
+    ## Step 5 in paper (p.7)
+
+    if m == 1:
+        mcx_rep = resource_rep(qml.CNOT)
+    elif m == 2:
+        mcx_rep = resource_rep(qml.Toffoli)
+    else:
+        mcx_params = {
+            "num_work_wires": 0,  # Work wires will be allocated by MCX itself
+            "work_wire_type": "borrowed",
+            "num_control_wires": m,
+            "num_zero_control_values": 0,
+        }
+        mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
 
     # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
     # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
@@ -923,22 +934,10 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     for bit_count, count in counts.items():
         resources[resource_rep(qml.CNOT)] += count * bit_count
 
-    ## Step 5 in paper (p.7)
-    # TODO [dwierichs]: Revisit the following "hack" once [sc-110068] is completed.
-    # We have to hack the MultiControlledX resources a little bit, even with exact=False.
-    # This is because MultiControlledX resources with differing `num_zero_control_values`
-    # are considered different by the framework. Overall we accounted for all MultiControlledX
-    # instances as having the maximal number of zeroed control values above.
-    # Here we replace m of them with all possible instances of zeroed control values. If we would
-    # be reaching negative counts, we simply add more MCX gates, leading to an upper bound instead
-    resources[mcx_rep] = max(resources[mcx_rep] - m, 1)
-    for num_zeroed in range(m):
-        if num_zeroed == 0 and m == 2:
-            # For this special case PL casts to Toffoli instead of MCX
-            resources[resource_rep(qml.Toffoli)] += 1
-        else:
-            mcx_params["num_zero_control_values"] = num_zeroed
-            resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
+    # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
+    # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
+    # and after the last group. This amounts to `num_entries` layers of bit flips
+    resources[resource_rep(qml.X)] += num_entries * m
 
     ## Step 6 in paper (p.7)
     if not identity_encoding:
@@ -1027,16 +1026,15 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
         # The following functions are called conditionally from within `uncompute_enumeration`
 
-        def single_mcx(k, bits):
+        def single_mcx(k):
             # If k is a power of two, we can directly use an MCX gate
             # This is an additional optimization compared to the paper, saving one MCX gate
             target = math.ceil_log2(k)
             qml.MultiControlledX(
                 wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
-                control_values=bits,
             )
 
-        def two_mcx(k, bits):
+        def two_mcx(k):
             # If k is a sum of two powers of two, we can directly use two MCX gates
             # This is an additional optimization compared to the paper, saving aux wire usage
             target0 = math.ceil_log2(k) - 1
@@ -1044,17 +1042,18 @@ def _sos_state_prep(coefficients, wires, indices, **__):
             for target in [target0, target1]:
                 qml.MultiControlledX(
                     wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
-                    control_values=bits,
                 )
 
-        def multi_mcx_via_cache(k, bits):
+        def multi_mcx_via_cache(k):
             # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
             # control to flip the targets
             mcx_kwargs = {
                 "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_cache_wires]),
-                "control_values": bits,
             }
 
+            # Note that this gate is a generalized left elbow, which we currently do not
+            # exploit.
+            # TODO: add decomposition that makes use of zeroed input state on target qubit.
             qml.MultiControlledX(**mcx_kwargs)
 
             @for_loop(d)
@@ -1064,20 +1063,35 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
             inner_loop()
 
+            # Note that this gate is a generalized right elbow, which we currently do not
+            # exploit.
+            # TODO: add decomposition that makes use of zeroed output state on target qubit.
             qml.MultiControlledX(**mcx_kwargs)
 
+        @for_loop(m)
+        def flip(i, bits_to_flip):
+            qml.cond(bits_to_flip[i], qml.X)(mcx_ctrl_wires[i])
+            return bits_to_flip
+
+        # Start the for loop at 1 because we don't need to do anything for 0 anyway
         @for_loop(1, num_entries)
-        def uncompute_enumeration(k):
-            bits = list(map(int, b_bits[:, k]))
+        def uncompute_enumeration(k, prev_bits):
+            bits = b_bits[:, k]
+            flip_bits = bits ^ prev_bits
+
+            flip(flip_bits)
+
             bit_count = np.bitwise_count(k)
             qml.cond(
                 bit_count == 1,
                 true_fn=single_mcx,
                 elifs=((bit_count == 2, two_mcx),),
                 false_fn=multi_mcx_via_cache,
-            )(k, bits)
+            )(k)
+            return bits
 
-        uncompute_enumeration()
+        last_bits = uncompute_enumeration(np.ones(m, dtype=int))
+        flip(1 - last_bits)
 
         # Step 6) in paper (p.7): Uncompute the b_i in the identification register (self-adjoint)
         if not identity_encoding:
