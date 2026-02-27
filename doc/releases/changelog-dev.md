@@ -491,31 +491,30 @@
   These are now handled by dedicated functions:
 
   .. warning::
-
     Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
     as the original behaviour was never supported.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
 
-    ```python
-    # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="my-rx")
+  ```python
+  # Legacy method (deprecated):
+  qml.RX(0.5, wires=0, id="my-rx")
 
-    # New method:
-    qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
-    ```
+  # New method:
+  qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+  ```
 
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
     for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-    ```python
-    # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="x0")
+  ```python
+  # Legacy method (deprecated):
+  qml.RX(0.5, wires=0, id="x0")
 
-    # New method:
-    qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
-    ```
+  # New method:
+  qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+  ```
   
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
