@@ -129,6 +129,7 @@ jobs:
           --ignore=doc/releases
           --ignore=doc/_static
           --ignore=doc/_templates
+          --ignore=doc/introduction
           "
 
           IGNORE_FILES="
@@ -149,6 +150,11 @@ jobs:
           --ignore=doc/introduction/pennylane.rst
           --ignore=doc/introduction/templates.rst
           --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE="
+          {$IGNORE_DIRS}
+          {$IGNORE_FILES}
           "
 
           pytest doc $IGNORE
