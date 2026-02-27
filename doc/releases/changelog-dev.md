@@ -551,6 +551,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update pennylane to use a uv lockfile for package dependency tracking. 
+  [(8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+  
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
