@@ -27,34 +27,38 @@ from .style import available_styles, use_style
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
-from importlib import metadata, import_module
+# from importlib import metadata, import_module
 
 
-def _load_catalyst_eps(entry_points):
-    drawers = {name: entry_points[name].load() for name in entry_points.names}
-    return drawers
+# def _load_catalyst_eps(entry_points):
+#     drawers = {name: entry_points[name].load() for name in entry_points.names}
+#     return drawers
 
 
-_catalyst_eps = metadata.entry_points(group="catalyst.graph_drawer")
-_catalyst_drawers = _load_catalyst_eps(_catalyst_eps)
+# _catalyst_eps = metadata.entry_points(group="pennylane.drawer")
+# _catalyst_drawers = _load_catalyst_eps(_catalyst_eps)
 
-_drawer_module = [
-    name for name, obj in globals().items() if callable(obj) and not name.startswith("_")
-]
+# _drawer_module = [
+#     name for name, obj in globals().items() if callable(obj) and not name.startswith("_")
+# ]
 
-__all__ = _drawer_module + list(_catalyst_drawers.keys())
-
-
-def __dir__():
-    return __all__ + list(globals().keys())
+# __all__ = _drawer_module + list(_catalyst_drawers.keys())
 
 
-def __getattr__(name):
-    if name in _catalyst_drawers:
-        func = _catalyst_drawers[name]
-        func.__module__ = __name__
-        setattr(import_module(__name__), name, func)
-        return func
+# def __dir__():
+#     return __all__ + list(globals().keys())
 
-    else:
-        raise AttributeError(f"module 'pennylane.drawer' has no attribute {name}")
+
+# def __getattr__(name):
+#     if name in _catalyst_drawers:
+#         func = _catalyst_drawers[name]
+#         func.__module__ = __name__
+#         setattr(import_module(__name__), name, func)
+#         return func
+
+#     else:
+#         raise AttributeError(f"module 'pennylane.drawer' has no attribute {name}")
+
+from .._catalyst_entry_points_utils import _setup_entry_points_from_catalyst
+
+__all__, __getattr__, __dir__ = _setup_entry_points_from_catalyst(__name__, "pennylane.drawer")

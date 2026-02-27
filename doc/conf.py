@@ -400,11 +400,11 @@ def get_catalyst_docstrings():
     groups if needed. Current entry-point groups:
 
     - catalyst.compilation_passes
-    - catalyst.graph_drawer
+    - pennylane.drawer
     """
 
     # add to this list as more entry-point groups are added to Catalyst
-    groups = ["catalyst.compilation_passes", "catalyst.graph_drawer"]
+    groups = ["catalyst.compilation_passes", "pennylane.drawer"]
 
     docs_dict = {}
     for group in groups:

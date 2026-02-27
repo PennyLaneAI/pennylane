@@ -202,15 +202,7 @@ from pennylane import qnn
 
 from pennylane import estimator
 
-from pennylane.drawer import draw, draw_mpl, _catalyst_drawers  # pylint:disable=wrong-import-order
-
-_catalyst_entry_points = [_catalyst_drawers]
-
-_all_pl = [name for name, obj in globals().items() if callable(obj) and not name.startswith("_")]
-
-__all__ = _all_pl + [
-    list(_catalyst_entry_points[i].keys()) for i in range(len(_catalyst_entry_points))
-]
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 from importlib import import_module
@@ -232,27 +224,11 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
+from ._catalyst_entry_points_utils import _setup_entry_points_from_catalyst
 
-def __dir__():
-    return __all__ + list(globals().keys())
+_entry_point_groups = ["pennylane.drawer"]
 
-
-def __getattr__(name):
-
-    if name == "plugin_devices":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.devices.device_constructor import plugin_devices
-
-        return plugin_devices
-
-    elif name in _catalyst_drawers:
-        func = _catalyst_drawers[name]
-        func.__module__ = __name__
-        setattr(import_module(__name__), name, func)
-        return func
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
-
+__all__, __getattr__, __dir__ = _setup_entry_points_from_catalyst(__name__, _entry_point_groups)
 
 def version():
     """Returns the PennyLane version number."""
