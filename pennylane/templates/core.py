@@ -41,6 +41,7 @@ from pennylane.capture import subroutine as capture_subroutine
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
+    adjoint_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -71,6 +72,80 @@ class AbstractArray:
 
     def __len__(self):
         return reduce(lambda a, b: a * b, self.shape)
+
+
+def adjoint_subroutine_resource_rep(
+    subroutine: "Subroutine", *args, **kwargs
+) -> CompressedResourceOp:
+    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    Args:
+        subroutine (Subroutine): the subroutine whose adjoint we are going to use in a decomposition.
+    Returns:
+        CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
+        the resources of another function.
+
+    .. warning:: Note that the following features only work with tape-based PennyLane, and
+        do not work with Catalyst.
+
+    Suppose we have a ``Subroutine`` and we want to use its adjoint in the decomposition of another ``Operator``.
+
+    .. code-block:: python
+
+        def S0_resources(params, wires, rotation):
+            return {qml.resource_rep(rotation): params.shape[0]}
+
+        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S0_resources)
+        def S0(params, wires, rotation):
+            for x in params:
+                rotation(x, wires)
+
+    We can add the ``S0`` adjoint to the resources of another ``Operator`` by using this function together with
+    an abstract form of what it will be called with using :class:`~.AbstractArray`.
+
+    .. code-block:: python
+        from pennylane.templates import AbstractArray, adjoint_subroutine_resource_rep
+
+        class MyOp(qml.operation.Operation):
+            pass
+
+        abstract_params = AbstractArray((4, ), float)
+        abstract_wires = AbstractArray(()) # a single wire
+        S0_resources = adjoint_subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
+
+        @qml.decomposition.register_resources({S0_resources: 1})
+        def MyOpDecomposition(wires):
+            # data of shape (4, ) and dtype float
+            params = np.array([1.0, 2.0, 3.0, 4.0])
+            Adjoint(S0)(params, wires, qml.RX)
+
+        qml.add_decomps(MyOp, MyOpDecomposition)
+
+    We can now see ``MyOp`` decompose into the relevant subroutine:
+
+    .. code-block:: python
+
+        qml.decomposition.enable_graph()
+        @qml.qnode(qml.device('reference.qubit', wires=1))
+        def c():
+            MyOp(wires=0)
+            return qml.state()
+
+        >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+        0: ──S0†(M0)─┤  State
+        <BLANKLINE>
+        M0 =
+        [1. 2. 3. 4.]
+    """
+    bound = subroutine.signature.bind(*args, **kwargs)
+    for arg in subroutine.dynamic_argnames:
+        leaves, struct = flatten(bound.arguments[arg])
+        bound.arguments[arg] = (struct, tuple(leaves))
+    signature_key = tuple(bound.arguments.values())
+    return adjoint_resource_rep(
+        SubroutineOp, {"subroutine": subroutine, "signature_key": signature_key}
+    )
 
 
 def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
