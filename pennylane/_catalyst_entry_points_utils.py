@@ -14,19 +14,14 @@ def _setup_entry_points_from_catalyst(module_name: str, group_name):
         Tuple(Callable): 
             The module's modified __all__, __getattr__, and __dir__ methods.
     """
-    print(group_name)
     if len(group_name) > 0:
         eps = metadata.entry_points(group=group_name[0])
         for i in range(1, len(group_name)):
             eps += metadata.entry_points(group=group_name[i])
-        print(">>>>>>>>>>>>", eps, module_name, group_name)
-        print(">>>>>>>>>>>>", type(module_name), type(group_name))
     else:
-        dist = metadata.distribution(module_name.split('.')[0])
-        eps = [ep for ep in dist.entry_points if ep.group == group_name]
-        # eps = metadata.entry_points(group=group_name)
-        print(">>>>>>>>>>>>", eps, module_name, group_name)
-        print(">>>>>>>>>>>>", type(module_name), type(group_name))
+        # dist = metadata.distribution(module_name.split('.')[0])
+        # eps = [ep for ep in dist.entry_points if ep.group == group_name]
+        eps = metadata.entry_points(group=group_name)
     
     ep_dict = {ep.name: ep for ep in eps}
     ep_names = list(ep_dict.keys())
