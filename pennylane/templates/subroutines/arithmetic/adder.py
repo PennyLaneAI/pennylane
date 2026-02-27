@@ -241,7 +241,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
 
     QFT(qft_wires)
     PhaseAdder(k, qft_wires, mod, work_wire)
-    adjoint(QFT(qft_wires))
+    adjoint(QFT)(qft_wires)
 
 
 add_decomps(Adder, _adder_decomposition)
