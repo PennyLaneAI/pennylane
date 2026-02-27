@@ -202,6 +202,32 @@ def _preprocess_level_input(
     return level_sorted
 
 
+def _mlir_resources_to_specs_resources(resources) -> SpecsResources:
+    """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
+
+    gate_types = {}
+    gate_sizes = defaultdict(int)
+
+    for res_name, sizes in resources.operations.items():
+        for size, count in sizes.items():
+            gate_sizes[size] += count
+
+        if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+            # Separate out PPMs and PPRs by weight
+            for size, count in sizes.items():
+                gate_types[f"{res_name}-w{size}"] = count
+        else:
+            gate_types[res_name] = sum(sizes.values())
+
+    return SpecsResources(
+        gate_types=gate_types,
+        gate_sizes=dict(gate_sizes),
+        measurements=dict(resources.measurements),
+        num_allocs=resources.num_allocs,
+        depth=None,  # Can't get depth from MLIR pass results
+    )
+
+
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[int, SpecsResources | list[SpecsResources]],
     dict[int, str],
@@ -293,38 +319,12 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         for lvl, (level_name, result) in zip(mlir_levels, results.items()):
             output_level[lvl + num_tape_levels] = level_name
 
-            if not isinstance(result, list):
-                result = [result]
+            if isinstance(result, list):
+                result = [_mlir_resources_to_specs_resources(res) for res in result]
+            else:
+                result = _mlir_resources_to_specs_resources(result)
 
-            resource_list = []
-
-            for res in result:
-                gate_types = {}
-                gate_sizes = defaultdict(int)
-
-                for res_name, sizes in res.operations.items():
-                    for size, count in sizes.items():
-                        gate_sizes[size] += count
-
-                    if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-                        # Separate out PPMs and PPRs by weight
-                        for size, count in sizes.items():
-                            gate_types[f"{res_name}-w{size}"] = count
-                    else:
-                        gate_types[res_name] = sum(sizes.values())
-
-                resource_list.append(
-                    SpecsResources(
-                        gate_types=gate_types,
-                        gate_sizes=dict(gate_sizes),
-                        measurements=dict(res.measurements),
-                        num_allocs=res.num_allocs,
-                        depth=None,  # Can't get depth for intermediate stages
-                    )
-                )
-            if len(resource_list) == 1:
-                resource_list = resource_list[0]
-            resources[level_name] = resource_list
+            resources[level_name] = result
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
