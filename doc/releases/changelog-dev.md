@@ -616,21 +616,27 @@
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
-* Documentation for Pauli-based computation passes was removed as part of migrating documentation in
-  PennyLane to where its source code lives (in Catalyst). The reason for the removal is for there to
-  be one single source of truth for documentation of a feature if it is desired to be accessible 
-  from both PennyLane and Catalyst. 
+* Infrastructure has been put in place for features that should be accessible from both PennyLane and 
+  Catalyst to have a single source of truth for documentation, which will provide a better overall
+  experience when consulting our documentation.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
   The process for Catalyst frontend features to be automatically accessible from PennyLane while 
   ensuring that such features' documentation is properly sourced from Catalyst and hosted on 
   PennyLane's documentation is outlined in the 
   :doc:`documentation development guide <../guide/documentation>` under the section titled 
-  "Making Catalyst functionality callable from PennyLane".
+  "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be found in
+  [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
-  Lastly, as part of [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020), images were 
-  added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to render in 
-  PennyLane's documentation.
+  In addition to the added infrastructure to make the above happen, the follow changes were made:
+  
+  * Documentation for Pauli-based computation passes was removed as part of migrating documentation in
+    PennyLane to where its source code lives (in Catalyst). The reason for the removal is for there to
+    be one single source of truth for documentation of a feature if it is desired to be accessible 
+    from both PennyLane and Catalyst. 
+
+  * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to 
+    render in PennyLane's documentation.
 
 <h3>Bug fixes 🐛</h3>
 

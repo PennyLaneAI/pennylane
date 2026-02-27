@@ -3,15 +3,15 @@ from importlib import metadata
 from typing import List, Callable, Tuple
 
 def _setup_entry_points(module_name, group_name):
-    """Returns dunder methods required to import group elements from an entry-point. Entry-point 
+    """Returns dunder methods required to import group elements from an entry-point. Entry-point
     elements are lazy-loaded.
 
-    Args: 
+    Args:
         module_name (str): The name of the module that this function gets called in.
         group_name (str | list(str)): The entry-point group names.
 
     Returns:
-        Tuple(Callable): 
+        Tuple(Callable):
             The module's modified __all__, __getattr__, and __dir__ methods.
     """
     # Get entry points from the given group name (or group names)
@@ -21,7 +21,7 @@ def _setup_entry_points(module_name, group_name):
             eps += metadata.entry_points(group=group_name[i])
     else:
         eps = metadata.entry_points(group=group_name)
-    
+
     ep_dict = {ep.name: ep for ep in eps}
     ep_names = list(ep_dict.keys())
 
@@ -37,10 +37,10 @@ def _setup_entry_points(module_name, group_name):
         """The new __getattr__ method for the current_module"""
         if name in ep_dict:
             func = ep_dict[name].load() # lazy load the entry point
-            func.__module__ = module_name 
+            func.__module__ = module_name
             setattr(current_module, name, func)
             return func
-        
+
         if current_module == "pennylane":
             if name == "plugin_devices":
                 # pylint: disable=import-outside-toplevel
