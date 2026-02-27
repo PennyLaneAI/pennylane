@@ -204,7 +204,6 @@ from pennylane import qnn
 from pennylane import estimator
 
 # pylint:disable=wrong-import-order
-from importlib import import_module
 from importlib.metadata import version as _metadata_version
 
 from importlib.util import find_spec as _find_spec
