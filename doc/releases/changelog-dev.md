@@ -555,8 +555,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update pennylane to use a uv lockfile for package dependency tracking. 
-  [(8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+  [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+  [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
   
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -614,9 +615,6 @@
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed bug that caused package installation failures in the repository's nightly sync workflows.
-[(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
 
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
