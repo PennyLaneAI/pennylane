@@ -54,6 +54,7 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9112)](https://github.com/PennyLaneAI/pennylane/pull/9112)
 
   ```python
   from pennylane.templates import Subroutine
@@ -162,6 +163,7 @@ The following classes have been ported over:
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
   
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
@@ -257,6 +259,9 @@ The following classes have been ported over:
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* No unnecessary classical registers will be created now when using `qml.to_openqasm` with `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 * A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
   for an operator, instead of a general `UserWarning`.
@@ -490,8 +495,9 @@ The following classes have been ported over:
 
   These are now handled by dedicated functions:
 
-  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
-     as the original behaviour was never supported.
+  .. warning::
+    Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+    as the original behaviour was never supported.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
@@ -554,6 +560,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Update pennylane to use a uv lockfile for package dependency tracking. 
+  [(8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+  
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
@@ -698,5 +707,6 @@ Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
+Nate Stemen,
 David Wierichs,
 Jake Zaia.
