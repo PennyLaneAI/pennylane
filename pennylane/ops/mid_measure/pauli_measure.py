@@ -16,10 +16,12 @@ Implements the pauli measurement.
 """
 
 import uuid
+import warnings
 from functools import lru_cache
 
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -31,13 +33,24 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         pauli_word: str,
         wires: WiresLike,
         postselect: int | None = None,
         id: str | None = None,
+        meas_uid: str | None = None,
     ):
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+            )
+            # Only override if meas_uid wasn't explicitly provided
+            if meas_uid is None:
+                meas_uid = id
+
         if not all(c in _VALID_PAULI_CHARS for c in pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that '
@@ -51,9 +64,15 @@ class PauliMeasure(Operator):
                 f"word. The Pauli word {pauli_word} has length {len(pauli_word)} "
                 f"and {len(wires)} wires were given: {wires}."
             )
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
         self.hyperparameters["pauli_word"] = pauli_word
         self.hyperparameters["postselect"] = postselect
+        self.hyperparameters["meas_uid"] = meas_uid
+
+    @property
+    def meas_uid(self) -> str | None:
+        """The custom ID associated with the measurement instance."""
+        return self.hyperparameters["meas_uid"]
 
     @property
     def pauli_word(self) -> str:
@@ -82,13 +101,15 @@ class PauliMeasure(Operator):
     @property
     def hash(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
-        return hash((self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.id))
+        return hash(
+            (self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.meas_uid)
+        )
 
 
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):
     """Concrete implementation of the pauli_measure primitive."""
     measurement_id = str(uuid.uuid4())
-    measurement = PauliMeasure(pauli_word, wires, postselect, measurement_id)
+    measurement = PauliMeasure(pauli_word, wires, postselect, meas_uid=measurement_id)
     return MeasurementValue([measurement])
 
 
