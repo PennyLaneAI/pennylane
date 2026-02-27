@@ -26,6 +26,7 @@ from pennylane.wires import Wires, WiresLike
 
 from ... import AbstractArray, subroutine_resource_rep
 from .phase_adder import PhaseAdder
+from ...core import adjoint_subroutine_resource_rep
 
 
 class Adder(Operation):

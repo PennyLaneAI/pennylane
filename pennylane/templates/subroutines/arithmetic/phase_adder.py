@@ -29,6 +29,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.templates import AbstractArray, SubroutineOp, subroutine_resource_rep
+from pennylane.templates.core import adjoint_subroutine_resource_rep
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
