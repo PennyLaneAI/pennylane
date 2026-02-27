@@ -290,30 +290,41 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
                 f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
             ) from ve
 
-        for lvl, (level_name, res) in zip(mlir_levels, results.items()):
-            gate_types = {}
-            gate_sizes = defaultdict(int)
-
-            for res_name, sizes in res.operations.items():
-                for size, count in sizes.items():
-                    gate_sizes[size] += count
-
-                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-                    # Separate out PPMs and PPRs by weight
-                    for size, count in sizes.items():
-                        gate_types[f"{res_name}-w{size}"] = count
-                else:
-                    gate_types[res_name] = sum(sizes.values())
-
-            res_resources = SpecsResources(
-                gate_types=gate_types,
-                gate_sizes=dict(gate_sizes),
-                measurements=dict(res.measurements),
-                num_allocs=res.num_allocs,
-                depth=None,  # Can't get depth for intermediate stages
-            )
-            resources[level_name] = res_resources
+        for lvl, (level_name, result) in zip(mlir_levels, results.items()):
             output_level[lvl + num_tape_levels] = level_name
+
+            if not isinstance(result, list):
+                result = [result]
+
+            resource_list = []
+
+            for res in result:
+                gate_types = {}
+                gate_sizes = defaultdict(int)
+
+                for res_name, sizes in res.operations.items():
+                    for size, count in sizes.items():
+                        gate_sizes[size] += count
+
+                    if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+                        # Separate out PPMs and PPRs by weight
+                        for size, count in sizes.items():
+                            gate_types[f"{res_name}-w{size}"] = count
+                    else:
+                        gate_types[res_name] = sum(sizes.values())
+
+                resource_list.append(
+                    SpecsResources(
+                        gate_types=gate_types,
+                        gate_sizes=dict(gate_sizes),
+                        measurements=dict(res.measurements),
+                        num_allocs=res.num_allocs,
+                        depth=None,  # Can't get depth for intermediate stages
+                    )
+                )
+            if len(resource_list) == 1:
+                resource_list = resource_list[0]
+            resources[level_name] = resource_list
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
