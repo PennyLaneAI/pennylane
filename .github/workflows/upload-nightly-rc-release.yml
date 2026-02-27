@@ -6,6 +6,9 @@ on:
     - cron: "50 9 * * 1-5"
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   setup-rc:
     name: Setup the release

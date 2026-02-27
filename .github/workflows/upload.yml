@@ -3,6 +3,9 @@ on:
   release:
     types: [published]
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   determine_runner:
     name: Change to Large Runner
