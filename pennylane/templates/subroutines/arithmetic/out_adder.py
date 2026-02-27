@@ -28,8 +28,8 @@ from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from ... import AbstractArray, subroutine_resource_rep
-from .phase_adder import PhaseAdder
 from ...core import adjoint_subroutine_resource_rep
+from .phase_adder import PhaseAdder
 
 
 class OutAdder(Operation):
@@ -277,9 +277,10 @@ class OutAdder(Operation):
 
         op_list = [
             QFT.operator(wires=qft_new_output_wires),
-            ControlledSequence(
-                PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-            ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires),
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
+            @ ControlledSequence(
+                PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
+            ),
             adjoint(QFT.operator(wires=qft_new_output_wires)),
         ]
 

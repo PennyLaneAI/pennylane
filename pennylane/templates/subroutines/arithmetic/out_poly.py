@@ -30,8 +30,8 @@ from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
-from .phase_adder import PhaseAdder
 from ...core import adjoint_subroutine_resource_rep
+from .phase_adder import PhaseAdder
 
 
 def _get_polynomial(f, mod, *variable_sizes):
