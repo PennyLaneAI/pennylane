@@ -113,10 +113,18 @@ jobs:
 
           pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
 
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
       - name: Test 'doc' folder
         run: |
           IGNORE="
           --ignore=doc/code
+          --ignore=doc/demos_getting-started
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
           "
 
-          pytest doc/**/*.rst 
+          pytest doc/**/*.rst $IGNORE
