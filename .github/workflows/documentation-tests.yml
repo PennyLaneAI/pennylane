@@ -127,4 +127,4 @@ jobs:
           --ignore=doc/_templates
           "
 
-          pytest doc/**/*.rst $IGNORE
+          pytest doc $IGNORE
