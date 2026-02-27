@@ -275,13 +275,11 @@ class OutAdder(Operation):
             qft_new_output_wires = output_wires
             work_wire = ()
 
-        target_op = ControlledSequence(
-            PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-        ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-
         op_list = [
             QFT.operator(wires=qft_new_output_wires),
-            target_op,
+            ControlledSequence(
+                PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
+            ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires),
             adjoint(QFT.operator(wires=qft_new_output_wires)),
         ]
 

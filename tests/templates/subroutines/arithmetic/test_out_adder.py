@@ -199,7 +199,7 @@ class TestOutAdder:
         else:
             qft_new_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT.operator(wires=qft_new_output_wires))
+        op_list += qml.QFT.operator(wires=qft_new_output_wires).decomposition()
         op_list.append(
             qml.ControlledSequence(
                 qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
@@ -210,7 +210,7 @@ class TestOutAdder:
                 qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
+        op_list += list(map(lambda op: qml.adjoint(op), qml.QFT.operator(wires=qft_new_output_wires).decomposition()))[::-1]
 
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
