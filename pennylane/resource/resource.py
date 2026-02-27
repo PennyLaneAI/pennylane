@@ -21,6 +21,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
+from string import ascii_lowercase
 from typing import Any
 
 from pennylane.measurements import MeasurementProcess, Shots, add_shots
@@ -34,6 +35,24 @@ from .error.error import _compute_algo_error
 def _count_to_str(count: int) -> str:
     """Helper for printing counts, converts large counts to scientific notation."""
     return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
+
+
+def _batch_num_to_letters(num: int) -> str:
+    """Helper for printing batch numbers, converts 0 to 'a', 1 to 'b', etc.
+
+    Example:
+    >>> _batch_num_to_letters(0)
+    'a'
+
+    >>> _batch_num_to_letters(25)
+    'z'
+
+    >>> _batch_num_to_letters(27)
+    'ab'
+    """
+    if num < 26:
+        return ascii_lowercase[num]
+    return _batch_num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
 @dataclass(frozen=True)
@@ -318,6 +337,8 @@ class SpecsResources:
             case "num_gates":
                 # As a property, this needs to be handled differently to the true fields
                 return self.num_gates
+            case "gate_counts":
+                return self.gate_counts
 
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
@@ -327,6 +348,11 @@ class SpecsResources:
     def num_gates(self) -> int:
         """Total number of gates in the circuit."""
         return sum(self.gate_types.values())
+
+    @property
+    def gate_counts(self) -> dict[str, int]:
+        """Alias for ``gate_types``"""
+        return self.gate_types
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
@@ -341,29 +367,24 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Total wire allocations: {self.num_allocs}")
+        lines.append(f"{prefix}Wire allocations: {self.num_allocs}")
         lines.append(f"{prefix}Total gates: {self.num_gates}")
-        lines.append(
-            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}"
-        )
 
-        lines.append("")  # Blank line
-
-        lines.append(f"{prefix}Gate types:")
+        lines.append(f"{prefix}Gate counts:")
         if not self.gate_types:
-            lines.append(prefix + "  No gates.")
+            lines.append(prefix + "- No gates.")
         else:
             for gate, count in self.gate_types.items():
-                lines.append(f"{prefix}  {gate}: {count}")
-
-        lines.append("")  # Blank line
+                lines.append(f"{prefix}- {gate}: {count}")
 
         lines.append(f"{prefix}Measurements:")
         if not self.measurements:
-            lines.append(prefix + "  No measurements.")
+            lines.append(prefix + "- No measurements.")
         else:
             for meas, count in self.measurements.items():
-                lines.append(f"{prefix}  {meas}: {count}")
+                lines.append(f"{prefix}- {meas}: {count}")
+
+        lines.append(f"{prefix}Depth: {self.depth if self.depth is not None else 'Not computed'}")
 
         return "\n".join(lines)
 
@@ -512,15 +533,16 @@ class CircuitSpecs:
 
         return lines
 
-    def _resources_to_str(self, res) -> str:
+    def _resources_to_str(self, res, preindent=0) -> str:
         """Helper for printing resources, prints list or single SpecsResources."""
         lines = []
         if isinstance(res, SpecsResources):
-            lines.append(res.to_pretty_str(preindent=2))
+            lines.append(res.to_pretty_str(preindent))
         elif isinstance(res, list):
+            prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"  Batched tape {i}:")
-                lines.append(r.to_pretty_str(preindent=4))
+                lines.append(f"{prefix}Batched tape {_batch_num_to_letters(i)}:")
+                lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
             raise ValueError(
@@ -538,7 +560,7 @@ class CircuitSpecs:
                 flat_resources[str(level)] = res
             elif isinstance(res, list):
                 for i, r in enumerate(res):
-                    flat_resources[f"{level}-{i}"] = r
+                    flat_resources[f"{level}-{_batch_num_to_letters(i)}"] = r
             else:
                 raise ValueError(
                     "Resources must be either a SpecsResources object or a list of SpecsResources objects."
@@ -550,6 +572,7 @@ class CircuitSpecs:
     ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
+        # This is the length of the longest metric name (currently "Wire allocations") plus padding
         max_metric_length = 16
         max_column_size = max(len(level) for level in flat_resources) + 2
 
@@ -587,7 +610,8 @@ class CircuitSpecs:
 
         num_cols = len(flat_resources)
         lines.append(
-            "Metric/Level".ljust(max_metric_length)
+            "Metric".ljust(max_metric_length - 5)
+            + "Level"
             + " |"
             + " |".join(level.rjust(max_column_size) for level in flat_resources)
         )
@@ -609,7 +633,7 @@ class CircuitSpecs:
             )
         )
 
-        lines.append("Gate types:".ljust(max_metric_length) + " |")
+        lines.append("Gate counts:".ljust(max_metric_length) + " |")
         for gate in all_gate_types:
             lines.append(
                 f"- {gate}".ljust(max_metric_length)
@@ -647,11 +671,11 @@ class CircuitSpecs:
 
         lines = self._get_specs_header()
 
-        lines.append("Resource specifications:")
         if isinstance(self.resources, dict):
+            lines.append("")  # Blank line before levels
             for level, res in self.resources.items():
                 lines.append(f"Level = {level}:")
-                lines.append(self._resources_to_str(res))
+                lines.append(self._resources_to_str(res, preindent=4))
                 lines.append("\n" + "-" * 60 + "\n")  # Separator between levels
         else:
             lines.append(self._resources_to_str(self.resources))

@@ -97,9 +97,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* `CircuitSpecs` will now render in a tabular format when converted to a string.
-  This makes results much more compact and easy to read.
-  This is format is enabled by default when using multiple levels in `qml.specs` (e.g. in pass-by-pass mode with `level="all"`):
+* When using :func:`pennylane.specs` with multiple levels, printing the returned :class:`pennylane.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level, for convenient comparison of circuit specifications between compilation passes.
+  This format is enabled by default when using multiple levels in `qml.specs` (e.g. in pass-by-pass mode with `level="all"`):
 
   ```python
   @qml.qjit
@@ -147,7 +146,6 @@
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
   states, as well as with ``jax.jit`` and static input states.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
->>>>>>> main
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
