@@ -484,7 +484,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update nightly RC builds to be triggered by Lightning. 
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
   
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
