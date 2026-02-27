@@ -1030,9 +1030,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
             # If k is a power of two, we can directly use an MCX gate
             # This is an additional optimization compared to the paper, saving one MCX gate
             target = math.ceil_log2(k)
-            qml.MultiControlledX(
-                wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
-            )
+            qml.MultiControlledX(mcx_ctrl_wires + [enumeration_wires[~target]])
 
         def two_mcx(k):
             # If k is a sum of two powers of two, we can directly use two MCX gates
@@ -1040,21 +1038,16 @@ def _sos_state_prep(coefficients, wires, indices, **__):
             target0 = math.ceil_log2(k) - 1
             target1 = math.ceil_log2(k - 2**target0)
             for target in [target0, target1]:
-                qml.MultiControlledX(
-                    wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
-                )
+                qml.MultiControlledX(mcx_ctrl_wires + [enumeration_wires[~target]])
 
         def multi_mcx_via_cache(k):
             # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
             # control to flip the targets
-            mcx_kwargs = {
-                "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_cache_wires]),
-            }
 
             # Note that this gate is a generalized left elbow, which we currently do not
             # exploit.
             # TODO: add decomposition that makes use of zeroed input state on target qubit.
-            qml.MultiControlledX(**mcx_kwargs)
+            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wires)
 
             @for_loop(d)
             def inner_loop(j):
@@ -1066,7 +1059,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
             # Note that this gate is a generalized right elbow, which we currently do not
             # exploit.
             # TODO: add decomposition that makes use of zeroed output state on target qubit.
-            qml.MultiControlledX(**mcx_kwargs)
+            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wires)
 
         @for_loop(m)
         def flip(i, bits_to_flip):
