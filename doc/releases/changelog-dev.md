@@ -255,6 +255,9 @@
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
+* No unnecessary classical registers will be created now when using `qml.to_openqasm` with `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
+
 * A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
   for an operator, instead of a general `UserWarning`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
@@ -699,5 +702,6 @@ Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
+Nate Stemen,
 David Wierichs,
 Jake Zaia.
