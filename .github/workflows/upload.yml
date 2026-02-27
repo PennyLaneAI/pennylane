@@ -43,7 +43,6 @@ jobs:
 
       - name: Build PennyLane wheel
         run: |
-          uv pip install build
           uv build --wheel --out-dir dist
 
       - name: Publish
