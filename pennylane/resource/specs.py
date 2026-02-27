@@ -427,18 +427,15 @@ def specs(
     Shots: Shots(total=None)
     Level: gradient
     <BLANKLINE>
-    Resource specifications:
-      Total wire allocations: 2
-      Total gates: 98
-      Circuit depth: 98
-    <BLANKLINE>
-      Gate types:
-        RX: 1
-        CNOT: 1
-        Evolution: 96
-    <BLANKLINE>
-      Measurements:
-        probs(all wires): 1
+    Wire allocations: 2
+    Total gates: 98
+    Gate counts:
+    - RX: 1
+    - CNOT: 1
+    - Evolution: 96
+    Measurements:
+    - probs(all wires): 1
+    Depth: 98
 
     .. details::
         :title: Usage Details
@@ -468,48 +465,42 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1).resources)
-        Total wire allocations: 2
+        Wire allocations: 2
         Total gates: 6
-        Circuit depth: 6
-        <BLANKLINE>
-        Gate types:
-          RandomLayers: 1
-          RX: 2
-          SWAP: 1
-          PauliX: 2
-        <BLANKLINE>
+        Gate counts:
+        - RandomLayers: 1
+        - RX: 2
+        - SWAP: 1
+        - PauliX: 2
         Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        - expval(Sum(num_wires=2, num_terms=2)): 1
+        Depth: 6
 
         We can analyze the effects of, for example, applying the first two transforms
         (:func:`~pennylane.transforms.cancel_inverses` and :func:`~pennylane.transforms.undo_swaps`) by setting
         ``level=2``. The result will show that ``SWAP`` and ``PauliX`` are not present in the circuit:
 
         >>> print(qml.specs(circuit, level=2)(0.1).resources)
-        Total wire allocations: 2
+        Wire allocations: 2
         Total gates: 3
-        Circuit depth: 3
-        <BLANKLINE>
-        Gate types:
-          RandomLayers: 1
-          RX: 2
-        <BLANKLINE>
+        Gate counts:
+        - RandomLayers: 1
+        - RX: 2
         Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        - expval(Sum(num_wires=2, num_terms=2)): 1
+        Depth: 3
 
         We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
 
         >>> print(qml.specs(circuit, level="device")(0.1).resources)
-        Total wire allocations: 2
+        Wire allocations: 2
         Total gates: 2
-        Circuit depth: 1
-        <BLANKLINE>
-        Gate types:
-          RY: 1
-          RX: 1
-        <BLANKLINE>
+        Gate counts:
+        - RY: 1
+        - RX: 1
         Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        - expval(Sum(num_wires=2, num_terms=2)): 1
+        Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
         desired transforms, the specs output's resources field is instead returned as a list with a
@@ -578,17 +569,14 @@ def specs(
         Shots: Shots(total=None)
         Level: device
         <BLANKLINE>
-        Resource specifications:
-          Total wire allocations: 3
-          Total gates: 2
-          Circuit depth: 2
-        <BLANKLINE>
-          Gate types:
-            CNOT: 1
-            RX: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
+        Wire allocations: 3
+        Total gates: 2
+        Gate counts:
+        - CNOT: 1
+        - RX: 1
+        Measurements:
+        - probs(all wires): 1
+        Depth: 2
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
@@ -631,11 +619,11 @@ def specs(
         - 2: cancel-inverses (MLIR-1)
         - 3: merge-rotations (MLIR-2)
         <BLANKLINE>
-        Metric/Level       |  0 |  1 |  2 |  3
+        ↓Metric     Level→ |  0 |  1 |  2 |  3
         --------------------------------------
         Wire allocations   |  2 |  3 |  3 |  3
         Total gates        |  5 |  5 |  3 |  2
-        Gate types:        |
+        Gate counts:       |
         - RX               |  2 |  2 |  2 |  1
         - PauliX           |  2 |  2 |  0 |  0
         - CNOT             |  1 |  1 |  1 |  1
@@ -654,30 +642,26 @@ def specs(
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
         >>> print(all_specs.resources['merge-rotations (MLIR-2)'])
-        Total wire allocations: 3
+        Wire allocations: 3
         Total gates: 2
-        Circuit depth: Not computed
-        <BLANKLINE>
-        Gate types:
-          RX: 1
-          CNOT: 1
-        <BLANKLINE>
+        Gate counts:
+        - RX: 1
+        - CNOT: 1
         Measurements:
-          probs(all wires): 1
+        - probs(all wires): 1
+        Depth: Not computed
 
         Or, equivalently, by using the int level directly:
 
         >>> print(all_specs.resources[all_specs.level[3]])
-        Total wire allocations: 3
+        Wire allocations: 3
         Total gates: 2
-        Circuit depth: Not computed
-        <BLANKLINE>
-        Gate types:
-          RX: 1
-          CNOT: 1
-        <BLANKLINE>
+        Gate counts:
+        - RX: 1
+        - CNOT: 1
         Measurements:
-          probs(all wires): 1
+        - probs(all wires): 1
+        Depth: Not computed
 
         .. warning::
             Certain transforms, like the ``split-non-commuting`` transform, can result in multiple output tapes.
@@ -707,11 +691,11 @@ def specs(
         - 2: Before MLIR Passes (MLIR-0)
         - 3: cancel-inverses (MLIR-1)
         <BLANKLINE>
-        Metric/Level     |    0 |  1-0 |  1-1 |    2 |    3
+        ↓Metric   Level→ |    0 |  1-a |  1-b |    2 |    3
         ---------------------------------------------------
         Wire allocations |    1 |    1 |    1 |    6 |    6
         Total gates      |    2 |    2 |    2 |    4 |    0
-        Gate types:      |
+        Gate counts:     |
         - PauliX         |    2 |    2 |    2 |    4 |    0
         Measurements:    |
         - expval(PauliZ) |    1 |    1 |    0 |    1 |    1

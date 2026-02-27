@@ -393,15 +393,13 @@ class Subroutine:
     >>> print(qml.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qml.specs(c)().resources)
-    Total wire allocations: 1
+    Wire allocations: 1
     Total gates: 1
-    Circuit depth: 1
-    <BLANKLINE>
-    Gate types:
-      MyTemplate: 1
-    <BLANKLINE>
+    Gate counts:
+    - MyTemplate: 1
     Measurements:
-      state(all wires): 1
+    - state(all wires): 1
+    Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:

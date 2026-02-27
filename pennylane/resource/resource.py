@@ -287,16 +287,14 @@ class SpecsResources:
         2
 
         >>> print(res)
-        Total wire allocations: 2
+        Wire allocations: 2
         Total gates: 2
-        Circuit depth: 2
-        <BLANKLINE>
-        Gate types:
-          Hadamard: 1
-          CNOT: 1
-        <BLANKLINE>
+        Gate counts:
+        - Hadamard: 1
+        - CNOT: 1
         Measurements:
-          expval(PauliZ): 1
+        - expval(PauliZ): 1
+        Depth: 2
     """
 
     gate_types: dict[str, int]
@@ -449,17 +447,14 @@ class CircuitSpecs:
         Shots: Shots(total=1000)
         Level: device
         <BLANKLINE>
-        Resource specifications:
-          Total wire allocations: 2
-          Total gates: 3
-          Circuit depth: 3
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            expval(PauliZ): 1
+        Wire allocations: 2
+        Total gates: 3
+        Gate counts:
+        - RX: 2
+        - CNOT: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: 3
     """
 
     device_name: str | None = None
@@ -610,8 +605,8 @@ class CircuitSpecs:
 
         num_cols = len(flat_resources)
         lines.append(
-            "Metric".ljust(max_metric_length - 5)
-            + "Level"
+            "↓Metric".ljust(max_metric_length - 6)
+            + "Level→"
             + " |"
             + " |".join(level.rjust(max_column_size) for level in flat_resources)
         )
