@@ -510,7 +510,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():

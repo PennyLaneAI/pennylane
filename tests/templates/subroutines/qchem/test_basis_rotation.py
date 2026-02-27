@@ -392,6 +392,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute can be set."""
         template = qml.BasisRotation.operator(

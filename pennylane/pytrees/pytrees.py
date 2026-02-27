@@ -183,7 +183,7 @@ class PyTreeStructure:
     >>> op = qml.adjoint(qml.RX(0.1, 0))
     >>> data, structure = qml.pytrees.flatten(op)
     >>> structure
-    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(RX, (Wires([0]), ()), [PyTreeStructure()])])
+    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),)),))
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
@@ -211,7 +211,9 @@ class PyTreeStructure:
         if self.is_leaf:
             return "Leaf"
         children_string = ", ".join(str(c) for c in self.children)
-        return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
+        if len(self.children) == 1:
+            children_string += ","
+        return f"PyTree({self.type_.__name__}, {self.metadata}, ({children_string}))"
 
 
 leaf = PyTreeStructure(None, (), ())
@@ -243,7 +245,7 @@ def flatten(
     [1.2, 2.3, 3.4]
 
     >>> structure
-    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(Rot, (Wires([0]), ()), [PyTreeStructure(), PyTreeStructure(), PyTreeStructure()])])
+    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(Rot, (Wires([0]), ()), (PyTreeStructure(), PyTreeStructure(), PyTreeStructure())),))
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     # set the flag is_leaf_node if is_leaf argument is provided and returns true
@@ -259,7 +261,7 @@ def flatten(
         flattened_leaves += child_leaves
         child_structures.append(child_structure)
 
-    structure = PyTreeStructure(type(obj), metadata, child_structures)
+    structure = PyTreeStructure(type(obj), metadata, tuple(child_structures))
     return flattened_leaves, structure
 
 

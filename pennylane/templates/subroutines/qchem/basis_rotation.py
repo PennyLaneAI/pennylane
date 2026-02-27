@@ -73,12 +73,6 @@ def setup_basis_rotation(wires, unitary_matrix, check=False):
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
-    if check and not math.is_abstract(unitary_matrix):
-        u_u_dag = unitary_matrix @ math.conj(unitary_matrix).T
-        is_unitary = math.allclose(u_u_dag, math.eye(M, dtype=complex), atol=1e-4)
-        if not is_unitary:
-            raise ValueError("The provided transformation matrix should be unitary.")
-
     if len(wires) < 2:
         raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
@@ -383,6 +377,14 @@ def BasisRotation(wires, unitary_matrix, check=False):
         implemented exclusively with ``SingleExcitation`` gates.
 
     """
+
+    M = math.shape(unitary_matrix)[0]
+
+    if check and not math.is_abstract(unitary_matrix):
+        u_u_dag = unitary_matrix @ math.conj(unitary_matrix).T
+        is_unitary = math.allclose(u_u_dag, math.eye(M, dtype=complex), atol=1e-4)
+        if not is_unitary:
+            raise ValueError("The provided transformation matrix should be unitary.")
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
     cond(is_real, _real_unitary, _complex_unitary)(unitary=unitary_matrix, wires=wires)
