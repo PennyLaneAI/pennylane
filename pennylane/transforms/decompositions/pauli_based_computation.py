@@ -15,14 +15,14 @@
 
 from pennylane.transforms.core import transform
 
-
+# pylint: disable=missing-function-docstring
 def to_ppr_setup_inputs():
     return (), {}
 
 
 to_ppr = transform(pass_name="to-ppr", setup_inputs=to_ppr_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
         raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
@@ -31,7 +31,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
 
 commute_ppr = transform(pass_name="commute-ppr", setup_inputs=commute_ppr_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
         raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
@@ -40,14 +40,14 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
 
 merge_ppr_ppm = transform(pass_name="merge-ppr-ppm", setup_inputs=merge_ppr_ppm_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=False):
     return (), {"decompose_method": decompose_method, "avoid_y_measure": avoid_y_measure}
 
 
 ppr_to_ppm = transform(pass_name="ppr-to-ppm", setup_inputs=ppr_to_ppm_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def ppm_compilation_setup_inputs(
     decompose_method="pauli-corrected", avoid_y_measure=False, max_pauli_size=0
 ):
@@ -62,14 +62,14 @@ def ppm_compilation_setup_inputs(
 
 ppm_compilation = transform(pass_name="ppm-compilation", setup_inputs=ppm_compilation_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def reduce_t_depth_setup_inputs():
     return (), {}
 
 
 reduce_t_depth = transform(pass_name="reduce-t-depth", setup_inputs=reduce_t_depth_setup_inputs)
 
-
+# pylint: disable=missing-function-docstring
 def decompose_arbitrary_ppr_setup_inputs():
     return (), {}
 

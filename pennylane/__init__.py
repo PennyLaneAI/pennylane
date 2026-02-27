@@ -222,10 +222,11 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
+# pylint:disable=wrong-import-order
 from ._entry_points_utils import _setup_entry_points
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
-_entry_point_groups = ["pennylane.drawer"] 
+_entry_point_groups = ["pennylane.drawer"]
 
 __all__, __getattr__, __dir__ = _setup_entry_points(__name__, _entry_point_groups)
 
