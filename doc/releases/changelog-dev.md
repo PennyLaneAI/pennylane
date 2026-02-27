@@ -517,7 +517,8 @@
       qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
       ````
 
-  
+
+
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
   Operator classes that used to have `_queue_category=None` have been updated
