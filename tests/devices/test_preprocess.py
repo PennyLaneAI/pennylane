@@ -388,6 +388,28 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
+@qml.register_resources({qml.H: 6, qml.RX: 1})
+def dummy_rz_decomp_0(theta, wires):
+    qml.H(wires)
+    qml.H(wires)
+    qml.H(wires)
+    qml.RX(theta, wires)
+    qml.H(wires)
+    qml.H(wires)
+    qml.H(wires)
+
+
+@qml.register_resources({qml.RX: 1})
+def dummy_rz_decomp_1(theta, wires):
+    qml.RX(theta, wires)
+
+
+@qml.register_resources({qml.H: 1}, work_wires={"zeroed": 1})
+def dummy_rz_decomp_2(theta, wires):
+    # pylint: disable=unused-argument
+    qml.H(wires)
+
+
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
@@ -514,6 +536,101 @@ class TestDecomposeTransformations:
         # Should still work correctly
         assert len(legacy_tape.operations) > len(tape.operations)
         assert all(op.name in target_gates for op in legacy_tape.operations)
+
+    @pytest.mark.parametrize(
+        "num_work_wires, fixed_decomps, alt_decomps, exp_types",
+        [
+            (
+                0,
+                {qml.RZ: dummy_rz_decomp_0},
+                {qml.RZ: [dummy_rz_decomp_1, dummy_rz_decomp_2]},
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),
+            (
+                1,
+                {qml.RZ: dummy_rz_decomp_0},
+                {qml.RZ: [dummy_rz_decomp_1, dummy_rz_decomp_2]},
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),
+            (
+                0,
+                {qml.RZ: dummy_rz_decomp_0},
+                None,
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),  # fixed decomp HHH RX HHH
+            (
+                1,
+                {qml.RZ: dummy_rz_decomp_0},
+                None,
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),  # fixed decomp HHH RX HHH
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0]},
+                [qml.PhaseShift, qml.GlobalPhase],
+            ),  # standard PhaseShift-GlobalPhase decomposition
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.PhaseShift, qml.GlobalPhase],
+            ),  # standard PhaseShift-GlobalPhase decomposition
+            (
+                1,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.H],
+            ),  # fake single-Hadamard decomposition "using" a work wire
+            (
+                None,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.H],
+            ),  # fake single-Hadamard decomposition "using" a work wire
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_1]},
+                [qml.RX],
+            ),  # use fake extra cheap RX decomposition
+            (
+                1,
+                None,
+                {qml.RZ: [dummy_rz_decomp_1]},
+                [qml.RX],
+            ),  # use fake extra cheap RX decomposition
+        ],
+    )
+    def test_decompose_with_pass_through_kwargs(
+        self, num_work_wires, fixed_decomps, alt_decomps, exp_types
+    ):
+        """Test that decompose works correctly when passing through ``fixed_decomps``
+        and/or ``alt_decomps`` with the graph-based decomposer."""
+        # pylint: disable=too-many-arguments
+        if not qml.decomposition.enabled_graph():
+            pytest.skip("This test only is expected to work with the graph-based system.")
+
+        # Mock a simple target gate set
+        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+
+        # Create a tape with an operation that needs decomposition
+        tape = qml.tape.QuantumScript([qml.RZ(0.2, 0)])
+
+        batch, _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=None,
+            num_work_wires=num_work_wires,
+            target_gates=target_gates,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
+        )
+        new_tape = batch[0]
+
+        for op, exp_t in zip(new_tape.operations, exp_types, strict=True):
+            assert isinstance(op, exp_t)
+        assert all(op.name in target_gates for op in new_tape.operations)
 
     @pytest.mark.parametrize(
         "device_wires_list,tape_wires_list,expected_work_wires",
