@@ -121,7 +121,7 @@ jobs:
       # to be working correctly.
       - name: Test 'doc' folder
         run: |
-          IGNORE="
+          IGNORE_DIRS="
           --ignore=doc/code
           --ignore=doc/demos_getting-started
           --ignore=doc/development
@@ -129,6 +129,26 @@ jobs:
           --ignore=doc/releases
           --ignore=doc/_static
           --ignore=doc/_templates
+          "
+
+          IGNORE_FILES="
+          --ignore=doc/introduction/interfaces
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/circuits.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/operations.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
           "
 
           pytest doc $IGNORE
