@@ -615,6 +615,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed bug that caused package installation failures in the repository's nightly sync workflows.
+[(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
+
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
