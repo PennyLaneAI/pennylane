@@ -142,6 +142,9 @@
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   
+* Catalyst's :func:`~.draw_graph` function is now accessible from PennyLane.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
@@ -535,6 +538,22 @@
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Documentation for Pauli-based computation passes was removed as part of migrating documentation in
+  PennyLane to where its source code lives (in Catalyst). The reason for the removal is for there to
+  be one single source of truth for documentation of a feature if it is desired to be accessible 
+  from both PennyLane and Catalyst. 
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
+  The process for Catalyst frontend features to be automatically accessible from PennyLane while 
+  ensuring that such features' documentation is properly sourced from Catalyst and hosted on 
+  PennyLane's documentation is outlined in the 
+  :doc:`documentation development guide <../guide/documentation>` under the section titled 
+  "Making Catalyst functionality callable from PennyLane".
+
+  Lastly, as part of [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020), images were 
+  added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to render in 
+  PennyLane's documentation.
 
 <h3>Bug fixes 🐛</h3>
 
