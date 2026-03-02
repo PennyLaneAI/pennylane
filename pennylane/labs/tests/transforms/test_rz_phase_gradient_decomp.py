@@ -30,7 +30,6 @@ def test_as_fixed_decomps(phi, p):
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-        wire = "targ"
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -48,7 +47,7 @@ def test_as_fixed_decomps(phi, p):
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
-            qp.RZ(phi, wire)
+            qp.RZ(phi, 0)
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
@@ -68,7 +67,6 @@ def test_as_alt_decomps(phi, p):
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-        wire = "targ"
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -86,7 +84,7 @@ def test_as_alt_decomps(phi, p):
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
-            qp.RZ(phi, wire)
+            qp.RZ(phi, 0)
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
