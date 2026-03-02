@@ -780,7 +780,7 @@ decompose_clifford_ppr = transform(
 
 def decompose_non_clifford_ppr_setup_inputs():
     """
-    Decompose the Non-Clifford (pi/8) PPR into PPR and PPMs operations via pauli corrected method
+    Decompose the Non-Clifford (pi/8) PPR into PPR and PPM operations via Pauli-corrected method
     as described in Figure 13(a) in the paper: `arXiv:2211.15465 <https://arxiv.org/pdf/2211.15465>`_.
     """
     return (), {}
