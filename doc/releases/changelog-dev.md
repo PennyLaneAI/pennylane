@@ -338,6 +338,44 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Pass-by-pass mode for :func:`~.specs` will no longer always show both a ``"Before transforms"`` and a ``"Before MLIR passes"`` level.
+  In scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level 0.
+  In scenarios where there is at least 1 tape transform, the behaviour remains the same, with level 0 being ``"Before transforms"`` and ``"Before MLIR passes"`` being the level after all tape transforms but before the first MLIR pass.
+
+  Note in the example below, using ``level="all"`` only returns 2 levels, rather than 3 which was the default in PennyLane v0.44.0.
+  ```python
+  @qml.qjit
+  @qml.transforms.cancel_inverses
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit():
+      qml.X(0)
+      qml.H(0)
+      qml.H(0)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> pprint(qml.specs(circuit, level="all")())
+  CircuitSpecs(device_name='lightning.qubit',
+               num_device_wires=2,
+               shots=Shots(total_shots=None, shot_vector=()),
+               level={0: 'Before MLIR Passes (MLIR-0)',
+                      1: 'cancel-inverses (MLIR-1)'},
+               resources={'Before MLIR Passes (MLIR-0)': SpecsResources(gate_types={'Hadamard': 2,
+                                                                                    'PauliX': 1},
+                                                                        gate_sizes={1: 3},
+                                                                        measurements={'probs(all wires)': 1},
+                                                                        num_allocs=2,
+                                                                        depth=None),
+                          'cancel-inverses (MLIR-1)': SpecsResources(gate_types={'PauliX': 1},
+                                                                     gate_sizes={1: 1},
+                                                                     measurements={'probs(all wires)': 1},
+                                                                     num_allocs=2,
+                                                                     depth=None)})
+  ```
+
+  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+
 * All operator classes are now queued by default, unless they implement a custom ``queue`` 
   method that changes this behaviour.
   
