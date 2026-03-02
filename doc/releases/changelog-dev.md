@@ -105,10 +105,10 @@
   @qml.transforms.cancel_inverses
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit():
-    qml.X(0)
-    qml.H(0)
-    qml.H(0)
-    return qml.probs()
+      qml.X(0)
+      qml.H(0)
+      qml.H(0)
+      return qml.probs()
   ```
 
   ```pycon
@@ -117,19 +117,19 @@
   Device wires: 2
   Shots: Shots(total=None)
   Levels:
-  - Before transforms (0)
-  - Before MLIR Passes (MLIR-0) (1)
-  - cancel-inverses (MLIR-1) (2)
+  - 0: Before transforms
+  - 1: Before MLIR Passes (MLIR-0)
+  - 2: cancel-inverses (MLIR-1)
   <BLANKLINE>
-  Metric/Level       | 0  | 1  | 2
-  ----------------------------------
-  Num allocs         | 1  | 2  | 2
-  Num Gates          | 3  | 3  | 1
-  Gate types:        |
-  - PauliX           | 1  | 1  | 1
-  - Hadamard         | 2  | 2  | 0
+  ↓Metric     Level→ |  0 |  1 |  2
+  ---------------------------------
+  Wire allocations   |  1 |  2 |  2
+  Total gates        |  3 |  3 |  1
+  Gate counts:       |
+  - PauliX           |  1 |  1 |  1
+  - Hadamard         |  2 |  2 |  0
   Measurements:      |
-  - probs(all wires) | 1  | 1  | 1
+  - probs(all wires) |  1 |  1 |  1
   ```
 
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
