@@ -181,15 +181,13 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        _adder_decomposition = (
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
-            .decomposition()
-        )
+        _adder_decomposition = qml.OutAdder(
+            x_wires, y_wires, output_wires, mod, work_wires
+        ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
         adder_decomposition = [
-            _adder_decomposition[0],
+            *_adder_decomposition[0].decomposition(),
             *_adder_decomposition[1].decomposition(),
-            _adder_decomposition[2],
+            *_adder_decomposition[2].decomposition(),
         ]
 
         op_list = []

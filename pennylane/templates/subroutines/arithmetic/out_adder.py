@@ -323,12 +323,13 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    QFT.operator(wires=qft_new_output_wires)
-    (
-        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-        @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-    )
-    adjoint(QFT.operator(wires=qft_new_output_wires))
+    QFT(wires=qft_new_output_wires)
+
+    ControlledSequence(
+        PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
+    ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+
+    adjoint(QFT)(wires=qft_new_output_wires)
 
 
 add_decomps(OutAdder, _out_adder_decomposition)
