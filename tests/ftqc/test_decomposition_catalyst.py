@@ -40,7 +40,7 @@ def test_converstion_to_mlir(pass_fn):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
-    @qml.qjit(target="mlir")
+    @qml.qjit(target="mlir", capture=True)
     @pass_fn
     @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
     def circ():
