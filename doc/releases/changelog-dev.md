@@ -555,7 +555,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_decomposition.py`.
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
   
 * Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
