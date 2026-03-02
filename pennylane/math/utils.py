@@ -633,7 +633,7 @@ def ceil_log2(n: int) -> int:
     return int(np.ceil(np.log2(n)))
 
 
-def binary_repr4pi(phi, precision):
+def binary_repr4pi(phi: float, precision: int):
     r"""
     Binary representation of ``phi`` to the closest precision :math:`\text{mod} 4\pi`
 
