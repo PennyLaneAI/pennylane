@@ -151,7 +151,7 @@ def rot_to_phase_gradient(
         tape (QNode or QuantumTape or Callable): A quantum circuit containing rotation gates. See above
             for a list of supported rotation gates.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
-            the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
+            the rotation gate in binary as a multiple of :math:`4\pi`.
             The length of the ``angle_wires`` , denoted :math:`b`, implicitly determines the precision
             with which the angle is represented.
             E.g., :math:`(1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 1 \cdot 2^{-3}) 2\pi` is represented by three bits as ``101``.
