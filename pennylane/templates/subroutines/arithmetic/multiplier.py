@@ -288,9 +288,9 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         wires_aux_swap = wires_aux
 
     inv_k = pow(k, -1, mod)
-    QFT.operator(wires=wires_aux)
+    QFT(wires=wires_aux)
     ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
-    adjoint(QFT.operator(wires=wires_aux))
+    adjoint(QFT)(wires=wires_aux)
 
     prod(
         *reversed(
@@ -298,9 +298,9 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         )
     )
 
-    QFT.operator(wires=wires_aux)
+    QFT(wires=wires_aux)
     adjoint(ControlledSequence(PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires))
-    adjoint(QFT.operator(wires=wires_aux))
+    adjoint(QFT)(wires=wires_aux)
 
 
 add_decomps(Multiplier, _multiplier_decomposition)
