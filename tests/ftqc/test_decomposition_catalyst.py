@@ -28,7 +28,6 @@ pytestmark = pytest.mark.external
 
 
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "pass_fn",
     [
