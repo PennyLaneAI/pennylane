@@ -32,6 +32,34 @@ def _binary_repr_int(phi, precision):
     Binary representation of ``phi`` to the closest precision
 
     The function is relying on ``np.round`` to do the heavy lifting to correctly handling the midpoint "round to even"
+
+    Parameters:
+        phi (float): number to be represented in binary
+        precision (int): number of digits to keep
+
+    **Example**
+
+    We round the binary representation of :math:`(0.11011) 4 \phi`, which simply yields :math:`(0.11) 4 \phi` from rounding down.
+
+    >>> from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
+    >>> precision = 2
+    >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi
+    >>> _binary_repr_int(phi, precision)
+    array([1, 1])
+
+    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011) 4 \phi`, we round to :math:`(0.11) 4 \phi`:
+
+    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
+    >>> _binary_repr_int(phi, precision)
+    array([1, 1])
+
+    Note that we ignore the positive decimals. E.g., because :math:`(0.1111) 4 \phi` rounds to :math:`(1.0000) 4 \phi`, we obtain ``[0, 0, 0, 0]``:
+
+    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16) * 4 * np.pi
+    >>> _binary_repr_int(phi, precision)
+    array([0, 0])
+
+
     """
     phi = qp.math.mod(phi, 4 * np.pi)
     phi_round = qp.math.round(2**precision * phi / 4 / np.pi)
