@@ -50,9 +50,11 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
 
   ```python
   from pennylane.templates import Subroutine
@@ -99,6 +101,10 @@
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
   
+* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+  be a tuple instead of a list.
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
+
 * Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
   preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
   to the graph-based decomposition system.
@@ -156,6 +162,7 @@
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
   
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
@@ -251,6 +258,9 @@
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* No unnecessary classical registers will be created now when using `qml.to_openqasm` with `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 * A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
   for an operator, instead of a general `UserWarning`.
@@ -484,8 +494,9 @@
 
   These are now handled by dedicated functions:
 
-  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
-     as the original behaviour was never supported.
+  .. warning::
+    Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+    as the original behaviour was never supported.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
@@ -548,6 +559,16 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+  [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
+  
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+  [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+  [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
+  
+* A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
+  [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
+
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
@@ -599,6 +620,12 @@
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+  documentation still resided in the PennyLane repository.
+  [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+  
 
 <h3>Bug fixes 🐛</h3>
 
@@ -689,5 +716,6 @@ Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
+Nate Stemen,
 David Wierichs,
 Jake Zaia.
