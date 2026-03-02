@@ -720,7 +720,7 @@ def decompose_arbitrary_ppr_setup_inputs():
     Shots: Shots(total=None)
     Level: decompose-arbitrary-ppr (MLIR-2)
     <BLANKLINE>
-    Wire allocations: 4
+    Wire allocations: 3
     Total gates: 6
     Gate counts:
     - pbc.prepare: 1

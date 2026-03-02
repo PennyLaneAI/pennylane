@@ -13,6 +13,8 @@
 # limitations under the License.
 """Code for resource estimation"""
 
+from __future__ import annotations
+
 import copy
 import json
 import os
@@ -21,10 +23,14 @@ import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
+
+if TYPE_CHECKING:
+    from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
@@ -128,7 +134,7 @@ def _specs_qjit_device_level_tracking(
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
-def _get_last_transform_level(compile_pipeline: "qml.CompilePipeline") -> int:
+def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     """Helper function to get the last level which is a tape transform and not an MLIR pass.
 
     Note that this includes an implicit level 0 which corresponds to the original circuit.
@@ -166,6 +172,7 @@ def _preprocess_level_input(
     """
 
     if level == "all" and num_tape_levels > 1:
+        # Account for 2 implicit "Before transforms" and "Before MLIR passes" levels
         return list(range(pipeline_len + 2))
 
     if level in ("all", "all-mlir"):
@@ -213,7 +220,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     compile_pipeline = original_qnode.compile_pipeline
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = _get_last_transform_level(compile_pipeline)
+    num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
     mlir_only = (level == "all-mlir") or num_tape_levels == 0
     if not mlir_only:
         # Account for the "Before transforms" tape at level 0
@@ -242,7 +249,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    output_level = {}  # This will be a map of level to its name
+    output_level: dict[int, str] = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
@@ -394,7 +401,8 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
-            on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
+            on the available levels. For ``qjit``-compiled workflows, see the sections below for more information.
+            Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
             depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
@@ -445,6 +453,12 @@ def specs(
     Measurements:
     - probs(all wires): 1
     Depth: 98
+
+    The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+    There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
+
+    * Runtime resource tracking via mock circuit execution
+    * Pass-by-pass resource collection for user applied compilation passes
 
     .. details::
         :title: Usage Details
@@ -545,11 +559,7 @@ def specs(
                                                depth=1)])
 
     .. details::
-        :title: Using specs on workflows compiled with Catalyst
-
-        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on compiled QNodes: runtime resource tracking,
-        and pass-by-pass specs for user applied compilation passes.
+        :title: Runtime resource tracking for workflows compiled with Catalyst
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -587,6 +597,9 @@ def specs(
         - probs(all wires): 1
         Depth: 2
 
+    .. details::
+        :title: Pass-by-pass resource breakdowns for workflows compiled with Catalyst
+
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
 
@@ -604,8 +617,8 @@ def specs(
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
-        * The string "all": To output information about all user-applied transforms and compilation passes
-        * The string "all-mlir": To output information about all compilation passes at the MLIR level only
+        * The string ``"all"``: To output information about all user-applied transforms and compilation passes
+        * The string ``"all-mlir"``: To output information about all compilation passes at the MLIR level only
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
@@ -712,7 +725,7 @@ def specs(
         - expval(PauliX) |    1 |    0 |    1 |    1 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
-        ``1-0`` and ``1-1`` in the output. The resources for these tapes are shown separately, and the level name for
+        ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
         both tapes is the same since they come from the same transform. Multiple tapes may not display as separate
         columns for MLIR passes since MLIR passes do not operate on tapes directly.
     """

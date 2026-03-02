@@ -97,8 +97,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* When using :func:`pennylane.specs` with multiple levels, printing the returned :class:`pennylane.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level, for convenient comparison of circuit specifications between compilation passes.
-  This format is enabled by default when using multiple levels in `qml.specs` (e.g. in pass-by-pass mode with `level="all"`):
+* When using :func:`~.specs` with multiple levels, printing the returned
+  :class:`~.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  for convenient comparison of circuit specifications between compilation passes.
+  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
 
   ```python
   @qml.qjit
@@ -650,6 +652,12 @@
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+  documentation still resided in the PennyLane repository.
+  [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+  
 
 <h3>Bug fixes 🐛</h3>
 
