@@ -27,7 +27,7 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-def _binary_repr_int(phi, precision):
+def binary_repr_int(phi, precision):
     r"""
     Binary representation of ``phi`` to the closest precision
 
@@ -41,22 +41,22 @@ def _binary_repr_int(phi, precision):
 
     We round the binary representation of :math:`(0.11011) 4 \pi`, which simply yields :math:`(0.11) 4 \pi` from rounding down.
 
-    >>> from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
+    >>> from pennylane.labs.transforms.rot_to_phase_gradient import binary_repr_int
     >>> precision = 2
     >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi
-    >>> _binary_repr_int(phi, precision)
+    >>> binary_repr_int(phi, precision)
     array([1, 1])
 
     When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011) 4 \pi`, we round to :math:`(0.11) 4 \pi`:
 
     >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
-    >>> _binary_repr_int(phi, precision)
+    >>> binary_repr_int(phi, precision)
     array([1, 1])
 
     Note that we ignore the positive decimals. E.g., because :math:`(0.1111) 4 \pi` rounds to :math:`(1.0000) 4 \pi`, we obtain ``[0, 0, 0, 0]``:
 
     >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16) * 4 * np.pi
-    >>> _binary_repr_int(phi, precision)
+    >>> binary_repr_int(phi, precision)
     array([0, 0])
 
     .. details::
@@ -68,7 +68,7 @@ def _binary_repr_int(phi, precision):
         are equally close to :math:`0.625 \cdot 4 \pi`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11) 4 \pi = 0.75 \cdot 4 \pi`.
 
         >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32) * 4 * np.pi
-        >>> _binary_repr_int(phi, precision)
+        >>> binary_repr_int(phi, precision)
         array([1, 1])
 
 
@@ -94,11 +94,11 @@ def _rz_phase_gradient(
     Note that the global phases are collected and added as one big global phase in the main function
     """
     # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient
-    # adapted to the slightly different _binary_repr_int from above
+    # adapted to the slightly different binary_repr_int from above
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ _binary_repr_int(phi * 2, precision)
+    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ binary_repr_int(phi * 2, precision)
 
     compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
     target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
@@ -120,7 +120,7 @@ def _select_pauli_rot_phase_gradient(
     """
 
     precision = len(angle_wires)
-    binary_int = _binary_repr_int(phis, precision)
+    binary_int = binary_repr_int(phis, precision)
 
     ops = [
         qp.QROM(
