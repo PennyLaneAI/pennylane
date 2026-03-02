@@ -14,6 +14,7 @@
 """Public API for the PennyLane Phox laboratory utilities."""
 
 from .expval_functions import CircuitConfig, bitflip_expval, build_expval_func
+from .mmd_loss import median_heuristic, mmd_loss
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -26,6 +27,8 @@ __all__ = [
     "CircuitConfig",
     "bitflip_expval",
     "build_expval_func",
+    "mmd_loss",
+    "median_heuristic",
     "BatchResult",
     "TrainingOptions",
     "TrainingResult",
