@@ -43,7 +43,7 @@ def ppr_to_mbqc_setup_inputs():
 
     This pass replaces PBC operations (``pbc.ppr`` and ``pbc.ppm``) with a
     gate-based sequence in the Quantum dialect using universal gates and
-    measurements that supported as MBQC gate set.
+    measurements that are supported as MBQC gate set.
     For details, see the Figure 2 of [Measurement-based Quantum Computation on cluster states](https://arxiv.org/abs/quant-ph/0301052).
 
     Conceptually, each Pauli product is handled by:
