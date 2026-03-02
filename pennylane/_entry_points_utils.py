@@ -59,7 +59,7 @@ def _setup_entry_points(module_name, group_name):
             setattr(current_module, name, func)
             return func
 
-        if current_module == "pennylane":
+        if current_module.__name__ == "pennylane":
             if name == "plugin_devices":
                 # pylint: disable=import-outside-toplevel
                 from pennylane.devices.device_constructor import plugin_devices
