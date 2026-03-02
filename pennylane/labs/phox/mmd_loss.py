@@ -120,8 +120,6 @@ def _compute_loss_for_sigma(
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    # Because this outer function is JITted, JAX will trace through expval_func
-    # and compile it directly into the same optimized execution graph.
     tr_iqp, tr_iqp_std_err = expval_func(
         params=params,
         observables=pauli_obs,
