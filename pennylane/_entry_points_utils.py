@@ -20,6 +20,7 @@ accessed from in PennyLane.
 import sys
 from importlib import metadata
 
+
 def _setup_entry_points(module_name, group_name):
     """Returns dunder methods required to import group elements from an entry-point. Entry-point
     elements are lazy-loaded.
@@ -47,14 +48,15 @@ def _setup_entry_points(module_name, group_name):
 
     # all public functions and classes
     current_module_funcs = [
-        name for name, obj in current_module.__dict__.items()
+        name
+        for name, obj in current_module.__dict__.items()
         if callable(obj) and not name.startswith("_")
     ]
 
     def module_getattr(name):
         """The new __getattr__ method for the current_module"""
         if name in ep_dict:
-            func = ep_dict[name].load() # lazy load the entry point
+            func = ep_dict[name].load()  # lazy load the entry point
             func.__module__ = module_name
             setattr(current_module, name, func)
             return func
