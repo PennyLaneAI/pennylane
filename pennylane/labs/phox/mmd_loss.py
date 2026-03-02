@@ -14,6 +14,8 @@
 """MMD loss utilities for Phox."""
 
 from collections.abc import Sequence
+from functools import partial
+from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -50,12 +52,13 @@ def median_heuristic(samples: ArrayLike) -> float:
     return 1.0
 
 
+@jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
     ops = jnp.asarray(binary_ops, dtype=jnp.int32)
     return jnp.where(ops == 1, 3, 0).astype(jnp.int32)
 
 
-@jax.jit
+@partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
 def _compute_single_mmd(
     tr_iqp: jnp.ndarray,
     tr_iqp_std_err: jnp.ndarray,
@@ -76,6 +79,65 @@ def _compute_single_mmd(
 
     reduced = jnp.mean(result)
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
+
+
+@partial(
+    jax.jit,
+    static_argnames=[
+        "n_ops",
+        "n_qubits",
+        "wire_tuple",
+        "effective_samples",
+        "sqrt_loss",
+        "expval_func",
+    ],
+)
+def _compute_loss_for_sigma(
+    sigma_val: float,
+    subkey: jnp.ndarray,
+    eval_key: jnp.ndarray,
+    params: jnp.ndarray,
+    ground_truth: jnp.ndarray,
+    effective_init_state: tuple | None,
+    n_ops: int,
+    n_qubits: int,
+    wire_tuple: tuple[int, ...],
+    effective_samples: int,
+    sqrt_loss: bool,
+    expval_func: Callable,
+):
+    """JIT-compiled step that fuses observable generation and expectation value math."""
+    wire_list = list(wire_tuple)
+    
+    p_mmd = (1 - jnp.exp(-1 / (2 * sigma_val**2))) / 2
+    visible_ops = jnp.array(
+        jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
+        dtype=jnp.float64,
+    )
+
+    all_ops = jnp.zeros((n_ops, n_qubits), dtype=jnp.float64)
+    all_ops = all_ops.at[:, wire_list].set(visible_ops)
+
+    pauli_obs = _binary_ops_to_pauli_int(all_ops)
+
+    # Because this outer function is JITted, JAX will trace through expval_func
+    # and compile it directly into the same optimized execution graph.
+    tr_iqp, tr_iqp_std_err = expval_func(
+        params=params,
+        observables=pauli_obs,
+        key=eval_key,
+        n_samples=effective_samples,
+        init_state=effective_init_state,
+    )
+
+    return _compute_single_mmd(
+        tr_iqp,
+        tr_iqp_std_err,
+        ground_truth,
+        visible_ops,
+        effective_samples,
+        sqrt_loss,
+    )
 
 
 def mmd_loss(
@@ -120,7 +182,8 @@ def mmd_loss(
 
     active_key = config.key if key is None else key
     n_qubits = config.n_qubits
-    wire_list = list(range(n_qubits)) if wires is None else list(wires)
+    
+    wire_tuple = tuple(range(n_qubits)) if wires is None else tuple(wires)
     sigma_list = [sigma] if isinstance(sigma, (int, float)) else list(sigma)
     ground_truth = jnp.asarray(ground_truth)
 
@@ -130,32 +193,19 @@ def mmd_loss(
     for sigma_val in sigma_list:
         active_key, subkey, eval_key = jax.random.split(active_key, 3)
 
-        p_mmd = (1 - jnp.exp(-1 / (2 * sigma_val**2))) / 2
-        visible_ops = jnp.array(
-            jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_list))),
-            dtype=jnp.float64,
-        )
-
-        all_ops = jnp.zeros((n_ops, n_qubits), dtype=jnp.float64)
-        all_ops = all_ops.at[:, wire_list].set(visible_ops)
-
-        pauli_obs = _binary_ops_to_pauli_int(all_ops)
-
-        tr_iqp, tr_iqp_std_err = expval_func(
+        loss_val = _compute_loss_for_sigma(
+            sigma_val=sigma_val,
+            subkey=subkey,
+            eval_key=eval_key,
             params=params,
-            observables=pauli_obs,
-            key=eval_key,
-            n_samples=effective_samples,
-            init_state=effective_init_state,
-        )
-
-        loss_val = _compute_single_mmd(
-            tr_iqp,
-            tr_iqp_std_err,
-            ground_truth,
-            visible_ops,
-            effective_samples,
-            sqrt_loss,
+            ground_truth=ground_truth,
+            effective_init_state=effective_init_state,
+            n_ops=n_ops,
+            n_qubits=n_qubits,
+            wire_tuple=wire_tuple,
+            effective_samples=effective_samples,
+            sqrt_loss=sqrt_loss,
+            expval_func=expval_func,
         )
         losses.append(loss_val)
 

@@ -310,7 +310,6 @@ def train(
 
             current_step = (i + 1) * unroll_steps
 
-            # Check based on validation loss if available, else training loss
             metric_acc = val_loss_acc if options.val_kwargs else loss_acc
 
             history_needed = 2 * options.convergence_interval
@@ -318,7 +317,7 @@ def train(
             if current_step > history_needed:
                 recent_history = jnp.concatenate(
                     metric_acc[-10:]
-                )  # Grab last 10 chunks (heuristic)
+                )
 
                 if len(recent_history) >= history_needed:
                     if _check_convergence(recent_history, options.convergence_interval):
