@@ -244,8 +244,10 @@ def _process_circuit_lst(circuit_as_lst):
 
 def estimate_wires_from_circuit(
     circuit_as_lst: Iterable[ResourceOperator, Operator, MeasurementProcess, MarkQubits],
-    gate_set: set,
-    config: dict,
+    gate_set: set | None = None,
+    config: dict | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
 ):
     processed_circ, circuit_wires = _process_circuit_lst(circuit_as_lst)
     total_algo_qubits = len(circuit_wires)
@@ -274,7 +276,7 @@ def estimate_wires_from_circuit(
                 [GateCount(circuit_element)],
                 gate_set=gate_set,
                 config=config,
-                num_available_any_state_aux=num_any_state_logical_wires + total,
+                num_available_any_state_aux=num_any_state_logical_wires + total + any_state,
                 num_active_qubits=circuit_element.num_wires,  # Should be equivalent to len(active_wires)
             )
 
@@ -284,26 +286,24 @@ def estimate_wires_from_circuit(
 
             if total + sub_max_dealloc < max_dealloc:
                 max_dealloc = total + sub_max_dealloc
-            if total < 0:
-                raise ValueError("Deallocated more qubits than available to allocate.")
             if total + sub_max_alloc > max_alloc:
                 max_alloc = total + sub_max_alloc
 
             total += sub_total
 
-    if total < 0 or max_dealloc < 0:
+    if max_dealloc < 0:
         raise ValueError("Deallocated more qubits than available to allocate.")
 
-    any_state = total
-    zeroed = max_alloc - total
-    return total_algo_qubits, any_state, zeroed
+    final_any_state = any_state + total
+    final_zeroed = max(zeroed, max_alloc - total)
+    return total_algo_qubits, final_any_state, final_zeroed
 
 
 def estimate_wires_from_resources(
     gate_counts: dict[CompressedResourceOp, int],
-    gate_set: set,
-    config: dict,
     algo: int,
+    gate_set: set | None = None,
+    config: dict | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -313,8 +313,8 @@ def estimate_wires_from_resources(
         gate_set = DefaultGateSet
     list_actions = [GateCount(gate, count) for gate, count in gate_counts.items()]
 
-    total = any_state
-    max_alloc = zeroed
+    total = 0
+    max_alloc = 0
     max_dealloc = 0
 
     for action in list_actions:
@@ -327,7 +327,7 @@ def estimate_wires_from_resources(
             action.count,
             gate_set,
             config,
-            num_available_any_state_aux=algo + total,
+            num_available_any_state_aux=algo + total + any_state,
             num_active_qubits=action.gate.num_wires,
         )
 
@@ -337,9 +337,9 @@ def estimate_wires_from_resources(
             max_alloc = total + sub_max_alloc
         total += sub_total
 
-    if total < 0 or max_dealloc < 0:
+    if max_dealloc < 0:
         raise ValueError("Deallocated more qubits than available to allocate.")
 
-    final_any_state = total
-    final_zeroed = max_alloc - total
+    final_any_state = total + any_state
+    final_zeroed = max(zeroed, max_alloc - total)
     return final_any_state, final_zeroed

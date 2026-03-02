@@ -25,7 +25,6 @@ resource estimation.
 """
 # import pennylane as qml
 from .estimate import estimate
-from .subroutines import QROM
 from .wires_manager import (
     Allocate,
     Deallocate,
