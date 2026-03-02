@@ -136,9 +136,19 @@ def rot_to_phase_gradient(
     Note that the discretized circuit contains :class:`~.SemiAdder`, which typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
 
+    Supported gates include:
+    * :class:`~RX`
+    * :class:`~RY`
+    * :class:`~RZ`
+    * :class:`~PhaseShift`
+    * :class:`~PauliRot`
+    * :class:`~SelectPauliRot`
+    * :class:`~IsingXX`
+    * :class:`~IsingYY`
+    * :class:`~IsingZZ`
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing rotation gates. See below
+        tape (QNode or QuantumTape or Callable): A quantum circuit containing rotation gates. See above
             for a list of supported rotation gates.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
