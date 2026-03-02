@@ -59,7 +59,13 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
 
 def _specs_qjit_device_level_tracking(
-    qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+    original_func,
+    original_qnode,
+    compile_options,
+    pass_pipeline_wrapped,
+    compute_depth,
+    *args,
+    **kwargs,
 ) -> SpecsResources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
@@ -83,8 +89,8 @@ def _specs_qjit_device_level_tracking(
         compute_depth=compute_depth,
     )
 
+    new_qnode = original_qnode.update(device=spoofed_dev)
     if pass_pipeline_wrapped:
-        new_qnode = original_qnode.update(device=spoofed_dev)
 
         def recursively_add_passes(pass_pipeline):
             if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
@@ -98,11 +104,10 @@ def _specs_qjit_device_level_tracking(
                 return new_pass_pipeline
             return new_qnode
 
-        pass_pipeline = recursively_add_passes(qjit.original_function)
-        new_qjit = QJIT(pass_pipeline, copy.deepcopy(qjit.compile_options))
+        pass_pipeline = recursively_add_passes(original_func)
+        new_qjit = QJIT(pass_pipeline, copy.deepcopy(compile_options))
     else:
-        new_qnode = qjit.original_function.update(device=spoofed_dev)
-        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+        new_qjit = QJIT(new_qnode, copy.deepcopy(compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
@@ -328,9 +333,22 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     pass_pipeline_wrapped = False
     if isinstance(qjit.original_function, PassPipelineWrapper):
         pass_pipeline_wrapped = True
+        original_func = qjit.original_function
         original_qnode = qjit.original_qnode
     elif isinstance(qjit.original_function, qml.QNode):
+        original_func = original_qnode
         original_qnode = qjit.original_function
+    elif isinstance(qjit.original_function, partial) and isinstance(
+        qjit.original_function.func, qml.QNode
+    ):
+        original_func = qjit.original_function.func
+        original_qnode = qjit.original_function.func
+        partial_args = qjit.original_function.args
+        partial_kwargs = qjit.original_function.keywords
+        args = partial_args + args
+        for key in kwargs:
+            assert key not in partial_kwargs, f"Keyword argument {key} was supplied multiple times."
+        kwargs = partial_kwargs | kwargs
     else:
         raise ValueError(
             "qml.specs can only be applied to a QNode or qjit'd QNode, instead got:",
@@ -341,7 +359,13 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
     if level == "device":
         resources = _specs_qjit_device_level_tracking(
-            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+            original_func,
+            original_qnode,
+            qjit.compile_options,
+            pass_pipeline_wrapped,
+            compute_depth,
+            *args,
+            **kwargs,
         )
 
     elif isinstance(level, (int, tuple, list, range, str)):
@@ -715,6 +739,12 @@ def specs(
     if isinstance(qnode, qml.QNode):
         return partial(_specs_qnode, qnode, level, compute_depth)
 
+    # Support for partial(QNode)
+    if isinstance(qnode, partial) and isinstance(qnode.func, qml.QNode):
+        return partial(
+            _specs_qnode, qnode.func, level, compute_depth, *qnode.args, **qnode.keywords
+        )
+
     try:
         from ..qnn.torch import TorchLayer
 
@@ -729,6 +759,13 @@ def specs(
 
         if isinstance(qnode, catalyst.jit.QJIT):
             return partial(_specs_qjit, qnode, level, compute_depth)
+
+        # Support for partial(qjit(QNode))
+        if isinstance(qnode, partial) and isinstance(qnode.func, catalyst.jit.QJIT):
+            return partial(
+                _specs_qjit, qnode.func, level, compute_depth, *qnode.args, **qnode.keywords
+            )
+
     except ImportError:  # pragma: no cover
         pass
 
