@@ -23,6 +23,7 @@ from functools import lru_cache, partial
 from typing import Literal
 
 import numpy as np
+from pennylane import math
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -136,14 +137,6 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_target_wires",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
-
     grad_method = None
     """Gradient computation method."""
 
@@ -197,6 +190,17 @@ class ControlledQubitUnitary(ControlledOp):
         work_wire_type: str | None = "borrowed",
     ):
 
+        self._wire_argnames = ("wires", "work_wires")
+        self._static_argnames = ("base", "unitary_check", "work_wire_type")  # TODO: exclude base?
+        self._bound_args = self._bind_args(
+            base=base,
+            wires=wires,
+            control_values=control_values,
+            unitary_check=unitary_check,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -225,16 +229,6 @@ class ControlledQubitUnitary(ControlledOp):
 
         self._name = "ControlledQubitUnitary"
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_target_wires": len(self.base.wires),
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
-
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
         values = None if self.control_values is None else [True] + self.control_values
@@ -251,19 +245,19 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
-def _to_general_c_qu_resource(num_target_wires, **kwargs):
+def _to_general_c_qu_resource(base, *args):
     return {
         resource_rep(
             qml.ops.Controlled,
+            *args,
             base_class=qml.QubitUnitary,
-            base_params={"num_wires": num_target_wires},
-            **kwargs,
+            base_params={"num_wires": len(base.wires)},
         ): 1
     }
 
 
 # pylint: disable=too-many-arguments
-@qml.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
+@qml.register_condition(lambda base, wires, control_values, unitary_check, work_wires, work_wire_type: len(base.wires) > 2)
 @qml.register_resources(_to_general_c_qu_resource)
 def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
@@ -320,8 +314,6 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CH"
 
     def _flatten(self):
@@ -349,10 +341,6 @@ class CH(ControlledOp):
 
     def adjoint(self):
         return CH(self.wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -414,7 +402,7 @@ class CH(ControlledOp):
         ]
 
 
-def _ch_to_ry_cz_ry_resources():
+def _ch_to_ry_cz_ry_resources(wires):
     return {qml.RY: 2, qml.CZ: 1}
 
 
@@ -463,8 +451,6 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CY"
 
     def _flatten(self):
@@ -486,10 +472,6 @@ class CY(ControlledOp):
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CY(self.wires)
@@ -550,7 +532,7 @@ class CY(ControlledOp):
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
 
-def _cy_to_cry_s_resources():
+def _cy_to_cry_s_resources(wires):
     return {qml.CRY: 1, qml.S: 1}
 
 
@@ -613,8 +595,6 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CZ"
 
     def _flatten(self):
@@ -636,10 +616,6 @@ class CZ(ControlledOp):
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CZ(self.wires)
@@ -675,7 +651,7 @@ class CZ(ControlledOp):
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
 
 
-def _cz_to_cps_resources():
+def _cz_to_cps_resources(wires):
     return {qml.ControlledPhaseShift: 1}
 
 
@@ -684,7 +660,7 @@ def _cz_to_cps(wires: WiresLike, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
 
-def _cz_to_cnot_resources():
+def _cz_to_cnot_resources(wires):
     return {qml.H: 2, qml.CNOT: 1}
 
 
@@ -695,7 +671,7 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qml.H(wires=wires[1])
 
 
-def _cz_to_ppr_resource():
+def _cz_to_ppr_resource(wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="Z"): 2,
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
@@ -751,8 +727,6 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CSWAP"
 
     def _flatten(self):
@@ -777,10 +751,6 @@ class CSWAP(ControlledOp):
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CSWAP(self.wires)
@@ -851,7 +821,7 @@ class CSWAP(ControlledOp):
         ]
 
 
-def _cswap_to_toffoli_resources():
+def _cswap_to_toffoli_resources(wires):
     return {qml.CNOT: 2, qml.Toffoli: 1}
 
 
@@ -862,7 +832,7 @@ def _cswap(wires: WiresLike, **__):
     qml.CNOT([wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resource():
+def _cswap_to_ppr_resource(wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZYY"): 1,
@@ -939,8 +909,6 @@ class CCZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CCZ"
 
     def __init__(self, wires, id=None):
@@ -954,10 +922,6 @@ class CCZ(ControlledOp):
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CCZ(self.wires)
@@ -1057,7 +1021,7 @@ class CCZ(ControlledOp):
         ]
 
 
-def _ccz_resources():
+def _ccz_resources(wires):
     return {
         qml.CNOT: 6,
         qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
@@ -1085,7 +1049,7 @@ def _ccz(wires: WiresLike, **__):
     qml.Hadamard(wires=wires[2])
 
 
-def _ccz_to_toffoli_resources():
+def _ccz_to_toffoli_resources(wires):
     return {qml.Hadamard: 2, qml.Toffoli: 1}
 
 
@@ -1131,8 +1095,6 @@ class CNOT(ControlledOp):
 
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     name = "CNOT"
 
@@ -1182,10 +1144,6 @@ class CNOT(ControlledOp):
         """
         raise qml.operation.DecompositionUndefinedError
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
@@ -1217,7 +1175,7 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-def _cnot_cz_h_resources():
+def _cnot_cz_h_resources(wires):
     return {qml.H: 2, qml.CZ: 1}
 
 
@@ -1228,7 +1186,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qml.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
+def _cnot_to_ppr_resource(wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
@@ -1286,8 +1244,6 @@ class Toffoli(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "Toffoli"
 
     def _flatten(self):
@@ -1311,10 +1267,6 @@ class Toffoli(ControlledOp):
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
@@ -1431,7 +1383,7 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
-def _toffoli_resources():
+def _toffoli_resources(wires):
     return {
         qml.Hadamard: 2,
         qml.CNOT: 6,
@@ -1459,7 +1411,7 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource():
+def _toffoli_to_ppr_resource(wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZX"): 2,
@@ -1487,7 +1439,7 @@ add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
-def _toffoli_elbow_resources():
+def _toffoli_elbow_resources(wires):
     return {
         change_op_basis_resource_rep(
             qml.Elbow,
@@ -1564,13 +1516,6 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
-
     name = "MultiControlledX"
 
     def _flatten(self):
@@ -1618,6 +1563,12 @@ class MultiControlledX(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
+        self._wire_argnames = ("wires", "work_wires")
+        self._static_argnames = (
+            "work_wire_type",
+        )
+        self._bound_args = self._bind_args(wires=wires, control_values=control_values, work_wires=work_wires, work_wire_type=work_wire_type)
+
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
         self._validate_control_values(control_values)
@@ -1654,15 +1605,6 @@ class MultiControlledX(ControlledOp):
     @property
     def wires(self):
         return self.control_wires + self.target_wires
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
 
     def adjoint(self):
         return MultiControlledX(
@@ -1783,13 +1725,13 @@ class MultiControlledX(ControlledOp):
         )
 
 
-def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
-    if num_control_wires == 1:
-        return {qml.CNOT: 1, qml.X: num_zero_control_values}
-    return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
+def _mcx_to_cnot_or_toffoli_resource(wires, control_values, work_wires, work_wire_type):
+    if len(control_values) == 1:
+        return {qml.CNOT: 1, qml.X: len(control_values) - math.sum(control_values)}
+    return {qml.Toffoli: 1, qml.X: (len(control_values) - math.sum(control_values)) * 2}
 
 
-@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
+@register_condition(lambda wires, control_values, work_wires, work_wire_type: len(control_values) < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
 def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     if len(wires) == 2 and not control_values[0]:
@@ -1872,8 +1814,6 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1896,10 +1836,6 @@ class CRX(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
@@ -1986,7 +1922,7 @@ class CRX(ControlledOp):
         ]
 
 
-def _crx_to_rz_ry_resources():
+def _crx_to_rz_ry_resources(phi, wires):
     return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
 
 
@@ -2000,7 +1936,7 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources():
+def _crx_to_rx_cz_resources(phi, wires):
     return {qml.RX: 2, qml.CZ: 2}
 
 
@@ -2012,7 +1948,7 @@ def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
     qml.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources():
+def _crx_to_h_crz_resources(phi, wires):
     return {qml.Hadamard: 2, qml.CRZ: 1}
 
 
@@ -2023,7 +1959,7 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources():
+def _crx_to_ppr_resources(phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
@@ -2089,8 +2025,6 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -2113,10 +2047,6 @@ class CRY(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
@@ -2203,7 +2133,7 @@ class CRY(ControlledOp):
         ]
 
 
-def _cry_resources():
+def _cry_resources(phi, wires):
     return {qml.RY: 2, qml.CNOT: 2}
 
 
@@ -2215,7 +2145,7 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources():
+def _cry_to_ppr_resources(phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
         resource_rep(qml.PauliRot, pauli_word="Y"): 1,
@@ -2286,8 +2216,6 @@ class CRZ(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -2310,10 +2238,6 @@ class CRZ(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
@@ -2438,7 +2362,7 @@ class CRZ(ControlledOp):
         ]
 
 
-def _crz_resources():
+def _crz_resources(phi, wires):
     return {qml.RZ: 2, qml.CNOT: 2}
 
 
@@ -2450,7 +2374,7 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _crz_to_ppr_resources():
+def _crz_to_ppr_resources(phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
@@ -2517,8 +2441,6 @@ class CRot(ControlledOp):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
@@ -2544,10 +2466,6 @@ class CRot(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         phi, theta, omega = self.parameters
@@ -2665,7 +2583,7 @@ class CRot(ControlledOp):
         ]
 
 
-def _crot_resources():
+def _crot_resources(phi, theta, omega, wires):
     return {qml.RZ: 3, qml.CNOT: 2, qml.RY: 2}
 
 
@@ -2727,8 +2645,6 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 
@@ -2751,10 +2667,6 @@ class ControlledPhaseShift(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
@@ -2880,7 +2792,7 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-def _cphase_rz_resource():
+def _cphase_rz_resource(phi, wires):
     return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
 
 
@@ -2894,7 +2806,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resource():
+def _cphase_to_ppr_resource(phi, wires):
     return {
         qml.GlobalPhase: 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 2,

@@ -132,8 +132,6 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
     grad_method = None
     """Gradient computation method."""
 
@@ -144,6 +142,9 @@ class QubitUnitary(Operation):
         id: str | None = None,
         unitary_check: bool = False,
     ):
+        self._static_argnames = ("unitary_check",)
+        self._bound_args = self._bind_args(U, wires=wires, id=id, unitary_check=unitary_check)
+
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
@@ -183,10 +184,6 @@ class QubitUnitary(Operation):
             qml.math.eye(dim),
             atol=1e-6,
         )
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
@@ -445,12 +442,6 @@ class DiagonalQubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    resource_keys = {"num_wires"}
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
     @staticmethod
     def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -646,7 +637,8 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):
+def _diagonal_qu_resource(wires):
+    num_wires = len(wires)
     if num_wires == 1:
         return {qml.RZ: 1, qml.GlobalPhase: 1}
     return {

@@ -268,8 +268,6 @@ class QubitSum(Operation):
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     def label(
         self,
         decimals: int | None = None,
@@ -277,10 +275,6 @@ class QubitSum(Operation):
         cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ

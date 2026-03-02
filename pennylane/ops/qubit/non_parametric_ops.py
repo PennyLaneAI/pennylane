@@ -72,8 +72,6 @@ class Hadamard(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
@@ -95,10 +93,6 @@ class Hadamard(Operation):
     @property
     def name(self) -> str:
         return "Hadamard"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -329,8 +323,6 @@ class PauliX(Operation):
 
     basis = "X"
 
-    resource_keys = set()
-
     batch_size = None
 
     is_verified_hermitian = True
@@ -364,10 +356,6 @@ class PauliX(Operation):
     @property
     def name(self) -> str:
         return "PauliX"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -610,8 +598,6 @@ class PauliY(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "Y"
 
     batch_size = None
@@ -645,10 +631,6 @@ class PauliY(Operation):
     @property
     def name(self) -> str:
         return "PauliY"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -861,13 +843,9 @@ class PauliZ(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "Z"
 
     batch_size = None
-
-    resource_keys = set()
 
     @property
     def pauli_rep(self):
@@ -898,10 +876,6 @@ class PauliZ(Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1139,8 +1113,6 @@ class S(Operation):
 
     batch_size = None
 
-    resource_keys = set()
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1158,10 +1130,6 @@ class S(Operation):
         if isinstance(wire, str):
             return f"S('{wire}')"
         return f"S({wire})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1308,8 +1276,6 @@ class T(Operation):
 
     batch_size = None
 
-    resource_keys = set()
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1327,10 +1293,6 @@ class T(Operation):
         if isinstance(wire, str):
             return f"T('{wire}')"
         return f"T({wire})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1462,12 +1424,6 @@ class SX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -1630,7 +1586,6 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
     batch_size = None
 
     @property
@@ -1727,10 +1682,6 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def pow(self, z: int | float) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
@@ -1834,12 +1785,6 @@ class ECR(Operation):
     num_params = 0
 
     batch_size = None
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -2002,11 +1947,6 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -2185,11 +2125,6 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
