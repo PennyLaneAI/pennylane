@@ -21,6 +21,7 @@ from pennylane.labs.phox.training import TrainingOptions, train, training_iterat
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+jaxopt = pytest.importorskip("jaxopt")
 
 
 @pytest.fixture
@@ -64,6 +65,7 @@ def test_optimization_success(quadratic_problem):
     assert jnp.allclose(result.final_params, target, atol=1e-1)
 
 
+@pytest.mark.usefixtures("skip_if_no_jaxopt")
 def test_determinism(quadratic_problem):
     # pylint: disable=redefined-outer-name
     """

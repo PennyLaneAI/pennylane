@@ -30,6 +30,7 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
+
 @dataclass
 class TrainingOptions:
     """
