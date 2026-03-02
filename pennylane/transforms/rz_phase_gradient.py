@@ -15,6 +15,8 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -35,7 +37,7 @@ def _rz_phase_gradient(
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = int(qml.math.binary_repr4pi(phi, precision), 2)
+    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ qml.math.binary_repr4pi(phi * 2, precision)
 
     compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
     target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
