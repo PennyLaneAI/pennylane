@@ -37,7 +37,7 @@ pytestmark = pytest.mark.external
         decompose_non_clifford_ppr,
     ],
 )
-def test_converstion_to_mlir(pass_fn):
+def test_conversion_to_mlir(pass_fn):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
