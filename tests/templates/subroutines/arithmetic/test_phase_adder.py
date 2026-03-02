@@ -237,16 +237,6 @@ class TestPhaseAdder:
         work_wire = [0]
 
         phase_adder_decomp = qml.PhaseAdder.compute_decomposition(k, x_wires, mod, work_wire)
-        cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
-        cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
-        cob_decomp2 = phase_adder_decomp[-1].decomposition()
-
-        phase_adder_decomposition = [
-            *phase_adder_decomp[:cob_index],
-            *cob_decomp1,
-            *phase_adder_decomp[cob_index + 1 : -1],
-            *cob_decomp2,
-        ]
 
         op_list = []
         base_list_ops1 = [
@@ -269,7 +259,7 @@ class TestPhaseAdder:
             op_list.append(qml.CNOT(wires=[aux_k, work_wire[0]]))
             op_list.append(qml.prod(*base_list_ops2, qml.X(aux_k)))
 
-        for op1, op2 in zip(phase_adder_decomposition, op_list):
+        for op1, op2 in zip(phase_adder_decomp, op_list):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("mod", [7, 8])
