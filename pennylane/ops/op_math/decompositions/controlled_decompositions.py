@@ -569,8 +569,9 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
             _skip_toggle_detection=True,
         )
 
+    lazy = compiler.active()
     # Uncompute the first ladder
-    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=lazy)(wires[:-1])
 
     right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.adjoint(qml.TemporaryAND)
     right_elbow([wires[0], wires[1], work0])
@@ -589,7 +590,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
                 _skip_toggle_detection=True,
             )
 
-        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=lazy)(wires[:-1])
 
 
 decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
@@ -674,7 +675,8 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
 
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-    ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+    lazy = compiler.active()
+    ops.adjoint(_build_linear_depth_ladder, lazy=lazy)(wires[:-1])
 
     if work_wire_type == "borrowed":
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
@@ -686,7 +688,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-        ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+        ops.adjoint(_build_linear_depth_ladder, lazy=lazy)(wires[:-1])
 
 
 decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
