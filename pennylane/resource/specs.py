@@ -210,7 +210,8 @@ def _preprocess_level_input(
     return level_sorted
 
 
-def _mlir_resources_to_specs_resources(resources) -> SpecsResources:
+def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: no cover
+    # This is function is covered by integration tests within the Catalyst frontend
     """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
 
     gate_types = {}
