@@ -22,9 +22,13 @@ from typing import Any, Callable, Iterator, NamedTuple
 
 import jax
 import jax.numpy as jnp
-import jaxopt
-import optax
-from tqdm import tqdm
+
+try:
+    import jaxopt
+    import optax
+    from tqdm import tqdm
+except (ModuleNotFoundError, ImportError) as import_error:
+    pass
 
 
 @dataclass
@@ -103,6 +107,7 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
     Raises:
         ValueError: If the optimizer name is not recognized.
     """
+    # pylint: disable=import-outside-toplevel
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
     if name == "Adam":
@@ -275,6 +280,7 @@ def train(
         TrainingResult: The results of the training process, including final parameters and loss history.
             See :class:`TrainingResult` for further details.
     """
+
     options = options or TrainingOptions()
 
     unroll_steps = max(1, options.unroll_steps)
