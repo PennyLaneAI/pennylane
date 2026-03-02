@@ -71,8 +71,6 @@ class MultiRZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -203,10 +201,6 @@ class MultiRZ(Operation):
 
         return ops
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
-
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
@@ -222,8 +216,8 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(num_wires):
-    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}
+def _multi_rz_decomposition_resources(theta, wires):
+    return {qml.RZ: 1, qml.CNOT: 2 * (len(wires) - 1)}
 
 
 @register_resources(_multi_rz_decomposition_resources)
@@ -319,6 +313,11 @@ class PauliRot(Operation):
         wires: WiresLike,
         id: str | None = None,
     ):
+        self._static_argnames = (
+            "pauli_word",
+        )
+        self._bound_args = self._bind_args(theta, pauli_word=pauli_word, wires=wires)
+
         super().__init__(theta, wires=wires, id=id)
 
         if not self._wires:
@@ -571,7 +570,7 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
-def _pauli_rot_resources(pauli_word):
+def _pauli_rot_resources(theta, pauli_word, wires):
     if set(pauli_word) == {"I"}:
         return {qml.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
@@ -695,8 +694,6 @@ class PCPhase(Operation):
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
-    resource_keys = {"num_wires", "dim"}
-
     def generator(self) -> "qml.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
         The operator reads
@@ -734,10 +731,6 @@ class PCPhase(Operation):
 
         super().__init__(phi, wires=wires, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
@@ -1016,8 +1009,9 @@ def _ctrl_phase_shift(
     return 0.0
 
 
-def _decompose_pcphase_resource(num_wires, dim):
+def _decompose_pcphase_resource(phi, dim, wires):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
+    num_wires = len(wires)
 
     gate_count = Counter()
     flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
@@ -1152,8 +1146,6 @@ class IsingXX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1162,10 +1154,6 @@ class IsingXX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1256,7 +1244,7 @@ class IsingXX(Operation):
         return IsingXX(phi, wires=self.wires)
 
 
-def _isingxx_to_cnot_rx_cnot_resources():
+def _isingxx_to_cnot_rx_cnot_resources(phi, wires):
     return {qml.CNOT: 2, qml.RX: 1}
 
 
@@ -1267,7 +1255,7 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _isingxx_to_ppr_resource():
+def _isingxx_to_ppr_resource(phi, wires):
     return {resource_rep(qml.PauliRot, pauli_word="XX"): 1}
 
 
@@ -1321,8 +1309,6 @@ class IsingYY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1331,10 +1317,6 @@ class IsingYY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -1432,7 +1414,7 @@ class IsingYY(Operation):
         return IsingYY(phi, wires=self.wires)
 
 
-def _isingyy_to_cy_ry_cy_resources():
+def _isingyy_to_cy_ry_cy_resources(phi, wires):
     return {qml.CY: 2, RY: 1}
 
 
@@ -1443,7 +1425,7 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     qml.CY(wires=wires)
 
 
-def _isingyy_to_ppr_resource():
+def _isingyy_to_ppr_resource(phi, wires):
     return {resource_rep(qml.PauliRot, pauli_word="YY"): 1}
 
 
@@ -1498,8 +1480,6 @@ class IsingZZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1508,10 +1488,6 @@ class IsingZZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike):
@@ -1640,7 +1616,7 @@ class IsingZZ(Operation):
         return IsingZZ(phi, wires=self.wires)
 
 
-def _isingzz_to_cnot_rz_cnot_resources():
+def _isingzz_to_cnot_rz_cnot_resources(phi, wires):
     return {qml.CNOT: 2, RZ: 1}
 
 
@@ -1651,7 +1627,7 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _isingzz_to_ppr_resource():
+def _isingzz_to_ppr_resource(phi, wires):
     return {resource_rep(qml.PauliRot, pauli_word="ZZ"): 1}
 
 
@@ -1716,8 +1692,6 @@ class IsingXY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1733,10 +1707,6 @@ class IsingXY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -1876,7 +1846,7 @@ class IsingXY(Operation):
         return IsingXY(phi, wires=self.wires)
 
 
-def _isingxy_to_h_cy_resources():
+def _isingxy_to_h_cy_resources(phi, wires):
     return {Hadamard: 2, qml.CY: 2, RY: 1, RX: 1}
 
 
@@ -1928,17 +1898,11 @@ class PSWAP(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -2065,7 +2029,7 @@ class PSWAP(Operation):
         return PSWAP(phi, wires=self.wires)
 
 
-def _pswap_to_swap_cnot_phaseshift_cnot_resources():
+def _pswap_to_swap_cnot_phaseshift_cnot_resources(phi, wires):
     return {qml.SWAP: 1, qml.CNOT: 2, PhaseShift: 1}
 
 
@@ -2077,7 +2041,7 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
     qml.CNOT(wires=wires)
 
 
-def _pswap_to_ppr_resources():
+def _pswap_to_ppr_resources(phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="XX"): 1,
         resource_rep(qml.PauliRot, pauli_word="YY"): 1,
@@ -2143,14 +2107,8 @@ class CPhaseShift00(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2300,7 +2258,7 @@ class CPhaseShift00(Operation):
         return self.wires[0:1]
 
 
-def _cphaseshift00_resources():
+def _cphaseshift00_resources(phi, wires):
     return {PauliX: 4, PhaseShift: 3, qml.CNOT: 2}
 
 
@@ -2367,14 +2325,8 @@ class CPhaseShift01(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2517,7 +2469,7 @@ class CPhaseShift01(Operation):
         return self.wires[0:1]
 
 
-def _cphaseshift01_resources():
+def _cphaseshift01_resources(phi, wires):
     return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
 
 
@@ -2581,14 +2533,8 @@ class CPhaseShift10(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2726,7 +2672,7 @@ class CPhaseShift10(Operation):
         return self.wires[0:1]
 
 
-def _cphaseshift10_resources():
+def _cphaseshift10_resources(phi, wires):
     return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
 
 
