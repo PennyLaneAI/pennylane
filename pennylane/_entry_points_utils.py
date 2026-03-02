@@ -22,16 +22,16 @@ from importlib import metadata
 
 
 def _setup_entry_points(module_name, group_name):
-    """Returns dunder methods required to import group elements from an entry-point. Entry-point
+    """Returns dunder methods required to import entry-points from the module in which this function is called. Entry-point
     elements are lazy-loaded.
 
     Args:
         module_name (str): The name of the module that this function gets called in.
-        group_name (str | list(str)): The entry-point group names.
+        group_name (str | list(str)): The entry-point group name(s).
 
     Returns:
         Tuple(Callable):
-            The module's modified __all__, __getattr__, and __dir__ methods.
+            The module's modified ``__all__``, ``__getattr__``, and ``__dir__`` methods.
     """
     # Get entry points from the given group name (or group names)
     if isinstance(group_name, list):
