@@ -58,8 +58,7 @@ def _rz_phase_gradient(
     Note that the global phases are collected and added as one big global phase in the main function
     """
     # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient
-    # adapted to the slightly different _binary_repr_int from
-    # pennylane.labs.transforms.select_pauli_rot_phase_gradient
+    # adapted to the slightly different _binary_repr_int from above
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
@@ -134,15 +133,16 @@ def rot_to_phase_gradient(
     rather assumes it has been prepared on those wires at an earlier stage. Look at the example below to see how
     this state can be prepared.
 
-    Note that this operator contains :class:`~.SemiAdder` that typically uses additional ``work_wires`` for the semi-in-place addition
+    Note that the discretized circuit contains :class:`~.SemiAdder`, which typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
 
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.SelectPauliRot` operators.
+        tape (QNode or QuantumTape or Callable): A quantum circuit containing rotation gates. See below
+            for a list of supported rotation gates.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
-            The length of the ``angle_wires`` , i.e. :math:`b`, implicitly determines the precision
+            The length of the ``angle_wires`` , denoted :math:`b`, implicitly determines the precision
             with which the angle is represented.
             E.g., :math:`(1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 1 \cdot 2^{-3}) 2\pi` is represented by three bits as ``101``.
         phase_grad_wires (Wires): Qubits with the catalytic phase gradient state prepared on them.
@@ -157,7 +157,7 @@ def rot_to_phase_gradient(
 
     .. code-block:: python
 
-        from pennylane.labs.transforms import select_pauli_rot_phase_gradient
+        from pennylane.labs.transforms import rot_to_phase_gradient
         from functools import partial
         import numpy as np
 
@@ -172,11 +172,11 @@ def rot_to_phase_gradient(
             n = len(wires)
             basis = np.eye(2**n)
             B = 2**n
-            wave_function = np.sum([b * np.exp(-1j*2*np.pi * i/B) for i, b in enumerate(basis)], axis=0)/(2**(n/2))
+            wave_function = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
             return qp.StatePrep(wave_function, wires)
 
         @partial(
-            select_pauli_rot_phase_gradient,
+            rot_to_phase_gradient,
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,

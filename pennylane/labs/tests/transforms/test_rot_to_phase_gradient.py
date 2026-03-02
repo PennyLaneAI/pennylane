@@ -146,7 +146,7 @@ class TestSelectPauliRotDecompositions:
             assert g.name == exp_name
 
     def test_wire_validation(self):
-        """Test that an error is raised when phg wires are fewer than angle wires"""
+        """Test that an error is raised when `phase_grad_wires` or `work_wires` are too small."""
 
         circ = qp.tape.QuantumScript([qp.SelectPauliRot([0.2, -0.4], [0], 1)])
 
