@@ -239,7 +239,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    output_level = {}  # This will be a map of level to its name
+    output_level: dict[int, str] = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
