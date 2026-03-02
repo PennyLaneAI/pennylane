@@ -63,7 +63,7 @@ def test_preprocess_levels(level, output, expect_warnings):
         "foo": 2,
         "bar": 3,
         # Treat MLIR lowering as level 4
-        "baz": 5
+        "baz": 5,
     }
 
     if expect_warnings:
