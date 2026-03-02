@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qp
-from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
+from pennylane.labs.transforms.rot_to_phase_gradient import binary_repr_int
 from pennylane.labs.transforms.rz_phase_gradient_decomp import make_rz_to_phase_gradient_decomp
 
 
@@ -53,7 +53,7 @@ def test_as_fixed_decomps(phi, p):
         specs = qp.specs(circuit)()["resources"].gate_types
 
         expected_specs = {"GlobalPhase": 1, "SemiAdder": 1}
-        if (n_cnots := 2 * sum(_binary_repr_int(phi * 2, p))) > 0:
+        if (n_cnots := 2 * sum(binary_repr_int(phi * 2, p))) > 0:
             expected_specs["CNOT"] = n_cnots
 
         assert expected_specs == specs
@@ -90,7 +90,7 @@ def test_as_alt_decomps(phi, p):
         specs = qp.specs(circuit)()["resources"].gate_types
 
         expected_specs = {"GlobalPhase": 1, "SemiAdder": 1}
-        if (n_cnots := 2 * sum(_binary_repr_int(phi * 2, p))) > 0:
+        if (n_cnots := 2 * sum(binary_repr_int(phi * 2, p))) > 0:
             expected_specs["CNOT"] = n_cnots
 
         assert expected_specs == specs
