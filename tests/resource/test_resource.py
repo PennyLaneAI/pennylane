@@ -28,6 +28,7 @@ from pennylane.resource.resource import (
     Resources,
     ResourcesOperation,
     SpecsResources,
+    _batch_num_to_letters,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -705,6 +706,7 @@ class TestSpecsResources:
         s = self.example_specs_resource()
 
         assert s["gate_types"] == s.gate_types
+        assert s["gate_counts"] == s.gate_types
         assert s["gate_sizes"] == s.gate_sizes
         assert s["measurements"] == s.measurements
         assert s["num_allocs"] == s.num_allocs
@@ -736,16 +738,14 @@ class TestSpecsResources:
 
         s = self.example_specs_resource()
 
-        expected = "Total wire allocations: 2\n"
+        expected = "Wire allocations: 2\n"
         expected += "Total gates: 3\n"
-        expected += "Circuit depth: 2\n"
-        expected += "\n"
-        expected += "Gate types:\n"
-        expected += "  Hadamard: 2\n"
-        expected += "  CNOT: 1\n"
-        expected += "\n"
+        expected += "Gate counts:\n"
+        expected += "- Hadamard: 2\n"
+        expected += "- CNOT: 1\n"
         expected += "Measurements:\n"
-        expected += "  expval(PauliZ): 1"
+        expected += "- expval(PauliZ): 1\n"
+        expected += "Depth: 2"
 
         expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
 
@@ -757,15 +757,13 @@ class TestSpecsResources:
 
         s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
 
-        expected = "Total wire allocations: 0\n"
+        expected = "Wire allocations: 0\n"
         expected += "Total gates: 0\n"
-        expected += "Circuit depth: Not computed\n"
-        expected += "\n"
-        expected += "Gate types:\n"
-        expected += "  No gates.\n"
-        expected += "\n"
+        expected += "Gate counts:\n"
+        expected += "- No gates.\n"
         expected += "Measurements:\n"
-        expected += "  No measurements."
+        expected += "- No measurements.\n"
+        expected += "Depth: Not computed"
 
         expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
 
@@ -971,8 +969,7 @@ class TestCircuitSpecs:
         expected += "Shots: Shots(total=1000)\n"
         expected += "Level: 2\n"
         expected += "\n"
-        expected += "Resource specifications:\n"
-        expected += r.resources.to_pretty_str(preindent=2)
+        expected += r.resources.to_pretty_str()
 
         assert str(r) == expected
 
@@ -989,11 +986,11 @@ Levels:
 - 1: l1
 - 2: l2
 
-Metric/Level     |    1 |  2-0 |  2-1
+↓Metric   Level→ |    1 |  2-a |  2-b
 -------------------------------------
 Wire allocations |    2 |    2 |    2
 Total gates      |    6 |    1 |    1
-Gate types:      |
+Gate counts:     |
 - Hadamard       |    4 |    0 |    0
 - CNOT           |    2 |    1 |    1
 Measurements:    |
@@ -1011,19 +1008,18 @@ Measurements:    |
         expected += "Levels:\n"
         expected += "- 1: l1\n"
         expected += "- 2: l2\n"
-        expected += "\n"
-        expected += "Resource specifications:\n"
+        expected += "\n\n"
 
         expected += "Level = 1:\n"
-        expected += r.resources[1].to_pretty_str(preindent=2)
+        expected += r.resources[1].to_pretty_str(preindent=4)
 
         expected += "\n\n" + "-" * 60 + "\n\n"
 
         expected += "Level = 3:\n"
-        expected += "  Batched tape 0:\n"
-        expected += r.resources[3][0].to_pretty_str(preindent=4)
-        expected += "\n\n  Batched tape 1:\n"
-        expected += r.resources[3][1].to_pretty_str(preindent=4)
+        expected += "    Batched tape a:\n"
+        expected += r.resources[3][0].to_pretty_str(preindent=8)
+        expected += "\n\n    Batched tape b:\n"
+        expected += r.resources[3][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
 
@@ -1121,3 +1117,14 @@ class TestCountResources:
         )
 
         assert computed_resources == expected_resources
+
+
+def test_batch_num_to_letters():
+    """Test the _batch_num_to_letters helper function."""
+    assert _batch_num_to_letters(0) == "a"
+    assert _batch_num_to_letters(1) == "b"
+    assert _batch_num_to_letters(25) == "z"
+    assert _batch_num_to_letters(26) == "aa"
+    assert _batch_num_to_letters(27) == "ab"
+    assert _batch_num_to_letters(51) == "az"
+    assert _batch_num_to_letters(52) == "ba"

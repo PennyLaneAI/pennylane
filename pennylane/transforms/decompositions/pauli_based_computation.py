@@ -92,20 +92,17 @@ def to_ppr_setup_inputs():
     Shots: Shots(total=None)
     Level: to-ppr (MLIR-1)
     <BLANKLINE>
-    Resource specifications:
-        Total wire allocations: 2
-        Total gates: 11
-        Circuit depth: Not computed
-    <BLANKLINE>
-      Gate types:
-        GlobalPhase: 3
-        PPR-pi/4-w1: 5
-        PPR-pi/4-w2: 1
-        PPM-w1: 1
-        PPR-pi/8-w1: 1
-    <BLANKLINE>
-      Measurements:
-        expval(PauliZ): 1
+    Wire allocations: 2
+    Total gates: 11
+    Gate counts:
+    - GlobalPhase: 3
+    - PPR-pi/4-w1: 5
+    - PPR-pi/4-w2: 1
+    - PPM-w1: 1
+    - PPR-pi/8-w1: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -198,18 +195,15 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     Shots: Shots(total=None)
     Level: commute-ppr (MLIR-2)
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 2
+    Wire allocations: 2
     Total gates: 7
-    Circuit depth: Not computed
-    <BLANKLINE>
-      Gate types:
-        PPR-pi/8-w1: 1
-        PPR-pi/4-w1: 5
-        PPR-pi/4-w2: 1
-    <BLANKLINE>
-      Measurements:
-        expval(PauliZ): 1
+    Gate counts:
+    - PPR-pi/8-w1: 1
+    - PPR-pi/4-w1: 5
+    - PPR-pi/4-w2: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
     of :math:`\tfrac{\pi}{2}`) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
@@ -303,16 +297,13 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     Shots: Shots(total=None)
     Level: merge-ppr-ppm (MLIR-2)
     <BLANKLINE>
-    Resource specifications:
-        Total wire allocations: 2
-        Total gates: 1
-        Circuit depth: Not computed
-    <BLANKLINE>
-      Gate types:
-        PPM-w2: 1
-    <BLANKLINE>
-      Measurements:
-        No measurements.
+    Wire allocations: 2
+    Total gates: 1
+    Gate counts:
+    - PPM-w2: 1
+    Measurements:
+    - No measurements.
+    Depth: Not computed
 
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped. In the above output, ``PPM-w<int>`` denotes the PPM weight (the
@@ -420,21 +411,18 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     Shots: Shots(total=None)
     Level: ppr-to-ppm (MLIR-2)
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 9
+    Wire allocations: 9
     Total gates: 24
-    Circuit depth: Not computed
-    <BLANKLINE>
-      Gate types:
-        PPM-w2: 7
-        PPM-w1: 8
-        PPM-w3: 1
-        PPR-pi/2-w1: 6
-        PPR-pi/2-w2: 1
-        pbc.fabricate: 1
-    <BLANKLINE>
-      Measurements:
-        expval(PauliZ): 1
+    Gate counts:
+    - PPM-w2: 7
+    - PPM-w1: 8
+    - PPM-w3: 1
+    - PPR-pi/2-w1: 6
+    - PPR-pi/2-w2: 1
+    - pbc.fabricate: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -535,22 +523,19 @@ def ppm_compilation_setup_inputs(
     Shots: Shots(total=None)
     Level: ppm-compilation (MLIR-1)
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 8
+    Wire allocations: 8
     Total gates: 25
-    Circuit depth: Not computed
-    <BLANKLINE>
-      Gate types:
-        GlobalPhase: 3
-        pbc.fabricate: 1
-        PPM-w2: 6
-        PPM-w1: 7
-        PPM-w3: 1
-        PPR-pi/2-w1: 6
-        PPR-pi/2-w2: 1
-    <BLANKLINE>
-      Measurements:
-        expval(PauliZ): 1
+    Gate counts:
+    - GlobalPhase: 3
+    - pbc.fabricate: 1
+    - PPM-w2: 6
+    - PPM-w1: 7
+    - PPM-w3: 1
+    - PPR-pi/2-w1: 6
+    - PPR-pi/2-w2: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -735,21 +720,18 @@ def decompose_arbitrary_ppr_setup_inputs():
     Shots: Shots(total=None)
     Level: decompose-arbitrary-ppr (MLIR-2)
     <BLANKLINE>
-    Resource specifications:
-      Total wire allocations: 4
-      Total gates: 6
-      Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-      pbc.prepare: 1
-      PPM-w3: 1
-      PPM-w1: 1
-      PPR-pi/2-w1: 1
-      PPR-pi/2-w2: 1
-      PPR-Phi-w1: 1
-    <BLANKLINE>
+    Wire allocations: 3
+    Total gates: 6
+    Gate counts:
+    - pbc.prepare: 1
+    - PPM-w3: 1
+    - PPM-w1: 1
+    - PPR-pi/2-w1: 1
+    - PPR-pi/2-w2: 1
+    - PPR-Phi-w1: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
