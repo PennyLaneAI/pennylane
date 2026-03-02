@@ -631,3 +631,62 @@ def ceil_log2(n: int) -> int:
     if is_abstract(n):
         return np.ceil(np.log2(n)).astype(int)
     return int(np.ceil(np.log2(n)))
+
+
+def binary_repr4pi(phi, precision):
+    r"""
+    Binary representation of ``phi`` to the closest precision :math:`\text{mod} 4\pi`
+
+    We often require the binary representation of :math:`\tilde{\phi}` in phase factors such as :math:`\exp(-i \tilde{\phi} 2 \pi)`.
+    Due to the convention that we divide angles in rotation gates such as :class:`~RZ` gates by 2, this function considers the angle :math:`\phi = 2\tilde{\phi}`
+    as a multiple of :math:`4\pi`.
+
+    We thus only care about the decimals of the binary representation.
+    So, from :math:`(1/2 + 0/4 + 1/8) 4 \pi`, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
+
+    Args:
+        phi (float): number to be represented in binary
+        precision (int): number of digits to keep
+
+    Returns:
+        array: Binary representation of the decimals :math:`\text{mod} 4\pi`
+
+    **Example**
+
+    We round the binary representation of :math:`(0.11011)_2 4 \pi`, which simply yields :math:`(0.11)_2 4 \pi` from rounding down.
+
+    >>> from pennylane.labs.transforms.rot_to_phase_gradient import binary_repr4pi
+    >>> precision = 2
+    >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi
+    >>> binary_repr4pi(phi, precision)
+    array([1, 1])
+
+    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011)_2 4 \pi`, we round to :math:`(0.11)_2 4 \pi`:
+
+    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
+    >>> binary_repr4pi(phi, precision)
+    array([1, 1])
+
+    Note that we ignore the positive decimals. E.g., because :math:`(0.1111)_2 4 \pi` rounds to :math:`(1.0000)_2 4 \pi`, we obtain ``[0, 0, 0, 0]``:
+
+    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16) * 4 * np.pi
+    >>> binary_repr4pi(phi, precision)
+    array([0, 0])
+
+    .. details::
+        :title: Tie to even rule
+
+        The non-trivial case is when we are exactly at the midpoint, i.e. the truncated bits are :math:`100`.
+        In this case, the so-called ties to even rule kicks in. This is automatically handled by numpy under the hood.
+        For example, take :math:`(0.10100)_2 4 \pi = 0.625 \cdot 4 \pi`. We can either round down to :math:`(0.10)_2 4 \pi = 0.5 \cdot 4 \pi`, or round up to :math:`(0.11)_2 4 \pi = 0.75 \cdot 4 \pi`, but it is a tie because both numbers
+        are equally close to :math:`0.625 \cdot 4 \pi`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11)_2 4 \pi = 0.75 \cdot 4 \pi`.
+
+        >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32) * 4 * np.pi
+        >>> binary_repr4pi(phi, precision)
+        array([1, 1])
+
+
+    """
+    phi = math.mod(phi, 4 * np.pi)
+    phi_round = math.round(2**precision * phi / 4 / _np.pi)
+    return math.int_to_binary(phi_round.astype(int), precision)
