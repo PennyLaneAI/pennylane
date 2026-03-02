@@ -28,6 +28,7 @@ from pennylane.resource.resource import (
     Resources,
     ResourcesOperation,
     SpecsResources,
+    _batch_num_to_letters,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -705,6 +706,7 @@ class TestSpecsResources:
         s = self.example_specs_resource()
 
         assert s["gate_types"] == s.gate_types
+        assert s["gate_counts"] == s.gate_types
         assert s["gate_sizes"] == s.gate_sizes
         assert s["measurements"] == s.measurements
         assert s["num_allocs"] == s.num_allocs
@@ -1115,3 +1117,14 @@ class TestCountResources:
         )
 
         assert computed_resources == expected_resources
+
+
+def test_batch_num_to_letters():
+    """Test the _batch_num_to_letters helper function."""
+    assert _batch_num_to_letters(0) == "a"
+    assert _batch_num_to_letters(1) == "b"
+    assert _batch_num_to_letters(25) == "z"
+    assert _batch_num_to_letters(26) == "aa"
+    assert _batch_num_to_letters(27) == "ab"
+    assert _batch_num_to_letters(51) == "az"
+    assert _batch_num_to_letters(52) == "ba"

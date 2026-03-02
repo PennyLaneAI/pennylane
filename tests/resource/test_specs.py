@@ -62,7 +62,8 @@ def test_preprocess_levels(level, output, expect_warnings):
     marker_to_level = {
         "foo": 2,
         "bar": 3,
-        "baz": 5,
+        # Treat MLIR lowering as level 4
+        "baz": 4,  # Actually 5, after lowering
     }
 
     if expect_warnings:
@@ -71,9 +72,9 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert _preprocess_level_input(level, marker_to_level, 5, 6) == output
+            assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
     else:
-        assert _preprocess_level_input(level, marker_to_level, 5, 6) == output
+        assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
 
 
 @pytest.mark.parametrize("num_tapes", [0, 2, 5])
