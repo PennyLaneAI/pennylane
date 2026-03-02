@@ -392,7 +392,8 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
-            on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
+            on the available levels. For ``qjit``-compiled workflows, see the sections below for more information.
+            Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
             depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
@@ -443,6 +444,11 @@ def specs(
     Measurements:
     - probs(all wires): 1
     Depth: 98
+
+    The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+    There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
+       * Runtime resource tracking via mock circuit execution
+       * Pass-by-pass resource collection for user applied compilation passes
 
     .. details::
         :title: Usage Details
@@ -543,11 +549,7 @@ def specs(
                                                depth=1)])
 
     .. details::
-        :title: Using specs on workflows compiled with Catalyst
-
-        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on compiled QNodes: runtime resource tracking,
-        and pass-by-pass specs for user applied compilation passes.
+        :title: Runtime resource tracking for workflows compiled with Catalyst
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -585,6 +587,9 @@ def specs(
         - probs(all wires): 1
         Depth: 2
 
+    .. details::
+        :title: Pass-by-pass resource breakdowns for workflows compiled with Catalyst
+
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
 
@@ -602,8 +607,8 @@ def specs(
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
-        * The string "all": To output information about all user-applied transforms and compilation passes
-        * The string "all-mlir": To output information about all compilation passes at the MLIR level only
+        * The string ``"all"``: To output information about all user-applied transforms and compilation passes
+        * The string ``"all-mlir"``: To output information about all compilation passes at the MLIR level only
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.

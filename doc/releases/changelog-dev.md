@@ -97,8 +97,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* When using :func:`pennylane.specs` with multiple levels, printing the returned :class:`pennylane.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level, for convenient comparison of circuit specifications between compilation passes.
-  This format is enabled by default when using multiple levels in `qml.specs` (e.g. in pass-by-pass mode with `level="all"`):
+* When using :func:`~.specs` with multiple levels, printing the returned
+  :class:`~.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  for convenient comparison of circuit specifications between compilation passes.
+  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
 
   ```python
   @qml.qjit
