@@ -49,29 +49,29 @@ class TestCeilLog2:
 
 
 class TestBinaryRepr4pi:
-    """Test ``fn.binary_repr4pi``."""
+    """Test ``fn.angle_to_binary``."""
 
     @pytest.mark.parametrize(
         "phi, p, expected",
         [
-            (1 / 2 * 4 * np.pi, 2, [1, 0]),
-            (1 / 2 * 4 * np.pi, 3, [1, 0, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 2, [1, 1]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 3, [1, 1, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, [1, 0, 1, 1, 1]),
+            (1 / 2, 2, [1, 0]),
+            (1 / 2, 3, [1, 0, 0]),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 2, [1, 1]),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 3, [1, 1, 0]),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1]),
         ],
     )
-    def test_binary_repr4pi_scalar(self, phi, p, expected):
+    def test_angle_to_binary_scalar(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
 
-        assert np.array_equal(expected, fn.binary_repr4pi(phi, p))
+        assert np.array_equal(expected, fn.angle_to_binary(phi, p))
 
     @pytest.mark.parametrize(
         "phi, p, expected",
         [
-            (np.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]) * 4 * np.pi, 2, [[1, 0], [1, 1], [0, 1]]),
+            (np.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]), 2, [[1, 0], [1, 1], [0, 1]]),
             (
-                np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]) * 4 * np.pi,
+                np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]),
                 3,
                 [[1, 0, 0], [0, 0, 1], [0, 1, 1]],
             ),
@@ -85,17 +85,15 @@ class TestBinaryRepr4pi:
                         0 / 2 + 0 / 4 + 0 / 8 + 0 / 16 + 1 / 32,
                         1 / 2 + 0 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
                     ]
-                )
-                * 4
-                * np.pi,
+                ),
                 2,
                 [[1, 1], [0, 0], [1, 1], [1, 0], [0, 0], [1, 1]],
             ),
         ],
     )
-    def test_binary_repr4pi_array(self, phi, p, expected):
+    def test_angle_to_binary_array(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
-        out = fn.binary_repr4pi(phi, p)
+        out = fn.angle_to_binary(phi, p)
         assert np.array_equal(expected, out), f"\n{expected}\n{out}"
 
 

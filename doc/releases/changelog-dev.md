@@ -95,7 +95,7 @@
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
-* A new :func:`~binary_repr4pi` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
+* A new :func:`~angle_to_binary` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
   This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
