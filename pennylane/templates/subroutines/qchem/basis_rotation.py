@@ -142,6 +142,7 @@ def _complex_unitary(unitary, wires):
     static_argnames="check",
     setup_inputs=setup_basis_rotation,
     compute_resources=basis_rotation_decomp_resources,
+    exact_resources=False,
 )
 def BasisRotation(wires, unitary_matrix, check=False):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
