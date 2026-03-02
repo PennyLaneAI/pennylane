@@ -653,6 +653,12 @@
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+  documentation still resided in the PennyLane repository.
+  [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+  
+
 <h3>Bug fixes 🐛</h3>
 
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
