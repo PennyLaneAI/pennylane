@@ -157,7 +157,7 @@ def _core_expval_execution(
     C = 2 * ((b_f @ g_f.T) % 2)
     expanded_params = jnp.asarray(params)[param_map]
     E = (C * expanded_params) @ B.T
-    
+
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_params, samples, bitflips)
 

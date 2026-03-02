@@ -108,7 +108,7 @@ def _compute_loss_for_sigma(
 ):
     """JIT-compiled step that fuses observable generation and expectation value math."""
     wire_list = list(wire_tuple)
-    
+
     p_mmd = (1 - jnp.exp(-1 / (2 * sigma_val**2))) / 2
     visible_ops = jnp.array(
         jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
@@ -182,7 +182,7 @@ def mmd_loss(
 
     active_key = config.key if key is None else key
     n_qubits = config.n_qubits
-    
+
     wire_tuple = tuple(range(n_qubits)) if wires is None else tuple(wires)
     sigma_list = [sigma] if isinstance(sigma, (int, float)) else list(sigma)
     ground_truth = jnp.asarray(ground_truth)
