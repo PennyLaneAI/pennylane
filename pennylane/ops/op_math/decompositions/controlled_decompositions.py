@@ -20,7 +20,7 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qml
-from pennylane import allocation, control_flow, math, ops, queuing
+from pennylane import allocation, compiler, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -439,6 +439,10 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     work wires"""
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
+
+    if compiler.active() or qml.capture.enabled():
+        control_wires = math.array(control_wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
 
     if work_wire_type == "borrowed":
         up_gate = down_gate = ops.Toffoli
