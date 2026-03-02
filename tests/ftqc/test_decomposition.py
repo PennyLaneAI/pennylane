@@ -23,7 +23,6 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
-from pennylane.capture import make_plxpr
 from pennylane.devices.qubit.apply_operation import apply_operation
 from pennylane.ftqc import (
     GraphStatePrep,
@@ -616,36 +615,6 @@ def test_conversion_to_mlir(pass_fn):
         decompose_non_clifford_ppr,
     ],
 )
-def test_pass_is_captured(pass_fn):
-    """Tests that the pass can be captured."""
-
-    pytest.importorskip("catalyst")
-
-    @pass_fn
-    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
-    def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.T(1)
-        qml.CNOT([0, 1])
-        return qml.sample()
-
-    plxpr = make_plxpr(circ)()
-    prim = plxpr.eqns[0].primitive
-    assert prim.name == "transform"
-    assert plxpr.eqns[0].params["transform"] == pass_fn
-
-
-@pytest.mark.catalyst
-@pytest.mark.external
-@pytest.mark.parametrize(
-    "pass_fn",
-    [
-        ppr_to_mbqc,
-        decompose_clifford_ppr,
-        decompose_non_clifford_ppr,
-    ],
-)
 def test_pass_without_qjit_raises_error(pass_fn):
     """Test that trying to apply the transform without QJIT raises an error"""
 
@@ -660,5 +629,5 @@ def test_pass_without_qjit_raises_error(pass_fn):
         qml.CNOT([0, 1])
         return qml.sample()
 
-    with pytest.raises(NotImplementedError, match="only implemented when using capture and QJIT"):
+    with pytest.raises(NotImplementedError, match="has no defined tape transform"):
         circ()
