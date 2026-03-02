@@ -39,7 +39,7 @@ def _binary_repr_int(phi, precision):
 
     **Example**
 
-    We round the binary representation of :math:`(0.11011) 4 \phi`, which simply yields :math:`(0.11) 4 \phi` from rounding down.
+    We round the binary representation of :math:`(0.11011) 4 \pi`, which simply yields :math:`(0.11) 4 \pi` from rounding down.
 
     >>> from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
     >>> precision = 2
@@ -47,17 +47,29 @@ def _binary_repr_int(phi, precision):
     >>> _binary_repr_int(phi, precision)
     array([1, 1])
 
-    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011) 4 \phi`, we round to :math:`(0.11) 4 \phi`:
+    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011) 4 \pi`, we round to :math:`(0.11) 4 \pi`:
 
     >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
     >>> _binary_repr_int(phi, precision)
     array([1, 1])
 
-    Note that we ignore the positive decimals. E.g., because :math:`(0.1111) 4 \phi` rounds to :math:`(1.0000) 4 \phi`, we obtain ``[0, 0, 0, 0]``:
+    Note that we ignore the positive decimals. E.g., because :math:`(0.1111) 4 \pi` rounds to :math:`(1.0000) 4 \pi`, we obtain ``[0, 0, 0, 0]``:
 
     >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16) * 4 * np.pi
     >>> _binary_repr_int(phi, precision)
     array([0, 0])
+
+    .. details::
+        :title: Tie to even rule
+
+        The most non-trivial case is when we are exactly at the midpoint, i.e. the truncated bits are :math:`100`.
+        In this case, the so-called ties to even rule kicks in. This is automatically handled by numpy under the hood.
+        For example, take :math:`(0.10100) 4 \pi = 0.625 \cdot 4 \pi`. We can either round down to :math:`(0.10) 4 \pi = 0.5 \cdot 4 \pi`, or round up to :math:`(0.11) 4 \pi = 0.75 \cdot 4 \pi`, but it is a tie because both numbers
+        are equally close to :math:`0.625 \cdot 4 \pi`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11) 4 \pi = 0.75 \cdot 4 \pi`.
+
+        >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32) * 4 * np.pi
+        >>> _binary_repr_int(phi, precision)
+        array([1, 1])
 
 
     """
