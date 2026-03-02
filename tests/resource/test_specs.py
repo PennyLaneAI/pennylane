@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
-from pennylane.resource.specs import _get_last_transform_level, _preprocess_level_input
+from pennylane.resource.specs import _get_last_tape_transform_level, _preprocess_level_input
 
 devices_list = [
     (qml.device("default.qubit"), None),
@@ -92,23 +92,25 @@ def test_preprocess_levels_invalid():
         _preprocess_level_input("foo", {}, [], 0)
 
 
-def test_get_last_transform_level():
-    """Test that _get_last_transform_level works correctly"""
+def test_get_last_tape_transform_level():
+    """Test that _get_last_tape_transform_level works correctly"""
 
     @qml.transform
     def dummy_transform(tape):
         return (tape,), lambda res: res[0]
 
     # If there are no transforms, the last transform level should be 0
-    assert _get_last_transform_level(qml.CompilePipeline()) == 0
+    assert _get_last_tape_transform_level(qml.CompilePipeline()) == 0
     # If there are *any* tape transforms, this should return the number of tape transforms
     # since there is an implied level 0 for "before transforms"
-    assert _get_last_transform_level(qml.CompilePipeline(dummy_transform)) == 1
-    assert _get_last_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
+    assert _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform)) == 1
+    assert (
+        _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
+    )
 
     # MLIR passes should not be counted
     assert (
-        _get_last_transform_level(
+        _get_last_tape_transform_level(
             qml.CompilePipeline(dummy_transform, qml.transforms.cancel_inverses)
         )
         == 1

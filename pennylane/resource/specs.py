@@ -134,7 +134,7 @@ def _specs_qjit_device_level_tracking(
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
-def _get_last_transform_level(compile_pipeline: CompilePipeline) -> int:
+def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     """Helper function to get the last level which is a tape transform and not an MLIR pass.
 
     Note that this includes an implicit level 0 which corresponds to the original circuit.
@@ -172,6 +172,7 @@ def _preprocess_level_input(
     """
 
     if level in ("all", "all-mlir"):
+        # Account for 2 implicit "Before transforms" and "Before MLIR passes" levels
         return list(range(pipeline_len + 2))
 
     if isinstance(level, (int, str)):
@@ -218,7 +219,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     compile_pipeline = original_qnode.compile_pipeline
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = _get_last_transform_level(compile_pipeline) + 1
+    num_tape_levels = _get_last_tape_transform_level(compile_pipeline) + 1
 
     # Maps to convert back and forth between marker name and int level
     marker_to_level: dict[str, int] = {
