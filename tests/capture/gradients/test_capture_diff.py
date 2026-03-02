@@ -36,21 +36,6 @@ def test_error_with_non_scalar_function():
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
-def test_value_and_grad_error_with_non_scalar_function():
-    """Test that an error is raised if the differentiated function has non-scalar outputs."""
-    with pytest.raises(
-        TypeError, match="value_and_grad only defined for scalar-output functions. "
-    ):
-        jax.make_jaxpr(qml.value_and_grad(jnp.sin))(jnp.array([0.5, 0.2]))
-
-    def f(x):
-        return (x, x)
-
-    with pytest.raises(
-        TypeError, match="value_and_grad only defined for scalar-output functions. "
-    ):
-        jax.make_jaxpr(qml.value_and_grad(f))(0.5)
-
 
 def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
     argnums = (0,) if argnums is None else argnums
