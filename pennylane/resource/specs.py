@@ -164,7 +164,8 @@ def _preprocess_level_input(
 
     Args:
         level (str | int | slice | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
+        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
+            Note that this should already account for any inserted lowering pass.
         pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
         num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
     Returns:
@@ -657,7 +658,7 @@ def specs(
         ---------------------------------
         Wire allocations   |  3 |  3 |  3
         Total gates        |  5 |  3 |  2
-        Gate types:        |
+        Gate counts:       |
         - RX               |  2 |  2 |  1
         - PauliX           |  2 |  0 |  0
         - CNOT             |  1 |  1 |  1
