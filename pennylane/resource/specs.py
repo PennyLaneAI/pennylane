@@ -59,11 +59,10 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
 
 def _specs_qjit_device_level_tracking(
-    qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+    qjit, original_qnode, compute_depth, *args, **kwargs
 ) -> SpecsResources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    import catalyst
     from catalyst import QJIT
 
     from ..devices import NullQubit
@@ -83,26 +82,8 @@ def _specs_qjit_device_level_tracking(
         compute_depth=compute_depth,
     )
 
-    if pass_pipeline_wrapped:
-        new_qnode = original_qnode.update(device=spoofed_dev)
-
-        def recursively_add_passes(pass_pipeline):
-            if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
-                inner_fxn = recursively_add_passes(pass_pipeline.qnode)
-                new_pass_pipeline = catalyst.passes.pass_api.PassPipelineWrapper(
-                    inner_fxn,
-                    pass_pipeline.pass_name_or_pipeline,
-                    *pass_pipeline.flags,
-                    **pass_pipeline.valued_options,
-                )
-                return new_pass_pipeline
-            return new_qnode
-
-        pass_pipeline = recursively_add_passes(qjit.original_function)
-        new_qjit = QJIT(pass_pipeline, copy.deepcopy(qjit.compile_options))
-    else:
-        new_qnode = qjit.original_function.update(device=spoofed_dev)
-        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+    new_qnode = qjit.original_function.update(device=spoofed_dev)
+    new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
@@ -319,17 +300,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-    from catalyst.passes.pass_api import PassPipelineWrapper
 
     if level is None:
         level = "device"
 
     # Unwrap the original QNode if any passes have been applied
-    pass_pipeline_wrapped = False
-    if isinstance(qjit.original_function, PassPipelineWrapper):
-        pass_pipeline_wrapped = True
-        original_qnode = qjit.original_qnode
-    elif isinstance(qjit.original_function, qml.QNode):
+    if isinstance(qjit.original_function, qml.QNode):
         original_qnode = qjit.original_function
     else:
         raise ValueError(
@@ -341,7 +317,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
     if level == "device":
         resources = _specs_qjit_device_level_tracking(
-            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+            qjit, original_qnode, compute_depth, *args, **kwargs
         )
 
     elif isinstance(level, (int, tuple, list, range, str)):
