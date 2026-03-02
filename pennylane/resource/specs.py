@@ -702,7 +702,7 @@ def specs(
         - expval(PauliX) |    1 |    0 |    1 |    1 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
-        ``1-0`` and ``1-1`` in the output. The resources for these tapes are shown separately, and the level name for
+        ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
         both tapes is the same since they come from the same transform. Multiple tapes may not display as separate
         columns for MLIR passes since MLIR passes do not operate on tapes directly.
     """
