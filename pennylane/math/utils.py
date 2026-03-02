@@ -637,12 +637,12 @@ def binary_decimals(phi: float, precision: int, mod: float = 1.0):
     r"""
     Binary representation of the decimals of ``phi`` to the closest precision
 
-    We often require the binary representation of :math:`\tilde{\phi}` in phase factors such as :math:`\exp(-i \tilde{\phi} 2 \pi)`.
+    We often require the binary representation of the decimals of :math:`\tilde{\phi}` in phase factors such as :math:`\exp(-i \tilde{\phi} 2 \pi)`.
     Due to the convention that we divide angles in rotation gates such as :class:`~RZ` gates by 2, we often want the function to consider the angle :math:`\phi = 2\tilde{\phi}`
     as a multiple of :math:`4\pi`. In some other scenarios, multiples of :math:`2\pi` are more handy. The user can set this via the optional ``mod`` argument.
 
     Generally, we only care about the decimals of the binary representation.
-    So, from :math:`(1/2 + 0/4 + 1/8) `, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
+    So, from :math:`\phi = (\tfrac12 + \tfrac04 + \tfrac18)`, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
 
     Args:
         phi (float): The number to be represented in binary.
