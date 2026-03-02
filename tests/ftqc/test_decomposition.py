@@ -38,8 +38,6 @@ from pennylane.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
     cnot_measurements,
-    decompose_clifford_ppr,
-    decompose_non_clifford_ppr,
     ppr_to_mbqc,
     queue_cnot,
     queue_corrections,
@@ -578,22 +576,14 @@ class TestMBQCFormalismConversion:
 
 @pytest.mark.catalyst
 @pytest.mark.external
-@pytest.mark.parametrize(
-    "pass_fn",
-    [
-        ppr_to_mbqc,
-        decompose_clifford_ppr,
-        decompose_non_clifford_ppr,
-    ],
-)
-def test_conversion_to_mlir(pass_fn):
+def test_ppr_to_mbqc_conversion_to_mlir():
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
     pytest.importorskip("catalyst")
 
     @qml.qjit(target="mlir", capture=True)
-    @pass_fn
+    @ppr_to_mbqc
     @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
     def circ():
         qml.H(0)
@@ -602,25 +592,17 @@ def test_conversion_to_mlir(pass_fn):
         qml.CNOT([0, 1])
         return qml.sample()
 
-    assert pass_fn.pass_name in circ.mlir
+    assert "ppr-to-mbqc" in circ.mlir
 
 
 @pytest.mark.catalyst
 @pytest.mark.external
-@pytest.mark.parametrize(
-    "pass_fn",
-    [
-        ppr_to_mbqc,
-        decompose_clifford_ppr,
-        decompose_non_clifford_ppr,
-    ],
-)
-def test_pass_without_qjit_raises_error(pass_fn):
+def test_ppr_to_mbqc_without_qjit_raises_error():
     """Test that trying to apply the transform without QJIT raises an error"""
 
     pytest.importorskip("catalyst")
 
-    @pass_fn
+    @ppr_to_mbqc
     @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
     def circ():
         qml.H(0)

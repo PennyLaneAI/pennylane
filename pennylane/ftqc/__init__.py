@@ -30,8 +30,6 @@ from .decomposition import (
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
     ppr_to_mbqc,
-    decompose_non_clifford_ppr,
-    decompose_clifford_ppr,
 )
 from .parametric_midmeasure import (
     ParametricMidMeasure,
@@ -74,8 +72,6 @@ __all__ = [
     "convert_to_mbqc_formalism",
     "convert_to_mbqc_gateset",
     "ppr_to_mbqc",
-    "decompose_clifford_ppr",
-    "decompose_non_clifford_ppr",
     "generate_lattice",
     "make_graph_state",
     "get_byproduct_corrections",
