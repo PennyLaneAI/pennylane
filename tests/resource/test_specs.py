@@ -465,48 +465,41 @@ Device wires: None
 Shots: Shots(total=None)
 Level: 2
 
-Resource specifications:
-  Batched tape 0:
-    Total wire allocations: 2
+Batched tape a:
+    Wire allocations: 2
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 1:
-    Total wire allocations: 3
+Batched tape b:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 2:
-    Total wire allocations: 3
+Batched tape c:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1"""
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5"""
         )
 
     @pytest.mark.parametrize(
