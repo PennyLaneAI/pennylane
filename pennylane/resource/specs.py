@@ -13,6 +13,8 @@
 # limitations under the License.
 """Code for resource estimation"""
 
+from __future__ import annotations
+
 import copy
 import json
 import os
@@ -21,10 +23,14 @@ import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
+
+if TYPE_CHECKING:
+    from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
@@ -128,7 +134,7 @@ def _specs_qjit_device_level_tracking(
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
-def _get_last_transform_level(compile_pipeline: "qml.CompilePipeline") -> int:
+def _get_last_transform_level(compile_pipeline: CompilePipeline) -> int:
     """Helper function to get the last level which is a tape transform and not an MLIR pass.
 
     Note that this includes an implicit level 0 which corresponds to the original circuit.
