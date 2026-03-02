@@ -447,8 +447,9 @@ def specs(
 
     The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
     There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
-       * Runtime resource tracking via mock circuit execution
-       * Pass-by-pass resource collection for user applied compilation passes
+
+    * Runtime resource tracking via mock circuit execution
+    * Pass-by-pass resource collection for user applied compilation passes
 
     .. details::
         :title: Usage Details

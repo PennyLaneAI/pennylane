@@ -112,7 +112,7 @@ def test_get_last_tape_transform_level():
     # MLIR passes should not be counted
     assert (
         _get_last_tape_transform_level(
-            qml.CompilePipeline(dummy_transform, qml.transforms.cancel_inverses)
+            qml.CompilePipeline(dummy_transform, qml.transform(pass_name="cancel_inverses"))
         )
         == 1
     )
