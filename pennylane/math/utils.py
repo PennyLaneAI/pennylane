@@ -687,6 +687,6 @@ def binary_repr4pi(phi: float, precision: int):
 
 
     """
-    phi = math.mod(phi, 4 * np.pi)
+    phi = math.mod(phi, 4 * _np.pi)
     phi_round = math.round(2**precision * phi / 4 / _np.pi)
     return math.int_to_binary(phi_round.astype(int), precision)
