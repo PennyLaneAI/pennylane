@@ -124,7 +124,7 @@ def ppr_to_mbqc_setup_inputs():
     return (), {}
 
 
-ppr_to_mbqc = transform(pass_name="ppr_to_mbqc", setup_inputs=ppr_to_mbqc_setup_inputs)
+ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_inputs)
 
 
 @register_resources({RotXZX: 1})
