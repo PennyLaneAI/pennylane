@@ -185,14 +185,16 @@ import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
-from functools import lru_cache
+from dataclasses import dataclass
+from functools import lru_cache, reduce
+from inspect import BoundArguments, signature
 from typing import Any, ClassVar, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -211,7 +213,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .pytrees import register_pytree
+from .pytrees import flatten, register_pytree
 
 has_jax = True
 try:
@@ -221,6 +223,56 @@ except ImportError:
     has_jax = False
 
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
+    for specifying abstract information about a :class:`~.Subroutine` for
+    purposes of resource calculations used with graph decompositions.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
+        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        wires.
+    """
+
+    shape: tuple[int, ...]
+    dtype: type = int
+
+    def __len__(self):
+        if self.shape:
+            return reduce(lambda a, b: a * b, self.shape)
+        else:
+            return 0
+
+
+def _create_signature_key(
+    bound_args, wire_argnames: tuple[str, ...], static_argnames: tuple[str, ...]
+):
+    key = []
+    for arg, val in bound_args.arguments.items():
+        if arg in static_argnames:
+            key.append(val)
+        elif arg in wire_argnames:
+            if val is not None:
+                key.append(
+                    AbstractArray(shape=(len(val),), dtype=int)
+                )  # TODO: move AbstractArray to a more convenient location
+            else:
+                key.append(AbstractArray(shape=(), dtype=int))
+        else:
+            leaves, struct = flatten(val)
+
+            shapes = (
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                for l in leaves
+            )
+            key.append((struct, tuple(shapes)))
+    return tuple(key)
 
 
 # =============================================================================
@@ -701,6 +753,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     """
 
+    resource_keys = {"signature_key"}
+
     def __init_subclass__(cls, **_):
         # turn has_decomposition into a class property if possible
 
@@ -797,6 +851,30 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
+
+    def _bind_args(self, *args, **kwargs) -> BoundArguments:
+        bound_args = signature(self.__init__).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        for wire_argname in self._wire_argnames:
+            register = bound_args.arguments[wire_argname]
+            if capture.enabled():
+                import jax  # pylint: disable=import-outside-toplevel
+
+                if register is not None and len(register) > 0:
+                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+            elif register is not None:
+                bound_args.arguments[wire_argname] = Wires(register)
+        return bound_args
+
+    @property
+    def resource_params(self) -> dict:
+        key = _create_signature_key(
+            self._bound_args,
+            wire_argnames=self._wire_argnames,
+            static_argnames=self._static_argnames,
+        )
+        return {"signature_key": key}
 
     @property
     def hash(self) -> int:
@@ -1147,6 +1225,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("wires",)
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = ()
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(*params, wires=wires, id=id)
 
         if id is not None:
             warnings.warn(
@@ -1435,38 +1519,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             list[Operator]: decomposition of the operator
         """
         raise DecompositionUndefinedError
-
-    @property
-    def resource_params(self) -> dict:
-        """A dictionary containing the minimal information needed to compute a
-        resource estimate of the operator's decomposition.
-
-        The keys of this dictionary should match the ``resource_keys`` attribute of the operator
-        class. Two instances of the same operator type should have identical ``resource_params`` iff
-        their decompositions exhibit the same counts for each gate type, even if the individual
-        gate parameters differ.
-
-        **Examples**
-
-        The ``MultiRZ`` has non-empty ``resource_keys``:
-
-        >>> qml.MultiRZ.resource_keys
-        {'num_wires'}
-
-        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
-
-        >>> op = qml.MultiRZ(0.5, wires=[0, 1])
-        >>> op.resource_params
-        {'num_wires': 2}
-
-        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
-
-        >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
-        >>> op2.resource_params
-        {'num_wires': 2}
-
-        """
-        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty

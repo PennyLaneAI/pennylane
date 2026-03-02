@@ -311,7 +311,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
-        rules = [rule for rule in self._get_decompositions(op) if rule.is_applicable(**op.params)]
+        rules = [
+            rule
+            for rule in self._get_decompositions(op)
+            if rule.is_applicable(*op.params["signature_key"])
+        ]
 
         # Treat ops that do not have a decomposition as supported if strict=False
         if not rules and not self._strict:
@@ -361,11 +365,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     ) -> _DecompositionNode | None:
         """Adds a decomposition rule to the graph and returns whether it depends on work wires."""
 
-        if not rule.is_applicable(**op_node.op.params):
+        if not rule.is_applicable(*op_node.op.params["signature_key"]):
             return None  # skip the decomposition rule if it is not applicable
 
-        decomp_resource = rule.compute_resources(**op_node.op.params)
-        work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
+        decomp_resource = rule.compute_resources(*op_node.op.params["signature_key"])
+        work_wire_spec = rule.get_work_wire_spec(*op_node.op.params["signature_key"])
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)

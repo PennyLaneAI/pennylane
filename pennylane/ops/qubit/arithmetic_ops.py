@@ -109,12 +109,6 @@ class QubitCarry(Operation):
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -417,8 +411,6 @@ class IntegerComparator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "value", "geq", "num_work_wires"}
-
     def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
         metadata = (
@@ -435,6 +427,14 @@ class IntegerComparator(Operation):
         geq: bool = True,
         work_wires: WiresLike | None = None,
     ):
+
+        self._wire_argnames = ("wires", "work_wires")
+        self._static_argnames = (
+            "value",
+            "geq",
+        )
+        self._bound_args = self._bind_args(value, wires=wires, geq=geq, work_wires=work_wires)
+
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
@@ -465,15 +465,6 @@ class IntegerComparator(Operation):
         self.value = value
 
         super().__init__(wires=total_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-            "value": self.value,
-            "geq": self.geq,
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
 
     def label(
         self,
@@ -660,9 +651,9 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
     return gate_counts
 
 
-@register_condition(lambda geq, **_: not geq)
+@register_condition(lambda value, wires, geq, work_wires: not geq)
 @register_resources(_integer_comparator_lt_resource)
-def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
+def _integer_comparator_lt_decomposition(value, wires, geq, work_wires):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
     This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
@@ -756,7 +747,9 @@ def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
             qml.X(wires[i])
 
 
-def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
+def _integer_comparator_ge_resource(value, wires, geq, work_wires):
+    num_wires = len(wires)
+    num_work_wires = len(work_wires)
 
     # If the value is 0, the flipping condition is always satisfied.
     if value == 0:
@@ -819,7 +812,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
     return dict(gate_set)
 
 
-@register_condition(lambda geq, **_: geq)
+@register_condition(lambda value, wires, geq, work_wires: geq)
 @register_resources(_integer_comparator_ge_resource)
 def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
@@ -874,16 +867,16 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
             qml.X(wires[i])
 
 
-def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq, **_):
+def _integer_comparator_flip_geq_resource(value, wires, geq, work_wires):
     """Resource estimation for flipping the geq condition."""
     return {
         qml.X: 1,
         resource_rep(
             qml.IntegerComparator,
-            num_wires=num_wires,
+            num_wires=len(wires),
             value=value,
             geq=not geq,
-            num_work_wires=num_work_wires,
+            num_work_wires=len(work_wires),
         ): 1,
     }
 

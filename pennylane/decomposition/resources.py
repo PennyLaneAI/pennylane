@@ -20,6 +20,7 @@ import functools
 from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
+from inspect import signature
 
 import pennylane as qml
 from pennylane.operation import Operator
