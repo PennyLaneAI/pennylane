@@ -21,7 +21,6 @@ from pennylane.labs.phox.training import TrainingOptions, train, training_iterat
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-jaxopt = pytest.importorskip("jaxopt")
 
 
 @pytest.fixture
