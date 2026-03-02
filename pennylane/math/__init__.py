@@ -111,7 +111,7 @@ from .utils import (
     in_backprop,
     is_abstract,
     requires_grad,
-    angle_to_binary,
+    binary_decimals,
 )
 from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
@@ -212,7 +212,7 @@ __all__ = [
     "binary_finite_reduced_row_echelon",
     "binary_is_independent",
     "binary_matrix_rank",
-    "angle_to_binary",
+    "binary_decimals",
     "binary_select_basis",
     "binary_solve_linear_system",
     "block_diag",

@@ -37,7 +37,7 @@ def _rz_phase_gradient(
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ qml.math.angle_to_binary(
+    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ qml.math.binary_decimals(
         phi * 2, precision, mod=4 * np.pi
     )
 

@@ -49,7 +49,7 @@ class TestCeilLog2:
 
 
 class TestBinaryRepr4pi:
-    """Test ``fn.angle_to_binary``."""
+    """Test ``fn.binary_decimals``."""
 
     @pytest.mark.parametrize(
         "phi, p, expected",
@@ -61,10 +61,10 @@ class TestBinaryRepr4pi:
             ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1]),
         ],
     )
-    def test_angle_to_binary_scalar(self, phi, p, expected):
+    def test_binary_decimals_scalar(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
 
-        assert np.array_equal(expected, fn.angle_to_binary(phi, p))
+        assert np.array_equal(expected, fn.binary_decimals(phi, p))
 
     @pytest.mark.parametrize(
         "phi, p, expected",
@@ -91,9 +91,9 @@ class TestBinaryRepr4pi:
             ),
         ],
     )
-    def test_angle_to_binary_array(self, phi, p, expected):
+    def test_binary_decimals_array(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
-        out = fn.angle_to_binary(phi, p)
+        out = fn.binary_decimals(phi, p)
         assert np.array_equal(expected, out), f"\n{expected}\n{out}"
 
 

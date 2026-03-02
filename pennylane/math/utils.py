@@ -633,7 +633,7 @@ def ceil_log2(n: int) -> int:
     return int(np.ceil(np.log2(n)))
 
 
-def angle_to_binary(phi: float, precision: int, mod: float = 1.0):
+def binary_decimals(phi: float, precision: int, mod: float = 1.0):
     r"""
     Binary representation of the decimals of ``phi`` to the closest precision
 
@@ -656,22 +656,22 @@ def angle_to_binary(phi: float, precision: int, mod: float = 1.0):
 
     We round the binary representation of :math:`(0.11011)_2`, which simply yields :math:`(0.11)_2` from rounding down.
 
-    >>> from pennylane.labs.transforms.rot_to_phase_gradient import angle_to_binary
+    >>> from pennylane.labs.transforms.rot_to_phase_gradient import binary_decimals
     >>> precision = 2
     >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32)
-    >>> angle_to_binary(phi, precision)
+    >>> binary_decimals(phi, precision)
     array([1, 1])
 
     When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011)_2`, we round to :math:`(0.11)_2`:
 
     >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16)
-    >>> angle_to_binary(phi, precision)
+    >>> binary_decimals(phi, precision)
     array([1, 1])
 
     Note that we ignore the positive decimals. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0, 0, 0]``:
 
     >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16)
-    >>> angle_to_binary(phi, precision)
+    >>> binary_decimals(phi, precision)
     array([0, 0])
 
     .. details::
@@ -683,7 +683,7 @@ def angle_to_binary(phi: float, precision: int, mod: float = 1.0):
         are equally close to :math:`0.625`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11)_2  = 0.75`.
 
         >>> phi = 1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32
-        >>> angle_to_binary(phi, precision)
+        >>> binary_decimals(phi, precision)
         array([1, 1])
 
 
