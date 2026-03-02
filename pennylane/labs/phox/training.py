@@ -24,9 +24,9 @@ import jax
 import jax.numpy as jnp
 
 try:
-    from tqdm import tqdm
     import jaxopt
     import optax
+    from tqdm import tqdm
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
