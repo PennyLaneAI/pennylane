@@ -767,7 +767,7 @@ decompose_arbitrary_ppr = transform(
 
 def decompose_clifford_ppr_setup_inputs():
     """
-    Decompose the PPR (pi/4) into PPR and PPMs operations via flattening method
+    Decompose the PPR (pi/4) into PPR and PPM operations via flattening method
     as described in Figure 11(b) in the paper: `arXiv:1808.02892 <https://arxiv.org/abs/1808.02892>`_.
     """
     return (), {}
