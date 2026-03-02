@@ -246,6 +246,7 @@ class TestIQPExpval:
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
     def test_iqp_parameter_broadcasting(self):
+        """Test that single parameter is broadcast to multiple generators."""
         n_qubits = 3
         gates = {0: [[0, 1], [1, 2]]}
         params = [0.8]
@@ -276,6 +277,8 @@ class TestIQPExpval:
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
     def test_build_expval_func_with_phase_layer(self):
+        """Test expectation values when a phase layer is supplied."""
+
         def compute_phase(params, z):
             hamming = jnp.mean(jnp.abs(z))
             hamming_powers = jnp.array([hamming**t for t in range(4)])
@@ -347,6 +350,7 @@ class TestIQPExpval:
     ],
 )
 def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
+    """Test generator parsing produces expected matrices and parameter maps."""
     generators, param_map = _parse_generator_dict(circuit_def, n_qubits)
 
     assert isinstance(generators, jnp.ndarray)
@@ -363,6 +367,7 @@ def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expect
 
 
 def test_parse_generator_dict_index_error():
+    """Test generator parsing raises IndexError for invalid qubit indices."""
     circuit_def = {0: [[5]]}
     n_qubits = 2
 
