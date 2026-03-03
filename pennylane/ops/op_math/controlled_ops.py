@@ -335,6 +335,13 @@ class CH(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Hadamard, wires=target_wires)
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
@@ -469,6 +476,13 @@ class CY(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Y, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
@@ -613,6 +627,13 @@ class CZ(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Z, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
@@ -748,6 +769,13 @@ class CSWAP(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.SWAP, wires=target_wires)
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
@@ -919,6 +947,13 @@ class CCZ(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Z, wires=target_wires)
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
@@ -1848,6 +1883,14 @@ class CRX(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RX, phi, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            phi=phi,
+            wires=wires,
+        )
+        
         super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
@@ -2059,6 +2102,14 @@ class CRY(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RY, phi, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            phi=phi,
+            wires=wires,
+        )
+
         super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
@@ -2250,6 +2301,14 @@ class CRZ(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RZ, phi, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            phi=phi,
+            wires=wires,
+        )
+
         super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
@@ -2476,6 +2535,16 @@ class CRot(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Rot, phi, theta, omega, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            phi=phi,
+            theta=theta,
+            omega=omega,
+            wires=wires,
+        )
+
         super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
@@ -2679,6 +2748,14 @@ class ControlledPhaseShift(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.PhaseShift, phi, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            phi=phi,
+            wires=wires,
+        )
+
         super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
