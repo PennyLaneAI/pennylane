@@ -1010,7 +1010,7 @@ def _sos_state_prep(
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, wires)
+    selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, target_wires)
     identity_encoding = r == m
 
     # Step 1: Dense state preparation in enumeration register
