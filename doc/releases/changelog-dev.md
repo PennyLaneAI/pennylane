@@ -88,6 +88,7 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
 
   ```python
   from pennylane.templates import Subroutine
@@ -144,8 +145,10 @@
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states.
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
+  [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
 
 * Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
   preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
@@ -597,6 +600,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+  [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
+  
 * Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
@@ -655,6 +661,12 @@
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+  documentation still resided in the PennyLane repository.
+  [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+  
 
 <h3>Bug fixes 🐛</h3>
 
