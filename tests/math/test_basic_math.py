@@ -48,33 +48,31 @@ class TestCeilLog2:
         assert fn.ceil_log2(2**out) == out
 
 
-class TestBinaryRepr4pi:
+class TestBinaryDecimals:
     """Test ``fn.binary_decimals``."""
 
     @pytest.mark.parametrize(
-        "phi, p, expected",
+        "phi, p, expected, mod",
         [
-            (1 / 2, 2, [1, 0]),
-            (1 / 2, 3, [1, 0, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 2, [1, 1]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 3, [1, 1, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1]),
+            (1 / 2, 2, [1, 0], 1),
+            (1 / 2 * 4 * np.pi, 2, [1, 0], 4 * np.pi),
+            (1 / 2, 3, [1, 0, 0], 1.0),
+            (1 / 2 * 7.0, 3, [1, 0, 0], 7.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 2, [1, 1], 1.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 3, [1, 1, 0], 1.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1], 1.0),
         ],
     )
-    def test_binary_decimals_scalar(self, phi, p, expected):
+    def test_binary_decimals_scalar(self, phi, p, expected, mod):
         """Test that the binary representation or approximation of the angle is correct"""
 
-        assert np.array_equal(expected, fn.binary_decimals(phi, p))
+        assert np.array_equal(expected, fn.binary_decimals(phi, p, mod))
 
     @pytest.mark.parametrize(
         "phi, p, expected",
         [
             (np.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]), 2, [[1, 0], [1, 1], [0, 1]]),
-            (
-                np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]),
-                3,
-                [[1, 0, 0], [0, 0, 1], [0, 1, 1]],
-            ),
+            (np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]), 3, [[1, 0, 0], [0, 0, 1], [0, 1, 1]]),
             (
                 np.array(
                     [
