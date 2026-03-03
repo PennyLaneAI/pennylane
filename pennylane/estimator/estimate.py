@@ -316,9 +316,15 @@ def _resources_from_qfunc(
         # Obtain resources in the gate_set
         compressed_res_ops_list = _ops_to_compressed_reps(q.queue)
         gate_counts = defaultdict(int)
+        cache = {}
         for cmp_rep_op in compressed_res_ops_list:
             _update_counts_from_compressed_res_op(
-                cmp_rep_op, gate_counts, wire_manager=wire_manager, gate_set=gate_set, config=config
+                cmp_rep_op,
+                gate_counts,
+                wire_manager=wire_manager,
+                gate_set=gate_set,
+                config=config,
+                cache=cache,
             )
         return Resources(
             zeroed_wires=wire_manager.zeroed,
@@ -344,6 +350,7 @@ def _resources_from_resource(
 
     wire_manager = WireResourceManager(zeroed, any_state, workflow.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
+    cache = {}
     for cmpr_rep_op, count in workflow.gate_types.items():
         _update_counts_from_compressed_res_op(
             cmpr_rep_op,
@@ -352,6 +359,7 @@ def _resources_from_resource(
             gate_set=gate_set,
             scalar=count,
             config=config,
+            cache=cache,
         )
 
     return Resources(
@@ -443,6 +451,54 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
     return decomp_func(**params, **filtered_kwargs)
 
 
+def _compute_operator_resources(
+    comp_res_op: CompressedResourceOp,
+    gate_set: set[str],
+    config: ResourceConfig,
+    cache: dict,
+):
+    if comp_res_op in cache:
+        return cache[comp_res_op]
+
+    if comp_res_op.name in gate_set:
+        res = ({comp_res_op: 1}, [])
+        cache[comp_res_op] = res
+        return res
+
+    resource_decomp = _get_resource_decomposition(comp_res_op, config)
+    qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
+
+    total_gates = defaultdict(int)
+    total_wire_actions = []
+
+    for action in resource_decomp:
+        if isinstance(action, GateCount):
+            sub_gates, sub_wire_actions = _compute_operator_resources(
+                action.gate, gate_set, config, cache
+            )
+
+            for g, c in sub_gates.items():
+                total_gates[g] += c * action.count
+
+            for action_type, amt, is_scalable in sub_wire_actions:
+                # If existing action is scalable, it multiplies by action.count
+                # If fixed, it stays fixed.
+                new_amt = amt * action.count if is_scalable else amt
+                total_wire_actions.append((action_type, new_amt, is_scalable))
+
+        elif isinstance(action, Allocate):
+            sc = qubit_alloc_sum != 0
+            total_wire_actions.append(("ALLOC", action.num_wires, sc))
+
+        elif isinstance(action, Deallocate):
+            sc = qubit_alloc_sum != 0
+            total_wire_actions.append(("DEALLOC", action.num_wires, sc))
+
+    res = (total_gates, total_wire_actions)
+    cache[comp_res_op] = res
+    return res
+
+
 def _update_counts_from_compressed_res_op(
     comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
@@ -450,6 +506,7 @@ def _update_counts_from_compressed_res_op(
     gate_set: set[str] | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
+    cache: dict | None = None,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
@@ -461,6 +518,7 @@ def _update_counts_from_compressed_res_op(
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
         config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
+        cache (dict | None): cache for memoization.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -468,32 +526,20 @@ def _update_counts_from_compressed_res_op(
     if config is None:
         config = ResourceConfig()
 
-    ## Early return if compressed resource operator is already in our defined gate set
-    if comp_res_op.name in gate_set:
-        gate_counts_dict[comp_res_op] += scalar
-        return
+    if cache is None:
+        cache = {}
 
-    resource_decomp = _get_resource_decomposition(comp_res_op, config)
-    qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
+    gates, wire_actions = _compute_operator_resources(comp_res_op, gate_set, config, cache)
 
-    for action in resource_decomp:
-        if isinstance(action, GateCount):
-            _update_counts_from_compressed_res_op(
-                action.gate,
-                gate_counts_dict,
-                wire_manager=wire_manager,
-                scalar=scalar * action.count,
-                gate_set=gate_set,
-                config=config,
-            )
-        elif isinstance(action, Allocate):
-            # When qubits are allocated and deallocate in equal numbers, we allocate and deallocate
-            # in series, meaning we don't need to apply the scalar
-            num_wires = action.num_wires * scalar if qubit_alloc_sum != 0 else action.num_wires
-            wire_manager.grab_zeroed(num_wires)
-        elif isinstance(action, Deallocate):
-            num_wires = action.num_wires * scalar if qubit_alloc_sum != 0 else action.num_wires
-            wire_manager.free_wires(num_wires)
+    for g, c in gates.items():
+        gate_counts_dict[g] += c * scalar
+
+    for action_type, amt, is_scalable in wire_actions:
+        val = amt * scalar if is_scalable else amt
+        if action_type == "ALLOC":
+            wire_manager.grab_zeroed(val)
+        elif action_type == "DEALLOC":
+            wire_manager.free_wires(val)
 
 
 def _sum_allocated_wires(decomp):

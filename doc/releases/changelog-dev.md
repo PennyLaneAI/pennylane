@@ -98,6 +98,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* The performance of the `qml.estimate` function has been significantly improved by memoizing the resource calculation for resource operators. This avoids redundant computations when the same operator type and parameters appear multiple times in a workflow.
+  [(#9021)](https://github.com/PennyLaneAI/pennylane/pull/9021)
 * `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
