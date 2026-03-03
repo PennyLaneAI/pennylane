@@ -139,11 +139,14 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    if not rule.is_applicable(*op.resource_params["signature_key"]):
+    non_sig_params = list(filter(lambda v: v is not None, (val if key != "signature_key" else None for key, val in op.resource_params.items())))
+    final_params = non_sig_params + list(op.resource_params["signature_key"])
+
+    if not rule.is_applicable(*final_params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(*op.resource_params["signature_key"])
+    resources = rule.compute_resources(*final_params)
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:

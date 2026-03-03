@@ -1289,8 +1289,6 @@ class Toffoli(ControlledOp):
 
     name = "Toffoli"
 
-    resource_keys = {"signature_key"}
-
     def _flatten(self):
         return tuple(), (self.wires,)
 
@@ -1787,10 +1785,10 @@ class MultiControlledX(ControlledOp):
         )
 
 
-def _mcx_to_cnot_or_toffoli_resource(wires, control_values, work_wires, work_wire_type):
+def _mcx_to_cnot_or_toffoli_resource(base_class, base_params, wires, control_values, work_wires, work_wire_type):
     if len(control_values) == 1:
-        return {resource_rep(qml.CNOT, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): len(control_values) - math.sum(control_values)}
-    return {resource_rep(qml.Toffoli, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): (len(control_values) - math.sum(control_values)) * 2}
+        return {resource_rep(qml.CNOT, base_class=base_class, base_params=base_params, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): len(control_values) - math.sum(control_values)}
+    return {resource_rep(qml.Toffoli, base_class=base_class, base_params=base_params, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): (len(control_values) - math.sum(control_values)) * 2}
 
 
 @register_condition(lambda wires, control_values, work_wires, work_wire_type: len(control_values) < 3)
