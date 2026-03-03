@@ -319,10 +319,16 @@ def _try_to_cancel_with_next(current_gate, list_copy):
     return list_copy, cancelled
 
 
+def cancel_inverses_setup_inputs():
+    """Pass options for the 'cancel-inverses' MLIR pass."""
+    return (), {}
+
+
 @partial(
     transform,
     plxpr_transform=cancel_inverses_plxpr_to_plxpr,
     pass_name="cancel-inverses",
+    setup_inputs=cancel_inverses_setup_inputs,
 )
 def cancel_inverses(
     tape: QuantumScript, recursive: bool = True

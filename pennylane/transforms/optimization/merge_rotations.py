@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 
-
 from functools import lru_cache, partial
 
 import pennylane as qml
@@ -191,7 +190,6 @@ def _get_plxpr_merge_rotations():
                 self._env[constvar] = const
 
             for eqn in jaxpr.eqns:
-
                 custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
                     self._interpret_remaining_ops()
@@ -252,7 +250,17 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr, pass_name="merge-rotations")
+def merge_rotations_setup_inputs():
+    """Pass options for the 'merge-rotations' MLIR pass."""
+    return (), {}
+
+
+@partial(
+    transform,
+    plxpr_transform=merge_rotations_plxpr_to_plxpr,
+    pass_name="merge-rotations",
+    setup_inputs=merge_rotations_setup_inputs,
+)
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
