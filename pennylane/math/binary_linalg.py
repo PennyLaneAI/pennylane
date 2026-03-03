@@ -32,7 +32,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     Args:
         phi (float): The number to be represented in binary.
         precision (int): The number of digits to keep.
-        unit (float): The angle is to be in the unit of ``unit``, meaning we conider ``(phi % unit)/unit``. The default is :math:`1`.
+        unit (float): The angle is to be in the unit of ``unit``, meaning we consider ``(phi % unit)/unit``. The default is :math:`1`.
 
     Returns:
         array: Binary representation of the decimals
@@ -48,21 +48,21 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
 
     When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011)_2`, we round to :math:`(0.11)_2`:
 
-    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16)
-    >>> binary_decimals(phi, precision)
+    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1 / 16)
+    >>> qml.math.binary_decimals(phi, precision)
     array([1, 1])
 
     If we want to represent the angle for a rotation like :class:`~.RZ`, where the convention the angle is divided by :math:`2`, we want to specify the unit.
     For example, looking at :math:`(0.1011)_2 4\pi` we obtain the following:
 
-    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
-    >>> binary_decimals(phi, precision, unit = 4 * np.pi)
+    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1 / 16) * 4 * np.pi
+    >>> qml.math.binary_decimals(phi, precision, unit = 4 * np.pi)
     array([1, 1])
 
     Note that we always ignore the integer part. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0, 0, 0]``:
 
-    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16)
-    >>> binary_decimals(phi, precision)
+    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
+    >>> qml.math.binary_decimals(phi, precision)
     array([0, 0])
 
     .. details::
@@ -75,8 +75,8 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
         In this case, we obtain :math:`0.625 * 2^2 = 2.5`, which is then rounded to the closest even integer, :math:`2`.
         Turning it back to a fraction we obtain :math:`\tfrac{2}{2^2} = 0.5 = (0.10)_2`.
 
-        >>> phi = 1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32
-        >>> binary_decimals(phi, precision)
+        >>> phi = 1 / 2 + 0 / 4 + 1 / 8 + 0 / 16 + 0 / 32
+        >>> qml.math.binary_decimals(phi, precision)
         array([1, 0])
 
         Note that equivalently, it is easier and cheaper to to simply translate the integer :math:`2=(10)_2` to its binary representation.
