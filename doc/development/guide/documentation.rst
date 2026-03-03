@@ -451,7 +451,7 @@ exist yet, you may add a group name with the associated features in a list as
 shown above. If the desired group name does exist, simply add the entry-point to 
 the specific feature(s) to the list.
 
-In PennyLane's source code, open ``doc/confy.py``, find the 
+In PennyLane's source code, open ``doc/conf.py``, find the 
 ``get_catalyst_docstrings`` function, and add any new group names to the 
 ``groups`` variable. 
 
@@ -485,7 +485,7 @@ variable.
 
 Once all steps above are completed, the desired features from Catalyst should be 
 accessible from PennyLane and the documentation that is part of the feature's 
-source code in Catalyst will also render on PennyLane's documentation.
+source code in Catalyst will also render in PennyLane's documentation.
 
 
 Contributing documentation
