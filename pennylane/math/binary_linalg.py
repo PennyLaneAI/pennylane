@@ -20,9 +20,9 @@ from pennylane import math
 
 def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     r"""
-    Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of ``phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2`` up to precision :math:`p`.
+    Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of :math:`phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2` up to precision :math:`p`.
 
-    For example, for :math:`\phi = (\tfrac12 + \tfrac04 + \tfrac18)`, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
+    For example, for :math:`\phi = 1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 1  \cdot 2^{-3} = \tfrac12 + \tfrac04 + \tfrac18`, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
 
     It is often handy to calculate the binary decimals in some unit of :math:`2\pi` or :math:`4\pi`, depending on the convention for how angles are treated.
     We often require the binary representation of the decimals of :math:`\tilde{\phi}` in phase factors such as :math:`\exp(-i \tilde{\phi} 2 \pi)`.
