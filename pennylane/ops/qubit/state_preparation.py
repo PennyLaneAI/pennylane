@@ -24,7 +24,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qml
 from pennylane import math
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
@@ -188,7 +188,12 @@ class BasisState(StatePrepBase):
 def _basis_state_decomp_resources(num_wires):
     # Represent one of the X gates as an RX and a GlobalPhase because RX is
     # used when jax-jit is enabled without capture/qjit.
-    return {qml.X: num_wires - 1 or num_wires, qml.RX: 1, qml.GlobalPhase: 1}
+    resources = {
+        pow_resource_rep(qml.X, base_params={}, z=0): 1,
+        pow_resource_rep(qml.X, base_params={}, z=1): 1,
+        qml.X: max(num_wires - 2, 1),
+    }
+    return resources
 
 
 @register_resources(_basis_state_decomp_resources, exact=False)
@@ -209,11 +214,7 @@ def _basis_state_decomp(state, wires, **__):
         # This branch is for supporting jax-jit without capture/qjit. This is necessary if
         # the state is traced
         if abstract_state:
-            global_phase = 0.0
-            for wire, basis in zip(wires, state):
-                qml.RX(basis * np.pi, wires=wire)
-                global_phase += basis * np.pi / 2
-            qml.GlobalPhase(-global_phase)
+            _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
             return
 
     @qml.for_loop(0, len(wires), 1)

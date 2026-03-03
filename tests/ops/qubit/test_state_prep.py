@@ -94,10 +94,9 @@ class TestStandardValidity:
                 assert len(tape) == 1
                 assert isinstance(tape[0], qml.X)
             else:
-                assert len(tape) == 3
-                assert isinstance(tape[0], qml.RX)
-                assert isinstance(tape[1], qml.RX)
-                assert isinstance(tape[2], qml.GlobalPhase)
+                assert len(tape) == 2
+                assert isinstance(tape[0], qml.ops.Pow)
+                assert isinstance(tape[1], qml.ops.Pow)
 
     @pytest.mark.external
     @pytest.mark.parametrize("state_traced", [True, False])
