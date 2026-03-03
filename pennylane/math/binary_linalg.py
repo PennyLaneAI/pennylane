@@ -59,7 +59,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     >>> qml.math.binary_decimals(phi, precision, unit = 4 * np.pi)
     array([1, 1])
 
-    Note that we always ignore the integer part. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0, 0, 0]``:
+    Note that we always ignore the integer part. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0]``:
 
     >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
     >>> qml.math.binary_decimals(phi, precision)
