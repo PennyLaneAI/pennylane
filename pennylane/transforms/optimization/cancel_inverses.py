@@ -319,7 +319,8 @@ def _try_to_cancel_with_next(current_gate, list_copy):
     return list_copy, cancelled
 
 
-def cancel_inverses_setup_inputs():
+# pylint: disable=unused-argument
+def cancel_inverses_setup_inputs(recursive: bool = True) -> tuple[tuple, dict]:
     """Pass options for the 'cancel-inverses' MLIR pass."""
     return (), {}
 

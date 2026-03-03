@@ -250,7 +250,8 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-def merge_rotations_setup_inputs():
+# pylint: disable=unused-argument
+def merge_rotations_setup_inputs(atol: float = 1e-8, include_gates=None):
     """Pass options for the 'merge-rotations' MLIR pass."""
     return (), {}
 
