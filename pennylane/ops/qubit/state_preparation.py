@@ -196,7 +196,7 @@ def _basis_state_decomp_resources(num_wires):
     resources = {
         pow_resource_rep(qml.X, base_params={}, z=0): 1,
         pow_resource_rep(qml.X, base_params={}, z=1): 1,
-        qml.X: max(num_wires - 2, 1),
+        qml.X: max((num_wires - 2) // 2, 1),
     }
     return resources
 

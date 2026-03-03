@@ -107,12 +107,13 @@ class TestStandardValidityBasisState:
     @pytest.mark.external
     @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
-    def test_qjit_compatibility(self, state_traced, wires_traced):
+    @pytest.mark.parametrize("controlled", [False, True])
+    def test_qjit_compatibility(self, state_traced, wires_traced, controlled):
         """Test compatibility with qml.qjit."""
-        state = np.array([0, 1])
+        state = np.array([0, 1]) if controlled else np.array([0, 1, 1])
         closure_state = state  # We can use a closure variable to avoid automatic tracing
 
-        wires = qml.wires.Wires([0, 1])
+        wires = qml.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
             import jax  # pylint: disable=import-outside-toplevel
@@ -120,13 +121,14 @@ class TestStandardValidityBasisState:
             wires = jax.numpy.array(wires)
 
         abstract_check = self.make_abstract_check(
-            state_traced, wires_traced, closure_state, closure_wires, False
+            state_traced, wires_traced, closure_state, closure_wires, controlled
         )
 
         tapes = qml.qjit(abstract_check)(state, wires)
+        exp_op = qml.CNOT if controlled else qml.X
         for tape in tapes:
             assert len(tape) == 1
-            assert isinstance(tape[0], qml.X)
+            assert isinstance(tape[0], exp_op)
 
 
 @pytest.mark.parametrize(
