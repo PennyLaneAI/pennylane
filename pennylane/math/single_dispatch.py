@@ -213,6 +213,13 @@ ar.register_function("autograd", "unstack", list)
 
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
+    # abstract array comes from PL so is treated as a autograd array
+    if x.__class__.__name__ == "AbstractArray":
+        # Abstr
+        try:
+            return x.dtype.name
+        except AttributeError:
+            return str(x.dtype)
     # this function seems to only get called with x is an arraybox.
     return ar.get_dtype_name(x._value)
 

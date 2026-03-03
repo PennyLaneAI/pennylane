@@ -66,19 +66,6 @@ def basis_rotation_decomp_resources(wires, unitary_matrix, check=False):
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
-def setup_basis_rotation(wires, unitary_matrix, check=False):
-    """Run pre-validation on the unitary_matrix provided to BasisRotation."""
-    M, N = math.shape(unitary_matrix)
-
-    if M != N:
-        raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
-
-    if len(wires) < 2:
-        raise ValueError(f"This template requires at least two wires, got {len(wires)}")
-
-    return (wires, unitary_matrix), {"check": check}
-
-
 def _real_unitary(unitary, wires):
 
     angle, unitary = _adjust_determinant(unitary)
@@ -114,6 +101,7 @@ def _complex_unitary(unitary, wires):
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
 
+    print(wires)
     @for_loop(len(phase_list))
     def phase_loop(idx):
         phase = phase_list[idx]
@@ -140,7 +128,6 @@ def _complex_unitary(unitary, wires):
 @partial(
     Subroutine,
     static_argnames="check",
-    setup_inputs=setup_basis_rotation,
     compute_resources=basis_rotation_decomp_resources,
     exact_resources=False,
 )
@@ -195,7 +182,7 @@ def BasisRotation(wires, unitary_matrix, check=False):
         >>> wires = range(len(umat))
         >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
         ... def circuit():
-        ...    qml.adjoint(qml.BasisRotation.operator(wires=wires, unitary_matrix=umat))
+        ...    qml.adjoint(qml.BasisRotation)(wires=wires, unitary_matrix=umat)
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
@@ -379,7 +366,13 @@ def BasisRotation(wires, unitary_matrix, check=False):
 
     """
 
-    M = math.shape(unitary_matrix)[0]
+    M, N = math.shape(unitary_matrix)
+
+    if M != N:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
+
+    if len(wires) < 2:
+        raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
     if check and not math.is_abstract(unitary_matrix):
         u_u_dag = unitary_matrix @ math.conj(unitary_matrix).T

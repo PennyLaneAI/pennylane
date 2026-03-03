@@ -104,7 +104,13 @@ def _register_subroutine(subroutine: qtemps.Subroutine):
 def _resources_for_subroutine(op: qtemps.SubroutineOp):
     if op.subroutine in _Subroutine_map:
         return _Subroutine_map[op.subroutine](op)
-    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered resource equivalent.")
+    with QueuingManager.stop_recording():
+        decomp = op.decomposition()
+
+    if len(decomp) == 1:
+        return _map_to_resource_op(decomp[0])
+
+    return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
 
 
 @_map_to_resource_op.register

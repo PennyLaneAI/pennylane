@@ -62,15 +62,19 @@ class AbstractArray:
 
     Args:
         shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
-        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        dtype (type): the data type of the array. Defaults to ``np.int64`` for easier use in specifying
         wires.
     """
 
     shape: tuple[int, ...]
-    dtype: type = int
+    dtype: type = np.int64
 
     def __len__(self):
         return reduce(lambda a, b: a * b, self.shape)
+    
+    def __post_init__(self):
+        if self.dtype in {int, float, complex}:
+            object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
 def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
@@ -185,7 +189,7 @@ def _get_array_types():
 
 
 @lru_cache
-def _get_iterable_wires_types():
+def _get_non_array_iterables():
     return (
         list,
         tuple,
@@ -193,14 +197,12 @@ def _get_iterable_wires_types():
         range,
         capture.autograph.ag_primitives.PRange,
         set,
-        *_get_array_types(),
     )
-
 
 def _setup_wires(wires):
     if isinstance(wires, _get_array_types()) and wires.shape == ():
         return (wires,)
-    if isinstance(wires, _get_iterable_wires_types()):
+    if isinstance(wires, _get_non_array_iterables()):
         return tuple(wires)
     return (wires,)
 
@@ -699,7 +701,7 @@ class Subroutine:
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if len(register) > 0:
+                if len(register) > 0 and not math.get_interface(register) != "jax":
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
