@@ -16,7 +16,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 """
 
 import pennylane as qml
-from pennylane.decomposition.symbolic_decomposition import (
+from pennylane.decomposition import (
     change_op_basis_resource_rep,
     controlled_resource_rep,
 )
