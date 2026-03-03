@@ -201,8 +201,10 @@ def _get_non_array_iterables():
 
 
 def _setup_wires(wires):
-    if isinstance(wires, _get_array_types()) and wires.shape == ():
-        return (wires,)
+    if isinstance(wires, _get_array_types()):
+        if wires.shape == ():
+            return (wires,)
+        return wires
     if isinstance(wires, _get_non_array_iterables()):
         return tuple(wires)
     return (wires,)
@@ -703,6 +705,7 @@ class Subroutine:
                 import jax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
+                    # don't stack if already a jax array
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
                 bound_args.arguments[wire_argname] = Wires(register)

@@ -14,7 +14,7 @@
 """
 Tests for the BasisRotation template.
 """
-
+# pylint: disable=missing-function-docstring, import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -98,6 +98,7 @@ class TestResources:
         assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 5 * 4 // 2}
 
 
+# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
