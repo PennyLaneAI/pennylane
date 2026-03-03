@@ -665,7 +665,7 @@ class SumOfSlatersPrep(Operation):
         import pennylane as qml
         import numpy as np
 
-        coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j])/np.sqrt(8)
+        coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j]) / np.sqrt(8)
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
         wires = qml.wires.Wires(range(7))
 
@@ -697,9 +697,8 @@ class SumOfSlatersPrep(Operation):
     >>> print(where)
     (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
     >>> print(prepared_state[where])
-    [ 0.35355339+0.j         -0.        -0.35355339j  0.        +0.35355339j
-      0.35355339+0.j          0.35355339+0.j         -0.        -0.35355339j
-      0.35355339+0.j          0.        +0.35355339j]
+    [ 0.3536+0.j     -0.    -0.3536j  0.    +0.3536j  0.3536+0.j
+      0.3536+0.j     -0.    -0.3536j  0.3536+0.j      0.    +0.3536j]
 
     That looks exactly right! Internally, the state preparation looks like this:
 
