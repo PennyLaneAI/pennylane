@@ -25,7 +25,8 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import value_and_grad_prim # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import value_and_grad_prim
 
 
 def test_value_and_grad_error_with_non_scalar_function():
@@ -45,6 +46,7 @@ def test_value_and_grad_error_with_non_scalar_function():
 
 
 def diff_eqn_assertions(eqn, argnums=None, fn=None):
+    """Perform basic checks on a value_and_grad equation."""
     argnums = (0,) if argnums is None else argnums
     assert eqn.primitive == value_and_grad_prim
     assert set(eqn.params.keys()) == {
@@ -59,16 +61,17 @@ def diff_eqn_assertions(eqn, argnums=None, fn=None):
     assert eqn.params["h"] == 1e-6
     assert eqn.params["fn"] == fn
 
+
 @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
 def test_classical_func(argnums):
     """Test taking the value_and_grad of a classical function."""
 
     def inner_func(x, y):
-        return jnp.prod(jnp.sin(x) * jnp.cos(y) **2)
-    
+        return jnp.prod(jnp.sin(x) * jnp.cos(y) ** 2)
+
     def workflow(x):
         return qml.value_and_grad(inner_func, argnums=argnums)(x, 0.5 * jnp.sqrt(x))
-    
+
     def workflow_jax(x):
         return jax.value_and_grad(inner_func, argnums=argnums)(x, 0.5 * jnp.sqrt(x))
 
@@ -81,7 +84,7 @@ def test_classical_func(argnums):
     jaxpr = jax.make_jaxpr(workflow)(x)
     assert jaxpr.in_avals == [jax.core.ShapedArray((), float, weak_type=True)]
     assert len(jaxpr.eqns) == 3
-    
+
     if isinstance(argnums, int):
         argnums = (argnums,)
     else:
@@ -92,11 +95,12 @@ def test_classical_func(argnums):
     grad_eqn = jaxpr.eqns[2]
     diff_eqn_assertions(grad_eqn, argnums=argnums, fn=inner_func)
     assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
-    assert len(grad_eqn.params['jaxpr'].eqns) == 6 # 5 numeric eqns, 1 conversion eqn
+    assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
     manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
     assert qml.math.allclose(manual_eval[0], jax_res)
     assert qml.math.allclose(manual_eval[1:], jax_grad)
+
 
 def test_nested_value_and_grad():
     """Test that value_and_grad can be nested.
@@ -110,7 +114,7 @@ def test_nested_value_and_grad():
 
     def func(x):
         return jnp.sin(x) ** 3
-    
+
     x = 0.654
 
     qml_func_1 = qml.value_and_grad(func)
@@ -124,7 +128,9 @@ def test_nested_value_and_grad():
     assert len(jaxpr_1.eqns) == 1
     assert jaxpr_1.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * 2
 
-    def just_grad_part(*args): return qml_func_1(*args)[1]
+    def just_grad_part(*args):
+        return qml_func_1(*args)[1]
+
     qml_func_2 = qml.value_and_grad(just_grad_part)
 
     jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
@@ -137,6 +143,7 @@ def test_nested_value_and_grad():
     diff_eqn_assertions(grad_eqn, fn=just_grad_part)
     assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
     assert grad_eqn.params["jaxpr"].eqns[0].primitive == value_and_grad_prim
+
 
 @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
 def test_pytree_input(argnums):
@@ -185,4 +192,3 @@ def test_pytree_input(argnums):
     # Assert that the output from the manual evaluation is flat
     assert grad_out_tree == jax.tree_util.tree_flatten(grad_out_flat)[1]
     assert qml.math.allclose(jax_out_flat, grad_out_flat)
-
