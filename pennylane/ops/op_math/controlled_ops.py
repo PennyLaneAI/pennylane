@@ -63,6 +63,7 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
+from ...operation import AbstractArray
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -1113,6 +1114,13 @@ class CNOT(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.X, wires=wires[1:])
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, wires[:1], id=id)
 
     def adjoint(self):
@@ -1246,6 +1254,8 @@ class Toffoli(ControlledOp):
 
     name = "Toffoli"
 
+    resource_keys = {"signature_key"}
+
     def _flatten(self):
         return tuple(), (self.wires,)
 
@@ -1263,6 +1273,13 @@ class Toffoli(ControlledOp):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.X, wires=target_wires)
+
+        self._wire_argnames = ("wires",)
+        self._static_argnames = ()
+        self._bound_args = self._bind_args(
+            wires=wires,
+        )
+
         super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
@@ -1563,15 +1580,25 @@ class MultiControlledX(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        self._wire_argnames = ("wires", "work_wires")
-        self._static_argnames = (
-            "work_wire_type",
-        )
-        self._bound_args = self._bind_args(wires=wires, control_values=control_values, work_wires=work_wires, work_wire_type=work_wire_type)
-
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
         self._validate_control_values(control_values)
+
+        if control_values is None:
+            control_values = [True] * (len(wires) - 1)
+
+        self._wire_argnames = ("wires", "work_wires")
+        self._static_argnames = (
+            "control_values",
+            "work_wire_type",
+        )
+
+        self._bound_args = self._bind_args(
+            wires=wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type
+        )
 
         if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
@@ -1727,8 +1754,8 @@ class MultiControlledX(ControlledOp):
 
 def _mcx_to_cnot_or_toffoli_resource(wires, control_values, work_wires, work_wire_type):
     if len(control_values) == 1:
-        return {qml.CNOT: 1, qml.X: len(control_values) - math.sum(control_values)}
-    return {qml.Toffoli: 1, qml.X: (len(control_values) - math.sum(control_values)) * 2}
+        return {resource_rep(qml.CNOT, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): len(control_values) - math.sum(control_values)}
+    return {resource_rep(qml.Toffoli, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): (len(control_values) - math.sum(control_values)) * 2}
 
 
 @register_condition(lambda wires, control_values, work_wires, work_wire_type: len(control_values) < 3)

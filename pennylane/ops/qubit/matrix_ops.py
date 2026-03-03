@@ -142,6 +142,7 @@ class QubitUnitary(Operation):
         id: str | None = None,
         unitary_check: bool = False,
     ):
+        self._wire_argnames = ("wires",)
         self._static_argnames = ("unitary_check",)
         self._bound_args = self._bind_args(U, wires=wires, id=id, unitary_check=unitary_check)
 

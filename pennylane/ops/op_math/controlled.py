@@ -520,10 +520,7 @@ class Controlled(SymbolicOp):
     resource_keys = {
         "base_class",
         "base_params",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
+        "signature_key"
     }
 
     def _flatten(self):
@@ -632,6 +629,21 @@ class Controlled(SymbolicOp):
         self.hyperparameters["work_wire_type"] = work_wire_type
         self._name = f"C({base.name})"
 
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("control_wires", "work_wires")
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = (
+                "control_values",
+                "work_wire_type"
+            )
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(
+                control_wires=control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type
+            )
+
         super().__init__(base, id)
 
     @property
@@ -734,10 +746,7 @@ class Controlled(SymbolicOp):
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
+            **super().resource_params
         }
 
     # Methods ##########################################

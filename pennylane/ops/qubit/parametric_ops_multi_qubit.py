@@ -313,6 +313,7 @@ class PauliRot(Operation):
         wires: WiresLike,
         id: str | None = None,
     ):
+        self._wire_argnames = ("wires",)
         self._static_argnames = (
             "pauli_word",
         )
