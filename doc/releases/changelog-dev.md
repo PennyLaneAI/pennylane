@@ -550,6 +550,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Workflow created to sync the master branch to main.
+  [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+  
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
