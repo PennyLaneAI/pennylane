@@ -180,7 +180,6 @@ def BasisRotation(wires, unitary_matrix, check=False):
         >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
-        >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
         ... def circuit():
         ...    qml.adjoint(qml.BasisRotation)(wires=wires, unitary_matrix=umat)
         ...    for idx, eigenval in enumerate(eigen_vals):
