@@ -71,7 +71,7 @@ class AbstractArray:
 
     def __len__(self):
         return reduce(lambda a, b: a * b, self.shape)
-    
+
     def __post_init__(self):
         if self.dtype in {int, float, complex}:
             object.__setattr__(self, "dtype", np.dtype(self.dtype))
@@ -198,6 +198,7 @@ def _get_non_array_iterables():
         capture.autograph.ag_primitives.PRange,
         set,
     )
+
 
 def _setup_wires(wires):
     if isinstance(wires, _get_array_types()) and wires.shape == ():
@@ -701,7 +702,7 @@ class Subroutine:
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if len(register) > 0 and not math.get_interface(register) != "jax":
+                if len(register) > 0 and math.get_interface(register) != "jax":
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
