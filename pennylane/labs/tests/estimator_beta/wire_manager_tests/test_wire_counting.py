@@ -17,10 +17,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.estimator as qre
-import pennylane.labs.estimator_beta as qre_exp
 from pennylane.allocation import AllocateState
 from pennylane.estimator import (
     GateCount,
+    Resources,
 )
 from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
@@ -1414,17 +1414,366 @@ class TestEstimateWiresFromCircuit:
 class TestEstimateWiresFromResources:
     """Test that we can correctly estimate the wires from a Resources object."""
 
-    def test_allocate_deallocate(self):
-        pass
-
-    def test_nested_allocate_deallocate(self):
-        pass
+    @pytest.mark.parametrize(
+        "resources, expected_wire_counts",  # {Op1: n_1, ...} (num_any_state, num_zeroed)
+        (
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=4,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(3)): 1,
+                        qre.CNOT.resource_rep(): 2,
+                        AllocateOp.resource_rep(Allocate(1)): 2,
+                        qre.Z.resource_rep(): 2,
+                    },
+                ),
+                (5, 0),
+            ),
+            (
+                Resources(
+                    zeroed_wires=3,
+                    any_state_wires=1,
+                    algo_wires=4,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(3)): 1,
+                        qre.CNOT.resource_rep(): 2,
+                        AllocateOp.resource_rep(Allocate(1)): 2,
+                        qre.Z.resource_rep(): 2,
+                    },
+                ),
+                (6, 0),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=5,
+                    gate_types={
+                        qre.QFT.resource_rep(5): 1,
+                        AllocateOp.resource_rep(Allocate(2)): 1,
+                        qre.CNOT.resource_rep(): 2,
+                        AllocateOp.resource_rep(Allocate(1)): 1,
+                        DeallocateOp.resource_rep(Deallocate(2)): 1,
+                        qre.Z.resource_rep(): 2,
+                    },
+                ),
+                (1, 2),
+            ),
+            (
+                Resources(
+                    zeroed_wires=2,
+                    any_state_wires=1,
+                    algo_wires=5,
+                    gate_types={
+                        qre.QFT.resource_rep(5): 1,
+                        AllocateOp.resource_rep(Allocate(2)): 1,
+                        qre.CNOT.resource_rep(): 2,
+                        AllocateOp.resource_rep(Allocate(1)): 1,
+                        DeallocateOp.resource_rep(Deallocate(2)): 1,
+                        qre.Z.resource_rep(): 2,
+                    },
+                ),
+                (2, 2),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=3,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(1)): 1,
+                        qre.X.resource_rep(): 1,
+                        qre.Prod.resource_rep(
+                            (
+                                (AllocateOp.resource_rep(Allocate(1)), 2),
+                                (qre.CNOT.resource_rep(), 1),
+                                (qre.Y.resource_rep(), 2),
+                                (DeallocateOp.resource_rep(Deallocate(1)), 1),
+                            ),
+                            num_wires=3,
+                        ): 3,
+                        qre.QFT.resource_rep(3): 1,
+                        qre.Prod.resource_rep(
+                            (
+                                (AllocateOp.resource_rep(Allocate(1)), 1),
+                                (qre.Y.resource_rep(), 2),
+                                (qre.CNOT.resource_rep(), 1),
+                                (DeallocateOp.resource_rep(Deallocate(1)), 2),
+                            ),
+                            num_wires=3,
+                        ): 3,
+                    },
+                ),
+                (1, 4),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(2)): 2,
+                        qre.CNOT.resource_rep(): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
+                        ): 5,
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        DeallocateOp.resource_rep(Deallocate(1)): 3,
+                    },
+                ),
+                (1, 8),
+            ),
+            (
+                Resources(
+                    zeroed_wires=5,
+                    any_state_wires=3,
+                    algo_wires=6,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(2)): 2,
+                        qre.CNOT.resource_rep(): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
+                        ): 5,
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        DeallocateOp.resource_rep(Deallocate(1)): 3,
+                    },
+                ),
+                (4, 8),
+            ),
+            (
+                Resources(
+                    zeroed_wires=10,
+                    any_state_wires=3,
+                    algo_wires=6,
+                    gate_types={
+                        AllocateOp.resource_rep(Allocate(2)): 2,
+                        qre.CNOT.resource_rep(): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
+                        ): 5,
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        DeallocateOp.resource_rep(Deallocate(1)): 3,
+                    },
+                ),
+                (4, 9),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(5, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                (0, 1),
+            ),
+            (
+                Resources(
+                    zeroed_wires=4,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                (0, 6),
+            ),
+            (
+                Resources(
+                    zeroed_wires=10,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                (0, 10),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=6,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                (6, 0),
+            ),
+            (
+                Resources(
+                    zeroed_wires=3,
+                    any_state_wires=3,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                (3, 3),
+            ),
+        ),
+    )
+    def test_allocate_deallocate(self, resources, expected_wire_counts):
+        """Test that the number of allocated qubits (any state or zeroed) is correct."""
+        wire_counts = estimate_wires_from_resources(resources, zeroed=0, any_state=0)
+        assert wire_counts == expected_wire_counts
 
     def test_deallocate_error(self):
-        pass
+        """Test that an error is raised if more qubits are deallocated than available."""
+        circ_res = Resources(
+            zeroed_wires=0,
+            any_state_wires=0,
+            algo_wires=4,
+            gate_types={
+                AllocateOp.resource_rep(Allocate(2)): 1,
+                qre.CNOT.resource_rep(): 2,
+                DeallocateOp.resource_rep(Deallocate(1)): 3,
+                AllocateOp.resource_rep(Allocate(5)): 1,
+            },
+        )
 
-    def test_zeroed_any_state_wires(self):
-        pass
+        with pytest.raises(ValueError, match="Deallocated more qubits than available to allocate."):
+            estimate_wires_from_resources(circ_res)
 
-    def test_zeroed_any_state_wire_error(self):
-        pass
+    @pytest.mark.parametrize(
+        "resources, initial_zeored, initial_any_state, expected_wire_counts",
+        (
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(5, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                0,
+                0,
+                (0, 1),
+            ),
+            (
+                Resources(
+                    zeroed_wires=1,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                3,
+                0,
+                (0, 6),
+            ),
+            (
+                Resources(
+                    zeroed_wires=4,
+                    any_state_wires=0,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                6,
+                0,
+                (0, 10),
+            ),
+            (
+                Resources(
+                    zeroed_wires=0,
+                    any_state_wires=3,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                0,
+                3,
+                (6, 0),
+            ),
+            (
+                Resources(
+                    zeroed_wires=1,
+                    any_state_wires=2,
+                    algo_wires=6,
+                    gate_types={
+                        qre.QFT.resource_rep(num_wires=4): 1,
+                        AlocOpFree.resource_rep(
+                            num_wires=2,
+                            allocate=Allocate(10, state=AllocateState.ANY, restored=True),
+                            cmpr_op=qre.CZ.resource_rep(),
+                        ): 3,
+                        qre.Z.resource_rep(): 5,
+                    },
+                ),
+                2,
+                1,
+                (3, 3),
+            ),
+        ),
+    )
+    def test_zeroed_any_state_wires(
+        self, resources, initial_zeored, initial_any_state, expected_wire_counts
+    ):
+        """Test that we can correctly resolve the number of qubits when we provide an intial
+        number of zeroed and any state qubits."""
+        wire_counts = estimate_wires_from_resources(
+            resources, zeroed=initial_zeored, any_state=initial_any_state
+        )
+        assert wire_counts == expected_wire_counts

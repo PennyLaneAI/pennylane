@@ -20,7 +20,7 @@ from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.estimator.resources_base import DefaultGateSet
+from pennylane.estimator.resources_base import DefaultGateSet, Resources
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -300,13 +300,17 @@ def estimate_wires_from_circuit(
 
 
 def estimate_wires_from_resources(
-    gate_counts: dict[CompressedResourceOp, int],
-    algo: int,
+    workflow: Resources,
     gate_set: set | None = None,
     config: dict | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
+    algo = workflow.algo_wires
+    zeroed += workflow.zeroed_wires
+    any_state += workflow.any_state_wires
+    gate_counts = workflow.gate_types
+
     if config is None:
         config = ResourceConfig()
     if gate_set is None:
