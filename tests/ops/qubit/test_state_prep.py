@@ -33,7 +33,7 @@ def test_basis_state_input_cast_to_int():
     assert op.data[0].dtype == np.int64
 
 
-class TestStandardValidity:
+class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
     def test_assert_valid(self):
@@ -45,9 +45,11 @@ class TestStandardValidity:
         qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
-    def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
+    def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires, ctrld):
         """Create a function for JIT-related tests that creates tapes from the decomposition
         rules registered for `BasisState` with the graph-based decomposition system."""
+
+        op_name = "C(BasisState)" if ctrld else "BasisState"
 
         def abstract_check(state, wires):
             """Function for JIT-related tests."""
@@ -60,7 +62,7 @@ class TestStandardValidity:
             assert qml.math.is_abstract(state) == state_traced
             assert qml.math.is_abstract(wires) == wires_traced
             tapes = []
-            for rule in qml.list_decomps(qml.BasisState):
+            for rule in qml.list_decomps(op_name):
                 with qml.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qml.tape.QuantumScript.from_queue(q))
@@ -72,31 +74,35 @@ class TestStandardValidity:
     @pytest.mark.jax
     @pytest.mark.parametrize("state_traced, expected", [(True, "continuous"), (False, "discrete")])
     @pytest.mark.parametrize("wires_traced", [True, False])
-    def test_jit_compatibility(self, state_traced, expected, wires_traced):
+    @pytest.mark.parametrize("controlled", [False, True])
+    def test_jit_compatibility(self, state_traced, expected, wires_traced, controlled):
         """Test compatibility with jax.jit."""
         # pylint: disable=import-outside-toplevel
         import jax
 
-        state = np.array([0, 1])
+        state = np.array([0, 1]) if controlled else np.array([0, 1, 0])
         closure_state = state  # We can use a closure variable to avoid automatic tracing
-        wires = qml.wires.Wires([0, 1])
+        wires = qml.wires.Wires([0, 2, 1])
         closure_wires = wires  # We can use a closure variable to avoid automatic tracing
         if wires_traced:
             wires = jax.numpy.array(wires)
 
         abstract_check = self.make_abstract_check(
-            state_traced, wires_traced, closure_state, closure_wires
+            state_traced, wires_traced, closure_state, closure_wires, controlled
         )
 
         tapes = jax.jit(abstract_check)(state, wires)
+        exp_op = qml.CNOT if controlled else qml.X
         for tape in tapes:
             if expected == "discrete":
                 assert len(tape) == 1
-                assert isinstance(tape[0], qml.X)
+                assert isinstance(tape[0], exp_op)
             else:
-                assert len(tape) == 2
-                assert isinstance(tape[0], qml.ops.Pow)
-                assert isinstance(tape[1], qml.ops.Pow)
+                assert len(tape) == len(state)
+                assert all(
+                    isinstance(op, qml.ops.Pow) and isinstance(op.base, exp_op)
+                    for op in tape.operations
+                )
 
     @pytest.mark.external
     @pytest.mark.parametrize("state_traced", [True, False])
@@ -114,7 +120,7 @@ class TestStandardValidity:
             wires = jax.numpy.array(wires)
 
         abstract_check = self.make_abstract_check(
-            state_traced, wires_traced, closure_state, closure_wires
+            state_traced, wires_traced, closure_state, closure_wires, False
         )
 
         tapes = qml.qjit(abstract_check)(state, wires)
