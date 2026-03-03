@@ -15,6 +15,67 @@
 also referred to as finite field F_2, Galois field GF_2, or ℤ_2."""
 import numpy as np
 
+from pennylane import math
+
+
+def binary_decimals(phi: float, precision: int, mod: float = 1.0):
+    r"""
+    Binary representation of the decimals of ``phi`` to the closest precision
+
+    This function produces the decimals of the binary representation.
+    For example, for :math:`\phi = (\tfrac12 + \tfrac04 + \tfrac18)`, which has binary representation :math:`(0.101)_2`, we take only the decimals :math:`101`.
+
+    We often require the binary representation of the decimals of :math:`\tilde{\phi}` in phase factors such as :math:`\exp(-i \tilde{\phi} 2 \pi)`.
+    Due to the convention that we divide angles in rotation gates such as :class:`~.RZ` gates by 2, we often want the function to consider the angle :math:`\phi = 2\tilde{\phi}`
+    as a multiple of :math:`4\pi`. In some other scenarios, multiples of :math:`2\pi` are more handy. The user can set this via the optional ``mod`` argument.
+
+    Args:
+        phi (float): The number to be represented in binary.
+        precision (int): The number of digits to keep.
+        mod (float): The angle is reduced to the modulo of ``mod``. Default is :math:`1`.
+
+    Returns:
+        array: Binary representation of the decimals
+
+    **Example**
+
+    We round the binary representation of :math:`(0.11011)_2`, which simply yields :math:`(0.11)_2` from rounding down.
+
+    >>> precision = 2
+    >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32)
+    >>> qml.math.binary_decimals(phi, precision)
+    array([1, 1])
+
+    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011)_2`, we round to :math:`(0.11)_2`:
+
+    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16)
+    >>> binary_decimals(phi, precision)
+    array([1, 1])
+
+    Note that we ignore the integer part. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0, 0, 0]``:
+
+    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16)
+    >>> binary_decimals(phi, precision)
+    array([0, 0])
+
+    .. details::
+        :title: Tie to even rule
+
+        The non-trivial case is when we are exactly at the midpoint, i.e. the truncated bits are :math:`100`.
+        In this case, the so-called tie to even rule kicks in. This is automatically handled by numpy under the hood.
+        For example, take :math:`(0.10100)_2  = 0.625`. We can either round down to :math:`(0.10)_2  = 0.5`, or round up to :math:`(0.11)_2  = 0.75`, but it is a tie because both numbers
+        are equally close to :math:`0.625`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11)_2  = 0.75`.
+
+        >>> phi = 1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32
+        >>> binary_decimals(phi, precision)
+        array([1, 1])
+
+
+    """
+    phi = math.mod(phi, mod)
+    phi_round = math.round(2**precision * phi / mod)
+    return int_to_binary(phi_round.astype(int), precision)
+
 
 def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     """Convert an integer or an array of integers to an array of bitstrings of

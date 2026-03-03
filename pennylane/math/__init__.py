@@ -35,6 +35,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .binary_linalg import (
+    binary_decimals,
     binary_finite_reduced_row_echelon,
     binary_is_independent,
     binary_matrix_rank,
@@ -111,7 +112,6 @@ from .utils import (
     in_backprop,
     is_abstract,
     requires_grad,
-    binary_decimals,
 )
 from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
