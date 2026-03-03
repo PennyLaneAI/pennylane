@@ -1,0 +1,60 @@
+# This workflow will sync changes in the release candidate branch to master during a
+# feature freeze. The action is run daily and will only create a pull request when
+# there exists a release candidate branch corresponding to the current package version
+# as declared in pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while
+# the package version is "v0.24.0-dev".
+
+name: Sync main to master
+
+# Controls when the workflow will run
+on:
+  # Scheduled trigger every weekday at 2:47am UTC
+  schedule:
+  - cron:  '47 2 * * 1-5'
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job to sync the master branch with changes from the rc
+  sync:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out the PennyLane repository
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Sync main to master
+        run: |
+          git fetch origin 
+          if git merge --no-commit --no-ff main; then
+            echo "No changes to sync from main to master."
+            echo "merge_conflict=false" >> $GITHUB_ENV
+            echo "has_changes=$(git diff HEAD~1 --quiet && echo 'false' || echo 'true')" >> $GITHUB_ENV
+          else
+            echo "Merge conflict detected. Creating a PR ..."
+            echo "merge_conflict=true" >> $GITHUB_ENV
+            git merge --abort || true 
+          fi      
+
+      # Create a new branch at from the current main to be used in the PR
+      - name: Create PR for conflict resolution
+        env:
+          GH_TOKEN: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+        run: |
+          git checkout main
+          BRANCH="main_$(date +'%Y-%m-%d-%H-%M-%S')"
+          echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
+          git checkout -b "$BRANCH"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          if ! git diff --quiet origin/master origin/main; then
+            echo "new_changes=true" >> $GITHUB_ENV
+            git push --set-upstream origin "$BRANCH"
+            gh pr create --repo PennyLaneAI/pennylane --title "Daily main sync to master - conflict resolution" --body "" --base master 
+          else
+            echo "No new changes to sync from main to master."
+          fi 
