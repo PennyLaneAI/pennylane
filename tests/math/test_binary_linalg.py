@@ -129,7 +129,7 @@ class TestBinaryDecimals:
     """Test ``qml.math.binary_decimals``."""
 
     @pytest.mark.parametrize(
-        "phi, p, expected, mod",
+        "phi, p, expected, unit",
         [
             (1 / 2, 2, [1, 0], 1),
             (1 / 2 * 4 * np.pi, 2, [1, 0], 4 * np.pi),
@@ -140,10 +140,10 @@ class TestBinaryDecimals:
             ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1], 1.0),
         ],
     )
-    def test_binary_decimals_scalar(self, phi, p, expected, mod):
+    def test_binary_decimals_scalar(self, phi, p, expected, unit):
         """Test that the binary representation or approximation of the angle is correct"""
 
-        assert np.array_equal(expected, math.binary_decimals(phi, p, mod))
+        assert np.array_equal(expected, math.binary_decimals(phi, p, unit))
 
     @pytest.mark.parametrize(
         "phi, p, expected",
@@ -199,7 +199,7 @@ class TestBinaryDecimals:
     )
     def test_binary_decimals_jax(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct for jax arrays"""
-        out = math.binary_decimals(phi, p, mod=1.0)
+        out = math.binary_decimals(phi, p, unit=1.0)
         assert jnp.array_equal(expected, out), f"\n{expected}\n{out}"
 
 
