@@ -766,15 +766,17 @@ class TestCompilePipelineDunders:
 
         assert str(compile_pipeline) == "CompilePipeline()"
 
+        # Tape transform
         transform1 = BoundTransform(qml.transform(first_valid_transform))
-        transform2 = BoundTransform(qml.transform(second_valid_transform))
+        # MLIR pass
+        transform2 = BoundTransform(qml.transform(pass_name="cancel-inverses"))
 
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
         pipeline_str = str(compile_pipeline)
         expected_str = (
-            "CompilePipeline(\n  [1] first_valid_transform(),\n  [2] second_valid_transform()\n)"
+            "CompilePipeline(\n  [1] first_valid_transform(),\n  [2] cancel-inverses()\n)"
         )
         assert pipeline_str == expected_str
 

@@ -227,6 +227,7 @@ class TestInputs:
             weights = np.zeros(12)
             circuit(weights)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.ArbitraryStatePreparation(

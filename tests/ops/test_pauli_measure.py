@@ -17,8 +17,19 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import MeasurementValue, PauliMeasure
 from pennylane.wires import Wires
+
+
+def test_id_is_deprecated():
+    """Tests that the 'id' argument is deprecated and renamed."""
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
+    ):
+        op = PauliMeasure("XY", wires=[0, 1], id="blah")
+    assert op.meas_uid == "blah"
 
 
 class TestPauliMeasure:
@@ -59,15 +70,15 @@ class TestPauliMeasure:
     def test_hash(self):
         """Test that the hash for PauliMeasure is defined correctly."""
 
-        m1 = PauliMeasure("XY", wires=[0, 1], id="id1")
-        m2 = PauliMeasure("XY", wires=[1, 2], id="id1")
+        m1 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
+        m2 = PauliMeasure("XY", wires=[1, 2], meas_uid="id1")
         assert hash(m1) != hash(m2)
 
-        m3 = PauliMeasure("XZ", wires=[0, 1], id="id1")
+        m3 = PauliMeasure("XZ", wires=[0, 1], meas_uid="id1")
         assert hash(m1) != hash(m3)
 
-        m4 = PauliMeasure("XY", wires=[0, 1], id="id2")
+        m4 = PauliMeasure("XY", wires=[0, 1], meas_uid="id2")
         assert hash(m1) != hash(m4)
 
-        m5 = PauliMeasure("XY", wires=[0, 1], id="id1")
+        m5 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
         assert hash(m1) == hash(m5)
