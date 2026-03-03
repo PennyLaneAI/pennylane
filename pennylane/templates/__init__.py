@@ -15,6 +15,7 @@
 This module contains templates, which are pre-coded routines that can be used in a quantum node.
 """
 
+from .core import Subroutine, SubroutineOp, AbstractArray, subroutine_resource_rep
 from .embeddings import *
 from .layer import layer
 from .state_preparations import *

@@ -84,6 +84,13 @@ class TestGradJacobian:
         with pytest.raises(ValueError, match="Invalid value"):
             grad_fn(lambda x: x**2, method="fd")(0.5)
 
+    @pytest.mark.parametrize("argnums", (4.5, "abc"))
+    def test_error_bad_argnums(self, grad_fn, argnums):
+        """Test that an error is raised if the argnums is not a collection."""
+
+        with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
+            grad_fn(lambda x: x**2, argnums=argnums)(0.5)
+
     def test_dynamic_kwarg(self, grad_fn):
         """Test that numerical kwargs are still treated like inputs."""
 

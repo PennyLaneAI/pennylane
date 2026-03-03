@@ -68,7 +68,8 @@ class TestControlledQubitUnitary:
         "op",
         [
             qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
-            qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3, 4)),
+            qml.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
+            qml.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
         ],
     )
     def test_standard_validity(self, op):

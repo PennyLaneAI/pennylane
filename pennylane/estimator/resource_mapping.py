@@ -287,6 +287,52 @@ def _(op: qtemps.Select):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.HybridQRAM):
+    data = op.data[0]
+    tree_wire_manager = op.hyperparameters["tree_wire_manager"]
+    select_wires = op.hyperparameters["select_wires"]
+    signal_wire = op.hyperparameters["signal_wire"]
+    control_wires = tree_wire_manager.control_wires
+    target_wires = tree_wire_manager.target_wires
+    return re_temps.HybridQRAM(
+        data=data,
+        num_wires=len(op.wires),
+        num_control_wires=len(control_wires),
+        num_select_wires=len(select_wires),
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=signal_wire
+        + tree_wire_manager.bus_wire
+        + tree_wire_manager.dir_wires
+        + tree_wire_manager.portL_wires
+        + tree_wire_manager.portR_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectOnlyQRAM):
+    data = op.data[0]
+    control_wires = op.hyperparameters["control_wires"]
+    select_wires = op.hyperparameters["select_wires"]
+    target_wires = op.hyperparameters["target_wires"]
+    select_value = op.hyperparameters["select_value"]
+    num_control_wires = len(control_wires)
+    num_select_wires = len(select_wires)
+    num_wires = num_control_wires + num_select_wires + len(target_wires)
+
+    return re_temps.SelectOnlyQRAM(
+        data,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.BBQRAM):
     bitstrings = op.data[0]
     wire_manager = op.hyperparameters["wire_manager"]

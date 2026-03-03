@@ -431,7 +431,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
         PPM-w3: 1
         PPR-pi/2-w1: 6
         PPR-pi/2-w2: 1
-        qec.fabricate: 1
+        pbc.fabricate: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -542,7 +542,7 @@ def ppm_compilation_setup_inputs(
     <BLANKLINE>
     Gate types:
         GlobalPhase: 3
-        qec.fabricate: 1
+        pbc.fabricate: 1
         PPM-w2: 6
         PPM-w1: 7
         PPM-w3: 1
@@ -736,12 +736,12 @@ def decompose_arbitrary_ppr_setup_inputs():
     Level: 3
     <BLANKLINE>
     Resource specifications:
-      Total wire allocations: 4
+      Total wire allocations: 3
       Total gates: 6
       Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-      qec.prepare: 1
+      pbc.prepare: 1
       PPM-w3: 1
       PPM-w1: 1
       PPR-pi/2-w1: 1
@@ -762,4 +762,30 @@ def decompose_arbitrary_ppr_setup_inputs():
 
 decompose_arbitrary_ppr = transform(
     pass_name="decompose-arbitrary-ppr", setup_inputs=decompose_arbitrary_ppr_setup_inputs
+)
+
+
+def decompose_clifford_ppr_setup_inputs():
+    """
+    Decompose the PPR (pi/4) into PPR and PPM operations via flattening method
+    as described in Figure 11(b) in the paper: `arXiv:1808.02892 <https://arxiv.org/abs/1808.02892>`_.
+    """
+    return (), {}
+
+
+decompose_clifford_ppr = transform(
+    pass_name="decompose-clifford-ppr", setup_inputs=decompose_clifford_ppr_setup_inputs
+)
+
+
+def decompose_non_clifford_ppr_setup_inputs():
+    """
+    Decompose the Non-Clifford (pi/8) PPR into PPR and PPM operations via Pauli-corrected method
+    as described in Figure 13(a) in the paper: `arXiv:2211.15465 <https://arxiv.org/pdf/2211.15465>`_.
+    """
+    return (), {}
+
+
+decompose_non_clifford_ppr = transform(
+    pass_name="decompose-non-clifford-ppr", setup_inputs=decompose_non_clifford_ppr_setup_inputs
 )
