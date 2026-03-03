@@ -20,6 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
+from types import NoneType
 from typing import Literal
 
 import numpy as np
@@ -64,6 +65,7 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 from ...operation import AbstractArray
+from ...pytrees import PyTreeStructure
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -410,7 +412,7 @@ class CH(ControlledOp):
         ]
 
 
-def _ch_to_ry_cz_ry_resources(wires):
+def _ch_to_ry_cz_ry_resources(base_class, base_params, wires):
     return {qml.RY: 2, qml.CZ: 1}
 
 
@@ -547,7 +549,7 @@ class CY(ControlledOp):
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
 
-def _cy_to_cry_s_resources(wires):
+def _cy_to_cry_s_resources(base_class, base_params, wires):
     return {qml.CRY: 1, qml.S: 1}
 
 
@@ -557,7 +559,7 @@ def _cy(wires: WiresLike, **__):
     qml.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
+def _cy_to_ppr_resource(base_class, base_params, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="Y"): 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
@@ -673,7 +675,7 @@ class CZ(ControlledOp):
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
 
 
-def _cz_to_cps_resources(wires):
+def _cz_to_cps_resources(base_class, base_params, wires):
     return {qml.ControlledPhaseShift: 1}
 
 
@@ -682,7 +684,7 @@ def _cz_to_cps(wires: WiresLike, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
 
-def _cz_to_cnot_resources(wires):
+def _cz_to_cnot_resources(base_class, base_params, wires):
     return {qml.H: 2, qml.CNOT: 1}
 
 
@@ -850,7 +852,7 @@ class CSWAP(ControlledOp):
         ]
 
 
-def _cswap_to_toffoli_resources(wires):
+def _cswap_to_toffoli_resources(base_class, base_params, wires):
     return {qml.CNOT: 2, qml.Toffoli: 1}
 
 
@@ -861,7 +863,7 @@ def _cswap(wires: WiresLike, **__):
     qml.CNOT([wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resource(wires):
+def _cswap_to_ppr_resource(base_class, base_params, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZYY"): 1,
@@ -1057,7 +1059,7 @@ class CCZ(ControlledOp):
         ]
 
 
-def _ccz_resources(wires):
+def _ccz_resources(base_class, base_params, wires):
     return {
         qml.CNOT: 6,
         qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
@@ -1085,7 +1087,7 @@ def _ccz(wires: WiresLike, **__):
     qml.Hadamard(wires=wires[2])
 
 
-def _ccz_to_toffoli_resources(wires):
+def _ccz_to_toffoli_resources(base_class, base_params, wires):
     return {qml.Hadamard: 2, qml.Toffoli: 1}
 
 
@@ -1218,7 +1220,7 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-def _cnot_cz_h_resources(wires):
+def _cnot_cz_h_resources(base_class, base_params, wires):
     return {qml.H: 2, qml.CZ: 1}
 
 
@@ -1229,7 +1231,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qml.H(wires[1])
 
 
-def _cnot_to_ppr_resource(wires):
+def _cnot_to_ppr_resource(base_class, base_params, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
@@ -1311,6 +1313,7 @@ class Toffoli(ControlledOp):
         self._static_argnames = ()
         self._bound_args = self._bind_args(
             wires=wires,
+            id=id
         )
 
         super().__init__(base, control_wires, id=id)
@@ -1433,7 +1436,7 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
-def _toffoli_resources(wires):
+def _toffoli_resources(base_class, base_params, wires):
     return {
         qml.Hadamard: 2,
         qml.CNOT: 6,
@@ -1461,7 +1464,7 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource(wires):
+def _toffoli_to_ppr_resource(base_class, base_params, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZX"): 2,
@@ -1489,7 +1492,7 @@ add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
-def _toffoli_elbow_resources(wires):
+def _toffoli_elbow_resources(base_class, base_params, wires):
     return {
         change_op_basis_resource_rep(
             qml.Elbow,
@@ -1788,10 +1791,10 @@ class MultiControlledX(ControlledOp):
 def _mcx_to_cnot_or_toffoli_resource(base_class, base_params, wires, control_values, work_wires, work_wire_type):
     if len(control_values) == 1:
         return {resource_rep(qml.CNOT, base_class=base_class, base_params=base_params, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): len(control_values) - math.sum(control_values)}
-    return {resource_rep(qml.Toffoli, base_class=base_class, base_params=base_params, signature_key=(wires,)): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): (len(control_values) - math.sum(control_values)) * 2}
+    return {resource_rep(qml.Toffoli, base_class=base_class, base_params=base_params, signature_key=(wires, (PyTreeStructure(), (AbstractArray(shape=(), dtype=NoneType),)))): 1, resource_rep(qml.X, signature_key=(AbstractArray((1,)),)): (len(control_values) - math.sum(control_values)) * 2}
+    # TODO: make a helper for creating signature keys with ids, etc.
 
-
-@register_condition(lambda wires, control_values, work_wires, work_wire_type: len(control_values) < 3)
+@register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
 def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     if len(wires) == 2 and not control_values[0]:
@@ -1990,7 +1993,7 @@ class CRX(ControlledOp):
         ]
 
 
-def _crx_to_rz_ry_resources(phi, wires):
+def _crx_to_rz_ry_resources(base_class, base_params, phi, wires):
     return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
 
 
@@ -2004,7 +2007,7 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources(phi, wires):
+def _crx_to_rx_cz_resources(base_class, base_params, phi, wires):
     return {qml.RX: 2, qml.CZ: 2}
 
 
@@ -2016,7 +2019,7 @@ def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
     qml.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources(phi, wires):
+def _crx_to_h_crz_resources(base_class, base_params, phi, wires):
     return {qml.Hadamard: 2, qml.CRZ: 1}
 
 
@@ -2027,7 +2030,7 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources(phi, wires):
+def _crx_to_ppr_resources(base_class, base_params, phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
@@ -2221,7 +2224,7 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources(phi, wires):
+def _cry_to_ppr_resources(base_class, base_params, phi, wires):
     return {
         resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
         resource_rep(qml.PauliRot, pauli_word="Y"): 1,
@@ -2446,7 +2449,7 @@ class CRZ(ControlledOp):
         ]
 
 
-def _crz_resources(phi, wires):
+def _crz_resources(base_class, base_params, phi, wires):
     return {qml.RZ: 2, qml.CNOT: 2}
 
 
@@ -2677,7 +2680,7 @@ class CRot(ControlledOp):
         ]
 
 
-def _crot_resources(phi, theta, omega, wires):
+def _crot_resources(base_class, base_params, phi, theta, omega, wires):
     return {qml.RZ: 3, qml.CNOT: 2, qml.RY: 2}
 
 
@@ -2894,7 +2897,7 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-def _cphase_rz_resource(phi, wires):
+def _cphase_rz_resource(base_class, base_params, phi, wires):
     return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
 
 
@@ -2908,7 +2911,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resource(phi, wires):
+def _cphase_to_ppr_resource(base_class, base_params, phi, wires):
     return {
         qml.GlobalPhase: 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 2,

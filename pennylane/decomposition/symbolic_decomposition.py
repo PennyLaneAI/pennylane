@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+from copy import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -23,6 +25,7 @@ from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from ..operation import AbstractArray
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -244,19 +247,19 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
 def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    def _condition_fn(**resource_params):
-        new_params = resource_params.copy()
-        new_params["num_zero_control_values"] = 0
-        return inner_decomp.is_applicable(**new_params)
+    def _condition_fn(*resource_params):
+        new_params = list(copy(resource_params))
+        new_params[3] = [1] * len(new_params[3])  # control_values
+        return inner_decomp.is_applicable(*new_params)
 
-    def _resource_fn(**resource_params):
-        new_params = resource_params.copy()
-        new_params["num_zero_control_values"] = 0
-        inner_resource = inner_decomp.compute_resources(**new_params)
-        num_x = resource_params["num_zero_control_values"]
+    def _resource_fn(*resource_params):
+        new_params = list(copy(resource_params))
+        new_params[3] = [1] * len(new_params[3])
+        inner_resource = inner_decomp.compute_resources(*new_params)
+        num_x = math.sum(resource_params[3])
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
+        gate_counts[resource_rep(qml.X, signature_key={"wires": AbstractArray((1,))})] = gate_counts.get(resource_rep(qml.X, signature_key={"wires": AbstractArray((1,))}), 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access
