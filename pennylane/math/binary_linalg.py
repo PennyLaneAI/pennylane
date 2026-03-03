@@ -83,7 +83,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
 
 
     """
-    phi = math.unit(phi, unit)
+    phi = math.mod(phi, unit)
     phi_round = math.round(2**precision * phi / unit)
     return int_to_binary(phi_round.astype(int), precision)
 
