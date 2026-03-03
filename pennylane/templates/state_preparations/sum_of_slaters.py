@@ -741,7 +741,7 @@ class SumOfSlatersPrep(Operation):
          'enumeration_wires': 4,
          'identification_wires': 0,
          'qrom_work_wires': 3,
-         'mcx_cache_wires': 1}
+         'mcx_cache_wire': 1}
 
         .. note::
 
@@ -848,7 +848,7 @@ class SumOfSlatersPrep(Operation):
                 "enumeration_wires": 0,
                 "identification_wires": 0,
                 "qrom_work_wires": 0,
-                "mcx_cache_wires": 0,
+                "mcx_cache_wire": 0,
             }
 
         d = math.ceil_log2(num_entries)
@@ -870,7 +870,7 @@ class SumOfSlatersPrep(Operation):
             "enumeration_wires": d,
             "identification_wires": num_identification,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": num_mcx_cache,
+            "mcx_cache_wire": num_mcx_cache,
         }
 
 
@@ -993,7 +993,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         enumeration_wires = allocated[start : (start := start + sizes["enumeration_wires"])]
         identification_wires = allocated[start : (start := start + sizes["identification_wires"])]
         qrom_work_wires = allocated[start : (start := start + sizes["qrom_work_wires"])]
-        mcx_cache_wires = allocated[start : (start := start + sizes["mcx_cache_wires"])]
+        mcx_cache_wire = allocated[start : (start := start + sizes["mcx_cache_wire"])]
         # Step 1 in paper (p.7): Dense state preparation in enumeration register
         qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
@@ -1047,19 +1047,19 @@ def _sos_state_prep(coefficients, wires, indices, **__):
             # Note that this gate is a generalized left elbow, which we currently do not
             # exploit.
             # TODO: add decomposition that makes use of zeroed input state on target qubit.
-            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wires)
+            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wire)
 
             @for_loop(d)
             def inner_loop(j):
                 bit_is_set = (k >> (d - 1 - j)) & 1
-                qml.cond(bit_is_set, qml.CNOT)([mcx_cache_wires[0], enumeration_wires[j]])
+                qml.cond(bit_is_set, qml.CNOT)([mcx_cache_wire[0], enumeration_wires[j]])
 
             inner_loop()
 
             # Note that this gate is a generalized right elbow, which we currently do not
             # exploit.
             # TODO: add decomposition that makes use of zeroed output state on target qubit.
-            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wires)
+            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wire)
 
         @for_loop(m)
         def flip(i, bits_to_flip):

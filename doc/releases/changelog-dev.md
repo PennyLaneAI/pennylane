@@ -35,7 +35,7 @@
 
   @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
   @qml.decompose(gate_set=gate_set, num_work_wires=10)
-  @qml.qnode(qml.device("lightning.qubit", wires=wires))
+  @qml.qnode(qml.device("lightning.qubit", wires=13))
   def circuit():
       qml.SumOfSlatersPrep(coefficients, wires, indices)
       return qml.state()
