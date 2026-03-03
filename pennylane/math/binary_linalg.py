@@ -79,7 +79,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
         >>> qml.math.binary_decimals(phi, precision)
         array([1, 0])
 
-        Note that equivalently, it is easier and cheaper to to simply translate the integer :math:`2=(10)_2` to its binary representation.
+        Note it is easier and cheaper to to simply translate the integer :math:`2=(10)_2` to its binary representation, which is equivalent.
 
 
     """
