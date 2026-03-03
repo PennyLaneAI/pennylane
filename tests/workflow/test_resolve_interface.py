@@ -163,5 +163,5 @@ def test_unsupported():
     tapes = [
         QuantumScript([qml.RX(0.5, wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
-    with pytest.raises(ValueError, match="Unknown interface"):
+    with pytest.raises(ValueError, match="'.*' is not a valid Interface."):
         _resolve_interface("unsupported_interface", tapes)

@@ -16,8 +16,6 @@ Tests for the transform diagonalize_measurements, which diagonalizes unsupported
 observables in measurements on a tape.
 """
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -559,15 +557,17 @@ class TestDiagonalizeTapeMeasurements:
         if to_eigvals and supported_base_obs != [qml.Z]:
             pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.RX(1.23, 1)
             qml.RY(2.46, 0)
             return qml.expval(X(0)), qml.var(X(1) + Y(2))
 
-        @partial(diagonalize_measurements, supported_base_obs=supported_base_obs)
+        @diagonalize_measurements(supported_base_obs=supported_base_obs)
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit_diagonalized():
             qml.RX(1.23, 1)

@@ -167,7 +167,6 @@ class TestCompressedResourceOp:
                     [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))],
                 ).pauli_rep,
                 "coeff": 1.2j,
-                "num_steps": 3,
             },
         )
         assert isinstance(hash(op), int)
@@ -176,7 +175,6 @@ class TestCompressedResourceOp:
         """Tests when the resource params contains a list."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {"foo", "bar"}
 
             @property
@@ -263,7 +261,6 @@ class TestResourceRep:
             resource_rep(int)
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {}
 
             @property
@@ -306,7 +303,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 
@@ -321,7 +318,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
             1,
             1,
@@ -335,7 +332,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 
@@ -356,17 +353,17 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "work_wire_type": "clean",
+                    "work_wire_type": "zeroed",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.MultiControlledX,
@@ -374,9 +371,106 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
         )
+
+    @pytest.mark.parametrize(
+        "num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, expected",
+        [
+            (1, 0, 0, "zeroed", CompressedResourceOp(qml.CNOT)),
+            (1, 0, 1, "zeroed", CompressedResourceOp(qml.CNOT)),
+            (
+                1,
+                1,
+                0,
+                "zeroed",
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 1,
+                        "num_zero_control_values": 1,
+                        "num_work_wires": 0,
+                        "work_wire_type": "zeroed",
+                    },
+                ),
+            ),
+            (
+                1,
+                1,
+                1,
+                "zeroed",
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 1,
+                        "num_zero_control_values": 1,
+                        "num_work_wires": 1,
+                        "work_wire_type": "zeroed",
+                    },
+                ),
+            ),
+            (2, 0, 0, "zeroed", CompressedResourceOp(qml.Toffoli)),
+            (
+                2,
+                0,
+                1,
+                "zeroed",
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 2,
+                        "num_zero_control_values": 0,
+                        "num_work_wires": 1,
+                        "work_wire_type": "zeroed",
+                    },
+                ),
+            ),
+            (
+                2,
+                1,
+                0,
+                "zeroed",
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 2,
+                        "num_zero_control_values": 1,
+                        "num_work_wires": 0,
+                        "work_wire_type": "zeroed",
+                    },
+                ),
+            ),
+            (
+                2,
+                1,
+                1,
+                "zeroed",
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 2,
+                        "num_zero_control_values": 1,
+                        "num_work_wires": 1,
+                        "work_wire_type": "zeroed",
+                    },
+                ),
+            ),
+        ],
+    )
+    def test_controlled_x_rep_for_x_base(  # pylint: disable=too-many-arguments
+        self, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, expected
+    ):
+        """Test that resources of controlled PauliX gates are mapped correctly"""
+        rep = controlled_resource_rep(
+            qml.X,
+            {},
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert rep == expected
 
     def test_controlled_qubit_unitary(self):
         """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
@@ -389,12 +483,12 @@ class TestControlledResourceRep:
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.ControlledQubitUnitary,
@@ -403,7 +497,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
         )
 
@@ -419,17 +513,17 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "work_wire_type": "dirty",
+                    "work_wire_type": "borrowed",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.ControlledQubitUnitary,
@@ -438,7 +532,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 

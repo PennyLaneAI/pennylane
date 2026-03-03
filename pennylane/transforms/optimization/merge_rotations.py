@@ -15,9 +15,9 @@
 
 
 from functools import lru_cache, partial
-from typing import Optional
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
@@ -47,7 +47,7 @@ def _get_plxpr_merge_rotations():
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
 
-        def __init__(self, atol: Optional[float] = 1e-8, include_gates: Optional[list[str]] = None):
+        def __init__(self, atol: float | None = 1e-8, include_gates: list[str] | None = None):
             super().__init__()
             self.atol = atol
             self.include_gates = include_gates
@@ -115,7 +115,6 @@ def _get_plxpr_merge_rotations():
                     self.previous_ops[w] = op
                 return
 
-            # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
             can_merge = op.wires == previous_op.wires and type(op) == type(previous_op)
             if not can_merge:
@@ -164,7 +163,7 @@ def _get_plxpr_merge_rotations():
             """Interpret all the previously seen operations and then clear."""
 
             # Use list(dict(...)) as opposed to a set to maintain deterministic order
-            ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
+            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
             for op in ops_remaining:
                 super().interpret_operation(op)
 
@@ -238,6 +237,7 @@ def _get_plxpr_merge_rotations():
     # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
@@ -252,7 +252,7 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr, pass_name="merge-rotations")
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -294,7 +294,7 @@ def merge_rotations(
             return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
-    0.9553364891256055
+    np.float64(0.955...)
 
     .. details::
         :title: Details on merging ``Rot`` gates
@@ -343,7 +343,7 @@ def merge_rotations(
         By inspection, we can combine the two ``RX`` rotations on the first qubit.
         On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
 
-        >>> optimized_qfunc = merge_rotations()(qfunc)
+        >>> optimized_qfunc = merge_rotations(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
@@ -354,7 +354,7 @@ def merge_rotations(
         merge using the ``include_gates`` argument. For example, if in the above
         circuit we wanted only to merge the "RX" gates, we could do so as follows:
 
-        >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
+        >>> optimized_qfunc = merge_rotations(qfunc, include_gates=["RX"])
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
@@ -369,9 +369,11 @@ def merge_rotations(
 
     [expanded_tape], _ = qml.devices.preprocess.decompose(
         tape,
+        target_gates=gate_sets.ALL_OPS,
         stopping_condition=stop_at,
         name="merge_rotations",
         error=qml.operation.DecompositionUndefinedError,
+        strict=False,
     )
     list_copy = expanded_tape.operations
     new_operations = []
@@ -387,7 +389,7 @@ def merge_rotations(
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate in composable_rotations:
+        if current_gate not in composable_rotations:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue
@@ -458,7 +460,7 @@ def merge_rotations(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

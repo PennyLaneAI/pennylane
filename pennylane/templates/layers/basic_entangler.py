@@ -14,9 +14,11 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RX
+from pennylane.ops import CNOT, RX, cond
 
 
 class BasicEntanglerLayers(Operation):
@@ -50,7 +52,7 @@ class BasicEntanglerLayers(Operation):
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
             for the rotation.
         wires (Iterable): wires that the template acts on
-        rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
+        rotation (Type[pennylane.operation.Operation]): one-parameter single-qubit gate to use,
             if ``None``, :class:`~pennylane.ops.RX` is used as default
 
     Raises:
@@ -75,7 +77,7 @@ class BasicEntanglerLayers(Operation):
                 return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
-        [1., 1., -1.]
+        [np.float64(1.0), np.float64(1.0), np.float64(-1.0)]
 
         **Parameter shape**
 
@@ -104,7 +106,7 @@ class BasicEntanglerLayers(Operation):
                 return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
-        [-1, 1]
+        [np.float64(-1.0), np.float64(1.0)]
 
 
         **Changing the rotation gate**
@@ -123,6 +125,8 @@ class BasicEntanglerLayers(Operation):
     """
 
     grad_method = None
+
+    resource_keys = {"repeat", "num_wires", "rotation"}
 
     def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
@@ -149,13 +153,19 @@ class BasicEntanglerLayers(Operation):
     def num_params(self):
         return 1
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "repeat": math.shape(self.parameters[0])[-2],
+            "num_wires": len(self.wires),
+            "rotation": self.hyperparameters["rotation"],
+        }
+
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-
 
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
@@ -163,7 +173,7 @@ class BasicEntanglerLayers(Operation):
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                 for the rotation.
             wires (Any or Iterable[Any]): wires that the operator acts on
-            rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
+            rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -209,3 +219,47 @@ class BasicEntanglerLayers(Operation):
         """
 
         return n_layers, n_wires
+
+
+def _basic_entangler_resources(repeat, num_wires, rotation):
+    resources = {resource_rep(rotation): repeat * num_wires}
+
+    if num_wires == 2:
+        resources[resource_rep(CNOT)] = repeat
+
+    elif num_wires > 2:
+        resources[resource_rep(CNOT)] = repeat * num_wires
+
+    return resources
+
+
+@register_resources(_basic_entangler_resources)
+def _basic_entangler_decomposition(weights, wires, rotation):
+    repeat = math.shape(weights)[-2]
+
+    if capture.enabled():
+        weights, wires = math.array(weights, like="jax"), math.array(wires, like="jax")
+
+    @for_loop(repeat)
+    def repeat_loop(layer):
+
+        @for_loop(len(wires))
+        def wires_loop(i):
+            rotation(weights[..., layer, i], wires=wires[i])
+
+        wires_loop()  # pylint: disable=no-value-for-parameter
+
+        def elif_body():
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                j = (i + 1) % len(wires)
+                CNOT(wires=[wires[i], wires[j]])
+
+        def true_body():
+            CNOT(wires=wires)
+
+        cond(len(wires) == 2, true_body, false_fn=None, elifs=((len(wires) > 2, elif_body),))()
+
+    repeat_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(BasicEntanglerLayers, _basic_entangler_decomposition)

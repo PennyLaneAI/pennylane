@@ -707,7 +707,7 @@ class TestMetricTensor:
 
     @pytest.mark.tf
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1114,7 +1114,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_tf(self, dev_name, ansatz, params, interface):
         import tensorflow as tf
@@ -1279,7 +1279,7 @@ class TestDifferentiabilityDiag:
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf
@@ -1373,8 +1373,8 @@ class TestDifferentiability:
             qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
         )
         for argnum in range(len(weights)):
-            expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
-            jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
+            expected_full = qml.jacobian(_cost_full, argnums=argnum)(*weights)
+            jac = qml.jacobian(cost_full, argnums=argnum)(*weights)
             assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -1401,7 +1401,7 @@ class TestDifferentiability:
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf
@@ -1538,6 +1538,29 @@ def test_error_generator_not_registered(allow_nonunitary):
     else:
         with pytest.raises(ValueError, match="Generator for operation"):
             qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+
+
+def test_expand_metric_tensor():
+    """Tests _expand_metric_tensor works with and without allowed non-unitaries."""
+    allow_nonunitary = [True, False]
+    res = []
+
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
+
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
+    @qml.qnode(dev)
+    def circuit(x, z):
+        qml.H("wire2")
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire1")
+        return qml.expval(qml.PauliZ("wire1"))
+
+    for allow in allow_nonunitary:
+        res.append(qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
+
+    assert qml.numpy.allclose(res[0], res[1])
 
 
 def test_no_error_missing_aux_wire_not_used():

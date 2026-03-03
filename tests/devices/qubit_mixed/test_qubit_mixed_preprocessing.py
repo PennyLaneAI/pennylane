@@ -28,35 +28,33 @@ from pennylane.devices.default_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
 # pylint: disable=protected-access
 def test_mid_circuit_measurement_preprocessing():
     """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
-    dev = DefaultMixed(wires=2, shots=1000)
+    dev = DefaultMixed(wires=2)
 
     # Define operations and mid-circuit measurement
     m0 = qml.measure(0)
     ops = [*m0.measurements, qml.ops.Conditional(m0, qml.X(0))]
 
     # Construct the QuantumScript
-    tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))])
+    tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))], shots=1000)
 
     # Process the tape with the device's preprocess method
-    transform_program, _ = dev.preprocess()
+    compile_pipeline, _ = dev.preprocess()
 
-    # Apply the transform program to the tape
-    processed_tapes, _ = transform_program([tape])
+    # Apply the compile pipeline to the tape
+    processed_tapes, _ = compile_pipeline([tape])
 
     # There should be one processed tape
     assert len(processed_tapes) == 1, "Expected exactly one processed tape."
     processed_tape = processed_tapes[0]
 
     # Check that mid-circuit measurements have been deferred
-    mid_measure_ops = [
-        op for op in processed_tape.operations if isinstance(op, qml.measurements.MidMeasureMP)
-    ]
+    mid_measure_ops = [op for op in processed_tape.operations if isinstance(op, qml.ops.MidMeasure)]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
     assert processed_tape.circuit == [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.expval(qml.Z(0))]
 
@@ -81,6 +79,20 @@ class NoMatNoDecompOp(qml.operation.Operation):
     @property
     def has_matrix(self):
         return False
+
+
+@pytest.fixture(scope="function", autouse=True)
+def custom_decomps():
+    """Locally register decomposition rules."""
+
+    @qml.register_resources({qml.X: 1, qml.Y: 1})
+    def custom_rule_no_mat_op(wires):
+        qml.X(wires)
+        qml.Y(wires)
+
+    with qml.decomposition.local_decomps():
+        qml.add_decomps(NoMatOp, custom_rule_no_mat_op)
+        yield
 
 
 # pylint: disable=too-few-public-methods
@@ -319,8 +331,13 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                with pytest.warns(DecompositionWarning):
+                    program(tapes)
+        else:
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                program(tapes)
 
     @pytest.mark.parametrize(
         "readout_err, req_warn",
@@ -395,7 +412,7 @@ class TestPreprocessing:
 
         seed = jax.random.PRNGKey(42)
 
-        dev = DefaultMixed(wires=1, seed=seed, shots=100)
+        dev = DefaultMixed(wires=1, seed=seed)
 
         # Preprocess the device
         _ = dev.preprocess()

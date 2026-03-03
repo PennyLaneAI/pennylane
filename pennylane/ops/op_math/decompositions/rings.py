@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
-from typing import List
 
 import numpy as np
 
@@ -124,12 +123,24 @@ class ZSqrtTwo:
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             return ZSqrtTwo(self.a % int(other), self.b % int(other))
 
+        if self in (zero := ZSqrtTwo(0, 0), other):  # Trivial cases
+            return zero
+
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
-        return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+        if (dv := ZSqrtTwo(n1 // d, n2 // d)) != ZSqrtTwo(0, 0):  # Check if floor division works
+            return self - dv * other
+
+        # If floor division leads to a zero divisor, search neighbours.
+        dv_a, dv_b = max(round(n1 / d), dv.a), dv.b
+        if dv_a == dv.a:
+            dv_b = max(round(n2 / d), dv.b)
+
+        # Adjust the sign difference based on the adjusted values.
+        return (-1) ** (dv_a != dv.a or dv_b != dv.b) * (self - ZSqrtTwo(dv_a, dv_b) * other)
 
     @property
-    def flatten(self: ZSqrtTwo) -> List[int]:
+    def flatten(self: ZSqrtTwo) -> list[int]:
         """Flatten to a list."""
         return [self.a, self.b]
 
@@ -289,8 +300,11 @@ class ZOmega:
 
     def __mod__(self, other: ZOmega) -> ZOmega:
         d = abs(other)
-        n = self * other.conj() * ((other * other.conj()).adj2())
-        return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
+        n = self * other.conj() * (other * other.conj()).adj2()
+        r = other * ZOmega(*[(s + d // 2) // d for s in n.flatten])
+        # TODO [sc-105367]: The logic for selecting the remainder needs a bit more
+        # tweaking to ensure the remainder with the smallest norm is selected here.
+        return self - r if abs(self) > abs(r) else r - self
 
     @classmethod
     def from_sqrt_pair(cls, alpha: ZSqrtTwo, beta: ZSqrtTwo, shift: ZOmega) -> ZOmega:
@@ -299,7 +313,7 @@ class ZOmega:
         return cls(beta.b - alpha.b, beta.a, beta.b + alpha.b, alpha.a) + shift
 
     @property
-    def flatten(self: ZOmega) -> List[int]:
+    def flatten(self: ZOmega) -> list[int]:
         """Flatten to a list."""
         return [self.a, self.b, self.c, self.d]
 
@@ -435,7 +449,7 @@ class DyadicMatrix:
         k_scale, k_parity = int(math.pow(2, (A.k - B.k) // 2)), (A.k - B.k) % 2
         b_elems = []
         for b_elem in B.flatten:
-            a, b, c, d = [s * k_scale for s in b_elem.flatten]
+            a, b, c, d = (s * k_scale for s in b_elem.flatten)
             if k_parity != 0:  # sqrt(2) factor
                 a, b, c, d = [(b - d), (c + a), (b + d), (c - a)]
             b_elems.append(ZOmega(a, b, c, d))
@@ -470,7 +484,7 @@ class DyadicMatrix:
         )
 
     @property
-    def flatten(self: DyadicMatrix) -> List[ZOmega]:
+    def flatten(self: DyadicMatrix) -> list[ZOmega]:
         """Flatten the matrix elements to a list."""
         return [self.a, self.b, self.c, self.d]
 
@@ -526,7 +540,7 @@ class DyadicMatrix:
 
         while all(np.allclose([_s % 2 for _s in s.flatten], 0) for s in self.flatten):
             self.k -= 2
-            self.a, self.b, self.c, self.d = [s // 2 for s in self.flatten]
+            self.a, self.b, self.c, self.d = (s // 2 for s in self.flatten)
 
         # Factoring sqrt(2): Derived using (w - w^3) [a', b', c', d'] => [a, b, c, d]
         sqrt2_flag = True
@@ -616,7 +630,7 @@ class SO3Matrix:
         return self.k == other.k and all(x == y for (x, y) in zip(self.flatten, other.flatten))
 
     @property
-    def flatten(self: SO3Matrix) -> List[ZOmega]:
+    def flatten(self: SO3Matrix) -> list[ZOmega]:
         """Flatten the matrix to a 1D NumPy array."""
         return [l for row in self.so3mat for l in row]
 
@@ -636,7 +650,7 @@ class SO3Matrix:
         """Return the permutation vector of the SO(3) matrix."""
         return np.sum(self.parity_mat, axis=1)
 
-    def from_matrix(self, matrix: DyadicMatrix) -> List[List[ZSqrtTwo]]:
+    def from_matrix(self, matrix: DyadicMatrix) -> list[list[ZSqrtTwo]]:
         """Return the SO(3) matrix as a list of lists."""
         su2_elems, k = matrix.flatten, 2 * matrix.k
         if any(s.parity for s in su2_elems):
@@ -676,6 +690,7 @@ class SO3Matrix:
             >>> A = DyadicMatrix(ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), k = 4) * 2
             >>> B = SO3Matrix(A @ A)
             >>> B.normalize()
+            >>> B
             SO3Matrix(matrix=[[1, 1], [1, 1]], k=-6)
         """
         elements = self.flatten

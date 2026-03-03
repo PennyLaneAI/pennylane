@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dynamical Lie algebra functionality"""
-from typing import Iterable, Union
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -21,7 +21,7 @@ from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
-    A: Union[PauliSentence, Operator, TensorLike], B: Union[PauliSentence, Operator, TensorLike]
+    A: PauliSentence | Operator | TensorLike, B: PauliSentence | Operator | TensorLike
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
@@ -74,7 +74,7 @@ def trace_inner_product(
         >>> A = qml.X(0) - 1j * qml.Y(0)
         >>> Ad = qml.X(0) + 1j * qml.Y(0)
         >>> B = qml.X(0) + 1j * qml.Y(0)
-        >>> trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B))
+        >>> print(trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B)))
         True
 
     """

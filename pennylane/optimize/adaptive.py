@@ -50,7 +50,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
     new_tape = tape.copy(operations=tape.operations + new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]  # pragma: no cover
@@ -73,8 +73,8 @@ class AdaptiveOptimizer:
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
-        param_steps (int): number of steps for optimizing the parameter of a selected gate
-        stepsize (float): step size for optimizing the parameter of a selected gate
+        param_steps (int): number of steps for optimizing the parameter of a selected gate (default value: 10).
+        stepsize (float): step size for optimizing the parameter of a selected gate (default value: 0.5).
 
     **Example**
 

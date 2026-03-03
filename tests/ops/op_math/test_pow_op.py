@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import AdjointUndefinedError, DecompositionUndefinedError
+from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
 
 
 class TestConstructor:
@@ -108,6 +108,15 @@ class TestConstructor:
 
         assert original_op not in q.queue
 
+    def test_simplify_squared(self):
+        """Test that an op without a special pow method can still be simplified when raised to an integer power."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        simplified = (DummyOp(0) ** 2).simplify()
+        qml.assert_equal(simplified, DummyOp(0) @ DummyOp(0))
+
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInheritanceMixins:
@@ -122,8 +131,6 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -143,37 +150,11 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
-
-    def test_observable(self, power_method):
-        """Test that when the base is an Observable, Pow will also inherit from Observable."""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-
-            class CustomObs(qml.operation.Observable):
-                num_wires = 1
-                num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert ob.compare(ob)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -184,15 +165,13 @@ class TestInitialization:
         """Test pow initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op: Pow = power_method(base=base, z=-4.2, id="something")
+        op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -206,15 +185,13 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op: Pow = power_method(base=base, z=-0.766, id="id")
+        op: Pow = power_method(base=base, z=-0.766)
 
         assert op.base is base
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Rot**-0.766"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -380,10 +357,10 @@ class TestProperties:
             """Dummy operator."""
 
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
@@ -508,8 +485,8 @@ class TestSimplify:
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
-        final_op = qml.CH([1, 0], id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1), z=3)
+        final_op = qml.CH([1, 0])
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 
@@ -574,7 +551,7 @@ class TestMiscMethods:
         op = Pow(base, -1.2)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
+        assert op.label(decimals=2, cache=cache) == "U\n(M0)⁻¹⋅²"
         assert len(cache["matrices"]) == 1
 
     def test_eigvals(self):

@@ -24,7 +24,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
@@ -116,16 +117,13 @@ class TestInitialization:
     """Test the initialization."""
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
-    @pytest.mark.parametrize("id", ("foo", "bar"))
-    def test_init_sum_op(self, id, sum_method):
+    def test_init_sum_op(self, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        if sum_method.__name__ == sum.__name__:
-            assert sum_op.id == id
 
         assert sum_op.data == (0.23,)
         assert sum_op.parameters == [0.23]
@@ -141,7 +139,6 @@ class TestInitialization:
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        assert sum_op.id is None
 
         assert sum_op.data == (0.23, 9.87)
         assert sum_op.parameters == [0.23, 9.87]
@@ -676,16 +673,16 @@ class TestProperties:
         true_hermitian_state = True
 
         for op in ops_lst:
-            true_hermitian_state = true_hermitian_state and op.is_hermitian
+            true_hermitian_state = true_hermitian_state and op.is_verified_hermitian
 
-        assert sum_op.is_hermitian == true_hermitian_state
+        assert sum_op.is_verified_hermitian == true_hermitian_state
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category(self, ops_lst, sum_method):
-        """Test queue_category property is always None."""  # currently not supporting queuing Sum
+        """Test queue_category property is "_ops" by inheritance."""
         sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category is None  # pylint: disable=protected-access
+        assert sum_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
@@ -1170,10 +1167,9 @@ class TestWrapperFunc:
         created using the class."""
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "sum_op"
 
-        sum_func_op = qml.sum(*summands, id=op_id)
-        sum_class_op = Sum(*summands, id=op_id)
+        sum_func_op = qml.sum(*summands)
+        sum_class_op = Sum(*summands)
         qml.assert_equal(sum_func_op, sum_class_op)
 
     def test_lazy_mode(self):
@@ -1250,9 +1246,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1265,9 +1262,10 @@ class TestIntegration:
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1420,21 +1418,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op3.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op4.grouping_indices) == {(0, 1), (2,)}
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",
@@ -1471,8 +1469,9 @@ class TestGrouping:
     @pytest.mark.parametrize("shots", [None, 1000])
     def test_grouping_integration(self, shots):
         """Test that grouping does not impact the results of a circuit."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def qnode(grouping_type):
             H = qml.dot(

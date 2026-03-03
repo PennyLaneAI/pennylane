@@ -15,6 +15,7 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 import string
+from pickle import PicklingError
 
 import numpy as np
 
@@ -189,7 +190,7 @@ class BadPickling0(Operator):
 def test_bad_pickling():
     """Test an error is raised in an operator cant be pickled."""
 
-    with pytest.raises(AttributeError):
+    with pytest.raises((AttributeError, PicklingError)):
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 

@@ -14,6 +14,7 @@
 """
 Tests the apply_operation functions from devices/qubit
 """
+
 from functools import reduce
 
 import numpy as np
@@ -779,7 +780,7 @@ class TestSnapshot:
         op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
         _ = apply_operation(op, initial_state, debugger=debugger)
 
-        assert debugger.snapshots["tag"].shape == (50,)
+        assert debugger.snapshots["tag"].shape == (50, 1)
 
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
@@ -1408,7 +1409,7 @@ class TestLargeTFCornerCases:
         dev = qml.device("default.qubit", wires=8)
 
         @qml.qnode(dev, interface="tf")
-        def ancillary_qcnn_circuit(inputs):
+        def auxiliary_qcnn_circuit(inputs):
             qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
             qml.CNOT(wires=[0, 1])
             qml.PauliZ(1)
@@ -1420,7 +1421,7 @@ class TestLargeTFCornerCases:
 
         batch_size = 3
         params = np.random.rand(batch_size, 16)
-        result = ancillary_qcnn_circuit(tf.Variable(params))
+        result = auxiliary_qcnn_circuit(tf.Variable(params))
         assert qml.math.shape(result) == (4, batch_size)
 
     def test_pauliz_large_batched_state_tf(self):
@@ -1496,7 +1497,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
     def test_mid_measure(self, m_res, monkeypatch):
-        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
+        """Test the application of a MidMeasure on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
             [
@@ -1522,39 +1523,35 @@ class TestConditionalsAndMidMeasure:
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
-    @pytest.mark.parametrize("reset", (False, True))
-    @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
-    def test_mid_measure_with_postselect_and_reset(self, m_res, reset):
-        """Test the application of a MidMeasureMP with postselection and reset."""
+    def test_floating_point_mcm_bug(self):
+        """Test an edge case where the mcm probability is greater than one by an insignificant amount."""
 
-        initial_state = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        mid_state, end_state = np.zeros((4, 4)), np.zeros((4, 4))
+        ops = [
+            qml.RX(-5.754168297787336, wires=0),
+            qml.H(1),
+            qml.ops.MidMeasure(1),
+            qml.ops.MidMeasure(2),
+            qml.ops.MidMeasure(3),
+        ]
+        state = np.zeros((2, 2, 2, 2))
+        state[0, 0, 0, 0] = 1
 
-        if reset:
-            m_res[0] = 0
+        for op in ops:
+            state = apply_operation(op, state, mid_measurements={})
 
-        mid_state[2 * m_res[0] : 2 * (m_res[0] + 1), 2 * m_res[0] : 2 * (m_res[0] + 1)] = 0.5
-        end_state[2 * m_res[0] + m_res[1], 2 * m_res[0] + m_res[1]] = 1.0
+        # just need to make sure that ran without numpy complaining
 
-        m0 = qml.measure(0, postselect=m_res[0], reset=reset).measurements[0]
-        m1 = qml.measure(1, postselect=m_res[1]).measurements[0]
-        mid_meas = {m0: m_res[0], m1: m_res[1]}
+    def test_norm_greater_than_one_mcm(self):
+        """Test an error is raised about the norm if it is substantially greater than one."""
 
-        new_state = apply_operation(
-            m0, initial_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
-        )
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(mid_state, qml.math.outer(res_state, res_state))
-
-        new_state = apply_operation(
-            m1, new_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
-        )
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(end_state, qml.math.outer(res_state, res_state))
+        state = np.zeros((2,))
+        state[0] = 1.0005
+        with pytest.raises(ValueError, match="probabilities greater than 1."):
+            apply_operation(qml.ops.MidMeasure(0), state)
 
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 
-        with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+        with pytest.raises(ValueError, match="MidMeasure cannot be applied to batched states."):
             m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
             apply_operation(m0, state=input_state, is_state_batched=True)

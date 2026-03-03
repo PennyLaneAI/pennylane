@@ -14,8 +14,6 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-
-
 import functools
 import itertools
 
@@ -23,7 +21,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.math.utils import binary_finite_reduced_row_echelon
+from pennylane.math import binary_finite_reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
@@ -112,7 +110,9 @@ def symmetry_generators(h):
 
     for null_vector in nullspace:
         tau = {}
-        for idx, op in enumerate(zip(null_vector[:num_qubits], null_vector[num_qubits:])):
+        for idx, op in enumerate(
+            zip(null_vector[:num_qubits], null_vector[num_qubits:], strict=True)
+        ):
             x, z = op
             tau[idx] = pauli_map[f"{x}{z}"]
 
@@ -242,12 +242,13 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_h.wires + ps_u.wires
-    wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1)))
+
+    wiremap = dict(zip(list(wireset.toset()), range(len(wireset)), strict=True))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     wires_tap = [i for i in wiremap.keys() if i not in paulix_wires]
     wires_ord = list(range(len(wires_tap)))
-    wiremap_tap = dict(zip(wires_tap, wires_ord))
+    wiremap_tap = dict(zip(wires_tap, wires_ord, strict=True))
 
     obs, val = [], qml.math.ones(len(ts_ps))
     for i, pw in enumerate(ts_ps.keys()):
@@ -265,7 +266,9 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     coeffs = qml.math.multiply(val, qml.math.array(list(ts_ps.values()), like=interface))
 
     if interface == "jax" and qml.math.is_abstract(coeffs):
-        tapered_ham = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, obs)))
+        tapered_ham = qml.sum(
+            *(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True))
+        )
     else:
         if qml.math.all(qml.math.abs(qml.math.imag(coeffs)) <= 1e-8):
             coeffs = qml.math.real(coeffs)
@@ -521,7 +524,8 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
-                op_gen = operation.generator().pauli_rep
+                with qml.QueuingManager.stop_recording():
+                    op_gen = operation.generator().pauli_rep
 
             except (ValueError, qml.operation.GeneratorUndefinedError) as exc:
                 raise NotImplementedError(

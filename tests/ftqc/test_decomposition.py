@@ -38,6 +38,7 @@ from pennylane.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
     cnot_measurements,
+    ppr_to_mbqc,
     queue_cnot,
     queue_corrections,
     queue_measurements,
@@ -312,7 +313,9 @@ class TestMBQCFormalismConversion:
         # queue ops with queue_single_qubit_gate
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(1.2, 0.34, 0.7, wire_map[w])
-            wire_map[w], measurements = queue_single_qubit_gate(q_mgr, op=op, in_wire=wire_map[w])
+            wire_map[w], measurements = queue_single_qubit_gate(
+                q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=False
+            )
             queue_corrections(op, measurements)(wire_map[w])
             qml.expval(qml.X(wire_map[w]))
             qml.expval(qml.Y(wire_map[w]))
@@ -324,12 +327,22 @@ class TestMBQCFormalismConversion:
         assert isinstance(tape.operations[1], GraphStatePrep)
         assert isinstance(tape.operations[2], qml.CZ)
         for tape_op in tape.operations[3:]:
-            assert isinstance(tape_op, tuple([qml.measurements.MidMeasureMP, qml.ops.Conditional]))
+            assert isinstance(tape_op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
 
         # tape yields expected results
-        (diagonalized_tape,), _ = diagonalize_mcms(tape)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Rot(1.2, 0.34, 0.7, wire_map[w])
+            wire_map[w], measurements = queue_single_qubit_gate(
+                q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=True
+            )
+            queue_corrections(op, measurements)(wire_map[w])
+            qml.expval(qml.X(wire_map[w]))
+            qml.expval(qml.Y(wire_map[w]))
+            qml.expval(qml.Z(wire_map[w]))
+
+        diagonalized_tape = qml.tape.QuantumScript.from_queue(q, shots=3000)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.07)
+        assert np.allclose(res, res_ref, atol=0.05)
 
     def test_queue_cnot(self):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
@@ -377,7 +390,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(tape.operations[3], qml.CZ)
         assert isinstance(tape.operations[4], qml.CZ)
         for op in tape.operations[5:]:
-            assert isinstance(op, tuple([qml.measurements.MidMeasureMP, qml.ops.Conditional]))
+            assert isinstance(op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
 
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
@@ -411,7 +424,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(graph_op, GraphStatePrep)
         assert isinstance(entanglement_op, qml.CZ)
         for m in measurements:
-            assert isinstance(m, qml.measurements.MidMeasureMP)
+            assert isinstance(m, qml.ops.MidMeasure)
         for bp in byproducts:
             assert isinstance(bp, qml.ops.Conditional)
         assert isinstance(final_op, gate)
@@ -531,10 +544,10 @@ class TestMBQCFormalismConversion:
 
         # after transform, only state prep and MCMs are present on the tape
         (transformed_tape,), _ = convert_to_mbqc_formalism(tape)
-        expected_gates = (GraphStatePrep, qml.CZ, qml.measurements.MidMeasureMP, qml.X, qml.Y)
+        expected_gates = (GraphStatePrep, qml.CZ, qml.ops.MidMeasure, qml.X, qml.Y)
         for op in transformed_tape.operations:
             if isinstance(op, qml.ops.Conditional):
-                assert isinstance(op.base, (qml.X, qml.Z, qml.measurements.MidMeasureMP))
+                assert isinstance(op.base, (qml.X, qml.Z, qml.ops.MidMeasure))
             else:
                 assert isinstance(op, expected_gates)
 
@@ -545,8 +558,7 @@ class TestMBQCFormalismConversion:
             tape = base_tape.copy(
                 operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=500
             )
-            (mbqc_tape,), _ = convert_to_mbqc_formalism(tape)
-            (diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
+            (diagonalized_tape,), _ = convert_to_mbqc_formalism(tape, diagonalize_mcms=True)
 
             samples = qml.execute([diagonalized_tape], dev)[0]
             for wire in (0, 1):
@@ -560,3 +572,44 @@ class TestMBQCFormalismConversion:
         # to catch changes that modify the results, and we have to choose here between
         # very slow, or fairly noisy
         assert np.allclose(res, reference_result, atol=0.1)
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+def test_ppr_to_mbqc_conversion_to_mlir():
+    """Test that we can generate MLIR from the captured circuit and that the generated MLIR
+    includes the pass name we are mapping to"""
+
+    pytest.importorskip("catalyst")
+
+    @qml.qjit(target="mlir", capture=True)
+    @ppr_to_mbqc
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    assert "ppr-to-mbqc" in circ.mlir
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+def test_ppr_to_mbqc_without_qjit_raises_error():
+    """Test that trying to apply the transform without QJIT raises an error"""
+
+    pytest.importorskip("catalyst")
+
+    @ppr_to_mbqc
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+        circ()

@@ -14,20 +14,26 @@
 r"""
 Functionality for finding the maximum weighted cycle of directed graphs.
 """
-# pylint: disable=unnecessary-comprehension, unnecessary-lambda-assignment
+# pylint: disable=unnecessary-comprehension
 import itertools
 from collections.abc import Iterable
-from typing import Union
+from typing import TYPE_CHECKING
 
-import networkx as nx
 import numpy as np
 import rustworkx as rx
 
 from pennylane.operation import Operator
 from pennylane.ops import Identity, LinearCombination, X, Y, Z
 
+if TYPE_CHECKING:
+    from networkx import DiGraph as nx_DiGraph
+    from networkx import Graph as nx_Graph
+else:
+    nx_DiGraph = None
+    nx_Graph = None
 
-def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tuple, int]:
+
+def edges_to_wires(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
@@ -68,6 +74,8 @@ def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tup
     Returns:
         Dict[Tuple, int]: a mapping from graph edges to wires
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if isinstance(graph, nx.Graph):
         return {edge: i for i, edge in enumerate(graph.edges)}
     if isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
@@ -81,7 +89,7 @@ def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tup
     )
 
 
-def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int, tuple]:
+def wires_to_edges(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
@@ -122,6 +130,8 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int
     Returns:
         Dict[Tuple, int]: a mapping from wires to graph edges
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if isinstance(graph, nx.Graph):
         return {i: edge for i, edge in enumerate(graph.edges)}
     if isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
@@ -135,7 +145,7 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int
     )
 
 
-def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def cycle_mixer(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
@@ -217,6 +227,8 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     Returns:
         qml.Hamiltonian: the cycle-mixer Hamiltonian
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -231,7 +243,7 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) -> Operator:
+def _partial_cycle_mixer(graph: nx_DiGraph | rx.PyDiGraph, edge: tuple) -> Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -248,6 +260,8 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) ->
     Returns:
         qml.Hamiltonian: the partial cycle-mixer Hamiltonian
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -262,8 +276,9 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) ->
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
 
     # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
+    # thus, we use the following  function to get node-values.
+    def get_nvalues(T):
+        return (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     for node in graph_nodes:
         out_edge = (edge[0], node)
@@ -290,7 +305,7 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) ->
     return LinearCombination(coeffs, ops)
 
 
-def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Operator:
+def loss_hamiltonian(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -372,6 +387,8 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Operat
         ValueError: if the graph contains self-loops
         KeyError: if one or more edges do not contain weight data
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -386,8 +403,9 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Operat
     edges_data = sorted(graph.weighted_edge_list()) if is_rx else graph.edges(data=True)
 
     # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
+    # thus, we use the following  function to get node-values.
+    def get_nvalues(T):
+        return (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     for edge_data in edges_data:
         edge = edge_data[:2]
@@ -446,7 +464,7 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def out_flow_constraint(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -481,6 +499,8 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     Raises:
         ValueError: if the input graph is not directed
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -498,7 +518,7 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def net_flow_constraint(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -532,6 +552,8 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     Raises:
         ValueError: if the input graph is not directed
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if isinstance(graph, (nx.DiGraph, rx.PyDiGraph)) and (
         not hasattr(graph, "in_edges") or not hasattr(graph, "out_edges")
     ):
@@ -551,9 +573,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def _inner_out_flow_constraint_hamiltonian(
-    graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Operator:
+def _inner_out_flow_constraint_hamiltonian(graph: nx_DiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
@@ -570,6 +590,8 @@ def _inner_out_flow_constraint_hamiltonian(
     Returns:
         qml.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -581,8 +603,9 @@ def _inner_out_flow_constraint_hamiltonian(
     is_rx = isinstance(graph, rx.PyDiGraph)
 
     # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
+    # thus, we use the following  function to get node-values.
+    def get_nvalues(T):
+        return (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     edges_to_qubits = edges_to_wires(graph)
     out_edges = graph.out_edges(node)
@@ -620,9 +643,7 @@ def _inner_out_flow_constraint_hamiltonian(
     return H
 
 
-def _inner_net_flow_constraint_hamiltonian(
-    graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Operator:
+def _inner_net_flow_constraint_hamiltonian(graph: nx_DiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
 
@@ -640,6 +661,8 @@ def _inner_net_flow_constraint_hamiltonian(
     Returns:
         qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
     """
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
@@ -662,8 +685,9 @@ def _inner_net_flow_constraint_hamiltonian(
         in_edges = sorted(in_edges)
 
     # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
+    # thus, we use the following  function to get node-values.
+    def get_nvalues(T):
+        return (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     coeffs.append(len(out_edges) - len(in_edges))
     ops.append(Identity(0))

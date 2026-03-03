@@ -19,7 +19,6 @@ from collections import Counter
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Optional
 
 import numpy as np
 
@@ -70,11 +69,13 @@ class QubitCarry(Operation):
     The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
     the last qubit denotes the carry value:
 
-    .. code-block::
+    .. code-block:: python
+
+        import itertools
 
         input_bitstring = (0, 1, 1, 0)
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
             qml.QubitCarry(wires=[0, 1, 2, 3])
@@ -238,11 +239,13 @@ class QubitSum(Operation):
     The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
     final wire holding the modulo-two sum of the first two wires:
 
-    .. code-block::
+    .. code-block:: python
+
+        import itertools
 
         input_bitstring = (0, 1, 0)
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
@@ -261,8 +264,7 @@ class QubitSum(Operation):
     The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
     output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
 
-    >>> abc_sum = output_bitstring[2]
-    >>> abc_sum
+    >>> output_bitstring[2]
     1
     """
 
@@ -276,9 +278,9 @@ class QubitSum(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
 
@@ -404,9 +406,9 @@ class IntegerComparator(Operation):
     ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
     ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
-    tensor(1.+0.j, requires_grad=True)
+    np.complex128(1+0j)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
-    tensor(1.+0.j, requires_grad=True)
+    np.complex128(1+0j)
     """
 
     is_self_inverse: bool = True
@@ -431,7 +433,7 @@ class IntegerComparator(Operation):
         value: int,
         wires: WiresLike,
         geq: bool = True,
-        work_wires: Optional[WiresLike] = None,
+        work_wires: WiresLike | None = None,
     ):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
@@ -475,16 +477,16 @@ class IntegerComparator(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
+        control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -494,8 +496,8 @@ class IntegerComparator(Operation):
         .. seealso:: :meth:`~.IntegerComparator.matrix`
 
         Args:
-            value (int): The value :math:`L` that the state's decimal representation is compared against.
             control_wires (Union[Wires, Sequence[int], or int]): wires to place controls on
+            value (int): The value :math:`L` that the state's decimal representation is compared against.
             geq (bool): If set to `True`, the comparison made will be :math:`n \geq L`. If `False`, the comparison
                 made will be :math:`n < L`.
 
@@ -504,7 +506,7 @@ class IntegerComparator(Operation):
 
         **Example**
 
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1]))
+        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2))
         [[1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 1. 0. 0. 0. 0. 0. 0.]
          [0. 0. 1. 0. 0. 0. 0. 0.]
@@ -513,7 +515,7 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 1. 0. 0. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]
          [0. 0. 0. 0. 0. 0. 1. 0.]]
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1], geq=False))
+        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2, geq=False))
         [[0. 1. 0. 0. 0. 0. 0. 0.]
          [1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 0. 0. 1. 0. 0. 0. 0.]
@@ -556,7 +558,7 @@ class IntegerComparator(Operation):
         value: int,
         wires: WiresLike,
         geq: bool = True,
-        work_wires: Optional[WiresLike] = None,
+        work_wires: WiresLike | None = None,
         **kwargs,
     ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
@@ -640,7 +642,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=first_significant + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_significant,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] = 1
 
@@ -651,7 +653,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=first_significant + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_significant,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             )
         ] = 1
 
@@ -775,7 +777,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=num_controls,
                 num_work_wires=num_work_wires,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             ): 1
         }
 
@@ -787,7 +789,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=first_zero + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_zero,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] = 1
     gate_set[resource_rep(qml.X)] = 2
@@ -799,7 +801,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=first_zero + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_zero,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             )
         ] = 1
         gate_set[resource_rep(qml.X)] += 2
@@ -810,7 +812,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=num_controls,
             num_work_wires=num_work_wires,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] += 1
 

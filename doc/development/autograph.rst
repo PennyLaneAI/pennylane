@@ -141,8 +141,7 @@ Currently, AutoGraph supports converting the following Python statements:
 - ``for`` loops
 - ``while`` loops
 
-``break`` and ``continue`` statements are currently not supported. The logical operators
-``and``, ``or`` and ``not`` are currently unsupported.
+``break`` and ``continue`` statements are currently not supported. 
 
 Nested functions
 ----------------
@@ -380,18 +379,6 @@ a JAX array:
 
 If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this ``for`` loop.
 
-If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
-
->>> def f():
-...     my_list = jnp.empty(2, dtype=int)
-...     for i in range(2):
-...         my_list = my_list.at[i].set(i)  # not my_list[i] = i
-...     return my_list
->>> plxpr = make_plxpr(f)()
->>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
-Array([0, 1], dtype=int64)
-
-
 Dynamic indexing
 ~~~~~~~~~~~~~~~~
 
@@ -421,7 +408,6 @@ Break and continue
 
 Within a ``for`` loop, control flow statements ``break`` and ``continue``
 are not currently supported.
-
 
 Updating and assigning variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -522,19 +508,6 @@ To allow AutoGraph conversion to work in this case, simply convert the list to a
 
 If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this ``while`` loop.
 
-If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
-
->>> def f():
-...     my_list = jnp.empty(2, dtype=int)
-...     i = 0
-...     while i < 2:
-...         my_list = my_list.at[i].set(i)  # not my_list[i] = i
-...         i += 1
-...     return my_list
->>> plxpr = make_plxpr(f)()
->>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
-Array([0, 1], dtype=int64)
-
 Break and continue
 ~~~~~~~~~~~~~~~~~~
 
@@ -592,12 +565,6 @@ will be ignored by AutoGraph:
 >>> plxpr = make_plxpr(fn)(0)
 >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
 [0]
-
-Logical statements
-------------------
-
-AutoGraph in PennyLane currently does not provide support for capturing logical statements that involve dynamic variables --- that is,
-statements involving ``and``, ``not``, and ``or`` that return booleans.
 
 Debugging
 ---------
@@ -766,38 +733,3 @@ Traced<ShapedArray(int64[], weak_type=True)>with<DynamicJaxprTrace(level=2/0)> T
     ] 0 2 1 a
     f:f64[] = integer_pow[y=2] b
   in (f,) }
-
-
-In-place JAX array updates
---------------------------
-
-To update array values when using JAX, the `JAX syntax for array assignment
-<https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#array-updates-x-at-idx-set-y>`__
-(which uses the array ``at`` and ``set`` methods) must be used:
-
-.. code-block:: python
-
-    def f(x):
-        first_dim = x.shape[0]
-        result = jnp.empty((first_dim,), dtype=x.dtype)
-
-        for i in range(first_dim):
-            result = result.at[i].set(x[i] * 2)
-
-        return result
-
->>> plxpr = make_plxpr(f)(jnp.zeros(3))
->>> eval_jaxprF(plxpr.jaxpr, plxpr.consts, jnp.array([0.1, 0.2, 0.3]))
-[Array([0.2, 0.4, 0.6], dtype=float64)]
-
-Similarly, to update array values with an operation when using JAX, the JAX syntax for array
-update (which uses the array ``at`` and the ``add``, ``multiply``, etc. methods) must be used:
-
->>> def f(x):
-...     first_dim = x.shape[0]
-...     result = jnp.copy(x)
-...
-...     for i in range(first_dim):
-...         result = result.at[i].multiply(2)
-...
-...     return result

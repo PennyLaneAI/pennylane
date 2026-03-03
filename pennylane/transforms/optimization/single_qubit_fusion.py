@@ -15,7 +15,6 @@
 
 
 from functools import lru_cache, partial
-from typing import Optional
 
 import pennylane as qml
 from pennylane import math
@@ -53,7 +52,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             not share any wires. This will not impact the correctness of the circuit.
         """
 
-        def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
+        def __init__(self, atol: float | None = 1e-8, exclude_gates: list[str] | None = None):
             """Initialize the interpreter."""
             self.atol = atol
             self.exclude_gates = set(exclude_gates) if exclude_gates is not None else set()
@@ -247,6 +246,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
 
     def single_qubit_fusion_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``single_qubit_fusion`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
@@ -263,7 +264,7 @@ SingleQubitFusionInterpreter, single_qubit_plxpr_to_plxpr = _get_plxpr_single_qu
 
 @partial(transform, plxpr_transform=single_qubit_plxpr_to_plxpr)
 def single_qubit_fusion(  # pylint: disable=too-many-branches
-    tape: QuantumScript, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None
+    tape: QuantumScript, atol: float | None = 1e-8, exclude_gates: list[str] | None = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
@@ -576,7 +577,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

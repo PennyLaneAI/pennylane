@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import WireError
+from pennylane.exceptions import WireError
 
 
 def test_QutritBasisState_decomposition():
@@ -85,7 +85,7 @@ class TestStateVector:
         assert not np.any(basis_state)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_QutritBasisState_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state_vector is also that type."""
         basis_op = qml.QutritBasisState(qml.math.array([0, 1], like=interface), wires=[1, 2])

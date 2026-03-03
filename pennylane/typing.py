@@ -17,7 +17,7 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
-from typing import TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -32,7 +32,7 @@ class InterfaceTensorMeta(type):
 
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)
+        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
 
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
@@ -74,28 +74,22 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
-            import jax
-            import jaxlib
+            from jax import Array
+            from jax.core import Tracer
             from jax.numpy import ndarray
 
-            JaxTensor = Union[
-                ndarray,
-                (
-                    jax.Array
-                    if hasattr(jax, "Array")
-                    else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
-                ),
-            ]
+            JaxTensor = ndarray | Array | Tracer
             check = issubclass if subclass else isinstance
 
             return check(other, JaxTensor)
     return False
 
 
-def _is_tensorflow(other, subclass=False):
+def _is_tensorflow(
+    other, subclass=False
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Check if other is an instance or a subclass of a tensorflow tensor."""
     if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
         with contextlib.suppress(ImportError):
@@ -127,4 +121,4 @@ ResultBatch = Sequence[Result]
 PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
-JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]
+JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]

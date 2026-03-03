@@ -16,10 +16,11 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 """
 
 from collections import defaultdict
+from collections.abc import Sequence
 from copy import copy
 from functools import cached_property
 from operator import itemgetter
-from typing import Literal, Optional, Sequence
+from typing import Literal
 
 import numpy as np
 import rustworkx as rx
@@ -462,7 +463,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
 
 def group_observables(
     observables: list["qml.operation.Operator"],
-    coefficients: Optional[TensorLike] = None,
+    coefficients: TensorLike | None = None,
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
     method: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
 ):
@@ -510,7 +511,7 @@ def group_observables(
     >>> obs_groupings
     [[Y(0), X(0) @ X(1)], [Z(1)]]
     >>> coeffs_groupings
-    [[1.43, 4.21], [0.97]]
+    [[np.float64(1.43), np.float64(4.21)], [np.float64(0.97)]]
     """
 
     if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):

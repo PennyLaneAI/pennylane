@@ -212,7 +212,7 @@ Internally, the QNode translates the quantum function into one or more quantum t
 and classical processing routines that, taken together, execute the quantum computation.
 
 The crucial property of a QNode is that it is differentiable by classical autodifferentiation
-frameworks such as autograd, jax, TensorFlow and PyTorch.
+frameworks such as autograd, JAX, and PyTorch.
 
 >>> jax.grad(qnode)
 [-0.4794  0.]
@@ -260,7 +260,7 @@ In other words, these steps can invoke differentiable classical computations, su
 
 There are some devices where the execution of the quantum circuit is also tracked by the
 autodifferentiation framework. This is possible if the device is a simulator that is
-coded entirely in the framework's language (such as a TensorFlow quantum simulator).
+coded entirely in the framework's language (such as a PyTorch quantum simulator).
 
 |
 
@@ -271,7 +271,7 @@ coded entirely in the framework's language (such as a TensorFlow quantum simulat
 |
 
 Most devices, however, are blackboxes with regards to the autodifferentiation framework.
-This means that when the execution on the device begins, autograd, jax, PyTorch and TensorFlow
+This means that when the execution on the device begins, autograd, JAX, and PyTorch
 tensors need to be converted to formats that the device understands - which is in most cases
 a representation as NumPy arrays. Likewise, the results of the execution have to be translated
 back to differentiable tensors. These two conversions happen at what PennyLane calls the

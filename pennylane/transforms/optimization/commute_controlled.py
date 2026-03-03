@@ -14,9 +14,9 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
+from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
-from typing import Optional, Sequence
 
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -237,6 +237,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     def commute_controlled_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
+        tkwargs = dict(tkwargs)
+
         interpreter = CommuteControlledInterpreter(direction=tkwargs.get("direction", "right"))
 
         def wrapper(*inner_args):
@@ -250,7 +252,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
 CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
 
 
-def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[int]:
+def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> int | None:
     """Finds the previous gate index that shares wires."""
 
     return find_next_gate(wires, reversed(prevs_ops))
@@ -407,7 +409,7 @@ def commute_controlled(
 
     .. code-block:: python
 
-        @partial(commute_controlled, direction="right")
+        @commute_controlled(direction="right")
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])
@@ -427,7 +429,7 @@ def commute_controlled(
             return qml.expval(qml.Z(0))
 
     >>> circuit(0.5)
-    0.9999999999999999
+    np.float64(0.999...)
 
     .. details::
         :title: Usage Details
@@ -485,7 +487,7 @@ def commute_controlled(
     new_tape = tape.copy(operations=op_list)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

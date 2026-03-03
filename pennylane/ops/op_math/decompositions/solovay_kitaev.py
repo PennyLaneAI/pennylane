@@ -119,7 +119,7 @@ def _prune_approximate_set(
     return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
 
-@lru_cache()
+@lru_cache
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
@@ -256,7 +256,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030).
-    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
+    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt(0.5 - 0.5 * qml.math.cos(theta / 2))))
 
     # Begin decomposition by computing the rotation operations V and W.
     v = qml.RX(phi, [0])
@@ -309,10 +309,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-    .. code-block:: python3
-
-        import numpy as np
-        import pennylane as qml
+    .. code-block:: python
 
         op  = qml.RZ(np.pi/3, wires=0)
 
@@ -327,7 +324,6 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
 
     >>> qml.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
     True
-
     """
     # Check for length of wires in the operation
     if len(op.wires) != 1:
@@ -336,6 +332,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         )
 
     with QueuingManager.stop_recording():
+        # Obtain the operation matrix and interface
+        op_matrix = op.matrix()
+        if qml.compiler.active() or qml.math.is_abstract(op_matrix):
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT. "
+                "Use qml.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
+            )
+
         # Build the approximate set with caching
         approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
             tuple(basis_set), max_length=basis_length
@@ -344,8 +348,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         # Build the k-d tree with the current approximation set for querying in the base case
         kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
-        # Obtain the SU(2) and quaternion for the operation
-        op_matrix = op.matrix()
+        # Build the SU(2) and quaternion for the operation
         interface = qml.math.get_deep_interface(op_matrix)
         gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)

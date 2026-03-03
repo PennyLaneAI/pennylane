@@ -19,7 +19,7 @@ ftqc module.
 from threading import RLock
 
 from pennylane import math
-from pennylane.measurements import MeasurementValue
+from pennylane.ops import MeasurementValue
 
 
 def parity(*args):
@@ -48,9 +48,8 @@ class QubitMgr:
         The following MBQC example workload uses the ``QubitMgr`` to assist with recycling of indices
         between iterations
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            import pennylane as qml
             from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
             dev = qml.device('null.qubit')
 

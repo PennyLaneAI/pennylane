@@ -70,7 +70,7 @@ class BoseWord(dict):
     @property
     def wires(self):
         r"""Return wires in a BoseWord."""
-        return set(i[1] for i in self.sorted_dic.keys())
+        return {i[1] for i in self.sorted_dic.keys()}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in BoseWord."""
@@ -280,8 +280,8 @@ class BoseWord(dict):
 
         >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
-        4.0 * b⁺(0) b(0)
-        + 2.0 * I
+        2.0 * I
+        + 4.0 * b⁺(0) b(0)
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
         """
         bw_terms = sorted(self)
@@ -413,7 +413,6 @@ class BoseWord(dict):
         return bs
 
 
-# pylint: disable=useless-super-delegation
 class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
@@ -608,9 +607,9 @@ class BoseSentence(dict):
 
         >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> bs = qml.BoseSentence({bw: 1})
-        >>> print(bw.normal_order())
-        4.0 * b⁺(0) b(0)
-        + 2.0 * I
+        >>> print(bs.normal_order())
+        2.0 * I
+        + 4.0 * b⁺(0) b(0)
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
         """
 

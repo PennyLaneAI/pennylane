@@ -26,7 +26,6 @@ from pennylane.math.is_independent import _get_random_args
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -143,7 +142,7 @@ class TestIsIndependentAutograd:
         qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
-        qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnum=[0, 1]),
+        qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnums=[0, 1]),
     ]
 
     args_constant = [
@@ -190,7 +189,7 @@ class TestIsIndependentAutograd:
         """Tests that kwargs are taken into account when checking
         independence of outputs."""
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
-        jac = qml.jacobian(f, argnum=0)
+        jac = qml.jacobian(f, argnums=0)
         args = (0.2,)
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
@@ -309,119 +308,6 @@ class TestIsIndependentJax:
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
         assert is_independent(jac, self.interface, args, {"kw": True})
-
-
-class TestIsIndependentTensorflow:
-    """Tests for is_independent, which tests a function to be
-    independent of its inputs, using Tensorflow."""
-
-    interface = "tf"
-
-    @pytest.mark.parametrize("num", [0, 1, 2])
-    @pytest.mark.parametrize(
-        "args",
-        [
-            (tf.Variable(0.2),),
-            (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
-            (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
-            (tf.Variable(0.3), tf.constant([1.0, 4, 2]), tf.Variable(np.array([0.3, 9.1]))),
-        ],
-    )
-    @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
-    def test_get_random_args(self, args, num, bounds):
-        """Tests the utility ``_get_random_args`` using a fixed seed."""
-        seed = 921
-        rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
-        assert len(rnd_args) == num
-        tf.random.set_seed(seed)
-        for _rnd_args in rnd_args:
-            expected = tuple(
-                tf.random.uniform(tf.shape(arg), dtype=arg.dtype) * (bounds[1] - bounds[0])
-                + bounds[0]
-                for arg in args
-            )
-            expected = tuple(
-                tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
-                for _arg, _exp in zip(args, expected)
-            )
-            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
-
-    dev = qml.device("default.qubit", wires=1)
-
-    constant_functions = [
-        qml.QNode(const_circuit, dev, interface=interface),
-        lambda x: np.arange(20).reshape((2, 5, 2)),
-        lambda x: (np.ones(3), np.array(-0.1)),
-    ]
-
-    args_constant = [
-        (0.1, np.array([-2.1, 0.1])),
-        (1.2,),
-        (np.ones((2, 3)),),
-    ]
-
-    dependent_functions = [
-        qml.QNode(dependent_circuit, dev, interface=interface),
-        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
-        *dependent_lambdas,
-    ]
-
-    args_dependent = [
-        (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
-        (
-            tf.Variable(
-                np.ones((3, 8)) * 1.1,
-            ),
-        ),
-        *args_dependent_lambdas,
-    ]
-
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
-    def test_independent(self, func, args):
-        """Tests that an independent function is correctly detected as such."""
-        args = tuple(tf.Variable(_arg) for _arg in args)
-        assert is_independent(func, self.interface, args)
-
-    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
-    def test_dependent(self, func, args):
-        """Tests that a dependent function is correctly detected as such."""
-        from tensorflow.python.framework.errors_impl import InvalidArgumentError
-
-        args = tuple(tf.Variable(_arg) for _arg in args)
-        # Filter out functions with TF-incompatible output format
-        out = func(*args)
-        if not isinstance(out, tf.Tensor):
-            try:
-                assert not is_independent(func, self.interface, args)
-            except AttributeError:
-                _func = lambda *args: tf.Variable(func(*args))
-                assert not is_independent(_func, self.interface, args)
-            except InvalidArgumentError:
-                pytest.skip()
-        else:
-            assert not is_independent(func, self.interface, args)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
-    def test_overlooked_dependence(self, func, args):
-        """Test that particular functions that are dependent on the input
-        are overlooked."""
-        assert not is_independent(func, self.interface, args)
-
-    def test_kwargs_are_considered(self):
-        """Tests that kwargs are taken into account when checking
-        independence of outputs."""
-        f = lambda x, kw=False: 0.1 * x if kw else tf.constant(0.2)
-
-        def _jac(x, kw):
-            with tf.GradientTape() as tape:
-                out = f(x, kw)
-            return tape.jacobian(out, x)
-
-        args = (tf.Variable(0.2),)
-        assert is_independent(f, self.interface, args)
-        assert not is_independent(f, self.interface, args, {"kw": True})
-        assert is_independent(_jac, self.interface, args, {"kw": True})
 
 
 class TestIsIndependentTorch:

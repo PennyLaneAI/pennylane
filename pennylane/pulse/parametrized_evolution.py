@@ -19,7 +19,6 @@ This file contains the ``ParametrizedEvolution`` operator.
 
 import warnings
 from collections.abc import Sequence
-from typing import Union
 
 from pennylane import math
 from pennylane.operation import Operation
@@ -373,7 +372,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, list[float]] = None,
+        t: float | list[float] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
@@ -442,7 +441,7 @@ class ParametrizedEvolution(Operation):
             return_intermediate=return_intermediate,
             complementary=complementary,
             dense=dense,
-            id=self.id,
+            id=self._id,
             **odeint_kwargs,
         )
 

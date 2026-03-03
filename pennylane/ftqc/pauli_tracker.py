@@ -16,7 +16,6 @@ r"""
 This module contains Pauli Tracking functions.
 """
 import itertools
-from typing import List, Tuple
 
 import numpy as np
 
@@ -49,7 +48,7 @@ _CLIFFORD_GATES_SUPPORTED = (H, S, CNOT)
 _NON_CLIFFORD_GATES_SUPPORTED = (RZ, RotXZX)
 
 
-def pauli_to_xz(op: Operator) -> Tuple[int, int]:
+def pauli_to_xz(op: Operator) -> tuple[int, int]:
     r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -66,12 +65,10 @@ def pauli_to_xz(op: Operator) -> Tuple[int, int]:
     **Example:**
         The following example shows how the Pauli to XZ works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import pauli_to_xz
-            from pennylane import I
-            >>> pauli_to_xz(I(0))
-            (0, 0)
+        >>> from pennylane.ftqc.pauli_tracker import pauli_to_xz
+        >>> from pennylane import I
+        >>> pauli_to_xz(I(0))
+        (0, 0)
 
         A xz tuple representation is returned for a given Pauli operator.
     """
@@ -99,11 +96,9 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     **Example:**
         The following example shows how the XZ to Pauli works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import xz_to_pauli
-            >>> xz_to_pauli(0, 0)(wires=0)
-            I(0)
+        >>> from pennylane.ftqc.pauli_tracker import xz_to_pauli
+        >>> xz_to_pauli(0, 0)(wires=0)
+        I(0)
 
         A Pauli operator class is returned for a given xz tuple.
     """
@@ -112,7 +107,7 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
+def pauli_prod(ops: list[Operator]) -> tuple[int, int]:
     r"""
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
     Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
@@ -126,12 +121,10 @@ def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
     **Example:**
         The following example shows how the `pauli_prod` works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import pauli_prod
-            from pennylane import I, X, Y, Z
-            >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
-            (0, 0)
+        >>> from pennylane.ftqc.pauli_tracker import pauli_prod
+        >>> from pennylane import I, X, Y, Z
+        >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
+        (0, 0)
 
         The result is a new Pauli operator in the xz-encoding representation.
     """
@@ -191,7 +184,7 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
     return [(xc, zc ^ zt), (xc ^ xt, zt)]
 
 
-def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> list[tuple[int, int]]:
     r"""Gets the list of xz-encoded bits representing the list of input Pauli ops after being commuted through the given Clifford op.
     Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = clifford\_op \cdot xz`
     up to a global phase to move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
@@ -207,12 +200,10 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     **Example:**
         The following example shows how the `commute_clifford_op` works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import commute_clifford_op
-            from pennylane import I, CNOT
-            >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
-            [(1, 1), (0, 0)]
+        >>> from pennylane.ftqc.pauli_tracker import commute_clifford_op
+        >>> from pennylane import I, CNOT
+        >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
+        [(1, 1), (0, 0)]
 
         A list of Pauli operators in the xz representation is returned.
     """
@@ -247,7 +238,7 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
-def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
+def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
     r"""Parse a series of mid-measurement results of a quantum tape where
     all gates are from the set {X, Y, Z, I, H, S, CNOT, RZ, RotXZX}, and
     where only the first gate on each wire is permitted to be a non-Clifford
@@ -298,7 +289,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops
 
 
-def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
+def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
@@ -345,7 +336,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
     return x_record, z_record
 
 
-def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
+def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: list):
     """Correct sample measurements in a tape. The samples are corrected based on the `samples`
     at `wires` with the corresponding recorded x.
 
@@ -365,7 +356,7 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
     return correct_meas
 
 
-def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_vals: List):
+def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
     r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively
@@ -391,16 +382,12 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
     **Example:**
 
-        .. code-block:: python3
-
-            import pennylane as qml
+        .. code-block:: python
 
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep
 
             from pennylane.ftqc.pauli_tracker import get_byproduct_corrections
-            import numpy as np
-
 
             def generate_random_state(n):
                 seed_value = 42  # You can use any integer as the seed
@@ -415,8 +402,9 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
 
             num_shots = 1000
-            dev = qml.device("lightning.qubit", shots=num_shots)
+            dev = qml.device("lightning.qubit")
 
+            @qml.set_shots(num_shots)
             @diagonalize_mcms
             @qml.qnode(dev, mcm_method="one-shot")
             def circ(start_state):

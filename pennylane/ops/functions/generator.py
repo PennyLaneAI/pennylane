@@ -150,12 +150,12 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     >>> op = qml.CRX(0.6, wires=[0, 1])
     >>> qml.generator(op)
-    (Projector([1], wires=[0]) @ X(1), -0.5)
+    (X(1) @ Projector(array([1]), wires=[0]), np.float64(-0.5))
 
     It can also be used in a functional form:
 
     >>> qml.generator(qml.CRX)(0.6, wires=[0, 1])
-    (Projector([1], wires=[0]) @ X(1), -0.5)
+    (X(1) @ Projector(array([1]), wires=[0]), np.float64(-0.5))
 
     By default, ``generator`` will return the generator in the format of ``(obs, prefactor)``,
     corresponding to :math:`G=p \hat{O}`, where the observable :math:`\hat{O}` will
@@ -169,8 +169,8 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     (X(0), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will be a LinearCombination
     -0.5 * X(0)
-    >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
-    Projector([1], wires=[0])
+    >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # output will be a simplified obs where possible
+    Projector(array([1]), wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
     -0.5 * X(0)
     """
@@ -194,7 +194,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             # versions <=0.22, assume gen_op.generator is a property
             gen = _generator_backcompatibility(gen_op)
 
-        if not gen.is_hermitian:
+        if not gen.is_verified_hermitian:
             raise QuantumFunctionError(
                 f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
             )

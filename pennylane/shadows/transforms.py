@@ -149,8 +149,8 @@ def shadow_state(
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=10000)
-        @partial(qml.shadows.shadow_state, wires=[0, 1], diffable=True)
+        @qml.set_shots(shots=10000)
+        @qml.shadows.shadow_state(wires=[0, 1], diffable=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)

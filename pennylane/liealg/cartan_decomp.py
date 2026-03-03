@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
-from typing import List, Tuple, Union
 
 from pennylane import math
 from pennylane.operation import Operator
@@ -22,8 +21,8 @@ from pennylane.typing import TensorLike
 
 
 def cartan_decomp(
-    g: List[Union[PauliSentence, Operator]], involution: callable
-) -> Tuple[List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]]:
+    g: list[PauliSentence | Operator], involution: callable
+) -> tuple[list[PauliSentence | Operator], list[PauliSentence | Operator]]:
     r"""Compute the Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` of a Lie algebra :math:`\mathfrak{g}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
@@ -61,19 +60,13 @@ def cartan_decomp(
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
-    [X(0) @ X(1),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
     >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
-    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
-     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))], [X(0) @ X(1), Z(0), Z(1), Y(0) @ Y(1)])
 
     We can check the validity of the decomposition using :func:`~check_cartan_decomp`.
 
@@ -85,11 +78,7 @@ def cartan_decomp(
     >>> from pennylane.liealg import check_cartan_decomp
     >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> k, m
-    ([Z(0), Z(1)],
-     [X(0) @ X(1),
-      -1.0 * (Y(0) @ X(1)),
-      -1.0 * (X(0) @ Y(1)),
-      -1.0 * (Y(0) @ Y(1))])
+     ([Z(0), Z(1)], [X(0) @ X(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)])
     >>> check_cartan_decomp(k, m)
     True
     """
@@ -107,9 +96,9 @@ def cartan_decomp(
 
 
 def check_commutation_relation(
-    ops1: List[Union[PauliSentence, TensorLike]],
-    ops2: List[Union[PauliSentence, TensorLike]],
-    vspace: Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]],
+    ops1: list[PauliSentence | TensorLike],
+    ops2: list[PauliSentence | TensorLike],
+    vspace: PauliVSpace | list[PauliSentence | TensorLike],
 ):
     r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
@@ -208,8 +197,8 @@ def _is_subspace(subspace, vspace):
 
 
 def check_cartan_decomp(
-    k: List[Union[PauliSentence, TensorLike]],
-    m: List[Union[PauliSentence, TensorLike]],
+    k: list[PauliSentence | TensorLike],
+    m: list[PauliSentence | TensorLike],
     verbose=True,
 ):
     r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}.`
@@ -243,19 +232,13 @@ def check_cartan_decomp(
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
-    [X(0) @ X(1),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
     >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
-    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
-     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))], [X(0) @ X(1), Z(0), Z(1), Y(0) @ Y(1)])
 
     We can check the validity of the decomposition using ``check_cartan_decomp``.
 

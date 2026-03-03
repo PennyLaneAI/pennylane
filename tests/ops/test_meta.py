@@ -20,6 +20,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import Snapshot
+from pennylane.decomposition import gate_sets
+from pennylane.transforms import decompose
 
 
 class TestBarrier:
@@ -58,9 +60,8 @@ class TestBarrier:
         dev = qml.device("default.qubit", wires=3)
         optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
-        assert optimized_gates == 0
+        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
 
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
@@ -80,9 +81,7 @@ class TestBarrier:
 
         optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 0
+        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
 
         def qfunc1():
             qml.Hadamard(wires=0)
@@ -137,7 +136,11 @@ class TestBarrier:
             return qml.state()
 
         tape = qml.workflow.construct_tape(circuit)()
-        tape = tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+        [tape], _ = decompose(
+            tape,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: op.name in ["Barrier", "PauliX", "CNOT"],
+        )
 
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"
@@ -224,6 +227,23 @@ class TestWireCut:
 
 class TestSnapshot:
     """Unit tests for the snapshot class."""
+
+    def test_repr(self):
+        """Test the repr for a Snapshot."""
+
+        op = qml.Snapshot("my_tag", measurement=qml.expval(qml.Z(0)), shots=2)
+        assert repr(op) == "<Snapshot: tag=my_tag, measurement=expval(Z(0)), shots=Shots(total=2)>"
+
+    def test_update_tag(self):
+        """Test that update_tag generates a copy with a new tag."""
+
+        op1 = qml.Snapshot("initial_tag", measurement=qml.probs(), shots=5)
+
+        op2 = op1.update_tag("new_tag")
+        assert op2.tag == "new_tag"
+        assert op2.hyperparameters["shots"] == qml.measurements.Shots(5)
+        assert op2.hyperparameters["measurement"] == qml.probs()
+        assert op1.tag == "initial_tag"
 
     def test_decomposition(self):
         """Test the decomposition of the Snapshot operation."""

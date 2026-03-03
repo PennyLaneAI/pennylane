@@ -617,7 +617,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     broadcasted_ops = [
         qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.RZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
         qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.CRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
@@ -630,7 +632,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         qml.PauliZ(2),
         qml.CNOT([1, 2]),
         qml.RX(np.pi, wires=2),
+        qml.RZ(np.pi, wires=2),
         qml.PhaseShift(np.pi / 2, wires=2),
+        qml.CRZ(np.pi / 2, wires=[1, 2]),
         qml.IsingXX(np.pi / 2, wires=[1, 2]),
         qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
@@ -894,6 +898,24 @@ class TestDensityMatrix:
 
         assert math.allclose(result, expected)
 
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_eigvals(self, num_q, ml_framework):
+        """Test applying density matrix with batched eigenvalues"""
+
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        batched_params = math.asarray([0, 1, 2], like=ml_framework)
+        op = qml.RX(batched_params, wires=0)
+
+        shape = (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = apply_operation(op, state)
+        assert result.shape == (len(batched_params),) + shape
+
     def test_partial_trace_single_qubit_update(self, ml_framework):
         """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""
 
@@ -949,3 +971,94 @@ class TestDensityMatrix:
         result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
 
         assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state(self, ml_framework):
+        """Test partial tracing with state in tensor format (as used by the actual mixed device).
+
+        This test reproduces the bug from GitHub issue #8932 where QubitDensityMatrix
+        fails when applied to a subset of wires because the state is in tensor format
+        (2, 2, ..., 2) rather than 2D matrix format (dim, dim).
+        """
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2) representing |0000><0000|
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the 2-qubit density matrix for GHZ state: (|00> + |11>)/sqrt(2)
+        ghz = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (4, 4)
+        ghz_dm = math.asarray(ghz_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first 2 wires (wires=[0, 1])
+        op = qml.QubitDensityMatrix(ghz_dm, wires=[0, 1])
+
+        # Apply the operation - this should not raise ValueError
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        # Trace should be 1
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state_noncontiguous_wires(self, ml_framework):
+        """Test partial tracing with non-contiguous wire indices in tensor format state."""
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2)
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define a 2-qubit Bell state density matrix
+        bell = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        bell_dm = np.outer(bell, np.conj(bell))
+        bell_dm = math.asarray(bell_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on non-contiguous wires [0, 2]
+        op = qml.QubitDensityMatrix(bell_dm, wires=[0, 2])
+
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+
+def test_qubit_density_matrix_qnode_integration():
+    """Integration test for QubitDensityMatrix on subset of wires using QNode.
+
+    This reproduces the exact bug scenario from GitHub issue #8932.
+    """
+    n = 2
+    dev = qml.device("default.mixed", wires=2 * n)
+
+    @qml.qnode(dev)
+    def test_circuit(rho):
+        # Only initialize n of the 2n qubits using with rho
+        qml.QubitDensityMatrix(rho, wires=range(0, n))
+
+        # Apply Hadamard gate to ancilla qubits
+        for a in range(n, 2 * n):
+            qml.H(a)
+
+        return qml.probs(wires=range(n))
+
+    # GHZ state: (|00> + |11>)/sqrt(2)
+    GHZ = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    rho = qml.math.dm_from_state_vector(GHZ)
+
+    # This should not raise ValueError
+    result = test_circuit(rho)
+
+    # Expected: probabilities for GHZ state are [0.5, 0, 0, 0.5]
+    expected = np.array([0.5, 0.0, 0.0, 0.5])
+    assert np.allclose(result, expected, atol=1e-8)

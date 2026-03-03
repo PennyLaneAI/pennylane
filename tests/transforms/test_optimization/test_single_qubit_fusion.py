@@ -350,3 +350,36 @@ class TestSingleQubitFusionInterfaces:
         # Check operation list
         tape = qml.workflow.construct_tape(transformed_qnode)(input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
+
+    @pytest.mark.jax
+    def test_single_qubit_fusion_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RY(0.5, wires=0),
+                ]
+            )
+            [tape], _ = single_qubit_fusion(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RY(0.5, wires=0),
+                ]
+            )
+            [tape], _ = single_qubit_fusion(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 2

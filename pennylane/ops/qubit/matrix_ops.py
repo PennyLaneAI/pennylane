@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from typing import Optional, Union
 
 import numpy as np
 import scipy as sp
@@ -29,7 +28,8 @@ from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
-from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -45,7 +45,7 @@ from pennylane.wires import Wires, WiresLike
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
 
-def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
+def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
 
     Args:
@@ -139,9 +139,9 @@ class QubitUnitary(Operation):
 
     def __init__(
         self,
-        U: Union[TensorLike, csr_matrix],
+        U: TensorLike | csr_matrix,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
         unitary_check: bool = False,
     ):
         wires = Wires(wires)
@@ -207,8 +207,8 @@ class QubitUnitary(Operation):
 
         >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
         >>> qml.QubitUnitary.compute_matrix(U)
-        [[0.98877108+0.j, 0.-0.14943813j],
-        [0.-0.14943813j, 0.98877108+0.j]]
+         array([[0.988...+0.j        , 0.        -0.149...j],
+                [0.        -0.149...j, 0.988...+0.j        ]])
         """
         if sp.sparse.issparse(U):
             raise qml.operation.MatrixUndefinedError(
@@ -228,10 +228,16 @@ class QubitUnitary(Operation):
 
         **Example**
 
-        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> U = np.array([
+        ...     [1, 0, 0, 0],
+        ...     [0, 1, 0, 0],
+        ...     [0, 0, 0, 1],
+        ...     [0, 0, 1, 0]
+        ... ])
+        >>> U = sp.sparse.csr_matrix(U)
         >>> qml.QubitUnitary.compute_sparse_matrix(U)
-        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
-            with 2 stored elements in Compressed Sparse Row format>
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+            with 4 stored elements and shape (4, 4)>
         """
         if sp.sparse.issparse(U):
             return U.asformat(format)
@@ -260,8 +266,13 @@ class QubitUnitary(Operation):
         **Example:**
 
         >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        >>> qml.QubitUnitary.compute_decomposition(U, 0)
-        [Rot(tensor(3.14159265, requires_grad=True), tensor(1.57079633, requires_grad=True), tensor(0., requires_grad=True), wires=[0])]
+        >>> decomp = qml.QubitUnitary.compute_decomposition(U, 0)
+        >>> from pprint import pprint
+        >>> pprint(decomp)
+        [RZ(np.float64(3.141...), wires=[0]),
+        RY(np.float64(1.570...), wires=[0]),
+        RZ(np.float64(0.0), wires=[0]),
+        GlobalPhase(np.float64(-1.570...), wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -314,7 +325,7 @@ class QubitUnitary(Operation):
         # Note: it is necessary to explicitly cast back to csr, or it will become csc.
         return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         if self.has_sparse_matrix:
             mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
@@ -334,9 +345,9 @@ class QubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
@@ -628,14 +639,14 @@ class DiagonalQubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+def _diagonal_qu_resource(num_wires):
     if num_wires == 1:
         return {qml.RZ: 1, qml.GlobalPhase: 1}
     return {
@@ -763,7 +774,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -835,8 +846,8 @@ class BlockEncode(Operation):
 
         >>> A = np.array([[0.1,0.2],[0.3,0.4]])
         >>> A
-        tensor([[0.1, 0.2],
-                [0.3, 0.4]])
+        array([[0.1, 0.2],
+            [0.3, 0.4]])
         >>> qml.BlockEncode.compute_matrix(A, subspace=[2,2,4])
         array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
                [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
@@ -867,9 +878,9 @@ class BlockEncode(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 
@@ -884,7 +895,9 @@ def _process_blockencode(A, subspace):
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
-        if like == "tensorflow":
+        if (
+            like == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             axis = 1 if h else 0
             return qml.math.concat(lst, like=like, axis=axis)
         return qml.math.hstack(lst) if h else qml.math.vstack(lst)

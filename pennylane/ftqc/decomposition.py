@@ -14,12 +14,13 @@
 """
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
+
 from functools import partial, singledispatch
 
 import networkx as nx
 
-from pennylane import math
-from pennylane.decomposition import enabled_graph, register_resources
+from pennylane import PhaseShift, adjoint, math, measure
+from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
@@ -33,7 +34,97 @@ from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
 
-mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
+
+def ppr_to_mbqc_setup_inputs():
+    """
+    Specify that the MLIR compiler pass for lowering Pauli Product Rotations (PPR)
+    and Pauli Product Measurements (PPM) to a measurement-based quantum computing
+    (MBQC) style circuit will be applied.
+
+    This pass replaces PBC operations (``pbc.ppr`` and ``pbc.ppm``) with a
+    gate-based sequence in the Quantum dialect using universal gates and
+    measurements that are supported as MBQC gate set.
+    For details, see the Figure 2 of `Measurement-based Quantum Computation on cluster states <https://arxiv.org/abs/quant-ph/0301052>`_.
+
+    Conceptually, each Pauli product is handled by:
+
+    - Mapping its Pauli string to the Z basis via per-qubit conjugations
+      (e.g., ``H`` for ``X``; specialized ``RotXZX`` sequences for ``Y``).
+    - Accumulating parity onto the first qubit with a right-to-left CNOT ladder.
+    - Emitting the kernel operation:
+      - **PPR**: apply an ``RZ`` with an angle derived from the rotation kind.
+      - **PPM**: perform a measurement and return an ``i1`` result.
+    - Uncomputing by reversing the CNOT ladder and the conjugations.
+    - Conjugating the qubits back to the original basis.
+
+    .. note::
+
+        This pass expects PPR/PPM operations to be present. In practice, use it
+        after ``to_ppr``.
+
+    Args:
+        fn (QNode): QNode to apply the pass to.
+
+    Returns:
+        :class:`QNode <pennylane.QNode>`
+
+    **Example**
+
+    Convert a simple Clifford+T circuit to PPRs, then lower them to an
+    MBQC-style circuit. Note that this pass should be applied before
+    ``ppr_to_ppm`` since it requires the actual PPR/PPM operations.
+
+    .. code-block::
+
+        import pennylane as qml
+        from pennylane.ftqc.decomposition import ppr_to_mbqc
+        from pennylane.transforms.decompositions import to_ppr
+
+        p = [("my_pipe", ["quantum-compilation-stage"])]
+
+        @qml.qjit(pipelines=p, target="mlir", keep_intermediate=True)
+        @ppr_to_mbqc
+        @to_ppr
+        @qml.qnode(qml.device("null.qubit", wires=2))
+        def circuit():
+            qml.H(0)
+            qml.CNOT([0, 1])
+            return
+
+        print(circuit.mlir_opt)
+
+    Example MLIR excerpt (structure only):
+
+    .. code-block::
+
+        ...
+        %cst = arith.constant -1.5707963267948966 : f64
+        %cst_0 = arith.constant 1.5707963267948966 : f64
+        %0 = quantum.alloc( 2) : !quantum.reg
+        %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+        %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+        %out_qubits = quantum.custom "RZ"(%cst_0) %1 : !quantum.bit
+        %out_qubits_1 = quantum.custom "H"() %out_qubits : !quantum.bit
+        %out_qubits_2 = quantum.custom "RZ"(%cst_0) %out_qubits_1 : !quantum.bit
+        %out_qubits_3 = quantum.custom "H"() %out_qubits_2 : !quantum.bit
+        %out_qubits_4 = quantum.custom "RZ"(%cst_0) %out_qubits_3 : !quantum.bit
+        %out_qubits_5 = quantum.custom "H"() %2 : !quantum.bit
+        %out_qubits_6:2 = quantum.custom "CNOT"() %out_qubits_5, %out_qubits_4 : !quantum.bit, !quantum.bit
+        %out_qubits_7 = quantum.custom "RZ"(%cst_0) %out_qubits_6#1 : !quantum.bit
+        %out_qubits_8:2 = quantum.custom "CNOT"() %out_qubits_6#0, %out_qubits_7 : !quantum.bit, !quantum.bit
+        %out_qubits_9 = quantum.custom "H"() %out_qubits_8#0 : !quantum.bit
+        %out_qubits_10 = quantum.custom "RZ"(%cst) %out_qubits_8#1 : !quantum.bit
+        %out_qubits_11 = quantum.custom "H"() %out_qubits_9 : !quantum.bit
+        %out_qubits_12 = quantum.custom "RZ"(%cst) %out_qubits_11 : !quantum.bit
+        %out_qubits_13 = quantum.custom "H"() %out_qubits_12 : !quantum.bit
+        %mres, %out_qubit = quantum.measure %out_qubits_13 : i1, !quantum.bit
+        ...
+
+    """
+    return (), {}
+
+
+ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_inputs)
 
 
 @register_resources({RotXZX: 1})
@@ -52,19 +143,25 @@ def convert_to_mbqc_gateset(tape):
             "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
             " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
         )
-    tapes, fn = decompose(tape, gate_set=mbqc_gate_set, alt_decomps={Rot: [_rot_to_xzx]})
+    tapes, fn = decompose(tape, gate_set=gate_sets.MBQC_GATES, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn
 
 
 @transform
-def convert_to_mbqc_formalism(tape):
+def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
     before applying the transform.
 
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
-    all byproduct operations online immediately after their respective measurement procedures."""
+    all byproduct operations online immediately after their respective measurement procedures.
+
+    Args:
+        diagonalize_mcms (bool, optional): When set, the transform inserts diagonalizing gates
+            before arbitrary-basis mid-circuit measurements. Defaults to False.
+
+    """
 
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
         raise NotImplementedError(
@@ -88,11 +185,10 @@ def convert_to_mbqc_formalism(tape):
             elif isinstance(op, CNOT):  # two wires
                 ctrl, tgt = op.wires[0], op.wires[1]
                 wire_map[ctrl], wire_map[tgt], measurements = queue_cnot(
-                    q_mgr, wire_map[ctrl], wire_map[tgt]
+                    q_mgr, wire_map[ctrl], wire_map[tgt], diagonalize_mcms
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                # pylint: disable=isinstance-second-argument-not-valid-type
                 if isinstance(op, (X, Y, Z, Identity)):
                     # else branch because Identity may not have wires
                     wire = wire_map[op.wires[0]] if op.wires else ()
@@ -100,7 +196,7 @@ def convert_to_mbqc_formalism(tape):
                 else:
                     w = op.wires[0]
                     wire_map[w], measurements = queue_single_qubit_gate(
-                        q_mgr, op, in_wire=wire_map[w]
+                        q_mgr, op, in_wire=wire_map[w], diagonalize_mcms=diagonalize_mcms
                     )
                     queue_corrections(op, measurements)(wire_map[w])
 
@@ -113,7 +209,7 @@ def convert_to_mbqc_formalism(tape):
     return (new_tape,), null_postprocessing
 
 
-def queue_single_qubit_gate(q_mgr, op, in_wire):
+def queue_single_qubit_gate(q_mgr, op, in_wire, diagonalize_mcms):
     """Queue the resource state preparation, measurements and byproducts
     to execute the operation in the MBQC formalism. This implementation
     follows the procedures defined in Raussendorf et al. 2003,
@@ -125,7 +221,7 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
     make_graph_state(nx.grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
-    measurements = queue_measurements(op, wires)
+    measurements = queue_measurements(op, wires, diagonalize_mcms)
 
     # release input qubit and intermediate graph qubits
     q_mgr.release_qubits(wires[0:-1])
@@ -133,16 +229,36 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
 
 
 @singledispatch
-def queue_measurements(op, wires):
+def queue_measurements(op, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute the operation in the MBQC formalism"""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
 @queue_measurements.register(RotXZX)
-def _rot_measurements(op: RotXZX, wires):
+def _rot_measurements(op: RotXZX, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute RotXZX in the MBQC formalism"""
 
     phi, theta, omega = op.data
+
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+
+        cond(m1, partial(PhaseShift, phi=-phi), partial(PhaseShift, phi=phi))(wires=wires[1])
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+
+        cond(m2, partial(PhaseShift, phi=-theta), partial(PhaseShift, phi=theta))(wires=wires[2])
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+
+        cond(m1 ^ m3, partial(PhaseShift, phi=-omega), partial(PhaseShift, phi=omega))(
+            wires=wires[3]
+        )
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+
+        return [m1, m2, m3, m4]
 
     m1 = measure_x(wires[0], reset=True)
     m2 = cond_measure(
@@ -165,10 +281,26 @@ def _rot_measurements(op: RotXZX, wires):
 
 
 @queue_measurements.register(RZ)
-def _rz_measurements(op: RZ, wires):
+def _rz_measurements(op: RZ, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute RZ in the MBQC formalism"""
 
     angle = op.parameters[0]
+
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+
+        cond(m2, partial(PhaseShift, phi=-angle), partial(PhaseShift, phi=angle))(wires=wires[2])
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+
+        return [m1, m2, m3, m4]
 
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
@@ -183,8 +315,22 @@ def _rz_measurements(op: RZ, wires):
 
 
 @queue_measurements.register(H)
-def _hadamard_measurements(op: H, wires):
+def _hadamard_measurements(op: H, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute Hadamard in the MBQC formalism"""
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+        adjoint(S(wires[1]))
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+        adjoint(S(wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+        adjoint(S(wires[3]))
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+        return [m1, m2, m3, m4]
+
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_y(wires[1], reset=True)
     m3 = measure_y(wires[2], reset=True)
@@ -194,8 +340,20 @@ def _hadamard_measurements(op: H, wires):
 
 
 @queue_measurements.register(S)
-def _s_measurements(op: S, wires):
+def _s_measurements(op: S, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute S in the MBQC formalism"""
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+        adjoint(S(wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+        return [m1, m2, m3, m4]
+
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
     m3 = measure_y(wires[2], reset=True)
@@ -250,7 +408,7 @@ def _s_corrections(op, m1, m2, m3, m4):
     return m2 ^ m4, parity(m1, m2, m3, 1)
 
 
-def queue_cnot(q_mgr, ctrl_idx, target_idx):
+def queue_cnot(q_mgr, ctrl_idx, target_idx, diagonalize_mcms=False):
     """Queue the resource state preparation, measurements and byproducts to execute
     the operation in the MBQC formalism. This is the 15-qubit procedure from
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312, Fig. 2"""
@@ -268,7 +426,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     CZ([ctrl_idx, graph_wires[0]])
     CZ([target_idx, graph_wires[7]])
 
-    measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires))
+    measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires), diagonalize_mcms)
 
     q_mgr.release_qubit(ctrl_idx)
     q_mgr.release_qubit(target_idx)
@@ -278,11 +436,48 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     return output_ctrl_idx, output_target_idx, measurements
 
 
-def cnot_measurements(wires):
+def cnot_measurements(wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
     Numbering convention follows the procedure in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
     ctrl_idx, target_idx, graph_wires = wires
+    if diagonalize_mcms:
+        H(ctrl_idx)
+        m1 = measure(ctrl_idx, reset=True)
+        adjoint(S(graph_wires[0]))
+        H(graph_wires[0])
+        m2 = measure(graph_wires[0], reset=True)
+        adjoint(S(graph_wires[1]))
+        H(graph_wires[1])
+        m3 = measure(graph_wires[1], reset=True)
+        adjoint(S(graph_wires[2]))
+        H(graph_wires[2])
+        m4 = measure(graph_wires[2], reset=True)
+        adjoint(S(graph_wires[3]))
+        H(graph_wires[3])
+        m5 = measure(graph_wires[3], reset=True)
+        adjoint(S(graph_wires[4]))
+        H(graph_wires[4])
+        m6 = measure(graph_wires[4], reset=True)
+
+        adjoint(S(graph_wires[6]))
+        H(graph_wires[6])
+        m8 = measure(graph_wires[6], reset=True)
+
+        H(target_idx)
+        m9 = measure(target_idx, reset=True)
+        H(graph_wires[7])
+        m10 = measure(graph_wires[7], reset=True)
+        H(graph_wires[8])
+        m11 = measure(graph_wires[8], reset=True)
+        adjoint(S(graph_wires[9]))
+        H(graph_wires[9])
+        m12 = measure(graph_wires[9], reset=True)
+        H(graph_wires[10])
+        m13 = measure(graph_wires[10], reset=True)
+        H(graph_wires[11])
+        m14 = measure(graph_wires[11], reset=True)
+        return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14]
 
     m1 = measure_x(ctrl_idx, reset=True)
     m2 = measure_y(graph_wires[0], reset=True)

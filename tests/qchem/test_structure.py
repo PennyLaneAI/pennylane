@@ -451,6 +451,14 @@ def test_inconsistent_active_spaces(
         )
 
 
+def pcp_not_found_error(pcp=None):
+    """Raise a PubChem NotFoundError."""
+    try:
+        raise pcp.NotFoundError(404, "The input record was not found", [])
+    except TypeError as exc:
+        raise pcp.NotFoundError from exc
+
+
 def mock_get_cids(identifier, namespace, pcp=None):
     """Return PubChem Compound ID for the provided identifier"""
     records = {
@@ -472,7 +480,7 @@ def mock_get_cids(identifier, namespace, pcp=None):
         for val in vals:
             if (identifier, namespace) == val:
                 return [key]
-    raise pcp.NotFoundError
+    return pcp_not_found_error(pcp)
 
 
 def mock_from_cid(cid, record_type, pcp=None):
@@ -502,11 +510,9 @@ def mock_from_cid(cid, record_type, pcp=None):
     if [cid, record_type] in [[297, "3d"], [783, "2d"]]:
         return pcp.Compound(records[cid])
 
-    raise (
-        pcp.NotFoundError
-        if [cid, record_type] == [783, "3d"]
-        else ValueError("Provided CID (or Identifier) is None.")
-    )
+    if [cid, record_type] == [783, "3d"]:
+        pcp_not_found_error(pcp)
+    raise ValueError("Provided CID (or Identifier) is None.")
 
 
 @pytest.mark.parametrize(

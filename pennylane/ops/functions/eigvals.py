@@ -71,7 +71,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     >>> x = torch.tensor(0.6, requires_grad=True)
     >>> eigval_fn = qml.eigvals(qml.RX)
     >>> eigval_fn(x, wires=0)
-    tensor([0.9553+0.2955j, 0.9553-0.2955j], grad_fn=<LinalgEigBackward>)
+    tensor([0.9553+0.2955j, 0.9553-0.2955j], grad_fn=<LinalgEigBackward0>)
 
     In its functional form, it is fully differentiable with respect to gate arguments:
 
@@ -93,7 +93,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
         Consider the following quantum function:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
@@ -105,8 +105,8 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         >>> eigvals_fn = qml.eigvals(circuit)
         >>> theta = np.pi / 4
         >>> eigvals_fn(theta)
-        array([ 0.92387953+0.38268343j,  0.92387953-0.38268343j,
-               -0.92387953+0.38268343j, -0.92387953-0.38268343j])
+        array([ 0.92387953+0.38268343j, -0.92387953-0.38268343j,
+            0.92387953-0.38268343j, -0.92387953+0.38268343j])
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):

@@ -26,7 +26,6 @@ import scipy
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
-from pennylane.exceptions import DeviceError
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
@@ -378,6 +377,11 @@ mul_LinearCombinations = [
 
 matmul_LinearCombinations = [
     (
+        qml.ops.LinearCombination([1], [X(0)]),
+        qml.ops.LinearCombination([0.5], [Z(3)]),
+        qml.ops.LinearCombination([0.5], [X(0) @ Z(3)]),
+    ),
+    (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         qml.ops.LinearCombination([0.5, 0.5], [Z(2), Z(3)]),
         qml.ops.LinearCombination(
@@ -402,15 +406,22 @@ matmul_LinearCombinations = [
                 Z(0) @ Z(2),
             ],
         ),
+    ),
+    (
+        qml.ops.LinearCombination([], []),
+        X(2),
+        qml.ops.LinearCombination([], []),
+    ),
+    (
+        qml.ops.LinearCombination([0.2], [Z(1)]),
+        X(2),
+        qml.ops.LinearCombination([0.2], [Z(1) @ X(2)]),
     ),
     (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.ops.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
     ),
-]
-
-rmatmul_LinearCombinations = [
     (
         qml.ops.LinearCombination([0.5, 0.5], [Z(2), Z(3)]),
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
@@ -437,10 +448,10 @@ rmatmul_LinearCombinations = [
             ],
         ),
     ),
-    (
-        qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
+    (  # This does not use __matmul__ of LinearCombination but of Operator
         X(2),
-        qml.ops.LinearCombination([1, 1], [X(2) @ X(0), X(2) @ Z(1)]),
+        qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
+        X(2) @ (1 * X(0) + 1 * Z(1)),
     ),
 ]
 
@@ -561,20 +572,20 @@ class TestLinearCombination:
         assert pr is not None
         assert pr == true_pauli
 
-    def test_is_hermitian_trivial(self):
+    def test_is_verified_hermitian_trivial(self):
         """Test that an empty LinearCombination is trivially hermitian"""
         op = qml.ops.LinearCombination([], [])
-        assert op.is_hermitian
+        assert op.is_verified_hermitian
 
-    IS_HERMITIAN_TEST = (
+    IS_VERIFIED_HERMITIAN_TEST = (
         (qml.ops.LinearCombination([0.5, 0.5], [X(0), X(1) @ X(2)]), True),
         (qml.ops.LinearCombination([0.5, 0.5j], [X(0), X(1) @ X(2)]), False),
         (qml.ops.LinearCombination([0.5, 0.5], [X(0), qml.Hadamard(0)]), True),
     )
 
-    @pytest.mark.parametrize("op, res", IS_HERMITIAN_TEST)
-    def test_is_hermitian(self, op, res):
-        assert op.is_hermitian is res
+    @pytest.mark.parametrize("op, res", IS_VERIFIED_HERMITIAN_TEST)
+    def test_is_verified_hermitian(self, op, res):
+        assert op.is_verified_hermitian is res
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     def test_LinearCombination_valid_init(self, coeffs, ops):
@@ -628,7 +639,7 @@ class TestLinearCombination:
     def test_LinearCombination_wires(self, coeffs, ops):
         """Tests that the LinearCombination object has correct wires."""
         H = qml.ops.LinearCombination(coeffs, ops)
-        assert set(H.wires) == set(w for op in H.ops for w in op.wires)
+        assert set(H.wires) == {w for op in H.ops for w in op.wires}
 
     def test_label(self):
         """Tests the label method of LinearCombination when <=3 coefficients."""
@@ -708,54 +719,6 @@ class TestLinearCombination:
         (qml.ops.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
 
-    @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
-    def test_compare_to_simple_ops(self, H, op):
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H.compare(op)
-
-    def test_compare_raises_error(self):
-        op = qml.ops.LinearCombination([], [])
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
-                op.compare(0)
-
-    @pytest.mark.xfail
-    def test_compare_gell_mann(self):
-        """Tests that the compare method returns the correct result for LinearCombinations
-        with qml.GellMann present."""
-        H1 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=2)])
-        H2 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)]
-        )
-        H3 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=1)])
-        H4 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
-        )
-
-        assert H1.compare(qml.GellMann(wires=2, index=2))
-        assert H1.compare(qml.GellMann(wires=2, index=1))
-        assert H1.compare(H3)
-        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(H4)
-
-    def test_LinearCombination_equal_error(self):
-        """Tests that the correct error is raised when compare() is called on invalid type"""
-
-        H = qml.ops.LinearCombination([1], [Z(0)])
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(
-                ValueError,
-                match=r"Can only compare a LinearCombination and an Operator.",
-            ):
-                _ = H.compare([[1, 0], [0, -1]])
-
-    @pytest.mark.parametrize(("H1", "H2", "res"), equal_LinearCombinations)
-    def test_LinearCombination_equal(self, H1, H2, res):
-        """Tests that equality can be checked between LinearCombinations"""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H1.compare(H2) == res
-
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
     def test_LinearCombination_add(self, H1, H2, H):
         """Tests that LinearCombinations are added correctly"""
@@ -819,12 +782,11 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly"""
-        assert H == (H1 @ H2)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
-    def test_LinearCombination_rmatmul(self, H1, H2, H):
-        """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
-        assert H == (H1 @ H2)
+        with qml.queuing.AnnotatedQueue() as q:
+            H1.queue()
+            H2.queue()
+            assert H == (H1 @ H2)
+        assert len(q.queue) == 1
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -1524,12 +1486,12 @@ class TestGrouping:
 
         # compute grouping during construction
         H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         H3 = qml.ops.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H3.grouping_indices) == {(0, 1), (2,)}
 
     def test_grouping_with_duplicate_terms(self):
         """Test that the grouping indices are correct when the LinearCombination has duplicate
@@ -1974,8 +1936,6 @@ class TestLinearCombinationDifferentiation:
         assert grad[0] is None
         assert np.allclose(grad[1], grad_expected[1])
 
-    # TODO: update logic of adjoint differentiation to catch attempt to differentiate lincomb coeffs
-    @pytest.mark.xfail
     def test_not_supported_by_adjoint_differentiation(self):
         """Test that error is raised when attempting the adjoint differentiation method."""
         device = qml.device("default.qubit", wires=2)
@@ -1995,10 +1955,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        with pytest.raises(
-            DeviceError,
-            match="not supported on adjoint",
-        ):
+        with pytest.warns(UserWarning, match="not supported with the adjoint differentiation"):
             grad_fn(coeffs, param)
 
 

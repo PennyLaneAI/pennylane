@@ -34,6 +34,8 @@ def find_next_gate(wires, op_list):
     next_gate_idx = None
 
     for op_idx, op in enumerate(op_list):
+        if any(qml.math.is_abstract(w) for w in op.wires):
+            break
         if len(Wires.shared_wires([wires, op.wires])) > 0:
             next_gate_idx = op_idx
             break

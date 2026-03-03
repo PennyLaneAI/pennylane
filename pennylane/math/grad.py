@@ -15,7 +15,7 @@
 This submodule defines grad and jacobian for differentiating circuits in an interface-independent way.
 """
 
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 from pennylane._grad import grad as _autograd_grad
 from pennylane._grad import jacobian as _autograd_jacobian
@@ -24,7 +24,7 @@ from .interface_utils import get_interface
 
 
 # pylint: disable=import-outside-toplevel
-def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
+def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
     Args:
@@ -72,7 +72,7 @@ def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            g = _autograd_grad(f, argnum=argnums)(*args, **kwargs)
+            g = _autograd_grad(f, argnums=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
 
         if interface == "jax":
@@ -87,7 +87,9 @@ def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
             g = tuple(args[i].grad for i in argnums)
             return g[0] if argnums_integer else g
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             with tf.GradientTape() as tape:
@@ -128,7 +130,9 @@ def _torch_jac(f, argnums, args, kwargs):
 
 
 # pylint: disable=import-outside-toplevel
-def _tensorflow_jac(f, argnums, args, kwargs):
+def _tensorflow_jac(
+    f, argnums, args, kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Calculate a jacobian via tensorflow"""
     import tensorflow as tf
 
@@ -152,7 +156,7 @@ def _tensorflow_jac(f, argnums, args, kwargs):
 
 
 # pylint: disable=import-outside-toplevel
-def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
+def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the Jacobian in a jax-like manner for any interface.
 
     Args:
@@ -228,7 +232,7 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            return _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
+            return _autograd_jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "jax":
             import jax
@@ -238,7 +242,9 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
         if interface == "torch":
             return _torch_jac(f, argnums, args, kwargs)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             return _tensorflow_jac(f, argnums, args, kwargs)
 
         raise ValueError(f"Interface {interface} is not differentiable.")

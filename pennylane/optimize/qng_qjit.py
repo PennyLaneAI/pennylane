@@ -44,6 +44,21 @@ class QNGOptimizerQJIT:
             - ``QNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
               (e.g., ``2 * theta`` as a gate parameter).
 
+    Args:
+        stepsize (float): the user-defined stepsize hyperparameter (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization to be applied at each optimization step (default value: 0).
+
     **Example:**
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
@@ -78,12 +93,13 @@ class QNGOptimizerQJIT:
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
     Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
+    Using ``qml.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
+    in compilation time and no runtime benefits.
 
-    Using the ``jax.jit`` decorator for the entire workflow is not recommended since it
-    may lead to a significative compilation time and no runtime benefits.
-    However, ``jax.jit`` can be used with the ``default.qubit`` device to just-in-time
-    compile the ``step`` (or ``step_and_cost``) method of the optimizer.
-    For example:
+    The ``jax.jit`` decorator should not be used on the entire workflow.
+    However, it can be used with the ``default.qubit`` device to just-in-time
+    compile the ``step`` (or ``step_and_cost``) method of the optimizer, leading
+    to a significative increase in runtime performance:
 
     .. code-block:: python
 
@@ -110,21 +126,6 @@ class QNGOptimizerQJIT:
 
     >>> params
     Array([ 3.14159265, -1.57079633], dtype=float64)
-
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined stepsize hyperparameter
-        approx="block-diag" (str): approximation method for the metric tensor.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly
-
-            - If ``"diag"``, the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``)
-
-        lam=0 (float): metric tensor regularization to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
@@ -163,13 +164,6 @@ class QNGOptimizerQJIT:
 
         Returns:
             tuple: (new parameters values, new optimizer's state)
-
-        .. note::
-
-            Since the Quantum Natural Gradient (QNG) algorithm doesn't actually require any particular state,
-            the ``state`` object is never really updated in this case. However, it is carried over the
-            optimization to match the ``optax``-like interface for all Jax-based quantum-specific optimizers.
-
         """
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         grad = self._get_grad(qnode, params, **kwargs)
@@ -188,13 +182,6 @@ class QNGOptimizerQJIT:
 
         Returns:
             tuple: (new parameters values, new optimizer's state, objective function value)
-
-        .. note::
-
-            Since the Quantum Natural Gradient (QNG) algorithm doesn't actually require any particular state,
-            the ``state`` object is never really updated in this case. However, it is carried over the
-            optimization to match the ``optax``-like interface for all Jax-based quantum-specific optimizers.
-
         """
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         cost, grad = self._get_value_and_grad(qnode, params, **kwargs)

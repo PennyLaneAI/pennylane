@@ -15,14 +15,42 @@ r"""
 This module contains the :func:`about` function to display all the details of the PennyLane installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
+import json
+import os
 import platform
 import sys
 from importlib import metadata
-from subprocess import check_output
+from importlib.metadata import PackageNotFoundError, version
+from importlib.util import find_spec
 from sys import version_info
 
 import numpy
 import scipy
+
+if find_spec("jax"):
+    jax_version = version("jax")
+else:
+    jax_version = None  # pragma: no cover
+
+
+def _pkg_location():
+    """Return absolute path to the installed PennyLane package."""
+    try:
+        dist = metadata.distribution("pennylane")
+        return os.path.abspath(str(dist.locate_file("")))
+    except (PackageNotFoundError, OSError):  # pragma: no cover
+        # Use imported module path if available
+        mod = sys.modules.get("pennylane")
+        if mod and getattr(mod, "__file__", None):
+            return os.path.abspath(os.path.dirname(mod.__file__))
+        return "(unknown)"
+
+
+def catalyst_version() -> str | None:
+    """Get the version of the installed Catalyst package, if available."""
+    if find_spec("catalyst"):
+        return version("pennylane_catalyst")
+    return None
 
 
 def about():
@@ -37,14 +65,56 @@ def about():
     else:  # pragma: no cover
         plugin_devices = metadata.entry_points(group="pennylane.plugins")
         dist_name = "name"
-    print(check_output([sys.executable, "-m", "pip", "show", "pennylane"]).decode())
+
+    try:
+        dist = metadata.distribution("pennylane")
+        meta = dist.metadata
+        location = _pkg_location()
+
+        lines = [
+            f"Name: {meta.get('Name', 'PennyLane')}",
+            f"Version: {meta.get('Version', '')}",
+            f"Summary: {meta.get('Summary', '')}",
+            f"Home-page: {meta.get('Home-page', '')}",
+            f"Author: {meta.get('Author', '')}",
+            f"License: {meta.get('License', '')}",
+            f"Location: {location or '(unknown)'}",
+        ]
+
+        # PEP 610: detect editable with direct_url.json
+        try:
+            raw = dist.read_text("direct_url.json")
+            if raw is None:
+                raise FileNotFoundError
+            direct = json.loads(raw)
+            if direct.get("dir_info", {}).get("editable"):
+                url = direct.get("url", "")
+                if url.startswith("file://"):
+                    url = url[7:]
+                lines.append(f"Editable project location: {url}")
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+
+        info = "\n".join(lines)
+
+    except PackageNotFoundError:  # pragma: no cover
+        info = "PennyLane version info unavailable (no distribution metadata)"
+    except OSError:  # pragma: no cover
+        info = "PennyLane version info unavailable (metadata read error)"
+
+    print(info)
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
         f"Python version:          {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
     )
     print(f"Numpy version:           {numpy.__version__}")
     print(f"Scipy version:           {scipy.__version__}")
+    print(f"JAX version:             {jax_version}")
 
+    # Compiler information
+    print(f"Catalyst version:        {catalyst_version()}")
+
+    # Plugin devices
     print("Installed devices:")
 
     for d in plugin_devices:

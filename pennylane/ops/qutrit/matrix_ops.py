@@ -19,6 +19,8 @@ accept a unitary matrix as a parameter.
 import warnings
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -59,6 +61,8 @@ class QutritUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, *params, wires):
         wires = Wires(wires)
 
@@ -93,6 +97,10 @@ class QutritUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -137,6 +145,18 @@ class QutritUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
+def _adjoint_qutrit_unitary_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {resource_rep(QutritUnitary, num_wires=base_params["num_wires"]): 1}
+
+
+@qml.register_resources(_adjoint_qutrit_unitary_resource)
+def _adjoint_qutrit_unitary(U, wires, **_):
+    QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=wires)
+
+
+add_decomps("Adjoint(QutritUnitary)", _adjoint_qutrit_unitary)
+
+
 class ControlledQutritUnitary(QutritUnitary):
     r"""ControlledQutritUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
@@ -169,6 +189,9 @@ class ControlledQutritUnitary(QutritUnitary):
 
     >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1], wires=2)
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2])
 
     By default, controlled operations apply the desired gate if the control qutrit(s)
     are all in the state :math:`\vert 2\rangle`. However, there are some situations where
@@ -181,6 +204,9 @@ class ControlledQutritUnitary(QutritUnitary):
     second is in state ``1``, and the third in state ``2``, we can write:
 
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2, 3])
     """
 
     num_params = 1
@@ -191,6 +217,8 @@ class ControlledQutritUnitary(QutritUnitary):
 
     grad_method = None
     """Gradient computation method."""
+
+    resource_keys = {"num_u_wires", "num_control_wires"}
 
     def __init__(self, *params, control_wires=None, wires=None, control_values=None):
         if control_wires is None:
@@ -212,6 +240,13 @@ class ControlledQutritUnitary(QutritUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_u_wires": len(self._hyperparameters["u_wires"]),
+            "num_control_wires": len(self._hyperparameters["control_wires"]),
+        }
 
     @staticmethod
     def compute_matrix(
@@ -328,3 +363,27 @@ class ControlledQutritUnitary(QutritUnitary):
             wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
+
+
+def _adjoint_controlled_qu_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {
+        resource_rep(
+            ControlledQutritUnitary,
+            num_u_wires=base_params["num_u_wires"],
+            num_control_wires=base_params["num_control_wires"],
+        ): 1
+    }
+
+
+# pylint: disable=unused-argument
+@register_resources(_adjoint_controlled_qu_resource)
+def _adjoint_controlled_qu(U, wires, base, **_):
+    ControlledQutritUnitary(
+        qml.math.conj(qml.math.moveaxis(U, -2, -1)),
+        wires=base.hyperparameters["u_wires"],
+        control_wires=base.hyperparameters["control_wires"],
+        control_values=base.hyperparameters["control_values"],
+    )
+
+
+add_decomps("Adjoint(ControlledQutritUnitary)", _adjoint_controlled_qu)
