@@ -556,7 +556,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Removed `pytest-benchmark` as a developer-facing dependency from `requirements-dev.txt`.
+* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
