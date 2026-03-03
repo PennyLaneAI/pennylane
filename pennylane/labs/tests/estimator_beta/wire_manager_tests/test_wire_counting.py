@@ -205,17 +205,11 @@ def nested_any_state_allocation3():
     return [
         allocate,
         GateCount(qre.X.resource_rep(), 10),
-        GateCount(
-            AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5
-        ),
+        GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
         Allocate(5),
-        GateCount(
-            AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3
-        ),
+        GateCount(AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
         Deallocate(3),
-        GateCount(
-            AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7
-        ),
+        GateCount(AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
         Deallocate(allocated_register=allocate),
     ]
 
@@ -878,9 +872,9 @@ class TestEstimateAuxiliaryWires:
 
 
 class TestEstimateWiresFromCircuit:
-    """Test that we can correctly estimate the number of wires 
+    """Test that we can correctly estimate the number of wires
     from a list of operators."""
-    
+
     @pytest.mark.parametrize(
         "circuit, expected_wire_counts",  # [Op1, ..., OpN], (algo, any_state, zeroed)
         (
@@ -890,7 +884,7 @@ class TestEstimateWiresFromCircuit:
                     qre.CNOT(wires=[0, 1]),
                     qre.Toffoli(wires=[0, 1, 2]),
                 ],
-                (3, 0, 0), 
+                (3, 0, 0),
             ),
             (
                 [
@@ -901,7 +895,7 @@ class TestEstimateWiresFromCircuit:
                     qre.Z(wires=1),
                     qre.Toffoli(wires=[2, 3, 4]),
                 ],
-                (5, 0, 0), 
+                (5, 0, 0),
             ),
             (
                 [
@@ -933,7 +927,7 @@ class TestEstimateWiresFromCircuit:
                     qre.Z(),
                     qre.Toffoli(),
                 ],
-                (3, 0, 0), 
+                (3, 0, 0),
             ),
             (
                 [
@@ -954,7 +948,7 @@ class TestEstimateWiresFromCircuit:
                     qre.CNOT(),
                     qre.Toffoli(),
                 ],
-                (4, 0, 0), 
+                (4, 0, 0),
             ),
             (
                 [
@@ -994,7 +988,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [
                     AllocateOp(Allocate(3)),
-                    qre.CNOT(wires=[0,1]),
+                    qre.CNOT(wires=[0, 1]),
                     AllocateOp(Allocate(2)),
                     qre.Z(),
                     qml.Z(wires=1),
@@ -1003,7 +997,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [
-                    qml.QFT(wires=[0,1,2,3,4]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4]),
                     AllocateOp(Allocate(3)),
                     qre.CNOT(),
                     DeallocateOp(Deallocate(2)),
@@ -1015,7 +1009,7 @@ class TestEstimateWiresFromCircuit:
                 [
                     qre.QFT(num_wires=5, wires=range(5)),
                     AllocateOp(Allocate(3)),
-                    qre.CNOT(wires=[2,3]),
+                    qre.CNOT(wires=[2, 3]),
                     DeallocateOp(Deallocate(2)),
                     qre.Z(wires=0),
                     AllocateOp(Allocate(3)),
@@ -1041,9 +1035,9 @@ class TestEstimateWiresFromCircuit:
                                 3,
                             ),
                         ),
-                        wires = [0, 1, 2],
+                        wires=[0, 1, 2],
                     ),
-                    qre.QFT(wires = [0, 1, 2]),
+                    qre.QFT(wires=[0, 1, 2]),
                     qre.Prod(
                         (
                             (
@@ -1051,14 +1045,14 @@ class TestEstimateWiresFromCircuit:
                                     (
                                         AllocateOp(Allocate(1)),
                                         (qre.Y(), 2),
-                                         qre.CNOT(),
+                                        qre.CNOT(),
                                         (DeallocateOp(Deallocate(1)), 2),
                                     ),
                                 ),
                                 3,
                             ),
                         ),
-                        wires = [0, 1, 2],
+                        wires=[0, 1, 2],
                     ),
                 ],
                 (3, 1, 4),
@@ -1066,6 +1060,7 @@ class TestEstimateWiresFromCircuit:
         ),
     )
     def test_allocate_deallocate(self, circuit, expected_wire_counts):
+        """Test that the number of allocated qubits (zeored or any state) is correct."""
         wire_counts = estimate_wires_from_circuit(circuit, zeroed=0, any_state=0)
         assert wire_counts == expected_wire_counts
 
@@ -1075,13 +1070,8 @@ class TestEstimateWiresFromCircuit:
             (  # Borrow idle
                 [  # 4 available idle qubits of 6 qubits total
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AlocOpFree(
-                        num_wires=1,
-                        allocate=Allocate(3),
-                        op=qre.X(),
-                        wires=["busy_wire2"]
-                    ),
-                    qre.QFT(num_wires=4)
+                    AlocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=["busy_wire2"]),
+                    qre.QFT(num_wires=4),
                 ],
                 (6, 0, 0),  # The idle qubits are used in place of the allocation!
             ),
@@ -1089,12 +1079,7 @@ class TestEstimateWiresFromCircuit:
                 [  # 4 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AlocOpFree(
-                        num_wires=1,
-                        allocate=Allocate(5),
-                        op=qre.X(),
-                        wires=["busy_wire2"]
-                    ),
+                    AlocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],
@@ -1105,29 +1090,19 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(2)),
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
                     MarkClean(wires=["busy_wire1"]),  # busy_wire1 is treated as clean and idle
-                    AlocOpFree(
-                        num_wires=1,
-                        allocate=Allocate(5),
-                        op=qre.X(),
-                        wires=["busy_wire2"]
-                    ),
+                    AlocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],
-                (6, 1, 1),  # We needed to allocate one fewer wire! 
+                (6, 1, 1),  # We needed to allocate one fewer wire!
             ),
             (
                 [
                     qre.QFT(wires=[0, 1, 2, 3, 4]),
                     MarkClean(wires=[0, 1, 2, 3, 4]),  # Marked the qubits as clean
-                    AlocOpFree(
-                        num_wires=1,
-                        allocate=Allocate(3),
-                        op=qre.X(),
-                        wires=[0, 1]
-                    ),
+                    AlocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=[0, 1]),
                     qre.QFT(wires=[0, 1, 2, 3, 4]),
-                    MarkClean(wires=[0, 1, 2, 3, 4]),   # Same qubits can be marked and reused 
+                    MarkClean(wires=[0, 1, 2, 3, 4]),  # Same qubits can be marked and reused
                     qre.Prod(
                         (
                             AllocateOp(Allocate(2)),
@@ -1141,6 +1116,7 @@ class TestEstimateWiresFromCircuit:
         ),
     )
     def test_borrow_idle(self, circuit, expected_wire_counts):
+        """Test that idle algorithmic qubits are used over qubit allocation where ever possible."""
         wire_counts = estimate_wires_from_circuit(circuit, zeroed=0, any_state=0)
         assert wire_counts == expected_wire_counts
 
@@ -1151,10 +1127,10 @@ class TestEstimateWiresFromCircuit:
                 [
                     qre.CNOT(wires=[1, 2]),
                     AlocOpFree(
-                      num_wires = 2, 
-                      allocate = Allocate(5, state=AllocateState.ANY, restored=True),
-                      op = qre.CZ(),
-                      wires = [1, 2],
+                        num_wires=2,
+                        allocate=Allocate(5, state=AllocateState.ANY, restored=True),
+                        op=qre.CZ(),
+                        wires=[1, 2],
                     ),
                 ],
                 (2, 0, 5),  # No available qubits to borrow
@@ -1163,52 +1139,276 @@ class TestEstimateWiresFromCircuit:
                 [
                     qre.QFT(num_wires=4),
                     AlocOpFree(
-                      num_wires = 2, 
-                      allocate = Allocate(5, state=AllocateState.ANY, restored=True),
-                      op = qre.CZ(),
-                      wires = [1, 2],
+                        num_wires=2,
+                        allocate=Allocate(5, state=AllocateState.ANY, restored=True),
+                        op=qre.CZ(),
+                        wires=[1, 2],
                     ),
                 ],
                 (6, 0, 1),  # 4 qubits were borrowed from QFT because it acts on a distinct register
             ),
             (
-                [  # There are 6 algorithmic wires
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AlocOpFree(
-                      num_wires = 2, 
-                      allocate = Allocate(4, state=AllocateState.ANY, restored=True),
-                      op = qre.Z(),
-                      wires = [0, 1],
+                        num_wires=2,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1],
                     ),  # We borrow wires 2, 3, 4, 5
                     AllocateOp(Allocate(3)),  # This request 3 new clean qubits
                     qre.Prod(
                         (
                             AlocOpFree(
-                                num_wires = 4, 
-                                allocate = Allocate(5, state=AllocateState.ANY, restored=True),
-                                op = qre.QFT(num_wires=9),
-                                wires = [0, 1, 2, 3],  # borrow wires 4, 5 + the 3 allocated
+                                num_wires=4,
+                                allocate=Allocate(5, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[0, 1, 2, 3],  # borrow wires 4, 5 + the 3 allocated
                             ),
                             qre.Toffoli(wires=[3, 4, 5]),
                         ),
                     ),
                 ],
-                (6, 3, 0),  
+                (6, 3, 0),
             ),
         ),
     )
     def test_borrow_any_state(self, circuit, expected_wire_counts):
+        """Test that idle algorithmic qubits or allocated qubits from a higher scope are
+        used as auxiliaries when we allocate any state qubits with a promise to restore them."""
         wire_counts = estimate_wires_from_circuit(circuit, zeroed=0, any_state=0)
         assert wire_counts == expected_wire_counts
 
-    # def test_deallocate_error(self):
-    #     pass
+    def test_deallocate_error(self):
+        """Test that deallocating more qubits than we initially allocated results in an error"""
+        circ_lst = [
+            AllocateOp(Allocate(2)),
+            qre.CNOT(),
+            DeallocateOp(Deallocate(3)),
+            AllocateOp(Allocate(5)),
+        ]
 
-    # def test_zeroed_any_state_wires(self):
-    #     pass
+        with pytest.raises(ValueError, match="Deallocated more qubits than available to allocate."):
+            estimate_wires_from_circuit(circ_lst)
 
-    # def test_zeroed_any_state_wire_error(self):
-    #     pass
+    @pytest.mark.parametrize(
+        "circuit, initial_zeored, initial_any_state, expected_wire_counts",
+        (
+            (
+                [
+                    qre.QFT(num_wires=5, wires=range(5)),
+                    AllocateOp(Allocate(3)),
+                    qre.CNOT(wires=[2, 3]),
+                    DeallocateOp(Deallocate(2)),
+                    qre.Z(wires=0),
+                    AllocateOp(Allocate(3)),
+                    qml.PhaseShift(1.23, wires=1),
+                ],
+                0,
+                2,
+                (5, 6, 0),
+            ),
+            (
+                [
+                    qre.QFT(num_wires=5, wires=range(5)),
+                    AllocateOp(Allocate(3)),
+                    qre.CNOT(wires=[2, 3]),
+                    DeallocateOp(Deallocate(2)),
+                    qre.Z(wires=0),
+                    AllocateOp(Allocate(3)),
+                    qml.PhaseShift(1.23, wires=1),
+                ],
+                6,
+                0,
+                (5, 4, 2),
+            ),
+            (
+                [
+                    qre.QFT(num_wires=5, wires=range(5)),
+                    AllocateOp(Allocate(3)),
+                    qre.CNOT(wires=[2, 3]),
+                    DeallocateOp(Deallocate(2)),
+                    qre.Z(wires=0),
+                    AllocateOp(Allocate(3)),
+                    qml.PhaseShift(1.23, wires=1),
+                ],
+                6,
+                2,
+                (5, 6, 2),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                0,
+                0,
+                (6, 1, 4),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                2,
+                0,
+                (6, 1, 4),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                7,
+                0,
+                (6, 1, 6),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                0,
+                2,
+                (6, 3, 2),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                0,
+                5,
+                (6, 6, 2),
+            ),
+            (
+                [  # Can borrow algorithmic wires and allocated wires from a higher scope
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    AlocOpFree(
+                        num_wires=4,
+                        allocate=Allocate(4, state=AllocateState.ANY, restored=True),
+                        op=qre.Z(),
+                        wires=[0, 1, 4, 5],
+                    ),  # We borrow wires 2, 3,
+                    AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
+                    qre.Prod(
+                        (
+                            AlocOpFree(
+                                num_wires=5,
+                                allocate=Allocate(6, state=AllocateState.ANY, restored=True),
+                                op=qre.QFT(num_wires=9),
+                                wires=[1, 2, 3, 4, 5],  # borrow wire "0" + the 3 allocated before
+                            ),
+                            qre.Toffoli(wires=[3, 4, 5]),
+                        ),
+                    ),
+                    DeallocateOp(Deallocate(2)),
+                ],
+                1,
+                1,
+                (6, 2, 3),
+            ),
+        ),
+    )
+    def test_zeroed_any_state_wires(
+        self, circuit, initial_zeored, initial_any_state, expected_wire_counts
+    ):
+        """Test that we can correctly resolve the number of qubits when we provide an intial
+        number of zeroed and any state qubits."""
+        wire_counts = estimate_wires_from_circuit(
+            circuit, zeroed=initial_zeored, any_state=initial_any_state
+        )
+        assert wire_counts == expected_wire_counts
 
 
 class TestEstimateWiresFromResources:

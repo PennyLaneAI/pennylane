@@ -256,7 +256,7 @@ def estimate_wires_from_circuit(
 
     total = 0  # A running counter for the number of active (allocated but not freed) qubits
     #   --> we assume that these are in Any state as they were likely used and not cleaned
-    max_alloc = 0
+    max_alloc = zeroed
     max_dealloc = 0
 
     for circuit_element, active_wires in processed_circ:
@@ -295,7 +295,7 @@ def estimate_wires_from_circuit(
         raise ValueError("Deallocated more qubits than available to allocate.")
 
     final_any_state = any_state + total
-    final_zeroed = max(zeroed, max_alloc - total)
+    final_zeroed = max_alloc - total
     return total_algo_qubits, final_any_state, final_zeroed
 
 
@@ -314,7 +314,7 @@ def estimate_wires_from_resources(
     list_actions = [GateCount(gate, count) for gate, count in gate_counts.items()]
 
     total = 0
-    max_alloc = 0
+    max_alloc = zeroed
     max_dealloc = 0
 
     for action in list_actions:
@@ -341,5 +341,5 @@ def estimate_wires_from_resources(
         raise ValueError("Deallocated more qubits than available to allocate.")
 
     final_any_state = total + any_state
-    final_zeroed = max(zeroed, max_alloc - total)
+    final_zeroed = max_alloc - total
     return final_any_state, final_zeroed
