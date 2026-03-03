@@ -199,7 +199,7 @@ class TestBinaryDecimals:
     )
     def test_binary_decimals_jax(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct for jax arrays"""
-        out = math.binary_decimals(phi, p)
+        out = math.binary_decimals(phi, p, mod=1.0)
         assert jnp.array_equal(expected, out), f"\n{expected}\n{out}"
 
 
