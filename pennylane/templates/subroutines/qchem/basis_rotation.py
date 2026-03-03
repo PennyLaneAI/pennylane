@@ -101,7 +101,6 @@ def _complex_unitary(unitary, wires):
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
 
-    print(wires)
     @for_loop(len(phase_list))
     def phase_loop(idx):
         phase = phase_list[idx]
