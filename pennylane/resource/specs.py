@@ -455,8 +455,16 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
+    .. note::
+
+        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+        There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
+
+        * Runtime resource tracking via mock circuit execution
+        * Pass-by-pass resource collection for user applied compilation passes
+
     .. details::
-        :title: Usage Details
+        :title: Specs with Tape Transforms
 
         Here you can see how the number of gates and their types change as we apply different amounts of transforms
         through the ``level`` argument:
@@ -553,14 +561,8 @@ def specs(
                                                num_allocs=3,
                                                depth=1)])
 
-    The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-    There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
-
-    * Runtime resource tracking via mock circuit execution
-    * Pass-by-pass resource collection for user applied compilation passes
-
     .. details::
-        :title: Runtime resource tracking for workflows compiled with Catalyst
+        :title: Runtime Specs with Catalyst
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -599,7 +601,7 @@ def specs(
         Depth: 2
 
     .. details::
-        :title: Pass-by-pass resource breakdowns for workflows compiled with Catalyst
+        :title: Pass-by-pass Specs with Catalyst
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
