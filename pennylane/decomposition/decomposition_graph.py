@@ -311,10 +311,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
+        non_sig_params = list(filter(lambda v: v is not None, (val if key != "signature_key" else None for key, val in op.resource_params.items())))
+        final_params = non_sig_params + list(op.resource_params["signature_key"])
+
         rules = [
             rule
             for rule in self._get_decompositions(op)
-            if rule.is_applicable(*op.params["signature_key"])
+            if rule.is_applicable(*final_params)
         ]
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -365,11 +368,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     ) -> _DecompositionNode | None:
         """Adds a decomposition rule to the graph and returns whether it depends on work wires."""
 
-        if not rule.is_applicable(*op_node.op.params["signature_key"]):
+        non_sig_params = list(filter(lambda v: v is not None, (val if key != "signature_key" else None for key, val in op_node.op.resource_params.items())))
+        final_params = non_sig_params + list(op_node.op.resource_params["signature_key"])
+
+        if not rule.is_applicable(*final_params):
             return None  # skip the decomposition rule if it is not applicable
 
-        decomp_resource = rule.compute_resources(*op_node.op.params["signature_key"])
-        work_wire_spec = rule.get_work_wire_spec(*op_node.op.params["signature_key"])
+        decomp_resource = rule.compute_resources(*final_params)
+        work_wire_spec = rule.get_work_wire_spec(*final_params)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
