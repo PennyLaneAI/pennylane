@@ -665,9 +665,9 @@ class SumOfSlatersPrep(Operation):
         import pennylane as qml
         import numpy as np
 
-        coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
-        indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-        wires = qml.wires.Wires(range(5))
+        coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j])/np.sqrt(8)
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        wires = qml.wires.Wires(range(7))
 
     This is all the information we require to create the state
     preparation: ``coefficients``, ``indices``, and ``wires``.
@@ -684,41 +684,99 @@ class SumOfSlatersPrep(Operation):
         first_free_wire = max(wires)+1
 
         @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qml.decompose(gate_set=gate_set, num_work_wires=10)
-        @qml.qnode(qml.device("lightning.qubit", wires=13))
+        @qml.decompose(gate_set=gate_set, num_work_wires=11)
+        @qml.qnode(qml.device("lightning.qubit", wires=18))
         def circuit():
             qml.SumOfSlatersPrep(coefficients, wires, indices)
             return qml.state()
 
     We can check that we prepared the right state:
 
-    >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
+    >>> prepared_state = circuit()[::2**11] # Slice the state, as there are eleven work wires
     >>> where = np.where(prepared_state)
     >>> print(where)
-    (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+    (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
     >>> print(prepared_state[where])
-    [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
-     -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+    [ 0.35355339+0.j         -0.        -0.35355339j  0.        +0.35355339j
+      0.35355339+0.j          0.35355339+0.j         -0.        -0.35355339j
+      0.35355339+0.j          0.        +0.35355339j]
 
     That looks exactly right! Internally, the state preparation looks like this:
 
-    >>> print(qml.draw(circuit, show_matrices=False)())
-     0: ──────╭QROM(M0)──X─╭●────╭●────╭●─╭●────╭●──X─╭●─╭●────╭●─╭●────╭●──────────╭●────╭●────╭●─╭●────┤  State
-     1: ──────├QROM(M0)──X─├●────├●──X─├●─├●────├●──X─├●─├●────├●─├●────├●──────────├●────├●──X─├●─├●────┤  State
-     2: ──────├QROM(M0)──X─├●──X─├●────├●─├●────├●──X─├●─├●────├●─├●──X─├●──────────├●────├●──X─├●─├●──X─┤  State
-     3: ──────├QROM(M0)──X─├●────├●────├●─├●──X─├●──X─├●─├●──X─├●─├●────├●──────────├●────├●──X─├●─├●──X─┤  State
-     4: ──────├QROM(M0)────├●──X─├●──X─├●─├●──X─├●──X─├●─├●────├●─├●──X─├●──────────├●──X─├●────├●─├●────┤  State
-     5: ─╭|Ψ⟩─├QROM(M0)────│─────│─────│──│─────│─────│──│─────│──│─────│───────────│─────╰X────╰X─│─────┤  State
-     6: ─├|Ψ⟩─├QROM(M0)────│─────│─────│──│─────╰X────╰X─│─────╰X─│─────│──╭X───────│──────────────│─────┤  State
-     7: ─├|Ψ⟩─├QROM(M0)────│─────╰X────╰X─│──────────────│────────╰X────│──│──╭X────│──────────────│─────┤  State
-     8: ─╰|Ψ⟩─├QROM(M0)────╰X─────────────╰X─────────────╰X─────────────│──│──│──╭X─│──────────────╰X────┤  State
-     9: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
-    10: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
-    11: ──────╰QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
-    12: ────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────┤  State
+    >>> print(qml.draw(circuit, show_matrices=False, max_length=180)())
+     0: ──────╭QROM(M0)─╭●───────────────────────────────────────────────────────────────────────────────────────────╭●────────────────────────────┤  State
+     1: ──────├QROM(M0)─│────────╭●──────────────────────────────────────────────────────────────────────────────────│────────╭●───────────────────┤  State
+     2: ──────├QROM(M0)─│──╭●────│──╭●───────────────────────────────────────────────────────────────────────────────│──╭●────│──╭●────────────────┤  State
+     3: ──────├QROM(M0)─│──│─────│──│─────╭●─────────────────────────────────────────────────────────────────────────│──│─────│──│─────╭●──────────┤  State
+     4: ──────├QROM(M0)─│──│──╭●─│──│──╭●─│──╭●──────────────────────────────────────────────────────────────────────│──│──╭●─│──│──╭●─│──╭●───────┤  State
+     5: ──────├QROM(M0)─│──│──│──│──│──│──│──│──╭●───────────────────────────────────────────────────────────────────│──│──│──│──│──│──│──│──╭●────┤  State
+     6: ──────├QROM(M0)─│──│──│──│──│──│──│──│──│──╭●────────────────────────────────────────────────────────────────│──│──│──│──│──│──│──│──│──╭●─┤  State
+     7: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│──────────────────────────╭X────╭X───────╭X──────────╭X──────────│──│──│──│──│──│──│──│──│──│──┤  State
+     8: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────╭X────╭X───────│─────│────────│──╭X───────│──╭X───────│──│──│──│──│──│──│──│──│──│──┤  State
+     9: ─╰|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│─────╭X────│─────│──╭X────│─────│──╭X────│──│────────│──│──╭X────│──│──│──│──│──│──│──│──│──│──┤  State
+    10: ──────│─────────╰X─╰X─╰X─│──│──│──│──│──│──│───X─├●────├●──X─├●─├●──X─├●──X─├●─├●──X─├●─├●──X─╭●─│──│──│──╭●─╰X─╰X─╰X─│──│──│──│──│──│──│──┤  State
+    11: ──────│──────────────────╰X─╰X─╰X─│──│──│──│───X─├●────├●──X─├●─├●──X─├●──X─├●─├●────├●─├●──X─├●─│──│──│──├●──X───────╰X─╰X─╰X─│──│──│──│──┤  State
+    12: ──────│───────────────────────────╰X─╰X─│──│───X─├●────├●──X─├●─├●────├●──X─├●─├●────├●─├●────├●─│──│──│──├●──X────────────────╰X─╰X─│──│──┤  State
+    13: ──────│─────────────────────────────────╰X─│───X─├●──X─├●──X─├●─├●────├●────├●─├●────├●─├●────├●─│──│──│──├●──X──────────────────────╰X─│──┤  State
+    14: ──────│────────────────────────────────────╰X────╰●──X─╰●────╰●─╰●────╰●────╰●─╰●────╰●─╰●────├●─│──│──│──├●──X─────────────────────────╰X─┤  State
+    15: ──────├QROM(M0)───────────────────────────────────────────────────────────────────────────────│──│──│──│──│────────────────────────────────┤  State
+    16: ──────╰QROM(M0)───────────────────────────────────────────────────────────────────────────────│──│──│──│──│────────────────────────────────┤  State
+    17: ──────────────────────────────────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────────────────┤  State
 
     .. details::
         :title: Usage details
+
+        **Reduced circuit complexity for identity encodings**
+
+        Depending on the ``indices`` passed to the state preparation, they may or may not
+        be reducible to short enough sub-bitstrings such that no further encoding is required.
+        In this case, the blocks of ``CNOT`` gates seen in the example above are not needed.
+        For example, consider the following modification of the example:
+
+        .. code-block:: python
+
+            coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+            indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+            wires = qml.wires.Wires(range(5))
+            first_free_wire = max(wires)+1
+
+            @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)
+            @qml.decompose(gate_set=gate_set, num_work_wires=10)
+            @qml.qnode(qml.device("lightning.qubit", wires=13))
+            def circuit():
+                qml.SumOfSlatersPrep(coefficients, wires, indices)
+                return qml.state()
+
+        In this case, we only require eight work wires, because the encoding blocks can be skipped.
+
+        >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
+        >>> where = np.where(prepared_state)
+        >>> print(where)
+        (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+        >>> print(prepared_state[where])
+        [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+         -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+
+        The reduced circuit looks like this:
+
+        >>> print(qml.draw(circuit, show_matrices=False, max_length=150)())
+         0: ──────╭QROM(M0)──X─╭●────╭●────╭●─╭●────╭●──X─╭●─╭●────╭●─╭●────╭●──────────╭●────╭●────╭●─╭●────┤  State
+         1: ──────├QROM(M0)──X─├●────├●──X─├●─├●────├●──X─├●─├●────├●─├●────├●──────────├●────├●──X─├●─├●────┤  State
+         2: ──────├QROM(M0)──X─├●──X─├●────├●─├●────├●──X─├●─├●────├●─├●──X─├●──────────├●────├●──X─├●─├●──X─┤  State
+         3: ──────├QROM(M0)──X─├●────├●────├●─├●──X─├●──X─├●─├●──X─├●─├●────├●──────────├●────├●──X─├●─├●──X─┤  State
+         4: ──────├QROM(M0)────├●──X─├●──X─├●─├●──X─├●──X─├●─├●────├●─├●──X─├●──────────├●──X─├●────├●─├●────┤  State
+         5: ─╭|Ψ⟩─├QROM(M0)────│─────│─────│──│─────│─────│──│─────│──│─────│───────────│─────╰X────╰X─│─────┤  State
+         6: ─├|Ψ⟩─├QROM(M0)────│─────│─────│──│─────╰X────╰X─│─────╰X─│─────│──╭X───────│──────────────│─────┤  State
+         7: ─├|Ψ⟩─├QROM(M0)────│─────╰X────╰X─│──────────────│────────╰X────│──│──╭X────│──────────────│─────┤  State
+         8: ─╰|Ψ⟩─├QROM(M0)────╰X─────────────╰X─────────────╰X─────────────│──│──│──╭X─│──────────────╰X────┤  State
+         9: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+        10: ──────├QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+        11: ──────╰QROM(M0)─────────────────────────────────────────────────│──│──│──│──│────────────────────┤  State
+        12: ────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────┤  State
+
+        As we can see, the multi-controlled bit flips (:class:`~.MultiControlledX`) are now
+        controlled on the target register directly, rather than the encoding register, which
+        we thus can skip for the identity encoding.
 
         **Dynamic work wires**
 
@@ -751,47 +809,6 @@ class SumOfSlatersPrep(Operation):
             further decomposing the circuit efficiently may require additional work wires, for
             example for the ``MultiControlledX`` gates. In contrast, the QROM work wires are
             explicitly accounted for, which is due to some internal technical limitation.
-
-        **Two encoding modes**
-
-        Depending on the encoding computed by :func:`~.compute_sos_encoding`, the state preparation
-        circuit requires an additional register of auxiliary qubits and two more layers of
-        :class:`~.CNOT` gates, or not. The example shown above did not require those, because
-        small examples tend to be particularly easy to encode.
-        We can force a more expensive encoding with ``indices`` that are powers of two on at least
-        seven qubits:
-
-        .. code-block:: python
-
-            coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, 0.5])
-            indices = tuple(2**i for i in range(7))
-            wires = qml.wires.Wires(range(7))
-
-            @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-            @qml.decompose(gate_set=gate_set, num_work_wires=10)
-            @qml.qnode(qml.device("null.qubit", wires=100))
-            def circuit():
-                qml.SumOfSlatersPrep(coefficients, wires, indices)
-                return qml.state()
-
-        >>> print(qml.draw(circuit, show_matrices=False)())
-         0: ──────╭QROM(M0)─╭●──────────────────────────────────────────────╭●───────────────────┤  State
-         1: ──────├QROM(M0)─│──╭●───────────────────────────────────────────│──╭●────────────────┤  State
-         2: ──────├QROM(M0)─│──│──╭●────────────────────────────────────────│──│──╭●─────────────┤  State
-         3: ──────├QROM(M0)─│──│──│──╭●─────────────────────────────────────│──│──│──╭●──────────┤  State
-         4: ──────├QROM(M0)─│──│──│──│─────╭●───────────────────────────────│──│──│──│─────╭●────┤  State
-         5: ──────├QROM(M0)─│──│──│──│──╭●─│──╭●────────────────────────────│──│──│──│──╭●─│──╭●─┤  State
-         6: ──────├QROM(M0)─│──│──│──│──│──│──│─────────────────────────────│──│──│──│──│──│──│──┤  State
-         7: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──────────────╭X─╭X────╭X────│──│──│──│──│──│──│──┤  State
-         8: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│─────╭X─╭X────│──│─────│──╭X─│──│──│──│──│──│──│──┤  State
-         9: ─╰|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──╭X─│──│──╭X─│──│──╭X─│──│──│──│──│──│──│──│──│──┤  State
-        10: ──────│─────────╰X─│──│──│──│──│──│──├○─├○─├○─├○─├○─├○─├○─├●─├●─╰X─│──│──│──│──│──│──┤  State
-        11: ──────│────────────╰X─│──│──│──│──│──├○─├○─├○─├○─├○─├●─├●─├○─├○────╰X─│──│──│──│──│──┤  State
-        12: ──────│───────────────╰X─│──│──│──│──├○─├○─├○─├○─├●─├○─├○─├○─├○───────╰X─│──│──│──│──┤  State
-        13: ──────│──────────────────╰X─╰X─│──│──├●─├○─├●─├●─├○─├○─├○─├○─├○──────────╰X─╰X─│──│──┤  State
-        14: ──────│────────────────────────╰X─╰X─╰●─╰●─╰○─╰○─╰○─╰○─╰○─╰○─╰○────────────────╰X─╰X─┤  State
-        15: ──────├QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
-        16: ──────╰QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
 
     """
 
