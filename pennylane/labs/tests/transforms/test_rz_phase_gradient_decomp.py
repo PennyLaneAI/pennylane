@@ -17,7 +17,6 @@
 import pytest
 
 import pennylane as qp
-from pennylane.labs.transforms.rot_to_phase_gradient import binary_repr_int
 from pennylane.labs.transforms.rz_phase_gradient_decomp import make_rz_to_phase_gradient_decomp
 
 
@@ -25,7 +24,8 @@ from pennylane.labs.transforms.rz_phase_gradient_decomp import make_rz_to_phase_
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
-    """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected as a fixed decomposition and yields the correct resources"""
+    """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
+    as a fixed decomposition and yields the correct resources"""
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
@@ -41,21 +41,16 @@ def test_as_fixed_decomps(phi, p):
         }
 
         custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+        gate_set = {"SemiAdder", "C(BasisEmbedding)", "GlobalPhase"}
 
-        @qp.transforms.decompose(
-            gate_set={"SemiAdder", "CNOT", "GlobalPhase"}, fixed_decomps={qp.RZ: custom_decomp}
-        )
+        @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
             qp.RZ(phi, 0)
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
-
-        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1}
-        if (n_cnots := 2 * sum(binary_repr_int(phi * 2, p))) > 0:
-            expected_specs["CNOT"] = n_cnots
-
+        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisEmbedding)": 2}
         assert expected_specs == specs
 
 
@@ -78,19 +73,14 @@ def test_as_alt_decomps(phi, p):
         }
 
         custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+        gate_set = {"SemiAdder", "C(BasisEmbedding)", "GlobalPhase"}
 
-        @qp.transforms.decompose(
-            gate_set={"SemiAdder", "CNOT", "GlobalPhase"}, alt_decomps={qp.RZ: [custom_decomp]}
-        )
+        @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
             qp.RZ(phi, 0)
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
-
-        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1}
-        if (n_cnots := 2 * sum(binary_repr_int(phi * 2, p))) > 0:
-            expected_specs["CNOT"] = n_cnots
-
+        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisEmbedding)": 2}
         assert expected_specs == specs
