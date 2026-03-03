@@ -49,7 +49,7 @@ class TestCeilLog2:
 
 
 class TestBinaryDecimals:
-    """Test ``fn.binary_decimals``."""
+    """Test ``qml.math.binary_decimals``."""
 
     @pytest.mark.parametrize(
         "phi, p, expected, mod",
