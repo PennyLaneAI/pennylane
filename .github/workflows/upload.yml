@@ -3,6 +3,9 @@ on:
   release:
     types: [published]
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   determine_runner:
     name: Change to Large Runner
@@ -43,7 +46,6 @@ jobs:
 
       - name: Build PennyLane wheel
         run: |
-          uv pip install build
           uv build --wheel --out-dir dist
 
       - name: Publish

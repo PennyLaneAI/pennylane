@@ -6,6 +6,9 @@ on:
     - cron: "50 9 * * 1-5"
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   setup-rc:
     name: Setup the release
@@ -72,7 +75,6 @@ jobs:
     - name: Build wheels
       if: ${{ steps.check_rc.outputs.branch_exists == 'true' }}
       run: |
-        uv pip install build
         uv build --wheel --out-dir dist
   
     - uses: actions/upload-artifact@v4
