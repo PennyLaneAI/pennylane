@@ -99,7 +99,7 @@
 <h3>Improvements 🛠</h3>
 
 * When using :func:`~.specs` with multiple levels, printing the returned
-  :class:`~.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
   This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
 
