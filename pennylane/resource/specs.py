@@ -455,12 +455,6 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
-    The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-    There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
-
-    * Runtime resource tracking via mock circuit execution
-    * Pass-by-pass resource collection for user applied compilation passes
-
     .. details::
         :title: Usage Details
 
@@ -558,6 +552,12 @@ def specs(
                                                measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                                                num_allocs=3,
                                                depth=1)])
+
+    The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+    There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
+
+    * Runtime resource tracking via mock circuit execution
+    * Pass-by-pass resource collection for user applied compilation passes
 
     .. details::
         :title: Runtime resource tracking for workflows compiled with Catalyst

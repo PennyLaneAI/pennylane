@@ -54,6 +54,7 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
 
   ```python
   from pennylane.templates import Subroutine
@@ -98,7 +99,7 @@
 <h3>Improvements 🛠</h3>
 
 * When using :func:`~.specs` with multiple levels, printing the returned
-  :class:`~.resources.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
   This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
 
@@ -632,6 +633,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+  [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
+  
 * Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
