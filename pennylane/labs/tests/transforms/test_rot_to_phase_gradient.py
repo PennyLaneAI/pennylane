@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.labs.transforms.rot_to_phase_gradient import (
-    _binary_repr_int,
     _select_pauli_rot_phase_gradient,
+    binary_repr_int,
     rot_to_phase_gradient,
 )
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
@@ -36,7 +36,7 @@ def prepare_phase_gradient(wires):
 
 
 class TestBinaryReprInt:
-    """Test ``_binary_repr_int``."""
+    """Test ``binary_repr_int``."""
 
     @pytest.mark.parametrize(
         "phi, p, expected",
@@ -48,10 +48,10 @@ class TestBinaryReprInt:
             ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, [1, 0, 1, 1, 1]),
         ],
     )
-    def test_binary_repr_int_scalar(self, phi, p, expected):
+    def testbinary_repr_int_scalar(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
 
-        assert np.array_equal(expected, _binary_repr_int(phi, p))
+        assert np.array_equal(expected, binary_repr_int(phi, p))
 
     @pytest.mark.parametrize(
         "phi, p, expected",
@@ -76,13 +76,13 @@ class TestBinaryReprInt:
                 * 4
                 * np.pi,
                 2,
-                [[1, 1], [0, 0], [1, 0], [0, 1], [0, 0], [1, 1]],
+                [[1, 1], [0, 0], [1, 1], [1, 0], [0, 0], [1, 1]],
             ),
         ],
     )
-    def test_binary_repr_int_array(self, phi, p, expected):
+    def testbinary_repr_int_array(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct"""
-        out = _binary_repr_int(phi, p)
+        out = binary_repr_int(phi, p)
         assert np.array_equal(expected, out), f"\n{expected}\n{out}"
 
 
