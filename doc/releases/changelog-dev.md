@@ -550,6 +550,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* References to the `master` branch are changed to the new default branch `main`.
+  [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
+  
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
