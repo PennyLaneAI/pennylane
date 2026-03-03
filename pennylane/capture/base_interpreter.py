@@ -36,8 +36,8 @@ from .primitives import (
     jacobian_prim,
     jvp_prim,
     qnode_prim,
-    value_and_grad_prim,
     quantum_subroutine_prim,
+    value_and_grad_prim,
     vjp_prim,
     while_loop_prim,
 )
