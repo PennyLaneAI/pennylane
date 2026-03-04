@@ -1029,8 +1029,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     @property
     def kwargs(self) -> dict:
         """The stored quantum transform's ``kwargs``."""
-        #return self._kwargs
-        return {k: tuple(v) if isinstance(v, list) else v for k, v in self._kwargs.items()}
+        return self._kwargs
 
     @property
     def classical_cotransform(self) -> None | Callable:
