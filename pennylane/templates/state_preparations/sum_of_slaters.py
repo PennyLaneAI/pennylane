@@ -1120,6 +1120,7 @@ def _sos_state_prep(
 
     if compiler.active():
         b_bits = qml.math.array(b_bits, like="jax")
+        mcx_ctrl_wires = qml.math.array(mcx_ctrl_wires, like="jax")
 
     @for_loop(m)
     def flip(i, bits_to_flip):
@@ -1140,6 +1141,7 @@ def _sos_state_prep(
             elifs=((bit_count == 2, two_mcx),),
             false_fn=multi_mcx_via_cache,
         )(k)
+        return bits
 
     last_bits = uncompute_enumeration(np.ones(m, dtype=int))
     flip(1 - last_bits)

@@ -1063,12 +1063,19 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
-    @control_flow.for_loop(0, len(control_wires_x), 1)
+    if compiler.active():
+        control_wires_x = math.array(control_wires_x, like="jax")
+        control_wires_y = math.array(control_wires_y, like="jax")
+        target_wires = math.array(target_wires, like="jax")
+
+    # @control_flow.for_loop(0, len(control_wires_x), 1)
     def loop(i):
         ops.X(target_wires[i])
         ops.Toffoli([control_wires_x[i], control_wires_y[i], target_wires[i]])
 
-    loop()
+    for i in range(len(control_wires_x)):
+        loop(i)
+    # loop()
 
 
 def _build_linear_depth_ladder(wires) -> int:
