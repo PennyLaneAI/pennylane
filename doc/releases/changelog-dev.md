@@ -595,6 +595,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove usage of `PassPipelineWrapper` after `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+  [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
+
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
   
