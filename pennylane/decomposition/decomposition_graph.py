@@ -303,6 +303,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_node in self._all_op_indices:
             return self._all_op_indices[op_node]
 
+        # print(f"Adding op node for {op}")
         op_node_idx = self._graph.add_node(op_node)
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
@@ -367,6 +368,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         decomp_resource = rule.compute_resources(**op_node.op.params)
         work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
 
+        # print(f"Got decomposition with resources {decomp_resource} for {op_node}")
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
         if not decomp_resource.gate_counts:

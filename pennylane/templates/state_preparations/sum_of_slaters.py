@@ -20,7 +20,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import compiler, for_loop, math
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 
@@ -947,20 +951,35 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
-    qrom_params = {
-        "num_bitstrings": num_entries,
+    # qrom_params = {
+    # "num_bitstrings": num_entries,
+    # "num_control_wires": d,
+    # "num_target_wires": num_wires,
+    # "num_work_wires": d - 1,
+    # "clean": True,
+    # }
+    # resources[resource_rep(qml.QROM, **qrom_params)] += 1
+
+    select_params = {
+        "op_reps": [
+            resource_rep(qml.BasisEmbedding, num_wires=num_wires) for _ in range(num_entries)
+        ],
         "num_control_wires": d,
-        "num_target_wires": num_wires,
+        "partial": True,
         "num_work_wires": d - 1,
-        "clean": True,
     }
-    resources[resource_rep(qml.QROM, **qrom_params)] += 1
+    resources[resource_rep(qml.Select, **select_params)] += 1
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7)
         resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
+
+    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
+    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
+    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
+    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
     if m == 1:
         mcx_rep = resource_rep(qml.CNOT)
@@ -974,11 +993,6 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
             "num_zero_control_values": 0,
         }
         mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
-
-    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
-    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
-    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
-    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
     # If k is a power of two, we can directly use an MCX gate
     resources[mcx_rep] += counts.pop(1, 0)
@@ -1046,14 +1060,22 @@ def _sos_state_prep(
 
     # Step 1: Dense state preparation in enumeration register
     # Need to add work wires and correct decomposition
-    qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+    # qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+
+    # qml.QROMStatePreparation(coefficients, wires=enumeration_wires, precision_wires=identification_wires, work_wires=[*mcx_work_wires, *enumeration_wires])
 
     # Step 2: QROM to load v_bits into system register
-    qml.QROM(
-        v_bits.T,
-        control_wires=enumeration_wires,
-        target_wires=target_wires,
+    # qml.QROM(
+    # v_bits.T,
+    # control_wires=enumeration_wires,
+    # target_wires=target_wires,
+    # work_wires=qrom_work_wires,
+    # )
+    qml.Select(
+        ops=[qml.BasisEmbedding(_bits, target_wires) for _bits in v_bits.T],
+        control=enumeration_wires,
         work_wires=qrom_work_wires,
+        partial=True,
     )
 
     if not identity_encoding:
@@ -1122,18 +1144,17 @@ def _sos_state_prep(
         b_bits = qml.math.array(b_bits, like="jax")
         mcx_ctrl_wires = qml.math.array(mcx_ctrl_wires, like="jax")
 
-    @for_loop(m)
-    def flip(i, bits_to_flip):
-        qml.cond(bits_to_flip[i], qml.X)(mcx_ctrl_wires[i])
-        return bits_to_flip
-
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
         bits = b_bits[:, k]
-        flip_bits = bits ^ prev_bits
+        flip_bits = qml.math.bitwise_xor(bits, prev_bits)
 
-        flip(flip_bits)
+        @for_loop(m)
+        def _flip(i):
+            qml.cond(flip_bits[i], qml.X)(mcx_ctrl_wires[i])
+
+        _flip()
         bit_count = qml.math.bitwise_count(k)
         qml.cond(
             bit_count == 1,
@@ -1144,7 +1165,13 @@ def _sos_state_prep(
         return bits
 
     last_bits = uncompute_enumeration(np.ones(m, dtype=int))
-    flip(1 - last_bits)
+
+    @for_loop(m)
+    def flip(i):
+        qml.cond(~last_bits[i], qml.X)(mcx_ctrl_wires[i])
+
+    # flip_bits = qml.math.bitwise_xor(qml.math.ones(m, dtype=int, like="jax"), last_bits)
+    flip()
 
     # Step 6): Uncompute the b_i in the identification register (self-adjoint)
     if not identity_encoding:
