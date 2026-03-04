@@ -150,7 +150,7 @@ def dynamic_one_shot(
 
         We can inspect the compilation pipeline to indeed verify our transform exists:
 
-        >>> qml.workflow.get_compile_pipeline(circ, level="device")()
+        >>> print(qml.workflow.get_compile_pipeline(circ, level="device")())
         CompilePipeline(
           [1] _expand_transform_param_shift(),
           [2] validate_measurements(name=lightning.qubit),
