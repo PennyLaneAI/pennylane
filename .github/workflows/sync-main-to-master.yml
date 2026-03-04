@@ -1,22 +1,15 @@
 name: Sync main to master
 
-# Controls when the workflow will run
 on:
   # Scheduled trigger every weekday at 2:47am UTC
   schedule:
   - cron:  '47 2 * * 1-5'
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job to sync the master branch with changes from the rc
   sync:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out the PennyLane repository
       - uses: actions/checkout@v4
         with:
           ref: master
@@ -34,10 +27,11 @@ jobs:
             git merge --abort || true 
           fi      
 
-      # Create a new branch at from the current main to be used in the PR
+        # If there are conflicts, create a PR for resolution
       - name: Create PR for conflict resolution
         env:
           GH_TOKEN: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+        if: env.merge_conflict == 'true'            
         run: |
           git checkout main
           BRANCH="main_$(date +'%Y-%m-%d-%H-%M-%S')"
