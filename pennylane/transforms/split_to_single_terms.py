@@ -139,6 +139,7 @@ def split_to_single_terms(tape):
         >>> processing_fn(results)
         (np.float64(2.0), np.float64(2.0), np.float64(1.0))
 
+    ..details::
         :title: Usage with Catalyst (qjit)
 
         This transform is compatible with qjit with a few minor differences to be aware of.
