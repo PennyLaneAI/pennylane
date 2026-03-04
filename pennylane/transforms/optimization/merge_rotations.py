@@ -385,7 +385,7 @@ def merge_rotations(
 
             dev = qml.device("lightning.qubit", wires=1)
 
-            @qml.qjit(keep_intermediate=True)
+            @qml.qjit(capture=True)
             @qml.transforms.cancel_inverses
             @qml.qnode(dev)
             def circuit():
