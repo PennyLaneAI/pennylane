@@ -98,6 +98,45 @@
 
 <h3>Improvements 🛠</h3>
 
+* When using :func:`~.specs` with multiple levels, printing the returned
+  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  for convenient comparison of circuit specifications between compilation passes.
+  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
+
+  ```python
+  @qml.qjit
+  @qml.transforms.cancel_inverses
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit():
+      qml.X(0)
+      qml.H(0)
+      qml.H(0)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> print(qml.specs(circuit, level="all")())
+  Device: lightning.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Levels:
+  - 0: Before transforms
+  - 1: Before MLIR Passes (MLIR-0)
+  - 2: cancel-inverses (MLIR-1)
+  <BLANKLINE>
+  ↓Metric     Level→ |  0 |  1 |  2
+  ---------------------------------
+  Wire allocations   |  1 |  2 |  2
+  Total gates        |  3 |  3 |  1
+  Gate counts:       |
+  - PauliX           |  1 |  1 |  1
+  - Hadamard         |  2 |  2 |  0
+  Measurements:      |
+  - probs(all wires) |  1 |  1 |  1
+  ```
+
+  [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
+
 * `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
