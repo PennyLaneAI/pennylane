@@ -36,6 +36,29 @@ if TYPE_CHECKING:
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
 
+def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
+    """Helper function to make a level name unique by appending a suffix if necessary.
+
+    Args:
+        level_name (str): The original level name
+        existing_names (set[str]): The set of existing level names to check against
+
+    Returns:
+        str: A unique level name
+
+    Example:
+        >>> existing = {"cancel-inverses", "merge-rotations", "cancel-inverses-2"}
+        >>> _make_level_name_unique("cancel-inverses", existing)
+        'cancel-inverses-3'
+    """
+    unique_name = level_name
+    counter = 1
+    while unique_name in existing_names:
+        counter += 1
+        unique_name = f"{level_name}-{counter}"
+    return unique_name
+
+
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
 
@@ -149,7 +172,7 @@ def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
     for i, trans in reversed(list(enumerate(compile_pipeline))):
         if trans.pass_name is None:
-            #  Add 1 to account for the implicit "Before transforms" at level=0
+            #  Add 1 to account for the implicit "Before Tape Transforms" at level=0
             return i + 1
     return 0
 
@@ -173,7 +196,7 @@ def _preprocess_level_input(
     """
 
     if level == "all" and num_tape_levels > 1:
-        # Account for 2 implicit "Before transforms" and "Before MLIR passes" levels
+        # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
         return list(range(pipeline_len + 2))
 
     if level in ("all", "all-mlir"):
@@ -224,7 +247,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
     mlir_only = (level == "all-mlir") or num_tape_levels == 0
     if not mlir_only:
-        # Account for the "Before transforms" tape at level 0
+        # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
     # Maps to convert back and forth between marker name and int level
@@ -272,16 +295,11 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             if tape_level in level_to_markers:
                 trans_name: str = ", ".join(level_to_markers[tape_level])
             elif tape_level == 0:
-                trans_name = "Before transforms"
+                trans_name = "Before Tape Transforms"
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            # If the same transform appears multiple times, append a suffix
-            if trans_name in resources:
-                rep = 2
-                while f"{trans_name}-{rep}" in resources:
-                    rep += 1
-                trans_name += f"-{rep}"
+            trans_name = _make_level_name_unique(trans_name, set(output_level.values()))
             resources[trans_name] = res
             output_level[tape_level] = trans_name
 
@@ -289,7 +307,12 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     if len(mlir_levels) > 0:
         try:
             results = mlir_specs(
-                qjit, mlir_levels, *args, **kwargs, level_to_markers=mlir_level_to_markers
+                qjit,
+                mlir_levels,
+                *args,
+                **kwargs,
+                level_to_markers=mlir_level_to_markers,
+                existing_level_names=set(output_level.values()),
             )
         except ValueError as ve:
             levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
@@ -712,7 +735,7 @@ def specs(
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - 0: Before transforms
+        - 0: Before Tape Transforms
         - 1: split_non_commuting
         - 2: Before MLIR Passes (MLIR-0)
         - 3: cancel-inverses (MLIR-1)

@@ -80,7 +80,7 @@ def test_preprocess_levels(level, output, expect_warnings):
 @pytest.mark.parametrize(
     "num_tapes, expected",
     [
-        (  # If there are no tape transforms, the "Before transforms" level should be skipped
+        (  # If there are no tape transforms, the "Before Tape Transforms" level should be skipped
             0,
             list(range(5)),
         ),
@@ -113,7 +113,7 @@ def test_get_last_tape_transform_level():
     # If there are no transforms, the last transform level should be 0
     assert _get_last_tape_transform_level(qml.CompilePipeline()) == 0
     # If there are *any* tape transforms, this should return the number of tape transforms
-    # since there is an implied level 0 for "before transforms"
+    # since there is an implied level 0 for "Before Tape Transforms"
     assert _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform)) == 1
     assert (
         _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
