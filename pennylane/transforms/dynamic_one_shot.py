@@ -167,6 +167,7 @@ def dynamic_one_shot(
 
         >>> circ_qjit = qml.qjit(circ)
         >>> circ_qjit()
+        Array(0.4, dtype=float64)
 
     """
     if not any(is_mcm(o) for o in tape.operations):
