@@ -192,8 +192,6 @@ def _preprocess_level_input(
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-            if level[i] >= num_tape_levels:
-                level[i] += 1  # Account for the MLIR lowering pass
         elif isinstance(lvl, int):
             if lvl < 0:
                 raise ValueError(
