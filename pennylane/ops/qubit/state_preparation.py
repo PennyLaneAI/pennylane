@@ -190,37 +190,55 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(num_wires):
-    # Represent one of the X gates as a power of X for z=0, 1 each.
-    # used when jax-jit is used, without capture/qjit.
+def _fallback_branch_resources(num_wires):
     resources = {
-        pow_resource_rep(qml.X, base_params={}, z=0): 1,
-        pow_resource_rep(qml.X, base_params={}, z=1): 1,
-        qml.X: max((num_wires - 2) // 2, 1),
+        pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
+        pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
     }
     return resources
 
 
+def _fallback_branch_cond(**_):
+    x = qml.math.array(0.2, like="jax")
+    if qml.capture.enabled() or qml.compiler.active():
+        return False
+    return qml.math.is_abstract(x)
+
+
+@register_condition(_fallback_branch_cond)
+@register_resources(_fallback_branch_resources, exact=False)
+def _fallback_branch_decomp(state, wires, **__):
+    if qml.math.is_abstract(state):
+        _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+        return
+    _ = [qml.X(wires=wire) for wire, basis in zip(wires, state) if basis]
+
+
+def _basis_state_decomp_resources(num_wires):
+    return {qml.X: num_wires // 2}
+
+
+def _basis_state_decomp_cond(**_):
+    x = qml.math.array(0.2, like="jax")
+    if qml.capture.enabled() or qml.compiler.active():
+        return True
+    return not qml.math.is_abstract(x)
+
+
+@register_condition(_basis_state_decomp_cond)
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    abstract_state = qml.math.is_abstract(state)
     if qml.capture.enabled() or qml.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
         import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
-        if not abstract_state:
+        if not qml.math.is_abstract(state):
             state = jnp.array(state)
 
         if not qml.math.is_abstract(wires):
             wires = jnp.array(wires)
-    else:
-        # This branch is for supporting jax-jit without capture/qjit. This is necessary if
-        # the state is traced
-        if abstract_state:
-            _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
-            return
 
     @qml.for_loop(0, len(wires), 1)
     def _loop(i):
@@ -276,7 +294,7 @@ def _single_ctrl_basis_state_decomp(state, wires, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp)
+add_decomps(BasisState, _basis_state_decomp, _fallback_branch_decomp)
 add_decomps("C(BasisState)", _single_ctrl_basis_state_decomp)
 
 

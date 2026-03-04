@@ -63,6 +63,12 @@ class TestStandardValidityBasisState:
             assert qml.math.is_abstract(wires) == wires_traced
             tapes = []
             for rule in qml.list_decomps(op_name):
+                cond_kwargs = {"num_wires": len(wires)}
+                if ctrld:
+                    cond_kwargs["num_control_wires"] = 1
+                    cond_kwargs["num_zero_control_values"] = 0
+                if not rule.is_applicable(**cond_kwargs):
+                    continue
                 with qml.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qml.tape.QuantumScript.from_queue(q))
