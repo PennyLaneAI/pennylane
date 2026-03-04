@@ -40,7 +40,6 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           if ! git diff --quiet origin/master origin/main; then
-            echo "new_changes=true" >> $GITHUB_ENV
             git push --set-upstream origin "$BRANCH"
             gh pr create --repo PennyLaneAI/pennylane --title "Daily main sync to master - conflict resolution" --body "" --base master 
           else
