@@ -558,10 +558,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
-  
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
@@ -638,6 +638,10 @@
 
   * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to
     render in PennyLane's documentation.
+
+* The :mod:`transforms API documentation page <~.transforms>` has been reogranized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
 <h3>Bug fixes 🐛</h3>
 
