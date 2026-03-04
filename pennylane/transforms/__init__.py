@@ -414,6 +414,8 @@ from .disentangle_cnot_swap import disentangle_cnot, disentangle_swap
 from .decompositions import (
     clifford_t_decomposition,
     commute_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
     decompose_arbitrary_ppr,
     gridsynth,
     merge_ppr_ppm,
