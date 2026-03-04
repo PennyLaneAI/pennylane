@@ -35,7 +35,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@transform(pass_name="split-to-single-terms")
 def split_to_single_terms(tape):
     """Splits any expectation values of multi-term observables in a circuit into single term
     expectation values for devices that don't natively support measuring expectation values

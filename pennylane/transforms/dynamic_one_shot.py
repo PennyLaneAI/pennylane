@@ -81,7 +81,7 @@ def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> Postprocessi
     return new_fn
 
 
-@partial(transform, expand_transform=_expand_fn)
+@partial(transform, expand_transform=_expand_fn, pass_name="dynamic-one-shot")
 def dynamic_one_shot(
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
