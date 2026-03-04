@@ -21,6 +21,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.select import _select_decomp_unary
+from pennylane.templates.subroutines.qrom import _qrom_decomposition
 
 has_jax = True
 try:
@@ -330,6 +332,28 @@ class TestQROM:
         )
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
+
+    def test_select_decomposition_unary(self):
+        """Tests that unary iterator can be used within QROM.
+        This is done by checking there are TemporaryAND gates in the decomposition."""
+
+        bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
+
+        control_wires = [0, 1, 2]
+        target_wires = [3, 4]
+
+        qml.decomposition.enable_graph()
+
+        @qml.transforms.decompose(
+            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", *qml.ops.__all__},
+            fixed_decomps={qml.QROM: _qrom_decomposition, qml.Select: _select_decomp_unary},
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.QROM(bitstrings, control_wires, target_wires, work_wires=[5, 6])
+            return qml.state()
+
+        assert "TemporaryAND" in list(qml.specs(circuit)()["resources"]["gate_types"].keys())
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
