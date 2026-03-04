@@ -34,6 +34,14 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .binary_linalg import (
+    binary_finite_reduced_row_echelon,
+    binary_is_independent,
+    binary_matrix_rank,
+    binary_select_basis,
+    binary_solve_linear_system,
+    int_to_binary,
+)
 from .is_independent import is_independent
 from .matrix_manipulation import (
     expand_matrix,
@@ -96,7 +104,6 @@ from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,
-    binary_finite_reduced_row_echelon,
     cast,
     cast_like,
     ceil_log2,
@@ -201,6 +208,11 @@ __all__ = [
     "allclose",
     "allequal",
     "array",
+    "binary_finite_reduced_row_echelon",
+    "binary_is_independent",
+    "binary_matrix_rank",
+    "binary_select_basis",
+    "binary_solve_linear_system",
     "block_diag",
     "cast",
     "cast_like",
@@ -230,6 +242,7 @@ __all__ = [
     "get_deep_interface",
     "get_trainable_indices",
     "grad",
+    "int_to_binary",
     "in_backprop",
     "is_abstract",
     "is_independent",
@@ -251,7 +264,6 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
-    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",
