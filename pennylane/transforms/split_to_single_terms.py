@@ -139,6 +139,23 @@ def split_to_single_terms(tape):
         >>> processing_fn(results)
         (np.float64(2.0), np.float64(2.0), np.float64(1.0))
 
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with qjit with a few minor differences to be aware of.
+        Currently, when combined with ``qjit``, this transform will not work with shot vectors
+        and will not simplify any tensor products like ``X(0) @ Y(0)`` contained in measurements.
+
+        For example, by decorating our ``QNode`` with ``qml.qjit``, we will be applying the MLIR pass
+        associated with this transform.
+
+        .. code-block::
+
+            @qml.qjit
+            @qml.transforms.split_to_single_terms
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
+
     """
 
     if len(tape.measurements) == 0:
