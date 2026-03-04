@@ -24,7 +24,7 @@ from types import NoneType
 from typing import Literal
 
 import numpy as np
-from pennylane import math, PauliX
+from pennylane import math
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -36,6 +36,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.ops.qubit import PauliX
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -1299,11 +1300,11 @@ class Toffoli(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def resource_rep(cls, base_params):
+    def resource_rep(cls):
         return resource_rep(
             cls,
             base_class=PauliX,
-            base_params=base_params,
+            base_params=PauliX.resource_params,
             signature_key=(
                 AbstractArray((3,)),  # wires
                 (PyTreeStructure(), (AbstractArray(shape=(), dtype=NoneType),))  # id

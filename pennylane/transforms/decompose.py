@@ -857,7 +857,11 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
         if num_work_wires is not None:
-            num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+            non_sig_params = list(filter(lambda v: v is not None,
+                                         (val if key != "signature_key" else None for key, val in
+                                          op.resource_params.items())))
+            final_params = non_sig_params + list(op.resource_params["signature_key"])
+            num_work_wires -= op_rule.get_work_wire_spec(*final_params).total
 
     elif enabled_graph() and isinstance(op, GlobalPhase):
         warnings.warn(

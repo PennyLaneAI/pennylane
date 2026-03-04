@@ -433,11 +433,11 @@ def _mcx_many_workers_resource(base_class, base_params, wires, control_values, w
     num_control_wires = len(control_values)
 
     if work_wire_type == "borrowed":
-        return {ops.Toffoli.resource_rep(base_params): 4 * (num_control_wires - 2)}
+        return {ops.Toffoli.resource_rep(): 4 * (num_control_wires - 2)}
     return {
         qml.TemporaryAND: num_control_wires - 2,
         adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
-        ops.Toffoli.resource_rep(base_params): 1,
+        ops.Toffoli.resource_rep(): 1,
     }
 
 
@@ -533,14 +533,14 @@ def _mcx_two_workers_resource(base_class, base_params, wires, control_values, wo
         n_ccx = 2 * num_control_wires - 3
         n_temporary_ccx_pairs = 2 - is_small_mcx
         return {
-            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
+            ops.Toffoli.resource_rep(): n_ccx - 2 * n_temporary_ccx_pairs,
             ops.X: n_ccx - 3 if is_small_mcx else n_ccx - 5,
             qml.TemporaryAND: n_temporary_ccx_pairs,
             adjoint_resource_rep(qml.TemporaryAND): n_temporary_ccx_pairs,
         }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8}
+    return {ops.Toffoli.resource_rep(): n_ccx, ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8}
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -649,14 +649,14 @@ def _mcx_one_worker_resource(base_class, base_params, wires, control_values, wor
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 5
         return {
-            ops.Toffoli.resource_rep(base_params): n_ccx,
+            ops.Toffoli.resource_rep(): n_ccx,
             qml.TemporaryAND: 1,
             adjoint_resource_rep(qml.TemporaryAND): 1,
             ops.X: n_ccx - 1,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli.resource_rep(base_params): n_ccx, ops.X: n_ccx - 4}
+    return {ops.Toffoli.resource_rep(): n_ccx, ops.X: n_ccx - 4}
 
 
 @register_condition(_mcx_one_worker_condition)

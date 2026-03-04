@@ -153,7 +153,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qml.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    total_work_wires = rule.get_work_wire_spec(*final_params).total
     if total_work_wires:
         [tape], _ = qml.transforms.resolve_dynamic_wires(
             [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
