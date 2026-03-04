@@ -54,6 +54,7 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
 
   ```python
   from pennylane.templates import Subroutine
@@ -96,6 +97,45 @@
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
+
+* When using :func:`~.specs` with multiple levels, printing the returned
+  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
+  for convenient comparison of circuit specifications between compilation passes.
+  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
+
+  ```python
+  @qml.qjit
+  @qml.transforms.cancel_inverses
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit():
+      qml.X(0)
+      qml.H(0)
+      qml.H(0)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> print(qml.specs(circuit, level="all")())
+  Device: lightning.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Levels:
+  - 0: Before transforms
+  - 1: Before MLIR Passes (MLIR-0)
+  - 2: cancel-inverses (MLIR-1)
+  <BLANKLINE>
+  ↓Metric     Level→ |  0 |  1 |  2
+  ---------------------------------
+  Wire allocations   |  1 |  2 |  2
+  Total gates        |  3 |  3 |  1
+  Gate counts:       |
+  - PauliX           |  1 |  1 |  1
+  - Hadamard         |  2 |  2 |  0
+  Measurements:      |
+  - probs(all wires) |  1 |  1 |  1
+  ```
+
+  [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
 
 * `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
   be a tuple instead of a list.
@@ -158,6 +198,7 @@
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
   
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
@@ -253,6 +294,9 @@
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* No unnecessary classical registers will be created now when using `qml.to_openqasm` with `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 * A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
   for an operator, instead of a general `UserWarning`.
@@ -486,8 +530,9 @@
 
   These are now handled by dedicated functions:
 
-  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
-     as the original behaviour was never supported.
+  .. warning::
+    Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+    as the original behaviour was never supported.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
@@ -553,6 +598,13 @@
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
   
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+  [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
+  
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+  [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+  [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
+  
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
@@ -607,6 +659,12 @@
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+  documentation still resided in the PennyLane repository.
+  [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+  
 
 <h3>Bug fixes 🐛</h3>
 
@@ -697,5 +755,6 @@ Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
+Nate Stemen,
 David Wierichs,
 Jake Zaia.
