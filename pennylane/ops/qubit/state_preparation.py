@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint: disable=too-many-branches,arguments-differ
+from collections import defaultdict
 from warnings import warn
 
 import numpy as np
@@ -27,7 +28,11 @@ from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.templates.state_preparations import MottonenStatePreparation
+from pennylane.templates.state_preparations.mottonen import (
+    MottonenStatePreparation,
+    _get_alpha_y,
+    _get_alpha_z,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -607,7 +612,45 @@ def _state_prep_decomp(state, wires, **_):
     qml.MottonenStatePreparation(state, wires)
 
 
-add_decomps(StatePrep, _state_prep_decomp)
+def _state_prep_to_select_pauli_rot_resources(num_wires):
+    resources = defaultdict(int)
+    for i in range(num_wires):
+        for axis in "YZ":
+            rep = qml.resource_rep(qml.SelectPauliRot, rot_axis=axis, num_wires=i + 1)
+            resources[rep] += 1
+    resources[qml.GlobalPhase] += 1
+    return dict(resources)
+
+
+@register_resources(_state_prep_to_select_pauli_rot_resources, exact=False)
+def _state_prep_to_select_pauli_rot(state_vector, wires):
+    a = math.abs(state_vector)
+    omega = math.angle(state_vector)
+    n = len(wires)
+
+    op_list = [
+        qml.SelectPauliRot(_get_alpha_y(a, n, k), wires[: n - k], wires[n - k], rot_axis="Y")
+        for k in range(n, 0, -1)
+    ]
+
+    # If necessary, apply RZ multiplexers to prepare correct phases of amplitudes
+    if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
+        op_list.extend(
+            [
+                qml.SelectPauliRot(
+                    _get_alpha_z(omega, n, k), wires[: n - k], wires[n - k], rot_axis="Z"
+                )
+                for k in range(n, 0, -1)
+            ]
+        )
+
+        global_phase = -1 * math.sum(omega) / len(state_vector)
+        op_list.append(qml.GlobalPhase(global_phase, wires=wires))
+
+    return op_list
+
+
+add_decomps(StatePrep, _state_prep_decomp, _state_prep_to_select_pauli_rot)
 
 
 class QubitDensityMatrix(Operation):

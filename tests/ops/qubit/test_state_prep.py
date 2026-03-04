@@ -173,15 +173,56 @@ class TestDecomposition:
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
 
-        U = np.array([1, 0, 0, 0])
+        state = np.array([1, 0, 0, 0])
         wires = (0, 1)
 
-        ops1 = qml.StatePrep.compute_decomposition(U, wires)
-        ops2 = qml.StatePrep(U, wires=wires).decomposition()
+        ops0 = qml.StatePrep.compute_decomposition(state, wires)
+        ops1 = qml.StatePrep(state, wires=wires).decomposition()
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.list_decomps(qml.StatePrep)[0](state, wires)
+        ops2 = q.queue
 
-        assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.MottonenStatePreparation)
-        assert isinstance(ops2[0], qml.MottonenStatePreparation)
+        for ops in [ops0, ops1, ops2]:
+            assert len(ops) == 1
+            assert isinstance(ops[0], qml.MottonenStatePreparation)
+
+    @pytest.mark.parametrize("dtype", ["real", "complex"])
+    def test_state_prep_to_select_pauli_rot_decomp(self, dtype):
+        """Test that StatePrep has a correct decomposition rule
+        into SelectPauliRots registered."""
+
+        decomp = qml.list_decomps(qml.StatePrep)[1]
+
+        n = 5
+        wires = [0, 3, 2, 7, "a"]
+        resource_obj = decomp.compute_resources(num_wires=n)
+
+        exp_counts = {
+            qml.resource_rep(qml.SelectPauliRot, num_wires=i, rot_axis="Y"): 1
+            for i in range(1, n + 1)
+        }
+        exp_counts |= {
+            qml.resource_rep(qml.SelectPauliRot, num_wires=i, rot_axis="Z"): 1
+            for i in range(1, n + 1)
+        }
+        exp_counts[qml.resource_rep(qml.GlobalPhase)] = 1
+
+        assert resource_obj.num_gates == 2 * n + 1
+        assert resource_obj.gate_counts == exp_counts
+
+        if dtype == "real":
+            state = np.random.random(2**n)
+        else:
+            state = np.random.random(2**n) + 1j * np.random.random(2**n)
+
+        state /= np.linalg.norm(state)
+        mat = qml.matrix(decomp, wire_order=wires)(state, wires=wires)
+        assert np.allclose(mat[:, 0], state)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(state, wires=wires)
+
+        assert len(q.queue) == n if dtype == "real" else 2 * n + 1
 
     def test_stateprep_resources(self):
         """Test the resources for StatePrep"""

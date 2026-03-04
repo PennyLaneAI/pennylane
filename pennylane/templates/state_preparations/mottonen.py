@@ -14,8 +14,6 @@
 r"""
 Contains the MottonenStatePreparation template.
 """
-from collections import defaultdict
-
 import numpy as np
 
 import pennylane as qml
@@ -460,54 +458,4 @@ mottonen_decomp = qml.register_resources(
     _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
 )
 
-
-def _mottonen_to_select_pauli_rot_resources(num_wires):
-    resources = defaultdict(int)
-    for i in range(num_wires):
-        for axis in "YZ":
-            rep = qml.resource_rep(qml.SelectPauliRot, rot_axis=axis, num_wires=i + 1)
-            resources[rep] += 1
-    resources[qml.GlobalPhase] += 1
-    return dict(resources)
-
-
-@qml.register_resources(_mottonen_to_select_pauli_rot_resources, exact=False)
-def _mottonen_to_select_pauli_rot(state_vector, wires):
-    if len(qml.math.shape(state_vector)) > 1:
-        raise ValueError(
-            "Broadcasting with MottonenStatePreparation is not supported. Please use the "
-            "qml.transforms.broadcast_expand transform to use broadcasting with "
-            "MottonenStatePreparation."
-        )
-
-    a = qml.math.abs(state_vector)
-    omega = qml.math.angle(state_vector)
-    n = len(wires)
-
-    op_list = [
-        qml.SelectPauliRot(_get_alpha_y(a, n, k), wires[: n - k], wires[n - k], rot_axis="Y")
-        for k in range(n, 0, -1)
-    ]
-
-    # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-    if (
-        qml.math.is_abstract(omega)
-        or qml.math.requires_grad(omega)
-        or not qml.math.allclose(omega, 0)
-    ):
-        op_list.extend(
-            [
-                qml.SelectPauliRot(
-                    _get_alpha_z(omega, n, k), wires[: n - k], wires[n - k], rot_axis="Z"
-                )
-                for k in range(n, 0, -1)
-            ]
-        )
-
-        global_phase = -1 * qml.math.sum(omega) / len(state_vector)
-        op_list.append(qml.GlobalPhase(global_phase, wires=wires))
-
-    return op_list
-
-
-qml.add_decomps(MottonenStatePreparation, mottonen_decomp, _mottonen_to_select_pauli_rot)
+qml.add_decomps(MottonenStatePreparation, mottonen_decomp)
