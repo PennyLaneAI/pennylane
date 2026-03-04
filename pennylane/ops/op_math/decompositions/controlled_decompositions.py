@@ -13,8 +13,7 @@
 # limitations under the License.
 
 """This submodule defines functions to decompose controlled operations."""
-
-
+from types import NoneType
 from typing import Literal
 
 import numpy as np
@@ -434,11 +433,11 @@ def _mcx_many_workers_resource(base_class, base_params, wires, control_values, w
     num_control_wires = len(control_values)
 
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * (num_control_wires - 2)}
+        return {ops.Toffoli.resource_rep(base_params): 4 * (num_control_wires - 2)}
     return {
         qml.TemporaryAND: num_control_wires - 2,
         adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
-        ops.Toffoli: 1,
+        ops.Toffoli.resource_rep(base_params): 1,
     }
 
 
@@ -486,8 +485,8 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 2},
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_many_workers_resource(base_class, base_params, wires, control_values, work_wires, "zeroed"),
+    work_wires=lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: {"zeroed": len(control_values) - 2},
 )
 def _mcx_many_zeroed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -503,8 +502,8 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed"),
-    work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_many_workers_resource(base_class, base_params, wires, control_values, work_wires, "borrowed"),
+    work_wires=lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: {"borrowed": len(control_values) - 2},
 )
 def _mcx_many_borrowed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -609,7 +608,7 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_two_workers_resource(len(control_values), "zeroed"),
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_two_workers_resource(base_class, base_params, wires, control_values, work_wires, "zeroed"),
     work_wires=lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: {"zeroed": 1 + (len(control_values) >= 6)},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
@@ -625,7 +624,7 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_two_workers_resource(len(control_values), "borrowed"),
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_two_workers_resource(base_class, base_params, wires, control_values, work_wires, "borrowed"),
     work_wires=lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: {"borrowed": 2 - (len(control_values) < 6)},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
@@ -650,14 +649,14 @@ def _mcx_one_worker_resource(base_class, base_params, wires, control_values, wor
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 5
         return {
-            ops.Toffoli: n_ccx,
+            ops.Toffoli.resource_rep(base_params): n_ccx,
             qml.TemporaryAND: 1,
             adjoint_resource_rep(qml.TemporaryAND): 1,
             ops.X: n_ccx - 1,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
+    return {ops.Toffoli.resource_rep(base_params): n_ccx, ops.X: n_ccx - 4}
 
 
 @register_condition(_mcx_one_worker_condition)
@@ -710,7 +709,7 @@ decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_one_worker_resource(len(control_values), "zeroed"),
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_one_worker_resource(base_class, base_params, wires, control_values, work_wires, "zeroed"),
     work_wires={"zeroed": 1},
 )
 def _mcx_one_zeroed_worker(wires, **kwargs):
@@ -725,7 +724,7 @@ decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: not len(work_wires))
 @register_condition(lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: len(control_values) > 2)
 @register_resources(
-    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_one_worker_resource(len(control_values), "borrowed"),
+    lambda base_class, base_params, wires, control_values, work_wires, work_wire_type: _mcx_one_worker_resource(base_class, base_params, wires, control_values, work_wires, "borrowed"),
     work_wires={"borrowed": 1},
 )
 def _mcx_one_borrowed_worker(wires, **kwargs):

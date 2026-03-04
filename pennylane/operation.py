@@ -1230,7 +1230,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if not hasattr(self, "_static_argnames"):
             self._static_argnames = ()
         if not hasattr(self, "_bound_args"):
-            self._bound_args = self._bind_args(*params, wires=wires, id=id)
+            self._bound_args = self._bind_args(*params, wires=wires)
 
         if id is not None:
             warnings.warn(

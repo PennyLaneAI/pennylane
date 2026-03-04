@@ -24,7 +24,7 @@ from types import NoneType
 from typing import Literal
 
 import numpy as np
-from pennylane import math
+from pennylane import math, PauliX
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -1297,6 +1297,18 @@ class Toffoli(ControlledOp):
     @classmethod
     def _unflatten(cls, _, metadata):
         return cls(metadata[0])
+
+    @classmethod
+    def resource_rep(cls, base_params):
+        return resource_rep(
+            cls,
+            base_class=PauliX,
+            base_params=base_params,
+            signature_key=(
+                AbstractArray((3,)),  # wires
+                (PyTreeStructure(), (AbstractArray(shape=(), dtype=NoneType),))  # id
+            )
+        )
 
     @classmethod
     def _primitive_bind_call(cls, wires, id=None):
