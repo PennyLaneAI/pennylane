@@ -148,7 +148,7 @@ def split_to_single_terms(tape):
 
         We can apply the MLIR pass by simply decorating our ``QNode`` with ``@qml.qjit``:
 
-        .. code-block::
+        .. code-block:: python
 
             @qml.qjit
             @qml.transforms.split_to_single_terms

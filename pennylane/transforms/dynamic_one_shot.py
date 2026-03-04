@@ -128,6 +128,46 @@ def dynamic_one_shot(
             qml.cond(m0, qml.RY)(y, wires=1)
             return qml.expval(op=m0)
 
+    ..details::
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with qjit where it will be applied as an MLIR pass
+        rather than a tape-level transform.
+        That being said, there are a few differences to be aware of when using the MLIR pass,
+
+        - Shot vectors or broadcasting are not supported
+        - VJP/VJP pipelines are not supported
+        - ``qml.var()`` on observables (non-MCM) are unsupported
+
+        Consider the following ``QNode`` using `dynamic-one-shot`:
+
+        .. code-block:: python
+
+            @qml.set_shots(10)
+            @qml.qnode(qml.device("lightning.qubit", wires=2), mcm_method="one-shot")
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
+
+        We can inspect the compilation pipeline to indeed verify our transform exists:
+
+        >>> qml.workflow.get_compile_pipeline(circ, level="device")()
+        CompilePipeline(
+          [1] _expand_transform_param_shift(),
+          [2] validate_measurements(name=lightning.qubit),
+          [3] validate_observables(..., name=lightning.qubit),
+          [4] decompose(stopping_condition=..., skip_initial_state_prep=True, name=lightning.qubit, device_wires=Wires([0, 1]), target_gates=...),
+          [5] device_resolve_dynamic_wires(wires=Wires([0, 1]), allow_resets=True),
+          [6] validate_device_wires(Wires([0, 1]), name=lightning.qubit),
+          [7] _expand_fn(postselect_mode=None),
+          [8] dynamic_one_shot(postselect_mode=None),
+          [9] broadcast_expand()
+        )
+
+        To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
+
+        >>> circ_qjit = qml.qjit(circ)
+        >>> circ_qjit()
+
     """
     if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
