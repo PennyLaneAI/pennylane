@@ -232,7 +232,7 @@ Args:
 """
 
 
-def _hadamard_rz_rx_resources():
+def _hadamard_rz_rx_resources(wires):
     return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
 
 
@@ -244,7 +244,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-def _hadamard_rz_ry_resources():
+def _hadamard_rz_ry_resources(wires):
     return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
 
 
@@ -492,7 +492,7 @@ Args:
 """
 
 
-def _paulix_to_rx_resources():
+def _paulix_to_rx_resources(wires):
     return {qml.GlobalPhase: 1, qml.RX: 1}
 
 
@@ -766,7 +766,7 @@ Args:
 """
 
 
-def _pauliy_to_ry_gp_resources():
+def _pauliy_to_ry_gp_resources(wires):
     return {qml.GlobalPhase: 1, qml.RY: 1}
 
 
@@ -1020,7 +1020,7 @@ Args:
 """
 
 
-def _pauliz_to_ps_resources():
+def _pauliz_to_ps_resources(wires):
     return {qml.PhaseShift: 1}
 
 
@@ -1217,7 +1217,7 @@ class S(Operation):
         return [np.pi / 2, 0.0, 0.0]
 
 
-def _s_phaseshift_resources():
+def _s_phaseshift_resources(wires):
     return {qml.PhaseShift: 1}
 
 
@@ -1380,7 +1380,7 @@ class T(Operation):
         return [np.pi / 4, 0.0, 0.0]
 
 
-def _t_phaseshift_resources():
+def _t_phaseshift_resources(wires):
     return {qml.PhaseShift: 1}
 
 
@@ -1532,7 +1532,7 @@ class SX(Operation):
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
-def _sx_to_rx_resources():
+def _sx_to_rx_resources(wires):
     return {qml.RX: 1, qml.GlobalPhase: 1}
 
 
@@ -1693,7 +1693,7 @@ class SWAP(Operation):
         return qml.CSWAP(wires=wire + self.wires)
 
 
-def _swap_to_cnot_resources():
+def _swap_to_cnot_resources(wires):
     return {qml.CNOT: 3}
 
 
@@ -1903,7 +1903,7 @@ class ECR(Operation):
         return super().pow(z % 2)
 
 
-def _ecr_decomp_resources():
+def _ecr_decomp_resources(wires):
     return {Z: 1, qml.CNOT: 1, SX: 1, qml.RX: 2, qml.RY: 1}
 
 
@@ -2054,7 +2054,7 @@ class ISWAP(Operation):
         return super().pow(z_mod4)
 
 
-def _iswap_decomp_resources():
+def _iswap_decomp_resources(wires):
     return {qml.S: 2, qml.Hadamard: 2, qml.CNOT: 2}
 
 
@@ -2259,7 +2259,7 @@ class SISWAP(Operation):
         return super().pow(z_mod8)
 
 
-def _siswap_decomp_resources():
+def _siswap_decomp_resources(wires):
     return {SX: 6, qml.RZ: 4, qml.CNOT: 2}
 
 

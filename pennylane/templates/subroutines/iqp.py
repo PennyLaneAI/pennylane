@@ -86,7 +86,6 @@ class IQP(Operation):
     .. seealso:: `IQP tutorial <https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax#parameterized-iqp-circuits>`__
     """
 
-    resource_keys = {"spin_sym", "pattern", "num_wires"}
 
     def __init__(
         self, weights, num_wires, pattern, spin_sym=False, id=None
@@ -139,7 +138,8 @@ class IQP(Operation):
         }
 
 
-def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
+def _instantaneous_quantum_polynomial_resources(n_layers, pattern, wires):
+    num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
         resources[

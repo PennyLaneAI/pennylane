@@ -344,7 +344,6 @@ class MPSPrep(Operation):
             ]
     """
 
-    resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
 
     def __init__(
         self, mps, wires, work_wires=None, right_canonicalize=False, id=None
@@ -382,13 +381,6 @@ class MPSPrep(Operation):
         hyperparams_dict = dict(metadata)
         return cls(data, **hyperparams_dict)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "bond_dimensions": [data.shape[-1] for data in self.data],
-            "num_sites": len(self.data),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
 
     def map_wires(self, wire_map):
         new_wires = Wires(
@@ -510,8 +502,9 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
 
 
 def _mps_prep_decomposition_resources(
-    bond_dimensions, num_sites, num_work_wires
-):  # pylint: disable=unused-argument
+    mps, wires, work_wires
+):
+    num_work_wires = len(work_wires)  # pylint: disable=unused-argument
     return {resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
 
 

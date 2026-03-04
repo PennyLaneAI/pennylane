@@ -349,17 +349,7 @@ class Select(Operation):
 
     """
 
-    resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
 
-    @property
-    def resource_params(self):
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
-        return {
-            "op_reps": op_reps,
-            "num_control_wires": len(self.control),
-            "partial": self.partial,
-            "num_work_wires": len(self.work_wires),
-        }
 
     def _flatten(self):
         return tuple(self.ops), (
@@ -1089,7 +1079,9 @@ add_decomps(Select, _select_decomp_unary)
 # Decomposition of Select using one work wire to control the target operations
 
 
-def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_work_wires, partial):
+def _select_multi_control_work_wire_resources(ops, control, work_wires, partial):
+    num_control_wires = len(control)
+    num_work_wires = len(work_wires) if work_wires is not None else 0
     resources = defaultdict(int)
 
     if partial:

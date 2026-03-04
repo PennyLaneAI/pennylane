@@ -713,13 +713,7 @@ class TmpPauliRot(PauliRot):
     # Deactivate the matrix property of qml.PauliRot in order to force decomposition
     has_matrix = False
 
-    resource_keys = {
-        "pauli_word",
-    }
 
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def compute_decomposition(

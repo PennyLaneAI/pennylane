@@ -63,7 +63,6 @@ class CosineWindow(StatePrepBase):
 
     """
 
-    resource_keys = {"num_wires"}
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
@@ -88,11 +87,6 @@ class CosineWindow(StatePrepBase):
 
         return decomp_ops
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "CosineWindow"
@@ -144,7 +138,8 @@ class CosineWindow(StatePrepBase):
         return math.convert_like(ket, op_vector)
 
 
-def _cosine_window_resources(num_wires):
+def _cosine_window_resources(wires):
+    num_wires = len(wires)
     return {
         resource_rep(qml.Hadamard): 1,
         resource_rep(qml.RZ): 1,

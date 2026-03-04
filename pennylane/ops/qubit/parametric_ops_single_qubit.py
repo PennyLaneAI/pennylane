@@ -636,7 +636,7 @@ class RZ(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
-def _rz_to_ps_resources():
+def _rz_to_ps_resources(phi, wires):
     return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
 
 
@@ -646,7 +646,7 @@ def _rz_to_ps(phi, wires: WiresLike, **_):
     qml.GlobalPhase(phi / 2)
 
 
-def _rz_to_rot_resources():
+def _rz_to_rot_resources(phi, wires):
     return {qml.Rot: 1}
 
 
@@ -655,7 +655,7 @@ def _rz_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(0, 0, phi, wires=wires)
 
 
-def _rz_to_ry_rx_resources():
+def _rz_to_ry_rx_resources(phi, wires):
     return {qml.RY: 2, qml.RX: 1}
 
 
@@ -666,7 +666,7 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qml.RY(-np.pi / 2, wires=wires)
 
 
-def _rz_to_rx_cliff_resources():
+def _rz_to_rx_cliff_resources(phi, wires):
     return {change_op_basis_resource_rep(qml.Hadamard, qml.RX, qml.Hadamard): 1}
 
 
@@ -675,7 +675,7 @@ def _rz_to_rx_cliff(phi, wires: WiresLike, **__):
     qml.change_op_basis(qml.Hadamard(wires), qml.RX(phi, wires), qml.Hadamard(wires))
 
 
-def _rz_to_ry_cliff_resources():
+def _rz_to_ry_cliff_resources(phi, wires):
     return {
         change_op_basis_resource_rep(
             resource_rep(
@@ -700,7 +700,7 @@ def _rz_to_ry_cliff(phi, wires: WiresLike, **__):
     )
 
 
-def _rz_to_ppr_resources():
+def _rz_to_ppr_resources(phi, wires):
     return {resource_rep(qml.PauliRot, pauli_word="Z"): 1}
 
 
@@ -774,15 +774,9 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -924,7 +918,7 @@ class PhaseShift(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
-def _phaseshift_to_rz_gp_resources():
+def _phaseshift_to_rz_gp_resources(phi, wires):
     return {qml.RZ: 1, qml.GlobalPhase: 1}
 
 
@@ -999,12 +993,8 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
-
-    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -1016,10 +1006,6 @@ class Rot(Operation):
         id: str | None = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(
@@ -1152,7 +1138,7 @@ class Rot(Operation):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
-def _rot_to_rz_ry_rz_resources():
+def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
     return {qml.RZ: 2, qml.RY: 1}
 
 
@@ -1248,17 +1234,11 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = set()
-
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1337,7 +1317,7 @@ class U1(Operation):
         return U1(phi, wires=self.wires)
 
 
-def _u1_phaseshift_resources():
+def _u1_phaseshift_resources(phi, wires):
     return {PhaseShift: 1}
 
 
@@ -1398,14 +1378,8 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, delta, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
@@ -1499,7 +1473,7 @@ class U2(Operation):
         return U2(phi, delta, wires=wires)
 
 
-def _u2_phaseshift_rot_resources():
+def _u2_phaseshift_rot_resources(phi, delta, wires):
     return {PhaseShift: 2, Rot: 1}
 
 
@@ -1572,8 +1546,6 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_keys = set()
-
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -1584,10 +1556,6 @@ class U3(Operation):
         id: str | None = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
@@ -1712,7 +1680,7 @@ class U3(Operation):
         return U3(p0, p1, p2, wires=wires)
 
 
-def _u3_phaseshift_rot_resources():
+def _u3_phaseshift_rot_resources(theta, phi, delta, wires):
     return {PhaseShift: 2, Rot: 1}
 
 

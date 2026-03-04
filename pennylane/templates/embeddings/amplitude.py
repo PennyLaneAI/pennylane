@@ -106,11 +106,7 @@ class AmplitudeEmbedding(StatePrep):
 
     """
 
-    resource_keys = frozenset({"num_wires"})
 
-    @property
-    def resource_params(self):
-        return {"num_wires": len(self.wires)}
 
     def __init__(
         self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True

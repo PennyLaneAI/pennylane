@@ -110,7 +110,6 @@ class HilbertSchmidt(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
@@ -128,15 +127,6 @@ class HilbertSchmidt(Operation):
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
         return cls(*data)
 
-    @property
-    def resource_params(self) -> dict:
-        u_ops = self.hyperparameters["U"]
-        v_ops = self.hyperparameters["V"]
-        return {
-            "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
-            "v_wires": [len(op_v.wires) for op_v in v_ops],
-        }
 
     def __init__(
         self,
@@ -348,7 +338,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         np.float64(0.5...)
     """
 
-    resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @staticmethod
     def compute_decomposition(
@@ -393,15 +382,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         return decomp_ops
 
-    @property
-    def resource_params(self) -> dict:
-        u_ops = self.hyperparameters["U"]
-        v_ops = self.hyperparameters["V"]
-        return {
-            "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
-            "v_wires": [len(op_v.wires) for op_v in v_ops],
-        }
 
     def __copy__(self):
         clone = LocalHilbertSchmidt.__new__(LocalHilbertSchmidt)

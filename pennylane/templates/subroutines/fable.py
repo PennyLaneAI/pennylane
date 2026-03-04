@@ -84,7 +84,6 @@ class FABLE(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    resource_keys = {"wires", "thetas", "control_wires", "tol"}
 
     def __init__(self, input_matrix, wires, tol=0, id=None):
         wires = Wires(wires)
@@ -132,18 +131,6 @@ class FABLE(Operation):
 
         super().__init__(input_matrix, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        code = gray_code(int(2 * math.log2(len(self.parameters[0]))))
-        control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
-        alphas = math.arccos(self.parameters).flatten()
-        thetas = compute_theta(alphas)
-        return {
-            "wires": self.wires,
-            "thetas": thetas,
-            "control_wires": control_wires,
-            "tol": self.hyperparameters["tol"],
-        }
 
     @staticmethod
     def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
@@ -203,7 +190,7 @@ class FABLE(Operation):
         return op_list
 
 
-def _fable_resources(wires, thetas, control_wires, tol):
+def _fable_resources(input_matrix, wires, tol):
 
     resources = Counter({resource_rep(Hadamard): len(wires) // 2 * 2})
 

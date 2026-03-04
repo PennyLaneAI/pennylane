@@ -154,7 +154,6 @@ class Permute(Operation):
 
     grad_method = None
 
-    resource_keys = {"wires", "permutation"}
 
     def __init__(self, permutation, wires, id=None):
         if len(permutation) <= 1 or len(wires) <= 1:
@@ -185,12 +184,6 @@ class Permute(Operation):
         )
         return new_op
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "permutation": self.hyperparameters["permutation"],
-            "wires": self.wires,
-        }
 
     @property
     def num_params(self):
@@ -236,7 +229,7 @@ class Permute(Operation):
         return op_list
 
 
-def _permute_resources(wires, permutation):
+def _permute_resources(permutation, wires):
     resources = Counter()
     working_order = wires.tolist()
 

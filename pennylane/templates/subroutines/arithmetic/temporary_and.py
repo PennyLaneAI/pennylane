@@ -95,7 +95,6 @@ class TemporaryAND(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
 
     def __repr__(self):
         cvals = self.hyperparameters["control_values"]
@@ -108,9 +107,6 @@ class TemporaryAND(Operation):
         self.hyperparameters["control_values"] = tuple(control_values)
         super().__init__(wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def _flatten(self):
         return tuple(), (self.wires, self.hyperparameters["control_values"])
@@ -173,7 +169,7 @@ class TemporaryAND(Operation):
         return result_matrix
 
 
-def _temporary_and_resources():
+def _temporary_and_resources(wires, control_values):
     number_xs = 4  # worst case scenario
     prod_rep = resource_rep(
         ops.Prod,

@@ -198,15 +198,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     grad_method = None
 
-    resource_keys = {"num_controls", "num_target_wires"}
 
-    @property
-    def resource_params(self) -> dict:
-        manager = self.hyperparameters["wire_manager"]
-        return {
-            "num_controls": len(manager.control_wires),
-            "num_target_wires": len(manager.target_wires),
-        }
 
     def __init__(
         self,
@@ -271,7 +263,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _bucket_brigade_qram_resources(num_controls, num_target_wires):
+def _bucket_brigade_qram_resources(bitstrings, target_wires, control_wires, work_wires):
+    num_controls = len(control_wires)
+    num_target_wires = len(target_wires)
     """
     Calculates the resources, assuming the worst case where data is all ones.
     """
@@ -480,11 +474,6 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "num_target_wires",
-        "num_select_wires",
-        "num_tree_control_wires",
-    }
 
     def __init__(
         self,
@@ -576,7 +565,10 @@ class HybridQRAM(Operation):
         }
 
 
-def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_wires):
+def _hybrid_qram_resources(bitstrings, target_wires, select_wires, tree_control_wires, work_wires):
+    num_target_wires = len(target_wires)
+    num_select_wires = len(select_wires)
+    num_tree_control_wires = len(tree_control_wires)
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -941,12 +933,6 @@ class SelectOnlyQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "select_value",
-        "num_control_wires",
-        "num_select_wires",
-        "num_target_wires",
-    }
 
     # pylint: disable=too-many-arguments
     def __init__(

@@ -146,7 +146,6 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
 
     def __init__(
         self,
@@ -206,14 +205,6 @@ class OutMultiplier(Operation):
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
 
     @property
     def num_params(self):
@@ -294,8 +285,11 @@ class OutMultiplier(Operation):
 
 
 def _out_multiplier_decomposition_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod
+    x_wires, y_wires, output_wires, mod, work_wires
 ) -> dict:
+    num_output_wires = len(output_wires)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
         change_op_basis_resource_rep(

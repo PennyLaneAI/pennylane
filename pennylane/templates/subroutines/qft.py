@@ -128,7 +128,6 @@ class QFT(Operation):
     """
 
     grad_method = None
-    resource_keys = {"num_wires"}
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)
@@ -205,7 +204,8 @@ class QFT(Operation):
         return {"num_wires": len(self.wires)}
 
 
-def _qft_decomposition_resources(num_wires):
+def _qft_decomposition_resources(wires):
+    num_wires = len(wires)
     return {
         Hadamard: num_wires,
         SWAP: num_wires // 2,

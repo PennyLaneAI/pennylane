@@ -125,7 +125,6 @@ class AQFT(Operation):
 
     """
 
-    resource_keys = {"num_wires", "order"}
 
     def __init__(self, order: int, wires: WiresLike, *, id=None) -> None:
         wires = Wires(wires)
@@ -150,9 +149,6 @@ class AQFT(Operation):
         self.hyperparameters["order"] = order
         super().__init__(wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {"order": self.hyperparameters["order"], "num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -205,7 +201,8 @@ class AQFT(Operation):
         return decomp_ops
 
 
-def _AQFT_resources(num_wires, order):
+def _AQFT_resources(order, wires):
+    num_wires = len(wires)
     resources = {}
 
     resources[resource_rep(Hadamard)] = num_wires

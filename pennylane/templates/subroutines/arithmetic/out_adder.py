@@ -147,7 +147,6 @@ class OutAdder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
 
     def __init__(
         self,
@@ -201,14 +200,6 @@ class OutAdder(Operation):
         self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
 
     @property
     def num_params(self):
@@ -284,7 +275,10 @@ class OutAdder(Operation):
         return op_list
 
 
-def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
+def _out_adder_decomposition_resources(x_wires, y_wires, output_wires, mod, work_wires) -> dict:
+    num_output_wires = len(output_wires)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
     qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
     target_resources = defaultdict(int)
     target_resources[

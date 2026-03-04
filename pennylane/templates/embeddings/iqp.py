@@ -176,7 +176,6 @@ class IQPEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"pattern_size", "n_repeats", "num_wires"}
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = math.shape(features)
@@ -198,13 +197,6 @@ class IQPEmbedding(Operation):
 
         super().__init__(features, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "pattern_size": len(self.hyperparameters["pattern"]),
-            "n_repeats": self.hyperparameters["n_repeats"],
-            "num_wires": len(self.wires),
-        }
 
     def map_wires(self, wire_map):
         # pylint: disable=protected-access
@@ -277,7 +269,8 @@ class IQPEmbedding(Operation):
         return op_list
 
 
-def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
+def _iqp_embedding_resources(features, wires, n_repeats, pattern):
+    num_wires = len(wires)
     return {
         resource_rep(RZ): n_repeats * num_wires,
         resource_rep(H): n_repeats * num_wires,

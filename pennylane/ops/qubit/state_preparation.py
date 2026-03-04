@@ -75,12 +75,6 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    resource_keys = {"num_wires"}
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
     def __init__(self, state, wires: WiresLike, id=None):
 
         wires = Wires(wires)
@@ -185,7 +179,8 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(num_wires):
+def _basis_state_decomp_resources(state, wires):
+    num_wires = len(wires)
     # Represent one of the X gates as an RX and a GlobalPhase because RX is
     # used when jax-jit is enabled without capture/qjit.
     return {qml.X: num_wires - 1 or num_wires, qml.RX: 1, qml.GlobalPhase: 1}
@@ -355,11 +350,7 @@ class StatePrep(StatePrepBase):
 
     """
 
-    resource_keys = frozenset({"num_wires"})
 
-    @property
-    def resource_params(self):
-        return {"num_wires": len(self.wires)}
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -598,7 +589,8 @@ class StatePrep(StatePrepBase):
         return state
 
 
-def _stateprep_resources(num_wires):
+def _stateprep_resources(state, wires, pad_with, normalize, validate_norm):
+    num_wires = len(wires)
     return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
 
 

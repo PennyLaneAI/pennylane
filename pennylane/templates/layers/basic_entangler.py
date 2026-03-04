@@ -126,7 +126,6 @@ class BasicEntanglerLayers(Operation):
 
     grad_method = None
 
-    resource_keys = {"repeat", "num_wires", "rotation"}
 
     def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
@@ -153,13 +152,6 @@ class BasicEntanglerLayers(Operation):
     def num_params(self):
         return 1
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "repeat": math.shape(self.parameters[0])[-2],
-            "num_wires": len(self.wires),
-            "rotation": self.hyperparameters["rotation"],
-        }
 
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
@@ -221,7 +213,8 @@ class BasicEntanglerLayers(Operation):
         return n_layers, n_wires
 
 
-def _basic_entangler_resources(repeat, num_wires, rotation):
+def _basic_entangler_resources(weights, wires, rotation):
+    num_wires = len(wires)
     resources = {resource_rep(rotation): repeat * num_wires}
 
     if num_wires == 2:

@@ -266,7 +266,6 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_work_wires", "mod", "coeffs_list"}
 
     def __init__(
         self,
@@ -347,14 +346,6 @@ class OutPoly(Operation):
         hyperparams_dict = dict(metadata)
         return cls(*data, **hyperparams_dict)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "mod": self.hyperparameters["mod"],
-            "coeffs_list": self.hyperparameters["coeffs_list"],
-        }
 
     def map_wires(self, wire_map: dict):
 
@@ -469,7 +460,9 @@ class OutPoly(Operation):
         return list_ops
 
 
-def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
+def _out_poly_decomposition_resources(f, input_registers, output_wires, mod, work_wires) -> dict:
+    num_output_wires = len(output_wires)
+    num_work_wires = len(work_wires)
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
     resources = Counter(

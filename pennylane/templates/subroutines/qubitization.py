@@ -75,7 +75,6 @@ class Qubitization(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_control_wires", "hamiltonian"}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -91,12 +90,6 @@ class Qubitization(Operation):
 
         super().__init__(*hamiltonian.data, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.hyperparameters["control"]),
-            "hamiltonian": self.hyperparameters["hamiltonian"],
-        }
 
     def _flatten(self):
         data = (self.hyperparameters["hamiltonian"],)
@@ -180,7 +173,8 @@ class Qubitization(Operation):
         return self
 
 
-def _qubitization_resources(num_control_wires, hamiltonian):
+def _qubitization_resources(hamiltonian, control):
+    num_control_wires = len(control)
     return {
         resource_rep(
             Reflection,

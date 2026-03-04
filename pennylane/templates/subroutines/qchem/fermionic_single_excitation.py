@@ -125,7 +125,6 @@ class FermionicSingleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    resource_keys = {"num_wires"}
 
     def __init__(self, weight: float, wires: WiresLike, *, id=None):
         wires = Wires(wires)
@@ -138,9 +137,6 @@ class FermionicSingleExcitation(Operation):
 
         super().__init__(weight, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -219,7 +215,8 @@ class FermionicSingleExcitation(Operation):
         return op_list
 
 
-def _fermionic_single_excitation_resources(num_wires):
+def _fermionic_single_excitation_resources(weight, wires):
+    num_wires = len(wires)
     return {RX: 4, Hadamard: 4, CNOT: 4 * (num_wires - 1), RZ: 2}
 
 

@@ -191,7 +191,6 @@ class UCCSD(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "n_repeats", "num_d_wires", "num_s_wires"}
 
     def __init__(
         self,
@@ -266,16 +265,6 @@ class UCCSD(Operation):
         )
         return new_op
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_d_wires": [
-                (len(x[0]), len(x[1])) if len(x) else () for x in self.hyperparameters["d_wires"]
-            ],
-            "num_s_wires": [len(x) for x in self.hyperparameters["s_wires"]],
-            "n_repeats": self.hyperparameters["n_repeats"],
-            "num_wires": len(self.wires),
-        }
 
     @property
     def num_params(self):
@@ -330,7 +319,10 @@ class UCCSD(Operation):
         return op_list
 
 
-def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
+def _UCCSD_resources(weights, wires, s_wires, d_wires, init_state, n_repeats):
+    num_wires = len(wires)
+    num_d_wires = len(d_wires) if d_wires is not None else 0
+    num_s_wires = len(s_wires) if s_wires is not None else 0
     resources = Counter(
         {
             resource_rep(BasisState, num_wires=num_wires): 1,

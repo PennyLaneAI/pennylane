@@ -134,7 +134,6 @@ class PhaseAdder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "mod"}
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None):
@@ -170,12 +169,6 @@ class PhaseAdder(Operation):
         self.hyperparameters["x_wires"] = x_wires
         super().__init__(wires=x_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
 
     @property
     def num_params(self):
@@ -269,7 +262,8 @@ class PhaseAdder(Operation):
         return op_list
 
 
-def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
+def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
+    num_x_wires = len(x_wires)
 
     if mod == 2**num_x_wires:
         return {ops.PhaseShift: num_x_wires}

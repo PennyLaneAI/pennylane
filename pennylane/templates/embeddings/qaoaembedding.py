@@ -173,7 +173,6 @@ class QAOAEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"repeat", "n_features", "num_wires", "local_field"}
 
     def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
@@ -314,14 +313,6 @@ class QAOAEmbedding(Operation):
 
         return op_list
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "repeat": math.shape(self.parameters[1])[-2],
-            "n_features": math.shape(self.parameters[0])[-1],
-            "num_wires": len(self.wires),
-            "local_field": self.hyperparameters["local_field"],
-        }
 
     @staticmethod
     def shape(n_layers, n_wires, n_broadcast=None):
@@ -347,7 +338,8 @@ class QAOAEmbedding(Operation):
         return n_layers, wire_dim
 
 
-def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
+def _qaoa_embedding_resources(features, weights, wires, local_field):
+    num_wires = len(wires)
     resources = defaultdict(int)
 
     resources.update(

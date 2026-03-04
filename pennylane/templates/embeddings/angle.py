@@ -83,7 +83,6 @@ class AngleEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"rotation", "num_wires"}
 
     def _flatten(self):
         hyperparameters = (("rotation", self._rotation),)
@@ -109,9 +108,6 @@ class AngleEmbedding(Operation):
         wires = wires[:n_features]
         super().__init__(features, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {"rotation": self.hyperparameters["rotation"], "num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -154,7 +150,8 @@ class AngleEmbedding(Operation):
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
 
 
-def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:
+def _angle_embedding_resources(features, wires, rotation) -> dict:
+    num_wires = len(wires)
     return {resource_rep(rotation): num_wires}
 
 

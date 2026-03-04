@@ -88,7 +88,6 @@ class GQSP(Operation):
 
     grad_method = None
 
-    resource_keys = {"unitary", "num_iters"}
 
     def __init__(self, unitary, angles, control, id=None):
         total_wires = Wires(control) + unitary.wires
@@ -97,12 +96,6 @@ class GQSP(Operation):
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "unitary": self.hyperparameters["unitary"],
-            "num_iters": min(len(self.data[0][0]), len(self.data[0][1]), len(self.data[0][2])),
-        }
 
     def _flatten(self):
         return (*self.data, self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
@@ -180,7 +173,7 @@ class GQSP(Operation):
         return self
 
 
-def _GQSP_resources(unitary, num_iters):
+def _GQSP_resources(unitary, angles, control):
     resources = {
         ops.X: 2 + 2 * (num_iters - 1),
         ops.U3: num_iters,

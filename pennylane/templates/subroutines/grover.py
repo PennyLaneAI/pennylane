@@ -102,7 +102,6 @@ class GroverOperator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "num_work_wires"}
 
     def __repr__(self):
         return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
@@ -125,12 +124,6 @@ class GroverOperator(Operation):
 
         super().__init__(wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": self.hyperparameters["n_wires"],
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
 
     @property
     def work_wires(self):
@@ -215,7 +208,9 @@ class GroverOperator(Operation):
         return 2 / dim - np.eye(dim)
 
 
-def _grover_operator_resources(num_wires, num_work_wires):
+def _grover_operator_resources(wires, work_wires):
+    num_wires = len(wires)
+    num_work_wires = len(work_wires)
     return {
         Hadamard: (num_wires - 1) * 2,
         PauliZ: 2,

@@ -244,7 +244,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
     """
 
-    resource_keys = {"n", "order", "ops"}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -299,13 +298,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "n": self.hyperparameters["n"],
-            "order": self.hyperparameters["order"],
-            "ops": self.hyperparameters["base"].operands,
-        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -488,7 +480,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return decomp
 
 
-def _trotter_product_decomposition_resources(n, order, ops):
+def _trotter_product_decomposition_resources(hamiltonian, time, n, order, check_hermitian):
     reps = {}
 
     def _count(op, ops):

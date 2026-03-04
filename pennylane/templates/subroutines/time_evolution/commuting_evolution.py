@@ -114,7 +114,6 @@ class CommutingEvolution(Operation):
 
     grad_method = None
 
-    resource_keys = {"words"}
 
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
@@ -129,11 +128,6 @@ class CommutingEvolution(Operation):
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
-        }
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
@@ -208,7 +202,7 @@ class CommutingEvolution(Operation):
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
 
 
-def _commuting_evolution_resources(words: tuple[PauliWord]):
+def _commuting_evolution_resources(hamiltonian, time, frequencies, shifts):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 

@@ -64,7 +64,6 @@ class MultiplexerStatePreparation(Operation):
 
     """
 
-    resource_keys = {"num_wires"}
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments
     def __init__(self, state_vector, wires, id=None):
@@ -90,11 +89,6 @@ class MultiplexerStatePreparation(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
 
     @staticmethod
     def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
@@ -108,7 +102,8 @@ class MultiplexerStatePreparation(Operation):
         return q.queue
 
 
-def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
+def _multiplexer_state_prep_decomposition_resources(state_vector, wires) -> dict:
+    num_wires = len(wires)
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
         [resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],

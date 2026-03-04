@@ -170,13 +170,6 @@ class QROM(Operation):
 
     """
 
-    resource_keys = {
-        "num_bitstrings",
-        "num_control_wires",
-        "num_target_wires",
-        "num_work_wires",
-        "clean",
-    }
 
     def __init__(
         self,
@@ -231,15 +224,6 @@ class QROM(Operation):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
         return tuple(self.data), metadata
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_bitstrings": self.data[0].shape[0],
-            "num_control_wires": len(self.hyperparameters["control_wires"]),
-            "num_target_wires": len(self.hyperparameters["target_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "clean": self.hyperparameters["clean"],
-        }
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -392,8 +376,12 @@ class QROM(Operation):
 
 
 def _qrom_decomposition_resources(
-    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
-):  # pylint: disable=too-many-branches
+    bitstrings, control_wires, target_wires, work_wires, clean
+):
+    num_bitstrings = len(bitstrings)
+    num_control_wires = len(control_wires)
+    num_target_wires = len(target_wires)
+    num_work_wires = len(work_wires)  # pylint: disable=too-many-branches
     if num_control_wires == 0:
         return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 

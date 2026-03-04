@@ -185,7 +185,6 @@ class GateFabric(Operation):
 
     grad_method = None
 
-    resource_keys = {"n_layers", "num_wires", "len_wire_pattern", "include_pi"}
 
     def __init__(self, weights, wires, init_state, include_pi=False, id=None):
         if len(wires) < 4:
@@ -324,7 +323,8 @@ class GateFabric(Operation):
         return n_layers, n_wires // 2 - 1, 2
 
 
-def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+def _gate_fabric_resources(weights, wires, init_state, include_pi):
+    num_wires = len(wires)
     resources = {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
         resource_rep(DoubleExcitation): n_layers * len_wire_pattern,

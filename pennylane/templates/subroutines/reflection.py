@@ -113,7 +113,6 @@ class Reflection(Operation):
 
     grad_method = None
 
-    resource_keys = {"base_class", "base_params", "num_wires", "num_reflection_wires"}
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
@@ -146,14 +145,6 @@ class Reflection(Operation):
 
         super().__init__(alpha, *U.data, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
-            "num_wires": len(self.wires),
-            "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
-        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

@@ -475,7 +475,6 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
-    resource_keys = {"UA", "projectors"}
 
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
@@ -490,12 +489,6 @@ class QSVT(Operation):
 
         super().__init__(wires=total_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "UA": self.hyperparameters["UA"],
-            "projectors": self.hyperparameters["projectors"],
-        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -657,7 +650,7 @@ class QSVT(Operation):
         return mat
 
 
-def _QSVT_resources(projectors, UA):
+def _QSVT_resources(UA, projectors):
     resources = defaultdict(int)
     resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
     for i in range(1, len(projectors) - 1, 2):

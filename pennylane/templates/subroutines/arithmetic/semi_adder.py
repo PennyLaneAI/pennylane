@@ -191,7 +191,6 @@ class SemiAdder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_y_wires"}
 
     def __init__(
         self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
@@ -222,11 +221,6 @@ class SemiAdder(Operation):
 
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-        }
 
     @property
     def num_params(self):
@@ -290,7 +284,8 @@ class SemiAdder(Operation):
         return q.queue
 
 
-def _semiadder_resources(num_y_wires):
+def _semiadder_resources(x_wires, y_wires, output_wire, carry_wire):
+    num_y_wires = len(y_wires)
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # In the case where len(x_wires) < len(y_wires), this is an upper bound.
     return {

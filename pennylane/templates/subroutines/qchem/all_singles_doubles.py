@@ -129,7 +129,6 @@ class AllSinglesDoubles(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_singles", "num_doubles", "num_wires"}
 
     def __init__(
         self,
@@ -189,13 +188,6 @@ class AllSinglesDoubles(Operation):
         weights = math.array(weights)
         return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_singles": len(self.hyperparameters["singles"]),
-            "num_doubles": len(self.hyperparameters["doubles"]),
-            "num_wires": len(self.wires),
-        }
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

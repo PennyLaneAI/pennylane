@@ -189,7 +189,7 @@ class QubitCarry(Operation):
         ]
 
 
-def _qubitcarry_to_cnot_toffoli_resources():
+def _qubitcarry_to_cnot_toffoli_resources(wires):
     return {qml.CNOT: 1, qml.Toffoli: 2}
 
 
@@ -343,7 +343,7 @@ class QubitSum(Operation):
         return QubitSum(wires=self.wires)
 
 
-def _qubitsum_to_cnots_resources():
+def _qubitsum_to_cnots_resources(wires):
     return {qml.CNOT: 2}
 
 

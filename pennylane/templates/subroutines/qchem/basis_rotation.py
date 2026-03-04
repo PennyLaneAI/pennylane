@@ -280,7 +280,6 @@ class BasisRotation(Operation):
 
     grad_method = None
 
-    resource_keys = {"dim", "is_real"}
 
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
@@ -314,12 +313,6 @@ class BasisRotation(Operation):
 
         super().__init__(unitary_matrix, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "dim": math.shape(self.data[0])[0],
-            "is_real": math.is_real_obj_or_close(self.data[0]),
-        }
 
     @property
     def num_params(self):
@@ -387,7 +380,7 @@ class BasisRotation(Operation):
         return op_list
 
 
-def _basis_rotation_decomp_resources(dim, is_real):
+def _basis_rotation_decomp_resources(wires, unitary_matrix, check):
     se_count = dim * (dim - 1) / 2
     if is_real:
         return {PhaseShift: 1, SingleExcitation: se_count}

@@ -113,22 +113,12 @@ class AmplitudeAmplification(Operation):
 
     grad_method = None
 
-    resource_keys = {"fixed_point", "O", "iters", "num_reflection_wires", "U"}
 
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
         metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
         return data, metadata
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "fixed_point": self.hyperparameters["fixed_point"],
-            "O": self.hyperparameters["O"],
-            "iters": self.hyperparameters["iters"],
-            "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
-            "U": self.hyperparameters["U"],
-        }
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -221,7 +211,7 @@ class AmplitudeAmplification(Operation):
         return self
 
 
-def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
+def _amplitude_amplification_resources(U, O, iters, fixed_point, work_wire, p_min):
     resources = {}
 
     if fixed_point and iters // 2 > 0:

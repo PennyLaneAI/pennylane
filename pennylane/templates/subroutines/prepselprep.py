@@ -83,13 +83,7 @@ class PrepSelPrep(Operation):
      [ 0.75  0.25]]
     """
 
-    resource_keys = frozenset({"num_control", "op_reps"})
 
-    @property
-    def resource_params(self):
-        ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
-        return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
 
@@ -219,7 +213,8 @@ class PrepSelPrep(Operation):
         return self
 
 
-def _prepselprep_resources(op_reps, num_control):
+def _prepselprep_resources(lcu, control):
+    num_control = len(control)
     prod_reps = tuple(
         resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )

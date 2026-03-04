@@ -339,7 +339,6 @@ class QuantumMonteCarlo(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
     def _primitive_bind_call(
@@ -364,15 +363,6 @@ class QuantumMonteCarlo(Operation):
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_target_wires": len(self.hyperparameters["target_wires"]),
-            "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_resource_rep": resource_rep(
-                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
-            ),
-        }
 
     def __init__(self, probs, func, target_wires, estimation_wires, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
@@ -461,7 +451,9 @@ if QuantumMonteCarlo._primitive is not None:
         return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires, id)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
+def _quantum_monte_carlo_resources(probs, func, target_wires, estimation_wires):
+    num_target_wires = len(target_wires)
+    num_estimation_wires = len(estimation_wires)
     return {
         resource_rep(QubitUnitary, num_wires=num_target_wires - 1): 1,
         resource_rep(QubitUnitary, num_wires=num_target_wires): 1,

@@ -252,7 +252,6 @@ class ParticleConservingU1(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "n_layers"}
 
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
@@ -285,9 +284,6 @@ class ParticleConservingU1(Operation):
     def num_params(self):
         return 1
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[0])[0]}
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
@@ -367,7 +363,8 @@ class ParticleConservingU1(Operation):
         return n_layers, n_wires - 1, 2
 
 
-def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
+def _particle_conserving_u1_resources(weights, wires, init_state):
+    num_wires = len(wires)
     # number of pairs of even-indexed of wires
     num_nm_wires = num_wires - 1
 

@@ -78,7 +78,6 @@ class ControlledSequence(SymbolicOp, Operation):
 
     grad_method = None
 
-    resource_keys = {"base_class", "base_params", "num_control_wires"}
 
     def _flatten(self):
         return (self.base,), (self.control,)
@@ -100,14 +99,6 @@ class ControlledSequence(SymbolicOp, Operation):
 
         super().__init__(base, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        params = {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
-            "num_control_wires": len(self.hyperparameters["control_wires"]),
-        }
-        return params
 
     @property
     def hash(self):
@@ -212,7 +203,8 @@ class ControlledSequence(SymbolicOp, Operation):
         return ops
 
 
-def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires) -> dict:
+def _ctrl_seq_decomposition_resources(base_class, base_params, base, control) -> dict:
+    num_control_wires = len(control)
 
     resources = {}
 

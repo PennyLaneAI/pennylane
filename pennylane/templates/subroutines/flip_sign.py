@@ -66,7 +66,6 @@ class FlipSign(Operation):
 
     """
 
-    resource_keys = {"num_wires", "arr_bin"}
 
     def _flatten(self):
         hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
@@ -95,12 +94,6 @@ class FlipSign(Operation):
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, id=id)
 
-    @property
-    def resource_params(self):
-        return {
-            "num_wires": len(self.wires),
-            "arr_bin": self.hyperparameters["arr_bin"],
-        }
 
     @staticmethod
     def to_list(n, n_wires):
@@ -157,7 +150,8 @@ class FlipSign(Operation):
         return op_list
 
 
-def _flip_sign_resources(num_wires, arr_bin):
+def _flip_sign_resources(n, wires):
+    num_wires = len(wires)
     res = {
         controlled_resource_rep(
             Z,

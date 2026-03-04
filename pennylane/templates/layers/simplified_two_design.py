@@ -109,7 +109,6 @@ class SimplifiedTwoDesign(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "n_layers"}
 
     def __init__(self, initial_layer_weights, weights, wires, id=None):
         shape = math.shape(weights)
@@ -139,9 +138,6 @@ class SimplifiedTwoDesign(Operation):
     def num_params(self):
         return 2
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[1])[0]}
 
     @staticmethod
     def compute_decomposition(
@@ -235,7 +231,8 @@ class SimplifiedTwoDesign(Operation):
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
 
 
-def _simplified_two_design_resources(n_layers, num_wires):
+def _simplified_two_design_resources(initial_layer_weights, weights, wires):
+    num_wires = len(wires)
     if num_wires > 1:
         return {
             resource_rep(RY): num_wires + (n_layers * num_wires - n_layers) * 2,

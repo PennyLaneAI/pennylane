@@ -123,7 +123,6 @@ class ApproxTimeEvolution(Operation):
 
     grad_method = None
 
-    resource_keys = {"words", "n"}
 
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
@@ -138,12 +137,6 @@ class ApproxTimeEvolution(Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
-            "n": self.hyperparameters["n"],
-        }
 
     def __init__(self, hamiltonian, time, n, id=None):
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -237,7 +230,7 @@ class ApproxTimeEvolution(Operation):
         return full_decomp
 
 
-def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+def _approx_time_evolution_resources(hamiltonian, time, n):
     resources = defaultdict(int)
 
     for _ in range(n):

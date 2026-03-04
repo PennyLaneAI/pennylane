@@ -99,7 +99,6 @@ class ArbitraryUnitary(Operation):
     num_params = 1
     ndim_params = (1,)
 
-    resource_keys = {"num_wires"}
 
     def __init__(self, weights, wires, id=None):
         shape = math.shape(weights)
@@ -111,9 +110,6 @@ class ArbitraryUnitary(Operation):
 
         super().__init__(weights, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
@@ -151,7 +147,8 @@ class ArbitraryUnitary(Operation):
         return (4**n_wires - 1,)
 
 
-def _arbitrary_unitary_resources(num_wires: int) -> dict:
+def _arbitrary_unitary_resources(weights, wires) -> dict:
+    num_wires = len(wires)
     resources = {}
     for pauli_word in _all_pauli_words_but_identity(num_wires):
         resources[resource_rep(PauliRot, pauli_word=pauli_word)] = 1

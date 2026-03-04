@@ -212,7 +212,6 @@ class kUpCCGSD(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "k", "s_wires", "d_wires"}
 
     def _flatten(self):
         # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
@@ -281,14 +280,6 @@ class kUpCCGSD(Operation):
     def num_params(self):
         return 1
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-            "k": self.hyperparameters["k"],
-            "s_wires": self.hyperparameters["s_wires"],
-            "d_wires": self.hyperparameters["d_wires"],
-        }
 
     @staticmethod
     def compute_decomposition(
@@ -366,7 +357,8 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
-def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
+def _kupccgsd_resources(weights, wires, k, delta_sz, init_state):
+    num_wires = len(wires)
     resources = defaultdict(int)
     resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
 

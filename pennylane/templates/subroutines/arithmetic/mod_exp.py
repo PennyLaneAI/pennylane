@@ -114,7 +114,6 @@ class ModExp(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "num_output_wires", "mod", "num_work_wires"}
 
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
@@ -158,14 +157,6 @@ class ModExp(Operation):
         self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "mod": self.hyperparameters["mod"],
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
 
     @property
     def num_params(self):
@@ -242,7 +233,10 @@ class ModExp(Operation):
         return op_list
 
 
-def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+def _mod_exp_decomposition_resources(x_wires, output_wires, base, mod, work_wires) -> dict:
+    num_x_wires = len(x_wires)
+    num_output_wires = len(output_wires)
+    num_work_wires = len(work_wires)
     return {
         resource_rep(
             ControlledSequence,

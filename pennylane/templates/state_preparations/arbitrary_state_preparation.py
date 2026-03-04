@@ -86,7 +86,6 @@ class ArbitraryStatePreparation(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires"}
 
     def __init__(self, weights, wires, id=None):
         shape = qml.math.shape(weights)
@@ -97,11 +96,6 @@ class ArbitraryStatePreparation(Operation):
 
         super().__init__(weights, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
 
     @property
     def num_params(self):
@@ -158,7 +152,8 @@ class ArbitraryStatePreparation(Operation):
         return (2 ** (n_wires + 1) - 2,)
 
 
-def _arbitrary_state_preparation_resources(num_wires):
+def _arbitrary_state_preparation_resources(weights, wires):
+    num_wires = len(wires)
     return dict(
         Counter(
             resource_rep(qml.PauliRot, pauli_word=pauli_word)

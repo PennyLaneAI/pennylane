@@ -178,11 +178,7 @@ class SingleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -272,7 +268,7 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-def _single_excitation_resources():
+def _single_excitation_resources(phi, wires):
     return {
         qml.Hadamard: 2,
         qml.CNOT: 2,
@@ -349,11 +345,7 @@ class SingleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -449,7 +441,7 @@ class SingleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
 
 
-def _single_excitation_minus_decomp_resources():
+def _single_excitation_minus_decomp_resources(phi, wires):
     return {
         qml.Hadamard: 2,
         qml.CY: 1,
@@ -521,11 +513,7 @@ class SingleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -614,7 +602,7 @@ class SingleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
 
 
-def _single_excitation_plus_decomp_resources():
+def _single_excitation_plus_decomp_resources(phi, wires):
     return {
         qml.Hadamard: 2,
         qml.CY: 1,
@@ -710,11 +698,7 @@ class DoubleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -970,11 +954,7 @@ class DoubleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.SparseHamiltonian":
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -1067,11 +1047,7 @@ class DoubleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.SparseHamiltonian":
         G = np.eye(16, dtype=np.complex64)
@@ -1189,11 +1165,7 @@ class OrbitalRotation(Operation):
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -1315,7 +1287,7 @@ class OrbitalRotation(Operation):
         return OrbitalRotation(-phi, wires=self.wires)
 
 
-def _orbital_rotation_decomposition_resources():
+def _orbital_rotation_decomposition_resources(phi, wires):
     return {qml.FermionicSWAP: 2, qml.SingleExcitation: 2}
 
 
@@ -1403,11 +1375,7 @@ class FermionicSWAP(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -1538,7 +1506,7 @@ class FermionicSWAP(Operation):
         return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)
 
 
-def _fermionic_swap_decomp_resources():
+def _fermionic_swap_decomp_resources(phi, wires):
     return {
         qml.Hadamard: 4,
         qml.resource_rep(qml.MultiRZ, num_wires=2): 2,

@@ -234,7 +234,6 @@ class Superposition(Operation):
     grad_method = None
     ndim_params = (1,)
 
-    resource_keys = {"num_wires", "num_coeffs", "bases"}
 
     def __init__(
         self, coeffs, bases, wires, work_wire, id=None
@@ -267,13 +266,6 @@ class Superposition(Operation):
 
         super().__init__(coeffs, wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.hyperparameters["target_wires"]),
-            "num_coeffs": len(self.data[0]),
-            "bases": self.hyperparameters["bases"],
-        }
 
     @property
     def num_params(self):
@@ -382,7 +374,9 @@ class Superposition(Operation):
         )
 
 
-def _superposition_resources(num_wires, num_coeffs, bases):
+def _superposition_resources(bases, coeffs, wires, work_wires):
+    num_wires = len(wires)
+    num_coeffs = len(coeffs)
     perms = order_states(bases)
 
     resources = Counter()

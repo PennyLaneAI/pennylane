@@ -106,7 +106,6 @@ class Adder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "mod"}
 
     def __init__(
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
@@ -141,12 +140,6 @@ class Adder(Operation):
 
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
 
     @property
     def num_params(self):
@@ -216,7 +209,8 @@ class Adder(Operation):
         return op_list
 
 
-def _adder_decomposition_resources(num_x_wires, mod) -> dict:
+def _adder_decomposition_resources(k, x_wires, mod, work_wires) -> dict:
+    num_x_wires = len(x_wires)
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
