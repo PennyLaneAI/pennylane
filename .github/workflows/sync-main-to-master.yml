@@ -13,19 +13,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: master
+          token: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
 
       - name: Sync main to master
         run: |
           git fetch origin 
-          if git merge --no-commit --no-ff main; then
-            echo "No changes to sync from main to master."
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"          
+          if git merge --no-commit --no-ff origin/main; then
+            echo "Synching from main to master."
             echo "merge_conflict=false" >> $GITHUB_ENV
-            echo "has_changes=$(git diff HEAD~1 --quiet && echo 'false' || echo 'true')" >> $GITHUB_ENV
+            git commit -m "Sync main to master"
+            git push origin master 
           else
             echo "Merge conflict detected. Creating a PR ..."
             echo "merge_conflict=true" >> $GITHUB_ENV
             git merge --abort || true 
-          fi      
+          fi   
 
         # If there are conflicts, create a PR for resolution
       - name: Create PR for conflict resolution
