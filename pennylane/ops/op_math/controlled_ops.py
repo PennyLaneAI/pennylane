@@ -1304,7 +1304,7 @@ class Toffoli(ControlledOp):
         return resource_rep(
             cls,
             base_class=PauliX,
-            base_params=PauliX.resource_params,
+            base_params=PauliX(0).resource_params,
             signature_key=(
                 AbstractArray((3,)),  # wires
                 (PyTreeStructure(), (AbstractArray(shape=(), dtype=NoneType),))  # id
