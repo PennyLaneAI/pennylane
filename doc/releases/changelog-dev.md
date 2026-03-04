@@ -662,10 +662,6 @@
 
 <h3>Documentation 📝</h3>
 
-* Documentation has been added to :func:`~.transforms.cancel_inverses` and
-  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
-  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
-
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
