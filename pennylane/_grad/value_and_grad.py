@@ -16,6 +16,7 @@ Defines qml.value_and_grad.
 """
 import inspect
 from functools import lru_cache, wraps
+from importlib.util import find_spec
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -23,19 +24,17 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
+_has_jax = find_spec("jax") is not None
 
 
 # pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_value_and_grad_prim():
     """Create a primitive for gradient computations."""
-    if not has_jax:  # pragma: no cover
+    if not _has_jax:  # pragma: no cover
         return None
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     value_and_grad_prim = capture.QmlPrimitive("value_and_grad")
     value_and_grad_prim.multiple_results = True
@@ -72,6 +71,8 @@ def _get_value_and_grad_prim():
 def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     # mostly a copy-paste of _capture_diff, but a few minor things needed to get updated
     # Could also find a way to remove code duplication
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
