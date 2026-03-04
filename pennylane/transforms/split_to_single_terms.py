@@ -145,8 +145,7 @@ def split_to_single_terms(tape):
         Currently, when combined with ``qjit``, this transform will not work with shot vectors
         and will not simplify any tensor products like ``X(0) @ Y(0)`` contained in measurements.
 
-        For example, by decorating our ``QNode`` with ``qml.qjit``, we will be applying the MLIR pass
-        associated with this transform.
+        We can apply the MLIR pass by simply decorating our ``QNode`` with ``@qml.qjit``:
 
         .. code-block::
 
