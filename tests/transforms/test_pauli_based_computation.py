@@ -13,13 +13,14 @@
 # limitations under the License.
 """Tests for to_ppr, commute_ppr, merge_ppr_ppm, ppm_compilation, ppr_to_ppm, and reduce_t_depth (not implemented with tape)."""
 
-
 import pytest
 
 import pennylane as qml
 from pennylane.transforms.decompositions import (
     commute_ppr,
     decompose_arbitrary_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
     merge_ppr_ppm,
     ppm_compilation,
     ppr_to_ppm,
@@ -35,6 +36,8 @@ PBC_TRANSFORMS = [
     ppr_to_ppm,
     reduce_t_depth,
     decompose_arbitrary_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
 ]
 PASS_NAMES = [
     "to-ppr",
@@ -44,6 +47,8 @@ PASS_NAMES = [
     "ppr-to-ppm",
     "reduce-t-depth",
     "decompose-arbitrary-ppr",
+    "decompose-clifford-ppr",
+    "decompose-non-clifford-ppr",
 ]
 PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))
 
@@ -55,7 +60,6 @@ def dummy_qnode():
 
 @pytest.mark.parametrize("pbc_transform, pass_name", PBC_TRANSFORM_DATA)
 class TestPauliBasedComputationTransforms:
-
     # pylint: disable=unused-argument
     def test_not_implemented(self, pbc_transform, pass_name):
         """Test that NotImplementedError is raised when trying to use Pauli-based computation
@@ -75,7 +79,6 @@ class TestPauliBasedComputationTransforms:
 
 
 class TestTransformsSetup:
-
     def test_to_ppr_setup(self):
         """Test that to_ppr has no arguments."""
 
@@ -157,3 +160,43 @@ class TestTransformsSetup:
         assert bound_t.args == ()
         assert bound_t.kwargs == {}
         assert bound_t.pass_name == "decompose-arbitrary-ppr"
+
+    def test_decompose_clifford_ppr_setup(self):
+        """Test that decompose_clifford_ppr default setup."""
+
+        transformed = decompose_clifford_ppr(dummy_qnode)
+        bound_t = transformed.compile_pipeline[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {}
+        assert bound_t.pass_name == "decompose-clifford-ppr"
+
+    def test_decompose_non_clifford_ppr_setup(self):
+        """Test that decompose_non_clifford_ppr default setup."""
+
+        transformed = decompose_non_clifford_ppr(dummy_qnode)
+        bound_t = transformed.compile_pipeline[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {}
+        assert bound_t.pass_name == "decompose-non-clifford-ppr"
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+@pytest.mark.parametrize("pass_fn", PBC_TRANSFORMS)
+def test_conversion_to_mlir(pass_fn):
+    """Test that we can generate MLIR from the captured circuit and that the generated MLIR
+    includes the pass name we are mapping to"""
+
+    pytest.importorskip("catalyst")
+
+    @qml.qjit(target="mlir", capture=True)
+    @pass_fn
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    assert pass_fn.pass_name in circ.mlir
