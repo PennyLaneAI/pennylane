@@ -97,6 +97,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
+  available in PennyLane instead of only Catalyst. These compilation passes simplify rendundant
+  ``CNOT`` and ``SWAP`` gates.
+  [](TODO)
+
 * `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
@@ -558,10 +563,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
-  
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
