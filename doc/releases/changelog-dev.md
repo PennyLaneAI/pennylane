@@ -98,6 +98,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a decomposition of :class:`~.MottonenStatePreparation` into :class:`~.SelectPauliRot`
+  multiplexers. This is a useful decomposition when using 
+  [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/) to
+  further break down the template.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
+
 * When using :func:`~.specs` with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
