@@ -595,7 +595,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Workflow created to sync the master branch to main.
+* Workflow created to sync the main branch to master.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
   
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
