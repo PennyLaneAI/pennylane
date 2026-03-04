@@ -100,7 +100,7 @@
 * The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
   available in PennyLane instead of only Catalyst. These compilation passes simplify rendundant
   ``CNOT`` and ``SWAP`` gates.
-  [](TODO)
+  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
 
 * `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
   be a tuple instead of a list.
@@ -618,6 +618,10 @@
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
 <h3>Documentation 📝</h3>
+
+* Documentation has been added to :func:`~.transforms.cancel_inverses` and
+  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
+  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
