@@ -295,8 +295,48 @@ class TestDecomposition:
         op = qml.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
         assert op.resource_params == {"num_wires": 2}
 
-    def test_decomposition_rule(self):
-        """Test that MottonenStatePreparation has a correct decomposition rule registered."""
+    @pytest.mark.parametrize("dtype", ["real", "complex"])
+    def test_decomposition_rule_select_pauli_rot(self, dtype):
+        """Test that MottonenStatePreparation has a correct decomposition rule
+        into SelectPauliRots registered."""
+
+        decomp = qml.list_decomps(qml.MottonenStatePreparation)[1]
+
+        n = 5
+        wires = [0, 3, 2, 7, "a"]
+        resource_obj = decomp.compute_resources(num_wires=n)
+
+        exp_counts = {
+            qml.resource_rep(qml.SelectPauliRot, num_wires=i, rot_axis="Y"): 1
+            for i in range(1, n + 1)
+        }
+        exp_counts |= {
+            qml.resource_rep(qml.SelectPauliRot, num_wires=i, rot_axis="Z"): 1
+            for i in range(1, n + 1)
+        }
+        exp_counts[qml.resource_rep(qml.GlobalPhase)] = 1
+
+        assert resource_obj.num_gates == 2 * n + 1
+        assert resource_obj.gate_counts == exp_counts
+
+        if dtype == "real":
+            state = np.random.random(2**n)
+        else:
+            state = np.random.random(2**n) + 1j * np.random.random(2**n)
+
+        state /= np.linalg.norm(state)
+        mat = qml.matrix(decomp, wire_order=wires)(state, wires=wires)
+        assert np.allclose(mat[:, 0], state)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(state, wires=wires)
+
+        assert len(q.queue) == n if dtype == "real" else 2 * n + 1
+
+    @pytest.mark.parametrize("dtype", ["real", "complex"])
+    def test_decomposition_rule_cnot_rots(self, dtype):
+        """Test that MottonenStatePreparation has a correct decomposition rule
+        into CNOTs and rotations registered."""
 
         decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
 
@@ -328,6 +368,21 @@ class TestDecomposition:
         qml.assert_equal(q[8], qml.RZ(-np.pi / 4, 1))
         qml.assert_equal(q[9], qml.CNOT((0, 1)))
         qml.assert_equal(q[10], qml.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+
+        wires = ["a", 10, 2]
+        if dtype == "real":
+            state = np.random.random(2**3)
+        else:
+            state = np.random.random(2**3) + 1j * np.random.random(2**3)
+
+        state /= np.linalg.norm(state)
+        mat = qml.matrix(decomp, wire_order=wires)(state, wires=wires)
+        assert np.allclose(mat[:, 0], state)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(state, wires=wires)
+
+        assert len(q.queue) == 2 * n - 1 if dtype == "real" else 4 * n - 1
 
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_graph_decomposition")
