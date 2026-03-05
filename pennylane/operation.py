@@ -2087,8 +2087,14 @@ class Gate(Operation):
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
 
+    @classproperty
+    def signature(cls):
+        """A signature can be inferred for an uninstantiated type if it takes simple 1-D params and wires."""
+        return {"signature_key": tuple([AbstractArray((1,)) for _ in range(cls.num_params)] + [AbstractArray((cls.num_wires,)),])}
+
     @property
-    def signature(self):
+    def bound_signature(self):
+        """Useful for Gates with shapes that are determined by initialization parameters."""
         key = _create_signature_key(
             self._bound_args,
             wire_argnames=self._wire_argnames,

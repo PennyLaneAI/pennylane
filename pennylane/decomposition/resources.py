@@ -179,7 +179,7 @@ def _validate_resource_rep(op_type, params):
         )
 
     unexpected_arguments = set(params.keys()) - op_type.resource_keys
-    if unexpected_arguments:
+    if unexpected_arguments not in ({"signature_key"}, set()):
         raise TypeError(
             f"Unexpected keyword arguments for resource_rep({op_type.__name__}): "
             f"{list(unexpected_arguments)}). Expected: {list(op_type.resource_keys)}"
@@ -282,6 +282,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
+    if issubclass(op_type, qml.operation.Gate):
+        return CompressedResourceOp(op_type, params, **op_type.signature)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):

@@ -273,7 +273,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             if isinstance(op, qml.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Gate):
-                op = resource_rep(type(op), **op.resource_params, signature_key=op.signature)
+                op = resource_rep(type(op), **op.resource_params, **op.bound_signature)
             elif isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
@@ -611,7 +611,7 @@ class DecompGraphSolution:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
         if isinstance(op, Gate):
-            op_rep = resource_rep(type(op), **op.resource_params, signature_key=op.signature)
+            op_rep = resource_rep(type(op), **op.resource_params, **op.bound_signature)
         else:
             op_rep = resource_rep(type(op), **op.resource_params)
         if op_rep not in self._op_to_op_nodes:
