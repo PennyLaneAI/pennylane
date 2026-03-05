@@ -151,7 +151,7 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
+        params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
