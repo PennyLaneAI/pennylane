@@ -770,6 +770,7 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
 
     # c-1 left elbows at the beginning and c-1-max(a,1) left elbows for each of the target
     # operators, except the last one, where a is the first flipped bit. Same for right elbows.
+    print(c)
     first_flipped_bits = np.array(_make_first_flipped_bits(c)[: K - 1], dtype=int)
     num_elbows = c - 1 + np.sum(c - 1 - np.clip(first_flipped_bits, a_min=1, a_max=None))
 

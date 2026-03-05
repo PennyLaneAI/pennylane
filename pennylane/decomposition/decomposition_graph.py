@@ -231,6 +231,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         strict: bool = True,
     ):
 
+        self._VERBOSE = False
         if not isinstance(gate_set, GateSet):
             gate_set = GateSet(gate_set)
 
@@ -303,7 +304,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_node in self._all_op_indices:
             return self._all_op_indices[op_node]
 
-        # print(f"Adding op node for {op}")
+        if self._VERBOSE:
+            print(f"Adding op node for {op}")
         op_node_idx = self._graph.add_node(op_node)
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
@@ -368,7 +370,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         decomp_resource = rule.compute_resources(**op_node.op.params)
         work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
 
-        # print(f"Got decomposition with resources {decomp_resource} for {op_node}")
+        if self._VERBOSE:
+            print(f"Got decomposition with resources {decomp_resource} for {op_node}")
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
         if not decomp_resource.gate_counts:
@@ -405,7 +408,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_name = to_name(op)
 
         if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
+            decomp = self._fixed_decomps[op_name]
+            assert decomp.is_applicable(
+                **op.params
+            ), f"Fixed a decomp which is not applicable for {op=}"
+            return [decomp]
 
         decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
 

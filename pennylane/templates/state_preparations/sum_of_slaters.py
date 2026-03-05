@@ -857,33 +857,21 @@ class SumOfSlatersPrep(Operation):
         self.hyperparameters["mcx_work_wires"] = mcx_work_wires
         self.hyperparameters["indices"] = indices
 
-    @staticmethod
-    def compute_decomposition(
-        coefficients,
-        wires=None,
-        target_wires=None,
-        enumeration_wires=None,
-        identification_wires=None,
-        qrom_work_wires=None,
-        mcx_work_wires=None,
-        indices=None,
-    ):  # pylint: disable=arguments-differ, too-many-arguments
-        with AnnotatedQueue() as q:
-            _sos_state_prep(
-                coefficients,
-                target_wires=target_wires,
-                enumeration_wires=enumeration_wires,
-                identification_wires=identification_wires,
-                qrom_work_wires=qrom_work_wires,
-                mcx_work_wires=mcx_work_wires,
-                indices=indices,
-            )
+    @property
+    def has_decomposition(self):
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
+        return False
 
-        op_list = []
-        if QueuingManager.recording():
-            for op in q:
-                op_list.append(qml.apply(op))
-        return op_list
+    @staticmethod
+    def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``."""
+        raise DecompositionUndefinedError
 
     @staticmethod
     def required_register_sizes(num_entries, num_bits, num_wires):
@@ -948,7 +936,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
+    resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
     # qrom_params = {
@@ -987,8 +975,8 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
         mcx_rep = resource_rep(qml.Toffoli)
     else:
         mcx_params = {
-            "num_work_wires": 0,  # Work wires will be allocated by MCX itself
-            "work_wire_type": "borrowed",
+            "num_work_wires": m,  # Work wires will be allocated by MCX itself
+            "work_wire_type": "clean",
             "num_control_wires": m,
             "num_zero_control_values": 0,
         }
@@ -1060,7 +1048,12 @@ def _sos_state_prep(
 
     # Step 1: Dense state preparation in enumeration register
     # Need to add work wires and correct decomposition
-    # qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+    missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
+    coefficients = qml.math.concatenate(
+        [coefficients, qml.math.cast_like(qml.math.zeros(missing_dim), coefficients)],
+        like=qml.math.get_interface(coefficients),
+    )
+    qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
 
     # qml.QROMStatePreparation(coefficients, wires=enumeration_wires, precision_wires=identification_wires, work_wires=[*mcx_work_wires, *enumeration_wires])
 

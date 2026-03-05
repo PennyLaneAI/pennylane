@@ -388,7 +388,7 @@ class BasisRotation(Operation):
 
 
 def _basis_rotation_decomp_resources(dim, is_real):
-    se_count = dim * (dim - 1) / 2
+    se_count = dim * (dim - 1) // 2
     if is_real:
         return {PhaseShift: 1, SingleExcitation: se_count}
 

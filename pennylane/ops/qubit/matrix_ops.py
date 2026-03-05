@@ -664,7 +664,7 @@ def _diagonal_qu_decomp(D, wires):
         qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
         qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
     else:
-        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1])
         qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 

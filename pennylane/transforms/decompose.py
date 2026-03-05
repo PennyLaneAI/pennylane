@@ -822,16 +822,23 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     max_depth_reached = False
     decomp = []
 
+    _VERBOSE = True
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
     if isinstance(op, (Allocate, Deallocate)):
+        if _VERBOSE:
+            print(f"Accepting {op=}")
         yield op
 
     elif isinstance(op, Conditional):
         if acceptance_function(op.base) or max_depth_reached:
+            if _VERBOSE:
+                print(f"Accepting {op=}")
             yield op
         else:
+            if _VERBOSE:
+                print(f"Decompose base of conditional {op=}")
             yield from (
                 Conditional(op.meas_val, base_op)
                 for base_op in _operator_decomposition_gen(
@@ -846,13 +853,19 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             )
 
     elif acceptance_function(op) or max_depth_reached:
+        if _VERBOSE:
+            print(f"Accepting {op=}")
         yield op
 
     elif isinstance(op, SubroutineOp):
+        if _VERBOSE:
+            print(f"Using unique decomposition registered courtesy of `SubroutineOp` {op=}")
         decomp = op.decomposition()
 
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
+        if _VERBOSE:
+            print(f"Decomposing {op=} with rule that was solved for")
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
@@ -870,6 +883,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         yield op
 
     elif custom_decomposer is not None:
+        if _VERBOSE:
+            print(f"Decomposing {op=} with custom decomposer")
         try:
             decomp = custom_decomposer(op)
         except DecompositionUndefinedError as e:
@@ -878,6 +893,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             ) from e
 
     elif op.has_decomposition:
+        # if _VERBOSE: print(f"Using old system for {op=}")
+        raise DecompositionUndefinedError(f"I don't want to use the old system for {op=}")
         decomp = op.decomposition()
 
     elif strict:

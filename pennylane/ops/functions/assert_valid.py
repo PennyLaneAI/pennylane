@@ -166,6 +166,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     if rule.exact_resources and not (
         isinstance(op, qml.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
+        print(list(filter((lambda op: op not in gate_counts), actual_gate_counts)))
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
