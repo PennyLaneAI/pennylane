@@ -131,7 +131,7 @@ def dynamic_one_shot(
     ..details::
         :title: Usage with Catalyst (qjit)
 
-        This transform is compatible with qjit where it will be applied as an MLIR pass
+        This transform is compatible with ``qjit``, where it will be applied as an MLIR pass
         rather than a tape-level transform.
         That being said, there are a few differences to be aware of when using the MLIR pass,
 
