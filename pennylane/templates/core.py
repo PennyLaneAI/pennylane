@@ -821,4 +821,10 @@ class Subroutine:
         return op.output
 
 
-__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep", "adjoint_subroutine_resource_rep"]
+__all__ = [
+    "Subroutine",
+    "SubroutineOp",
+    "AbstractArray",
+    "subroutine_resource_rep",
+    "adjoint_subroutine_resource_rep",
+]

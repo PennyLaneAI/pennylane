@@ -29,8 +29,7 @@ from pennylane.templates.subroutines.controlled_sequence import ControlledSequen
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
-from ...core import adjoint_subroutine_resource_rep
+from pennylane.templates.core import AbstractArray, SubroutineOp, subroutine_resource_rep, adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 

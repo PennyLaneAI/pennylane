@@ -23,11 +23,15 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import Prod, adjoint
+from pennylane.templates.core import (
+    AbstractArray,
+    adjoint_subroutine_resource_rep,
+    subroutine_resource_rep,
+)
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from pennylane.templates.core import AbstractArray, subroutine_resource_rep, adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -324,6 +328,7 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
 
     QFT(wires=qft_new_output_wires)
 
+    # pylint: disable=expression-not-assigned
     ControlledSequence(
         PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
     ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)

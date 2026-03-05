@@ -18,7 +18,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 from collections import defaultdict
 
-from pennylane import math, ops, capture
+from pennylane import capture, math, ops
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -33,8 +33,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
+from ..core import AbstractArray, adjoint_subroutine_resource_rep
 from .qft import QFT
-from ..core import adjoint_subroutine_resource_rep, AbstractArray
 
 
 class QuantumPhaseEstimation(ErrorOperation):
@@ -330,9 +330,9 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
         for op, count in QFT.compute_resources(wires=range(num_estimation_wires)).items():
             gate_count[adjoint_resource_rep(op)] += count
     else:
-        gate_count.update({
-            adjoint_subroutine_resource_rep(QFT, AbstractArray((num_estimation_wires,))): 1
-        })
+        gate_count.update(
+            {adjoint_subroutine_resource_rep(QFT, AbstractArray((num_estimation_wires,))): 1}
+        )
     return gate_count
 
 

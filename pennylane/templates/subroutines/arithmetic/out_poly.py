@@ -19,7 +19,6 @@ from collections import Counter
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
@@ -29,8 +28,7 @@ from pennylane.ops import adjoint, ctrl
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
-from ...core import adjoint_subroutine_resource_rep
+from pennylane.templates.core import AbstractArray, subroutine_resource_rep, adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
