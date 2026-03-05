@@ -21,11 +21,16 @@ def disentangle_cnot_setup_inputs():
     return (), {}
 
 
-disentangle_cnot = transform(pass_name="disentangle-cnot", setup_inputs=disentangle_cnot_setup_inputs)
+disentangle_cnot = transform(
+    pass_name="disentangle-cnot", setup_inputs=disentangle_cnot_setup_inputs
+)
+
 
 # pylint: disable=missing-function-docstring
 def disentangle_swap_setup_inputs():
     return (), {}
 
 
-disentangle_swap = transform(pass_name="disentangle-swap", setup_inputs=disentangle_swap_setup_inputs)
+disentangle_swap = transform(
+    pass_name="disentangle-swap", setup_inputs=disentangle_swap_setup_inputs
+)
