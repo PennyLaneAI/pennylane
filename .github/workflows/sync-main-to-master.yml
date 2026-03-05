@@ -1,3 +1,4 @@
+# This workflow syncs the main branch to master every weekday. It will remain until the master branch is deleted.
 name: Sync main to master
 
 on:
@@ -20,7 +21,7 @@ jobs:
           git fetch origin 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"          
-          if git merge --no-commit --no-ff origin/main; then
+          if git merge --no-commit --ff-only origin/main; then
             echo "Synching from main to master."
             echo "merge_conflict=false" >> $GITHUB_ENV
             git commit -m "Sync main to master"
