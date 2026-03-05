@@ -24,7 +24,7 @@ from pennylane.gradients.gradient_transform import (
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 
 def test_supported_gradient_kwargs():
@@ -40,7 +40,7 @@ def test_supported_gradient_kwargs():
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
-        if isinstance(obj, TransformDispatcher):
+        if isinstance(obj, Transform):
             grad_transforms.append(obj)
 
     # Collect arguments of all gradient transforms
@@ -383,6 +383,10 @@ class TestGradientTransformIntegration:
                 """Decompose into a qml.RX gate."""
                 return [qml.RX(phi, wires=wires)]
 
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(phi, wires):
+            qml.RX(phi, wires)
+
         @qml.qnode(dev)
         def circuit(weights):
             """A quantum circuit using the above non-differentiable RX gate."""
@@ -394,7 +398,10 @@ class TestGradientTransformIntegration:
         grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
-        res = grad_fn(w)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NonDiffRXGate, _decomp)
+            res = grad_fn(w)
 
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])

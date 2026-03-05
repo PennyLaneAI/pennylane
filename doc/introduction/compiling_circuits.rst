@@ -7,28 +7,27 @@ Compiling circuits
 ==================
 
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
-here in a loose sense as the process of transforming one circuit 
-into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For
-example, such a transformation could
-replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
-or replace a large circuit by a number of smaller circuits.
+here in a loose sense as the process of transforming one circuit into one or more
+differing circuits. A circuit could be either a quantum function or a sequence of
+operators. For example, such a transformation could replace a gate type with another,
+fuse gates, exploit mathematical relations that simplify an observable, or replace a
+large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**; see
-the :doc:`transforms documentation <../code/qml_transforms>` for more details,
-as well as information on how to write your own custom transforms.
+Compilation functionality is mostly designed as **transforms**; see the :doc:`transforms documentation <../code/qml_transforms>` 
+for more details, as well as information on how to write your own custom transforms.
 
-In addition to quantum circuit transforms, PennyLane also
-supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
-`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
-supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators that you are using. 
-More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
+In addition to quantum circuit transforms, PennyLane also supports experimental 
+just-in-time compilation, via the :func:`~.qjit` decorator and `Catalyst <https://github.com/pennylaneai/catalyst>`__. 
+This is more general, and supports full hybrid compilation --- compiling both the 
+classical and quantum components of your workflow into a binary that can be run 
+close to the accelerators that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple
-other PennyLane objects.
+PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, 
+and multiple other PennyLane objects. See the :ref:`transforms library <transform_library>` 
+for a complete list.
 
 :html:`<div class="summary-table">`
 
@@ -52,17 +51,60 @@ other PennyLane objects.
 
     Most compilation transforms support just-in-time compilation with ``jax.jit``.
 
-The :func:`~.pennylane.compile` transform allows you to chain together
-sequences of quantum function transforms into custom circuit optimization pipelines.
-
-For example, take the following decorated quantum function:
+Transforms can be applied on ``QNodes`` using the decorator syntax:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=[0, 1, 2])
+    dev = qml.device("default.qubit", wires=2)
 
-    @qml.compile
+    @qml.transforms.split_non_commuting(grouping_strategy="wires")
     @qml.qnode(dev)
+    def circuit(params):
+        qml.RX(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        return [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.Z(0) @ qml.Z(1)),
+            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+        ]
+
+They can additionally be stacked, allowing for the application of multiple compilation passes on a ``QNode``:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses(recursive=True)
+    @qml.qnode(device=dev)
+    def circuit(x, y):
+        qml.X(wires=0)
+        qml.Hadamard(wires=0)
+        qml.Hadamard(wires=0)
+        qml.X(wires=0)
+        qml.RX(x, wires=0)
+        qml.RX(y, wires=0)
+        return qml.expval(qml.Z(0))
+
+Alternatively, multiple transforms can be chained together into custom circuit optimization pipelines
+via the :class:`~.CompilePipeline` class. The defined compilation program can then be applied on a
+``QNode``, which will transform the circuit with each pass therein.
+
+For example, by constructing a pipeline with the sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
+:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations`,
+the number of gates in the following quantum circuit can be reduced by almost a half:
+
+.. code-block:: python
+
+    pipeline = qml.CompilePipeline(
+        qml.transforms.commute_controlled,
+        qml.transforms.cancel_inverses(recursive=True),
+        qml.transforms.merge_rotations,
+    )
+
+    @pipeline
+    @qml.qnode(qml.device("default.qubit"))
     def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
@@ -79,57 +121,17 @@ For example, take the following decorated quantum function:
         qml.CZ(wires=[1, 2])
         return qml.expval(qml.Z(wires=0))
 
-The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
-transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
-and then :func:`~.pennylane.transforms.merge_rotations`.
-
 >>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
-
-
-The :func:`~.pennylane.compile` transform is flexible and accepts a custom pipeline
-of quantum function transforms (you can even write your own!).
-For example, if we wanted to only push single-qubit gates through
-controlled gates and cancel adjacent inverses, we could do:
-
-.. code-block:: python
-
-    from pennylane.transforms import commute_controlled, cancel_inverses
-
-    pipeline = [commute_controlled, cancel_inverses]
-
-    @qml.compile(pipeline=pipeline)
-    @qml.qnode(dev)
-    def qfunc(x, y, z):
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=1)
-        qml.Hadamard(wires=2)
-        qml.RZ(z, wires=2)
-        qml.CNOT(wires=[2, 1])
-        qml.RX(z, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RZ(-z, wires=2)
-        qml.RX(y, wires=2)
-        qml.Y(wires=2)
-        qml.CZ(wires=[1, 2])
-        return qml.expval(qml.Z(wires=0))
-
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
-0: ──H──RX(0.40)──RX(0.20)────────────────────────────┤  <Z>
-1: ──H─╭X──────────────────────────────────────────╭●─┤     
-2: ──H─╰●─────────RZ(0.40)──RZ(-0.40)──RX(0.30)──Y─╰Z─┤     
 
 .. note::
 
     The :class:`~.pennylane.Barrier` operator can be used to prevent blocks of code from being merged during
     compilation.
 
-
-For more details on :func:`~.pennylane.compile` and the available compilation transforms, visit
+For more details on :class:`~.CompilePipeline` and the available compilation transforms, visit
 `the compilation documentation
 <../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
 
@@ -271,14 +273,6 @@ enabled.
 Default behaviour with custom decompositions
 ********************************************
 
-.. warning::
-    The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
-    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
-    your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
-    graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
-    The details on how to define your decomposition rules using the graph decomposition system are described
-    in :ref:`the next section <custom_decomps_with_graph>`.
-
 For example, suppose we would like to implement the following QNode:
 
 .. code-block:: python
@@ -300,68 +294,32 @@ Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into
 ``CZ`` and ``Hadamard``. We define the custom decompositions like so, and pass them 
 to a device:
 
-.. code-block:: python
+.. code-block:: python3
 
-    def custom_cnot(wires, **_):
-        return [
-            qml.Hadamard(wires=wires[1]),
-            qml.CZ(wires=[wires[0], wires[1]]),
-            qml.Hadamard(wires=wires[1])
-        ]
+    @qml.decomposition.register_resources({
+        qml.H: 2,
+        qml.CZ: 1
+    })
+    def _custom_cnot_decomposition(wires, **_):
+        qml.Hadamard(wires=wires[1])
+        qml.CZ(wires=[wires[0], wires[1]])
+        qml.Hadamard(wires=wires[1])
 
-    custom_decomps = {qml.CNOT: custom_cnot}
+    qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
 
-    decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
-    decomp_qnode = qml.QNode(circuit, decomp_dev)
+    qml.decomposition.enable_graph()
 
-Note that custom decomposition functions should accept keyword arguments even when 
-it is not used.
+    decomp_dev = qml.device("default.qubit", wires=3)
+    qnode = qml.QNode(circuit, decomp_dev)
+    decomp_qnode = qml.transforms.decompose(qnode, gate_set={qml.CZ, qml.H})
 
-Now when we draw or run a QNode on this device, the gates will be expanded according 
+Now when we draw or run a QNode on this device, the gates will be expanded according
 to our specifications:
 
 >>> print(qml.draw(decomp_qnode, level="device")(weights))
 0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
-1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
-2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
-
-If the custom decomposition is only supposed to be used in a specific code context,
-a separate context manager :func:`~.pennylane.transforms.set_decomposition` can 
-be used.
-
-.. note::
-
-    Device-level custom decompositions **are not applied before other compilation 
-    passes (decorators on QNodes)**. For example, the following circuit has ``cancel_inverses`` 
-    applied to it, and the device was provided a decomposition for ``qml.CNOT``. 
-    The Hadamard gates applied around the ``qml.CNOT`` gate do not get cancelled 
-    with those introduced by the custom decomposition.
-
-    .. code-block:: python
-
-        def custom_cnot(wires, **_):
-            return [
-                qml.H(wires=wires[1]),
-                qml.CZ(wires=[wires[0], wires[1]]),
-                qml.H(wires=wires[1])
-            ]
-
-        dev = qml.device("default.qubit", custom_decomps={qml.CNOT: custom_cnot})
-
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
-        def circuit():
-            qml.H(1)
-            qml.CNOT([0, 1])
-            qml.H(1)
-            return qml.state()
-
-    >>> print(qml.draw(circuit, level="device")())
-    0: ───────╭●───────┤  State
-    1: ──H──H─╰Z──H──H─┤  State
-
-    To have better control over custom decompositions, consider using the graph 
-    decompositions system functionality outlined in the next section.
+1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤
+2: ──RX(0.60)──H───────╰Z──H─╰●────┤
 
 .. _custom_decomps_with_graph:
 

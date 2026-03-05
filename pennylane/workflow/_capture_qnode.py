@@ -153,7 +153,15 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
     for s in shots:
         for m in measurements:
             s = s.val if isinstance(s, jax.extend.core.Literal) else s
-            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            try:
+                shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            except AttributeError as e:
+                raise ValueError(
+                    "Only Measurement Processes can be returned from QNode's. Got returned"
+                    f" value of abstract type {m.aval}."
+                    "\nNote that raw mid circuit measurements can no longer be returned with"
+                    " Catalyst when capture is turned on. Please use qp.sample(mcm) instead for accurate results."
+                ) from e
             if all(isinstance(si, int) for si in shape):
                 aval_type = jax.core.ShapedArray
             else:
@@ -220,7 +228,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
+    qfunc_jaxpr = qnode.compile_pipeline(qfunc_jaxpr, temp_consts, *temp_args)
     temp_consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
@@ -516,7 +524,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """
     # apply transform to a callable so will be captured when called
     qnode_func = partial(_bind_qnode, qnode)
-    for t in qnode.transform_program:
+    for t in qnode.compile_pipeline:
         qnode_func = t(qnode_func)
 
     return qnode_func(*args, **kwargs)

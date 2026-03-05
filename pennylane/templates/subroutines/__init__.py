@@ -41,7 +41,8 @@ from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
-from .qram import BBQRAM
+from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
+from .iqp import IQP
 from .qrom import QROM
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
@@ -78,17 +79,20 @@ __all__ = [
     "TrotterProduct",
     "trotterize",
     "Interferometer",
+    "IQP",
     "Permute",
     "QFT",
     "QuantumPhaseEstimation",
     "GroverOperator",
     "HilbertSchmidt",
+    "HybridQRAM",
     "LocalHilbertSchmidt",
     "FlipSign",
     "BasisRotation",
     "QuantumMonteCarlo",
     "FABLE",
     "Select",
+    "SelectOnlyQRAM",
     "PrepSelPrep",
     "Reflection",
     "Qubitization",

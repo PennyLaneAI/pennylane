@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec
@@ -213,7 +213,7 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: str | TransformDispatcher | None = None
+    gradient_method: str | Transform | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
     gradient_keyword_arguments: dict = field(default_factory=FrozenMapping)
@@ -268,12 +268,9 @@ class ExecutionConfig:
         _validate_and_freeze_dict("device_options")
         _validate_and_freeze_dict("gradient_keyword_arguments")
 
-        if not (
-            isinstance(self.gradient_method, (str, TransformDispatcher))
-            or self.gradient_method is None
-        ):
+        if not (isinstance(self.gradient_method, (str, Transform)) or self.gradient_method is None):
             raise ValueError(
-                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
+                f"Differentiation method {self.gradient_method} must be a str, Transform, or None. Got {type(self.gradient_method)} instead."
             )
 
         if isinstance(self.mcm_config, dict):

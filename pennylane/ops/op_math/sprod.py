@@ -282,16 +282,6 @@ class SProd(ScalarSymbolicOp):
     def _matrix(scalar, mat):
         return scalar * mat
 
-    @property
-    def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns: None
-        """
-        return None
-
     def pow(self, z):
         """Returns the operator raised to a given power."""
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]

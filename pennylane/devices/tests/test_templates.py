@@ -29,7 +29,10 @@ import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import DeviceError
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [
+    pytest.mark.skip_unsupported,
+    pytest.mark.usefixtures("enable_and_disable_graph_decomp"),
+]
 
 
 def check_op_supported(op, dev):

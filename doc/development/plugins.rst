@@ -248,7 +248,7 @@ can be specified like so:
     from pennylane.devices.preprocess import decompose
 
     def stopping_condition(op):
-        return obj.name in {"CNOT", "RX", "RZ"}
+        return op.name in {"CNOT", "RX", "RZ"}
     
     program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
 
@@ -299,10 +299,10 @@ registered with ``qml.add_decomps``:
 
     @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
     def decompose_cnot(wires, **_):
-        qml.RY(np.pi/2, wires=wires[0]),
-        qml.IsingXX(np.pi/2, wires=wires),
-        qml.RX(-np.pi/2, wires=wires[0]),
-        qml.RY(-np.pi/2, wires=wires[0]),
+        qml.RY(np.pi/2, wires=wires[0])
+        qml.IsingXX(np.pi/2, wires=wires)
+        qml.RX(-np.pi/2, wires=wires[0])
+        qml.RY(-np.pi/2, wires=wires[0])
         qml.RY(-np.pi/2, wires=wires[1])
 
     qml.add_decomps(qml.CNOT, decompose_cnot)
@@ -311,7 +311,7 @@ registered with ``qml.add_decomps``:
         decompose,
         stopping_condition=stopping_condition,
         decomposer=custom_decomposer,
-        device_wires=[2],
+        device_wires=[0, 1],
         target_gates={qml.IsingXX, "RX", "RY"},
         name="my_device"
     )

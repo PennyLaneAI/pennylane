@@ -23,6 +23,7 @@ import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane import math as pl_math
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -71,8 +72,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
         if len(decomp) == 1:
             return _map_to_resource_op(decomp[0])
 
-        decomp_wires = Wires.all_wires([d_op.wires for d_op in decomp])
-        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
+        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
 
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
@@ -287,10 +287,76 @@ def _(op: qtemps.Select):
 
 
 @_map_to_resource_op.register
-def _(op: qtemps.QROM):
-    bitstrings = op.hyperparameters["bitstrings"]
+def _(op: qtemps.HybridQRAM):
+    data = op.data[0]
+    tree_wire_manager = op.hyperparameters["tree_wire_manager"]
+    select_wires = op.hyperparameters["select_wires"]
+    signal_wire = op.hyperparameters["signal_wire"]
+    control_wires = tree_wire_manager.control_wires
+    target_wires = tree_wire_manager.target_wires
+    return re_temps.HybridQRAM(
+        data=data,
+        num_wires=len(op.wires),
+        num_control_wires=len(control_wires),
+        num_select_wires=len(select_wires),
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=signal_wire
+        + tree_wire_manager.bus_wire
+        + tree_wire_manager.dir_wires
+        + tree_wire_manager.portL_wires
+        + tree_wire_manager.portR_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectOnlyQRAM):
+    data = op.data[0]
+    control_wires = op.hyperparameters["control_wires"]
+    select_wires = op.hyperparameters["select_wires"]
+    target_wires = op.hyperparameters["target_wires"]
+    select_value = op.hyperparameters["select_value"]
+    num_control_wires = len(control_wires)
+    num_select_wires = len(select_wires)
+    num_wires = num_control_wires + num_select_wires + len(target_wires)
+
+    return re_temps.SelectOnlyQRAM(
+        data,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.BBQRAM):
+    bitstrings = op.data[0]
+    wire_manager = op.hyperparameters["wire_manager"]
     num_bitstrings = len(bitstrings)
     size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
+    return re_temps.BBQRAM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        num_bit_flips=pl_math.sum(bitstrings),
+        num_wires=len(op.wires),
+        control_wires=wire_manager.control_wires,
+        target_wires=wire_manager.target_wires,
+        work_wires=wire_manager.bus_wire
+        + wire_manager.dir_wires
+        + wire_manager.portL_wires
+        + wire_manager.portR_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.QROM):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
@@ -388,6 +454,18 @@ def _(op: qops.IntegerComparator):
         register_size=len(op.wires) - 1,
         geq=op.hyperparameters["geq"],
         wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.Reflection):
+    base = op.hyperparameters["base"]
+    ref_wires = op.hyperparameters["reflection_wires"]
+    return re_temps.Reflection(
+        num_wires=len(ref_wires),
+        U=_map_to_resource_op(base),
+        alpha=op.alpha,
+        wires=ref_wires,
     )
 
 

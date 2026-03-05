@@ -312,7 +312,7 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    bin_range = int(np.ceil(np.log2(orbitals)))
+    bin_range = qml.math.ceil_log2(orbitals)
 
     beta = np.array([[1]])
 

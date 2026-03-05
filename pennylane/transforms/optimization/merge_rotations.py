@@ -17,6 +17,7 @@
 from functools import lru_cache, partial
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
@@ -368,9 +369,11 @@ def merge_rotations(
 
     [expanded_tape], _ = qml.devices.preprocess.decompose(
         tape,
+        target_gates=gate_sets.ALL_OPS,
         stopping_condition=stop_at,
         name="merge_rotations",
         error=qml.operation.DecompositionUndefinedError,
+        strict=False,
     )
     list_copy = expanded_tape.operations
     new_operations = []
@@ -386,7 +389,7 @@ def merge_rotations(
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate in composable_rotations:
+        if current_gate not in composable_rotations:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue
@@ -457,7 +460,7 @@ def merge_rotations(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

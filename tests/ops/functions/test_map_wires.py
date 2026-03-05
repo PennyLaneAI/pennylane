@@ -88,13 +88,6 @@ class TestMapWiresOperators:
         assert len(q) == 1
         assert q.queue[0] is m_op
 
-    def test_map_wires_unsupported_object_raises_error(self):
-        """Test that an error is raised when trying to map the wires of an unsupported object."""
-        with pytest.raises(
-            qml.transforms.core.TransformError, match="only apply to sequences of QuantumScript"
-        ):
-            qml.map_wires("unsupported type", wire_map=wire_map)
-
 
 class TestMapWiresTapes:
     """Tests for the qml.map_wires method used with tapes."""

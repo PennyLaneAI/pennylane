@@ -11,21 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
-
-from functools import partial
+"""Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit."""
 
 from pennylane.transforms.core import transform
 
 
-@partial(transform, pass_name="gridsynth")
-def gridsynth(tape, *, epsilon, ppr_basis):
+def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
     r"""Decomposes RZ and PhaseShift gates into the Clifford+T basis or the PPR basis.
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``gridsynth`` compilation pass. Consult the Catalyst documentation for more information.
+        This transform must be applied within a workflow compiled with :func:`pennylane.qjit`,
+        as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
+        Consult the Catalyst documentation for more information.
 
     Args:
         tape (QNode): A quantum circuit.
@@ -35,8 +33,6 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     **Example**
 
     .. code-block:: python
-
-        qml.capture.enable()
 
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def circuit(x):
@@ -64,7 +60,11 @@ def gridsynth(tape, *, epsilon, ppr_basis):
         Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     """
+    if not isinstance(ppr_basis, bool):
+        raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
+    if not isinstance(epsilon, float):
+        raise ValueError(f"epsilon must be of type float. Got {epsilon}.")
+    return (), {"epsilon": epsilon, "ppr_basis": ppr_basis}
 
-    raise NotImplementedError(  # pragma: no cover
-        "This transform pass (gridsynth) is only implemented when using program capture and QJIT. They can be activated by `qml.capture.enable()` and applying the `@qml.qjit` decorator. Otherwise, please use qml.transforms.clifford_t_decomposition."
-    )
+
+gridsynth = transform(pass_name="gridsynth", setup_inputs=gridsynth_setup_inputs)

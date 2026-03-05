@@ -363,7 +363,7 @@ def is_independent(
 
     # pylint:disable=too-many-arguments
 
-    if not interface in {"autograd", "jax", "tf", "torch", "tensorflow"}:
+    if interface not in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")
 
     kwargs = kwargs or {}

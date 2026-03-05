@@ -35,6 +35,18 @@ from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
 
+    def test_error_if_wrong_number_of_outputs(self):
+        """Test that a helpful error is raised if the function has the wrong number of outputs."""
+
+        @qml.for_loop(3)
+        def f(i):  # pylint: disable=unused-argument
+            return 2
+
+        with pytest.raises(
+            ValueError, match="number of inputs must be one greater than the number of outputs"
+        ):
+            f()
+
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_identity(self, array):
         """Test simple for-loop primitive vs dynamic dimensions."""

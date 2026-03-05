@@ -220,7 +220,7 @@ def sum_of_terms_method(
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term
-    return math.sum(
+    return sum(
         measure(
             ExpectationMP(term),
             state,
