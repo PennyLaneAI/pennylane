@@ -29,7 +29,6 @@ from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,
     MarkClean,
-    MarkQubits,
     _estimate_auxiliary_wires,
     _process_circuit_lst,
     estimate_wires_from_circuit,

@@ -19,7 +19,6 @@ from functools import singledispatch, wraps
 from pennylane.estimator.estimate import (
     _get_resource_decomposition,
     _ops_to_compressed_reps,
-    _update_counts_from_compressed_res_op,
 )
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op

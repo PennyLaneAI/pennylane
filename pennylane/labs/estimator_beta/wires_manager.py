@@ -19,7 +19,7 @@ from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+from pennylane.estimator.resource_operator import GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
