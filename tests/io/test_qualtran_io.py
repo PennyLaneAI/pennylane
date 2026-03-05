@@ -1425,10 +1425,10 @@ class TestToBloqEstimator:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 609,
-                    (qml.CNOT([0, 1]), True): 882,
-                    (qml.Hadamard(0), True): 84,
-                    (qml.T(0), True): 49896,
+                    (qml.Toffoli([0, 1, 2]), True): 805,
+                    (qml.CNOT([0, 1]), True): 938,
+                    (qml.Hadamard(0), True): 168,
+                    (qml.T(0), True): 57288,
                 },
             ),
             (
