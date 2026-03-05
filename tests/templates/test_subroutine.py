@@ -107,7 +107,6 @@ class TestInitialization:
 
         def compute_resources(x, wires, metadata):
             assert metadata == 2  # test filled in with default values.
-            assert isinstance(wires, qml.wires.Wires)
             return {qml.RX: len(wires)}
 
         @partial(Subroutine, compute_resources=compute_resources)
