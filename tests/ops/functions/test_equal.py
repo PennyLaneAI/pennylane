@@ -2897,7 +2897,7 @@ class TestBasisRotation:
 
         with pytest.raises(
             AssertionError,
-            match=re.escape("op1 has value Wires([0, 1]) and op2 has value Wires([2, 3])"),
+            match=re.escape("op1 has value (0, 1) and op2 has value (2, 3)"),
         ):
             assert_equal(op, other_op)
 
