@@ -27,59 +27,106 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
-class _WireAction:
-    """Base class for operations that manage wire resources."""
+class Allocate:
+    """A class used to represent the allocation of auxiliary wires to be used in the resource
+    decomposition of a ``ResourceOperator``."""
 
     def __init__(self, num_wires, state=AllocateState.ZERO, restored=False):
+        if not isinstance(num_wires, int) or num_wires < 0:
+            raise ValueError(f"num_wires must be 0 or a positive integer, got {num_wires}")
+
+        if state not in ("zero", "any"):
+            raise ValueError(f"state must be one of 'zero', 'any'. Got {state}")
+
+        if restored not in (True, False):
+            raise ValueError(f"Expected restored to be True or False, got {restored}")
+
         self.state = state
         self.restored = restored
         self.num_wires = num_wires
 
-    def equal(self, other: "_WireAction") -> bool:
-        """Custom equal method. We avoid overriding `__eq__` due to concerns with hashing"""
-        return isinstance(other, self.__class__) and self.num_wires == other.num_wires
+    def equal(
+        self, other: "Allocate"
+    ) -> bool:  # We avoid overriding `__eq__` due to concerns with hashing
+        if not isinstance(other, self.__class__):
+            return False
 
-    def __mul__(self, other):
-        if isinstance(other, int):
-            return self.__class__(self.num_wires * other)
-        raise NotImplementedError
+        return all(
+            (
+                self.state == other.state,
+                self.restored == other.restored,
+                self.num_wires == other.num_wires,
+            )
+        )
 
-
-class Allocate(_WireAction):
     def __repr__(self) -> str:
         return f"Allocate({self.num_wires}, state={self.state}, restored={self.restored})"
 
 
-class Deallocate(_WireAction):
+class Deallocate:
+    """A class used to represent the deallocation of auxiliary wires that were used in the resource
+    decomposition of a ``ResourceOperator``."""
+
     def __init__(
         self, num_wires=None, allocated_register=None, state=AllocateState.ZERO, restored=False
     ):
-        if num_wires is None and allocated_register is None:
-            raise ValueError("Atleast one of `num_wires` and `allocated_register` must be provided")
-
-        if allocated_register is not None and num_wires is not None:
-            if num_wires != allocated_register.num_wires:
-                raise ValueError("`num_wires` argument must match `allocated_register.num_wires`")
-
-        if state == AllocateState.ANY:
-            if restored == True:
-                if allocated_register is None:
-                    raise ValueError(
-                        "Must provide `allocated_register` when deallocating an ANY state register with `restored=True`"
-                    )
-
         if allocated_register is not None:
+            if not isinstance(allocated_register, Allocate):
+                raise ValueError(
+                    f"The allocated_register must be an instance of Allocate, got {allocated_register}"
+                )
+
             state = allocated_register.state
             restored = allocated_register.restored
             num_wires = allocated_register.num_wires
+
+        else:  # allocated_register = None
+            if num_wires is None:
+                raise ValueError(
+                    "Atleast one of `num_wires` and `allocated_register` must be provided"
+                )
+
+            if state == AllocateState.ANY and restored:
+                raise ValueError(
+                    "Must provide the `allocated_register` when deallocating an ANY state register with `restored=True`"
+                )
+
+        if not isinstance(num_wires, int) or num_wires < 0:
+            raise ValueError(f"num_wires must be 0 or a positive integer, got {num_wires}")
+
+        if state not in ("zero", "any"):
+            raise ValueError(f"state must be one of 'zero', 'any'. Got {state}")
+
+        if restored not in (True, False):
+            raise ValueError(f"Expected restored to be True or False, got {restored}")
 
         self.state = state
         self.restored = restored
         self.num_wires = num_wires
         self.allocated_register = allocated_register
 
+    def equal(
+        self, other: "Deallocate"
+    ) -> bool:  # We avoid overriding `__eq__` due to concerns with hashing
+        """Determine if two instances of the class are equal."""
+        if not isinstance(other, self.__class__):
+            return False
+
+        equal_allocated_register = self.allocated_register == other.allocated_register
+        if self.allocated_register is not None and other.allocated_register is not None:
+            equal_allocated_register = self.allocated_register.equal(other.allocated_register)
+
+        return all(
+            (
+                self.state == other.state,
+                self.restored == other.restored,
+                self.num_wires == other.num_wires,
+                equal_allocated_register,
+            )
+        )
+
     def __repr__(self) -> str:
-        return f"Deallocate(({self.num_wires}, state={self.state}, restored={self.restored}))"
+        return f"Deallocate({self.num_wires}, state={self.state}, restored={self.restored})"
 
 
 class MarkQubits:
@@ -93,9 +140,11 @@ class MarkQubits:
         context.append(self)
         return self
 
-    def __eq__(self, other: "MarkQubits"):
+    def equal(
+        self, other: "MarkQubits"
+    ):  # We avoid overriding `__eq__` due to concerns with hashing
         """Check if two MarkQubits instances are equal"""
-        return (self.__class__ == other.__class__) and (self.wires == other.wires)
+        return (self.__class__ == other.__class__) and (self.wires.toset() == other.wires.toset())
 
 
 class MarkClean(MarkQubits):
