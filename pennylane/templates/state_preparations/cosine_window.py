@@ -24,6 +24,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep
 from pennylane.exceptions import WireError
 from pennylane.operation import StatePrepBase
+from pennylane.templates import subroutine_resource_rep
+from pennylane.templates.core import adjoint_subroutine_resource_rep, AbstractArray
 from pennylane.wires import Wires
 
 
@@ -147,17 +149,24 @@ class CosineWindow(StatePrepBase):
 
 
 def _cosine_window_resources(num_wires):
-    ret = defaultdict(int)
-    ret.update(
-        {
-            resource_rep(qml.Hadamard): 1,
-            resource_rep(qml.RZ): 1,
-            resource_rep(qml.PhaseShift): num_wires,
-        }
-    )
-    for op, count in qml.QFT.compute_resources(wires=range(num_wires)).items():
-        ret[adjoint_resource_rep(op)] += count
-    return ret
+    if capture.enabled():
+        ret = defaultdict(int)
+        ret.update(
+            {
+                resource_rep(qml.Hadamard): 1,
+                resource_rep(qml.RZ): 1,
+                resource_rep(qml.PhaseShift): num_wires,
+            }
+        )
+        for op, count in qml.QFT.compute_resources(wires=range(num_wires)).items():
+            ret[adjoint_resource_rep(op)] += count
+        return ret
+    return {
+        resource_rep(qml.Hadamard): 1,
+        resource_rep(qml.RZ): 1,
+        resource_rep(qml.PhaseShift): num_wires,
+        adjoint_subroutine_resource_rep(qml.QFT, AbstractArray((num_wires,))): 1
+    }
 
 
 @register_resources(_cosine_window_resources)
