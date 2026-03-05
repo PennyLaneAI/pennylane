@@ -136,7 +136,7 @@ def dynamic_one_shot(
         That being said, there are a few differences to be aware of when using the MLIR pass:
 
         - Shot vectors or broadcasting are not supported
-        - VJP/VJP pipelines are not supported
+        - Workflows involving gradients are not supported
         - ``qml.var()`` on observables (non-MCM) are unsupported
 
         To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
