@@ -242,7 +242,7 @@ class TestOutMultiplier:
         )
         op_list += list(
             map(
-                lambda op: qml.adjoint(op),
+                qml.adjoint,
                 qml.QFT.operator(wires=qft_output_wires).decomposition(),
             )
         )[::-1]

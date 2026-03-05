@@ -210,7 +210,7 @@ class TestOutAdder:
         )
         op_list += list(
             map(
-                lambda op: qml.adjoint(op),
+                qml.adjoint,
                 qml.QFT.operator(wires=qft_new_output_wires).decomposition(),
             )
         )[::-1]
