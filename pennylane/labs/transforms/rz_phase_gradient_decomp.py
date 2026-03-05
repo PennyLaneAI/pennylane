@@ -151,20 +151,25 @@ def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires
             # controlled_resource_rep(qml.X, base_params={}, num_control_wires=1, num_zero_control_values=1): len(phase_grad_wires),
         }
         if rot_axis == "Y":
-            prod_resources |= {
+            comp_resources = prod_resources | {
                 adjoint_resource_rep(qml.S): 1,
                 qml.resource_rep(qml.H): 1,
             }
+            uncomp_resources = prod_resources | {
+                qml.resource_rep(qml.S): 1,
+                qml.resource_rep(qml.H): 1,
+            }
         elif rot_axis == "X":
-            prod_resources |= {
+            comp_resources = uncomp_resources = prod_resources | {
                 qml.resource_rep(qml.H): 1,
             }
         else:
-            pass
+            comp_resources = uncomp_resources = prod_resources
 
-        compute_op = qml.resource_rep(qml.ops.Prod, resources=prod_resources)
+        compute_rep = qml.resource_rep(qml.ops.Prod, resources=comp_resources)
+        uncompute_rep = qml.resource_rep(qml.ops.Prod, resources=uncomp_resources)
 
-        change_basis_rep = change_op_basis_resource_rep(compute_op, target_op)
+        change_basis_rep = change_op_basis_resource_rep(compute_rep, target_op, uncompute_rep)
 
         return {change_basis_rep: 1}
 
@@ -177,25 +182,26 @@ def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires
 
         with qml.QueuingManager.stop_recording():
             select_ops = [qml.BasisEmbedding(_int, angle_wires) for _int in binary_ints]
-            ops = [
-                qml.Select(
-                    select_ops, control=control_wires, work_wires=work_wires
-                )
-            ] + sum(
+            ops = [qml.Select(select_ops, control=control_wires, work_wires=work_wires)] + sum(
                 [[qml.CNOT([target_wire, wire]), qml.X(wire)] for wire in phase_grad_wires],
                 start=[],
             )
+            adj_ops = ops.copy()[::-1]
             if rot_axis == "Y":
                 ops.append(qml.adjoint(qml.S(target_wire)))
                 ops.append(qml.Hadamard(target_wire))
+                adj_ops.append(qml.Hadamard(target_wire))
+                adj_ops.append(qml.S(target_wire))
             elif rot_axis == "X":
                 ops.append(qml.Hadamard(target_wire))
+                adj_ops.append(qml.Hadamard(target_wire))
             else:
                 pass
 
             pg_op = qml.change_op_basis(
                 qml.prod(*ops[::-1]),
                 qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
+                qml.prod(*adj_ops[::-1]),
             )
         if qml.queuing.QueuingManager.recording():
             qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
