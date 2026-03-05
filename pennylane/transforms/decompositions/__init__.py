@@ -23,4 +23,6 @@ from .pauli_based_computation import (
     ppr_to_ppm,
     reduce_t_depth,
     decompose_arbitrary_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
 )
