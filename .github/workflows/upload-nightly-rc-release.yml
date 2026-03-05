@@ -1,10 +1,10 @@
 name: Build nightly PennyLane RC releases for TestPyPI
 
 on:
-  schedule:
-    # Run every weekday at 5:50 EDT (cron is in UTC)
-    - cron: "50 9 * * 1-5"
   workflow_dispatch:
+
+env:
+  UV_SYSTEM_PYTHON: 1
 
 jobs:
   setup-rc:
@@ -72,7 +72,6 @@ jobs:
     - name: Build wheels
       if: ${{ steps.check_rc.outputs.branch_exists == 'true' }}
       run: |
-        uv pip install build
         uv build --wheel --out-dir dist
   
     - uses: actions/upload-artifact@v4

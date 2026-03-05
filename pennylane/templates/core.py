@@ -421,7 +421,7 @@ add_decomps(SubroutineOp, _Subroutine_decomp)
 P = ParamSpec("P")
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class Subroutine:
     """The definition of a Subroutine, compatible both with program capture and backwards
     compatible with operators.
@@ -440,6 +440,8 @@ class Subroutine:
             It should only calculate the resources from the static arguments, the length of the wire registers,
             and the shape and dtype of the dynamic arguments. In the case of the specific resources
             depending on the specifics of a dynamic argument, a worse case scenario can be used.
+        exact_resources (bool): whether or not ``compute_resources`` is exact. Similar to ``register_resources``,
+            this option is used purely for testing purposes.
 
     For simple cases, a ``Subroutine`` can simply be created from a single quantum function, like:
 
@@ -468,15 +470,13 @@ class Subroutine:
     >>> print(qml.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qml.specs(c)().resources)
-    Total wire allocations: 1
+    Wire allocations: 1
     Total gates: 1
-    Circuit depth: 1
-    <BLANKLINE>
-    Gate types:
-      MyTemplate: 1
-    <BLANKLINE>
+    Gate counts:
+    - MyTemplate: 1
     Measurements:
-      state(all wires): 1
+    - state(all wires): 1
+    Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:
@@ -713,11 +713,13 @@ class Subroutine:
         static_argnames: str | tuple[str, ...] = tuple(),
         wire_argnames: str | tuple[str, ...] = ("wires",),
         compute_resources: None | Callable[P, dict] = None,
+        exact_resources: bool = True,
     ):
         self._definition = capture.disable_autograph(definition)
         self._setup_inputs = setup_inputs
         self._compute_resources = compute_resources
         self._signature = signature(definition)
+        self._exact_resources = exact_resources
         update_wrapper(self, definition)
         if isinstance(static_argnames, str):
             static_argnames = (static_argnames,)
@@ -734,6 +736,11 @@ class Subroutine:
     def name(self) -> str:
         """A string representation to label the Subroutine."""
         return getattr(self._definition, "__name__", str(self._definition))
+
+    @property
+    def exact_resources(self) -> bool:
+        """Whether or not the ``compute_resources`` function provides the exact resources. Used for testing."""
+        return self._exact_resources
 
     @property
     def signature(self) -> Signature:
