@@ -364,7 +364,7 @@ def merge_rotations(
         2: ─╰X─────────H────────╰●───────────────────┤
 
     .. details::
-        :title: Usage with qjit
+        :title: Usage with Catalyst (qjit)
 
         When used with ``qjit``, the following gates can be optimized by the ``merge_rotations``
         transform:
@@ -409,8 +409,10 @@ def merge_rotations(
         Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports
-        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`.
-
+        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
+        
+        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.cancel_inverses`_.
+        
     """
 
     # Expand away adjoint ops
