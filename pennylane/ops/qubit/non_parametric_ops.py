@@ -1129,6 +1129,9 @@ class S(Gate):
             )
         return self._pauli_rep
 
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -1292,6 +1295,9 @@ class T(Gate):
             )
         return self._pauli_rep
 
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -1440,6 +1446,9 @@ class SX(Gate):
                 }
             )
         return self._pauli_rep
+
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1592,6 +1601,9 @@ class SWAP(Gate):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def pauli_rep(self):
@@ -1791,6 +1803,9 @@ class ECR(Gate):
 
     batch_size = None
 
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1952,6 +1967,9 @@ class ISWAP(Gate):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def pauli_rep(self):
@@ -2130,6 +2148,9 @@ class SISWAP(Gate):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+
+    def __init__(self, wires: WiresLike, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def pauli_rep(self):

@@ -41,7 +41,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
-from pennylane.operation import Gate
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -252,16 +251,45 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
+def _to_general_c_qu_resource(num_target_wires, **kwargs):
+    return {
+        resource_rep(
+            qml.ops.Controlled,
+            base_class=qml.QubitUnitary,
+            base_params={"num_wires": num_target_wires},
+            **kwargs,
+        ): 1
+    }
+
+
+# pylint: disable=too-many-arguments
+@qml.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
+@qml.register_resources(_to_general_c_qu_resource)
+def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+    """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
+    the graph finds the general decomposition rule of applying control to the decomposition
+    of the base QubitUnitary."""
+    num_target_wires = len(wires) - len(control_wires)
+    qml.ops.Controlled(
+        qml.QubitUnitary(U, wires=wires[-num_target_wires:]),
+        control_wires=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
 add_decomps(
     ControlledQubitUnitary,
     flip_zero_control(ctrl_decomp_bisect_rule),
     flip_zero_control(single_ctrl_decomp_zyz_rule),
     flip_zero_control(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
+    _to_general_c_qu,
 )
 
 
-class CH(Gate, ControlledOp):
+class CH(ControlledOp):
     r"""CH(wires)
     The controlled-Hadamard operator
 
@@ -283,13 +311,16 @@ class CH(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CH"
 
@@ -318,6 +349,10 @@ class CH(Gate, ControlledOp):
 
     def adjoint(self):
         return CH(self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache
@@ -395,7 +430,7 @@ add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(Gate, ControlledOp):
+class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -419,13 +454,16 @@ class CY(Gate, ControlledOp):
             can be useful for some applications where the instance has to be identified.
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CY"
 
@@ -448,6 +486,10 @@ class CY(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CY(self.wires)
@@ -520,8 +562,8 @@ def _cy(wires: WiresLike, **__):
 
 def _cy_to_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="IY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Y"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
         qml.GlobalPhase: 1,
     }
@@ -529,8 +571,8 @@ def _cy_to_ppr_resource():
 
 @register_resources(_cy_to_ppr_resource)
 def _cy_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IY", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+    qml.PauliRot(-np.pi / 2, "Y", wires=wires[1])
+    qml.PauliRot(-np.pi / 2, "Z", wires=wires[0])
     qml.PauliRot(np.pi / 2, "ZY", wires=wires)
     qml.GlobalPhase(np.pi / 4)
 
@@ -540,7 +582,7 @@ add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
-class CZ(Gate, ControlledOp):
+class CZ(ControlledOp):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -562,13 +604,16 @@ class CZ(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CZ"
 
@@ -591,6 +636,10 @@ class CZ(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CZ(self.wires)
@@ -648,8 +697,7 @@ def _cz_to_cnot(wires: WiresLike, **__):
 
 def _cz_to_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="IZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 2,
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
         qml.GlobalPhase: 1,
     }
@@ -657,8 +705,8 @@ def _cz_to_ppr_resource():
 
 @register_resources(_cz_to_ppr_resource)
 def _cz_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IZ", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+    qml.PauliRot(-np.pi / 2, "Z", wires=wires[1])
+    qml.PauliRot(-np.pi / 2, "Z", wires=wires[0])
     qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
     qml.GlobalPhase(np.pi / 4)
 
@@ -668,7 +716,7 @@ add_decomps("Adjoint(CZ)", self_adjoint)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
-class CSWAP(Gate, ControlledOp):
+class CSWAP(ControlledOp):
     r"""CSWAP(wires)
     The controlled-swap operator
 
@@ -694,13 +742,16 @@ class CSWAP(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 3
     """int : Number of wires that the operation acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CSWAP"
 
@@ -726,6 +777,10 @@ class CSWAP(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CSWAP(self.wires)
@@ -786,26 +841,25 @@ class CSWAP(Gate, ControlledOp):
         **Example:**
 
         >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
-        [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
+        [CNOT(wires=[2, 1]), Toffoli(wires=[0, 1, 2]), CNOT(wires=[2, 1])]
 
         """
-        decomp_ops = [
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+        return [
+            qml.CNOT([wires[2], wires[1]]),
             qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+            qml.CNOT([wires[2], wires[1]]),
         ]
-        return decomp_ops
 
 
 def _cswap_to_toffoli_resources():
-    return {qml.Toffoli: 3}
+    return {qml.CNOT: 2, qml.Toffoli: 1}
 
 
 @register_resources(_cswap_to_toffoli_resources)
 def _cswap(wires: WiresLike, **__):
-    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.CNOT([wires[2], wires[1]])
     qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
-    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.CNOT([wires[2], wires[1]])
 
 
 def _cswap_to_ppr_resource():
@@ -813,10 +867,10 @@ def _cswap_to_ppr_resource():
         resource_rep(qml.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZYY"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IZZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IYY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZII"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
         qml.GlobalPhase: 1,
     }
 
@@ -826,10 +880,10 @@ def _cswap_to_ppr(wires: WiresLike, **_):
     qml.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
     qml.PauliRot(-np.pi / 4, "ZYY", wires=wires)
     qml.PauliRot(-np.pi / 4, "ZXX", wires=wires)
-    qml.PauliRot(np.pi / 4, "IZZ", wires=wires)
-    qml.PauliRot(np.pi / 4, "IYY", wires=wires)
-    qml.PauliRot(np.pi / 4, "IXX", wires=wires)
-    qml.PauliRot(np.pi / 4, "ZII", wires=wires)
+    qml.PauliRot(np.pi / 4, "ZZ", wires=wires[1:])
+    qml.PauliRot(np.pi / 4, "YY", wires=wires[1:])
+    qml.PauliRot(np.pi / 4, "XX", wires=wires[1:])
+    qml.PauliRot(np.pi / 4, "Z", wires=wires[0])
     qml.GlobalPhase(-np.pi / 8)
 
 
@@ -838,7 +892,7 @@ add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
-class CCZ(Gate, ControlledOp):
+class CCZ(ControlledOp):
     r"""CCZ(wires)
     CCZ (controlled-controlled-Z) gate.
 
@@ -865,8 +919,6 @@ class CCZ(Gate, ControlledOp):
         wires (Sequence[int]): the subsystem the gate acts on
     """
 
-    ndim_params = ()
-
     @classmethod
     def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=3)
@@ -884,6 +936,11 @@ class CCZ(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
     name = "CCZ"
 
     def __init__(self, wires, id=None):
@@ -897,6 +954,10 @@ class CCZ(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CCZ(self.wires)
@@ -1024,12 +1085,23 @@ def _ccz(wires: WiresLike, **__):
     qml.Hadamard(wires=wires[2])
 
 
-add_decomps(CCZ, _ccz)
+def _ccz_to_toffoli_resources():
+    return {qml.Hadamard: 2, qml.Toffoli: 1}
+
+
+@register_resources(_ccz_to_toffoli_resources)
+def _ccz_to_toffoli(wires: WiresLike, **__):
+    qml.Hadamard(wires[2])
+    qml.Toffoli(wires)
+    qml.Hadamard(wires[2])
+
+
+add_decomps(CCZ, _ccz, _ccz_to_toffoli)
 add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-class CNOT(Gate, ControlledOp):
+class CNOT(ControlledOp):
     r"""CNOT(wires)
     The controlled-NOT operator
 
@@ -1057,9 +1129,12 @@ class CNOT(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    name = "CNOT"
-
     ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
+    name = "CNOT"
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -1107,6 +1182,10 @@ class CNOT(Gate, ControlledOp):
         """
         raise qml.operation.DecompositionUndefinedError
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
@@ -1151,8 +1230,8 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
 
 def _cnot_to_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="IX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+        resource_rep(qml.PauliRot, pauli_word="X"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
         qml.GlobalPhase: 1,
     }
@@ -1160,8 +1239,8 @@ def _cnot_to_ppr_resource():
 
 @register_resources(_cnot_to_ppr_resource)
 def _cnot_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IX", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+    qml.PauliRot(-np.pi / 2, "X", wires=wires[1])
+    qml.PauliRot(-np.pi / 2, "Z", wires=wires[0])
     qml.PauliRot(np.pi / 2, "ZX", wires=wires)
     qml.GlobalPhase(np.pi / 4)
 
@@ -1171,7 +1250,7 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
-class Toffoli(Gate, ControlledOp):
+class Toffoli(ControlledOp):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -1204,9 +1283,12 @@ class Toffoli(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    name = "Toffoli"
-
     ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
+    name = "Toffoli"
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -1229,6 +1311,10 @@ class Toffoli(Gate, ControlledOp):
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
@@ -1375,9 +1461,8 @@ def _toffoli(wires: WiresLike, **__):
 
 def _toffoli_to_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="ZZI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZIX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IZX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZX"): 2,
         resource_rep(qml.PauliRot, pauli_word="ZZX"): 1,
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
         resource_rep(qml.PauliRot, pauli_word="Z"): 2,
@@ -1387,9 +1472,9 @@ def _toffoli_to_ppr_resource():
 
 @register_resources(_toffoli_to_ppr_resource)
 def _toffoli_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 4, "ZZI", wires=wires)
-    qml.PauliRot(-np.pi / 4, "ZIX", wires=wires)
-    qml.PauliRot(-np.pi / 4, "IZX", wires=wires)
+    qml.PauliRot(-np.pi / 4, "ZZ", wires=wires[:2])
+    qml.PauliRot(-np.pi / 4, "ZX", wires=[wires[0], wires[2]])
+    qml.PauliRot(-np.pi / 4, "ZX", wires=wires[1:])
     qml.PauliRot(np.pi / 4, "ZZX", wires=wires)
     qml.PauliRot(np.pi / 4, "X", wires=wires[2])
     qml.PauliRot(np.pi / 4, "Z", wires=wires[1])
@@ -1469,8 +1554,6 @@ class MultiControlledX(ControlledOp):
         unchanged.
 
     """
-
-    ndim_params = ()
 
     is_self_inverse = True
     """bool: Whether or not the operator is self-inverse."""
@@ -1741,7 +1824,7 @@ add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
-class CRX(Gate, ControlledOp):
+class CRX(ControlledOp):
     r"""The controlled-RX operator
 
     .. math::
@@ -1780,13 +1863,16 @@ class CRX(Gate, ControlledOp):
         id (str or None): String representing the operation (optional)
     """
 
-    ndim_params = (0,)
-
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
@@ -1810,6 +1896,10 @@ class CRX(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
@@ -1951,7 +2041,7 @@ add_decomps("Adjoint(CRX)", adjoint_rotation)
 add_decomps("Pow(CRX)", pow_rotation)
 
 
-class CRY(Gate, ControlledOp):
+class CRY(ControlledOp):
     r"""The controlled-RY operator
 
     .. math::
@@ -1997,6 +2087,9 @@ class CRY(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2020,6 +2113,10 @@ class CRY(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
@@ -2136,7 +2233,7 @@ add_decomps("Adjoint(CRY)", adjoint_rotation)
 add_decomps("Pow(CRY)", pow_rotation)
 
 
-class CRZ(Gate, ControlledOp):
+class CRZ(ControlledOp):
     r"""The controlled-RZ operator
 
     .. math::
@@ -2187,6 +2284,9 @@ class CRZ(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2210,6 +2310,10 @@ class CRZ(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
@@ -2364,7 +2468,7 @@ add_decomps("Adjoint(CRZ)", adjoint_rotation)
 add_decomps("Pow(CRZ)", pow_rotation)
 
 
-class CRot(Gate, ControlledOp):
+class CRot(ControlledOp):
     r"""The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -2411,6 +2515,9 @@ class CRot(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
@@ -2437,6 +2544,10 @@ class CRot(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         phi, theta, omega = self.parameters
@@ -2580,7 +2691,7 @@ def _adjoint_crot(phi, theta, omega, wires, **_):
 add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
-class ControlledPhaseShift(Gate, ControlledOp):
+class ControlledPhaseShift(ControlledOp):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -2613,10 +2724,13 @@ class ControlledPhaseShift(Gate, ControlledOp):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
-
-    ndim_params = (0,)
 
     def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
@@ -2637,6 +2751,10 @@ class ControlledPhaseShift(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)

@@ -185,14 +185,16 @@ import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
-from functools import lru_cache
+from dataclasses import dataclass
+from functools import lru_cache, reduce
+from inspect import BoundArguments, signature
 from typing import Any, ClassVar, Literal, Optional, Union, final
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -211,7 +213,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .pytrees import register_pytree
+from .pytrees import register_pytree, flatten
 
 has_jax = True
 try:
@@ -221,6 +223,55 @@ except ImportError:
     has_jax = False
 
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
+    for specifying abstract information about a :class:`~.Subroutine` for
+    purposes of resource calculations used with graph decompositions.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
+        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        wires.
+    """
+
+    shape: tuple[int, ...]
+    dtype: type = int
+
+    def __len__(self):
+        if self.shape:
+            return reduce(lambda a, b: a * b, self.shape)
+        return 0
+
+
+def _create_signature_key(
+    bound_args, wire_argnames: tuple[str, ...], static_argnames: tuple[str, ...]
+):
+    key = []
+    for arg, val in bound_args.arguments.items():
+        if arg in static_argnames:
+            key.append(val)
+        elif arg in wire_argnames:
+            if val is not None:
+                key.append(
+                    AbstractArray(shape=(len(val),), dtype=int)
+                )  # TODO: move AbstractArray to a more convenient location
+            else:
+                key.append(AbstractArray(shape=(), dtype=int))
+        else:
+            leaves, struct = flatten(val)
+
+            shapes = (
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                for l in leaves
+            )
+            key.append((struct, tuple(shapes)))
+    return tuple(key)
 
 
 # =============================================================================
@@ -2079,6 +2130,39 @@ class Gate(Operation):
         return super().__init_subclass__(**_)
 
     resource_keys = frozenset()
+
+    def _bind_args(self, *args, **kwargs) -> BoundArguments:
+        bound_args = signature(self.__init__).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        for wire_argname in self._wire_argnames:
+            register = bound_args.arguments[wire_argname]
+            if capture.enabled():
+                import jax  # pylint: disable=import-outside-toplevel
+                if register is not None and len(register) > 0:
+                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+            elif register is not None:
+                bound_args.arguments[wire_argname] = Wires(register)
+        return bound_args
+
+    @property
+    def signature(self):
+        key = _create_signature_key(
+            self._bound_args,
+            wire_argnames=self._wire_argnames,
+            static_argnames=self._static_argnames,
+        )
+        return {"signature_key": key}
+
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("wires",)
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = ()
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(*params, wires=wires)
+
+        super().__init__(*params, wires=wires, id=id)
 
     @property
     @abc.abstractmethod
