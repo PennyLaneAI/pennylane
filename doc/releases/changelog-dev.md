@@ -595,6 +595,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improved marker `capture` modification logic in `pytest_collection_modifyitems` to create a new list to avoid mutating the shared `item.fixturenames`.
+  [(#9126)](https://github.com/PennyLaneAI/pennylane/pull/9126)
+
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
   
