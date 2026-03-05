@@ -93,6 +93,8 @@ def adjoint_subroutine_resource_rep(
 
     .. code-block:: python
 
+        from functools import partial
+
         def S0_resources(params, wires, rotation):
             return {qml.resource_rep(rotation): params.shape[0]}
 
@@ -105,6 +107,7 @@ def adjoint_subroutine_resource_rep(
     an abstract form of what it will be called with using :class:`~.AbstractArray`.
 
     .. code-block:: python
+
         from pennylane.templates import AbstractArray, adjoint_subroutine_resource_rep
 
         class MyOp(qml.operation.Operation):
@@ -118,7 +121,7 @@ def adjoint_subroutine_resource_rep(
         def MyOpDecomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
-            Adjoint(S0)(params, wires, qml.RX)
+            adjoint(S0)(params, wires, qml.RX)
 
         qml.add_decomps(MyOp, MyOpDecomposition)
 
@@ -132,11 +135,11 @@ def adjoint_subroutine_resource_rep(
             MyOp(wires=0)
             return qml.state()
 
-        >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
-        0: ──S0†(M0)─┤  State
-        <BLANKLINE>
-        M0 =
-        [1. 2. 3. 4.]
+    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+    0: ──S0(M0)†─┤  State
+    <BLANKLINE>
+    M0 =
+    [1. 2. 3. 4.]
     """
     bound = subroutine.signature.bind(*args, **kwargs)
     for arg in subroutine.dynamic_argnames:
