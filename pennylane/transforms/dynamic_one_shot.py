@@ -133,7 +133,7 @@ def dynamic_one_shot(
 
         This transform is compatible with ``qjit``, where it will be applied as an MLIR pass
         rather than a tape-level transform.
-        That being said, there are a few differences to be aware of when using the MLIR pass,
+        That being said, there are a few differences to be aware of when using the MLIR pass:
 
         - Shot vectors or broadcasting are not supported
         - VJP/VJP pipelines are not supported
