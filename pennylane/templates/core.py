@@ -73,6 +73,9 @@ class AbstractArray:
         return reduce(lambda a, b: a * b, self.shape)
 
     def __post_init__(self):
+        if math.get_interface(self.dtype) == "torch":
+            dummy = math.array((), dtype=self.dtype, like="torch")
+            object.__setattr__(self, "dtype", dummy.numpy().dtype)
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 

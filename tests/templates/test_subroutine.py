@@ -575,6 +575,16 @@ class TestGraphDecomposition:
         assert hash(a)
         assert b == qml.templates.AbstractArray(())
 
+    @pytest.mark.torch
+    def test_torch_dtype_converted_to_numpy(self):
+        """Test that torch data types are converted to numpy data types."""
+
+        import torch
+
+        x = torch.tensor(0.5, dtype=torch.float64)
+        a = qml.templates.AbstractArray((), x.dtype)
+        assert a.dtype is np.dtype(np.float64)
+
     def test_inbuilt_type_promotion_to_numpy(self):
         """Test that python types are converted to numpy types."""
         assert AbstractArray((), int).dtype is np.dtype(np.int64)
