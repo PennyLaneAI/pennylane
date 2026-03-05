@@ -142,7 +142,7 @@ def split_to_single_terms(tape):
     .. details::
         :title: Usage with Catalyst (qjit)
 
-        This transform is compatible with qjit with a few minor differences to be aware of.
+        This transform is compatible with ``qjit`` with a few minor differences to be aware of.
         Currently, when combined with ``qjit``, this transform will not work with shot vectors
         and will not simplify any tensor products like ``X(0) @ Y(0)`` contained in measurements.
 
