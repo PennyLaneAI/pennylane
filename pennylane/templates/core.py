@@ -259,8 +259,8 @@ def _get_array_types():
     if has_jax:
         import jax  # pylint: disable=import-outside-toplevel
 
-        return (jax.numpy.ndarray, np.ndarray)
-    return (np.ndarray,)
+        return (jax.numpy.ndarray, np.ndarray, AbstractArray)
+    return (np.ndarray, AbstractArray)
 
 
 @lru_cache
@@ -783,7 +783,7 @@ class Subroutine:
                     # don't stack if already a jax array
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
-                bound_args.arguments[wire_argname] = Wires(register)
+                bound_args.arguments[wire_argname] = register
         return bound_args
 
     @property

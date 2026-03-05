@@ -28,11 +28,6 @@ from pennylane.templates import Subroutine
 from pennylane.wires import Wires, WiresLike
 
 
-def setup_qft(wires: WiresLike):
-    """Run pre-validation on the wires provided to QFT."""
-    return (wires,), {}
-
-
 def qft_decomp_resources(wires: WiresLike):
     """Calculate the resources for QFT."""
     num_wires = len(wires)
@@ -46,7 +41,6 @@ def qft_decomp_resources(wires: WiresLike):
 @functools.partial(
     Subroutine,
     static_argnames=[],
-    setup_inputs=setup_qft,
     compute_resources=qft_decomp_resources,
 )
 def QFT(wires: WiresLike):
