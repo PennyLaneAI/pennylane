@@ -268,7 +268,7 @@ def apply_operation_tensordot(
         # !Note: we don't treat the batched ops inside tensordot calling
         # here's for the unified treatment of the ops in the tensordot calling
         # i.e. treating the op as a kraus list len 1
-        mat = op.matrix() + 0j
+        mat = qml.matrix(op, op.wires) + 0j
         kraus = [mat]
     kraus = [math.reshape(k, kraus_shape) for k in kraus]
     kraus = math.array(kraus)  # Necessary for Jax

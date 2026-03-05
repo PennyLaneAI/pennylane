@@ -27,7 +27,7 @@ def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
     assert op.target_wires == qml.wires.Wires([0, 1])
-    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestError:
