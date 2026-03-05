@@ -13,6 +13,9 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
+import itertools
+import uuid
+
 import pytest
 
 import pennylane as qml
@@ -26,11 +29,13 @@ from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,
     MarkClean,
+    MarkQubits,
     _estimate_auxiliary_wires,
     _process_circuit_lst,
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
+from pennylane.wires import Wires
 
 any_state = AllocateState.ANY
 
@@ -216,7 +221,116 @@ def nested_any_state_allocation3():
 
 # ------- Tests: -------
 class TestProcessCircuitLst:
-    pass
+    """Test that the private _process_circuit_lst function works as expected."""
+
+    def test_error_incompatible_object(self):
+        """Test that an error is raised when an object is encountered that is not
+        a valid type (Operator, ResourceOperator, MeasurementProcess, MarkQubits)."""
+
+        with pytest.raises(ValueError, match="Circuit must contain only instances of"):
+            _process_circuit_lst([qre.X(0), "InvalidOp"])
+
+    def test_error_marking_qubits_not_in_circuit(self):
+        """Test that an error is raised if we attempt to mark qubits that haven't been
+        listed by any operator in the circuit."""
+        with pytest.raises(ValueError, match=r"Attempted to mark qubits Wires\(\[5, 6\]\)"):
+            _process_circuit_lst(
+                [
+                    MarkClean([0, 1, 2]),
+                    qre.CNOT(wires=[0, 1]),
+                    qre.QFT(wires=[2, 3, 4]),
+                    MarkClean(wires=[4, 5, 6]),
+                ]
+            )
+
+    @pytest.mark.parametrize(
+        "circ, expected_processed_circ, expected_circ_wires",
+        (
+            (  # Explicit Wire Labels
+                [
+                    qre.Z(wires=0),
+                    qml.Z(wires=1),
+                    qre.RZ(wires="a"),
+                    qml.CNOT(wires=[2, "b"]),
+                    qml.RX(1.23, wires="c"),
+                ],
+                [
+                    (qre.Z.resource_rep(), Wires(0)),
+                    (qre.Z.resource_rep(), Wires(1)),
+                    (qre.RZ.resource_rep(), Wires("a")),
+                    (qre.CNOT.resource_rep(), Wires([2, "b"])),
+                    (qre.RX.resource_rep(), Wires("c")),
+                ],
+                Wires([0, 1, "a", 2, "b", "c"]),
+            ),
+            (  # Dynamically Generated
+                [
+                    qre.X(),
+                    qre.CNOT(),
+                    qre.Toffoli(),
+                    qre.MultiControlledX(num_ctrl_wires=3),
+                    qre.QFT(num_wires=5),
+                    qre.ControlledSequence(qre.Z(), num_control_wires=3),
+                    qre.CCZ(),
+                    qre.CZ(),
+                    qre.Z(),
+                ],
+                [
+                    (qre.X.resource_rep(), Wires("w0")),
+                    (qre.CNOT.resource_rep(), Wires(["w0", "w1"])),
+                    (qre.Toffoli.resource_rep(), Wires(["w0", "w1", "w2"])),
+                    (qre.MultiControlledX.resource_rep(3, 0), Wires(["w0", "w1", "w2", "w3"])),
+                    (qre.QFT.resource_rep(5), Wires(["w0", "w1", "w2", "w3", "w4"])),
+                    (
+                        qre.ControlledSequence.resource_rep(qre.Z.resource_rep(), 3),
+                        Wires(["w0", "w1", "w2", "w3"]),
+                    ),
+                    (qre.CCZ.resource_rep(), Wires(["w0", "w1", "w2"])),
+                    (qre.CZ.resource_rep(), Wires(["w0", "w1"])),
+                    (qre.Z.resource_rep(), Wires("w0")),
+                ],
+                Wires(["w0", "w1", "w2", "w3", "w4"]),
+            ),
+            (  # Mixed Explicit and Dynamically Generated
+                [
+                    qre.CNOT(wires=[0, 1]),
+                    qre.QFT(num_wires=5),
+                    qml.CZ(wires=[1, 2]),
+                    MarkClean(wires=[0, 1, 2]),
+                    qre.MultiControlledX(num_ctrl_wires=3),
+                    qre.Z(),
+                    qml.Z(wires=1),
+                ],
+                [
+                    (qre.CNOT.resource_rep(), Wires([0, 1])),
+                    (qre.QFT.resource_rep(5), Wires([f"w{i}" for i in range(5)])),
+                    (qre.CZ.resource_rep(), Wires([1, 2])),
+                    (MarkClean(wires=[0, 1, 2]), Wires([0, 1, 2])),
+                    (qre.MultiControlledX.resource_rep(3, 0), Wires([f"w{i}" for i in range(4)])),
+                    (qre.Z.resource_rep(), Wires("w0")),
+                    (qre.Z.resource_rep(), Wires(1)),
+                ],
+                Wires([0, 1, "w0", "w1", "w2", "w3", "w4", 2]),
+            ),
+        ),
+    )
+    def test_process_circuit(self, circ, expected_processed_circ, expected_circ_wires):
+        """Test that the processed circuit is correct."""
+        global_counter = itertools.count()
+
+        def generate_sequence_wire_labels():
+            """Generate wire labels when called"""
+            c = next(global_counter)
+            return f"w{c}"
+
+        ## Money Patch uuid.uuid4():
+        uuid.uuid4 = generate_sequence_wire_labels
+
+        ## Test circuit:
+        actual_processed_circ, actual_circ_wires = _process_circuit_lst(circ)
+
+        assert actual_circ_wires == expected_circ_wires
+        assert actual_processed_circ == expected_processed_circ
 
 
 class TestEstimateAuxiliaryWires:

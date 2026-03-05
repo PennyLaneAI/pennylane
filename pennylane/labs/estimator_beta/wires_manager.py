@@ -93,6 +93,10 @@ class MarkQubits:
         context.append(self)
         return self
 
+    def __eq__(self, other: "MarkQubits"):
+        """Check if two MarkQubits instances are equal"""
+        return (self.__class__ == other.__class__) and (self.wires == other.wires)
+
 
 class MarkClean(MarkQubits):
     def __repr__(self) -> str:
