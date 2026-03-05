@@ -14,11 +14,12 @@
 """
 Tests for the BasisRotation template.
 """
-
+# pylint: disable=missing-function-docstring, import-outside-toplevel
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.templates import AbstractArray
 
 
 @pytest.mark.jax
@@ -54,9 +55,60 @@ def test_standard_validity(rotation):
     qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
+class TestResources:
+    """Tests for calculating the resources of a BasisRotation."""
+
+    @pytest.mark.parametrize(
+        "matrix, wires",
+        (
+            (AbstractArray((4, 2), float), AbstractArray((3,))),
+            (np.zeros((4, 2), float), (0, 1, 2)),
+            (qml.numpy.zeros((4, 2), float), ("a", "b", "c")),
+        ),
+    )
+    def test_resources_real(self, matrix, wires):
+        """Test that the resources can be calculated for AbstractArray with a real datatype."""
+
+        wires = qml.templates.AbstractArray((3,))
+        matrix = qml.templates.AbstractArray((4, 2), float)
+
+        resources = qml.BasisRotation.compute_resources(wires, matrix)
+        assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 4 * 3 // 2}
+
+    @pytest.mark.parametrize(
+        "matrix, wires",
+        (
+            (AbstractArray((4, 2), complex), AbstractArray((3,))),
+            (np.ones((4, 2), complex) * 1j, (0, 1, 2)),
+        ),
+    )
+    def test_resources_abstract_array_complex(self, matrix, wires):
+        """Test that the resources can be calculated for AbstractArray with a complex datatype."""
+
+        resources = qml.BasisRotation.compute_resources(wires, matrix)
+        se_count = 4 * 3 // 2
+        assert resources == {qml.PhaseShift: 4 + se_count, qml.SingleExcitation: se_count}
+
+    def test_resources_close_to_real(self):
+        """Test that the resources are calculated as real if the matrix is sufficiently close to real."""
+        matrix = np.ones((5,), complex) + 1e-8j
+        wires = (0,)
+
+        resources = qml.BasisRotation.compute_resources(wires, matrix)
+        assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 5 * 4 // 2}
+
+
+# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
+    @pytest.mark.parametrize(
+        "use_capture",
+        (
+            pytest.param(True, marks=pytest.mark.capture, id="capture"),
+            pytest.param(False, id="no_capture"),
+        ),
+    )
     @pytest.mark.parametrize(
         ("num_wires", "unitary_matrix", "givens", "diags"),
         [
@@ -92,21 +144,28 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_basis_rotation_operations_complex(self, num_wires, unitary_matrix, givens, diags):
+    def test_basis_rotation_operations_complex(
+        self, use_capture, num_wires, unitary_matrix, givens, diags
+    ):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
-
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in diags + givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(qml.numpy.array(angle))
+            gate_angles.append(np.array(angle))
             gate_wires.append(list(indices))
 
-        op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        queue = op.decomposition()
+        if use_capture:
+            jax = pytest.importorskip("jax")
+            wires = jax.numpy.arange(num_wires)
+            jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, unitary_matrix)
+            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
+        else:
+            op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=unitary_matrix)
+            queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
 
@@ -115,6 +174,13 @@ class TestDecomposition:
             assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
+    @pytest.mark.parametrize(
+        "use_capture",
+        (
+            pytest.param(True, marks=pytest.mark.capture, id="capture"),
+            pytest.param(False, id="no_capture"),
+        ),
+    )
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix", "givens"),
         [
@@ -156,7 +222,7 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_basis_rotation_operations_real(self, num_wires, ortho_matrix, givens):
+    def test_basis_rotation_operations_real(self, use_capture, num_wires, ortho_matrix, givens):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
@@ -166,18 +232,28 @@ class TestDecomposition:
         for indices, angle in givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(qml.numpy.array(angle))
+            gate_angles.append(np.array(angle))
             gate_wires.append(list(indices))
 
-        op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=ortho_matrix)
-        queue = op.decomposition()
+        if use_capture:
+            jax = pytest.importorskip("jax")
+            wires = jax.numpy.arange(num_wires)
+            jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, ortho_matrix)
+            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
+        else:
+            op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=ortho_matrix)
+            queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
         assert [type(op) for op in queue].count(qml.PhaseShift) <= 1  # at most one phase shift
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
-            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
+            # some reason program capture chooses chooses a rotation offset by 2*pi, but is
+            # still essentially the same angle.
+            assert np.allclose(
+                _op.parameters[0] % (2 * np.pi), (gate_angles[idx]) % (2 * np.pi)
+            )  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
     def test_custom_wire_labels(self, tol):

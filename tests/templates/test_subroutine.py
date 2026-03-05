@@ -44,6 +44,7 @@ class TestInitialization:
         assert S.static_argnames == tuple()
         assert S.wire_argnames == ("wires",)
         assert S.dynamic_argnames == ("x",)
+        assert S.exact_resources
 
         with qml.queuing.AnnotatedQueue() as q:
             S.definition(0.5, 0)
@@ -119,6 +120,16 @@ class TestInitialization:
         # test wires setup properly
         out2 = HasResources.compute_resources(0.5, 0)
         assert out2 == {qml.RX: 1}
+
+    @pytest.mark.parametrize("exact_resources", (True, False))
+    def test_setting_exact_resources(self, exact_resources):
+        """Test that exact_resources can be set."""
+
+        @partial(Subroutine, exact_resources=exact_resources)
+        def f(wires):
+            qml.X(wires)
+
+        assert f.exact_resources == exact_resources
 
 
 def Example1(x, y, reg1, reg2, pauli_words):
@@ -558,11 +569,17 @@ class TestGraphDecomposition:
 
         b = qml.templates.AbstractArray(())
         assert b.shape == ()
-        assert b.dtype == int
+        assert b.dtype == np.int64
 
         assert a != b
         assert hash(a)
         assert b == qml.templates.AbstractArray(())
+
+    def test_inbuilt_type_promotion_to_numpy(self):
+        """Test that python types are converted to numpy types."""
+        assert AbstractArray((), int).dtype == np.int64
+        assert AbstractArray((), float).dtype == np.float64
+        assert AbstractArray((), complex).dtype == np.complex128
 
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
@@ -786,3 +803,16 @@ class TestGraphDecomposition:
         qml.assert_equal(tape_ry[0], qml.RY(0.0, 0))
         qml.assert_equal(tape_ry[1], qml.RY(1.0, 1))
         qml.assert_equal(tape_ry[2], qml.RY(2.0, 2))
+
+    def test_inexact_resources_testing(self):
+        """Test that assert_valid will work on a Subroutine with inexact resources."""
+
+        def r(wires):
+            return {qml.X: 2}
+
+        @partial(Subroutine, compute_resources=r, exact_resources=False)
+        def f(wires):
+            qml.X(wires)
+
+        op = f.operator(0)
+        qml.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)

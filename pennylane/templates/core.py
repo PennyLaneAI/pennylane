@@ -63,15 +63,19 @@ class AbstractArray:
 
     Args:
         shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
-        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        dtype (type): the data type of the array. Defaults to ``np.int64`` for easier use in specifying
         wires.
     """
 
     shape: tuple[int, ...]
-    dtype: type = int
+    dtype: type = np.int64
 
     def __len__(self):
         return reduce(lambda a, b: a * b, self.shape)
+
+    def __post_init__(self):
+        if self.dtype in {int, float, complex}:
+            object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
 def adjoint_subroutine_resource_rep(
@@ -260,7 +264,7 @@ def _get_array_types():
 
 
 @lru_cache
-def _get_iterable_wires_types():
+def _get_non_array_iterables():
     return (
         list,
         tuple,
@@ -268,14 +272,15 @@ def _get_iterable_wires_types():
         range,
         capture.autograph.ag_primitives.PRange,
         set,
-        *_get_array_types(),
     )
 
 
 def _setup_wires(wires):
-    if isinstance(wires, _get_array_types()) and wires.shape == ():
-        return (wires,)
-    if isinstance(wires, _get_iterable_wires_types()):
+    if isinstance(wires, _get_array_types()):
+        if wires.shape == ():
+            return (wires,)
+        return wires
+    if isinstance(wires, _get_non_array_iterables()):
         return tuple(wires)
     return (wires,)
 
@@ -421,7 +426,7 @@ add_decomps(SubroutineOp, _Subroutine_decomp)
 P = ParamSpec("P")
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class Subroutine:
     """The definition of a Subroutine, compatible both with program capture and backwards
     compatible with operators.
@@ -440,6 +445,8 @@ class Subroutine:
             It should only calculate the resources from the static arguments, the length of the wire registers,
             and the shape and dtype of the dynamic arguments. In the case of the specific resources
             depending on the specifics of a dynamic argument, a worse case scenario can be used.
+        exact_resources (bool): whether or not ``compute_resources`` is exact. Similar to ``register_resources``,
+            this option is used purely for testing purposes.
 
     For simple cases, a ``Subroutine`` can simply be created from a single quantum function, like:
 
@@ -713,11 +720,13 @@ class Subroutine:
         static_argnames: str | tuple[str, ...] = tuple(),
         wire_argnames: str | tuple[str, ...] = ("wires",),
         compute_resources: None | Callable[P, dict] = None,
+        exact_resources: bool = True,
     ):
         self._definition = capture.disable_autograph(definition)
         self._setup_inputs = setup_inputs
         self._compute_resources = compute_resources
         self._signature = signature(definition)
+        self._exact_resources = exact_resources
         update_wrapper(self, definition)
         if isinstance(static_argnames, str):
             static_argnames = (static_argnames,)
@@ -734,6 +743,11 @@ class Subroutine:
     def name(self) -> str:
         """A string representation to label the Subroutine."""
         return getattr(self._definition, "__name__", str(self._definition))
+
+    @property
+    def exact_resources(self) -> bool:
+        """Whether or not the ``compute_resources`` function provides the exact resources. Used for testing."""
+        return self._exact_resources
 
     @property
     def signature(self) -> Signature:
@@ -765,7 +779,8 @@ class Subroutine:
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if len(register) > 0:
+                if len(register) > 0 and math.get_interface(register) != "jax":
+                    # don't stack if already a jax array
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
