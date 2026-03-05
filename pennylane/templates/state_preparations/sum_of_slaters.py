@@ -722,6 +722,11 @@ class SumOfSlatersPrep(Operation):
     16: ──────╰QROM(M0)───────────────────────────────────────────────────────────────────────────────│──│──│──│──│────────────────────────────────┤  State
     17: ──────────────────────────────────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────────────────┤  State
 
+    Here, the first seven wires (``0`` to ``6``) are the target wires of the state preparation,
+    wires ``7, 8, 9`` form the enumeration register, the next five wires (``10`` to ``14``)
+    are the encoding register, and the pair of wires ``15, 16`` as well as the wire ``17`` are
+    work wires for the ``QROM`` and the enumeration uncomputation, respectively.
+
     .. details::
         :title: Usage details
 
