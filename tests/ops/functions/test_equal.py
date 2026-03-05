@@ -3205,7 +3205,7 @@ class TestCompareSubroutines:
         op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
         op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
         assert not qml.equal(op1, op2)
-        with pytest.raises(AssertionError, match=r"has value \(1\) for register reg1"):
+        with pytest.raises(AssertionError, match=r"has value \(1,\) for register reg1"):
             qml.assert_equal(op1, op2)
 
     def test_different_pytree_inputs(self):
