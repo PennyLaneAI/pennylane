@@ -595,6 +595,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* References to the `master` branch are changed to the new default branch `main`.
+  [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
+  
 * Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
   
