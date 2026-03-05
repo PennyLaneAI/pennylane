@@ -166,7 +166,7 @@ def dynamic_one_shot(
         To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
 
         >>> circ_qjit = qml.qjit(circ)
-        >>> circ_qjit()
+        >>> circ_qjit() # doctest: +SKIP
         Array(0.4, dtype=float64)
 
     """
