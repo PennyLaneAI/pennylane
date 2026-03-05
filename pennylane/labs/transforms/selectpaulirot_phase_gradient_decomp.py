@@ -70,8 +70,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
         @qp.transforms.decompose(
-                gate_set={"QROM", "SemiAdder", "CNOT", "X", "ChangeOpBasis", "GlobalPhase"},
-                fixed_decomps={qp.SelectPauliRot: custom_decomp}
+            gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "CNOT", "X", "Adjoint(X)", "GlobalPhase"},
+            fixed_decomps={qp.SelectPauliRot: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit(angles):
@@ -84,20 +84,20 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'ChangeOpBasis': 1} # TODO: choose better target gate set
-    >>> print(qp.draw(circuit)(angles))
-         3: ─╭(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     qft_2: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     qft_1: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     qft_0: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-         0: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-         1: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-         2: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     aux_0: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     aux_1: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-     aux_2: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-    work_0: ─├(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
-    work_1: ─╰(((X)@(X)@(X)@QROM(M0))†)@SemiAdder@((X)@(X)@(X)@QROM(M0))─┤  State
+    {'ChangeOpBasis': 1}
+    >>> print(qp.draw(circuit, wire_order=[0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires)(angles))
+         0: ─╭QROM(M0)───────────────────────────────────────╭QROM(M0)†─┤  State
+         1: ─├QROM(M0)───────────────────────────────────────├QROM(M0)†─┤  State
+         2: ─├QROM(M0)───────────────────────────────────────├QROM(M0)†─┤  State
+         3: ─│─────────╭●────╭●────╭●───────────────╭●─╭●─╭●─│──────────┤  State
+     aux_0: ─├QROM(M0)─│─────│─────│─────╭SemiAdder─│──│──│──├QROM(M0)†─┤  State
+     aux_1: ─├QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│──├QROM(M0)†─┤  State
+     aux_2: ─╰QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│──╰QROM(M0)†─┤  State
+     qft_0: ───────────╰X──X─│─────│─────├SemiAdder─│──│──╰X──X─────────┤  State
+     qft_1: ─────────────────╰X──X─│─────├SemiAdder─│──╰X──X────────────┤  State
+     qft_2: ───────────────────────╰X──X─├SemiAdder─╰X──X───────────────┤  State
+    work_0: ─────────────────────────────├SemiAdder─────────────────────┤  State
+    work_1: ─────────────────────────────╰SemiAdder─────────────────────┤  State
 
     """
 
