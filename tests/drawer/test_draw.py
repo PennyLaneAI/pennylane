@@ -324,7 +324,7 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=0)
 
         draw_qnode = qml.draw(circ)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
         drawing = draw_qnode()
         spy.assert_not_called()
@@ -1089,7 +1089,7 @@ class TestLevelExpansionStrategy:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():

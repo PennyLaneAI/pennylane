@@ -18,6 +18,7 @@ method.
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
 import numpy as np
 
+from pennylane.math import ceil_log2
 from pennylane.operation import Operation
 from pennylane.qchem import factorize
 
@@ -372,9 +373,9 @@ class DoubleFactorization(Operation):
         eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
         eta = int(np.max([n for n in eta if n % 1 == 0]))
 
-        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
-        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
-        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
+        nxi = ceil_log2(rank_max)  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nl = ceil_log2(rank_r + 1)  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nlxi = ceil_log2(rank_rm + n / 2)  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
 
         bp1 = nl + alpha  # Eq. (C27) of PRX Quantum 2, 030305 (2021)
         bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
@@ -531,9 +532,9 @@ class DoubleFactorization(Operation):
 
         rank_rm = rank_r * rank_m
 
-        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
-        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
-        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
+        nxi = ceil_log2(rank_max)  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nl = ceil_log2(rank_r + 1)  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nlxi = ceil_log2(rank_rm + n / 2)  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
 
         bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
         bp2 = nxi + alpha + 2  # Eq. (C31) of PRX Quantum 2, 030305 (2021)
@@ -543,7 +544,7 @@ class DoubleFactorization(Operation):
         # the cost is computed using Eq. (C40) of PRX Quantum 2, 030305 (2021)
         e_cost = DoubleFactorization.estimation_cost(lamb, error)
         cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
-        cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
+        cost += kr * n * beta / 2 + 2 * ceil_log2(e_cost + 1) + 7
 
         return int(cost)
 

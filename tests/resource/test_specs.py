@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
+from pennylane.resource.specs import _get_last_tape_transform_level, _preprocess_level_input
 
 devices_list = [
     (qml.device("default.qubit"), None),
@@ -38,6 +39,83 @@ def test_error_with_bad_key(key):
     out = qml.specs(c)()
     with pytest.raises(KeyError):
         _ = out[key]
+
+
+@pytest.mark.parametrize(
+    "level,output,expect_warnings",
+    [
+        (0, [0], False),
+        (slice(3), [0, 1, 2], False),
+        (slice(1, 3), [1, 2], False),
+        (slice(1, 4, 2), [1, 3], False),
+        ([0, 1], [0, 1], False),
+        ([0, 1, 1, 1], [0, 1], True),
+        ((0, 1), [0, 1], False),
+        (range(3, 0, -1), [1, 2, 3], True),
+        ("foo", [2], False),
+        (["foo", "bar"], [2, 3], False),
+        ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
+    ],
+)
+def test_preprocess_levels(level, output, expect_warnings):
+    """Test that _preprocess_level_input works correctly"""
+    marker_to_level = {
+        "foo": 2,
+        "bar": 3,
+        # Treat MLIR lowering as level 4
+        "baz": 4,  # Actually 5, after lowering
+    }
+
+    if expect_warnings:
+        with pytest.warns(
+            UserWarning,
+            match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "order with no duplicate levels.",
+        ):
+            assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
+    else:
+        assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
+
+
+@pytest.mark.parametrize("num_tapes", [0, 2, 5])
+def test_preprocess_levels_all(num_tapes):
+    # Assume there are always 4 transforms in the pipeline
+    assert _preprocess_level_input("all", {}, 4, num_tapes) == list(range(6))
+
+
+def test_preprocess_levels_invalid():
+    with pytest.raises(
+        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
+    ):
+        _preprocess_level_input(-1, {}, [], 0)
+
+    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
+        _preprocess_level_input("foo", {}, [], 0)
+
+
+def test_get_last_tape_transform_level():
+    """Test that _get_last_tape_transform_level works correctly"""
+
+    @qml.transform
+    def dummy_transform(tape):
+        return (tape,), lambda res: res[0]
+
+    # If there are no transforms, the last transform level should be 0
+    assert _get_last_tape_transform_level(qml.CompilePipeline()) == 0
+    # If there are *any* tape transforms, this should return the number of tape transforms
+    # since there is an implied level 0 for "before transforms"
+    assert _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform)) == 1
+    assert (
+        _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
+    )
+
+    # MLIR passes should not be counted
+    assert (
+        _get_last_tape_transform_level(
+            qml.CompilePipeline(dummy_transform, qml.transform(pass_name="cancel_inverses"))
+        )
+        == 1
+    )
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -289,12 +367,14 @@ class TestSpecsTransform:
             ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
-                    qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
+                    qml.devices.preprocess.decompose,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATES,
+                    stopping_condition=self.stopping_condition,
                 )
                 return program
 
         dev = TestDevice(wires=2)
-        matrix = qml.matrix(qml.RX(1.2, 0))
+        matrix = qml.matrix([qml.RX(1.2, 0), qml.GlobalPhase(0.5)])
 
         @qml.qnode(dev)
         def circ():
@@ -388,48 +468,41 @@ Device wires: None
 Shots: Shots(total=None)
 Level: 2
 
-Resource specifications:
-  Batched tape 0:
-    Total qubit allocations: 2
+Batched tape a:
+    Wire allocations: 2
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 1:
-    Total qubit allocations: 3
+Batched tape b:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 2:
-    Total qubit allocations: 3
+Batched tape c:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1"""
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5"""
         )
 
     @pytest.mark.parametrize(
@@ -462,7 +535,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -499,8 +572,8 @@ class TestSpecsGraphModeExclusive:
             (4, "Hadamard"),  # 4 wires: insufficient for work_wires=5, so use H fallback
         ],
     )
-    def test_specs_max_work_wires_calculation(self, num_device_wires, expected_decomp):
-        """Test that qml.specs correctly calculates max_work_wires and uses appropriate decomposition."""
+    def test_specs_num_work_wires_calculation(self, num_device_wires, expected_decomp):
+        """Test that qml.specs correctly calculates num_work_wires and uses appropriate decomposition."""
 
         class MyCustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
@@ -514,17 +587,18 @@ class TestSpecsGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
 
-        # Test with parametrized number of device wires
-        dev = qml.device("default.qubit", wires=num_device_wires)
+            # Test with parametrized number of device wires
+            dev = qml.device("default.qubit", wires=num_device_wires)
 
-        @qml.qnode(dev)
-        def circuit():
-            MyCustomOp(0)  # Uses only wire 0
-            return qml.expval(qml.Z(0))
+            @qml.qnode(dev)
+            def circuit():
+                MyCustomOp(0)  # Uses only wire 0
+                return qml.expval(qml.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+            specs = qml.specs(circuit, level="device")()
 
         # Work wires calculation should be: device_wires - tape_wires
         if num_device_wires:
@@ -534,7 +608,7 @@ class TestSpecsGraphModeExclusive:
         # Check that the correct decomposition was used
         assert expected_decomp in specs["resources"].gate_types
 
-    def test_specs_max_work_wires_with_insufficient_wires(self):
+    def test_specs_num_work_wires_with_insufficient_wires(self):
         """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
 
         class MyLimitedOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -548,17 +622,18 @@ class TestSpecsGraphModeExclusive:
         def work_wire_decomp(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
 
-        # Device with only 2 wires - insufficient for the 10 work wires needed
-        dev = qml.device("default.qubit", wires=2)
+            # Device with only 2 wires - insufficient for the 10 work wires needed
+            dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
-        def circuit():
-            MyLimitedOp(0)  # Uses wire 0, fallback should be used
-            return qml.expval(qml.Z(0))
+            @qml.qnode(dev)
+            def circuit():
+                MyLimitedOp(0)  # Uses wire 0, fallback should be used
+                return qml.expval(qml.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+            specs = qml.specs(circuit, level="device")()
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
         assert specs["num_device_wires"] == 2
@@ -566,7 +641,7 @@ class TestSpecsGraphModeExclusive:
         # Fallback decomposition should be used (H gate)
         assert "Hadamard" in specs["resources"].gate_types
 
-    def test_specs_max_work_wires_no_available_wires(self):
+    def test_specs_num_work_wires_no_available_wires(self):
         """Test qml.specs when all device wires are used by the circuit."""
 
         dev = qml.device("default.qubit", wires=2)

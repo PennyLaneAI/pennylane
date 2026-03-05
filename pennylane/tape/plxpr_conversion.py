@@ -28,9 +28,11 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     jacobian_prim,
+    jvp_prim,
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    vjp_prim,
 )
 from pennylane.operation import Operator
 from pennylane.ops.mid_measure import (
@@ -189,8 +191,18 @@ def _(self, *wires, pauli_word="", postselect=None):
 
 
 @CollectOpsandMeas.register_primitive(jacobian_prim)
-def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
+def _jacobian_primitive(self, *invals, jaxpr, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(vjp_prim)
+def _vjp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the vjp primitive")
+
+
+@CollectOpsandMeas.register_primitive(jvp_prim)
+def _jvp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jvp primitive")
 
 
 # pylint: disable=unused-argument

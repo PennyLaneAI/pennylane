@@ -406,6 +406,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="State vectors must be one-dimensional"):
             qml.MottonenStatePreparation(state_vector, 2)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")

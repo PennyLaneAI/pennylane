@@ -109,6 +109,15 @@ class TestCounts:
         ):
             qml.counts()
 
+    def test_counts_no_implementation_mcm(self):
+        """Test that counts of an mcm can't be measured and raises a NotImplementedError."""
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"Counts has no execution implementation with program capture.",
+        ):
+            qml.counts(2)
+
     def test_warning_about_all_outcomes(self):
         """Test a warning is raised about all_outcomes=False"""
 
@@ -147,6 +156,40 @@ class TestCounts:
 
         with pytest.raises(ValueError, match="finite shots are required"):
             jaxpr.outvars[1].aval.abstract_eval(num_device_wires=0, shots=None)
+
+    @pytest.mark.parametrize("num_mcms", [1, 2])
+    def test_counts_mcm_capture_jaxpr(self, num_mcms):
+        """Test that counts can be captured into jaxpr."""
+
+        def f():
+            ms = [qml.measure(0) for _ in range(num_mcms)]
+            return qml.counts(ms)
+
+        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jaxpr.jaxpr
+
+        assert len(jaxpr.outvars) == 2
+
+        assert jaxpr.eqns[-1].primitive == CountsMP._mcm_primitive
+        assert len(jaxpr.eqns[0].invars) == 1
+
+        keys = jaxpr.outvars[0].aval
+        assert isinstance(keys, AbstractMeasurement)
+        keys_shape = keys.abstract_eval(num_device_wires=0, shots=50)
+        assert keys_shape[0] == (2**num_mcms,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            keys.abstract_eval(num_device_wires=0, shots=None)
+
+        values = jaxpr.outvars[1].aval
+        assert isinstance(values, AbstractMeasurement)
+        values_shape = values.abstract_eval(num_device_wires=0, shots=50)
+        assert values_shape[0] == (2**num_mcms,)
+        assert values_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            values.abstract_eval(num_device_wires=0, shots=None)
 
     def test_counts_capture_jaxpr_all_wires(self):
         """Test that counts can be captured into jaxpr."""
@@ -193,6 +236,32 @@ class TestCounts:
             assert len(r[0]) == 2
             for i in (0, 1):
                 assert r[0][i].shape == (4,)
+                assert r[0][i].dtype == jax.numpy.int64
+
+            assert r[1].shape == (10, 2)
+            assert r[1].dtype == jax.numpy.int64
+
+            return r
+
+        jaxpr = jax.make_jaxpr(w)().jaxpr
+        assert len(jaxpr.outvars) == 3
+
+    def test_qnode_integration_mcms(self):
+        """Test that counts can integrate with capturing a qnode."""
+
+        def w():
+            @qml.qnode(qml.device("default.qubit", wires=2), shots=10)
+            def c():
+                m0 = qml.measure(0)
+                return qml.counts(m0), qml.sample()
+
+            r = c()
+            assert isinstance(r, tuple)
+            assert len(r) == 2
+            assert isinstance(r[0], tuple)
+            assert len(r[0]) == 2
+            for i in (0, 1):
+                assert r[0][i].shape == (2,)
                 assert r[0][i].dtype == jax.numpy.int64
 
             assert r[1].shape == (10, 2)

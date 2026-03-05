@@ -103,7 +103,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         raise ValueError(
             f"Number of allowed bosonic states cannot be less than 2, provided {n_states}."
         )
-    nqub_per_boson = int(np.ceil(np.log2(n_states)))
+    nqub_per_boson = math.ceil_log2(n_states)
 
     creation = np.zeros((n_states, n_states))
     for s in range(n_states - 1):

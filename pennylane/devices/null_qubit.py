@@ -322,13 +322,14 @@ class NullQubit(Device):
         program, _ = target.preprocess(execution_config)
 
         for t in program:
-            if t.transform == decompose.transform:
+            if t.tape_transform == decompose.tape_transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
                     return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
+                t.kwargs["strict"] = False
 
                 original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
                 if original_shots_stopping_condition:

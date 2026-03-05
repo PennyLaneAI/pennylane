@@ -34,7 +34,10 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.queuing import WrappedObj
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -294,8 +297,21 @@ def test_node_ids(monkeypatch):
         mn = qcut.MeasureNode(wires=0)
         pn = qcut.PrepareNode(wires=0)
 
-        assert mn.id == "some_string"
-        assert pn.id == "some_string"
+        assert mn.node_uid == "some_string"
+        assert pn.node_uid == "some_string"
+
+
+def test_id_is_deprecated():
+    """Tests that the 'id' argument is deprecated and renamed."""
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' kwarg has been renamed to 'node_uid'"
+    ):
+        _ = qcut.MeasureNode(wires=0, id="blah")
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' kwarg has been renamed to 'node_uid'"
+    ):
+        _ = qcut.PrepareNode(wires=0, id="blah")
 
 
 @pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
@@ -313,12 +329,12 @@ class TestMeasurePrepareNodes:
 
     def test_id(self, cls):
         """Test that nodes can be initialized with an id or recieves its own UUID."""
-        n = cls(wires=0, id="hi")
-        assert n.id == "hi"
-        n = cls(wires=0, id=None)
-        assert n.id is not None
-        n2 = cls(wires=0, id=None)
-        assert n.id != n2.id
+        n = cls(wires=0, node_uid="hi")
+        assert n.node_uid == "hi"
+        n = cls(wires=0, node_uid=None)
+        assert n.node_uid is not None
+        n2 = cls(wires=0, node_uid=None)
+        assert n.node_uid != n2.node_uid
 
     @pytest.mark.parametrize("decimals", [0, 1, 5])
     @pytest.mark.parametrize("base_label", [None, "CustomNode"])
@@ -5404,7 +5420,7 @@ class TestAutoCutCircuit:
             qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+        [tape], _ = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(
             graph=graph,
@@ -5581,7 +5597,8 @@ class TestCutCircuitWithHamiltonians:
             qml.expval(hamiltonian)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+
+        [tape], _ = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]

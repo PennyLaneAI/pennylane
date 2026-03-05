@@ -554,8 +554,8 @@ class TestTransformDispatch:
     def test_qnode(self):
         """Test the transform on a qnode directly."""
         transformed_qnode = cancel_inverses(qnode_circuit)
-        assert not transformed_qnode.transform_program.is_empty()
-        assert len(transformed_qnode.transform_program) == 1
+        assert transformed_qnode.compile_pipeline
+        assert len(transformed_qnode.compile_pipeline) == 1
         params = [0.1, 0.2]
         res = transformed_qnode(params)
         expected = qnode_circuit(params)

@@ -25,7 +25,13 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    change_op_basis_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -180,6 +186,24 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires)
 
 
+def _rx_to_ry_cliff_resources():
+    return {change_op_basis_resource_rep(qml.S, qml.RY): 1}
+
+
+@register_resources(_rx_to_ry_cliff_resources)
+def _rx_to_ry_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.S(wires), qml.RY(phi, wires))
+
+
+def _rx_to_rz_cliff_resources():
+    return {change_op_basis_resource_rep(qml.Hadamard, qml.RZ, qml.Hadamard): 1}
+
+
+@register_resources(_rx_to_rz_cliff_resources)
+def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.Hadamard(wires), qml.RZ(phi, wires), qml.Hadamard(wires))
+
+
 def _rx_to_ppr_resources():
     return {resource_rep(qml.PauliRot, pauli_word="X"): 1}
 
@@ -189,7 +213,7 @@ def _rx_to_ppr(phi, wires, **_):
     qml.PauliRot(phi, "X", wires=wires)
 
 
-add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr)
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
 add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
@@ -357,6 +381,40 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
 
 
+def _ry_to_rx_cliff_resources():
+    return {change_op_basis_resource_rep(adjoint_resource_rep(qml.S), qml.RX, qml.S): 1}
+
+
+@register_resources(_ry_to_rx_cliff_resources)
+def _ry_to_rx_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.adjoint(qml.S(wires)), qml.RX(phi, wires), qml.S(wires))
+
+
+def _ry_to_rz_cliff_resources():
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={adjoint_resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+            qml.RZ,
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+        ): 1
+    }
+
+
+@register_resources(_ry_to_rz_cliff_resources)
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(
+        qml.Hadamard(wires) @ qml.adjoint(qml.S(wires)),
+        qml.RZ(phi, wires),
+        qml.S(wires) @ qml.Hadamard(wires),
+    )
+
+
 def _ry_to_ppr_resources():
     return {resource_rep(qml.PauliRot, pauli_word="Y"): 1}
 
@@ -366,7 +424,7 @@ def _ry_to_ppr(phi, wires, **_):
     qml.PauliRot(phi, "Y", wires=wires)
 
 
-add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr)
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
 add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
@@ -551,6 +609,16 @@ class RZ(Gate):
         return [self.data[0], 0.0, 0.0]
 
 
+def _rz_to_ps_resources():
+    return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_rz_to_ps_resources)
+def _rz_to_ps(phi, wires: WiresLike, **_):
+    qml.PhaseShift(phi, wires)
+    qml.GlobalPhase(phi / 2)
+
+
 def _rz_to_rot_resources():
     return {qml.Rot: 1}
 
@@ -571,6 +639,40 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qml.RY(-np.pi / 2, wires=wires)
 
 
+def _rz_to_rx_cliff_resources():
+    return {change_op_basis_resource_rep(qml.Hadamard, qml.RX, qml.Hadamard): 1}
+
+
+@register_resources(_rz_to_rx_cliff_resources)
+def _rz_to_rx_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.Hadamard(wires), qml.RX(phi, wires), qml.Hadamard(wires))
+
+
+def _rz_to_ry_cliff_resources():
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+            qml.RY,
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={adjoint_resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+        ): 1
+    }
+
+
+@register_resources(_rz_to_ry_cliff_resources)
+def _rz_to_ry_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(
+        qml.S(wires) @ qml.Hadamard(wires),
+        qml.RY(phi, wires),
+        qml.Hadamard(wires) @ qml.adjoint(qml.S(wires)),
+    )
+
+
 def _rz_to_ppr_resources():
     return {resource_rep(qml.PauliRot, pauli_word="Z"): 1}
 
@@ -580,7 +682,7 @@ def _rz_to_ppr(phi, wires, **_):
     qml.PauliRot(phi, "Z", wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr)
+add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
 add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 

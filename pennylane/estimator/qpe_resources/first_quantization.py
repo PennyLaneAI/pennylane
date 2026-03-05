@@ -19,6 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 import numpy as np
 import scipy as sp
 
+from pennylane.math import ceil_log2
 from pennylane.operation import Operation
 
 
@@ -212,7 +213,7 @@ class FirstQuantization(Operation):
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
 
-        c = n / 2 ** np.ceil(np.log2(n))
+        c = n / 2 ** ceil_log2(n)
         d = 2 * np.pi / 2**br
 
         theta = d * np.round((1 / d) * np.arcsin(np.sqrt(1 / (4 * c))))
@@ -342,7 +343,7 @@ class FirstQuantization(Operation):
         error_uv = 0.01 * error
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         n0 = n ** (1 / 3)
         lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
@@ -472,11 +473,11 @@ class FirstQuantization(Operation):
         l_nu = 2 * np.pi * n ** (2 / 3)
 
         # defined in the third and second paragraphs of page 15 of PRX Quantum 2, 040332 (2021)
-        n_eta = np.ceil(np.log2(eta))
-        n_etaz = np.ceil(np.log2(eta + 2 * l_z))
+        n_eta = ceil_log2(eta)
+        n_etaz = ceil_log2(eta + 2 * l_z)
 
         # n_p is taken from Eq. (22)
-        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         # errors in Eqs. (132-134) are set to be 0.01 of the algorithm error
         error_t = alpha * error
@@ -667,7 +668,7 @@ class FirstQuantization(Operation):
         l_nu = 2 * np.pi * n ** (2 / 3)
 
         # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021),
         # set to 0.01 of the algorithm error
@@ -693,8 +694,8 @@ class FirstQuantization(Operation):
 
         # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
         qubits = 3 * eta * n_p + 4 * n_m * n_p + 12 * n_p
-        qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error_qpe))))) + 5 * n_m
-        qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(eta + 2 * l_z))
+        qubits += 2 * (ceil_log2(np.ceil(np.pi * lamb / (2 * error_qpe)))) + 5 * n_m
+        qubits += 2 * ceil_log2(eta) + 3 * n_p**2 + ceil_log2(eta + 2 * l_z)
         qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
 
         return int(np.ceil(qubits))
@@ -746,23 +747,19 @@ class FirstQuantization(Operation):
         error_uv = alpha * error
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         n0 = n ** (1 / 3)
 
         # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
-        n_m = int(
-            np.ceil(
-                np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021) with
-                    # modifications taken from arXiv:2302.07981v1 (2023)
-                    (8 * np.pi * eta)
-                    / (error_uv * omega * bmin**2)
-                    * (eta - 1 + 2 * l_z)
-                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
-                )
-            )
+        n_m = ceil_log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021) with
+            # modifications taken from arXiv:2302.07981v1 (2023)
+            (8 * np.pi * eta)
+            / (error_uv * omega * bmin**2)
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
         )
 
         lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
@@ -863,7 +860,7 @@ class FirstQuantization(Operation):
         l_nu = 2 * np.pi * n ** (2 / 3)
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
@@ -874,17 +871,13 @@ class FirstQuantization(Operation):
         error_t, error_r, error_m, error_b = [alpha * error] * 4
 
         # parameters taken from PRX Quantum 2, 040332 (2021)
-        n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
-        n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
-        n_m = int(  # taken from Eq. (J13) arXiv:2302.07981v1 (2023)
-            np.ceil(
-                np.log2(
-                    (8 * np.pi * eta)
-                    / (error_m * omega * bmin**2)
-                    * (eta - 1 + 2 * l_z)
-                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
-                )
-            )
+        n_t = ceil_log2(np.pi * lambda_total / error_t)  # Eq. (134)
+        n_r = ceil_log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))  # Eq. (133)
+        n_m = ceil_log2(  # taken from Eq. (J13) arXiv:2302.07981v1 (2023)
+            (8 * np.pi * eta)
+            / (error_m * omega * bmin**2)
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
         )
 
         # qpe error obtained to satisfy a modification of
@@ -894,33 +887,23 @@ class FirstQuantization(Operation):
 
         # adapted from equations (L1, L2) in Appendix L of arXiv:2302.07981v1 (2023)
         clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
-        reflection_cost = (
-            np.ceil(np.log2(eta + 2 * l_z)) + 2 * np.ceil(np.log2(eta)) + 6 * n_p + n_m + 16 + 3
-        )
+        reflection_cost = ceil_log2(eta + 2 * l_z) + 2 * ceil_log2(eta) + 6 * n_p + n_m + 16 + 3
         clean_temp_cost = max([clean_temp_H_cost, reflection_cost])
 
         # the expression for computing the cost is taken from Appendix C of
         # PRX Quantum 2, 040332 (2021) and adapting to non-cubic using Appendix L of
         # arXiv:2302.07981v1 (2023)
         clean_cost = 3 * eta * n_p
-        clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
-        clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
-        clean_cost += 2 * np.ceil(np.log2(eta)) + 5 + 3 * (n_p + 1)
+        clean_cost += ceil_log2(np.ceil(np.pi * lambda_total / (2 * error_qpe)))
+        clean_cost += 1 + 1 + ceil_log2(eta + 2 * l_z) + 3 + 3
+        clean_cost += 2 * ceil_log2(eta) + 5 + 3 * (n_p + 1)
         clean_cost += n_p + n_m + 3 * n_p + 2 + 2 * n_p + 1 + 1 + 2 + 2 * n_p + 6 + 1
 
         clean_cost += clean_temp_cost
 
         # taken from Eq. (J7) of arXiv:2302.07981v1 (2023)
-        n_b = np.ceil(
-            np.log2(
-                4
-                * np.pi
-                * eta
-                * 2 ** (2 * n_p - 2)
-                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
-                / error_b
-            )
-        )
+        sum_abs = np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
+        n_b = ceil_log2(4 * np.pi * eta * 2 ** (2 * n_p - 2) * sum_abs / error_b)
         clean_cost += np.max([n_r + 1, n_t, n_b]) + 6 + n_m + 1
 
         return int(np.ceil(clean_cost))
@@ -967,32 +950,28 @@ class FirstQuantization(Operation):
         l_nu = 2 * np.pi * n ** (2 / 3)
 
         # defined in the third and second paragraphs of page 15 of PRX Quantum 2, 040332 (2021)
-        n_eta = np.ceil(np.log2(eta))
-        n_etaz = np.ceil(np.log2(eta + 2 * l_z))
+        n_eta = ceil_log2(eta)
+        n_etaz = ceil_log2(eta + 2 * l_z)
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+        n_p = ceil_log2(n ** (1 / 3) + 1)
 
         # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
         error_t, error_r, error_m = [alpha * error] * 3
 
         # parameters taken from PRX Quantum 2, 040332 (2021)
-        n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
-        n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
+        n_t = ceil_log2(np.pi * lambda_total / error_t)  # Eq. (134)
+        n_r = ceil_log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))  # Eq. (133)
 
         # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
         # equivalent to Eq. (J13) of arXiv:2302.07981v1 (2023)
-        n_m = int(
-            np.ceil(
-                np.log2(
-                    (8 * np.pi * eta)
-                    / (error_m * omega * bmin**2)
-                    * (eta - 1 + 2 * l_z)
-                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
-                )
-            )
+        n_m = ceil_log2(
+            (8 * np.pi * eta)
+            / (error_m * omega * bmin**2)
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
         )
 
         e_r = FirstQuantization._cost_qrom(l_z)
@@ -1006,16 +985,8 @@ class FirstQuantization(Operation):
 
         # taken from Eq. (J7) of arXiv:2302.07981v1 (2023)
         error_b = alpha * error
-        n_b = np.ceil(
-            np.log2(
-                2
-                * np.pi
-                * eta
-                * 2 ** (2 * n_p - 2)
-                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
-                / error_b
-            )
-        )
+        sum_abs = np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
+        n_b = ceil_log2(2 * np.pi * eta * 2 ** (2 * n_p - 2) * sum_abs / error_b)
 
         n_dirty = FirstQuantization._qubit_cost_noncubic(n, eta, error, br, charge, vectors)
         ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
@@ -1048,7 +1019,7 @@ class FirstQuantization(Operation):
         else:
             beta_gate = max([np.floor(2 * x / (3 * n_m / kappa) * np.log(2)), 1])
             beta = np.min([beta_dirty, beta_gate, beta_parallel])
-            ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(n_m / kappa) * np.ceil(np.log2(beta))
+            ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(n_m / kappa) * ceil_log2(beta)
 
         ms_cost = 2 * ms_cost_qrom + n_m + 8 * (n_p - 1) + 6 * n_p + 2 + 2 * n_p + n_m + 2
 

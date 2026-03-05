@@ -49,11 +49,11 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
     return circuit
 
 
-def get_x_basis_circuit(wires, shots, interface="autograd"):
+def get_x_basis_circuit(wires, shots, interface="autograd", seed=None):
     """
     Return a QNode that prepares the |++..+> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qml.device("default.qubit", wires=wires, seed=seed)
 
     @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
@@ -65,11 +65,11 @@ def get_x_basis_circuit(wires, shots, interface="autograd"):
     return circuit
 
 
-def get_y_basis_circuit(wires, shots, interface="autograd"):
+def get_y_basis_circuit(wires, shots, interface="autograd", seed=None):
     """
     Return a QNode that prepares the |+i>|+i>...|+i> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qml.device("default.qubit", wires=wires, seed=seed)
 
     @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
@@ -82,11 +82,11 @@ def get_y_basis_circuit(wires, shots, interface="autograd"):
     return circuit
 
 
-def get_z_basis_circuit(wires, shots, interface="autograd"):
+def get_z_basis_circuit(wires, shots, interface="autograd", seed=None):
     """
     Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qml.device("default.qubit", wires=wires, seed=seed)
 
     @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
@@ -505,13 +505,13 @@ class TestClassicalShadow:
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
     )
-    def test_return_distribution(self, wires, interface, circuit_fn, basis_recipe):
+    def test_return_distribution(self, wires, interface, circuit_fn, basis_recipe, seed):
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
         shots = 1000
 
-        circuit = circuit_fn(wires, shots=shots, interface=interface)
+        circuit = circuit_fn(wires, shots=shots, interface=interface, seed=seed)
         bits, recipes = circuit()
 
         # test that the recipes follow a rough uniform distribution

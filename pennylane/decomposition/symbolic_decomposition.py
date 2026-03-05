@@ -19,7 +19,7 @@ from __future__ import annotations
 import numpy as np
 
 import pennylane as qml
-from pennylane import allocation
+from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -74,8 +74,8 @@ def _adjoint_rotation(base_class, base_params, **__):
 @register_resources(_adjoint_rotation)
 def adjoint_rotation(phi, wires, base, **__):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    _, struct = base._flatten()
-    base._unflatten((-phi,), struct)
+    _, struct = qml.pytrees.flatten(base)
+    qml.pytrees.unflatten((-phi,), struct)
 
 
 def is_integer(x):
@@ -138,7 +138,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
-        return z % period != z
+        return math.shape(z) == () and z % period != z
 
     def _resource_fn(base_class, base_params, z):
         z_mod_period = z % period
