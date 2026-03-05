@@ -74,7 +74,13 @@ class AbstractArray:
         return reduce(lambda a, b: a * b, self.shape)
 
     def __post_init__(self):
-        if self.dtype in {int, float, complex}:
+        if self.dtype == int:
+            object.__setattr__(self, "dtype", np.int64)
+        if self.dtype == float:
+            object.__setattr__(self, "dtype", np.float64)
+        if self.dtype == complex:
+            object.__setattr__(self, "dtype", np.complex128)
+        else:
             object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
