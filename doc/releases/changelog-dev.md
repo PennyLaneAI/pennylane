@@ -682,7 +682,7 @@
   * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to
     render in PennyLane's documentation.
 
-* The :mod:`transforms API documentation page <~.transforms>` has been reogranized to allow for
+* The :mod:`~.transforms` module has been reogranized to allow for
   easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
   
