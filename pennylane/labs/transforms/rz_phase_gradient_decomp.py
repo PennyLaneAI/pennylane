@@ -141,8 +141,8 @@ def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires
                 for _ in range(2 ** (num_wires - 1))
             ),
             "num_control_wires": num_wires - 1,
-            "num_work_wires": len(work_wires) - (len(angle_wires) - 1),
             "partial": False,
+            "num_work_wires": len(work_wires),
         }
         prod_resources = {
             qml.resource_rep(qml.X): len(phase_grad_wires),
@@ -179,7 +179,7 @@ def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires
             select_ops = [qml.BasisEmbedding(_int, angle_wires) for _int in binary_ints]
             ops = [
                 qml.Select(
-                    select_ops, control=control_wires, work_wires=work_wires[len(angle_wires) - 1 :]
+                    select_ops, control=control_wires, work_wires=work_wires
                 )
             ] + sum(
                 [[qml.CNOT([target_wire, wire]), qml.X(wire)] for wire in phase_grad_wires],
