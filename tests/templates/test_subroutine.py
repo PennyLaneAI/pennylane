@@ -565,11 +565,11 @@ class TestGraphDecomposition:
 
         a = qml.templates.AbstractArray((2, 2, 3), np.float64)
         assert a.shape == (2, 2, 3)
-        assert a.dtype == np.float64
+        assert a.dtype is np.dtype(np.float64)
 
         b = qml.templates.AbstractArray(())
         assert b.shape == ()
-        assert b.dtype == np.int64
+        assert b.dtype is np.dtype(np.int64)
 
         assert a != b
         assert hash(a)
@@ -577,9 +577,9 @@ class TestGraphDecomposition:
 
     def test_inbuilt_type_promotion_to_numpy(self):
         """Test that python types are converted to numpy types."""
-        assert AbstractArray((), int).dtype == np.int64
-        assert AbstractArray((), float).dtype == np.float64
-        assert AbstractArray((), complex).dtype == np.complex128
+        assert AbstractArray((), int).dtype is np.dtype(np.int64)
+        assert AbstractArray((), float).dtype is np.dtype(np.float64)
+        assert AbstractArray((), complex).dtype is np.dtype(np.complex128)
 
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
