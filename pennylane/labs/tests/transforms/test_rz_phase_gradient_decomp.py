@@ -84,3 +84,6 @@ def test_as_alt_decomps(phi, p):
         specs = qp.specs(circuit)()["resources"].gate_types
         expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisEmbedding)": 2}
         assert expected_specs == specs
+
+
+# TODO: test correctness
