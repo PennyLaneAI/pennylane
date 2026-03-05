@@ -595,6 +595,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `dynamic_one_shot` and `split_non_commuting` transforms are now compatible with `qml.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
+
 * Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
   
