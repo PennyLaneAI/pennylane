@@ -394,7 +394,7 @@ def merge_rotations(
                 qml.Hadamard(wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-        >>> qml.specs(circuit, level=2)()
+        >>> print(qml.specs(circuit, level=2)())
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
