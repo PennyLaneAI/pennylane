@@ -40,7 +40,7 @@ from pennylane.wires import Wires
 any_state = AllocateState.ANY
 
 
-# Dummy Ops to use for testing:
+# Dummy Ops and Funcs to use for testing:
 class AllocateOp(qre.ResourceOperator):
     """A dummy class whose decomposition allocates qubits"""
 
