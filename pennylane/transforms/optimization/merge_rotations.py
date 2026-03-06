@@ -390,20 +390,19 @@ def merge_rotations(
             @qml.qnode(dev)
             def circuit():
                 qml.RX(0.1, wires=0)
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=0)
+                qml.RX(0.2, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
         >>> print(qml.specs(circuit, level=2)())
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: merge-rotations (MLIR-1)
+        Level: cancel-inverses (MLIR-1)
         <BLANKLINE>
         Wire allocations: 1
-        Total gates: 1
+        Total gates: 2
         Gate counts:
-        - RX: 1
+        - RX: 2
         Measurements:
         - expval(PauliZ): 1
         Depth: Not computed
