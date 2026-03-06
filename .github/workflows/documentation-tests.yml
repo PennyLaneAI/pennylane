@@ -133,9 +133,7 @@ jobs:
           "
 
           IGNORE_FILES="
-          --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/chemistry.rst
-          --ignore=doc/introduction/circuits.rst
           --ignore=doc/introduction/compiling_circuits.rst
           --ignore=doc/introduction/compiling_workflows.rst
           --ignore=doc/introduction/configuration.rst
@@ -146,7 +144,6 @@ jobs:
           --ignore=doc/introduction/interfaces.rst
           --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
-          --ignore=doc/introduction/operations.rst
           --ignore=doc/introduction/pennylane.rst
           --ignore=doc/introduction/templates.rst
           --ignore=doc/introduction/unsupported_gradients.rst
