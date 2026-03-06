@@ -453,7 +453,8 @@ def cancel_inverses(
         Additionally, the ``cancel_inverses`` transform supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
 
-        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.cancel_inverses`_.
+        For more technical information on how this transform behaves, consult the Catalyst
+        documentation for :func:`catalyst.passes.cancel_inverses`.
 
     """
     # Make a working copy of the list to traverse

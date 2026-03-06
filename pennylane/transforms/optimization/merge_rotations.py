@@ -411,7 +411,7 @@ def merge_rotations(
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
 
         For more technical information on how this transform behaves, consult the Catalyst
-        documentation: :func:`catalyst.passes.merge_rotations`_.
+        documentation for :func:`catalyst.passes.merge_rotations`.
     """
 
     # Expand away adjoint ops
