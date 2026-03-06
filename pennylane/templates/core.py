@@ -109,6 +109,7 @@ def adjoint_subroutine_resource_rep(
     .. code-block:: python
 
         from pennylane.templates import AbstractArray, adjoint_subroutine_resource_rep
+        from pennylane.ops import adjoint
 
         class MyOp(qml.operation.Operation):
             pass
