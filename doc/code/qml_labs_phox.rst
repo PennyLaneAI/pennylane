@@ -7,7 +7,7 @@ qml.labs.phox
 
 
 Phase Optimization with JAX (PHOX) workflow
-----------------------
+-----------------------------------------------
 
 ``pennylane.labs.phox`` exposes a compact toolkit for constructing and
 simulating Phase Optimization circuits with JAX. The usual workflow is:
