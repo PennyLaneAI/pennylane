@@ -132,9 +132,13 @@
 
 <h3>Improvements 🛠</h3>
 
-* Pass-by-pass mode for :func:`~.specs` will no longer always show both a ``"Before Tape Transforms"`` and a ``"Before MLIR passes"`` level.
-  In scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level 0.
-  In scenarios where there is at least 1 tape transform, the behaviour remains the same, with level 0 being ``"Before Tape Transforms"`` and ``"Before MLIR passes"`` being the level after all tape transforms but before the first MLIR pass.
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  the returned :class:`~.resource.CircuitSpecs` will no longer display a
+  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
+  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
+  In scenarios with at least one tape transform,
+  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
+  is the level after all tape transforms but before the first MLIR pass.
 
   Note in the example below, using ``level="all"`` only returns 2 levels, rather than 3 which was the default in PennyLane v0.44.0.
   ```python
@@ -170,7 +174,7 @@
 
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
 
-* When using :func:`~.specs` with multiple levels, printing the returned
+* When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
   This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
