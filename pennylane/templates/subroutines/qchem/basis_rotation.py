@@ -125,7 +125,6 @@ def _complex_unitary(unitary, wires):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
 @partial(
     Subroutine,
     static_argnames="check",
