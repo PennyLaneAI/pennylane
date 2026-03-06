@@ -152,7 +152,6 @@ class TestDecomposeInterpreter:
             f(x, (1, 2))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
-
         eqn1 = jaxpr.eqns[3]  # the first subroutine prim
         eqn2 = jaxpr.eqns[7]  # the second subroutine prim
 
