@@ -33,11 +33,11 @@ from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _grid_pts,
     _poly_func_optax,
-    _qsp_iterate_broadcast_optax,
-    _qsp_iterate_optax,
+    _qsp_iterate_broadcast,
+    _qsp_iterate,
     _qsp_optimization_optax,
-    _W_of_x_optax,
-    _z_rotation_optax,
+    _W_of_x,
+    _z_rotation,
 )
 
 
@@ -167,7 +167,7 @@ class TestOptaxInternalFunctions:
         )
 
         assert qml.math.isclose(
-            _qsp_iterate_broadcast_optax(phis, x_point, "jax"),
+            _qsp_iterate_broadcast(phis, x_point, "jax"),
             _poly_func_optax(coeffs=jnp.array(target_polynomial_coeffs), x=x_point),
             atol=tolerance,
         )
@@ -191,13 +191,13 @@ class TestOptaxInternalFunctions:
     @pytest.mark.parametrize("interface", ["jax"])
     def test_z_rotation_optax(self, angle, interface):
         """Test internal function _z_rotation_optax"""
-        assert np.allclose(_z_rotation_optax(angle, interface), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_qsp_iterate_optax(self, phi, interface):
         """Test internal function _qsp_iterate_optax"""
-        mtx = _qsp_iterate_optax(0.0, phi, interface)
+        mtx = _qsp_iterate(0.0, phi, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -211,7 +211,7 @@ class TestOptaxInternalFunctions:
         jax.config.update("jax_enable_x64", True)
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast_optax(phis, x, "jax")
+        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
@@ -219,7 +219,7 @@ class TestOptaxInternalFunctions:
     @pytest.mark.parametrize("interface", ["jax"])
     def test_W_of_x_optax(self, x, interface):
         """Test internal function _W_of_x_optax"""
-        mtx = _W_of_x_optax(x, interface)
+        mtx = _W_of_x(x, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
