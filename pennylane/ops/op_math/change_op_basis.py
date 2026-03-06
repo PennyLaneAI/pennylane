@@ -79,9 +79,9 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qml.draw(circuit2)())
-    0: ──H─╭●───╭●──────────╭●────┤  State
-    1: ─╭●─├QFT─├PhaseAdder─├QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H──────╭●────────────────┤  State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  Stat
 
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
