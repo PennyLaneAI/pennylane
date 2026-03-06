@@ -25,42 +25,6 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
-def basis_embedding_setup(features, wires):
-    """Run pre-validation on the features and wires provided to BasisEmbedding."""
-    wires = Wires(wires)
-    if isinstance(features, list):
-        features = math.stack(features)
-
-    tracing = math.is_abstract(features)
-
-    if not math.shape(features):
-        if not tracing and features >= 2 ** len(wires):
-            raise ValueError(
-                f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {features}"
-            )
-        bin = 2 ** math.arange(len(wires))[::-1]
-        features = math.where((features & bin) > 0, 1, 0)
-
-    shape = math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"State must be one-dimensional; got shape {shape}.")
-
-    n_states = shape[0]
-    if n_states != len(wires):
-        raise ValueError(
-            f"State must be of length {len(wires)}; got length {n_states} (state={features})."
-        )
-
-    if not tracing:
-        state_list = list(math.toarray(features))
-        if not set(state_list).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-    features = math.cast(features, int)
-
-    return (features, wires), {}
-
-
 # pylint: disable=unused-argument
 def basis_embedding_resources(features, wires):
     """Calculate the resources for BasisEmbedding."""
@@ -70,7 +34,6 @@ def basis_embedding_resources(features, wires):
 @functools.partial(
     Subroutine,
     static_argnames=[],
-    setup_inputs=basis_embedding_setup,
     compute_resources=basis_embedding_resources,
 )
 def BasisEmbedding(features: TensorLike, wires: WiresLike):
@@ -120,4 +83,35 @@ def BasisEmbedding(features: TensorLike, wires: WiresLike):
         Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
+    wires = Wires(wires)
+    if isinstance(features, list):
+        features = math.stack(features)
+
+    tracing = math.is_abstract(features)
+
+    if not math.shape(features):
+        if not tracing and features >= 2 ** len(wires):
+            raise ValueError(
+                f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {features}"
+            )
+        bin = 2 ** math.arange(len(wires))[::-1]
+        features = math.where((features & bin) > 0, 1, 0)
+
+    shape = math.shape(features)
+
+    if len(shape) != 1:
+        raise ValueError(f"State must be one-dimensional; got shape {shape}.")
+
+    n_states = shape[0]
+    if n_states != len(wires):
+        raise ValueError(
+            f"State must be of length {len(wires)}; got length {n_states} (state={features})."
+        )
+
+    if not tracing:
+        state_list = list(math.toarray(features))
+        if not set(state_list).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+    features = math.cast(features, int)
+
     _basis_state_decomp(features, wires=wires)
