@@ -44,6 +44,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     Returns:
         func: decomposition rule to be used within :func:`~decompose`.
 
+    .. seealso:: :func:`~make_selectpaulirot_to_phase_gradient_decomp`
+
     **Example**
 
     In this example we decompose a circuit containing only a single :class:`~RZ` gate using the custom decomposition rule
@@ -52,7 +54,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.transforms.rz_phase_gradient_decomp import make_rz_to_phase_gradient_decomp
+        from pennylane.labs.transforms import make_rz_to_phase_gradient_decomp
+        import numpy as np
 
         seed = 0
 
@@ -68,10 +71,10 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
         @qp.transforms.decompose(
-                gate_set={"SemiAdder", "CNOT", "GlobalPhase"},
+                gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},
                 fixed_decomps={qp.RZ: custom_decomp}
         )
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("null.qubit"))
         def circuit():
             qp.RZ(phi, 0)
             return qp.state()
@@ -82,17 +85,17 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'GlobalPhase': 1, 'CNOT': 6, 'SemiAdder': 1}
+    {'GlobalPhase': 1, 'C(BasisEmbedding)': 2, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
-             0: ─╭GlobalPhase(2.75)─╭●─╭●─╭●────────────╭●─╭●─╭●─┤  State
-         aux_0: ─├GlobalPhase(2.75)─╰X─│──│──╭SemiAdder─╰X─│──│──┤  State
-         aux_1: ─├GlobalPhase(2.75)────╰X─│──├SemiAdder────╰X─│──┤  State
-         aux_2: ─├GlobalPhase(2.75)───────╰X─├SemiAdder───────╰X─┤  State
-         qft_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤  State
-         qft_1: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤  State
-         qft_2: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤  State
-        work_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤  State
-        work_1: ─╰GlobalPhase(2.75)──────────╰SemiAdder──────────┤  State
+         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤  State
+     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤  State
+     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤  State
+     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤  State
+     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
+     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
+     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
+    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
+    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤  State
 
     """
     kwargs = {
