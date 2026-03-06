@@ -107,13 +107,13 @@ class TestInputs:
         ("feat", "wires", "expected"),
         [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
     )
-    def test_features_as_int_conversion(self, feat, wires, expected):
+    def test_features_as_int_conversion(self, feat, wires, expected, mocker):
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert np.allclose(
-            qml.BasisEmbedding.operator(features=feat, wires=wires).parameters[0], expected
-        )
+        decomp = mocker.spy(qml.templates.embeddings.basis, "_basis_state_decomp")
+        qml.BasisEmbedding(features=feat, wires=wires)
+        assert np.allclose(decomp.call_args.args[0], expected)
 
     @pytest.mark.parametrize(
         "x, msg",

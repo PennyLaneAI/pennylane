@@ -20,7 +20,7 @@ import math
 from pennylane import math
 from pennylane.ops import RX, GlobalPhase, PauliX
 from pennylane.ops.qubit.state_preparation import _basis_state_decomp
-from pennylane.templates import Subroutine, SubroutineOp
+from pennylane.templates import Subroutine
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
