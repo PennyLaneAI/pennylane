@@ -61,7 +61,13 @@ def test_as_fixed_decomps(prec):
             return qp.state()
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
-        expected_specs = {"QROM": 1, "Adjoint(QROM)": 1, "CNOT": 6, "PauliX": 6, "SemiAdder": 1}
+        expected_specs = {
+            "QROM": 1,
+            "Adjoint(QROM)": 1,
+            "CNOT": 2 * prec,
+            "PauliX": 2 * prec,
+            "SemiAdder": 1,
+        }
         assert expected_specs == specs
 
 
@@ -104,45 +110,48 @@ def test_integration_multi_wire(seed):
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
+    with qp.decomposition.toggle_graph_ctx(
+        True
+    ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-    @qp.transforms.decompose(
-        gate_set={
-            "QROM",
-            "Adjoint(QROM)",
-            "SemiAdder",
-            "CNOT",
-            "X",
-            "Adjoint(X)",
-            "StatePrep",
-            "Adjoint(StatePrep)",
-            "GlobalPhase",
-        },
-        fixed_decomps={qp.SelectPauliRot: custom_decomp},
-    )
-    @qp.qnode(qp.device("default.qubit", wires=all_wires))
-    def circuit(angles, in_state):
-        qp.StatePrep(in_state, wires=wires)  # input state
-        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
-        qp.SelectPauliRot(angles, control_wires=wires[:2], target_wire=wires[2])
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
-        return qp.state()
+        @qp.transforms.decompose(
+            gate_set={
+                "QROM",
+                "Adjoint(QROM)",
+                "SemiAdder",
+                "CNOT",
+                "X",
+                "Adjoint(X)",
+                "StatePrep",
+                "Adjoint(StatePrep)",
+                "GlobalPhase",
+            },
+            fixed_decomps={qp.SelectPauliRot: custom_decomp},
+        )
+        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        def circuit(angles, in_state):
+            qp.StatePrep(in_state, wires=wires)  # input state
+            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
+            qp.SelectPauliRot(angles, control_wires=wires[:2], target_wire=wires[2])
+            qp.adjoint(
+                qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
+            )  # uncompute phase gradient state
+            return qp.state()
 
-    # random input state
-    rng = np.random.default_rng(seed=seed)
-    in_state = rng.random(2 ** len(wires))
-    in_state /= np.linalg.norm(in_state)
+        # random input state
+        rng = np.random.default_rng(seed=seed)
+        in_state = rng.random(2 ** len(wires))
+        in_state /= np.linalg.norm(in_state)
 
-    # returned output state
-    out_state = circuit(angles, in_state)
+        # returned output state
+        out_state = circuit(angles, in_state)
 
-    # expected output state
-    zeros = np.eye(2 ** (prec * 3 - 1))[0]  # |000> on allthe aux wires
-    out_state_expected = (
-        qp.matrix(qp.SelectPauliRot(angles, control_wires=wires[:2], target_wire=wires[2]))
-        @ in_state
-    )
-    out_state_expected = np.kron(zeros, out_state_expected)
+        # expected output state
+        zeros = np.eye(2 ** (prec * 3 - 1))[0]  # |000> on allthe aux wires
+        out_state_expected = (
+            qp.matrix(qp.SelectPauliRot(angles, control_wires=wires[:2], target_wire=wires[2]))
+            @ in_state
+        )
+        out_state_expected = np.kron(zeros, out_state_expected)
 
-    assert np.allclose(out_state, out_state_expected)
+        assert np.allclose(out_state, out_state_expected)
