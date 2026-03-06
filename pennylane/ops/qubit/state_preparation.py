@@ -603,7 +603,7 @@ def _stateprep_resources(num_wires):
     return {
         subroutine_resource_rep(
             qml.MottonenStatePreparation,
-            AbstractArray((2**num_wires,)),
+            AbstractArray((2**num_wires,), dtype=float),
             AbstractArray((num_wires,)),
         ): 1
     }
