@@ -14,8 +14,6 @@
 r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
-from collections import defaultdict
-
 import pennylane as qml
 from pennylane.decomposition import (
     adjoint_resource_rep,
@@ -123,13 +121,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         )
 
         # 3. Prod: MUST be a dict {CompressedResourceOp: count}
-        prod_res = defaultdict(
-            int,
-            {
-                qrom_rep: 1,
-                ctrl_x_rep: len(phase_grad_wires),
-            },
-        )
+        prod_res = {
+            qrom_rep: 1,
+            ctrl_x_rep: len(phase_grad_wires),
+        }
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
@@ -154,23 +149,17 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             case "Y":
                 comp_rep = resource_rep(
                     Prod,
-                    resources=defaultdict(
-                        int,
-                        {
-                            resource_rep(qml.Hadamard): 1,
-                            adjoint_resource_rep(qml.S): 1,
-                        },
-                    ),
+                    resources={
+                        resource_rep(qml.Hadamard): 1,
+                        adjoint_resource_rep(qml.S): 1,
+                    },
                 )
                 uncomp_rep = resource_rep(
                     Prod,
-                    resources=defaultdict(
-                        int,
-                        {
-                            resource_rep(qml.S): 1,
-                            resource_rep(qml.Hadamard): 1,
-                        },
-                    ),
+                    resources={
+                        resource_rep(qml.S): 1,
+                        resource_rep(qml.Hadamard): 1,
+                    },
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
                     comp_rep, change_basis_rep, uncomp_rep
@@ -178,7 +167,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             case "Z":
                 change_basis_rep_basis_adapted = change_basis_rep
 
-        return {change_basis_rep_basis_adapted: 1, resource_rep(qml.GlobalPhase): 1}
+        return {change_basis_rep_basis_adapted: 1}
 
     @qml.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
@@ -196,11 +185,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         match rot_axis:
             case "X":
                 comp = uncomp = qml.Hadamard(target_wire)
-                qml.apply(qml.change_op_basis(comp, pg_op, uncomp))
+                qml.change_op_basis(comp, pg_op, uncomp)
             case "Y":
                 comp = qml.Hadamard(target_wire) @ qml.adjoint(qml.S(target_wire))
                 uncomp = qml.S(target_wire) @ qml.Hadamard(target_wire)
-                qml.apply(qml.change_op_basis(comp, pg_op, uncomp))
+                qml.change_op_basis(comp, pg_op, uncomp)
             case "Z":
                 qml.apply(pg_op)
 
