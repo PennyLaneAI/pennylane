@@ -14,6 +14,7 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
+
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -836,7 +837,6 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-
 @jit_if_jax_available
 def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
@@ -850,6 +850,7 @@ def _cheby_pol(x, degree):
     """
     return math.cos(degree * math.arccos(x))
 
+
 def _poly_func_scipy(coeffs, parity, x):
     r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
 
@@ -862,7 +863,7 @@ def _poly_func_scipy(coeffs, parity, x):
         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
     """
     ind = math.arange(len(coeffs))
-    return coeffs @ np.vectorize(_cheby_pol, excluded={'x'})(x, 2 * ind + parity)
+    return coeffs @ np.vectorize(_cheby_pol, excluded={"x"})(x, 2 * ind + parity)
 
 
 @partial(jit_if_jax_available, static_argnames=["interface"])
@@ -915,9 +916,7 @@ def _qsp_iterate(phi, x, interface):
     Returns:
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
-    return math.dot(
-        _W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface)
-    )
+    return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
 
 @partial(jit_if_jax_available, static_argnames=["interface"])
@@ -937,9 +936,9 @@ def _qsp_iterate_broadcast(phis, x, interface):
         interface = "jax"
         qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
     except ModuleNotFoundError:
-        qsp_iterate_list = math.vectorize(
-            _qsp_iterate, excluded=(1, 2), signature="()->(m,n)"
-        )(phis[1:], x, interface)
+        qsp_iterate_list = math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
+            phis[1:], x, interface
+        )
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
     matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
@@ -992,9 +991,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
             )
         except ModuleNotFoundError:
             obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(
-                    phi, grid_points, interface
-                )
+                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
                 - targets
             )
 
@@ -1045,8 +1042,6 @@ def _compute_qsp_angles_iteratively_scipy(poly):
     angles, *_ = _qsp_optimization_scipy(degree=degree, coeffs_target_func=coeffs_target_func)
 
     return angles
-
-
 
 
 @jit_if_jax_available
