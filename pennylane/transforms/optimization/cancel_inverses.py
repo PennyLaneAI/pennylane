@@ -408,7 +408,7 @@ def cancel_inverses(
         2: ──RX(1.00)──RX(2.00)─╰X─┤
 
     .. details::
-        :title: Usage with Catalyst (qjit)
+        :title: Usage with qjit
 
         When used with ``qjit``, the following gates can be optimized by the ``cancel_inverses``
         transform:

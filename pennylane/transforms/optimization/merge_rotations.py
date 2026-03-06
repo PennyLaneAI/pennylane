@@ -299,25 +299,6 @@ def merge_rotations(
     np.float64(0.955...)
 
     .. details::
-        :title: Details on merging Rot gates
-        :href: details-on-rot
-
-        When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
-
-        First, the output angles are not always defined uniquely, because Euler angles are not
-        unique for some rotations. ``merge_rotations`` makes a particular choice in
-        this case.
-
-        Second, ``merge_rotations`` is not differentiable everywhere when used on ``Rot``.
-        It has singularities for specific rotation angles where the derivative will be NaN.
-
-        Finally, this function can be numerically unstable near singular points.
-        It is therefore recommended to use it with 64-bit floating point precision angles.
-
-        For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation
-        of :func:`~.pennylane.transforms.single_qubit_fusion`.
-
-    .. details::
         :title: Usage Details
 
         You can also apply ``merge_rotations`` to a quantum function.
@@ -364,7 +345,7 @@ def merge_rotations(
         2: ─╰X─────────H────────╰●───────────────────┤
 
     .. details::
-        :title: Usage with Catalyst (qjit)
+        :title: Usage with qjit
 
         When used with ``qjit``, the following gates can be optimized by the ``merge_rotations``
         transform:
@@ -412,6 +393,26 @@ def merge_rotations(
 
         For more technical information on how this transform behaves, consult the Catalyst
         documentation for :func:`catalyst.passes.merge_rotations`.
+
+    .. details::
+        :title: Details on merging Rot gates
+        :href: details-on-rot
+
+        When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
+
+        First, the output angles are not always defined uniquely, because Euler angles are not
+        unique for some rotations. ``merge_rotations`` makes a particular choice in
+        this case.
+
+        Second, ``merge_rotations`` is not differentiable everywhere when used on ``Rot``.
+        It has singularities for specific rotation angles where the derivative will be NaN.
+
+        Finally, this function can be numerically unstable near singular points.
+        It is therefore recommended to use it with 64-bit floating point precision angles.
+
+        For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation
+        of :func:`~.pennylane.transforms.single_qubit_fusion`.
+
     """
 
     # Expand away adjoint ops
