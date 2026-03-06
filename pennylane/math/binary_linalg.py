@@ -20,7 +20,7 @@ from pennylane import math
 
 def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     r"""
-    Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of :math:`phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2` up to precision :math:`p`.
+    Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of :math:`\phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2` up to precision :math:`p`.
 
     For example, for :math:`\phi = 0.375` we obtain ``[0, 1, 1]`` because its binary representation is :math:`\phi = (0.011)_2` (:math:`0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 1  \cdot 2^{-3} = \tfrac02 + \tfrac14 + \tfrac18 = 0.375`).
 
