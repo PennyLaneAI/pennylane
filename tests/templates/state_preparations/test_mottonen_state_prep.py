@@ -378,20 +378,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="State vectors must be of (length|shape)"):
             qml.MottonenStatePreparation(state_vector, wires)
 
-    @pytest.mark.parametrize(
-        "state_vector",
-        [
-            ([[[0, 0, 1, 0]]]),
-            ([[[0, 1], [1, 0], [0, 0], [0, 0]]]),
-        ],
-    )
-    def test_exception_wrong_shape(self, state_vector):
-        """Verifies that exception is raised if the
-        number of dimensions of features is incorrect."""
-
-        with pytest.raises(ValueError, match="State vectors must be one-dimensional"):
-            qml.MottonenStatePreparation(state_vector, 2)
-
     @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""

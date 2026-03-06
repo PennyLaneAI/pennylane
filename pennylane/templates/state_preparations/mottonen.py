@@ -264,39 +264,6 @@ def _get_alpha_y(a, n, k):
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
-def setup_mottonen(state_vector, wires):
-    """Run pre-validation on the arguments provided to MottonenStatePreparation."""
-
-    # check if the `state_vector` param is batched
-    batched = len(qml.math.shape(state_vector)) > 1
-
-    state_batch = state_vector if batched else [state_vector]
-
-    # apply checks to each state vector in the batch
-    for i, state in enumerate(state_batch):
-        shape = qml.math.shape(state)
-
-        if len(shape) != 1:
-            raise ValueError(
-                f"State vectors must be one-dimensional; vector {i} has shape {shape}."
-            )
-
-        n_amplitudes = shape[0]
-        if n_amplitudes != 2 ** len(wires):
-            raise ValueError(
-                f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
-            )
-
-        if not qml.math.is_abstract(state):
-            norm = qml.math.sum(qml.math.abs(state) ** 2)
-            if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
-                raise ValueError(
-                    f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
-                )
-
-    return (state_vector, wires), {}
-
-
 # pylint: disable=unused-argument
 def mottonen_decomp_resources(state_vector, wires):
     """Calculate the resources for MottonenStatePreparation."""
@@ -308,7 +275,6 @@ def mottonen_decomp_resources(state_vector, wires):
 @partial(
     Subroutine,
     static_argnames=[],
-    setup_inputs=setup_mottonen,
     compute_resources=mottonen_decomp_resources,
 )
 def MottonenStatePreparation(state_vector, wires):
@@ -377,6 +343,20 @@ def MottonenStatePreparation(state_vector, wires):
             "Broadcasting with MottonenStatePreparation is not supported. Please use the "
             "qml.transforms.broadcast_expand transform to use broadcasting with "
             "MottonenStatePreparation."
+        )
+
+    shape = qml.math.shape(state_vector)
+
+    n_amplitudes = shape[0]
+    if n_amplitudes != 2 ** len(wires):
+        raise ValueError(
+            f"State vectors must be of length {2 ** len(wires)} or less; provided vector has length {n_amplitudes}."
+        )
+
+    norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+    if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
+        raise ValueError(
+            f"State vectors have to be of norm 1.0, provided vector has squared norm {norm}"
         )
 
     a = qml.math.abs(state_vector)
