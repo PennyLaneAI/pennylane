@@ -190,7 +190,7 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _fallback_branch_resources(num_wires):
+def _jax_jit_basis_state_resources(num_wires):
     resources = {
         pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
         pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
@@ -199,7 +199,7 @@ def _fallback_branch_resources(num_wires):
     return resources
 
 
-def _fallback_branch_cond(**_):
+def _jax_jit_basis_state_cond(**_):
     if qml.capture.enabled() or qml.compiler.active():
         return False
 
@@ -213,9 +213,9 @@ def _fallback_branch_cond(**_):
     return qml.math.is_abstract(x)
 
 
-@register_condition(_fallback_branch_cond)
-@register_resources(_fallback_branch_resources, exact=False)
-def _fallback_branch_decomp(state, wires, **__):
+@register_condition(_jax_jit_basis_state_cond)
+@register_resources(_jax_jit_basis_state_resources, exact=False)
+def _jax_jit_basis_state_decomp(state, wires, **__):
     if qml.math.is_abstract(state):
         _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
         return
@@ -226,7 +226,7 @@ def _basis_state_decomp_resources(num_wires):
     return {qml.X: num_wires // 2}
 
 
-@register_condition(lambda **_: not _fallback_branch_cond(**_))
+@register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
@@ -248,7 +248,7 @@ def _basis_state_decomp(state, wires, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp, _fallback_branch_decomp)
+add_decomps(BasisState, _basis_state_decomp, _jax_jit_basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
