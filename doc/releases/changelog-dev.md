@@ -10,11 +10,45 @@
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
   [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
 
-* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
+* A new state preparation method called :class:`~.SumOfSlatersPrep` is now available.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and
-  reversible bit encodings. For now, only classical preprocessing required to implement the
-  template is added.
+  reversible bit encodings.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
+  [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
+
+  Consider a sparse state on five qubits, specified by normalized coefficients and statevector
+  indices pointing to the populated computational basis states:
+
+  ```pycon
+  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
+  >>> coefficients = np.array(coefficients)
+  >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  >>> wires = qml.wires.Wires(range(5))
+  ```
+
+  And this is all the information we require to create the state
+  preparation: ``coefficients``, ``indices``, and ``wires``.
+
+  ```python
+  qml.decomposition.enable_graph()
+  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+
+  @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+  @qml.decompose(gate_set=gate_set, num_work_wires=10)
+  @qml.qnode(qml.device("lightning.qubit", wires=13))
+  def circuit():
+      qml.SumOfSlatersPrep(coefficients, wires, indices)
+      return qml.state()
+  ```
+  ```pycon
+  >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
+  >>> where = np.where(prepared_state)
+  >>> print(where)
+  (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+  >>> print(prepared_state[where])
+  [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+   -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+  ```
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
   linear algebraic functionalities over :math:`\mathbb{Z}_2`:
@@ -33,8 +67,8 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-  logarithm of its input and casts the result to an ``int``. It is equivalent to
-  ``int(np.ceil(np.log2(n)))``.
+  logarithm of its input and casts the result to an ``int``. It is equivalent 
+  to ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
@@ -633,6 +667,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* References to the `master` branch are changed to the new default branch `main`.
+  [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
+  
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
+  [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
+  
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 

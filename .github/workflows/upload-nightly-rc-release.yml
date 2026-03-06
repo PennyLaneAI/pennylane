@@ -1,9 +1,6 @@
 name: Build nightly PennyLane RC releases for TestPyPI
 
 on:
-  schedule:
-    # Run every weekday at 5:50 EDT (cron is in UTC)
-    - cron: "50 9 * * 1-5"
   workflow_dispatch:
 
 env:
@@ -20,7 +17,7 @@ jobs:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
       with:
-        ref: master
+        ref: main
 
     # Sets up Python environment
     - name: Set up Python
