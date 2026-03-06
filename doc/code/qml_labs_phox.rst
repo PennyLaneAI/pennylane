@@ -35,7 +35,6 @@ simulating Phase Optimization circuits with JAX. The usual workflow is:
    n_qubits = n_rows * n_cols
 
    gates = create_lattice_gates(n_rows, n_cols, distance=1, max_weight=2)
-   # Observables are now generated directly as integer arrays
    observables = generate_pauli_observables(n_qubits, orders=[2], bases=["Z"])
 
    key = jax.random.PRNGKey(0)
@@ -69,7 +68,6 @@ The loss function reuses the compiled
    from pennylane.labs.phox import train, TrainingOptions
 
    def loss_fn(current_params):
-       # Using keyword arguments and relying on the pre-computed config defaults
        expvals, _ = expval_fn(params=current_params)
        return jnp.sum(expvals)
 
