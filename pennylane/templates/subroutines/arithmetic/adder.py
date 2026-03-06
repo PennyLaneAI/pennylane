@@ -21,11 +21,11 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import adjoint
+from pennylane.templates import AbstractArray, subroutine_resource_rep
+from pennylane.templates.core import adjoint_subroutine_resource_rep
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from pennylane.templates import AbstractArray, subroutine_resource_rep
-from pennylane.templates.core import adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
