@@ -203,7 +203,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         >>> g = qml.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
-        >>> g(params) # doctest: +SKIP
+        >>> g(params)
         array([nan, nan])
     """
     operations = []
