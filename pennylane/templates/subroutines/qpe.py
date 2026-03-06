@@ -326,13 +326,9 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
                 num_control_wires=1,
             )
         ] = 1
-    if capture.enabled():
-        for op, count in QFT.compute_resources(wires=range(num_estimation_wires)).items():
-            gate_count[adjoint_resource_rep(op)] += count
-    else:
-        gate_count.update(
-            {adjoint_subroutine_resource_rep(QFT, AbstractArray((num_estimation_wires,))): 1}
-        )
+    gate_count.update(
+        {adjoint_subroutine_resource_rep(QFT, AbstractArray((num_estimation_wires,))): 1}
+    )
     return gate_count
 
 
