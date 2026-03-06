@@ -92,9 +92,7 @@ UnitaryToRotInterpreter, unitary_to_rot_plxpr_to_plxpr = _get_plxpr_unitary_to_r
 
 @partial(transform, plxpr_transform=unitary_to_rot_plxpr_to_plxpr)
 def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Quantum function transform to decomposes all instances of single-qubit and
-    select instances of two-qubit :class:`~.QubitUnitary` operations to
-    parametrized single-qubit operations.
+    r"""Decompose single-qubit and two-qubit :class:`~.QubitUnitary` operations to parametrized single-qubit operations and CNOTs.
 
     Single-qubit gates will be converted to a sequence of Y and Z rotations in the form
     :math:`RZ(\omega) RY(\theta) RZ(\phi)` that implements the original operation up
@@ -128,15 +126,15 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     .. code-block:: python
 
-        def qfunc():
+        @qml.transforms.unitary_to_rot
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
             qml.QubitUnitary(U, wires=0)
             return qml.expval(qml.Z(0))
 
     The original circuit is:
 
-    >>> dev = qml.device('default.qubit', wires=1)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
+    >>> print(qml.draw(circuit, level=0)())
     0: ──U(M0)─┤  <Z>
     M0 =
     [[-0.171...+0.5856...j -0.693...-0.383...j]
@@ -144,14 +142,12 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     We can use the transform to decompose the gate:
 
-    >>> transformed_qfunc = unitary_to_rot(qfunc)
-    >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
-    >>> print(qml.draw(transformed_qnode)())
+    >>> print(qml.draw(circuit, level=1)())
     0: ──RZ(11.22)──RY(1.83)──RZ(11.96)─┤  <Z>
 
 
     .. details::
-        :title: Usage Details
+        :title: Differentiability
 
         This decomposition is not fully differentiable. We **can** differentiate
         with respect to input QNode parameters when they are not used to
@@ -164,6 +160,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
+            @qml.transforms.unitary_to_rot
+            @qml.qnode(qml.device("default.qubit"))
             def circuit(angles):
                 qml.QubitUnitary(U, wires=["a", "b"])
                 qml.RX(angles[0], wires="a")
@@ -171,11 +169,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
                 qml.CNOT(wires=["b", "a"])
                 return qml.expval(qml.Z("a"))
 
-            dev = qml.device('default.qubit', wires=["a", "b"])
-            transformed_qfunc = qml.transforms.unitary_to_rot(circuit)
-            transformed_qnode = qml.QNode(transformed_qfunc, dev)
-
-        >>> g = qml.grad(transformed_qnode)
+        >>> g = qml.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
         >>> g(params)
         array([ 0.342..., -0.077...])
