@@ -231,7 +231,6 @@ class TestCompressedResourceOp:
             qml.ops.Prod, {"resources": {CompressedResourceOp(DummyOp, {"bar": 2, "foo": 1}): 1}}
         )
         assert op1 == op2
-        assert False
 
     def test_repr(self):
         """Tests the repr defined for debugging purposes."""
