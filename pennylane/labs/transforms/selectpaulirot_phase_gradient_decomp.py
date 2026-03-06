@@ -111,7 +111,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             num_bitstrings=2**num_control_wires,
             num_control_wires=num_control_wires,
             num_target_wires=len(angle_wires),
-            num_work_wires=len(work_wires),
+            num_work_wires=num_control_wires - 1,
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
