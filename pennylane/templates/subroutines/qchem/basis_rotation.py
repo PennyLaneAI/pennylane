@@ -22,6 +22,8 @@ from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.templates import Subroutine
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 
 def _is_jax_jit(U):
@@ -123,14 +125,13 @@ def _complex_unitary(unitary, wires):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
 @partial(
     Subroutine,
     static_argnames="check",
     compute_resources=basis_rotation_decomp_resources,
     exact_resources=False,
 )
-def BasisRotation(wires, unitary_matrix, check=False):
+def BasisRotation(wires: WiresLike, unitary_matrix: TensorLike, check: bool = False):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
     rotations and phase shifts.
 
