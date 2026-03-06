@@ -316,7 +316,7 @@ class ParticleConservingU1(Operation):
         >>> ops = qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
+        [<BasisEmbedding(features=[0, 1], wires=('a', 'b'))>,
         CZ(wires=['a', 'b']),
         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=Wires(['a', 'b'])),
         PhaseShift(tensor(-0.3000), wires=['b']),

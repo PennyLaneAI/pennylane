@@ -35,6 +35,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .select import Select
+from .. import subroutine_resource_rep, AbstractArray
 
 
 def _multi_swap(wires1, wires2):
@@ -46,7 +47,7 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, control_wires, swap_wires, data):
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in data]
+        ops_new = [BasisEmbedding.operator(bits, wires=target_wires) for bits in data]
         ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
             2 ** len(control_wires) - len(ops_new)
         )
@@ -395,7 +396,7 @@ def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):  # pylint: disable=too-many-branches
     if num_control_wires == 0:
-        return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
+        return {subroutine_resource_rep(BasisEmbedding, AbstractArray((num_bitstrings,)), AbstractArray((num_target_wires,))): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires
 
@@ -404,7 +405,7 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
+    ops = [subroutine_resource_rep(BasisEmbedding, AbstractArray((num_bitstrings,)), AbstractArray((num_target_wires,))) for _ in range(num_bitstrings)]
     ops_identity = ops + [qml_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (

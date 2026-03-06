@@ -217,7 +217,7 @@ class ParticleConservingU2(Operation):
         >>> ops = qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
+        [<BasisEmbedding(features=[0, 1], wires=('a', 'b'))>,
         RZ(tensor(0.3000), wires=['a']),
         RZ(tensor(1.), wires=['b']),
         CNOT(wires=['a', 'b']),
