@@ -347,18 +347,18 @@ def quantum_monte_carlo(
                  resources=SpecsResources(gate_types={'Adjoint(CNOT)': 7812,
                                                       'Adjoint(ControlledPhaseShift)': 15,
                                                       'Adjoint(Hadamard)': 6,
-                                                      'Adjoint(RY)': 3276,
+                                                      'Adjoint(RY)': 3150,
                                                       'Adjoint(SWAP)': 3,
                                                       'CNOT': 7874,
                                                       'CZ': 126,
                                                       'Hadamard': 258,
                                                       'MultiControlledX': 126,
                                                       'PauliX': 252,
-                                                      'RY': 3302},
-                                          gate_sizes={1: 7094, 2: 15830, 7: 126},
+                                                      'RY': 3175},
+                                          gate_sizes={1: 6841, 2: 15830, 7: 126},
                                           measurements={'probs(6 wires)': 1},
                                           num_allocs=12,
-                                          depth=21755))
+                                          depth=21502))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

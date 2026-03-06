@@ -81,7 +81,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     >>> print(qml.draw(circuit2)())
     0: ──H──────╭●────────────────┤  State
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  Stat
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
 
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
