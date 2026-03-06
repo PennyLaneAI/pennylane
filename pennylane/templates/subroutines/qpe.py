@@ -18,10 +18,9 @@ Contains the QuantumPhaseEstimation template.
 import copy
 from collections import defaultdict
 
-from pennylane import capture, math, ops
+from pennylane import math, ops
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
@@ -33,7 +32,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
-from ..core import AbstractArray, adjoint_subroutine_resource_rep
+from pennylane.templates.core import AbstractArray, adjoint_subroutine_resource_rep
 from .qft import QFT
 
 
