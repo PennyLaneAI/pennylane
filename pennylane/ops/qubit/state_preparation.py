@@ -37,6 +37,39 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 TOLERANCE = 1e-10
 
 
+def _process_state(state: TensorLike, wires: WiresLike):
+    if isinstance(state, list):
+        state = qml.math.stack(state)
+
+    tracing = qml.math.is_abstract(state)
+
+    if not qml.math.shape(state):
+        if not tracing and state >= 2 ** len(wires):
+            raise ValueError(
+                f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
+            )
+        bin = 2 ** math.arange(len(wires))[::-1]
+        state = qml.math.where((state & bin) > 0, 1, 0)
+
+    shape = qml.math.shape(state)
+
+    if len(shape) != 1:
+        raise ValueError(f"State must be one-dimensional; got shape {shape}.")
+
+    n_states = shape[0]
+    if n_states != len(wires):
+        raise ValueError(
+            f"State must be of length {len(wires)}; got length {n_states} (state={state})."
+        )
+
+    if not tracing:
+        state_list = list(qml.math.toarray(state))
+        if not set(state_list).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+    state = qml.math.cast(state, int)
+    return state
+
+
 class BasisState(StatePrepBase):
     r"""BasisState(state, wires)
     Prepares a single computational basis state.
@@ -84,35 +117,7 @@ class BasisState(StatePrepBase):
     def __init__(self, state, wires: WiresLike, id=None):
 
         wires = Wires(wires)
-        if isinstance(state, list):
-            state = qml.math.stack(state)
-
-        tracing = qml.math.is_abstract(state)
-
-        if not qml.math.shape(state):
-            if not tracing and state >= 2 ** len(wires):
-                raise ValueError(
-                    f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
-                )
-            bin = 2 ** math.arange(len(wires))[::-1]
-            state = qml.math.where((state & bin) > 0, 1, 0)
-
-        shape = qml.math.shape(state)
-
-        if len(shape) != 1:
-            raise ValueError(f"State must be one-dimensional; got shape {shape}.")
-
-        n_states = shape[0]
-        if n_states != len(wires):
-            raise ValueError(
-                f"State must be of length {len(wires)}; got length {n_states} (state={state})."
-            )
-
-        if not tracing:
-            state_list = list(qml.math.toarray(state))
-            if not set(state_list).issubset({0, 1}):
-                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-        state = qml.math.cast(state, int)
+        state = _process_state(state, wires)
         super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
@@ -598,6 +603,7 @@ class StatePrep(StatePrepBase):
         return state
 
 
+# pylint: disable=unused-argument
 def _stateprep_resources(num_wires):
     return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
 

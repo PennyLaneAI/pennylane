@@ -113,6 +113,7 @@
 The following classes have been ported over:
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
 - `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
+- `qml.BasisEmbedding` [(#9146)](https://github.com/PennyLaneAI/pennylane/pull/9146)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.

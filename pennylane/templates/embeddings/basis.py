@@ -14,12 +14,26 @@
 r"""
 Contains the BasisEmbedding template.
 """
+import functools
+from pennylane.ops import PauliX
+from pennylane.ops.qubit.state_preparation import _basis_state_decomp, _process_state
+from pennylane.templates import Subroutine
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
-from pennylane.decomposition import add_decomps
-from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp
+
+# pylint: disable=unused-argument
+def basis_embedding_resources(features, wires):
+    """Calculate the resources for BasisEmbedding."""
+    return {PauliX: len(wires)}
 
 
-class BasisEmbedding(BasisState):
+@functools.partial(
+    Subroutine,
+    static_argnames=[],
+    compute_resources=basis_embedding_resources,
+)
+def BasisEmbedding(features: TensorLike, wires: WiresLike):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
     For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the
@@ -66,9 +80,7 @@ class BasisEmbedding(BasisState):
         Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
+    wires = Wires(wires)
+    features = _process_state(features, wires)
 
-    def __init__(self, features, wires, id=None):
-        super().__init__(features, wires=wires, id=id)
-
-
-add_decomps(BasisEmbedding, _basis_state_decomp)
+    _basis_state_decomp(features, wires=wires)
