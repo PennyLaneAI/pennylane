@@ -219,14 +219,7 @@ def _basis_state_decomp_resources(num_wires):
     return {qml.X: num_wires // 2}
 
 
-def _basis_state_decomp_cond(**_):
-    x = qml.math.array(0.2, like="jax")
-    if qml.capture.enabled() or qml.compiler.active():
-        return True
-    return not qml.math.is_abstract(x)
-
-
-@register_condition(_basis_state_decomp_cond)
+@register_condition(lambda **_: not _fallback_branch_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
