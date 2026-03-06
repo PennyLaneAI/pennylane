@@ -848,7 +848,8 @@ def _poly_func_scipy(coeffs, parity, x):
         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
     """
     ind = math.arange(len(coeffs))
-    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
+    # return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
+    return coeffs @ np.vectorize(_cheby_pol, excluded={'x'})(x, 2 * ind + parity)
 
 
 def _z_rotation_scipy(phi, interface):
