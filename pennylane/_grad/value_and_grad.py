@@ -118,7 +118,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
         grad_flat = tree_leaves(grad_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        res_nested = tree_unflatten(flat_fn.out_tree, res_flat)
+        res_nested = tree_unflatten(flat_fn.out_tree, [res_flat])
 
         # The derivative output tree is the composition of output tree and trainable input trees
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)

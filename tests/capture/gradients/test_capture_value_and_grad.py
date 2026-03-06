@@ -103,13 +103,7 @@ def test_classical_func(argnums):
 
 
 def test_nested_value_and_grad():
-    """Test that value_and_grad can be nested.
-    We use the function
-    f(x) = sin(x)^3
-    f'(x) = 3 sin(x)^2 cos(x)
-    f''(x) = 6 sin(x) cos(x)^2 - 3 sin(x)^3
-    f'''(x) = 6 cos(x)^3 - 12 sin(x)^2 cos(x) - 9 sin(x)^2 cos(x)
-    """
+    """Test that value_and_grad can be nested."""
     fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
     def func(x):
