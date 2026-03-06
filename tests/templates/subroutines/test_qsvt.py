@@ -1065,7 +1065,7 @@ class TestIterativeSolver:
     def test_z_rotation_scipy(self, angle):
         """Test internal function _z_rotation_scipy"""
         try:
-            import jax
+            import jax  # pylint: disable=unused-import
             interface='jax'
         except ModuleNotFoundError:
             interface = None
@@ -1075,7 +1075,7 @@ class TestIterativeSolver:
     def test_qsp_iterate_scipy(self, phi):
         """Test internal function _qsp_iterate_scipy"""
         try:
-            import jax
+            import jax  # pylint: disable=unused-import
             interface = 'jax'
         except ModuleNotFoundError:
             interface = None
@@ -1092,7 +1092,7 @@ class TestIterativeSolver:
     def test_qsp_iterate_broadcast_scipy(self, x, degree):
         """Test internal function _qsp_iterate_broadcast_scipy"""
         try:
-            from jax import numpy as np
+            from jax import numpy as np  # pylint: disable=redefined-outer-name
             interface = 'jax'
         except ModuleNotFoundError:
             import numpy as np
@@ -1106,7 +1106,7 @@ class TestIterativeSolver:
     def test_W_of_x_scipy(self, x):
         """Test internal function _W_of_x_scipy"""
         try:
-            import jax
+            import jax  # pylint:disable=unused-import
             interface = 'jax'
         except ModuleNotFoundError:
             interface = None
