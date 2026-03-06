@@ -645,6 +645,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
+  [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
+
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
   
@@ -805,6 +808,7 @@ Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
