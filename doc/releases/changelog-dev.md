@@ -98,6 +98,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
+  This fixed a bug where two qubit unitaries would decompose incorrectly to two single qubit unitaries rather
+  than their rotation decomposition.
+  [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
+
 * When using :func:`~.specs` with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
