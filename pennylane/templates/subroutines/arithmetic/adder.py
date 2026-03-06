@@ -24,8 +24,8 @@ from pennylane.ops import adjoint
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, subroutine_resource_rep
-from ...core import adjoint_subroutine_resource_rep
+from pennylane.templates import AbstractArray, subroutine_resource_rep
+from pennylane.templates.core import adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
