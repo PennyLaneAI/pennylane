@@ -1066,7 +1066,8 @@ class TestIterativeSolver:
         """Test internal function _z_rotation_scipy"""
         try:
             import jax  # pylint: disable=unused-import
-            interface='jax'
+
+            interface = "jax"
         except ModuleNotFoundError:
             interface = None
         assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
@@ -1076,7 +1077,8 @@ class TestIterativeSolver:
         """Test internal function _qsp_iterate_scipy"""
         try:
             import jax  # pylint: disable=unused-import
-            interface = 'jax'
+
+            interface = "jax"
         except ModuleNotFoundError:
             interface = None
 
@@ -1093,10 +1095,12 @@ class TestIterativeSolver:
         """Test internal function _qsp_iterate_broadcast_scipy"""
         try:
             from jax import numpy as np  # pylint: disable=redefined-outer-name
-            interface = 'jax'
+
+            interface = "jax"
         except ModuleNotFoundError:
             import numpy as np
-            interface = 'numpy'
+
+            interface = "numpy"
         phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, interface)
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
@@ -1107,7 +1111,8 @@ class TestIterativeSolver:
         """Test internal function _W_of_x_scipy"""
         try:
             import jax  # pylint:disable=unused-import
-            interface = 'jax'
+
+            interface = "jax"
         except ModuleNotFoundError:
             interface = None
         mtx = _W_of_x(x, interface)
