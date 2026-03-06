@@ -135,6 +135,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
+
 * When using :func:`~.specs` with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
