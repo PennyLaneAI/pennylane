@@ -157,15 +157,25 @@ def rz_phase_gradient(
     Overall, the full circuit looks like the following:
 
     >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
-     ang_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_1: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_2: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_0: ──H──Rϕ(-3.14)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_1: ──H──Rϕ(-1.57)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_2: ──H──Rϕ(-0.79)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_1: ───────────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
+      targ: ──H────────────╭(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))──H ···
+     ang_0: ───────────────├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+     ang_1: ───────────────├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+     ang_2: ───────────────├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+     phg_0: ──H──Rϕ(-3.14)─├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+     phg_1: ──H──Rϕ(-1.57)─├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+     phg_2: ──H──Rϕ(-0.79)─├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+    work_0: ───────────────├(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+    work_1: ───────────────╰(BasisEmbedding(7.00))@SemiAdder@(BasisEmbedding(7.00))─── ···
+    <BLANKLINE>
+      targ: ··· ─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ··· ─├GlobalPhase(2.75)─┤
+     ang_1: ··· ─├GlobalPhase(2.75)─┤
+     ang_2: ··· ─├GlobalPhase(2.75)─┤
+     phg_0: ··· ─├GlobalPhase(2.75)─┤
+     phg_1: ··· ─├GlobalPhase(2.75)─┤
+     phg_2: ··· ─├GlobalPhase(2.75)─┤
+    work_0: ··· ─├GlobalPhase(2.75)─┤
+    work_1: ··· ─╰GlobalPhase(2.75)─┤
 
     The additional work wires are required by the :class:`~.SemiAdder`.
     Executing the circuit, we get the following result:
