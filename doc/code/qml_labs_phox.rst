@@ -6,17 +6,16 @@ qml.labs.phox
 .. automodule:: pennylane.labs.phox
 
 
-IQP simulator workflow
+Phase Optimization with JAX (PHOX) workflow
 ----------------------
 
 ``pennylane.labs.phox`` exposes a compact toolkit for constructing and
-simulating IQP-style circuits with JAX.
-The usual workflow is:
+simulating Phase Optimization circuits with JAX. The usual workflow is:
 
 1. Use the helpers in :mod:`pennylane.labs.phox.utils` to assemble gates and
    observables.
-2. Configure the simulator via :class:`pennylane.labs.phox.CircuitConfig`.
-3. Build a pure expectation-value function with
+2. Configure the circuit via :class:`pennylane.labs.phox.CircuitConfig`.
+3. Build a expectation-value function with
    :func:`pennylane.labs.phox.build_expval_func` and evaluate it for different
    parameter sets.
 
@@ -51,12 +50,12 @@ The usual workflow is:
    )
 
    expval_fn = build_expval_func(config)
-   expvals, std_errs = expval_fn(params=params)
+   expvals, std_errs = jax.jit(expval_func)
 
    print(expvals[:5])
    print(std_errs[:5])
 
-Training with ``phox.train``
+Training
 -----------------------------
 
 Below is a small training loop that minimizes the sum of all two-body ``Z``
