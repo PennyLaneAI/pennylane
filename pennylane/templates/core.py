@@ -63,19 +63,21 @@ class AbstractArray:
 
     Args:
         shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
-        dtype (type): the data type of the array. Defaults to ``np.int64`` for easier use in specifying
+        dtype (type): the data type of the array. Defaults to ``np.dtype(int)`` for easier use in specifying
         wires.
     """
 
     shape: tuple[int, ...]
-    dtype: type = np.dtype(int)
+    dtype: np.dtype = np.dtype(int)
 
     def __len__(self):
         return reduce(lambda a, b: a * b, self.shape)
 
     def __post_init__(self):
-        if self.dtype in {int, float, complex}:
-            object.__setattr__(self, "dtype", np.dtype(self.dtype))
+        if math.get_interface(self.dtype) == "torch":
+            dummy = math.array((), dtype=self.dtype, like="torch")
+            object.__setattr__(self, "dtype", dummy.numpy().dtype)
+        object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
 def adjoint_subroutine_resource_rep(
