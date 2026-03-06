@@ -19,7 +19,6 @@ from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate, Ma
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
-
 # pylint: disable=too-many-arguments
 
 
