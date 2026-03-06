@@ -14,19 +14,21 @@
 """
 Contains the Adder template.
 """
-from pennylane import Adjoint
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition.resources import adjoint_resource_rep, resource_rep
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import adjoint
+from pennylane.templates.core import (
+    AbstractArray,
+    adjoint_subroutine_resource_rep,
+    subroutine_resource_rep,
+)
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, subroutine_resource_rep
-from ...core import adjoint_subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
