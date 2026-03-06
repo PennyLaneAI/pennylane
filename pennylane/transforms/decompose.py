@@ -822,7 +822,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     max_depth_reached = False
     decomp = []
 
-    _VERBOSE = True
+    _VERBOSE = False
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
@@ -897,9 +897,9 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     elif op.has_decomposition:
         # if _VERBOSE:
         # print(f"Using old system for {op=}")
-        raise DecompositionUndefinedError(
-            f"I don't want to use the old system for {type(op)=}{op=}\n{op.hyperparameters}"
-        )
+        # raise DecompositionUndefinedError(
+        # f"I don't want to use the old system for {type(op)=}{op=}\n{op.hyperparameters}"
+        # )
         decomp = op.decomposition()
 
     elif strict:
