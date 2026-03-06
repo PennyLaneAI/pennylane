@@ -397,21 +397,22 @@ def merge_rotations(
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: cancel-inverses (MLIR-1)
+        Level: merge-rotations (MLIR-1)
         <BLANKLINE>
         Wire allocations: 1
-        Total gates: 2
+        Total gates: 1
         Gate counts:
-        - RX: 2
+        - RX: 1
         Measurements:
         - expval(PauliZ): 1
         Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
-        
-        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.merge_rotations`_.
-        
+
+        For more technical information on how this transform behaves, consult the Catalyst
+        documentation: :func:`catalyst.passes.merge_rotations`_.
+
     """
 
     # Expand away adjoint ops
