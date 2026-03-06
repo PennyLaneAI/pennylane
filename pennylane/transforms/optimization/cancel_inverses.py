@@ -408,7 +408,7 @@ def cancel_inverses(
         2: ──RX(1.00)──RX(2.00)─╰X─┤
 
     .. details::
-        :title: Usage with qjit
+        :title: Usage with Catalyst (qjit)
 
         When used with ``qjit``, the following gates can be optimized by the ``cancel_inverses``
         transform:
@@ -451,8 +451,10 @@ def cancel_inverses(
         Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform supports
-        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`.
-
+        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
+        
+        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.cancel_inverses`_.
+        
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
