@@ -194,7 +194,7 @@ def _jax_jit_basis_state_resources(num_wires):
     resources = {
         pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
         pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
-        qml.X: num_wires // 2,
+        qml.X: num_wires - num_wires // 2,
     }
     return resources
 
@@ -223,7 +223,7 @@ def _jax_jit_basis_state_decomp(state, wires, **__):
 
 
 def _basis_state_decomp_resources(num_wires):
-    return {qml.X: num_wires // 2}
+    return {qml.X: num_wires - num_wires // 2}
 
 
 @register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
