@@ -233,8 +233,11 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
         assert repr(op) == "MultiRZ(num_wires=5)"
 
+        op = CompressedResourceOp(DummyOp, {"bar": 1, "foo": 2})
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
+
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
-        assert repr(op) == "DummyOp(foo=2, bar=1)"
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
 
     @pytest.mark.parametrize(
         "op, expected_name",
