@@ -42,6 +42,21 @@ class TestDecomposition:
         "wires",
         [
             [0, 1],
+            [0, 1, 2, 3, 4],
+            ["a", "b", "c", "d", "e", "f"],
+        ],
+    )
+    def test_decomposition_new(self, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.CosineWindow(wires=wires)
+
+        for rule in qml.list_decomps(qml.CosineWindow):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
             [0, 1, 2],
             [0, 1, 2, 3],
             [0, 1, 2, 3, 4],
@@ -140,6 +155,7 @@ class TestDecomposition:
 class TestRepresentation:
     """Test id and label."""
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         wires = [0, 1, 2]

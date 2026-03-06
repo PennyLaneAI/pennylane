@@ -204,7 +204,7 @@ class TestAdder:
         )
 
         op_list = []
-        op_list.append(qml.QFT.operator(work_wires[:1] + x_wires))
+        op_list += qml.QFT.operator(work_wires[:1] + x_wires).decomposition()
         op_list.append(qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
         op_list.append(qml.adjoint(qml.QFT)(work_wires[:1] + x_wires))
 

@@ -231,7 +231,7 @@ class TestOutMultiplier:
         else:
             qft_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT.operator(wires=qft_output_wires))
+        op_list += qml.QFT.operator(wires=qft_output_wires).decomposition()
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
@@ -240,7 +240,12 @@ class TestOutMultiplier:
                 control=y_wires,
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
+        op_list += list(
+            map(
+                qml.adjoint,
+                qml.QFT.operator(wires=qft_output_wires).decomposition(),
+            )
+        )[::-1]
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)

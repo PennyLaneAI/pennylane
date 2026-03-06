@@ -18,19 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import math
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-
-
-def get_qft_mat(num_wires):
-    omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-    mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-    for m in range(2**num_wires):
-        for n in range(2**num_wires):
-            mat[m, n] = omega ** (m * n)
-
-    return 1 / math.sqrt(2**num_wires) * mat
 
 
 @pytest.mark.jax

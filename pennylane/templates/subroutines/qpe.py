@@ -21,7 +21,6 @@ from collections import defaultdict
 from pennylane import math, ops
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
@@ -31,6 +30,7 @@ from pennylane.operation import Operator
 from pennylane.ops import pow as qml_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.templates.core import AbstractArray, adjoint_subroutine_resource_rep
 from pennylane.wires import Wires
 
 from .qft import QFT
@@ -325,8 +325,9 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
                 num_control_wires=1,
             )
         ] = 1
-    for op, count in QFT.compute_resources(wires=range(num_estimation_wires)).items():
-        gate_count[adjoint_resource_rep(op)] += count
+    gate_count.update(
+        {adjoint_subroutine_resource_rep(QFT, AbstractArray((num_estimation_wires,))): 1}
+    )
     return gate_count
 
 

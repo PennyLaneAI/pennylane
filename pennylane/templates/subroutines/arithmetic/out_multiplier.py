@@ -20,12 +20,16 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import Adjoint
+from pennylane.ops import adjoint
+from pennylane.templates.core import (
+    AbstractArray,
+    adjoint_subroutine_resource_rep,
+    subroutine_resource_rep,
+)
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -270,7 +274,7 @@ class OutMultiplier(Operation):
         **Example**
 
         >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [(Adjoint(<QFT(wires=Wires([5, 6]))>)) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ <QFT(wires=Wires([5, 6]))>]
+        [<QFT(wires=(5, 6))>, ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3]), Adjoint(<QFT(wires=(5, 6))>)]
         """
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
@@ -287,7 +291,7 @@ class OutMultiplier(Operation):
                 ),
                 control=y_wires,
             ),
-            Adjoint(QFT.operator(wires=qft_output_wires)),
+            adjoint(QFT.operator(wires=qft_output_wires)),
         ]
         return op_list
 
@@ -333,7 +337,7 @@ def _out_multiplier_decomposition(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
         control=y_wires,
     )
-    Adjoint(QFT.operator(wires=qft_output_wires))
+    adjoint(QFT.operator(wires=qft_output_wires))
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)

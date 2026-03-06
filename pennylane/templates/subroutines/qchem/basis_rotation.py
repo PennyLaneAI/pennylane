@@ -66,25 +66,6 @@ def basis_rotation_decomp_resources(wires, unitary_matrix, check=False):
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
-def setup_basis_rotation(wires, unitary_matrix, check=False):
-    """Run pre-validation on the unitary_matrix provided to BasisRotation."""
-    M, N = math.shape(unitary_matrix)
-
-    if M != N:
-        raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
-
-    if check and not math.is_abstract(unitary_matrix):
-        u_u_dag = unitary_matrix @ math.conj(unitary_matrix).T
-        is_unitary = math.allclose(u_u_dag, math.eye(M, dtype=complex), atol=1e-4)
-        if not is_unitary:
-            raise ValueError("The provided transformation matrix should be unitary.")
-
-    if len(wires) < 2:
-        raise ValueError(f"This template requires at least two wires, got {len(wires)}")
-
-    return (wires, unitary_matrix), {"check": check}
-
-
 def _real_unitary(unitary, wires):
 
     angle, unitary = _adjust_determinant(unitary)
@@ -146,8 +127,8 @@ def _complex_unitary(unitary, wires):
 @partial(
     Subroutine,
     static_argnames="check",
-    setup_inputs=setup_basis_rotation,
     compute_resources=basis_rotation_decomp_resources,
+    exact_resources=False,
 )
 def BasisRotation(wires, unitary_matrix, check=False):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
@@ -198,9 +179,8 @@ def BasisRotation(wires, unitary_matrix, check=False):
         >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
-        >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
-        ... def circuit():
-        ...    qml.adjoint(qml.BasisRotation.operator(wires=wires, unitary_matrix=umat))
+        >>> def circuit():
+        ...    qml.adjoint(qml.BasisRotation)(wires=wires, unitary_matrix=umat)
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
@@ -383,6 +363,20 @@ def BasisRotation(wires, unitary_matrix, check=False):
         implemented exclusively with ``SingleExcitation`` gates.
 
     """
+
+    M, N = math.shape(unitary_matrix)
+
+    if M != N:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
+
+    if len(wires) < 2:
+        raise ValueError(f"This template requires at least two wires, got {len(wires)}")
+
+    if check and not math.is_abstract(unitary_matrix):
+        u_u_dag = unitary_matrix @ math.conj(unitary_matrix).T
+        is_unitary = math.allclose(u_u_dag, math.eye(M, dtype=complex), atol=1e-4)
+        if not is_unitary:
+            raise ValueError("The provided transformation matrix should be unitary.")
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
     cond(is_real, _real_unitary, _complex_unitary)(unitary=unitary_matrix, wires=wires)

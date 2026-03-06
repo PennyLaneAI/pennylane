@@ -573,12 +573,12 @@ class TestQubitUnitary:
 
         dev = qml.device("default.qubit")
 
-        ops_decompostion = qml.QFT.operator(wires=[0, 1]).decomposition()
+        matrix = qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1])
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
 
-        @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
         @qml.qnode(dev)
         def circuit():
-            qml.QFT(wires=[0, 1])
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
             return qml.state()
 
         tape = qml.workflow.construct_tape(circuit)()
