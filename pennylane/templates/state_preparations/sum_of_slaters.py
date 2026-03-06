@@ -936,27 +936,17 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
+    # resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
-    # qrom_params = {
-    # "num_bitstrings": num_entries,
-    # "num_control_wires": d,
-    # "num_target_wires": num_wires,
-    # "num_work_wires": d - 1,
-    # "clean": True,
-    # }
-    # resources[resource_rep(qml.QROM, **qrom_params)] += 1
-
-    select_params = {
-        "op_reps": [
-            resource_rep(qml.BasisEmbedding, num_wires=num_wires) for _ in range(num_entries)
-        ],
+    qrom_params = {
+        "num_bitstrings": num_entries,
         "num_control_wires": d,
-        "partial": True,
+        "num_target_wires": num_wires,
         "num_work_wires": d - 1,
+        "clean": True,
     }
-    resources[resource_rep(qml.Select, **select_params)] += 1
+    resources[resource_rep(qml.QROM, **qrom_params)] += 1
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7)
@@ -1053,22 +1043,16 @@ def _sos_state_prep(
         [coefficients, qml.math.cast_like(qml.math.zeros(missing_dim), coefficients)],
         like=qml.math.get_interface(coefficients),
     )
-    qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
+    # qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
 
     # qml.QROMStatePreparation(coefficients, wires=enumeration_wires, precision_wires=identification_wires, work_wires=[*mcx_work_wires, *enumeration_wires])
 
     # Step 2: QROM to load v_bits into system register
-    # qml.QROM(
-    # v_bits.T,
-    # control_wires=enumeration_wires,
-    # target_wires=target_wires,
-    # work_wires=qrom_work_wires,
-    # )
-    qml.Select(
-        ops=[qml.BasisEmbedding(_bits, target_wires) for _bits in v_bits.T],
-        control=enumeration_wires,
+    qml.QROM(
+        v_bits.T,
+        control_wires=enumeration_wires,
+        target_wires=target_wires,
         work_wires=qrom_work_wires,
-        partial=True,
     )
 
     if not identity_encoding:
