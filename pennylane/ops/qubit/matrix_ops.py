@@ -620,7 +620,7 @@ class DiagonalQubitUnitary(Operation):
                 qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
             ]
         return [  # Note that we use the first qubits as control, the reference uses the last qubits
-            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1]),
             qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
         ]
 

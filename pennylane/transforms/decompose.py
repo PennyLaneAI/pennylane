@@ -869,7 +869,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
-        print(f"...into {decomp}")
+        if _VERBOSE:
+            print(f"...into {decomp}")
         if num_work_wires is not None:
             num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
 
@@ -894,8 +895,9 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             ) from e
 
     elif op.has_decomposition:
-        # if _VERBOSE: print(f"Using old system for {op=}")
-        raise DecompositionUndefinedError(f"I don't want to use the old system for {op=}\n{op.hyperparameters}")
+        if _VERBOSE:
+            print(f"Using old system for {op=}")
+        # raise DecompositionUndefinedError(f"I don't want to use the old system for {op=}\n{op.hyperparameters}")
         decomp = op.decomposition()
 
     elif strict:

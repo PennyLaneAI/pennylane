@@ -652,7 +652,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         c_bar = 2 * (math.ceil_log2(k) - math.ceil_log2(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
         new_controls_sec_half = controls[c_bar + 2 :]
-        new_work_wires_sec_half = work_wires# + controls[: c_bar + 2]
+        new_work_wires_sec_half = work_wires  # + controls[: c_bar + 2]
 
         if c_bar > 0:  # second variant
             # Closing TemporaryAND for first half, opening TemporaryAND for second half
@@ -718,7 +718,7 @@ def _add_k_units(ops, controls, work_wires, k):
     controls = controls[:1] + controls[-(needed_controls - 1) :]
 
     and_wires = controls[:3]
-    new_work_wires = work_wires# + controls[:2]
+    new_work_wires = work_wires  # + controls[:2]
     new_controls = controls[2:]
     k_first = 2 ** (num_bits - 1)
     return (
@@ -731,7 +731,6 @@ def _add_k_units(ops, controls, work_wires, k):
 
 
 def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wires):
-    print(f"computing resources for select with {num_work_wires=} as input")
     resources = defaultdict(int)
     c = num_control_wires
     K = len(op_reps)
@@ -771,7 +770,6 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
 
     # c-1 left elbows at the beginning and c-1-max(a,1) left elbows for each of the target
     # operators, except the last one, where a is the first flipped bit. Same for right elbows.
-    print(c)
     first_flipped_bits = np.array(_make_first_flipped_bits(c)[: K - 1], dtype=int)
     num_elbows = c - 1 + np.sum(c - 1 - np.clip(first_flipped_bits, a_min=1, a_max=None))
 
@@ -791,8 +789,6 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
                 op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
             )
         ] += 1
-
-    print(dict(resources))
 
     return dict(resources)
 
@@ -839,7 +835,6 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
             }
         )
 
-    print(f"{num_work_wires=} in unary decomposition resource function")
     num_work_wires = num_work_wires - (num_control_wires - 1)
     for op in op_reps:
         counts[
@@ -964,7 +959,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         )
 
     unary_work_wires = work_wires[: c - 1]
-    new_work_wires = work_wires[c - 1 :]# + control
+    new_work_wires = work_wires[c - 1 :]  # + control
     aux_control = [control[0]]
     for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=False):
         aux_control.append(ctrl_wire)
@@ -1040,7 +1035,6 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
     details.
     """
 
-    print(f"{work_wires=} in unary decomposition")
     K = len(ops)
     if K == 0:
         return []
