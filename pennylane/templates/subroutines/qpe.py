@@ -30,9 +30,9 @@ from pennylane.operation import Operator
 from pennylane.ops import pow as qml_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.templates.core import AbstractArray, adjoint_subroutine_resource_rep
 from pennylane.wires import Wires
 
-from pennylane.templates.core import AbstractArray, adjoint_subroutine_resource_rep
 from .qft import QFT
 
 
