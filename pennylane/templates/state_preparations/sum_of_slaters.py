@@ -20,13 +20,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import compiler, for_loop, math
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -726,6 +722,11 @@ class SumOfSlatersPrep(Operation):
     16: ──────╰QROM(M0)───────────────────────────────────────────────────────────────────────────────│──│──│──│──│────────────────────────────────┤  State
     17: ──────────────────────────────────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────────────────┤  State
 
+    Here, the first seven wires (``0`` to ``6``) are the target wires of the state preparation,
+    wires ``7, 8, 9`` form the enumeration register, the next five wires (``10`` to ``14``)
+    are the encoding register, and the pair of wires ``15, 16`` as well as the wire ``17`` are
+    work wires for the ``QROM`` and the enumeration uncomputation, respectively.
+
     .. details::
         :title: Usage details
 
@@ -954,23 +955,23 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
 
     ## Step 5 in paper (p.7)
 
-    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
-    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
-    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
-    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
-
     if m == 1:
         mcx_rep = resource_rep(qml.CNOT)
     elif m == 2:
         mcx_rep = resource_rep(qml.Toffoli)
     else:
         mcx_params = {
-            "num_work_wires": m,  # Work wires will be allocated by MCX itself
+            "num_work_wires": m,
             "work_wire_type": "clean",
             "num_control_wires": m,
             "num_zero_control_values": 0,
         }
         mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
+
+    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
+    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
+    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
+    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
     # If k is a power of two, we can directly use an MCX gate
     resources[mcx_rep] += counts.pop(1, 0)
