@@ -151,14 +151,16 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
+        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
 def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
-            sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
+            sorted(
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
+            )
         )
     if hasattr(d, "tolist"):
         d = d.tolist()
