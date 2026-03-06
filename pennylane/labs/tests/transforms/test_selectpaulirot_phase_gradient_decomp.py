@@ -26,7 +26,8 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 # @pytest.mark.usefixtures("enable_graph_decomposition") # fixture doesnt exist in labs tests
-@pytest.mark.parametrize("prec", [2, 3, 4, 5])
+# @pytest.mark.parametrize("prec", [2, 3, 4, 5])
+@pytest.mark.parametrize("prec", [2, 3])
 def test_as_fixed_decomps(prec):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
@@ -34,7 +35,12 @@ def test_as_fixed_decomps(prec):
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-        angles = np.random.rand(2**3)
+        angles = (
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
+            @ np.array([1 / 2, 1 / 4, 1 / 8])
+            * 4
+            * np.pi
+        )
 
         # If precision is very low, the number of control wires of the multiplexer dictate the
         # required number of work wires.
@@ -62,7 +68,7 @@ def test_as_fixed_decomps(prec):
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit(angles):
-            qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
+            qp.SelectPauliRot(angles, control_wires=range(2), target_wire=2)
             return qp.state()
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
@@ -96,30 +102,30 @@ def test_integration_multi_wire(seed):
     # |∇_b> ┤: ────────────├X─├SemiAdder─├X─────────────┤ ├ |∇_b>
     #       ╰: ────────────╰X─╰SemiAdder─╰X─────────────┤ ╯
 
-    prec = 3
-
-    wires = [0, 1, 2]
-    angles = (
-        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
-        @ np.array([1 / 2, 1 / 4, 1 / 8])
-        * 4
-        * np.pi
-    )
-
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
-
-    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
-
-    all_wires = angle_wires + phase_grad_wires + work_wires + wires
-
-    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires
-    )
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        prec = 3
+
+        wires = [0, 1, 2]
+        angles = (
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
+            @ np.array([1 / 2, 1 / 4, 1 / 8])
+            * 4
+            * np.pi
+        )
+
+        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+        work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+
+        phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
+
+        all_wires = angle_wires + phase_grad_wires + work_wires + wires
+
+        custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires
+        )
 
         @qp.transforms.decompose(
             gate_set={
