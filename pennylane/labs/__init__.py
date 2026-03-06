@@ -27,6 +27,7 @@ Modules
 
     dla
     estimator_beta
+    phox
     transforms
     trotter_error
 
