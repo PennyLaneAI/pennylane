@@ -268,7 +268,7 @@ def merge_rotations(
             is ignored when used within a ``qjit`` workflow.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations in the
-            `~.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
+            :attr:`~pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
             only the operations whose names match those in the list will undergo merging. Note: this
             argument is ignored when used within a ``qjit`` workflow.
 
