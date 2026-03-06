@@ -28,7 +28,7 @@ from pennylane.wires import Wires, WiresLike
 # pylint: disable=unused-argument
 def basis_embedding_resources(features, wires):
     """Calculate the resources for BasisEmbedding."""
-    return {PauliX: len(wires) - 1 or len(wires), RX: 1, GlobalPhase: 1}
+    return {PauliX: len(wires)}
 
 
 @functools.partial(
