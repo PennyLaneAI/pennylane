@@ -200,9 +200,16 @@ def _fallback_branch_resources(num_wires):
 
 
 def _fallback_branch_cond(**_):
-    x = qml.math.array(0.2, like="jax")
     if qml.capture.enabled() or qml.compiler.active():
         return False
+
+    try:
+        import jax  # pylint: disable=import-outside-toplevel,unused-import
+    except ModuleNotFoundError:
+        # Can't be using jax.jit if jax is not installed.
+        return False
+    x = qml.math.array(0.2, like="jax")
+    # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
     return qml.math.is_abstract(x)
 
 
