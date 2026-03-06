@@ -20,6 +20,9 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 
+# pylint: disable=too-many-arguments
+
+
 class TestAllocate:
     """Test the methods and attributes of the Allocate class"""
 

@@ -36,6 +36,8 @@ from pennylane.labs.estimator_beta.wires_manager import (
 )
 from pennylane.wires import Wires
 
+# pylint: disable=unused-argument,too-many-arguments,arguments-differ
+
 any_state = AllocateState.ANY
 
 
@@ -182,6 +184,7 @@ def any_state_allocation3():
 
 
 def nested_any_state_allocation1():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     return [
         GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
@@ -193,6 +196,7 @@ def nested_any_state_allocation1():
 
 
 def nested_any_state_allocation2():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     allocate = Allocate(2, any_state, True)
     return [
@@ -204,6 +208,7 @@ def nested_any_state_allocation2():
 
 
 def nested_any_state_allocation3():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     allocate = Allocate(2, any_state, True)
     return [
