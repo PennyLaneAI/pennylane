@@ -171,7 +171,7 @@ A QNode can be explicitly created as follows:
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
->>> circuit(np.pi/4, 0.7)
+>>> circuit(np.pi/4, 0.7) # doctest: +SKIP
 tensor(0.764, requires_grad=True)
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
@@ -259,6 +259,7 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
     dev = qml.device('default.qubit', wires=2)
 
     @qml.set_shots(shots=10)
+    @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.CNOT([0, 1])
@@ -269,8 +270,9 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 This transform can also be used to transform an existing QNode:
 
->>> new_qnode = qml.set_shots(circuit, shots=100)
->>> new_qnode(0.5)
+>>> new_qnode = qml.set_shots(circuit, shots=5)
+>>> new_qnode(0.5) # doctest: +SKIP
+array([-1.,  1.,  1.,  1.,  1.])
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
 QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
@@ -293,26 +295,36 @@ second set of 10 shots, and final 1000 shots, separately. Therefore, we will get
 of shape ``(3, 2)``:
 
 >>> results = circuit(0.5)
->>> results
-((array(0.6), array(1.)),
- (array(-0.4), array(1.)),
- (array(0.048), array(0.902)))
+>>> from pprint import pprint
+>>> pprint(results) # doctest: +SKIP
+((np.float64(-0.2), np.float64(1.0)),
+ (np.float64(0.0), np.float64(0.8)),
+ (np.float64(-0.028), np.float64(0.866)))
 
 We can index into this tuple and retrieve the results computed with only 5 shots:
 
->>> results[0]
-(array(0.6), array(1.))
+>>> results[0] # doctest: +SKIP
+(np.float64(-0.6), np.float64(1.0))
 
 
 Parameter Broadcasting in QNodes
 --------------------------------
+
+Consider the following circuit,
+
+.. code-block:: python
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(x):
+        qml.RX(x,0)
+        return qml.expval(qml.Z(0))
 
 Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
 
 >>> x = np.array([0.543, 1.234])
 >>> result = circuit(x)
 >>> result
-tensor([0.85616242, 0.33046511], requires_grad=True)
+array([0.85616242, 0.33046511])
 
 Note that we are passing in a 1-dimensional array of parameters to the `circuit()`
 QNode defined above, which takes a single parameter and returns a single expectation
@@ -335,13 +347,7 @@ Many standard quantum operators support broadcasting; see the corresponding attr
 :class:`~.pennylane.operation.Operator` documentation contains implementation details
 and a guide to make custom operators compatible with broadcasting.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
-devices like ``"default.qubit"`` that indicate that they support it:
-
->>> cap = dev.capabilities()
->>> cap["supports_broadcasting"]
-True
-
-Other devices separate the parameters and execute the QNode sequentially.
+devices like ``"default.qubit"`` support it. Other devices separate the parameters and execute the QNode sequentially.
 
 Importing circuits from other frameworks
 ----------------------------------------
