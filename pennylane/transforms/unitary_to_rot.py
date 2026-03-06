@@ -147,7 +147,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
 
     .. details::
-        :title: Differentiability
+        :title: Usage Details
 
         This decomposition is not fully differentiable. We **can** differentiate
         with respect to input QNode parameters when they are not used to
