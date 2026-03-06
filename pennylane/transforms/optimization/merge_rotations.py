@@ -299,7 +299,7 @@ def merge_rotations(
     np.float64(0.955...)
 
     .. details::
-        :title: Details on merging ``Rot`` gates
+        :title: Details on merging Rot gates
         :href: details-on-rot
 
         When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
@@ -412,7 +412,6 @@ def merge_rotations(
 
         For more technical information on how this transform behaves, consult the Catalyst
         documentation: :func:`catalyst.passes.merge_rotations`_.
-
     """
 
     # Expand away adjoint ops
