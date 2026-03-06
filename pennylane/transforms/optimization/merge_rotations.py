@@ -386,7 +386,7 @@ def merge_rotations(
             dev = qml.device("lightning.qubit", wires=1)
 
             @qml.qjit(capture=True)
-            @qml.transforms.cancel_inverses
+            @qml.transforms.merge_rotations
             @qml.qnode(dev)
             def circuit():
                 qml.RX(0.1, wires=0)
@@ -411,7 +411,7 @@ def merge_rotations(
         Additionally, the ``merge_rotations`` transform supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
         
-        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.cancel_inverses`_.
+        For more technical information on how this transform behaves, consult the Catalyst documentation: :func:`catalyst.passes.merge_rotations`_.
         
     """
 
