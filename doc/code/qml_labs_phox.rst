@@ -49,7 +49,7 @@ simulating Phase Optimization circuits with JAX. The usual workflow is:
    )
 
    expval_fn = build_expval_func(config)
-   expvals, std_errs = jax.jit(expval_func, static_argnames=["n_samples"])
+   expvals, std_errs = jax.jit(expval_func)
 
    print(expvals[:5])
    print(std_errs[:5])
