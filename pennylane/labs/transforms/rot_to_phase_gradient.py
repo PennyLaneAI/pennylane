@@ -127,10 +127,13 @@ def _select_pauli_rot_phase_gradient(
             binary_int, control_wires, angle_wires, work_wires=work_wires[: len(control_wires) - 1]
         )
     ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
+    # The uncomputation does not need any adjoints because both QROM and C(X) are self-adjoint.
+    adj_ops = ops[::-1]
 
     return qp.change_op_basis(
         qp.prod(*ops[::-1]),
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
+        qp.prod(*adj_ops[::-1]),
     )
 
 
