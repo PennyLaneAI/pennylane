@@ -2,7 +2,7 @@ name: PennyLane Labs Unit-Tests
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 concurrency:
   group: qml-labs-${{ github.workflow }}-${{ github.ref }}
