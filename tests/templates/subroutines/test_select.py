@@ -766,7 +766,7 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [qml.BasisEmbedding.operator(i, wires=target) for i in range(num_ops)]
 
         @qml.qnode(dev)
         def circuit():
@@ -788,7 +788,7 @@ class TestUnaryIterator:
         """Test that proper errors are raised"""
 
         wires = qml.registers({"target": num_ops, "control": control, "work": work})
-        ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
+        ops = [qml.BasisEmbedding.operator(i, wires=wires["target"]) for i in range(num_ops)]
 
         with pytest.raises(ValueError, match=msg_match):
             _select_decomp_unary(
@@ -877,7 +877,7 @@ class TestSelectWithWorkWire:
         work = ["a"]
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [qml.BasisEmbedding.operator(i, wires=target) for i in range(num_ops)]
 
         @qml.qnode(dev)
         def circuit():
