@@ -140,38 +140,6 @@
   level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
   is the level after all tape transforms but before the first MLIR pass.
 
-  Note in the example below, using ``level="all"`` only returns 2 levels, rather than 3 which was the default in PennyLane v0.44.0.
-  ```python
-  @qml.qjit
-  @qml.transforms.cancel_inverses
-  @qml.qnode(qml.device("lightning.qubit", wires=2))
-  def circuit():
-      qml.X(0)
-      qml.H(0)
-      qml.H(0)
-      return qml.probs()
-  ```
-
-  ```pycon
-  >>> pprint(qml.specs(circuit, level="all")())
-  CircuitSpecs(device_name='lightning.qubit',
-               num_device_wires=2,
-               shots=Shots(total_shots=None, shot_vector=()),
-               level={0: 'Before MLIR Passes',
-                      1: 'cancel-inverses'},
-               resources={'Before MLIR Passes': SpecsResources(gate_types={'Hadamard': 2,
-                                                                           'PauliX': 1},
-                                                               gate_sizes={1: 3},
-                                                               measurements={'probs(all wires)': 1},
-                                                               num_allocs=2,
-                                                               depth=None),
-                          'cancel-inverses': SpecsResources(gate_types={'PauliX': 1},
-                                                            gate_sizes={1: 1},
-                                                            measurements={'probs(all wires)': 1},
-                                                            num_allocs=2,
-                                                            depth=None)})
-  ```
-
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
