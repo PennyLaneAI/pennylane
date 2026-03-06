@@ -157,6 +157,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         .. code-block:: python
 
             import scipy
+            import pennylane.numpy as pnp
 
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
@@ -178,17 +179,19 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         .. code-block:: python
 
+            @qml.transforms.unitary_to_rot
+            @qml.qnode(qml.device("default.qubit"))
             def circuit(angles):
                 z = angles[0]
                 x = angles[1]
 
-                Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
+                Z_mat = pnp.array([[pnp.exp(-1j * z / 2), 0.0], [0.0, pnp.exp(1j * z / 2)]])
 
-                c = np.cos(x / 2)
-                s = np.sin(x / 2) * 1j
-                X_mat = np.array([[c, -s], [-s, c]])
+                c = pnp.cos(x / 2)
+                s = pnp.sin(x / 2) * 1j
+                X_mat = pnp.array([[c, -s], [-s, c]])
 
-                U = np.kron(Z_mat, X_mat)
+                U = pnp.kron(Z_mat, X_mat)
 
                 qml.Hadamard(wires="a")
 
@@ -197,6 +200,11 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
                 qml.CNOT(wires=["b", "a"])
                 return qml.expval(qml.X("a"))
+
+        >>> g = qml.grad(circuit)
+        >>> params = pnp.array([0.2, 0.3], requires_grad=True)
+        >>> g(params) # doctest: +SKIP
+        array([nan, nan])
     """
     operations = []
     for op in tape.operations:
