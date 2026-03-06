@@ -14,6 +14,7 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+
 from itertools import product
 
 import pytest
@@ -242,6 +243,30 @@ class TestDecomposeSingleQubitUnitaryTransform:
         jitted_result = jitted_qnode(U)
         assert np.allclose(transformed_result, original_result)
         assert np.allclose(jitted_result, original_result)
+
+
+def test_two_qubit_decomposition_seperable_tensor_product():
+    """Tests the recursive nature of the algorithm to decompose multiple QubitUnitary"""
+
+    U = qml.matrix(qml.exp(-1j * 0.5 * qml.X(0)), wire_order=range(2))
+    U @= qml.matrix(qml.exp(-1j * 0.5 * qml.Y(1)), wire_order=range(2))
+
+    @qml.transforms.unitary_to_rot
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.QubitUnitary(U, wires=range(2))
+        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+    operations = qml.workflow.construct_tape(circuit)().operations
+    expected_operations = [
+        qml.RZ((1.5707963267948961), wires=[0]),
+        qml.RY((1.0), wires=[0]),
+        qml.RZ((10.995574287564276), wires=[0]),
+        qml.RZ((0.0), wires=[1]),
+        qml.RY((1.0), wires=[1]),
+        qml.RZ((0.0), wires=[1]),
+    ]
+    assert operations == expected_operations
 
 
 # A simple circuit; we will test QubitUnitary on matrices constructed using trainable
@@ -564,7 +589,7 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
         tape = qml.workflow.construct_tape(transformed_qnode)(x, y, z)
-        assert len(tape.operations) == 17
+        assert len(tape.operations) == 29
 
         original_grad = qml.grad(original_qnode)(x, y, z)
         transformed_grad = qml.grad(transformed_qnode)(x, y, z)
@@ -615,7 +640,7 @@ class TestTwoQubitUnitaryDifferentiability:
         tape = qml.workflow.construct_tape(transformed_qnode)(
             transformed_x, transformed_y, transformed_z
         )
-        assert len(tape.operations) == 17
+        assert len(tape.operations) == 29
 
         original_result.backward()
         transformed_result.backward()
@@ -661,7 +686,7 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_result, transformed_result)
 
         tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x)
-        assert len(tape.operations) == 15
+        assert len(tape.operations) == 27
 
         with tf.GradientTape() as tape:
             loss = original_qnode(x)
@@ -706,7 +731,7 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
         tape = qml.workflow.construct_tape(transformed_qnode)(x)
-        assert len(tape.operations) == 15
+        assert len(tape.operations) == 27
 
         original_grad = jax.grad(original_qnode, argnums=0)(x)
         transformed_grad = jax.grad(transformed_qnode, argnums=0)(x)

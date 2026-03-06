@@ -16,8 +16,9 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 """
 from functools import lru_cache, partial
 
-import pennylane as qml
+from pennylane import capture, math
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -54,10 +55,10 @@ def _get_plxpr_unitary_to_rot():
 
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
-            if isinstance(op, qml.QubitUnitary):
+            if isinstance(op, QubitUnitary):
                 ops = []
-                with qml.capture.pause():
-                    matrix_shape = qml.math.shape(op.parameters[0])
+                with capture.pause():
+                    matrix_shape = math.shape(op.parameters[0])
                     if matrix_shape == (2, 2):
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif matrix_shape == (4, 4):
@@ -205,17 +206,9 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     """
     operations = []
     for op in tape.operations:
-        if isinstance(op, qml.QubitUnitary):
-            # Single-qubit unitary operations
-            if qml.math.shape(op.parameters[0]) == (2, 2):
-                with QueuingManager.stop_recording():
-                    operations.extend(one_qubit_decomposition(op.parameters[0], op.wires[0]))
-            # Two-qubit unitary operations
-            elif qml.math.shape(op.parameters[0]) == (4, 4):
-                with QueuingManager.stop_recording():
-                    operations.extend(two_qubit_decomposition(op.parameters[0], op.wires))
-            else:
-                operations.append(op)
+        if isinstance(op, QubitUnitary):
+            decomposition = _recursively_decompose_qubit_unitary(op)
+            operations.extend(decomposition)
         else:
             operations.append(op)
 
@@ -228,3 +221,40 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         return results[0]
 
     return [new_tape], null_postprocessing
+
+
+def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
+    """Recursively decomposes a QubitUnitary operator into a list of rotations + CNOT."""
+
+    decomposition = [op]
+
+    while any(
+        isinstance(op_, QubitUnitary) and math.shape(op_.parameters[0])[0] <= 4
+        for op_ in decomposition
+    ):
+
+        tmp_decompositions = []
+
+        for op_ in decomposition:
+            # No need to process other gates
+            if not isinstance(op_, QubitUnitary):
+                tmp_decompositions.append(op_)
+                continue
+
+            shape = math.shape(op_.parameters[0])
+            # Single-qubit unitary operations
+            if shape == (2, 2):
+                with QueuingManager.stop_recording():
+                    tmp_decompositions.extend(
+                        one_qubit_decomposition(op_.parameters[0], op_.wires[0])
+                    )
+            # Two-qubit unitary operations
+            elif shape == (4, 4):
+                with QueuingManager.stop_recording():
+                    tmp_decompositions.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
+            else:
+                tmp_decompositions.append(op_)
+
+        decomposition = tmp_decompositions
+
+    return decomposition
