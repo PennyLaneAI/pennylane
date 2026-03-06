@@ -19,7 +19,6 @@ from pennylane.decomposition import add_decomps
 from pennylane.ops.qubit.state_preparation import (
     BasisState,
     _basis_state_decomp,
-    _single_ctrl_basis_state_decomp,
 )
 
 
@@ -76,4 +75,3 @@ class BasisEmbedding(BasisState):
 
 
 add_decomps(BasisEmbedding, _basis_state_decomp)
-add_decomps("C(BasisEmbedding)", _single_ctrl_basis_state_decomp)
