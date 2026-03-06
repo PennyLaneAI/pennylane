@@ -246,8 +246,6 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
             elif shape == (4, 4):
                 with QueuingManager.stop_recording():
                     tmp_decompositions.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
-            else:
-                tmp_decompositions.append(op_)
 
         decomposition = tmp_decompositions
 
