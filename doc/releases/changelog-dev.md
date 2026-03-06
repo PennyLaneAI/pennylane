@@ -109,6 +109,9 @@
   0: ──MyTemplate(0.10,0.20)─┤  State
   ```
 
+The following classes have been ported over:
+- `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
@@ -136,6 +139,9 @@
   This fixed a bug where two qubit unitaries would decompose incorrectly to two single qubit unitaries rather
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
+  
+* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
 * When using :func:`~.specs` with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
