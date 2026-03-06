@@ -90,6 +90,21 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             )
 
 
+def _check_wire_overlaps(wires_a, wires_b, name_b, name_a):
+    if pl_math.is_abstract(wires_a) or any(pl_math.is_abstract(w) for w in wires_a):
+        return
+    if pl_math.is_abstract(wires_b):
+        return
+    for wire in wires_b:
+        if pl_math.is_abstract(wire):
+            continue
+        if wire in wires_a:
+            raise ValueError(
+                f"{name_b} wires should be different from {name_a} wires. Found {wire} in both."
+            )
+    return
+
+
 class QROM(Operation):
     r"""Applies the QROM operator.
 
@@ -207,14 +222,10 @@ class QROM(Operation):
         self.hyperparameters["clean"] = clean
 
         if len(work_wires) != 0:
-            if any(wire in work_wires for wire in control_wires):
-                raise ValueError("Control wires should be different from work wires.")
+            _check_wire_overlaps(work_wires, control_wires, "Control", "work")
+            _check_wire_overlaps(work_wires, target_wires, "Target", "work")
 
-            if any(wire in work_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from work wires.")
-
-        if any(wire in control_wires for wire in target_wires):
-            raise ValueError("Target wires should be different from control wires.")
+        _check_wire_overlaps(control_wires, target_wires, "Target", "control")
 
         if 2 ** len(control_wires) < data.shape[0]:
             raise ValueError(

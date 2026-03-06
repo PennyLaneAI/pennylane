@@ -936,7 +936,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    # resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
+    resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
     qrom_params = {
@@ -1043,7 +1043,7 @@ def _sos_state_prep(
         [coefficients, qml.math.cast_like(qml.math.zeros(missing_dim), coefficients)],
         like=qml.math.get_interface(coefficients),
     )
-    # qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
+    qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
 
     # qml.QROMStatePreparation(coefficients, wires=enumeration_wires, precision_wires=identification_wires, work_wires=[*mcx_work_wires, *enumeration_wires])
 
