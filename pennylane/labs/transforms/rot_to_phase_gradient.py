@@ -122,11 +122,11 @@ def _select_pauli_rot_phase_gradient(
     precision = len(angle_wires)
     binary_int = binary_repr_int(phis, precision)
 
-    ops = [
-        qp.QROM(
-            binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )
-    ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
+    work_wires = work_wires[: len(control_wires) - 1]
+
+    ops = [qp.QROM(binary_int, control_wires, angle_wires, work_wires=work_wires)] + [
+        qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires
+    ]
 
     return qp.change_op_basis(
         qp.prod(*ops[::-1]),

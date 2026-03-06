@@ -151,7 +151,7 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
+        params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
@@ -265,7 +265,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_work_wires=1,
         ...     work_wire_type='borrowed'
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1, work_wire_type=borrowed)
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
@@ -276,7 +276,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1, work_wire_type=borrowed)
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
