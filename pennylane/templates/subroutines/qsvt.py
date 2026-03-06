@@ -836,6 +836,20 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
+
+@jit_if_jax_available
+def _cheby_pol(x, degree):
+    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
+
+    Args:
+        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
+        degree (int): degree of the Chebyshev polynomial
+
+    Returns:
+        float: value of cos(degree*arcos(x))
+    """
+    return math.cos(degree * math.arccos(x))
+
 def _poly_func_scipy(coeffs, parity, x):
     r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
 
@@ -848,11 +862,11 @@ def _poly_func_scipy(coeffs, parity, x):
         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
     """
     ind = math.arange(len(coeffs))
-    # return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
     return coeffs @ np.vectorize(_cheby_pol, excluded={'x'})(x, 2 * ind + parity)
 
 
-def _z_rotation_scipy(phi, interface):
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
     Args:
@@ -864,7 +878,8 @@ def _z_rotation_scipy(phi, interface):
     return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
 
 
-def _W_of_x_scipy(x, interface):
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _W_of_x(x, interface):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
     Args:
@@ -888,7 +903,8 @@ def _W_of_x_scipy(x, interface):
     )
 
 
-def _qsp_iterate_scipy(phi, x, interface):
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _qsp_iterate(phi, x, interface):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
 
@@ -900,11 +916,12 @@ def _qsp_iterate_scipy(phi, x, interface):
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
     return math.dot(
-        _W_of_x_scipy(x=x, interface=interface), _z_rotation_scipy(phi=phi, interface=interface)
+        _W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface)
     )
 
 
-def _qsp_iterate_broadcast_scipy(phis, x, interface):
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _qsp_iterate_broadcast(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
     Args:
@@ -918,14 +935,14 @@ def _qsp_iterate_broadcast_scipy(phis, x, interface):
         from jax import vmap
 
         interface = "jax"
-        qsp_iterate_list = vmap(_qsp_iterate_scipy, in_axes=(0, None, None))(phis[1:], x, interface)
+        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
     except ModuleNotFoundError:
         qsp_iterate_list = math.vectorize(
-            _qsp_iterate_scipy, excluded=(1, 2), signature="()->(m,n)"
+            _qsp_iterate, excluded=(1, 2), signature="()->(m,n)"
         )(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
-    matrix_iterate = math.dot(_z_rotation_scipy(phi=phis[0], interface=interface), matrix_iterate)
+    matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
 
     return math.real(matrix_iterate[0, 0])
 
@@ -968,14 +985,14 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
         try:
             from jax import jit, vmap
 
-            qsp_iterates = jit(_qsp_iterate_broadcast_scipy, static_argnames=["interface"])
+            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
 
             obj_func = (
                 vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
             )
         except ModuleNotFoundError:
             obj_func = (
-                math.vectorize(_qsp_iterate_broadcast_scipy, excluded=(0, 2))(
+                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(
                     phi, grid_points, interface
                 )
                 - targets
@@ -1030,18 +1047,6 @@ def _compute_qsp_angles_iteratively_scipy(poly):
     return angles
 
 
-@jit_if_jax_available
-def _cheby_pol(x, degree):
-    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
-
-    Args:
-        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
-        degree (int): degree of the Chebyshev polynomial
-
-    Returns:
-        float: value of cos(degree*arcos(x))
-    """
-    return math.cos(degree * math.arccos(x))
 
 
 @jit_if_jax_available
@@ -1050,79 +1055,6 @@ def _poly_func_optax(coeffs, x):
     return jax.numpy.sum(
         coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
     )
-
-
-@partial(jit_if_jax_available, static_argnames=["interface"])
-def _z_rotation_optax(phi, interface):
-    r"""Returns the matrix of the `RZ(2 \phi)` gate.
-
-    Args:
-        phi (float): angle parameter
-
-    Returns:
-        tensor_like: Z rotation matrix
-    """
-    return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
-
-
-@partial(jit_if_jax_available, static_argnames=["interface"])
-def _W_of_x_optax(x, interface):
-    r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
-
-    Args:
-        x (float): point at which to evaluate the parametric operator W
-
-    Returns:
-        tensor_like: 2x2 matrix of W(x)
-    """
-    return math.array(
-        [
-            [
-                _cheby_pol(x=x, degree=1.0),
-                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
-            ],
-            [
-                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
-                _cheby_pol(x=x, degree=1.0),
-            ],
-        ],
-        like=interface,
-    )
-
-
-@partial(jit_if_jax_available, static_argnames=["interface"])
-def _qsp_iterate_optax(phi, x, interface):
-    r"""
-    Signal operator defined as the product of RZ(phi) and W(x)
-
-    Args:
-        phi (float): angle parameter
-        x (float): point at which to evaluate the parametric operator W
-
-    Returns:
-        tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
-    """
-    return math.dot(
-        _W_of_x_optax(x=x, interface=interface), _z_rotation_optax(phi=phi, interface=interface)
-    )
-
-
-@partial(jit_if_jax_available, static_argnames=["interface"])
-def _qsp_iterate_broadcast_optax(phis, x, interface):
-    r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
-
-    Args:
-        phis (tensor_like): array of QSP angles implementing a given polynomial
-        x (float):point at which to evaluate the polynomial
-    Returns:
-        tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
-    """
-    qsp_iterate_list = jax.vmap(_qsp_iterate_optax, in_axes=(0, None, None))(phis[1:], x, interface)
-
-    matrix_iterate = reduce(math.dot, qsp_iterate_list)
-    matrix_iterate = math.dot(_z_rotation_optax(phi=phis[0], interface=interface), matrix_iterate)
-
-    return math.real(matrix_iterate[0, 0])
 
 
 def _grid_pts(degree, interface):
@@ -1156,7 +1088,7 @@ def _obj_function_optax(phi, x, y):
     # pylint: disable=import-outside-toplevel,redefined-outer-name
     import jax
 
-    obj_func = jax.vmap(_qsp_iterate_broadcast_optax, in_axes=(None, 0, None))(phi, x, "jax") - y
+    obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
 
