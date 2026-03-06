@@ -200,6 +200,7 @@ def _preprocess_level_input(
         return list(range(pipeline_len + 2))
 
     if level in ("all", "all-mlir"):
+        # Account for "Before MLIR passes" level
         return list(range(num_tape_levels, pipeline_len + 1))
 
     if isinstance(level, (int, str)):
@@ -660,9 +661,10 @@ def specs(
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
-            Level 0 always corresponds to the original circuit before any user transforms or passes have been applied,
-            and incremental levels correspond to the aggregate of user transforms and passes in the order in which they
-            were applied.
+            Level ``0`` always corresponds to the original circuit before any user-specified
+            tape transforms or compilation passes have been applied,
+            and incremental levels correspond to the aggregate of user-specified transforms and passes
+            in the order in which they are applied.
 
             This may include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
             further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
