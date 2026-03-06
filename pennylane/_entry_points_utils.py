@@ -21,7 +21,7 @@ import sys
 from importlib import metadata
 
 
-def _setup_entry_points(module_name, group_name): # pragma: no cover
+def _setup_entry_points(module_name, group_name):  # pragma: no cover
     """Returns dunder methods required to import entry-points from the module in which this function is called. Entry-point
     elements are lazy-loaded.
 
