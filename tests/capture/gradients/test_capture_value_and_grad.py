@@ -147,7 +147,7 @@ def test_nested_value_and_grad():
 
 @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
 def test_pytree_input(argnums):
-    """Test that the qml.grad primitive can be captured with pytree inputs."""
+    """Test that the value_and_grad primitive can be captured with pytree inputs."""
 
     fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 

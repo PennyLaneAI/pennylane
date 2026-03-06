@@ -30,7 +30,7 @@ _has_jax = find_spec("jax") is not None
 # pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_value_and_grad_prim():
-    """Create a primitive for gradient computations."""
+    """Create a primitive for value and gradient computations."""
     if not _has_jax:  # pragma: no cover
         return None
 
@@ -56,14 +56,11 @@ def _get_value_and_grad_prim():
     @value_and_grad_prim.def_abstract_eval
     def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
         in_avals = tuple(args[i] for i in argnums)
-        out_shapes = [outvar.aval.shape for outvar in jaxpr.outvars]
-        grad_avals = [
-            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
-            for out_shape in out_shapes
+        grad_avals = (
+            _ShapedArray(in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
             for in_aval in in_avals
-        ]
-        res_avals = [outvar.aval for outvar in jaxpr.outvars]
-        return res_avals + grad_avals
+        )
+        return [jaxpr.outvars[0].aval, *grad_avals]
 
     return value_and_grad_prim
 
@@ -117,7 +114,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
             **prim_kwargs,
         )
 
-        res_flat, grad_flat = out_flat[: len(jaxpr.out_avals)], out_flat[len(jaxpr.out_avals) :]
+        res_flat, *grad_flat = out_flat
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
         grad_flat = tree_leaves(grad_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
