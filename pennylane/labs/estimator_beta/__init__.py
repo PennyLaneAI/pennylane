@@ -23,6 +23,7 @@ resource estimation.
 .. currentmodule:: pennylane.labs.estimator_beta
 
 """
+from .estimate import estimate
 from .wires_manager import (
     Allocate,
     Deallocate,
