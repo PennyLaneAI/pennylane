@@ -26,6 +26,8 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+
 
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
@@ -306,15 +308,14 @@ def _estimate_auxiliary_wires(
                 num_active_qubits=action.gate.num_wires,
             )
 
-            if total + sub_max_dealloc < max_dealloc:
-                max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
-            if total + sub_max_alloc > max_alloc:
-                max_alloc = total + sub_max_alloc
+            max_alloc = max(max_alloc, total + sub_max_alloc)
+            max_dealloc = min(max_dealloc, total + sub_max_dealloc)  # sub_max_dealloc < 0
+
             total += sub_total
             continue
 
-        elif isinstance(action, Allocate):
-            if action.state == AllocateState.ANY and action.restored == True:
+        if isinstance(action, Allocate):
+            if action.state == AllocateState.ANY and action.restored is True:
                 diff = local_num_available_any_state_aux - action.num_wires
 
                 if diff < 0:
@@ -329,8 +330,8 @@ def _estimate_auxiliary_wires(
             else:
                 total += action.num_wires
 
-        elif isinstance(action, Deallocate):
-            if action.state == AllocateState.ANY and action.restored == True:
+        if isinstance(action, Deallocate):
+            if action.state == AllocateState.ANY and action.restored is True:
                 try:
                     associated_alloc = any_state_aux_allocation.pop(action.allocated_register)
                     total -= associated_alloc
@@ -344,10 +345,8 @@ def _estimate_auxiliary_wires(
             else:
                 total -= action.num_wires
 
-        if total > max_alloc:
-            max_alloc = total
-        if total < max_dealloc:
-            max_dealloc = total
+        max_alloc = max(max_alloc, total)
+        max_dealloc = min(max_dealloc, total)
 
     if len(any_state_aux_allocation) != 0:
         raise ValueError(
@@ -504,10 +503,8 @@ def estimate_wires_from_circuit(
             num_clean_aux_used = min(num_clean_logical_wires, borrowable_qubits)
             sub_max_alloc -= num_clean_aux_used
 
-            if total + sub_max_dealloc < max_dealloc:
-                max_dealloc = total + sub_max_dealloc
-            if total + sub_max_alloc > max_alloc:
-                max_alloc = total + sub_max_alloc
+            max_alloc = max(max_alloc, total + sub_max_alloc)
+            max_dealloc = min(max_dealloc, total + sub_max_dealloc)
 
             total += sub_total
 
@@ -572,10 +569,9 @@ def estimate_wires_from_resources(
             num_active_qubits=action.gate.num_wires,
         )
 
-        if total + sub_max_dealloc < max_dealloc:
-            max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
-        if total + sub_max_alloc > max_alloc:
-            max_alloc = total + sub_max_alloc
+        max_alloc = max(max_alloc, total + sub_max_alloc)
+        max_dealloc = min(max_dealloc, total + sub_max_dealloc)  # sub_max_dealloc < 0
+
         total += sub_total
 
     if max_dealloc < 0:
