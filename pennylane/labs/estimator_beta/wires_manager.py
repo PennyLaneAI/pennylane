@@ -399,7 +399,7 @@ def _process_circuit_lst(
                 f"Circuit must contain only instances of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits', got {type(op)}"
             )
 
-        elif isinstance(op, Operator):
+        if isinstance(op, Operator):
             op_wires = op.wires
             cmp_rep_op = _map_to_resource_op(op).resource_rep_from_op()
 
