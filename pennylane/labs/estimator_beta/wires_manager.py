@@ -30,6 +30,26 @@ from pennylane.wires import Wires
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
     decomposition of a ``ResourceOperator``.
+
+    Args:
+        num_wires (int): the number of wires to be allocated
+        state (str): The quantum state of the wires to be allocated, valid values include "zero" or "any".
+        restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
+            initial state. If True, this requirement will be enforced programmatically.
+
+    Raises:
+        ValueError: `num_wires` must be a 0 or a positive integer.
+        ValueError: `state` must be one of 'zero' or 'any'.
+        ValueError: Expected `restored` to be True or False.
+
+    **Example**
+
+    >>> import pennylane.labs.estimator_beta as exp_qre
+    >>> exp_qre.Allocate(4)
+    Allocate(4, state=zero, restored=False)
+    >>> exp_qre.Allocate(2, state="any", restored=True)
+    Allocate(2, state=any, restored=True)
+
     """
 
     def __init__(self, num_wires, state=AllocateState.ZERO, restored=False):
@@ -68,6 +88,41 @@ class Allocate:
 class Deallocate:
     r"""A class used to represent the deallocation of auxiliary wires that were used in the resource
     decomposition of a ``ResourceOperator``.
+
+    Args:
+        num_wires (int | None): the number of wires to be deallocated
+        allocated_register (Allocate | None): the allocated wire register the we wish to deallocate
+        state (str): The quantum state of the wires to be deallocated, valid values include "zero" or "any".
+        restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
+            initial state. If True, this requirement will be enforced programmatically.
+
+    Raises:
+        ValueError: `num_wires` must be a 0 or a positive integer.
+        ValueError: `state` must be one of 'zero' or 'any'.
+        ValueError: Expected `restored` to be True or False.
+
+    **Example**
+
+    The simplest way to deallocate a register is to provide the instance of ``Allocate``
+    where the register was allocated.
+
+    >>> import pennylane.labs.estimator_beta as exp_qre
+    >>> allocate_4 = exp_qre.Allocate(4)  # Allocate 4 qubits
+    >>> exp_qre.Deallocate(allocated_register=allocate_4)
+    Deallocate(4, state=zero, restored=False)
+
+    We can also manually deallocate a register by specifically providing the details of the register.
+
+    >>> exp_qre.Deallocate(num_wires=4, state="zero", restored=False)
+    Deallocate(4, state=zero, restored=False)
+
+    Note that if a register was allocated with ``state = "any"`` and ``restored = True``, this can
+    only be deallocated by passing that specific instance of ``Allocate`` to deallocate.
+
+    >>> temp_register = exp_qre.Allocate(5, state="any", restored=True)
+    >>> exp_qre.Deallocate(allocated_register=temp_register)  # Restore the allocated register
+    Deallocate(5, state=any, restored=True)
+
     """
 
     def __init__(
