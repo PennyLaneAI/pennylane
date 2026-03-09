@@ -24,7 +24,9 @@ from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.transforms import unitary_to_rot
+from pennylane.transforms.unitary_to_rot import _recursively_decompose_qubit_unitary
 from pennylane.wires import Wires
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
@@ -65,6 +67,55 @@ def qfunc(U):
     qml.Hadamard(wires="a")
     qml.QubitUnitary(U, wires="a")
     qml.CNOT(wires=["b", "a"])
+
+
+class TestRecursiveDecomposition:
+    """Tests the helper function for recursively decomposing."""
+
+    def test_single_qubit_unitary(self):
+        """Tests a single qubit unitary."""
+
+        U = qml.exp(-1j * 0.5 * qml.X(0)).matrix()
+
+        op = qml.QubitUnitary(U, wires=0)
+
+        decomp = _recursively_decompose_qubit_unitary(op)
+        expected_operations = [
+            qml.RZ((1.5707963267948961), wires=[0]),
+            qml.RY((1.0), wires=[0]),
+            qml.RZ((10.995574287564276), wires=[0]),
+        ]
+        assert decomp == expected_operations
+
+    def test_two_qubit_decomposition_seperable_tensor_product(self):
+        """Regression test to ensure the two-qubit unitary is recursively
+        decomposed into the rotation gates."""
+
+        U = qml.matrix(qml.exp(-1j * 0.5 * qml.X(0)), wire_order=range(2))
+        U @= qml.matrix(qml.exp(-1j * 0.5 * qml.Y(1)), wire_order=range(2))
+
+        op = qml.QubitUnitary(U, wires=range(2))
+
+        decomp = _recursively_decompose_qubit_unitary(op)
+        expected_operations = [
+            qml.RZ((1.5707963267948961), wires=[0]),
+            qml.RY((1.0), wires=[0]),
+            qml.RZ((10.995574287564276), wires=[0]),
+            qml.RZ((0.0), wires=[1]),
+            qml.RY((1.0), wires=[1]),
+            qml.RZ((0.0), wires=[1]),
+        ]
+        assert decomp == expected_operations
+
+    def test_multi_qubit_unitary(self):
+        """Tests that multi qubit unitaries don't get decomposed."""
+
+        matrix = np.eye(8)
+        op = QubitUnitary(matrix, wires=[0, 1, 2])
+
+        decomp = _recursively_decompose_qubit_unitary(op)
+        assert len(decomp) == 1
+        assert decomp == [op]
 
 
 class TestDecomposeSingleQubitUnitaryTransform:
@@ -243,30 +294,6 @@ class TestDecomposeSingleQubitUnitaryTransform:
         jitted_result = jitted_qnode(U)
         assert np.allclose(transformed_result, original_result)
         assert np.allclose(jitted_result, original_result)
-
-
-def test_two_qubit_decomposition_seperable_tensor_product():
-    """Tests the recursive nature of the algorithm to decompose multiple QubitUnitary"""
-
-    U = qml.matrix(qml.exp(-1j * 0.5 * qml.X(0)), wire_order=range(2))
-    U @= qml.matrix(qml.exp(-1j * 0.5 * qml.Y(1)), wire_order=range(2))
-
-    @qml.transforms.unitary_to_rot
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.QubitUnitary(U, wires=range(2))
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-    operations = qml.workflow.construct_tape(circuit)().operations
-    expected_operations = [
-        qml.RZ((1.5707963267948961), wires=[0]),
-        qml.RY((1.0), wires=[0]),
-        qml.RZ((10.995574287564276), wires=[0]),
-        qml.RZ((0.0), wires=[1]),
-        qml.RY((1.0), wires=[1]),
-        qml.RZ((0.0), wires=[1]),
-    ]
-    assert operations == expected_operations
 
 
 # A simple circuit; we will test QubitUnitary on matrices constructed using trainable
