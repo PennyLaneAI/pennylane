@@ -57,6 +57,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms.disentangle_cnot
+    ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
@@ -407,6 +409,7 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
+from .disentangle_cnot_swap import disentangle_cnot, disentangle_swap
 
 from .decompositions import (
     clifford_t_decomposition,
