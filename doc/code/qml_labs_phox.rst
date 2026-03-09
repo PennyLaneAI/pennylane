@@ -3,8 +3,9 @@ qml.labs.phox
 
 .. currentmodule:: pennylane.labs.phox
 
-.. automodule:: pennylane.labs.phox
-   :no-index:
+.. automodapi:: pennylane.labs.phox
+    :no-heading:
+    :include-all-objects:
 
 
 Phase Optimization with JAX (PHOX) workflow
