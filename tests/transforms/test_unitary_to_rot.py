@@ -118,6 +118,11 @@ class TestRecursiveDecomposition:
         assert len(decomp) == 1
         assert decomp == [op]
 
+    def test_non_qubit_unitary_operations(self):
+        """Tests that other operations are still captured."""
+        decomp = _recursively_decompose_qubit_unitary(qml.RZ(0.5, 0))
+        assert decomp == [qml.RZ(0.5, 0)]
+
 
 class TestDecomposeSingleQubitUnitaryTransform:
     """Tests to ensure the transform itself works in all interfaces."""
