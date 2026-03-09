@@ -81,7 +81,7 @@ def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> Postprocessi
     return new_fn
 
 
-@partial(transform, expand_transform=_expand_fn)
+@partial(transform, expand_transform=_expand_fn, pass_name="dynamic-one-shot")
 def dynamic_one_shot(
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -127,6 +127,30 @@ def dynamic_one_shot(
             m0 = qml.measure(0)
             qml.cond(m0, qml.RY)(y, wires=1)
             return qml.expval(op=m0)
+
+    ..details::
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with ``qjit``, where it will be applied as an MLIR pass
+        rather than a tape-level transform.
+        That being said, there are a few differences to be aware of when using the MLIR pass:
+
+        - Shot vectors or broadcasting are not supported
+        - Workflows involving gradients are not supported
+        - ``qml.var()`` on observables (non-MCM) are unsupported
+
+        To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
+
+        .. code-block:: python
+
+            @qml.qjit
+            @qml.set_shots(10)
+            @qml.qnode(qml.device("lightning.qubit", wires=2), mcm_method="one-shot")
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
+
+        >>> circ() # doctest: +SKIP
+        Array(0.4, dtype=float64)
 
     """
     if not any(is_mcm(o) for o in tape.operations):
