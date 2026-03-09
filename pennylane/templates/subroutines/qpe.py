@@ -308,11 +308,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
     gate_count = defaultdict(int)
-    gate_count.update(
-        {
-            ops.Hadamard: num_estimation_wires,
-        }
-    )
+    gate_count[ops.Hadamard] = num_estimation_wires
     for i in range(num_estimation_wires):
         gate_count[
             controlled_resource_rep(
