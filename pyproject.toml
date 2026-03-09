@@ -62,7 +62,6 @@ dev = [
     "pytest-rng",
     "flaky>=3.7.0",
     "pytest-forked>=1.4.0",
-    "pytest-benchmark",
     "pytest-split",
     "tomlkit~=0.13",
     "rich>=13.7.1",
@@ -91,7 +90,7 @@ docs = [
     "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",
-    # TODO: Remove once galois becomes compatible with latest numpy 
+    # TODO: Remove once galois becomes compatible with latest numpy
     "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
@@ -181,7 +180,7 @@ py-modules = []
 where = ["."]
 
 [tool.setuptools.dynamic]
-version = {attr = "pennylane._version.__version__"} 
+version = {attr = "pennylane._version.__version__"}
 
 [tool.setuptools_scm]
 
