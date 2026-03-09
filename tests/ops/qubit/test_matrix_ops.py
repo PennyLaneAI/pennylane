@@ -467,7 +467,7 @@ class TestQubitUnitary:
 
         @qml.qnode(dev)
         def circuit(matrix):
-            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
             return qml.state()
 
         state_expected = circuit(matrix)
