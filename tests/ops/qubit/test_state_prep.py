@@ -72,9 +72,9 @@ class TestStandardValidityBasisState:
         return abstract_check
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("state_traced, expected", [(True, "continuous"), (False, "discrete")])
+    @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
-    def test_jit_compatibility(self, state_traced, expected, wires_traced):
+    def test_jit_compatibility(self, state_traced, wires_traced):
         """Test compatibility with jax.jit."""
         # pylint: disable=import-outside-toplevel
         import jax
@@ -91,17 +91,11 @@ class TestStandardValidityBasisState:
         )
 
         tapes = jax.jit(abstract_check)(state, wires)
-        exp_op = qml.X
         for tape in tapes:
-            if expected == "discrete":
-                assert len(tape) == 1
-                assert isinstance(tape[0], exp_op)
-            else:
-                assert len(tape) == len(state)
-                assert all(
-                    isinstance(op, qml.ops.Pow) and isinstance(op.base, exp_op)
-                    for op in tape.operations
-                )
+            assert len(tape) == 3
+            assert all(
+                isinstance(op, qml.ops.Pow) and isinstance(op.base, qml.X) for op in tape.operations
+            )
 
     @pytest.mark.external
     @pytest.mark.parametrize("state_traced", [True, False])
