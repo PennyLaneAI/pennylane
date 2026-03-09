@@ -21,8 +21,8 @@ import numpy as np
 import pennylane as qml
 from pennylane import for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -722,6 +722,11 @@ class SumOfSlatersPrep(Operation):
     16: ──────╰QROM(M0)───────────────────────────────────────────────────────────────────────────────│──│──│──│──│────────────────────────────────┤  State
     17: ──────────────────────────────────────────────────────────────────────────────────────────────╰X─╰●─╰●─╰●─╰X───────────────────────────────┤  State
 
+    Here, the first seven wires (``0`` to ``6``) are the target wires of the state preparation,
+    wires ``7, 8, 9`` form the enumeration register, the next five wires (``10`` to ``14``)
+    are the encoding register, and the pair of wires ``15, 16`` as well as the wire ``17`` are
+    work wires for the ``QROM`` and the enumeration uncomputation, respectively.
+
     .. details::
         :title: Usage details
 
@@ -853,33 +858,21 @@ class SumOfSlatersPrep(Operation):
         self.hyperparameters["mcx_work_wires"] = mcx_work_wires
         self.hyperparameters["indices"] = indices
 
-    @staticmethod
-    def compute_decomposition(
-        coefficients,
-        wires=None,
-        target_wires=None,
-        enumeration_wires=None,
-        identification_wires=None,
-        qrom_work_wires=None,
-        mcx_work_wires=None,
-        indices=None,
-    ):  # pylint: disable=arguments-differ, too-many-arguments
-        with AnnotatedQueue() as q:
-            _sos_state_prep(
-                coefficients,
-                target_wires=target_wires,
-                enumeration_wires=enumeration_wires,
-                identification_wires=identification_wires,
-                qrom_work_wires=qrom_work_wires,
-                mcx_work_wires=mcx_work_wires,
-                indices=indices,
-            )
+    @property
+    def has_decomposition(self):
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
+        return False
 
-        op_list = []
-        if QueuingManager.recording():
-            for op in q:
-                op_list.append(qml.apply(op))
-        return op_list
+    @staticmethod
+    def compute_decomposition(**_):  # pylint: disable=arguments-differ
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``."""
+        raise DecompositionUndefinedError
 
     @staticmethod
     def required_register_sizes(num_entries, num_bits, num_wires):
