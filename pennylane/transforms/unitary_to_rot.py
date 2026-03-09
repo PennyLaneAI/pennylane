@@ -14,6 +14,7 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
+
 from functools import lru_cache, partial
 
 from pennylane import capture, math
@@ -232,7 +233,7 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
     # Recursively decompose until no single or two-qubit
     # QubitUnitary operators exist in the decomposition list
     while any(
-        isinstance(op_, QubitUnitary) and math.shape(op_.parameters[0])[0] <= 4
+        isinstance(op_, QubitUnitary) and math.shape(op_.parameters[0]) in {(2, 2), (4, 4)}
         for op_ in decomposition
     ):
         tmp_decompositions = []
