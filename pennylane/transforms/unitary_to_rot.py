@@ -210,7 +210,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     operations = []
     for op in tape.operations:
         if isinstance(op, QubitUnitary):
-            decomposition = _recursively_decompose_qubit_unitary(op)
+            with QueuingManager.stop_recording():
+                decomposition = _recursively_decompose_qubit_unitary(op)
             operations.extend(decomposition)
         else:
             operations.append(op)
@@ -235,26 +236,23 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
     while True:
         keep_decomposing = False
         next_decomposition = []
-        with QueuingManager.stop_recording():
-            for op_ in decomposition:
-                if not isinstance(op_, QubitUnitary):
-                    next_decomposition.append(op_)
-                    continue
+        for op_ in decomposition:
+            if not isinstance(op_, QubitUnitary):
+                next_decomposition.append(op_)
+                continue
 
-                shape = math.shape(op_.parameters[0])
-                if shape == (2, 2):
-                    # Single-qubit unitary operations
-                    next_decomposition.extend(
-                        one_qubit_decomposition(op_.parameters[0], op_.wires[0])
-                    )
-                    keep_decomposing = True
-                elif shape == (4, 4):
-                    # Two-qubit unitary operations
-                    next_decomposition.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
-                    keep_decomposing = True
-                else:
-                    # NOTE: Ensure we add 3+ QubitUnitary operators back
-                    next_decomposition.append(op_)
+            shape = math.shape(op_.parameters[0])
+            if shape == (2, 2):
+                # Single-qubit unitary operations
+                next_decomposition.extend(one_qubit_decomposition(op_.parameters[0], op_.wires[0]))
+                keep_decomposing = True
+            elif shape == (4, 4):
+                # Two-qubit unitary operations
+                next_decomposition.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
+                keep_decomposing = True
+            else:
+                # NOTE: Ensure we add 3+ QubitUnitary operators back
+                next_decomposition.append(op_)
 
         decomposition = next_decomposition
         if not keep_decomposing:

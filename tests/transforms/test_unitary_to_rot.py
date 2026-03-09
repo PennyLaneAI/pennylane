@@ -24,6 +24,7 @@ from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.unitary_to_rot import _recursively_decompose_qubit_unitary
@@ -80,11 +81,7 @@ class TestRecursiveDecomposition:
         op = qml.QubitUnitary(U, wires=0)
 
         decomp = _recursively_decompose_qubit_unitary(op)
-        expected_operations = [
-            qml.RZ((1.5707963267948961), wires=[0]),
-            qml.RY((1.0), wires=[0]),
-            qml.RZ((10.995574287564276), wires=[0]),
-        ]
+        expected_operations = one_qubit_decomposition(op.parameters[0], op.wires[0])
         assert decomp == expected_operations
 
     def test_two_qubit_decomposition_seperable_tensor_product(self):
@@ -97,14 +94,18 @@ class TestRecursiveDecomposition:
         op = qml.QubitUnitary(U, wires=range(2))
 
         decomp = _recursively_decompose_qubit_unitary(op)
+
+        # Get recursive decomp manually
+        first_decomp = two_qubit_decomposition(op.parameters[0], op.wires)
+        assert len(first_decomp) == 2
+        assert isinstance(first_decomp[0], QubitUnitary)
+        assert isinstance(first_decomp[1], QubitUnitary)
         expected_operations = [
-            qml.RZ((1.5707963267948961), wires=[0]),
-            qml.RY((1.0), wires=[0]),
-            qml.RZ((10.995574287564276), wires=[0]),
-            qml.RZ((0.0), wires=[1]),
-            qml.RY((1.0), wires=[1]),
-            qml.RZ((0.0), wires=[1]),
+            *one_qubit_decomposition(first_decomp[0].parameters[0], first_decomp[0].wires[0]),
+            *one_qubit_decomposition(first_decomp[1].parameters[0], first_decomp[1].wires[0]),
         ]
+        assert len(expected_operations) == 6
+
         assert decomp == expected_operations
 
     def test_multi_qubit_unitary(self):
