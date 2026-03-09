@@ -24,7 +24,7 @@ from pennylane.decomposition import (
     controlled_resource_rep,
 )
 
-from .rot_to_phase_gradient import _rz_phase_gradient, binary_repr_int
+from .rot_to_phase_gradient import _rz_phase_gradient
 
 
 def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
@@ -180,7 +180,8 @@ def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires
     def _decomp_fn(phis, control_wires, target_wire, rot_axis, **_):
         precision = len(angle_wires)
         binary_ints = [
-            2 ** np.arange(precision - 1, -1, -1) @ binary_repr_int(phi, precision) for phi in phis
+            2 ** np.arange(precision - 1, -1, -1) @ qml.math.binary_decimals(phi, precision)
+            for phi in phis
         ]
 
         with qml.QueuingManager.stop_recording():
