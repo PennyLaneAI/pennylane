@@ -136,6 +136,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         change_basis_rep = change_op_basis_resource_rep(
             compute_op=prod_rep,
             target_op=semi_adder_rep,
+            uncompute_op=prod_rep,
         )
 
         # 6. Basis adaptation depending on rot_axis
