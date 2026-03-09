@@ -139,6 +139,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
+  [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
+  
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
