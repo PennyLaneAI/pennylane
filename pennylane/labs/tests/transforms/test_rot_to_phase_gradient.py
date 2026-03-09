@@ -22,7 +22,6 @@ import pytest
 import pennylane as qp
 from pennylane.labs.transforms.rot_to_phase_gradient import (
     _select_pauli_rot_phase_gradient,
-    binary_repr_int,
     rot_to_phase_gradient,
 )
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
@@ -33,57 +32,6 @@ def prepare_phase_gradient(wires):
     B = 2 ** len(wires)
     wave_function = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
     return [qp.StatePrep(wave_function, wires)]
-
-
-class TestBinaryReprInt:
-    """Test ``binary_repr_int``."""
-
-    @pytest.mark.parametrize(
-        "phi, p, expected",
-        [
-            (1 / 2 * 4 * np.pi, 2, [1, 0]),
-            (1 / 2 * 4 * np.pi, 3, [1, 0, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 2, [1, 1]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 3, [1, 1, 0]),
-            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, [1, 0, 1, 1, 1]),
-        ],
-    )
-    def testbinary_repr_int_scalar(self, phi, p, expected):
-        """Test that the binary representation or approximation of the angle is correct"""
-
-        assert np.array_equal(expected, binary_repr_int(phi, p))
-
-    @pytest.mark.parametrize(
-        "phi, p, expected",
-        [
-            (np.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]) * 4 * np.pi, 2, [[1, 0], [1, 1], [0, 1]]),
-            (
-                np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]) * 4 * np.pi,
-                3,
-                [[1, 0, 0], [0, 0, 1], [0, 1, 1]],
-            ),
-            (
-                np.array(
-                    [
-                        1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32,
-                        1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
-                        1 / 2 + 0 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
-                        0 / 2 + 1 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
-                        0 / 2 + 0 / 4 + 0 / 8 + 0 / 16 + 1 / 32,
-                        1 / 2 + 0 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
-                    ]
-                )
-                * 4
-                * np.pi,
-                2,
-                [[1, 1], [0, 0], [1, 1], [1, 0], [0, 0], [1, 1]],
-            ),
-        ],
-    )
-    def testbinary_repr_int_array(self, phi, p, expected):
-        """Test that the binary representation or approximation of the angle is correct"""
-        out = binary_repr_int(phi, p)
-        assert np.array_equal(expected, out), f"\n{expected}\n{out}"
 
 
 class TestSelectPauliRotDecompositions:

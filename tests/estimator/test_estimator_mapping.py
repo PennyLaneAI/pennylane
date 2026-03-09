@@ -45,6 +45,24 @@ class TestMapToResourceOp:
         ):
             _map_to_resource_op(operation)
 
+    def test_unknown_subroutine_decomposition(self):
+        """Test that if an unknown subroutine is provided, it just uses the decomposition."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        r_op = _map_to_resource_op(f.operator(0))
+        assert r_op == re_ops.X()
+
+        @qml.templates.Subroutine
+        def g(wires):
+            qml.X(wires)
+            qml.Y(wires)
+
+        r_op_g = _map_to_resource_op(g.operator(0))
+        assert r_op_g == re_ops.Prod([re_ops.X(), re_ops.Y()])
+
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
@@ -116,7 +134,7 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
