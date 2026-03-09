@@ -165,6 +165,8 @@ def _make_hashable(d):
     if isinstance(d, CompressedResourceOp):
         # Since the params are guaranteed to be hashable, we can use them here
         return (d.op_type.__name__, d._hashable_params)  # pylint: disable=protected-access
+    if isinstance(d, type):
+        return d.__name__
     if hasattr(d, "tolist"):
         d = d.tolist()
     if isinstance(d, list):
