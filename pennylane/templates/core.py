@@ -35,6 +35,7 @@ from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
 import numpy as np
+from pennylane.ops import ChangeOpBasis
 
 from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
@@ -45,7 +46,8 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
+from pennylane.decomposition.resources import auto_wrap
+from pennylane.operation import Operation, Operator
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -87,6 +89,63 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
         leaves, struct = flatten(bound.arguments[arg])
         bound.arguments[arg] = (struct, tuple(leaves))
     return tuple(bound.arguments.values())
+
+
+def change_op_basis_subroutine_resource_rep(
+    compute: "Operator | CompressedResourceOp | Subroutine", target: "Operator | CompressedResourceOp | Subroutine", uncompute: "Operator | CompressedResourceOp | Subroutine"=None
+) -> CompressedResourceOp:
+    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
+    in advance.
+
+    Args:
+        compute (Operator | CompressedResourceOp | Subroutine): the compute op. May be a subroutine.
+        target (Operator | CompressedResourceOp | Subroutine): the target op. May be a subroutine.
+        target Optional(Operator | CompressedResourceOp | Subroutine): the optional uncompute op. May be a subroutine.
+    Returns:
+        CompressedResourceOp: a condensed representation of the change_op_basis involving a subroutine that can be
+        used in specifying the resources of another operator, template or subroutine.
+
+    .. note::
+
+        See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
+    """
+    if isinstance(compute, CompressedResourceOp):
+        compute_rep = auto_wrap(compute)
+    elif isinstance(compute, Operator):
+        compute_rep = resource_rep(type(compute), **compute.resource_params)
+    else:
+        compute_rep = subroutine_resource_rep(compute.func, *compute.args, **compute.keywords)
+    if isinstance(target, CompressedResourceOp):
+        target_rep = auto_wrap(target)
+    elif isinstance(target, Operator):
+        target_rep = resource_rep(type(target), **target.resource_params)
+    else:
+        target_rep = subroutine_resource_rep(target.func, *target.args, **target.keywords)
+    if not uncompute:
+        if isinstance(compute, Operator):
+            uncompute_rep = adjoint_resource_rep(type(compute), compute.resource_params)
+        elif isinstance(compute, CompressedResourceOp):
+            uncompute_rep = adjoint_resource_rep(compute.op_type, compute.params)
+        else:
+            uncompute_rep = adjoint_subroutine_resource_rep(compute.func, *compute.args, **compute.keywords)
+    else:
+        if isinstance(uncompute, CompressedResourceOp):
+            uncompute_rep = auto_wrap(uncompute)
+        elif isinstance(uncompute, Operator):
+            uncompute_rep = resource_rep(type(uncompute), **uncompute.resource_params)
+        else:
+            uncompute_rep = subroutine_resource_rep(uncompute.func, *uncompute.args, **uncompute.keywords)
+    return CompressedResourceOp(
+        ChangeOpBasis,
+        {
+            "compute_op": compute_rep,
+            "target_op": target_rep,
+            "uncompute_op": uncompute_rep,
+        },
+    )
 
 
 def adjoint_subroutine_resource_rep(
