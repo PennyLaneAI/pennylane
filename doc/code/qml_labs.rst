@@ -3,9 +3,7 @@ qml.labs
 
 .. currentmodule:: pennylane.labs
 
-.. automodapi:: pennylane.labs
-    :no-heading:
-    :include-all-objects:
+.. automodule:: pennylane.labs
 
 .. toctree::
    :hidden:
