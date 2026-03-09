@@ -867,7 +867,7 @@ class SumOfSlatersPrep(Operation):
         return False
 
     @staticmethod
-    def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
+    def compute_decomposition(**_):  # pylint: disable=arguments-differ
         """We are using ``qml.allocate`` in the decomposition, so the validation for
         decomposition in the old system breaks. Hence we manually deactivate the fallback
         of ``compute_decomposition`` to the new decomp system that is implemented in
@@ -1045,8 +1045,6 @@ def _sos_state_prep(
         like=qml.math.get_interface(coefficients),
     )
     qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
-
-    # qml.QROMStatePreparation(coefficients, wires=enumeration_wires, precision_wires=identification_wires, work_wires=[*mcx_work_wires, *enumeration_wires])
 
     # Step 2: QROM to load v_bits into system register
     qml.QROM(
