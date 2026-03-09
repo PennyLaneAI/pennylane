@@ -21,9 +21,8 @@ This subpackage contains experimental PennyLane transforms and their building bl
 
     ~rot_to_phase_gradient
     ~select_pauli_rot_phase_gradient
-    ~binary_repr_int
 
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .rot_to_phase_gradient import rot_to_phase_gradient, binary_repr_int
+from .rot_to_phase_gradient import rot_to_phase_gradient
