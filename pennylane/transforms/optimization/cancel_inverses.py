@@ -410,7 +410,7 @@ def cancel_inverses(
     .. details::
         :title: Usage with qjit
 
-        When used with ``qjit``, the following gates can be optimized by the ``cancel_inverses``
+        When used with ``qjit``, only the following gates can be optimized by the ``cancel_inverses``
         transform:
 
         - :class:`qml.Hadamard <pennylane.Hadamard>`,

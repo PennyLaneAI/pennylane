@@ -258,7 +258,7 @@ def merge_rotations(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum transform to combine rotation gates of the same type that act sequentially.
 
-    If the combination of two rotation produces an angle that is close to 0,
+    If the combination of two rotations produces an angle that is close to 0,
     neither gate will be applied.
 
     Args:
@@ -347,7 +347,7 @@ def merge_rotations(
     .. details::
         :title: Usage with qjit
 
-        When used with ``qjit``, the following gates can be optimized by the ``merge_rotations``
+        When used with ``qjit``, only the following gates can be optimized by the ``merge_rotations``
         transform:
 
         - :class:`qml.RX <pennylane.RX>`,
