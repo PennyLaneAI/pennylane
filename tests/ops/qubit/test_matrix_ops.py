@@ -461,7 +461,7 @@ class TestQubitUnitary:
         import jax
         from jax import numpy as jnp
 
-        matrix = jnp.array(qml.matrix(qml.CNOT(wires=[0, 1])))
+        matrix = jnp.array(qml.matrix(qml.MultiControlledX(wires=[0, 1, 2])))
 
         dev = qml.device("default.qubit", wires=3)
 
