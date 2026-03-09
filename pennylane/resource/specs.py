@@ -36,6 +36,29 @@ if TYPE_CHECKING:
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
 
+def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
+    """Helper function to make a level name unique by appending a suffix if necessary.
+
+    Args:
+        level_name (str): The original level name
+        existing_names (set[str]): The set of existing level names to check against
+
+    Returns:
+        str: A unique level name
+
+    Example:
+        >>> existing = {"cancel-inverses", "merge-rotations", "cancel-inverses-2"}
+        >>> _make_level_name_unique("cancel-inverses", existing)
+        'cancel-inverses-3'
+    """
+    unique_name = level_name
+    counter = 1
+    while unique_name in existing_names:
+        counter += 1
+        unique_name = f"{level_name}-{counter}"
+    return unique_name
+
+
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
 
@@ -130,7 +153,7 @@ def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
     for i, trans in reversed(list(enumerate(compile_pipeline))):
         if trans.pass_name is None:
-            #  Add 1 to account for the implicit "Before transforms" at level=0
+            #  Add 1 to account for the implicit "Before Tape Transforms" at level=0
             return i + 1
     return 0
 
@@ -145,16 +168,21 @@ def _preprocess_level_input(
 
     Args:
         level (str | int | slice | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
+        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
+            Note that this should already account for any inserted lowering pass.
         pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
         num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
     Returns:
         list[int]: The preprocessed level input
     """
 
-    if level in ("all", "all-mlir"):
-        # Account for 2 implicit "Before transforms" and "Before MLIR passes" levels
+    if level == "all" and num_tape_levels > 1:
+        # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
         return list(range(pipeline_len + 2))
+
+    if level in ("all", "all-mlir"):
+        # Account for "Before MLIR passes" level
+        return list(range(num_tape_levels, pipeline_len + 1))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -169,8 +197,6 @@ def _preprocess_level_input(
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-            if level[i] >= num_tape_levels:
-                level[i] += 1  # Account for the MLIR lowering pass
         elif isinstance(lvl, int):
             if lvl < 0:
                 raise ValueError(
@@ -200,24 +226,33 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     compile_pipeline = original_qnode.compile_pipeline
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = _get_last_tape_transform_level(compile_pipeline) + 1
+    num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
+    mlir_only = (level == "all-mlir") or num_tape_levels == 0
+    if not mlir_only:
+        # Account for the "Before Tape Transforms" tape at level 0
+        num_tape_levels += 1
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level: dict[str, int] = {
-        marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
-    }
+    marker_to_level: dict[str, int] = {}
+    for marker in compile_pipeline.markers:
+        lvl = compile_pipeline.get_marker_level(marker)
+        marker_to_level[marker] = lvl
+
+        # Account for the MLIR lowering pass if necessary
+        if not mlir_only and lvl >= num_tape_levels:
+            marker_to_level[marker] += 1
+
     # Multiple markers can correspond to the same level
     level_to_markers = defaultdict(list)
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
     mlir_level_to_markers = {
-        lvl - num_tape_levels + 1: markers
+        lvl - num_tape_levels: markers
         for lvl, markers in level_to_markers.items()
         if lvl >= num_tape_levels
     }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
     output_level: dict[int, str] = {}  # This will be a map of level to its name
@@ -242,16 +277,11 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             if tape_level in level_to_markers:
                 trans_name: str = ", ".join(level_to_markers[tape_level])
             elif tape_level == 0:
-                trans_name = "Before transforms"
+                trans_name = "Before Tape Transforms"
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            # If the same transform appears multiple times, append a suffix
-            if trans_name in resources:
-                rep = 2
-                while f"{trans_name}-{rep}" in resources:
-                    rep += 1
-                trans_name += f"-{rep}"
+            trans_name = _make_level_name_unique(trans_name, set(output_level.values()))
             resources[trans_name] = res
             output_level[tape_level] = trans_name
 
@@ -259,7 +289,12 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     if len(mlir_levels) > 0:
         try:
             results = mlir_specs(
-                qjit, mlir_levels, *args, **kwargs, level_to_markers=mlir_level_to_markers
+                qjit,
+                mlir_levels,
+                *args,
+                **kwargs,
+                level_to_markers=mlir_level_to_markers,
+                existing_level_names=set(output_level.values()),
             )
         except ValueError as ve:
             levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
@@ -269,14 +304,13 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             ) from ve
 
         for lvl, (level_name, res) in zip(mlir_levels, results.items()):
+            gate_types = {}
             gate_sizes = defaultdict(int)
-            for _, sizes in res.operations.items():
+
+            for res_name, sizes in res.operations.items():
                 for size, count in sizes.items():
                     gate_sizes[size] += count
 
-            gate_types = {}
-
-            for res_name, sizes in res.operations.items():
                 if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
                     # Separate out PPMs and PPRs by weight
                     for size, count in sizes.items():
@@ -591,35 +625,37 @@ def specs(
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
-            Level 0 always corresponds to the original circuit before any user transforms have been applied,
-            and incremental levels correspond to the aggregate of user transforms in the order in which they were applied.
+            Level ``0`` always corresponds to the original circuit before any user-specified
+            tape transforms or compilation passes have been applied,
+            and incremental levels correspond to the aggregate of user-specified transforms and passes
+            in the order in which they are applied.
 
-            In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst.
-            If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
+            This may include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
+            further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
+            but before all other MLIR passes.
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
-        >>> all_specs = qml.specs(circuit, level="all")(1.23)
-        >>> print(all_specs)
+        >>> all_specs = qml.specs(circuit, level="all")(1.23)  # doctest: +SKIP
+        >>> print(all_specs)  # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - 0: Before transforms
-        - 1: Before MLIR Passes (MLIR-0)
-        - 2: cancel-inverses (MLIR-1)
-        - 3: merge-rotations (MLIR-2)
+        - 0: Before MLIR Passes (MLIR-0)
+        - 1: cancel-inverses (MLIR-1)
+        - 2: merge-rotations (MLIR-2)
         <BLANKLINE>
-        ↓Metric     Level→ |  0 |  1 |  2 |  3
-        --------------------------------------
-        Wire allocations   |  2 |  3 |  3 |  3
-        Total gates        |  5 |  5 |  3 |  2
+        ↓Metric     Level→ |  0 |  1 |  2
+        ---------------------------------
+        Wire allocations   |  3 |  3 |  3
+        Total gates        |  5 |  3 |  2
         Gate counts:       |
-        - RX               |  2 |  2 |  2 |  1
-        - PauliX           |  2 |  2 |  0 |  0
-        - CNOT             |  1 |  1 |  1 |  1
+        - RX               |  2 |  2 |  1
+        - PauliX           |  2 |  0 |  0
+        - CNOT             |  1 |  1 |  1
         Measurements:      |
-        - probs(all wires) |  1 |  1 |  1 |  1
+        - probs(all wires) |  1 |  1 |  1
 
         When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
         object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
@@ -627,12 +663,12 @@ def specs(
         level name directly, use the ``level`` attribute of the returned :class:`~.resource.CircuitSpecs` object, which
         maps int levels to their associated transform or pass name. For example, the level names for the above example
 
-        >>> print(all_specs.level)
-        {0: 'Before transforms', 1: 'Before MLIR Passes (MLIR-0)', 2: 'cancel-inverses (MLIR-1)', 3: 'merge-rotations (MLIR-2)'}
+        >>> print(all_specs.level)  # doctest: +SKIP
+        {0: 'Before MLIR Passes (MLIR-0)', 1: 'cancel-inverses (MLIR-1)', 2: 'merge-rotations (MLIR-2)'}
 
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
-        >>> print(all_specs.resources['merge-rotations (MLIR-2)'])
+        >>> print(all_specs.resources['merge-rotations (MLIR-2)'])  # doctest: +SKIP
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -644,7 +680,7 @@ def specs(
 
         Or, equivalently, by using the int level directly:
 
-        >>> print(all_specs.resources[all_specs.level[3]])
+        >>> print(all_specs.resources[all_specs.level[2]])  # doctest: +SKIP
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -672,12 +708,12 @@ def specs(
                 qml.X(0)
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
-        >>> print(qml.specs(circuit, level="all")())
+        >>> print(qml.specs(circuit, level="all")())  # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - 0: Before transforms
+        - 0: Before Tape Transforms
         - 1: split_non_commuting
         - 2: Before MLIR Passes (MLIR-0)
         - 3: cancel-inverses (MLIR-1)
