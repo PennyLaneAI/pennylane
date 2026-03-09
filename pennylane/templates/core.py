@@ -133,7 +133,7 @@ def change_op_basis_subroutine_resource_rep(
     compute_rep = _get_non_adjoint_rep(compute)
     target_rep = _get_non_adjoint_rep(target)
     if not uncompute:
-        uncompute_rep = _get_adjoint_rep(uncompute)
+        uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
     return CompressedResourceOp(
