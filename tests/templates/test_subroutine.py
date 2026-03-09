@@ -19,14 +19,16 @@ from functools import partial
 
 import numpy as np
 import pytest
-from pennylane.decomposition import resource_rep
-
-from pennylane.ops import Adjoint, PauliX, CNOT
 
 import pennylane as qml
+from pennylane.decomposition import resource_rep
+from pennylane.ops import CNOT, Adjoint, PauliX
 from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
-from pennylane.templates.core import adjoint_subroutine_resource_rep, change_op_basis_subroutine_resource_rep, \
-    _make_signature_key
+from pennylane.templates.core import (
+    _make_signature_key,
+    adjoint_subroutine_resource_rep,
+    change_op_basis_subroutine_resource_rep,
+)
 
 
 class TestInitialization:
@@ -638,7 +640,7 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
-            resource_rep(qml.PauliX)
+            resource_rep(qml.PauliX),
         )
         assert isinstance(rr, qml.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -652,7 +654,9 @@ class TestGraphDecomposition:
         assert rr.params["compute_op"].op_type == SubroutineOp
         assert rr.params["compute_op"].params == {
             "subroutine": f,
-            "signature_key": _make_signature_key(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
         }
 
         assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
@@ -662,8 +666,10 @@ class TestGraphDecomposition:
             "base_class": SubroutineOp,
             "base_params": {
                 "subroutine": f,
-                "signature_key": _make_signature_key(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
-            }
+                "signature_key": _make_signature_key(
+                    f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                ),
+            },
         }
 
         rr = change_op_basis_subroutine_resource_rep(
@@ -682,7 +688,9 @@ class TestGraphDecomposition:
         assert rr.params["target_op"].op_type == SubroutineOp
         assert rr.params["target_op"].params == {
             "subroutine": f,
-            "signature_key": _make_signature_key(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
         }
 
         assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
@@ -710,7 +718,9 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].op_type == SubroutineOp
         assert rr.params["uncompute_op"].params == {
             "subroutine": f,
-            "signature_key": _make_signature_key(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
         }
 
     def test_adjoint_subroutine_resource_rep(self):

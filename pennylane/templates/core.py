@@ -35,7 +35,6 @@ from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
 import numpy as np
-from pennylane.ops import ChangeOpBasis
 
 from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
@@ -48,6 +47,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
+from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -108,7 +108,9 @@ def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
 
 
 def change_op_basis_subroutine_resource_rep(
-    compute: "Operator | CompressedResourceOp | Subroutine", target: "Operator | CompressedResourceOp | Subroutine", uncompute: "Operator | CompressedResourceOp | Subroutine"=None
+    compute: "Operator | CompressedResourceOp | Subroutine",
+    target: "Operator | CompressedResourceOp | Subroutine",
+    uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
 ) -> CompressedResourceOp:
     """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
