@@ -827,24 +827,19 @@ class TestSymbolicDecompositions:
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
 
-    def test_trivial_powers(self, _):
+    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qml.X(0)])])
+    def test_trivial_powers(self, _, z, expected):
         """Tests trivial powers of 1 or 0."""
 
-        op = qml.pow(qml.X(0), 1)
-        op2 = qml.pow(qml.X(0), 0)
+        op = qml.pow(qml.X(0), z)
 
-        graph = DecompositionGraph(operations=[op, op2], gate_set={"PauliX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.X(0)]
-
-        with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-
-        assert q.queue == []
+        assert q.queue == expected
 
     def test_custom_symbolic_decompositions(self, _):
         """Tests that custom symbolic decompositions are used."""
