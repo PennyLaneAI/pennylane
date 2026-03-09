@@ -176,7 +176,11 @@ def is_real_obj_or_close(obj):
     ``qml.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if not is_abstract(obj) and allclose(ar.imag(obj), 0.0):
+    if (
+        type(obj).__name__ != "AbstractArray"
+        and not is_abstract(obj)
+        and allclose(ar.imag(obj), 0.0)
+    ):
         obj = ar.real(obj)
     return not get_dtype_name(obj).startswith("complex")
 

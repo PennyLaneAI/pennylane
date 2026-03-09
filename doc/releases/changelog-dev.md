@@ -109,6 +109,9 @@
   0: ──MyTemplate(0.10,0.20)─┤  State
   ```
 
+The following classes have been ported over:
+- `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
@@ -135,6 +138,9 @@
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
 * When using :func:`~.specs` with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
@@ -633,6 +639,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
+  [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
+
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
 
@@ -794,6 +803,7 @@ Marcus Edwards,
 Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
