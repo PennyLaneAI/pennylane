@@ -194,7 +194,6 @@ def _jax_jit_basis_state_resources(num_wires):
     resources = {
         pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
         pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
-        qml.X: num_wires - num_wires // 2,
     }
     return resources
 
@@ -216,10 +215,7 @@ def _jax_jit_basis_state_cond(**_):
 @register_condition(_jax_jit_basis_state_cond)
 @register_resources(_jax_jit_basis_state_resources, exact=False)
 def _jax_jit_basis_state_decomp(state, wires, **__):
-    if qml.math.is_abstract(state):
-        _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
-        return
-    _ = [qml.X(wires=wire) for wire, basis in zip(wires, state) if basis]
+    _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
 
 
 def _basis_state_decomp_resources(num_wires):
