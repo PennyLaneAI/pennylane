@@ -19,7 +19,7 @@ from itertools import combinations, product
 import numpy as np
 
 import pennylane as qml
-from pennylane import for_loop, math
+from pennylane import compiler, for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
@@ -937,7 +937,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
+    resources[resource_rep(qml.MultiplexerStatePreparation, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
     qrom_params = {
@@ -961,8 +961,8 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
         mcx_rep = resource_rep(qml.Toffoli)
     else:
         mcx_params = {
-            "num_work_wires": 0,  # Work wires will be allocated by MCX itself
-            "work_wire_type": "borrowed",
+            "num_work_wires": m,
+            "work_wire_type": "clean",
             "num_control_wires": m,
             "num_zero_control_values": 0,
         }
@@ -1034,12 +1034,17 @@ def _sos_state_prep(
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, wires)
+    selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, target_wires)
     identity_encoding = r == m
 
     # Step 1: Dense state preparation in enumeration register
     # Need to add work wires and correct decomposition
-    qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+    missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
+    coefficients = qml.math.concatenate(
+        [coefficients, qml.math.cast_like(qml.math.zeros(missing_dim), coefficients)],
+        like=qml.math.get_interface(coefficients),
+    )
+    qml.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
 
     # Step 2: QROM to load v_bits into system register
     qml.QROM(
@@ -1068,6 +1073,8 @@ def _sos_state_prep(
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
+    if qml.compiler.active():
+        enumeration_wires = qml.math.array(enumeration_wires, like="jax")
     # The following functions are called conditionally from within `uncompute_enumeration`
 
     def single_mcx(k):
@@ -1109,18 +1116,21 @@ def _sos_state_prep(
 
         qml.MultiControlledX(**mcx_kwargs)
 
-    @for_loop(m)
-    def flip(i, bits_to_flip):
-        qml.cond(bits_to_flip[i], qml.X)(mcx_ctrl_wires[i])
-        return bits_to_flip
+    if compiler.active():
+        b_bits = qml.math.array(b_bits, like="jax")
+        mcx_ctrl_wires = qml.math.array(mcx_ctrl_wires, like="jax")
 
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
         bits = b_bits[:, k]
-        flip_bits = bits ^ prev_bits
+        flip_bits = qml.math.bitwise_xor(bits, prev_bits)
 
-        flip(flip_bits)
+        @for_loop(m)
+        def _flip(i):
+            qml.cond(flip_bits[i], qml.X)(mcx_ctrl_wires[i])
+
+        _flip()
         bit_count = qml.math.bitwise_count(k)
         qml.cond(
             bit_count == 1,
@@ -1128,9 +1138,16 @@ def _sos_state_prep(
             elifs=((bit_count == 2, two_mcx),),
             false_fn=multi_mcx_via_cache,
         )(k)
+        return bits
 
     last_bits = uncompute_enumeration(np.ones(m, dtype=int))
-    flip(1 - last_bits)
+
+    @for_loop(m)
+    def flip(i):
+        qml.cond(~last_bits[i], qml.X)(mcx_ctrl_wires[i])
+
+    # flip_bits = qml.math.bitwise_xor(qml.math.ones(m, dtype=int, like="jax"), last_bits)
+    flip()
 
     # Step 6): Uncompute the b_i in the identification register (self-adjoint)
     if not identity_encoding:
