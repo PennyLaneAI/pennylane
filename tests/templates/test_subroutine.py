@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 from pennylane.decomposition import resource_rep
 
-from pennylane.estimator import Controlled
 from pennylane.ops import Adjoint, PauliX, CNOT
 
 import pennylane as qml
