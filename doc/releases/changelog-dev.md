@@ -690,7 +690,11 @@
 
   * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to
     render in PennyLane's documentation.
-    
+
+* The :mod:`~.transforms` module has been reogranized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
+  
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was 
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
   documentation still resided in the PennyLane repository.
