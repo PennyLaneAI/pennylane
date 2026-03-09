@@ -145,7 +145,6 @@ The following classes have been ported over:
   In scenarios with at least one tape transform,
   level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
   is the level after all tape transforms but before the first MLIR pass.
-
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
