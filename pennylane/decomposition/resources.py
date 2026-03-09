@@ -151,7 +151,7 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
+        params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
@@ -162,6 +162,9 @@ def _make_hashable(d):
                 ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
             )
         )
+    if isinstance(d, CompressedResourceOp):
+        # Since the params are guaranteed to be hashable, we can use them here
+        return (d.op_type.__name__, d._hashable_params)  # pylint: disable=protected-access
     if hasattr(d, "tolist"):
         d = d.tolist()
     if isinstance(d, list):
