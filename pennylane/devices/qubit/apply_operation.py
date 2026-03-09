@@ -419,8 +419,12 @@ def apply_identity(op: ops.Identity, state, is_state_batched: bool = False, debu
 def apply_global_phase(
     op: ops.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
 ):
-    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
-    return math.exp(-1j * math.cast(op.data[0], complex)) * state
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the
+    state by ``exp(-1j * op.data[0])``"""
+    phase = math.exp(-1j * math.cast(op.data[0], complex))
+    if is_state_batched:
+        phase = phase.reshape((-1,) + (1,) * (state.ndim - 1))
+    return phase * state
 
 
 @apply_operation.register
