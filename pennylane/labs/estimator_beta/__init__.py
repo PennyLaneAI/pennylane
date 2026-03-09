@@ -27,4 +27,7 @@ from .wires_manager import (
     Allocate,
     Deallocate,
     MarkClean,
+    MarkQubits,
+    estimate_wires_from_circuit,
+    estimate_wires_from_resources,
 )

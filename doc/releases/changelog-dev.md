@@ -377,6 +377,19 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
+* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+  for resource estimation.
+  [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+
+  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
+  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+    from a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
+    from a :class:`~.estimator.Resources` object.
+
 <h3>Breaking changes 💔</h3>
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
