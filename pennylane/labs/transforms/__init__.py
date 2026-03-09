@@ -24,7 +24,6 @@ Transforms
 
     ~rot_to_phase_gradient
     ~select_pauli_rot_phase_gradient
-    ~binary_repr_int
 
 Custom decomposition rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,6 +37,6 @@ Custom decomposition rules
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .rot_to_phase_gradient import rot_to_phase_gradient, binary_repr_int
+from .rot_to_phase_gradient import rot_to_phase_gradient
 from .rz_phase_gradient_decomp import make_rz_to_phase_gradient_decomp
 from .selectpaulirot_phase_gradient_decomp import make_selectpaulirot_to_phase_gradient_decomp
