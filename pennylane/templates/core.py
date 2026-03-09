@@ -99,6 +99,14 @@ def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
+def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, Operator):
+        return adjoint_resource_rep(type(initial), initial.resource_params)
+    if isinstance(initial, CompressedResourceOp):
+        return adjoint_resource_rep(initial.op_type, initial.params)
+    return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
+
+
 def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine", target: "Operator | CompressedResourceOp | Subroutine", uncompute: "Operator | CompressedResourceOp | Subroutine"=None
 ) -> CompressedResourceOp:
@@ -123,12 +131,7 @@ def change_op_basis_subroutine_resource_rep(
     compute_rep = _get_non_adjoint_rep(compute)
     target_rep = _get_non_adjoint_rep(target)
     if not uncompute:
-        if isinstance(compute, Operator):
-            uncompute_rep = adjoint_resource_rep(type(compute), compute.resource_params)
-        elif isinstance(compute, CompressedResourceOp):
-            uncompute_rep = adjoint_resource_rep(compute.op_type, compute.params)
-        else:
-            uncompute_rep = adjoint_subroutine_resource_rep(compute.func, *compute.args, **compute.keywords)
+        uncompute_rep = _get_adjoint_rep(uncompute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
     return CompressedResourceOp(
