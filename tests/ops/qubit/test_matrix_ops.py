@@ -618,6 +618,7 @@ class TestQubitUnitary:
         [
             (qml.matrix(qml.RY(1, 0) @ qml.RY(2, 1)), qml.matrix(qml.RX(2, 0) @ qml.RZ(4, 1)), 4),
             (qml.matrix(qml.RY(1, 0)), qml.matrix(qml.RX(2, 0)), 2),
+            (qml.matrix(qml.GroverOperator([0, 1, 2])), qml.matrix(qml.MultiControlledX([0, 1, 2])), 8),
         ],
     )
     def test_compute_udv(self, a, b, size):
