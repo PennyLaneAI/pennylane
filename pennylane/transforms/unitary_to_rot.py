@@ -18,6 +18,7 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 from functools import lru_cache, partial
 
 from pennylane import capture, math
+from pennylane.operation import Operator
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.queuing import QueuingManager
@@ -33,7 +34,6 @@ def _get_plxpr_unitary_to_rot():
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
-        from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -227,12 +227,18 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     return [new_tape], null_postprocessing
 
 
-def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
-    """Recursively decomposes a QubitUnitary operator into a list of rotations + CNOT."""
+def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list[Operator]:
+    """Recursively decomposes single or two-qubit QubitUnitary operators.
+
+    Args:
+        op (QubitUnitary): The operator to decompose.
+
+    Returns:
+        list[Operator]: The decomposition that does not contain any single or two-qubit unitaries.
+
+    """
     decomposition = [op]
 
-    # Recursively decompose until no single or two-qubit
-    # QubitUnitary operators exist in the decomposition list
     while True:
         keep_decomposing = False
         next_decomposition = []
