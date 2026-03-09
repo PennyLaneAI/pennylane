@@ -67,7 +67,7 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-  logarithm of its input and casts the result to an ``int``. It is equivalent 
+  logarithm of its input and casts the result to an ``int``. It is equivalent
   to ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
@@ -132,6 +132,10 @@ The following classes have been ported over:
 * The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
+
+* A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
+  This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
+  [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
 
@@ -652,10 +656,10 @@ The following classes have been ported over:
 
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
-  
-* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
+
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane.
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
-  
+
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
@@ -809,6 +813,7 @@ Yushao Chen,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Korbinian Kottmann,
 Christina Lee,
 Mudit Pandey,
 Andrija Paurevic,
