@@ -93,7 +93,7 @@ UnitaryToRotInterpreter, unitary_to_rot_plxpr_to_plxpr = _get_plxpr_unitary_to_r
 
 @partial(transform, plxpr_transform=unitary_to_rot_plxpr_to_plxpr)
 def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Decompose single-qubit and two-qubit :class:`~.QubitUnitary` operations to parametrized single-qubit operations and CNOTs.
+    r"""Decompose all single-qubit and two-qubit :class:`~.QubitUnitary` operations to parametrized single-qubit operations and CNOTs.
 
     Single-qubit gates will be converted to a sequence of Y and Z rotations in the form
     :math:`RZ(\omega) RY(\theta) RZ(\phi)` that implements the original operation up
