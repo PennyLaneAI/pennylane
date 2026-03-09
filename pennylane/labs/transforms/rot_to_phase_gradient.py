@@ -23,59 +23,9 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-
-def binary_repr_int(phi, precision):
-    r"""
-    Binary representation of ``phi`` to the closest precision
-
-    The function is relying on ``np.round`` to do the heavy lifting to correctly handling the midpoint "round to even"
-
-    Parameters:
-        phi (float): number to be represented in binary
-        precision (int): number of digits to keep
-
-    **Example**
-
-    We round the binary representation of :math:`(0.11011) 4 \pi`, which simply yields :math:`(0.11) 4 \pi` from rounding down.
-
-    >>> from pennylane.labs.transforms.rot_to_phase_gradient import binary_repr_int
-    >>> precision = 2
-    >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi
-    >>> binary_repr_int(phi, precision)
-    array([1, 1])
-
-    When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011) 4 \pi`, we round to :math:`(0.11) 4 \pi`:
-
-    >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1/16) * 4 * np.pi
-    >>> binary_repr_int(phi, precision)
-    array([1, 1])
-
-    Note that we ignore the positive decimals. E.g., because :math:`(0.1111) 4 \pi` rounds to :math:`(1.0000) 4 \pi`, we obtain ``[0, 0, 0, 0]``:
-
-    >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1/16) * 4 * np.pi
-    >>> binary_repr_int(phi, precision)
-    array([0, 0])
-
-    .. details::
-        :title: Tie to even rule
-
-        The most non-trivial case is when we are exactly at the midpoint, i.e. the truncated bits are :math:`100`.
-        In this case, the so-called ties to even rule kicks in. This is automatically handled by numpy under the hood.
-        For example, take :math:`(0.10100) 4 \pi = 0.625 \cdot 4 \pi`. We can either round down to :math:`(0.10) 4 \pi = 0.5 \cdot 4 \pi`, or round up to :math:`(0.11) 4 \pi = 0.75 \cdot 4 \pi`, but it is a tie because both numbers
-        are equally close to :math:`0.625 \cdot 4 \pi`. In this case we use the so-called tie to even rule, which rounds to the closest even number, which in this case is up to :math:`(0.11) 4 \pi = 0.75 \cdot 4 \pi`.
-
-        >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 0/16 + 1/32) * 4 * np.pi
-        >>> binary_repr_int(phi, precision)
-        array([1, 1])
-
-
-    """
-    phi = qp.math.mod(phi, 4 * np.pi)
-    phi_round = qp.math.round(2**precision * phi / 4 / np.pi)
-    return qp.math.int_to_binary(phi_round.astype(int), precision)
 
 
 def fanout(wires):
@@ -83,27 +33,6 @@ def fanout(wires):
     if len(wires) == 1:
         return qp.I(wires)
     return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[~0:0:-1], wires[~1::-1])][::-1])
-
-
-@QueuingManager.stop_recording()
-def _rz_phase_gradient(
-    phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
-) -> Operator:
-    """Function that transforms the RZ gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
-    Note that the global phases are collected and added as one big global phase in the main function
-    """
-    # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient
-    # adapted to the slightly different binary_repr_int from above
-
-    precision = len(angle_wires)
-    # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ binary_repr_int(phi * 2, precision)
-
-    compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
-
-    return qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 # pylint: disable=too-many-arguments
@@ -120,7 +49,7 @@ def _select_pauli_rot_phase_gradient(
     """
 
     precision = len(angle_wires)
-    binary_int = binary_repr_int(phis, precision)
+    binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
 
     work_wires = work_wires[: len(control_wires) - 1]
 
