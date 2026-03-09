@@ -232,30 +232,32 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list:
 
     # Recursively decompose until no single or two-qubit
     # QubitUnitary operators exist in the decomposition list
-    while any(
-        isinstance(op_, QubitUnitary) and math.shape(op_.parameters[0]) in {(2, 2), (4, 4)}
-        for op_ in decomposition
-    ):
-        tmp_decompositions = []
-        for op_ in decomposition:
-            if not isinstance(op_, QubitUnitary):
-                tmp_decompositions.append(op_)
-                continue
+    while True:
+        keep_decomposing = False
+        next_decomposition = []
+        with QueuingManager.stop_recording():
+            for op_ in decomposition:
+                if not isinstance(op_, QubitUnitary):
+                    next_decomposition.append(op_)
+                    continue
 
-            shape = math.shape(op_.parameters[0])
-            with QueuingManager.stop_recording():
+                shape = math.shape(op_.parameters[0])
                 if shape == (2, 2):
                     # Single-qubit unitary operations
-                    tmp_decompositions.extend(
+                    next_decomposition.extend(
                         one_qubit_decomposition(op_.parameters[0], op_.wires[0])
                     )
+                    keep_decomposing = True
                 elif shape == (4, 4):
                     # Two-qubit unitary operations
-                    tmp_decompositions.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
+                    next_decomposition.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
+                    keep_decomposing = True
                 else:
                     # NOTE: Ensure we add 3+ QubitUnitary operators back
-                    tmp_decompositions.append(op_)
+                    next_decomposition.append(op_)
 
-        decomposition = tmp_decompositions
+        decomposition = next_decomposition
+        if not keep_decomposing:
+            break
 
     return decomposition
