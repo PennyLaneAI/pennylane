@@ -60,7 +60,7 @@ class TestStandardValidityBasisState:
             assert qml.math.is_abstract(state) == state_traced
             assert qml.math.is_abstract(wires) == wires_traced
             tapes = []
-            for rule in qml.list_decomps("BasisState"):
+            for rule in qml.list_decomps(qml.BasisState):
                 if not rule.is_applicable(num_wires=len(wires)):
                     continue
                 with qml.queuing.AnnotatedQueue() as q:

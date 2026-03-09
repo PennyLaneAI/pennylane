@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+from importlib.util import find_spec
+
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
@@ -202,11 +204,9 @@ def _jax_jit_basis_state_cond(**_):
     if qml.capture.enabled() or qml.compiler.active():
         return False
 
-    try:
-        import jax  # pylint: disable=import-outside-toplevel,unused-import
-    except ModuleNotFoundError:
-        # Can't be using jax.jit if jax is not installed.
+    if find_spec("jax") is None:
         return False
+
     x = qml.math.array(0.2, like="jax")
     # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
     return qml.math.is_abstract(x)
