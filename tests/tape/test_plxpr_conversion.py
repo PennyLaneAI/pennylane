@@ -27,7 +27,6 @@ jax = pytest.importorskip("jax")
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-
 QFT_DECOMP = [
     qml.H(0),
     qml.ControlledPhaseShift(
