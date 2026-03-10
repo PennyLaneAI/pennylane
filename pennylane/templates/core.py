@@ -114,18 +114,18 @@ def change_op_basis_subroutine_resource_rep(
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
 ) -> CompressedResourceOp:
-    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
     in advance.
 
     Args:
-        compute (Operator | CompressedResourceOp | Subroutine): the compute op. May be a subroutine.
-        target (Operator | CompressedResourceOp | Subroutine): the target op. May be a subroutine.
-        target Optional(Operator | CompressedResourceOp | Subroutine): the optional uncompute op. May be a subroutine.
+        compute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the compute op. May be a subroutine.
+        target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target op. May be a subroutine.
+        target Optional(Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the optional uncompute op. May be a subroutine.
     Returns:
-        CompressedResourceOp: a condensed representation of the change_op_basis involving a subroutine that can be
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the change_op_basis involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
 
     .. note::
@@ -151,13 +151,13 @@ def change_op_basis_subroutine_resource_rep(
 def adjoint_subroutine_resource_rep(
     subroutine: "Subroutine", *args, **kwargs
 ) -> CompressedResourceOp:
-    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     Args:
         subroutine (Subroutine): the subroutine whose adjoint we are going to use in a decomposition.
     Returns:
-        CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
         the resources of another function.
 
     .. note::
