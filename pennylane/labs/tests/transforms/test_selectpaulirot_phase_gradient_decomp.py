@@ -26,9 +26,9 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 # @pytest.mark.usefixtures("enable_graph_decomposition") # fixture doesnt exist in labs tests
-# @pytest.mark.parametrize("prec", [2, 3, 4, 5])
-@pytest.mark.parametrize("prec", [2, 3])
-def test_as_fixed_decomps(prec):
+@pytest.mark.parametrize("prec", [2, 3, 5])
+@pytest.mark.parametrize("num_controls", [1, 2])
+def test_as_fixed_decomps(prec, num_controls):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
     with qp.decomposition.toggle_graph_ctx(
@@ -40,11 +40,11 @@ def test_as_fixed_decomps(prec):
             @ np.array([1 / 2, 1 / 4, 1 / 8])
             * 4
             * np.pi
-        )
+        )[: 2**num_controls]
 
         # If precision is very low, the number of control wires of the multiplexer dictate the
         # required number of work wires.
-        num_work_wires = max(prec, 3) - 1
+        num_work_wires = max(prec, num_controls + 1) - 1
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
@@ -68,7 +68,7 @@ def test_as_fixed_decomps(prec):
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit(angles):
-            qp.SelectPauliRot(angles, control_wires=range(2), target_wire=2)
+            qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
             return qp.state()
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
