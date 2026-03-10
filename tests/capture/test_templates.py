@@ -239,8 +239,13 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
-    (qml.TemporaryAND, (), ({"wires": [0, 1, 2], "control_values": [0, 1]})),
-    (qml.TemporaryAND, ([0, 1, 2],), ({"control_values": [0, 1]})),
+    (qml.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
+    (qml.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (
+        qml.SumOfSlatersPrep,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+    ),
 ]
 
 
@@ -296,7 +301,6 @@ tested_modified_templates = [
     qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
-    qml.BasisRotation,
     qml.BBQRAM,
     qml.CommutingEvolution,
     qml.ControlledSequence,
@@ -425,36 +429,6 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
-
-    def test_basis_rotation(self):
-        """Test the primitive bind call of BasisRotation."""
-
-        mat = np.eye(4)
-        wires = [0, 5]
-
-        def qfunc(wires, mat):
-            qml.BasisRotation(wires, mat, check=True)
-
-        # Validate inputs
-        qfunc(wires, mat)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
-
-        assert len(jaxpr.eqns) == 1
-
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.BasisRotation._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params["check"] is True
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
@@ -1595,7 +1569,11 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qml.templates."""
-    return inspect.isclass(member) and member.__module__.startswith("pennylane.templates")
+    return (
+        inspect.isclass(member)
+        and member.__module__.startswith("pennylane.templates")
+        and issubclass(member, qml.operation.Operator)
+    )
 
 
 _, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn))

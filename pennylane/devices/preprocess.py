@@ -275,7 +275,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     skip_initial_state_prep: bool = True,
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     device_wires: Wires | None = None,
-    target_gates: set | None = None,
+    num_work_wires: int | None = None,
+    target_gates: set | dict | None = None,
+    fixed_decomps: dict | None = None,
+    alt_decomps: dict | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
     strict: bool = True,
@@ -298,10 +301,17 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
-        device_wires (Wires): The device wires. If provided along with ``target_gates``, will be
-            used to automatically set up graph decomposition when enabled.
-        target_gates (set): The target gate set for graph decomposition. If provided along with
-            ``device_wires``, will automatically enable graph-based decomposition when available.
+        device_wires (Wires): The device wires. If provided along with ``target_gates`` and
+            graph-based decomposition is enabled, will be used to infer available work wires.
+        num_work_wires (int): Number of work wires to be used if the graph-based decomposition
+            is enabled. If ``device_wires`` are given, they take precedence over ``num_work_wires``
+        target_gates (set or dict): Target gate set to be used if the graph-based decomposition
+            is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>` for more details.
+        fixed_decomps (dict): Fixed decomposition rules to be used if the graph-based decomposition
+            is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>` for more details.
+        alt_decomps (dict): Alternative decomposition rules to be used if the graph-based
+            decomposition is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>`
+            for more details.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -314,7 +324,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: This transform is intended for device developers. See :func:`qml.transforms.decompose <pennylane.transforms.decompose>` for a more user-friendly interface.
+    .. seealso::
+
+        This transform is intended for device developers. See
+        :func:`qml.decompose <pennylane.transforms.decompose>` for a more user-friendly
+        interface.
 
     Raises:
         Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.
@@ -364,15 +378,17 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    # Compute parameters for graph decomposition if device_wires and target_gates are provided
-    if device_wires is None:
-        num_available_work_wires = device_wires  # no constraint on work wires
-    else:
+    num_available_work_wires = None  # no constraint on work wires / not applicable with old system
+    graph_solution = None
+    if device_wires is not None:
         # Calculate work wires as device wires that are not used by the tape
         num_available_work_wires = len(set(device_wires) - set(tape.wires))
 
-    graph_solution = None
     if target_gates is not None and enabled_graph():
+        # Compute parameters for graph decomposition if device_wires and target_gates are provided
+        if num_available_work_wires is None:
+            num_available_work_wires = num_work_wires
+
         # Filter out instances of ops that don't need to be decomposed
         decomposable_ops = [op for op in tape.operations if not stopping_condition(op)]
 
@@ -382,8 +398,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             target_gates=target_gates,
             num_work_wires=num_available_work_wires,
             minimize_work_wires=False,
-            fixed_decomps=None,
-            alt_decomps=None,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
             strict=strict,
         )
 
