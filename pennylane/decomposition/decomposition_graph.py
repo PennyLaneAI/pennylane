@@ -489,6 +489,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if base_class is qml.GlobalPhase:
             return []
 
+        # Special case: controlled ChangeOpBasis defines its own decomposition, which applies
+        # the control on the middle op only. This should always be applied.
+        if base_class is qml.ops.ChangeOpBasis:
+            return []
+
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
