@@ -1663,7 +1663,7 @@ class MultiControlledX(ControlledOp):
         if qml.math.is_abstract(self.control_values):
             num_zero_control_values = len(self.control_values)
         else:
-            num_zero_control_values = sum(self.control_values)
+            num_zero_control_values = len(self.control_values) - sum(self.control_values)
         return {
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": num_zero_control_values,
