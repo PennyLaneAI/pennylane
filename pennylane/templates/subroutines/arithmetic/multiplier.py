@@ -282,11 +282,15 @@ def _multiplier_decomposition_resources(
         }
 
     return {
-        subroutine_resource_rep(QFT, AbstractArray((num_wires_aux,))): 2,
-        resource_rep(ControlledSequence, **cs_base_params): 1,
+        change_op_basis_subroutine_resource_rep(
+            subroutine_resource_rep(QFT, AbstractArray((num_wires_aux,))),
+            resource_rep(ControlledSequence, **cs_base_params),
+        ): 1,
         SWAP: 1,
-        adjoint_resource_rep(ControlledSequence, cs_base_params): 1,
-        adjoint_subroutine_resource_rep(QFT, AbstractArray((num_wires_aux,))): 2,
+        change_op_basis_subroutine_resource_rep(
+            subroutine_resource_rep(QFT, AbstractArray((num_wires_aux,))),
+            adjoint_resource_rep(ControlledSequence, cs_base_params),
+        ): 1,
     }
 
 

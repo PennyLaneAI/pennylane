@@ -303,7 +303,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ops.PhaseShift: num_x_wires,
         adjoint_resource_rep(ops.PhaseShift): num_x_wires,
         change_op_basis_subroutine_resource_rep(
-            subroutine_resource_rep(QFT, AbstractArray((num_x_wires,))), resource_rep(ops.CNOT)
+            adjoint_subroutine_resource_rep(QFT, AbstractArray((num_x_wires,))),
+            resource_rep(ops.CNOT),
+            subroutine_resource_rep(QFT, AbstractArray((num_x_wires,))),
         ): 1,
         change_op_basis_subroutine_resource_rep(
             resource_rep(ops.Prod, resources=basis_op_resources1),
