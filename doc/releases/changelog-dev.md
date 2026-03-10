@@ -657,6 +657,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Workflow created to sync the `main` branch to `master`.
+  [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+  
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
