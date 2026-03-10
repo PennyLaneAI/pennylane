@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates import AbstractArray
+from pennylane.templates.core import AbstractArray
 
 
 @pytest.mark.jax
