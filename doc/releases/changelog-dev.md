@@ -149,6 +149,10 @@ The following classes have been ported over:
 * Made decompositions of :class:`~.MultiControlledX` JIT-compatible.
   [(#9044)](https://github.com/PennyLaneAI/pennylane/pull/9044)
 
+* ``qml.math.givens_decomposition`` and ``qml.BasisRotation`` are now compatible with ``qjit`` when
+  ``capture`` is disabled.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
   
@@ -668,6 +672,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Fixed a warning of casting complex values to reals within ``qml.math.givens_decomposition``.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
@@ -750,6 +757,9 @@ The following classes have been ported over:
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
   [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
+
+* Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using ``qjit``.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.

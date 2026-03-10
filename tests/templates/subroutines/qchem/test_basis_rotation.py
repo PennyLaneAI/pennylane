@@ -621,22 +621,40 @@ class TestInterfaces:
             ),  # real unitary
         ],
     )
-    @pytest.mark.external
+    @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
+    @pytest.mark.jax
     @pytest.mark.catalyst
-    def test_qjit(self, unitary):
-        """Test compilation with qjit."""
-        dev = qml.device("null.qubit", wires=3)
+    @pytest.mark.external
+    def test_qjit(self, unitary, device_name, tol):
+        """Test with qjit interface."""
+        unitary_matrix = qml.math.array(unitary, like="jax")
 
-        gate_set = {"SingleExcitation", "BasisState", "PhaseShift"}
+        dev = qml.device(device_name, wires=3)
+
         circuit = qml.QNode(circuit_template, dev)
-        circuit = qml.qjit(qml.decompose(circuit, gate_set=gate_set))
-        specs = qml.specs(circuit)(unitary)
-        gates = specs["resources"].gate_types
-        exp_gates = {"BasisState": 1, "SingleExcitation": 3}
-        if unitary.dtype == np.complex128:
-            assert gates.pop("PhaseShift", 0) <= 6
 
-        assert gates == exp_gates
+        # We compute these results with `null.qubit` even though we won't compare them. This
+        # is to test error-free "execution".
+        res = qml.qjit(circuit)(unitary_matrix)
+        res2 = circuit(unitary_matrix)
+        res3 = circuit(qml.math.toarray(unitary_matrix))
+
+        if device_name == "lightning.qubit":
+            assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+            assert qml.math.allclose(res, res3, atol=tol, rtol=0)
+
+        gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
+        circuit_dec = qml.decompose(circuit, gate_set=gate_set)
+        specs = qml.specs(qml.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs2 = qml.specs(circuit_dec, level="device")(unitary_matrix)
+
+        gate_types = specs["resources"].gate_types
+        assert set(gate_types) == gate_set
+        assert gate_types["BasisState"] == 1
+        assert gate_types["SingleExcitation"] == 3
+        assert gate_types.get("PhaseShift", 0) <= 6  # Number of PhaseShifts is value-dependent
+        assert gate_types == specs2["resources"].gate_types
+        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
 
     @pytest.mark.slow
     @pytest.mark.tf
