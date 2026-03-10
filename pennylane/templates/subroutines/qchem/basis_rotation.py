@@ -72,7 +72,7 @@ def _real_unitary(unitary, wires):
 
     angle, unitary = _adjust_determinant(unitary)
 
-    if _is_jax_jit(angle):
+    if _is_jax_jit(angle) or compiler.active():
         PhaseShift(angle, wires[0])
     else:
         cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
@@ -80,7 +80,7 @@ def _real_unitary(unitary, wires):
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if capture.enabled() or compiler.active():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
 
@@ -98,7 +98,7 @@ def _complex_unitary(unitary, wires):
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if capture.enabled() or compiler.active():
         phase_list = math.array(phase_list, like="jax")
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
@@ -117,7 +117,7 @@ def _complex_unitary(unitary, wires):
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        if _is_jax_jit(phi):
+        if _is_jax_jit(phi) or compiler.active():
             PhaseShift(phi, wires[i])
         else:
             cond(math.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
@@ -378,6 +378,9 @@ def BasisRotation(wires: WiresLike, unitary_matrix: TensorLike, check: bool = Fa
         is_unitary = math.allclose(u_u_dag, math.eye(M, dtype=complex), atol=1e-4)
         if not is_unitary:
             raise ValueError("The provided transformation matrix should be unitary.")
+
+    if compiler.active():
+        wires = math.array(wires, like="jax")
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
     cond(is_real, _real_unitary, _complex_unitary)(unitary=unitary_matrix, wires=wires)

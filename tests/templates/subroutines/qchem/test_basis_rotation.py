@@ -682,3 +682,44 @@ class TestInterfaces:
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+
+@pytest.mark.external
+@pytest.mark.catalyst
+@pytest.mark.parametrize(
+    "unitary",
+    [
+        np.array(
+            [
+                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+            ]
+        ),  # complex unitary
+        np.array(
+            [
+                [-0.22081075, -0.29306608, -0.93024453],
+                [-0.67705210, -0.64047179, 0.36248634],
+                [-0.70202783, 0.70986489, -0.05699795],
+            ]
+        ),  # real unitary
+    ],
+)
+def test_catalyst(unitary, tol):
+    """Test the jax interface."""
+
+    import jax.numpy as jnp
+
+    unitary_matrix = jnp.array(unitary)
+
+    dev = qml.device("lightning.qubit", wires=3)
+
+    circuit = qml.qjit(qml.QNode(circuit_template, dev), capture=False)
+    circuit2 = qml.QNode(circuit_template, dev)
+
+    res = circuit(unitary_matrix)
+    res2 = circuit2(unitary_matrix)
+    res3 = circuit2(qml.math.toarray(unitary_matrix))
+
+    assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+    assert qml.math.allclose(res, res3, atol=tol, rtol=0)
