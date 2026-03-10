@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition import resource_rep
-from pennylane.ops import CNOT, Adjoint, PauliX
+from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     _make_signature_key,
@@ -671,6 +671,25 @@ class TestGraphDecomposition:
                 ),
             },
         }
+
+        rr = change_op_basis_subroutine_resource_rep(
+            qml.PauliZ(0),
+            resource_rep(qml.PauliX),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "PauliZ"
+        assert rr.params["compute_op"].op_type == PauliZ
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
 
         rr = change_op_basis_subroutine_resource_rep(
             resource_rep(qml.PauliX),
