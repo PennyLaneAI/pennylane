@@ -72,7 +72,7 @@ def _real_unitary(unitary, wires):
 
     angle, unitary = _adjust_determinant(unitary)
 
-    if _is_jax_jit(angle) or compiler.active():
+    if _is_jax_jit(angle):
         PhaseShift(angle, wires[0])
     else:
         cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
@@ -117,7 +117,7 @@ def _complex_unitary(unitary, wires):
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        if _is_jax_jit(phi) or compiler.active():
+        if _is_jax_jit(phi):
             PhaseShift(phi, wires[i])
         else:
             cond(math.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
