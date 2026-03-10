@@ -93,13 +93,13 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
 def adjoint_subroutine_resource_rep(
     subroutine: "Subroutine", *args, **kwargs
 ) -> CompressedResourceOp:
-    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     Args:
         subroutine (Subroutine): the subroutine whose adjoint we are going to use in a decomposition.
     Returns:
-        CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
         the resources of another function.
 
     .. note::
