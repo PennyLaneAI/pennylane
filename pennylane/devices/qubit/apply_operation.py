@@ -615,7 +615,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
         # H uses direct matrix application since its coefficients are constant;
         # no parameter-dependent logic needed unlike RX/RY/RZ.
         axis = op.wires[0] + is_state_batched
-        mat = _HADAMARD_CACHE.get(state.dtype, _HADAMARD_MAT.astype(state.dtype))
+        mat = _HADAMARD_MAT.astype(state.dtype)
         return _apply_single_qubit_np(mat, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
