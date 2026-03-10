@@ -485,19 +485,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [flip_control_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
-        # generated decomposition rules apply.
-        if base_class is qml.GlobalPhase:
+        # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
+        # own decomposition, which applies the control on the middle op only. This should
+        # always be applied.
+        if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
             return []
-
-        # Special case: controlled ChangeOpBasis defines its own decomposition, which applies
-        # the control on the middle op only. This should always be applied.
-        if base_class is qml.ops.ChangeOpBasis:
-# Special case: when the base is GlobalPhase, none of the following automatically
-# generated decomposition rules apply.
-        # Special case: controlled ChangeOpBasis defines its own decomposition, which applies
-        # the control on the middle op only. This should always be applied.
-if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
-return []
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
