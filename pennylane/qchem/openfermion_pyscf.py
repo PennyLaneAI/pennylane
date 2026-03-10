@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
-# pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
-# pylint: disable=consider-using-generator, protected-access
+# pylint: disable=too-many-arguments,unused-variable
+# pylint: disable=consider-using-generator
 import os
 
 import numpy as np
@@ -23,13 +23,13 @@ import pennylane as qml
 from .basis_data import atomic_numbers
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+BOHR_TO_ANG = 0.529177210903
 
 
 def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import openfermion
         import openfermionpyscf
     except ImportError as Error:
@@ -44,7 +44,7 @@ def _import_of():
 def _import_pyscf():
     """Import pyscf."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import pyscf
     except ImportError as Error:
         raise ImportError(
@@ -291,7 +291,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
 def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     r"""Generates the `FermionOperator <https://github.com/quantumlib/OpenFermion/blob/master/docs/
-    tutorials/intro_to_openfermion.ipynb>`_ representing a given two-particle operator
+    tutorials/intro_to_openfermion.ipynb>`__ representing a given two-particle operator
     required to build many-body qubit observables.
 
     Second quantized two-particle operators are expanded in the basis of single-particle
@@ -729,7 +729,7 @@ def meanfield(
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
-        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * BOHR_TO_ANG)]
         for i, symbol in enumerate(symbols)
     ]
 
@@ -816,7 +816,7 @@ def _pyscf_integrals(
     pyscf = _import_pyscf()
 
     geometry = [
-        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * BOHR_TO_ANG)]
         for i, symbol in enumerate(symbols)
     ]
 

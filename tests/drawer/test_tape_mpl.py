@@ -18,6 +18,8 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -430,8 +432,8 @@ class TestSpecialGates:
 
         plt.close()
 
-    def test_MidMeasureMP(self):
-        """Tests MidMeasureMP has correct special handling."""
+    def test_MidMeasure(self):
+        """Tests MidMeasure has correct special handling."""
         m = qml.measure(0)
         tape = QuantumScript(m.measurements)
         _, ax = tape_mpl(tape)
@@ -440,6 +442,16 @@ class TestSpecialGates:
 
         assert ax.patches[0].get_x() == -0.175
         assert ax.patches[0].get_y() == -0.175
+        plt.close()
+
+    def test_PauliMeasure(self):
+        """Tests PauliMeasure has correct special handling."""
+
+        m = qml.pauli_measure("XY", wires=[0, 1])
+        tape = QuantumScript(m.measurements)
+        _, ax = tape_mpl(tape)
+        assert len(ax.lines) == 2
+        assert len(ax.texts) == 4
         plt.close()
 
     def test_MidMeasure_reset(self):
@@ -656,6 +668,7 @@ class TestGeneralOperations:
         assert isinstance(ax, mpl.axes._axes.Axes)
 
         assert fig.axes == [ax]
+        assert len(ax.patches) == len(ax.texts) == 0
 
         # Test that `qml.Snapshot` works properly when other gates are present
         tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
@@ -668,6 +681,138 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == 2 + self.width
 
         plt.close()
+
+    @pytest.mark.parametrize("input_wires", [tuple(), (0, 1), (0, 2, 1, 3)])
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_global_phase(self, input_wires, show_all_wires, cls):
+        """Test that `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
+
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=input_wires), qml.X(0)])
+        fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        if show_all_wires:
+            num_wires = 5
+        else:
+            num_wires = max(len(input_wires), 1)
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == num_wires - 1 + self.width
+
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_multiple_global_ops(self, cls):
+        """Test that global ops correctly reserve layers for themselves."""
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        assert len(ax.patches) == 3  # Three boxes without notches
+        for i, patch in enumerate(ax.patches):
+            assert isinstance(patch, mpl.patches.FancyBboxPatch)
+            assert patch.get_x() == i + -self.width / 2.0
+            assert patch.get_y() == -self.width / 2.0
+            assert patch.get_width() == self.width
+            assert patch.get_height() == 2 + self.width
+
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "input_wires, control_wires",
+        [
+            (tuple(), (0,)),
+            ((0, 1), (2, 3)),
+            ((0, 3), (2,)),
+            ((0, 2, 3), (1,)),
+            ((0, 3), (1, 2)),
+            ((0, 2), (1, 3)),
+        ],
+    )
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op(self, input_wires, control_wires, show_all_wires, cls):
+        """Test that controlled `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
+
+        data = [0.3625][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=input_wires), control=control_wires)
+        tape = QuantumScript([op, qml.X(0), qml.X(1)])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Control node circular patches (may be invisible)
+        for i, c in enumerate(control_wires):
+            patch = ax.patches[i]
+            assert isinstance(patch, mpl.patches.Circle)
+            assert patch.center == (0, c)
+
+        # Main box
+        if show_all_wires:
+            covered_wires = range(5)
+        elif len(input_wires) == 0:
+            covered_wires = (0, 1)  # Wires for qml.X operations transfer to GlobalPhase
+        else:
+            covered_wires = range(min(input_wires), max(input_wires) + 1)
+        min_box_wire = min([w for w in covered_wires if w not in control_wires])
+        max_box_wire = max([w for w in covered_wires if w not in control_wires])
+        i = len(control_wires)
+        main_patch = ax.patches[i]
+        assert isinstance(main_patch, mpl.patches.FancyBboxPatch)
+
+        assert main_patch.get_x() == -self.width / 2.0
+        assert main_patch.get_y() == min_box_wire - self.width / 2.0
+        assert main_patch.get_width() == self.width
+        assert main_patch.get_height() == max_box_wire - min_box_wire + self.width
+        for j in range(i):
+            assert main_patch.zorder > ax.patches[j].zorder
+
+        # Notches
+        i += 1
+        for w in control_wires:
+            if min_box_wire < w < max_box_wire:
+                notch_patch = ax.patches[i]
+                assert isinstance(notch_patch, mpl.patches.FancyBboxPatch)
+                assert notch_patch.zorder < main_patch.zorder
+
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op_without_target(self, cls):
+        """Test that an error is raised if a controlled GlobalPhase is present that can
+        not infer any target wires."""
+
+        data = [0.251][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=[]), control=(0, 4))
+        tape = QuantumScript([op])
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
+            _ = tape_mpl(tape)
+
+        # No error if wire_order provides additional wire(s)
+        _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
+
+        # Error if wire_order provides additional wire(s) but they are not drawn
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
+            _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=False)
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
@@ -1027,3 +1172,26 @@ class TestClassicalControl:
         )  # box_length - 2 * pad + 2 *cwire_scaling
 
         plt.close()
+
+    def test_pauli_measure(self):
+        """Tests that the classical control wire from a pauli_measure is shifted."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.pauli_measure("X", [0])
+            qml.expval(m0)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        [_, cwire] = ax.lines
+        assert cwire.get_xdata() == [-0.075, -0.075, -0.075, 1, 1, 1]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 1, 1]
+
+    def test_pauli_measure_mcm_in_parallel(self):
+        """Tests that the classical control wire is not shifted from an MCM."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.pauli_measure("X", [0])
+            m1 = qml.measure(1)
+            qml.expval(m1)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        [*_, cwire] = ax.lines
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1]
+        assert cwire.get_ydata() == [2, 1, 2, 2, 2, 2]

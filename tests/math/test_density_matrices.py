@@ -22,7 +22,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -76,7 +75,7 @@ state_vectors = [
     (state_00_10, (mat_0_1, mat_0, mat_00_10)),
     (state_01_11, (mat_0_1, mat_1, mat_01_11))]
 
-array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor, tf.Variable, tf.constant]
+array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor]
 
 single_wires_list = [
     [0],
@@ -205,22 +204,6 @@ class TestDensityMatrixFromStateVectors:
         with pytest.raises(ValueError, match="State vector must be"):
             jitted_dens_matrix_func(state_vector, indices=(0, 1), check_state=True)
 
-    def test_density_matrix_tf_jit(self):
-        """Test jitting the density matrix from state vector function with Tf."""
-        from functools import partial
-
-        state_vector = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-
-        density_matrix = partial(fn.reduce_statevector, indices=[0])
-
-        density_matrix = tf.function(
-            density_matrix,
-            jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=(4,), dtype=tf.complex128),),
-        )
-        density_matrix = density_matrix(state_vector)
-        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
-
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector", list(zip(*state_vectors))[0])
@@ -261,14 +244,6 @@ density_matrices = [
     (torch.tensor(mat_01), (mat_0, mat_1)),
     (torch.tensor(mat_10), (mat_1, mat_0)),
     (torch.tensor(mat_11), (mat_1, mat_1)),
-    (tf.Variable(mat_00), (mat_0, mat_0)),
-    (tf.Variable(mat_01), (mat_0, mat_1)),
-    (tf.Variable(mat_10), (mat_1, mat_0)),
-    (tf.Variable(mat_11), (mat_1, mat_1)),
-    (tf.constant(mat_00), (mat_0, mat_0)),
-    (tf.constant(mat_01), (mat_0, mat_1)),
-    (tf.constant(mat_10), (mat_1, mat_0)),
-    (tf.constant(mat_11), (mat_1, mat_1)),
     (mat_00_10, (mat_0_1, mat_0)),
     (mat_01_11, (mat_0_1, mat_1)),
 ]
@@ -362,29 +337,6 @@ class TestDensityMatrixFromMatrix:
 
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
             jitted_dens_matrix_func(state_vector, indices=(0, 1), check_state=True)
-
-    def test_density_matrix_tf_jit(self):
-        """Test jitting the density matrix from density matrix function with Tf."""
-        from functools import partial
-
-        d_mat = tf.Variable(
-            [
-                [1, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            dtype=tf.complex128,
-        )
-        density_matrix = partial(fn.reduce_dm, indices=[0])
-
-        density_matrix = tf.function(
-            density_matrix,
-            jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=(4, 4), dtype=tf.complex128),),
-        )
-        density_matrix = density_matrix(d_mat)
-        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])

@@ -14,14 +14,18 @@
 r"""
 Contains the ArbitraryStatePreparation template.
 """
-# pylint: disable=trailing-comma-tuple
+
 import functools
+from collections import Counter
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import register_resources
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, resource_rep
+from pennylane.operation import Operation
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _state_preparation_pauli_words(num_wires):
     """Pauli words necessary for a state preparation.
 
@@ -80,8 +84,9 @@ class ArbitraryStatePreparation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
+
+    resource_keys = {"num_wires"}
 
     def __init__(self, weights, wires, id=None):
         shape = qml.math.shape(weights)
@@ -91,6 +96,12 @@ class ArbitraryStatePreparation(Operation):
             )
 
         super().__init__(weights, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+        }
 
     @property
     def num_params(self):
@@ -117,13 +128,16 @@ class ArbitraryStatePreparation(Operation):
         **Example**
 
         >>> weights = torch.tensor([1., 2., 3., 4., 5., 6.])
-        >>> qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
-        [PauliRot(tensor(1.), 'XI', wires=['a', 'b']),
-         PauliRot(tensor(2.), 'YI', wires=['a', 'b']),
-         PauliRot(tensor(3.), 'IX', wires=['a', 'b']),
-         PauliRot(tensor(4.), 'IY', wires=['a', 'b']),
-         PauliRot(tensor(5.), 'XX', wires=['a', 'b']),
-         PauliRot(tensor(6.), 'XY', wires=['a', 'b'])]
+        >>> ops = qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [PauliRot(1.0, XI, wires=['a', 'b']),
+        PauliRot(2.0, YI, wires=['a', 'b']),
+        PauliRot(3.0, IX, wires=['a', 'b']),
+        PauliRot(4.0, IY, wires=['a', 'b']),
+        PauliRot(5.0, XX, wires=['a', 'b']),
+        PauliRot(6.0, XY, wires=['a', 'b'])]
+
         """
         op_list = []
         for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
@@ -142,3 +156,27 @@ class ArbitraryStatePreparation(Operation):
             tuple[int]: shape
         """
         return (2 ** (n_wires + 1) - 2,)
+
+
+def _arbitrary_state_preparation_resources(num_wires):
+    return dict(
+        Counter(
+            resource_rep(qml.PauliRot, pauli_word=pauli_word)
+            for pauli_word in _state_preparation_pauli_words(num_wires)
+        )
+    )
+
+
+@register_resources(_arbitrary_state_preparation_resources)
+def _arbitrary_state_preparation_decomposition(weights, wires):
+    pauli_words = _state_preparation_pauli_words(len(wires))
+
+    @for_loop(len(pauli_words))
+    def pauli_loop(i):
+        pauli_word = pauli_words[i]
+        qml.PauliRot(weights[i], pauli_word, wires=wires)
+
+    pauli_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_decomposition)

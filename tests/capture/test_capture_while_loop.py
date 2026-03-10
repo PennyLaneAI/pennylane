@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -96,14 +96,11 @@ class TestCaptureWhileLoop:
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_capture(self, autograph):
+    def test_while_loop_capture(self):
         """Test that a while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -124,14 +121,11 @@ class TestCaptureCircuitsWhileLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(1.2, -0.16852022), (1.6, 0.598211352)])
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_circuit_args(self, arg, expected, autograph):
+    def test_circuit_args(self, arg, expected):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -182,14 +176,11 @@ class TestCaptureCircuitsWhileLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_nested(self, upper_bound, arg, expected, autograph):
+    def test_while_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -266,15 +257,11 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_grad(self, autograph):
+    def test_while_loop_grad(self):
         """Test simple while-loop primitive with gradient."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
-
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
@@ -301,9 +288,17 @@ class TestCaptureCircuitsWhileLoop:
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnum"] == [0]
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
@@ -365,7 +360,7 @@ class TestCaptureWhileLoopDynamicShapes:
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
         def f(a, b):
-            return jnp.hstack([a, b]), 2 * b
+            return jnp.ones(a.shape[0] + b.shape[0]), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
@@ -449,7 +444,7 @@ class TestCaptureWhileLoopDynamicShapes:
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing)
         def f(x, y):
-            x = jnp.hstack([x, y])
+            x = jnp.ones(x.shape[0] + y.shape[0])
             return x, 2 * x
 
         def workflow(i0):
@@ -459,8 +454,8 @@ class TestCaptureWhileLoopDynamicShapes:
 
         jaxpr = jax.make_jaxpr(workflow)(2)
         [dynamic_shape, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
-        assert qml.math.allclose(dynamic_shape, 8)
-        x_expected = jnp.array([1, 1, 2, 2, 2, 2, 4, 4])
+        assert qml.math.allclose(dynamic_shape, 16)
+        x_expected = jnp.ones(16)
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 2 * x_expected)
 
@@ -472,15 +467,15 @@ class TestCaptureWhileLoopDynamicShapes:
             lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
         )
         def f(a, b):
-            return jnp.hstack((a, b)), b + 1
+            return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
         [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-        assert jnp.allclose(shape1, 15)  # 3 * 5
+        assert jnp.allclose(shape1, 12)
         assert jnp.allclose(shape2, 3)
-        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        expected = jnp.ones(12)
         assert jnp.allclose(a, expected)
-        assert jnp.allclose(b, jnp.array([4, 4, 4]))
+        assert jnp.allclose(b, jnp.array([3, 3, 3]))

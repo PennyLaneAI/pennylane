@@ -1276,3 +1276,42 @@ class TestDenmanBeaversIterations:
         bad_mat = mat if det_mat < 0 else _reverse_det_hermitian(mat)
         with pytest.raises(ValueError, match="Invalid values encountered"):
             _denman_beavers_iterations(csr_matrix(bad_mat))
+
+
+def _random_unitary(n):
+    """Generates a random n x n unitary matrix."""
+    Z = np.random.rand(n, n) + 1j * np.random.rand(n, n)
+    Q, _ = np.linalg.qr(Z)
+    return Q
+
+
+@pytest.mark.parametrize(
+    "size, converter", [(2, qml.math.convert_to_su2), (4, qml.math.convert_to_su4)]
+)
+class TestConvertToSUMatrices:
+    """Tests for the convert_to_SU2 and convert_to_SU4 functions."""
+
+    @staticmethod
+    def _assert_correct(original_matrix, su, phase):
+        """Verifies that the converted matrix is correct."""
+        assert qml.math.allclose(su * qml.math.exp(1j * phase), original_matrix)
+        assert qml.math.allclose(qml.math.conj(su).T @ su, np.eye(su.shape[0]))
+        assert qml.math.allclose(qml.math.linalg.det(su), 1)
+
+    def test_simple_matrix(self, size, converter):
+        """Tests the conversion of a simple matrix to SU(2)"""
+
+        matrix = _random_unitary(size)
+        su, phase = converter(matrix, return_global_phase=True)
+        self._assert_correct(matrix, su, phase)
+
+    def test_batched(self, size, converter):
+        """Tests that the batched operation is correct."""
+
+        matrices = [_random_unitary(size) for _ in range(3)]
+        matrices = np.stack(matrices)
+        sus, phases = converter(matrices, return_global_phase=True)
+        assert qml.math.shape(sus) == (3, size, size)
+        assert qml.math.shape(phases) == (3,)
+        for matrix, su2, phase in zip(matrices, sus, phases):
+            self._assert_correct(matrix, su2, phase)

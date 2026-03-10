@@ -14,27 +14,23 @@
 """
 Contains the condition transform.
 """
-from functools import wraps
-from typing import Callable, Union
+from collections.abc import Callable
 
-import pennylane as qml
-from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops.op_math.condition import CondCallable, Conditional
+from pennylane import capture
+from pennylane.capture.autograph import wraps
+from pennylane.ops import MeasurementValue, MidMeasure
+from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
+from pennylane.queuing import QueuingManager
 
 
 def cond_measure(
-    condition: Union[MeasurementValue, bool],
+    condition: MeasurementValue | bool,
     true_fn: Callable,
     false_fn: Callable,
 ):
     """Perform a mid-circuit measurement where the basis of the measurement is conditional on the
     supplied expression. This conditional expression may involve the results of other mid-circuit
     qubit measurements.
-
-    .. note::
-
-        This function is currently not compatible with :func:`~.qjit`, or with
-        :func:`.pennylane.capture.enabled`.
 
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
@@ -49,21 +45,21 @@ def cond_measure(
         wire, and they must have the same settings for `reset` and `postselection`. The two
         branches can differ only in regard to the measurement basis of the applied measurement.
 
-
     Returns:
         function: A new function that applies the conditional measurements. The returned
         function takes the same input arguments as ``true_fn`` and ``false_fn``.
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x, measure_y
+        from functools import partial
 
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3)
 
         @diagonalize_mcms
+        @qml.set_shots(shots=1_000)
         @qml.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
             qml.RY(x, 0)
@@ -77,8 +73,8 @@ def cond_measure(
             return qml.expval(qml.X(2))
 
 
-        >>> qnode(np.pi/3, np.pi/2)
-        0.3806
+    >>> print(qnode(np.pi/3, np.pi/2)) # doctest: +SKIP
+    0.3914
 
     .. note::
 
@@ -94,10 +90,8 @@ def cond_measure(
         While such statements may not result in errors, they may result in
         incorrect behaviour.
     """
-    if qml.capture.enabled():
-        raise NotImplementedError(
-            "The `cond_measure` function is not compatible with program capture"
-        )
+    if capture.enabled():
+        cond(condition, true_fn, false_fn)
 
     if not isinstance(condition, MeasurementValue):
         # The condition is not a mid-circuit measurement - we can simplify immediately
@@ -112,7 +106,7 @@ def cond_measure(
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
 
-            with qml.QueuingManager.stop_recording():
+            with QueuingManager.stop_recording():
                 true_meas_return = true_fn(*args, **kwargs)
                 false_meas_return = false_fn(*args, **kwargs)
 
@@ -139,7 +133,7 @@ def _validate_measurements(true_meas, false_meas):
     (representing a true and false functions for the conditional) and confirms that
     they have the expected type, and 'match' except for the measurement basis"""
 
-    if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
+    if not (isinstance(true_meas, MidMeasure) and isinstance(false_meas, MidMeasure)):
         raise ValueError(
             "Only measurement functions that return a measurement value can be used in `cond_measure`"
         )

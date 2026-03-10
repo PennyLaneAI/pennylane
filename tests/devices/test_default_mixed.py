@@ -21,7 +21,15 @@ import pennylane as qml
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 
-ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
+ML_INTERFACES = ["numpy", "autograd", "torch", "jax"]
+
+
+def test_execution_with_no_execution_config():
+    """Test execution of a tape with no execution config."""
+    dev = qml.device("default.mixed")
+    qs = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.PauliZ(0))])
+    result = dev.execute(qs)
+    assert qml.math.allclose(result, -1.0)
 
 
 class TestDefaultMixedInit:
@@ -96,3 +104,67 @@ class TestDefaultMixedInit:
         assert (
             processed_config.interface is Interface.NUMPY
         ), "The interface should be set to numpy for an invalid gradient method"
+
+
+# pylint: disable=too-few-public-methods
+class TestDefaultMixedTrainability:
+    """Integration tests for DefaultMixed trainable parameters"""
+
+    @pytest.mark.integration
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ML_INTERFACES)
+    def test_trainable_params_interface(self, interface):
+        """Test that the trainable parameters are correctly identified"""
+        dev = DefaultMixed(wires=2)
+        param = qml.math.array(0.5, like=interface)
+
+        # Make a trainable, parametrized circuit
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        # Create a QNode with the specified interface
+        circuit = qml.QNode(
+            circuit,
+            dev,
+            interface=interface,
+        )
+        # Execute the circuit
+        result = circuit(param)
+        # Check that the result is a tensor with the correct interface
+        assert isinstance(result, qml.typing.TensorLike)
+        assert qml.math.get_interface(result) == interface
+
+    @pytest.mark.integration
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["torch", "autograd"])
+    def test_trainable_initial_state(self, interface):
+        """Test that the trainable parameters are correctly applied to initial state"""
+        num_qubits = 2
+        dev = DefaultMixed(wires=num_qubits)
+        state = qml.math.array(
+            [
+                1.0,
+            ],
+            like=interface,
+            requires_grad=True,
+        )
+
+        # Make a trainable, parametrized circuit
+        def circuit_StatePrep(state):
+            qml.StatePrep(state=state, wires=list(range(num_qubits)), normalize=True, pad_with=0)
+
+            return [qml.expval(qml.PauliZ(wires=q)) for q in range(num_qubits)]
+
+        # Create a QNode with the specified interface
+        circuit = qml.QNode(
+            circuit_StatePrep,
+            dev,
+            interface=interface,
+        )
+        # Execute the circuit
+        result = circuit(state)
+        # Check that the result is a tensor with the correct interface
+        assert isinstance(result, qml.typing.TensorLike)
+        assert qml.math.get_deep_interface(result) == interface

@@ -17,14 +17,14 @@ Function cut_circuit for cutting a quantum circuit into smaller circuit fragment
 
 from collections.abc import Callable
 from functools import partial
-from typing import Optional, Union
 
-import pennylane as qml
+from pennylane import ops, transforms
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
@@ -36,9 +36,9 @@ from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 def _cut_circuit_expand(
     tape: QuantumScript,
     use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
+    device_wires: Wires | None = None,
     max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
@@ -52,16 +52,18 @@ def _cut_circuit_expand(
 
     # Expand the tapes for handling Hamiltonian with two or more terms
     tape_meas_ops = tape.measurements
-    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.ops.Sum):
+    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, ops.Sum):
         if len(tape_meas_ops) > 1:
             raise NotImplementedError(
                 "Hamiltonian expansion is supported only with a single Hamiltonian"
             )
 
-        new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
+        new_meas_op = type(tape_meas_ops[0])(
+            obs=ops.LinearCombination(*tape_meas_ops[0].obs.terms())
+        )
         new_tape = tape.copy(measurements=[new_meas_op])
 
-        tapes, tapes_fn = qml.transforms.split_non_commuting(new_tape, grouping_strategy=None)
+        tapes, tapes_fn = transforms.split_non_commuting(new_tape, grouping_strategy=None)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
@@ -69,9 +71,9 @@ def _cut_circuit_expand(
 @partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
     tape: QuantumScript,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
+    device_wires: Wires | None = None,
     max_depth: int = 1,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -162,9 +164,7 @@ def cut_circuit(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.cut_circuit, auto_cutter=True)
+        @qml.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -411,7 +411,7 @@ def cut_circuit(
     # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
     fragment_tapes = [
-        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+        ops.functions.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
     ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
@@ -436,9 +436,9 @@ def cut_circuit(
     )
 
 
-@cut_circuit.custom_qnode_transform
-def _qnode_transform(self, qnode, targs, tkwargs):
+@cut_circuit.register
+def _qnode_transform(qnode: QNode, *targs, **tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    return cut_circuit.generic_apply_transform(qnode, *targs, **tkwargs)

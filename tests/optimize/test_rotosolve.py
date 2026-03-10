@@ -102,10 +102,14 @@ def test_error_no_trainable_args():
 
     opt = RotosolveOptimizer()
     fun = lambda x, y, z: 1.0
-    x = np.arange(4, requires_grad=False)
+
+    x = np.array(1.0, requires_grad=False)
+    y = np.array(2.0, requires_grad=False)
+    z = np.array(3.0, requires_grad=False)
+    args = (x, y, z)
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
-        opt.step(fun, x, nums_frequency=None, spectra=None)
+        opt.step(fun, *args, nums_frequency=None, spectra=None)
 
 
 classical_functions = [

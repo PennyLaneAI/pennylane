@@ -73,9 +73,9 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         tol (float): tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike, int): A tuple including `True`/`False` for whether an operation similar to the
+        tuple(bool, TensorLike, int): A tuple including ``True``/``False`` for whether an operation similar to the
         given operations was found, the quaternion representation of the searched operations, and its index in
-        the `op_vecs` or `kd_tree`.
+        the ``op_vecs`` or ``kd_tree``.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
@@ -95,10 +95,10 @@ def _prune_approximate_set(
         approx_set_mat (list[TensorLike]): list of SU(2) matrices
         approx_set_gph (list[float]): list of global phases
         approx_set_qat (list[TensorLike]): list of quaternion representations
-        approx_set_sum (list[int]): list of numbers of the T and Adjoint(T) gates in the sequences
+        approx_set_sum (list[int]): list of numbers of the ``T`` and ``Adjoint(T)`` gates in the sequences
 
     Returns:
-        Tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
+        tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
         A tuple containing the pruned approximate set.
     """
     if approx_set_qat:
@@ -119,17 +119,17 @@ def _prune_approximate_set(
     return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
 
-@lru_cache()
+@lru_cache
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
         basis_gates (tuple[str]): Basis set to be used for Solovay-Kitaev decomposition build using the following
-        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where `*` refers to the gate adjoint.
-        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
+        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers to the gate adjoint.
+        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is ``10``
 
     Returns:
-        Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
+        tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
@@ -256,7 +256,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030).
-    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
+    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt(0.5 - 0.5 * qml.math.cos(theta / 2))))
 
     # Begin decomposition by computing the rotation operations V and W.
     v = qml.RX(phi, [0])
@@ -275,7 +275,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), basis_length=10):
+def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
@@ -294,7 +294,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             a greater number of passes. Default is ``5``.
         basis_set (tuple[str]): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers
-            to the gate adjoint. Default value is ``('T', 'T*', 'H')``.
+            to the gate adjoint. Default value is ``('H', 'S', 'T')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
@@ -309,14 +309,11 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-    .. code-block:: python3
-
-        import numpy as np
-        import pennylane as qml
+    .. code-block:: python
 
         op  = qml.RZ(np.pi/3, wires=0)
 
-        # Get the gate decomposition in ['T', 'T*', 'H']
+        # Get the gate decomposition in ['H', 'S', 'T']
         ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
@@ -327,7 +324,6 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     >>> qml.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
     True
-
     """
     # Check for length of wires in the operation
     if len(op.wires) != 1:
@@ -336,6 +332,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         )
 
     with QueuingManager.stop_recording():
+        # Obtain the operation matrix and interface
+        op_matrix = op.matrix()
+        if qml.compiler.active() or qml.math.is_abstract(op_matrix):
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT. "
+                "Use qml.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
+            )
+
         # Build the approximate set with caching
         approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
             tuple(basis_set), max_length=basis_length
@@ -344,8 +348,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         # Build the k-d tree with the current approximation set for querying in the base case
         kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
-        # Obtain the SU(2) and quaternion for the operation
-        op_matrix = op.matrix()
+        # Build the SU(2) and quaternion for the operation
         interface = qml.math.get_deep_interface(op_matrix)
         gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)
@@ -408,11 +411,18 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         )
 
     # Map the wires to that of the operation and queue
-    [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
+    if queuing := QueuingManager.recording():
+        QueuingManager.remove(op)
+
+    if (op_wire := op.wires[0]) != 0:
+        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+    else:
+        if queuing:
+            _ = [qml.apply(op) for op in new_tape.operations]
 
     # Get phase information based on the decomposition effort
     phase = approx_set_gph[index] - gate_gph
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
-    return map_tape.operations + [global_phase]
+    return new_tape.operations + [global_phase]

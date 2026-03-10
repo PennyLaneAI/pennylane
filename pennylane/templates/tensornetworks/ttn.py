@@ -14,13 +14,16 @@
 """
 Contains the TTN template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
+
 import warnings
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices(wires, n_block_wires):
@@ -50,7 +53,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+    if not np.log2(n_wires / n_block_wires).is_integer():
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -95,7 +98,7 @@ class TTN(Operation):
 
         In general, the block takes D parameters and **must** have the following signature:
 
-        .. code-block:: python
+        .. code-block::
 
             unitary(parameter1, parameter2, ... parameterD, wires)
 
@@ -139,7 +142,6 @@ class TTN(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @property
@@ -177,7 +179,7 @@ class TTN(Operation):
     ):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
-        shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
+        shape = math.shape(template_weights)  # (n_params_block, n_blocks)
         n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
 
         if shape == ():
@@ -198,9 +200,7 @@ class TTN(Operation):
         super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, block, ind_gates
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -219,7 +219,7 @@ class TTN(Operation):
             list[.Operator]: decomposition of the operator
         """
         op_list = []
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
                 op_list += block_gen(*weights[idx], wires=w)
@@ -230,7 +230,7 @@ class TTN(Operation):
             for w in ind_gates:
                 op_list += block_gen(wires=w)
 
-        return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
+        return [apply(op) for op in op_list] if QueuingManager.recording() else op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):
@@ -243,7 +243,7 @@ class TTN(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+        if not np.log2(n_wires / n_block_wires).is_integer():
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

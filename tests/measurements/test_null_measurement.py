@@ -59,9 +59,8 @@ def test_integration_jax_jit():
     assert r.dtype == np.float64
 
 
-# pylint: disable=unused-argument
-@pytest.mark.jax
-def test_capture(enable_disable_plxpr):
+@pytest.mark.capture
+def test_capture():
     """Test that null measurement works with plxpr."""
 
     @qml.qnode(qml.device("default.qubit", wires=1))

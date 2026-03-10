@@ -43,28 +43,28 @@ class TestFromOpenFermion:
     OPS = (
         (
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            (1.2 * qml.X(0) + 2.4 * qml.Z(1)),
+            (qml.ops.LinearCombination([1.2, 2.4], [qml.X(0), qml.Z(1)])),
         ),
         (
             (openfermion.QubitOperator("X0 X2", 0.3) + openfermion.QubitOperator("Z1 Z0", 0.5)),
-            (0.3 * qml.X(0) @ qml.X(2) + 0.5 * qml.Z(1) @ qml.Z(0)),
+            (qml.ops.LinearCombination([0.3, 0.5], [qml.X(0) @ qml.X(2), qml.Z(1) @ qml.Z(0)])),
         ),
-        (openfermion.QubitOperator(), (0.0 * qml.I(0))),
+        (openfermion.QubitOperator(), qml.ops.LinearCombination([0.0], [qml.I(0)])),
         (
             (
                 0.1 * openfermion.QubitOperator("X0")
                 + 0.5 * openfermion.QubitOperator("Y1")
                 + 0.2 * openfermion.QubitOperator("Z2")
             ),
-            (0.1 * qml.X(0) + 0.2 * qml.Z(2) + 0.5 * qml.Y(1)),
+            qml.ops.LinearCombination([0.1, 0.5, 0.2], [qml.X(0), qml.Y(1), qml.Z(2)]),
         ),
         (
             (openfermion.QubitOperator("Z0", 0.1) - openfermion.QubitOperator("Z1", 0.5)),
-            (qml.ops.Sum(0.1 * qml.Z(0), -0.5 * qml.Z(1))),
+            qml.ops.LinearCombination([0.1, -0.5], [qml.Z(0), qml.Z(1)]),
         ),
         (
             (openfermion.QubitOperator("X0 X1", 1.0) + openfermion.QubitOperator("Y0 Y1", 0.5)),
-            (qml.ops.Sum(1.0 * qml.X(0) @ qml.X(1), 0.5 * qml.Y(0) @ qml.Y(1))),
+            qml.ops.LinearCombination([1.0, 0.5], [qml.X(0) @ qml.X(1), qml.Y(0) @ qml.Y(1)]),
         ),
     )
 
@@ -72,13 +72,13 @@ class TestFromOpenFermion:
     def test_convert_qubit(self, of_op, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane."""
         converted_pl_op = qml.from_openfermion(of_op)
-        assert converted_pl_op.compare(pl_op)
+        qml.assert_equal(converted_pl_op, pl_op)
 
     OPS_WIRES = (
         (
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
             ({0: "a", 1: 2}),
-            (1.2 * qml.X("a") + 2.4 * qml.Z(2)),
+            qml.ops.LinearCombination([1.2, 2.4], [qml.X("a"), qml.Z(2)]),
         ),
     )
 
@@ -86,7 +86,7 @@ class TestFromOpenFermion:
     def test_wires_qubit(self, of_op, wires, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane with wire map."""
         converted_pl_op = qml.from_openfermion(of_op, wires=wires)
-        assert converted_pl_op.compare(pl_op)
+        qml.assert_equal(converted_pl_op, pl_op)
 
     OPS_FERMI = (
         ((openfermion.FermionOperator("0^ 1")), ({0: "a", 1: 2})),
@@ -256,6 +256,10 @@ class TestToOpenFermion:
                 + 0.25 * openfermion.QubitOperator("X1")
                 + 0.2 * openfermion.QubitOperator("Y2")
             ),
+        ),
+        (
+            (0.2 * qml.Y(2) + 0.25 * qml.X(1)),
+            (0.25 * openfermion.QubitOperator("X1") + 0.2 * openfermion.QubitOperator("Y2")),
         ),
         (
             (qml.ops.Sum(qml.Y(1) @ qml.X(0), qml.X(0) @ qml.Z(2))),

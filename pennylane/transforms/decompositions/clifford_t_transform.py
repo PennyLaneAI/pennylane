@@ -15,10 +15,12 @@
 
 import math
 import warnings
+from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qml
-from pennylane.ops import Adjoint
+from pennylane.ops import Adjoint, MeasurementValue
+from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -62,7 +64,25 @@ _PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
 # Gates to be skipped during decomposition
-_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
+_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut, MeasurementValue)
+
+# Stores the cache of a specified size for the decomposition function
+# that is used to decompose the RZ gates in the Clifford+T basis.
+_CLIFFORD_T_CACHE = None
+
+_CATALYST_SKIP_OP_TYPES = ()
+
+
+# pylint: disable=import-outside-toplevel, global-statement
+def _add_catalyst_skip_op_types():
+    """Delayed addition of PennyLane-Catalyst skip op types."""
+    global _CATALYST_SKIP_OP_TYPES
+    try:
+        from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
+
+        _CATALYST_SKIP_OP_TYPES = (*_CATALYST_SKIP_OP_TYPES, MidCircuitMeasure)
+    except (ModuleNotFoundError, ImportError):  # pragma: no cover
+        pass
 
 
 def _check_clifford_op(op, use_decomposition=False):
@@ -178,9 +198,18 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
+    :class:`~.S`, and :class:`~.Hadamard`.
     """
     d_ops = []
+
+    if isinstance(op, qml.QubitUnitary):
+        ops = op.decomposition()
+        for o in ops[:-1]:
+            d_ops.extend(_rot_decompose(o))
+        d_ops.append(ops[-1])
+        return d_ops
+
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
@@ -189,7 +218,7 @@ def _rot_decompose(op):
         return d_ops
 
     (theta,), wires = op.data, op.wires
-    if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.Adjoint):
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.X(wires))
@@ -271,7 +300,7 @@ def _two_qubit_decompose(op):
     d_ops = []
     for td_op in td_ops:
         d_ops.extend(
-            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+            _rot_decompose(td_op) if td_op.num_params and len(td_op.wires) == 1 else [td_op]
         )
 
     return d_ops
@@ -321,12 +350,103 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
-@transform
+# NOTE: The cache size is set to 2000, which is a reasonable size for the mapping
+# decomposition in circuit with up to 500 wires. This is based on the fact that the
+# decompositions being mapped would contain {H, S, T} (with or without {Sadj, Tadj}).
+@lru_cache(maxsize=2000)
+def _map_wires(op, wire):
+    """Maps the operator to the provided wire."""
+    return op.map_wires({0: wire})
+
+
+class _CachedCallable:
+    """A class to cache the decomposition of the operators.
+
+    Args:
+        method (str): The method to be used for decomposition.
+        epsilon (float): The maximum permissible operator norm error for the decomposition.
+        cache_size (int): The size of the cache built for the decomposition function based on the angle.
+        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
+    """
+
+    def __init__(self, method, epsilon, cache_size, is_qjit=False, **method_kwargs):
+        match method:
+            case "sk":
+                self.decompose_fn = lru_cache(maxsize=cache_size)(
+                    partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
+                )
+            case "gridsynth":
+                rs_decomp = partial(
+                    rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs
+                )
+                self.decompose_fn = (
+                    rs_decomp if is_qjit else lru_cache(maxsize=cache_size)(rs_decomp)
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('gridsynth') decompositions, got {method}"
+                )
+
+        self.method = method
+        self.epsilon = epsilon
+        self.cache_size = cache_size
+        self.is_qjit = is_qjit
+        self.method_kwargs = method_kwargs
+        self.query = (
+            self.cached_decompose
+            if is_qjit
+            else lru_cache(maxsize=cache_size)(self.cached_decompose)
+        )
+
+    # pylint: disable=too-many-arguments
+    def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
+        """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
+        return (
+            self.method == method
+            and self.epsilon <= epsilon
+            and (
+                qml.math.allclose(self.epsilon, epsilon, rtol=cache_eps_rtol, atol=0.0)
+                if cache_eps_rtol is not None
+                else True
+            )
+            and self.cache_size <= cache_size
+            and self.is_qjit == is_qjit
+            and self.method_kwargs == method_kwargs
+        )
+
+    def cached_decompose(self, op):
+        """Decomposes the angle into a sequence of gates."""
+        if not self.is_qjit:
+            f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
+            cached_op = op if f_adj else op.adjoint()
+
+            seq = self.decompose_fn(cached_op)
+            if f_adj:
+                return seq
+
+            adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
+            return adj[1:] + adj[:1]
+
+        return self.decompose_fn(op)
+
+
+# pylint: disable=unused-argument
+def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
+    raise NotImplementedError(
+        "The clifford_t_decomposition is incompatible with program capture. "
+        "Please use qml.decompose and qml.transforms.gridsynth instead."
+    )
+
+
+# pylint: disable=too-many-branches,too-many-statements
+@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    method="sk",
+    method="gridsynth",
+    cache_size=1000,
+    cache_eps_rtol=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
@@ -339,13 +459,26 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
-    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
+    :math:`\epsilon > 0` error. By default, the Ross-Selinger algorithm described in
+    `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ is used for this. Alternatively,
+    the Solovay-Kitaev algorithm described in `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_
+    is available by setting ``method="sk"``.
+
+    .. note::
+
+        The ``clifford_t_decomposition`` transform is incompatible with program capture.
+        For compatibility with :func:`~.qjit`, either turn off program capture with ``qml.capture.disable()``
+        or use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with
+        :func:`~.transforms.gridnsynth` .
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for the Ross-Selinger algorithm.
+            Alternatively, use the value ``"sk"`` for the Solovay-Kitaev algorithm.
+        cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
+        cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
+            Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
@@ -353,6 +486,10 @@ def clifford_t_decomposition(
         in the :func:`qml.transform <pennylane.transform>`.
 
     **Keyword Arguments**
+
+    - Ross-Selinger (``gridsynth``) decomposition --
+        **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
+        where the decomposition is performed using the :func:`~.rs_decomposition` method.
 
     - Solovay-Kitaev decomposition --
         **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
@@ -362,11 +499,11 @@ def clifford_t_decomposition(
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.sk_decomposition` for Solovay-Kitaev decomposition.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for the Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
@@ -380,10 +517,14 @@ def clifford_t_decomposition(
         result = circuit(x, y)
         approx = decomposed_circuit(x, y)
 
-    >>> qml.math.allclose(result, approx, atol=1e-4)
+    >>> result
+    np.float64(-0.2669...)
+    >>> approx
+    np.float64(-0.26...)
+    >>> qml.math.allclose(result, approx, atol=1e-2)
     True
-    """
 
+    """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
@@ -392,11 +533,14 @@ def clifford_t_decomposition(
         # Compile the tape according to depth provided by the user and expand it
         [compiled_tape], _ = qml.compile(tape, pipelines, basis_set=basis_set)
 
+        if not _CATALYST_SKIP_OP_TYPES:
+            _add_catalyst_skip_op_types()
+
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         for op in compiled_tape.operations:
             # Check whether operation is to be skipped
-            if isinstance(op, _SKIP_OP_TYPES):
+            if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
                 decomp_ops.append(op)
 
             # Check whether the operation is a global phase
@@ -441,26 +585,46 @@ def clifford_t_decomposition(
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
 
-        # Every decomposition implementation should have the following shape:
+        # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
+        # where the implementation of each function should have the following signature:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        # Build the approximation set for Solovay-Kitaev decomposition
-        if method == "sk":
-            decompose_fn = sk_decomposition
+        is_qjit = qml.compiler.active_compiler() == "catalyst"
+        if number_ops > 0 and is_qjit and method == "sk":
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT or JAX-JIT. "
+                "Use Ross-Selinger decomposition (method='gridsynth') instead."
+            )
 
-        else:
-            raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
+        # Build the decomposition cache based on the method
+        global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
+        if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
+            method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
+        ):
+            _CLIFFORD_T_CACHE = _CachedCallable(
+                method, epsilon, cache_size, is_qjit, **method_kwargs
             )
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
         for op in new_operations:
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                phase += qml.math.convert_like(clifford_ops.pop().data[0], phase)
-                decomp_ops.extend(clifford_ops)
+                # If simplifies to Identity, skip it
+                if not (op_param := op.simplify().data):
+                    continue
+                wire = op.wires[0] if is_qjit else 0
+                # Decompose the RZ operation with a default wire
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
+                op_wire = op.wires[0]
+                # Extract the global phase from the last operation
+                # Map the operations to the original wires
+                if is_qjit:
+                    phase += clifford_ops[-1].data[0]
+                    decomp_ops.extend(clifford_ops[:-1])  # Already mapped
+                else:
+                    phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                    decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
 
@@ -469,13 +633,19 @@ def clifford_t_decomposition(
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
+    # and then clear `decomp_ops` list to free up the memory
     new_tape = compiled_tape.copy(operations=decomp_ops)
+    decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    [new_tape], _ = cancel_inverses(new_tape)
+    if not is_qjit:
+        # This is skipped for qjit because when qjit is enabled, the circuit may contain
+        # higher-level operations such as Cond and ForLoop whose wires attribute does not
+        # reflect the wires of all operators within its scope.
+        [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

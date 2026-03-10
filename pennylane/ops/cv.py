@@ -35,17 +35,12 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
-# pylint: disable=abstract-method
-import math
 
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane import math as qml_math
-from pennylane.operation import AnyWires, CVObservable, CVOperation
-
-from .identity import I, Identity  # pylint: disable=unused-import
-from .meta import Snapshot  # pylint: disable=unused-import
+from pennylane import math
+from pennylane.operation import CVObservable, CVOperation
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
@@ -73,7 +68,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return block_diag(1, temp)  # pylint: disable=no-member
+    return block_diag(1, temp)
 
 
 class Rotation(CVOperation):
@@ -667,7 +662,6 @@ class InterferometerUnitary(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = None
     grad_recipe = None
 
@@ -689,7 +683,7 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
+        return InterferometerUnitary(math.T(math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -833,7 +827,6 @@ class GaussianState(CVOperation):
     """
 
     num_params = 2
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, V, r, wires, id=None):
@@ -888,9 +881,9 @@ class FockState(CVOperation):
         if base_label is not None:
             if decimals is None:
                 return base_label
-            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            p = format(math.asarray(self.parameters[0]), ".0f")
             return base_label + f"\n({p})"
-        return f"|{qml_math.asarray(self.parameters[0])}⟩"
+        return f"|{math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
@@ -952,7 +945,6 @@ class FockStateVector(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -1001,7 +993,6 @@ class FockDensityMatrix(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -1133,7 +1124,6 @@ class TensorN(CVObservable):
     """
 
     num_params = 0
-    num_wires = AnyWires
     ev_order = None
 
     def __init__(self, wires):
@@ -1291,7 +1281,7 @@ class QuadOperator(CVObservable):
         if decimals is None:
             p = "φ"
         else:
-            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+            p = format(math.array(self.parameters[0]), f".{decimals}f")
         return f"cos({p})x\n+sin({p})p"
 
 
@@ -1326,7 +1316,6 @@ class PolyXP(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
@@ -1385,7 +1374,6 @@ class FockStateProjector(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = None
     ev_order = None
@@ -1421,8 +1409,6 @@ class FockStateProjector(CVObservable):
 
 
 __ops__ = {
-    "Identity",
-    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",

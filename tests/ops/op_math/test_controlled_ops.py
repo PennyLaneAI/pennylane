@@ -23,7 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -64,9 +64,16 @@ class TestControlledQubitUnitary:
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
 
-    def test_flatten_unflatten(self):
-        """Test that the operation can be flattened and unflattened"""
-        op = qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3))
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
+            qml.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
+            qml.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
+        ],
+    )
+    def test_standard_validity(self, op):
+        """Test that the operation is valid."""
         qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
@@ -79,73 +86,6 @@ class TestControlledQubitUnitary:
         with pytest.raises(ValueError, match="Base must be a matrix"):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
-    def test_deprecation_unitary_base(self):
-        """Test that a deprecation warning is raised when using the QubitUnitary base arg"""
-        base_op = [[0, 1], [1, 0]]
-        base_op = QubitUnitary(base_op, wires=1)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="QubitUnitary input to ControlledQubitUnitary is deprecated",
-        ):
-            qml.ControlledQubitUnitary(base_op, wires=[0, 1])
-
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_deprecation_unitary_base_primitive_bind(self):
-        """Test that a deprecation warning is raised when using the QubitUnitary base arg in the primitive_bind method"""
-        base_op = [[0, 1], [1, 0]]
-        base_op = QubitUnitary(base_op, wires=1)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires input to ControlledQubitUnitary is deprecated",
-        ):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
-            ):
-                qml.ControlledQubitUnitary(base_op, wires=[1], control_wires=[0])
-
-    def test_deprecated_base_already_has_wires(self):
-        """Test initialization with invalid control values"""
-        U = np.array([[0, 1], [1, 0]])
-        U = qml.QubitUnitary(U, wires=0)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires input to ControlledQubitUnitary is deprecated",
-        ):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
-            ):
-                qml.ControlledQubitUnitary(
-                    U, control_wires=[2, 3, 4], wires=[1], control_values=[1, 0, 1]
-                )
-
-    def test_deprecated_control_wires_argument_error(self):
-        """Test initialization with deprecated control_wires argument"""
-        U = np.array([[0, 1], [1, 0]])
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires input to ControlledQubitUnitary is deprecated",
-        ):
-            with pytest.raises(TypeError, match="Must specify a set of wires"):
-                qml.ControlledQubitUnitary(U, control_wires=[])
-
-    @pytest.mark.parametrize("base", (qml.X(0), qml.PauliX(0) @ qml.RX(0.5, wires=1)))
-    def test_deprecated_interface_still_available(self, base):
-        """Test that the deprecated interface is still available"""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires input to ControlledQubitUnitary is deprecated",
-        ):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
-            ):
-                qml.ControlledQubitUnitary(base, control_wires=[1, 2, 3])
-
     def test_wires_is_none(self):
         """Test that an error is raised if the user provides no target wires for an iterable base operator"""
         base_op = [[0, 1], [1, 0]]
@@ -153,8 +93,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(TypeError, match="Must specify a set of wires"):
             qml.ControlledQubitUnitary(base_op, wires=None)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "control_wires, wires",
         [(0, 1), ([0, 1], [2])],
@@ -170,8 +109,7 @@ class TestControlledQubitUnitary:
         assert op.base.wires == Wires(wires)
         assert op.control_wires == Wires(control_wires)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_pairwise_consistency_with_capture(self):
         """Test that both combinations of control and target wires lead to the same operator"""
         base_op = [[0, 1], [1, 0]]
@@ -189,17 +127,6 @@ class TestControlledQubitUnitary:
 
         assert op_2.base.wires == Wires(2)
         assert op_2.control_wires == Wires([0, 1])
-
-    def test_initialization_from_matrix_and_operator(self):
-        base_op = QubitUnitary(X, wires=1)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="QubitUnitary input to ControlledQubitUnitary is deprecated",
-        ):
-            op1 = qml.ControlledQubitUnitary(X, wires=[0, 2, 1])
-            op2 = qml.ControlledQubitUnitary(base_op, wires=[0, 2, 1])
-
-            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("target_wire", list(range(3)))
     def test_toffoli(self, target_wire):
@@ -232,6 +159,39 @@ class TestControlledQubitUnitary:
         state_2 = f2()
 
         assert np.allclose(state_1, state_2)
+
+    def test_toffoli_elbow_decomposition(self):
+        """Test that the decomposed Toffoli gate using TemporaryAnd operators works properly."""
+
+        wires = qml.wires.Wires([0, 1, 2])
+
+        def arbitrary_input(wires):
+            for ind, wire in enumerate(wires):
+                qml.RX(ind + 0.3, wire)
+
+        dev = qml.device("default.qubit", wires=5)
+
+        with qml.tape.QuantumTape() as tape:
+            arbitrary_input(wires=wires)
+            qml.Toffoli(
+                wires=wires,
+            )
+
+            _toffoli_elbow(
+                wires=wires,
+            )
+
+            qml.adjoint(arbitrary_input)(wires=wires)
+
+        qs = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires)])
+
+        assert len(qs.wires) == 4  # one work wire has been allocated
+
+        program, _ = dev.preprocess()
+        tape = program([qs])
+        output = dev.execute(tape[0])[0]
+
+        assert np.isclose(output[0], 1.0)
 
     @pytest.mark.parametrize("target_wire", range(3))
     def test_toffoli_broadcasted(self, target_wire):

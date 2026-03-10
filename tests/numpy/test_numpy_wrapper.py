@@ -22,6 +22,7 @@ import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
+import pennylane.exceptions
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox
 
@@ -30,9 +31,10 @@ from pennylane.numpy.tensor import tensor_to_arraybox
 class TestExtractTensors:
     """Tests for the extract_tensors function"""
 
-    def test_empty_terable(self):
+    def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
+        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res == []
 
     def test_iterable_with_strings(self):
@@ -88,12 +90,12 @@ class TestTensor:
     def test_string_representation(self, capsys):
         """Test the string representation is correct"""
         x = np.tensor([0, 1, 2])
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=True)" in captured.out
 
         x.requires_grad = False
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
 
@@ -442,7 +444,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0])
 
         res = grad_fn(arr1)
@@ -456,10 +458,10 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
-        with pytest.raises(np.NonDifferentiableError, match="non-differentiable"):
+        with pytest.raises(pennylane.exceptions.NonDifferentiableError, match="non-differentiable"):
             grad_fn(arr1)
 
 

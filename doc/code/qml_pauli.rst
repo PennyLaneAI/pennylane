@@ -4,6 +4,8 @@ qml.pauli
 Overview
 --------
 
+.. currentmodule:: pennylane.pauli
+
 This module defines functions and classes for generating and manipulating
 elements of the Pauli group. It also contains a subpackage :mod:`pauli/grouping`
 for Pauli-word partitioning functionality used in measurement optimization.

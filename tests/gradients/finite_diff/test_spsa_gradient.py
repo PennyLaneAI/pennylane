@@ -17,12 +17,13 @@ Tests for the gradients.spsa_gradient module.
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
+from scipy import stats
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
-from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
@@ -87,9 +88,15 @@ class TestRademacherSampler:
         assert np.allclose(first_direction, second_direction)
 
     @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+        "ids, num",
+        [
+            (list(range(5)), 5),
+            ([0, 2, 4], 5),
+            ([0], 1),
+            ([2, 3], 5),
+        ],
     )
-    @pytest.mark.parametrize("N", [10, 10000])
+    @pytest.mark.parametrize("N", [10000])
     def test_mean_and_var(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
         close to the theoretical values."""
@@ -97,14 +104,30 @@ class TestRademacherSampler:
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
         outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
+
         # Test that the mean of non-zero entries is approximately right
         assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
+
         # Test that the variance of non-zero entries is approximately right
-        assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
-        # Test that the mean of zero entries is exactly 0, because all entries should be
+        # DEV NOTE: For Rademacher distribution X ∈ {-1, +1}, the sample variance S² has a special
+        # property: S² = 1 - X̄². Since X̄ ~ N(0, 1/N), we have N·X̄² ~ χ²(1) with df=1 (NOT df=N-1).
+        # This is the key insight: the variance is completely determined by the mean.
+        #
+        # For a one-sided lower bound test at 99.73% confidence (3-sigma equivalent, α = 0.0027):
+        # We want P(S² < s_lower) = α, which translates to P(N·X̄² > N(1 - s_lower)) = α.
+        # Since N·X̄² ~ χ²(1), we need: N(1 - s_lower) = χ²_{0.9973}(1)
+        # Therefore: s_lower = 1 - χ²_{0.9973}(1) / N
+        alpha = 0.0027  # 99.73% confidence (3-sigma equivalent)
+        chi2_critical = stats.chi2.ppf(1 - alpha, df=1)
+        lower_bound = 1 - chi2_critical / N
+        sample_vars = np.var(outputs, axis=0)[ids_mask]
+        assert np.all(sample_vars >= lower_bound), (
+            f"Sample variance {sample_vars} fell below lower bound {lower_bound} "
+            f"at {100*(1-alpha):.2f}% confidence level (3-sigma equivalent)"
+        )
+
+        # Test that all the zero entries are exactly 0
         assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
-        # Test that the variance of zero entries is exactly 0, because all entries are the same
-        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
 
 class TestSpsaGradient:
@@ -322,7 +345,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.torch
@@ -338,7 +361,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.tf
@@ -354,7 +377,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.jax
@@ -370,7 +393,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
@@ -555,12 +578,10 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

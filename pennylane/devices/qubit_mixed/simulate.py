@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
-from typing import Optional
 
-# pylint: disable=protected-access
 from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.devices.qubit.sampling import jax_random_split
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -60,8 +58,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -93,7 +92,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """Perform the measurements specified in the circuit on the provided state.
 
@@ -192,11 +190,10 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     r"""

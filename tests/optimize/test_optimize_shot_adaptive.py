@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane import optimize
 
 
 class TestExceptions:
@@ -25,7 +26,7 @@ class TestExceptions:
     def test_analytic_device_error(self):
         """Test that an exception is raised if an analytic device is used"""
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def expval_cost(x):
@@ -36,7 +37,7 @@ class TestExceptions:
 
         x = np.array(0.5, requires_grad=True)
 
-        with pytest.raises(ValueError, match="can only be used with devices that"):
+        with pytest.raises(ValueError, match="can only be used with qnodes that"):
             opt.step(expval_cost, x)
 
     def test_learning_error(self):
@@ -44,8 +45,9 @@ class TestExceptions:
         lipschitz bound"""
         coeffs = [0.3, 0.1]
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def expval_cost(x):
             qml.RX(x, wires=0)
@@ -114,9 +116,9 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
         x_init = np.array(0.5, requires_grad=True)
-        qnode = qml.QNode(self.cost_fn0, device=dev)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn0, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.tensor)
@@ -168,10 +170,10 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
 
         x_init = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        qnode = qml.QNode(self.cost_fn1, device=dev)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn1, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)
@@ -237,8 +239,8 @@ class TestSingleShotGradientIntegration:
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
         x_init = np.ones(shape) * 0.5
-        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
-        qnode = qml.QNode(self.cost_fn2, device=dev)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn2, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)
@@ -301,8 +303,9 @@ class TestSingleShotGradientIntegration:
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
-        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -358,8 +361,9 @@ class TestSingleShotGradientIntegration:
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
-        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x[0, 0], wires=0)
@@ -451,9 +455,10 @@ class TestQNodeWeightedRandomSampling:
     def test_wrs_qnode(self, mocker):
         """Checks that cost functions that are qnodes can make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights, x):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -477,9 +482,10 @@ class TestQNodeWeightedRandomSampling:
     def test_wrs_qnode_multiple_args(self, mocker):
         """Checks that cost functions that are qnodes works with multiple args"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights, x):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -507,9 +513,10 @@ class TestQNodeWeightedRandomSampling:
 
         disable use of weighted random sampling"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -526,9 +533,10 @@ class TestQNodeWeightedRandomSampling:
     def test_unknown_term_sampling_method(self):
         """Checks that an exception is raised if the term sampling method is unknown"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -545,9 +553,10 @@ class TestQNodeWeightedRandomSampling:
         """Test that, if the shot budget for a single term is 0,
         that the jacobian computation is skipped"""
         coeffs = [0.2, 0.1, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -556,7 +565,8 @@ class TestQNodeWeightedRandomSampling:
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
-        spy = mocker.spy(qml, "jacobian")
+
+        spy = mocker.spy(optimize.shot_adaptive, "jacobian")
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
         )
@@ -570,9 +580,10 @@ class TestQNodeWeightedRandomSampling:
         """Test that, if the shot budget for a single term is 1,
         that the number of dimensions for the returned Jacobian is expanded"""
         coeffs = [0.2, 0.1, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(weights):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
@@ -582,7 +593,7 @@ class TestQNodeWeightedRandomSampling:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        spy = mocker.spy(qml, "jacobian")
+        spy = mocker.spy(optimize.shot_adaptive, "jacobian")
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
@@ -600,8 +611,9 @@ class TestOptimization:
     @pytest.mark.slow
     def test_multi_qubit_rotation(self, seed):
         """Test that multiple qubit rotation can be optimized"""
-        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -628,7 +640,7 @@ class TestOptimization:
     @pytest.mark.slow
     def test_vqe_optimization(self, seed):
         """Test that a simple VQE circuit can be optimized"""
-        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         coeffs = [0.1, 0.2]
         obs = [qml.PauliZ(0), qml.PauliX(0)]
         H = qml.Hamiltonian(coeffs, obs)
@@ -641,6 +653,7 @@ class TestOptimization:
             qml.Rot(*x[3], wires=1)
             qml.CNOT(wires=[0, 1])
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def cost(params):
             ansatz(params)
@@ -672,8 +685,9 @@ class TestStepAndCost:
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
 
-        dev = qml.device("default.qubit", wires=1, shots=10, seed=seed)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
 
+        @qml.set_shots(10)
         @qml.qnode(dev, cache=False)
         def circuit(x):
             qml.RX(x[0], wires=0)

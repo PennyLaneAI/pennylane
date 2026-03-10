@@ -16,7 +16,7 @@ of Dataset attributes."""
 
 
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Generic, Union
+from typing import Generic
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
@@ -24,7 +24,7 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 
-class DatasetDict(  # pylint: disable=too-many-ancestors
+class DatasetDict(
     Generic[T],
     DatasetAttribute[HDF5Group, Mapping[str, T], Mapping[str, T]],
     MutableMapping[str, T],
@@ -64,7 +64,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
         return self._mapper[__key].get_value()
 
-    def __setitem__(self, __key: str, __value: Union[T, DatasetAttribute[HDF5Any, T, T]]) -> None:
+    def __setitem__(self, __key: str, __value: T | DatasetAttribute[HDF5Any, T, T]) -> None:
         self._check_key(__key)
 
         if __key in self:

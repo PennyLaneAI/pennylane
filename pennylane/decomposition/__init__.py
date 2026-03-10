@@ -34,18 +34,16 @@ By default, this system is disabled.
     ~enable_graph
     ~disable_graph
     ~enabled_graph
+    ~toggle_graph_ctx
 
-.. code-block:: pycon
-
-    >>> import pennylane as qml
-    >>> qml.decomposition.enabled_garph()
-    False
-    >>> qml.decomposition.enable_graph()
-    >>> qml.decomposition.enabled_garph()
-    True
-    >>> qml.decomposition.disable_graph()
-    >>> qml.decomposition.enabled_garph()
-    False
+>>> qml.decomposition.enabled_graph()
+False
+>>> qml.decomposition.enable_graph()
+>>> qml.decomposition.enabled_graph()
+True
+>>> qml.decomposition.disable_graph()
+>>> qml.decomposition.enabled_graph()
+False
 
 .. _decomps_rules:
 
@@ -58,12 +56,16 @@ Defining Decomposition Rules
     :toctree: api
 
     ~register_resources
+    ~register_condition
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
     ~pow_resource_rep
+    ~change_op_basis_resource_rep
     ~DecompositionRule
     ~Resources
+    ~CompressedResourceOp
+    ~null_decomp
 
 In the new decomposition system, a decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -71,8 +73,6 @@ instance of the operator type that the decomposition is for. Additionally, a dec
 must declare its resource requirements using the ``register_resources`` decorator:
 
 .. code-block:: python
-
-    import pennylane as qml
 
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
     def my_cnot(wires):
@@ -91,6 +91,7 @@ Inspecting and Managing Decomposition Rules
     ~add_decomps
     ~list_decomps
     ~has_decomp
+    ~local_decomps
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -104,36 +105,32 @@ Integration with the Decompose Transform
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
 decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
 flexible decompositions towards any target gate set. For example, the current system does not
-guarentee a decomposition to the desired target gate set:
+guarantee a decomposition to the desired target gate set:
 
 .. code-block:: python
 
-    import pennylane as qml
+    from pprint import pprint
 
     with qml.queuing.AnnotatedQueue() as q:
         qml.CRX(0.5, wires=[0, 1])
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
-.. code-block:: pycon
-
-    >>> new_tape.operations
-    [RZ(1.5707963267948966, wires=[1]),
+>>> pprint(new_tape.operations)
+[RZ(np.float64(1.5707963267948966), wires=[1]),
      RY(0.25, wires=[1]),
      CNOT(wires=[0, 1]),
      RY(-0.25, wires=[1]),
      CNOT(wires=[0, 1]),
-     RZ(-1.5707963267948966, wires=[1])]
+     RZ(np.float64(-1.5707963267948966), wires=[1])]
 
 With the new system enabled, the transform produces the expected outcome.
 
-.. code-block:: pycon
-
-    >>> qml.decomposition.enable_graph()
-    >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
-    >>> new_tape.operations
-    [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
+>>> qml.decomposition.enable_graph()
+>>> [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+>>> pprint(new_tape.operations)
+[RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
 **Customizing Decompositions**
 
@@ -143,8 +140,8 @@ arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom dec
 as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
 to the transform via these arguments.
 
-The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+``fixed_decomps`` forces the transform to use the specified decomposition rules for
+certain operators, whereas ``alt_decomps`` is used to provide alternative decomposition rules
 for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
 In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
@@ -152,8 +149,6 @@ gates; when it comes to ``qml.CNOT``, the system will choose the most efficient 
 among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qml.CNOT``.
 
 .. code-block:: python
-
-    import pennylane as qml
 
     qml.decomposition.enable_graph()
 
@@ -177,8 +172,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @partial(
-        qml.transforms.decompose,
+    @qml.decompose(
         gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qml.IsingXX: isingxx_decomp},
@@ -189,11 +183,8 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qml.IsingXX(0.5, wires=[0, 1])
         return qml.state()
 
-
-.. code-block:: pycon
-
-    >>> qml.specs(circuit)()["resources"].gate_types
-    defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+>>> qml.specs(circuit)()["resources"].gate_types
+{'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
 
 To register alternative decomposition rules under an operator to be used globally, use
 :func:`~pennylane.add_decomps`. See :ref:`Inspecting and Managing Decomposition Rules <decomps_management>`
@@ -206,6 +197,7 @@ Graph-based Decomposition Solver
     :toctree: api
 
     ~DecompositionGraph
+    ~DecompGraphSolution
 
 The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
 algorithm is used to explore the graph and find the most efficient decomposition of a given
@@ -216,35 +208,58 @@ operator towards a target gate set.
     op = qml.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
-    graph.solve()
+    solution = graph.solve()
 
-.. code-block:: pycon
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     solution.decomposition(op)(0.5, wires=[0, 1])
+>>> q.queue
+[RZ(1.5707963267948966, wires=[1]),
+    RY(0.25, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RY(-0.25, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RZ(-1.5707963267948966, wires=[1])]
+>>> solution.resource_estimate(op)
+<num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
-    >>> with qml.queuing.AnnotatedQueue() as q:
-    ...     graph.decomposition(op)(0.5, wires=[0, 1])
-    >>> q.queue
-    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
-    >>> graph.resource_estimate(op)
-    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
+Utility Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionError
+    ~gate_set.GateSet
 
 """
 
-from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
-from .decomposition_graph import DecompositionGraph
+from pennylane.exceptions import DecompositionError
+from .gate_set import GateSet
+from .utils import (
+    enable_graph,
+    disable_graph,
+    enabled_graph,
+    toggle_graph_ctx,
+)
+from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (
     Resources,
-    # TODO: add CompressedResourceOp once the conflict with labs is resolved.
     resource_rep,
     controlled_resource_rep,
     adjoint_resource_rep,
     pow_resource_rep,
+    CompressedResourceOp,
+    change_op_basis_resource_rep,
 )
 from .decomposition_rule import (
     register_resources,
+    register_condition,
     DecompositionRule,
+    null_decomp,
     add_decomps,
     list_decomps,
     has_decomp,
+    local_decomps,
 )

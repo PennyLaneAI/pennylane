@@ -242,8 +242,8 @@ class TestNoiseFunctions:
             (qml.Z(0) + qml.Z(1), qml.Z("b") + qml.Z("a"), True),
             (qml.Z(0) + 1.2 * qml.Z(1), 2.4 * qml.Z("b") + qml.Z("a"), False),
             (qml.Z(0) + 1.2 * qml.Z(1), qml.Z("b") + qml.Z("a"), False),
-            (qml.exp(qml.RX(1.2, 0), 1.2, 1), qml.exp(qml.RX(2.3, "a"), 1.2, 1), True),
-            (qml.exp(qml.Z(0) + qml.Z(1), 1.2, 2), qml.exp(qml.Z("b") + qml.Z("a"), 1.2, 2), True),
+            (qml.exp(qml.RX(1.2, 0), 1.2), qml.exp(qml.RX(2.3, "a"), 1.2), True),
+            (qml.exp(qml.Z(0) + qml.Z(1), 1.2), qml.exp(qml.Z("b") + qml.Z("a"), 1.2), True),
             (qml.exp(qml.Z(0) @ qml.Z(1), 2j), qml.exp(qml.Z("b") @ qml.Z("a"), 1j), False),
             (qml.expval(qml.Z(0) @ qml.Y(1)), qml.Z("b"), False),
             (qml.sample(qml.Y("a") @ qml.Z("b")), qml.Y("b") @ qml.Z(2), True),
@@ -286,7 +286,7 @@ class TestNoiseFunctions:
 
         assert isinstance(func, qml.BooleanFn)
 
-        op_mps = list(op.__class__.__name__ for op in func.condition)
+        op_mps = list(getattr(op, "__name__", op.__class__.__name__) for op in func.condition)
         op_repr = [
             repr(op) if not isinstance(op, property) else repr(func.condition[idx].__name__)
             for idx, op in enumerate(op_mps)
@@ -377,6 +377,21 @@ class TestNoiseFunctions:
 
         mp = qml.noise.partial_wires(qml.counts)(qml.X("light"))
         qml.assert_equal(mp, qml.counts(wires=["light"]))
+
+    def test_partial_wires_queuing(self):
+        """Test for checking partial_wires correctly queue operations"""
+
+        op1 = qml.X(2)
+        qs1 = qml.tape.make_qscript(qml.noise.partial_wires(qml.DepolarizingChannel, 0.01))
+        qs2 = qml.tape.make_qscript(qml.noise.partial_wires(qml.DepolarizingChannel(0.01, [0])))
+        assert qs1(op1).operations == qs2(op1).operations and len(qs1(op1).operations) == 1
+
+        op1 = qml.CNOT(["a", "b"])
+        d1, d2 = [-0.9486833] * 4, [-0.31622777] * 2
+        krs = [qml.math.diag(d1), qml.math.diag(d2, k=2) + qml.math.diag(d2, k=-2)]
+        qs1 = qml.tape.make_qscript(qml.noise.partial_wires(qml.QubitChannel, krs))
+        qs2 = qml.tape.make_qscript(qml.noise.partial_wires(qml.QubitChannel(krs, [0, 1])))
+        assert qs1(op1).operations == qs2(op1).operations and len(qs1(op1).operations) == 1
 
     def test_partial_wires_error(self):
         """Test for checking partial_wires raise correct error when args are given"""

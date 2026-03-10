@@ -18,11 +18,10 @@ from dataclasses import replace
 
 import pytest
 
+import pennylane as qml
+
 # pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
-
-import pennylane as qml
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 torch = pytest.importorskip("torch")
@@ -51,10 +50,8 @@ class TestTorchRun:
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            resolved_config = _resolve_execution_config(
-                config, device, [tape1, tape2], TransformProgram()
-            )
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
         a = torch.tensor(0.1, requires_grad=True)
@@ -91,8 +88,8 @@ class TestTorchRun:
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            _, inner_tp = _setup_transform_program(device, resolved_config)
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = torch.tensor(0.1, requires_grad=True)
@@ -122,8 +119,8 @@ class TestTorchRun:
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
 
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            _, inner_tp = _setup_transform_program(device, resolved_config)
             res = run([tape], device, resolved_config, inner_tp)[0]
 
             if shots.has_partitioned_shots:

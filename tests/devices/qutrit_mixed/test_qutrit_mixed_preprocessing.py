@@ -24,6 +24,7 @@ from pennylane.devices.default_qutrit_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
+from pennylane.exceptions import DeviceError
 
 
 class NoMatOp(qml.operation.Operation):
@@ -36,6 +37,12 @@ class NoMatOp(qml.operation.Operation):
 
     def decomposition(self):
         return [qml.TShift(self.wires), qml.TClock(self.wires)]
+
+
+@qml.register_resources({qml.TShift: 1, qml.TClock: 1})
+def _no_mat_op_decomp(wires):
+    qml.TShift(wires)
+    qml.TClock(wires)
 
 
 # pylint: disable=too-few-public-methods
@@ -58,7 +65,7 @@ class TestPreprocessing:
         dev = DefaultQutritMixed()
 
         config = ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -217,7 +224,10 @@ class TestPreprocessingIntegration:
         ]
 
         program, _ = DefaultQutritMixed().preprocess()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
 
         expected = [qml.THadamard(0), qml.TShift(1), qml.TClock(1), qml.TRZ(0.123, wires=1)]
 
@@ -240,7 +250,11 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
+
         expected_ops = [
             qml.THadamard(0),
             qml.TShift(1),
@@ -268,7 +282,7 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(

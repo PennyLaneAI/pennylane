@@ -13,14 +13,15 @@
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
 from itertools import combinations, combinations_with_replacement
-from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops.functions as op_func
+from pennylane import math
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 def _all_commutators(ops):
@@ -34,7 +35,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]],
+    g: list[Operator | PauliWord | PauliSentence],
     pauli: bool = False,
     matrix: bool = False,
     is_orthogonal: bool = True,
@@ -74,18 +75,23 @@ def structure_constants(
 
     Let us first generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> import pennylane as qml
+    >>> from pennylane import liealg, math
     >>> from pennylane import X, Y, Z, I
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
     >>> gens += [Z(i) for i in range(n)]
-    >>> dla = qml.lie_closure(gens)
-    >>> print(dla)
-    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), -1.0 * (Y(0) @ Y(1))]
+    >>> dla = liealg.lie_closure(gens)
+    >>> dla
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     Y(0) @ Y(1)]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
-    >>> adjoint_rep = qml.structure_constants(dla)
+    >>> adjoint_rep = liealg.structure_constants(dla)
     >>> adjoint_rep.shape
     (6, 6, 6)
 
@@ -96,7 +102,7 @@ def structure_constants(
     Let us confirm those with an example. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
-    >>> adjoint_rep[0, 1, 3]
+    >>> print(adjoint_rep[0, 1, 3])
     -2.0
 
     We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
@@ -115,30 +121,30 @@ def structure_constants(
     To compute the structure constants of a non-orthogonal set of operators, use the option
     ``is_orthogonal=False``:
 
-    >>> dla = [qml.X(0), qml.Y(0), qml.X(0) - qml.Z(0)]
-    >>> adjoint_rep = qml.structure_constants(dla, is_orthogonal=False)
+    >>> dla = [X(0), Y(0), X(0) - Z(0)]
+    >>> adjoint_rep = liealg.structure_constants(dla, is_orthogonal=False)
     >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
     array([-2.,  0.,  2.])
 
     We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
     This alters how the structure constants are computed internally, but it does not change the result.
 
-    >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
-    >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
+    >>> adjoint_rep2 = liealg.structure_constants(dla, is_orthogonal=False, matrix=True)
+    >>> math.allclose(adjoint_rep, adjoint_rep2)
     True
 
     We can also input the DLA in form of matrices. For that we use :func:`~lie_closure` with the ``matrix=True``.
 
     >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
+    >>> g = liealg.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj = liealg.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
@@ -300,53 +306,56 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     if getattr(g[0], "wires", False):
         # operator input
-        all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
+        all_wires = Wires.all_wires([_.wires for _ in g])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))
 
-        g = qml.math.array(
-            [qml.matrix(op, wire_order=range(n)) for op in g], dtype=complex, like=g[0]
+        g = math.array(
+            [op_func.matrix(op, wire_order=range(n)) for op in g], dtype=complex, like=g[0]
         )
         chi = 2**n
         assert np.shape(g) == (len(g), chi, chi)
 
-    interface = qml.math.get_interface(g[0])
+    interface = math.get_interface(g[0])
 
     if isinstance(g[0], TensorLike) and isinstance(g, (list, tuple)):
         # list of matrices
-        g = qml.math.stack(g, like=interface)
+        g = math.stack(g, like=interface)
 
-    chi = qml.math.shape(g[0])[0]
-    assert qml.math.shape(g) == (len(g), chi, chi)
-    assert qml.math.allclose(
-        qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
+    chi = math.shape(g[0])[0]
+    assert math.shape(g) == (len(g), chi, chi)
+    assert math.allclose(
+        math.transpose(math.conj(g), (0, 2, 1)), g
     ), "Input matrices to structure_constants not Hermitian"
 
     # compute all commutators by computing all products first.
     # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
-    prod = qml.math.tensordot(g, g, axes=[[2], [1]])
+    prod = math.tensordot(g, g, axes=[[2], [1]])
     # The commutators now are the difference of prod with itself, with dimg axes swapped
-    all_coms = prod - qml.math.transpose(prod, (2, 1, 0, 3))
+    all_coms = prod - math.transpose(prod, (2, 1, 0, 3))
 
     # project commutators on the basis of g, see docstring for details.
     # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
     # Normalize trace inner product by dimension chi
-    adj = qml.math.real(1j * qml.math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
+    adj = math.real(1j * math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
 
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import keras  # pylint: disable=import-outside-toplevel
 
             pre_diag = keras.ops.diagonal(
                 keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
         else:
-            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            pre_diag = math.diagonal(
+                math.diagonal(prod, offset=0, axis1=1, axis2=3), offset=0, axis1=0, axis2=1
+            )
 
-        gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
+        gram_diag = math.real(math.sum(pre_diag, axis=0))
 
         adj = (chi / gram_diag[:, None, None]) * adj
 
@@ -357,12 +366,12 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
         # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
         # This contraction is missing the normalization factor 1/chi of the trace inner product.
-        gram_inv = qml.math.linalg.pinv(
-            qml.math.real(qml.math.sum(qml.math.diagonal(prod, axis1=1, axis2=3), axis=-1))
+        gram_inv = math.linalg.pinv(
+            math.real(math.sum(math.diagonal(prod, axis1=1, axis2=3), axis=-1))
         )
         # Axis ordering for contraction with gamma axis of raw structure constants:
         # (dimg, _dimg_), (_dimg_, dimg, dimg) -> (dimg, dimg, dim)
         # Here we add the missing normalization factor of the trace inner product (after inversion)
-        adj = qml.math.tensordot(gram_inv * chi, adj, axes=1)
+        adj = math.tensordot(gram_inv * chi, adj, axes=1)
 
     return adj

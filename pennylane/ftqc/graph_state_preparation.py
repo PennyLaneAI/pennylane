@@ -14,7 +14,6 @@
 
 r"""This module contains the GraphStatePrep template."""
 
-from typing import Optional, Union
 
 import networkx as nx
 
@@ -23,6 +22,18 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 from .qubit_graph import QubitGraph
+
+
+def make_graph_state(graph, wires, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ):
+    """A program-capture compatible way to create a GraphStatePrep template.
+    We can't capture the graph object in plxpr, so instead, if capture is enabled,
+    we capture the operations generated in computing the decomposition."""
+    if qml.capture.enabled():
+        GraphStatePrep.compute_decomposition(wires, graph, one_qubit_ops, two_qubit_ops)
+    else:
+        GraphStatePrep(
+            graph=graph, wires=wires, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
+        )
 
 
 class GraphStatePrep(Operation):
@@ -67,9 +78,8 @@ class GraphStatePrep(Operation):
     **Example:**
         The graph state preparation layer can be customized by the user.
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            import pennylane as qml
             from pennylane.ftqc import generate_lattice, GraphStatePrep, QubitGraph
 
             dev = qml.device('default.qubit')
@@ -113,10 +123,9 @@ class GraphStatePrep(Operation):
 
         Consider the following example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import networkx as nx
-            import pennylane as qml
             from pennylane.ftqc import GraphStatePrep
 
             dev = qml.device("default.qubit")
@@ -173,10 +182,10 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-        wires: Optional[Wires] = None,
+        wires: Wires | None = None,
     ):
         self.hyperparameters["graph"] = graph
         self.hyperparameters["one_qubit_ops"] = one_qubit_ops
@@ -216,10 +225,10 @@ class GraphStatePrep(Operation):
     @staticmethod
     def compute_decomposition(
         wires: Wires,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

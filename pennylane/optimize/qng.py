@@ -15,21 +15,21 @@
 import numbers
 from collections.abc import Iterable
 
-import pennylane as qml
-
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
+from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.gradients.metric_tensor import metric_tensor
+from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .gradient_descent import GradientDescentOptimizer
 
 
 def _reshape_and_regularize(tensor, lam):
-    shape = qml.math.shape(tensor)
-    size = 1 if shape == () else qml.math.prod(shape[: len(shape) // 2])
-    tensor = qml.math.reshape(tensor, (size, size))
+    shape = math.shape(tensor)
+    size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
+    tensor = math.reshape(tensor, (size, size))
     # Add regularization
-    tensor += lam * qml.math.eye(size, like=tensor)
+    tensor += lam * math.eye(size, like=tensor)
     return tensor
 
 
@@ -102,6 +102,22 @@ class QNGOptimizer(GradientDescentOptimizer):
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
@@ -143,24 +159,10 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. seealso::
 
-        See the :doc:`quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`
+        See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        approx (str): Which approximation of the metric tensor to compute.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
+        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
@@ -198,7 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
+        if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
                 "to be automatically computed. Otherwise, metric_tensor_fn must be explicitly "
@@ -207,7 +209,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
+                metric_tensor_fn = metric_tensor(qnode, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
             if isinstance(mt, tuple):
@@ -304,7 +306,7 @@ def _flatten_np(x):
         yield from _flatten_np(
             x.flat
         )  # should we allow object arrays? or just "yield from x.flat"?
-    elif isinstance(x, qml.wires.Wires):
+    elif isinstance(x, Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.
         yield from x
@@ -359,7 +361,6 @@ def _unflatten_np(flat, model):
     Raises:
         ValueError: if ``flat`` has more elements than ``model``
     """
-    # pylint:disable=len-as-condition
     res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
     if len(tail) != 0:
         raise ValueError("Flattened iterable has more elements than the model.")

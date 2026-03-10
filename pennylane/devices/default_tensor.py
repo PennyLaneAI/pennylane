@@ -21,12 +21,12 @@ from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices import Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.preprocess import (
     decompose,
@@ -34,6 +34,7 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -41,13 +42,12 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.templates.subroutines.trotter import _recursive_expression
-from pennylane.transforms.core import TransformProgram
+from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch, TensorLike
-from pennylane.wires import WireError
 
 has_quimb = True
 
@@ -188,6 +188,7 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
         warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
+# pylint: disable=unused-argument
 @simulator_tracking
 @single_tape_support
 class DefaultTensor(Device):
@@ -433,9 +434,7 @@ class DefaultTensor(Device):
 
         shots = kwargs.pop("shots", None)
         if shots is not None:
-            raise qml.DeviceError(
-                "default.tensor only supports analytic simulations with shots=None."
-            )
+            raise DeviceError("default.tensor only supports analytic simulations with shots=None.")
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -587,9 +586,7 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def _setup_execution_config(
-        self, config: Optional[ExecutionConfig] = DefaultExecutionConfig
-    ) -> ExecutionConfig:
+    def _setup_execution_config(self, config: ExecutionConfig) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
@@ -602,7 +599,7 @@ class DefaultTensor(Device):
                 new_device_options[option] = getattr(self, f"_{option}", None)
 
         if config.mcm_config.mcm_method not in {None, "deferred"}:
-            raise qml.DeviceError(
+            raise DeviceError(
                 f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
             )
 
@@ -610,16 +607,16 @@ class DefaultTensor(Device):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
-        """This function defines the device transform program to be applied and an updated device configuration.
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns :class:`~.QuantumTape`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -629,10 +626,12 @@ class DefaultTensor(Device):
         * Does not support derivatives.
         * Does not support vector-Jacobian products.
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
 
         config = self._setup_execution_config(execution_config)
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
@@ -643,6 +642,8 @@ class DefaultTensor(Device):
             stopping_condition=stopping_condition,
             skip_initial_state_prep=True,
             name=self.name,
+            device_wires=self.wires,
+            target_gates=_operations,
         )
         program.add_transform(qml.transforms.broadcast_expand)
 
@@ -651,8 +652,8 @@ class DefaultTensor(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -662,7 +663,8 @@ class DefaultTensor(Device):
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
-
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = []
         for circuit in circuits:
             if self.wires is not None and not self.wires.contains_wires(circuit.wires):
@@ -799,10 +801,12 @@ class DefaultTensor(Device):
         """
 
         obs = measurementprocess.obs
-
+        assert obs is not None, "variance must have an observable"
         obs_mat = qml.matrix(obs)
         expect_op = self.expval(measurementprocess)
-        expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
+        expect_squar_op = self._local_expectation(
+            obs_mat @ qml.math.conj(obs_mat).T, tuple(obs.wires)
+        )
 
         return expect_squar_op - np.square(expect_op)
 
@@ -843,11 +847,10 @@ class DefaultTensor(Device):
 
         return float(np.real(exp_val))
 
-    # pylint: disable=unused-argument
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[qml.tape.QuantumTape] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: qml.tape.QuantumTape | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -864,7 +867,7 @@ class DefaultTensor(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Calculate the Jacobian of either a single or a batch of circuits on the device.
 
@@ -882,7 +885,7 @@ class DefaultTensor(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Compute the results and Jacobians of circuits at the same time.
 
@@ -897,11 +900,10 @@ class DefaultTensor(Device):
             "The computation of derivatives has yet to be implemented for the default.tensor device."
         )
 
-    # pylint: disable=unused-argument
     def supports_vjp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not this device defines a custom vector-Jacobian product.
 
@@ -918,7 +920,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""The vector-Jacobian product used in reverse-mode differentiation.
 
@@ -940,7 +942,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Calculate both the results and the vector-Jacobian product used in reverse-mode differentiation.
 
@@ -958,6 +960,7 @@ class DefaultTensor(Device):
         )
 
 
+# pylint: disable=no-member
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
@@ -1038,13 +1041,12 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        device._quimb_circuit.apply_gate(
-            qml.matrix(o).astype(device._c_dtype), *o.wires, parametrize=None
-        )
+        mat = qml.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
+        device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
 
 
 @singledispatch
-def expval_core(obs: Observable, device) -> float:
+def expval_core(obs: Operator, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
 
@@ -1054,7 +1056,8 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
+        mat = qml.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
+        ket.apply_gate(mat, *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 
 

@@ -15,9 +15,9 @@ on:
 
 jobs:
   rtd_check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: "3.11"
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"
@@ -42,12 +42,10 @@ jobs:
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
-
+        pip install --group docs
 
     - name: Build Sphinx HTML
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
-

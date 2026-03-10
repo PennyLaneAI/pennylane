@@ -14,10 +14,11 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+
 import numpy as np
 
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.ops import Conditional, Controlled
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 
 
 def default_wire_map(tape):
@@ -27,30 +28,40 @@ def default_wire_map(tape):
         tape [~.tape.QuantumTape): the QuantumTape containing operations and measurements
 
     Returns:
-        dict: map from wires to sequential positive integers
+        tuple[dict]: A tuple of maps from wires to sequential positive integers. The first map
+        includes work wires whereas the second map excludes work wires.
     """
 
     # Use dictionary to preserve ordering, sets break order
     used_wires = {wire: None for op in tape for wire in op.wires}
-    return {wire: ind for ind, wire in enumerate(used_wires)}
+    used_wire_map = {wire: ind for ind, wire in enumerate(used_wires)}
+    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
+    used_and_work_wires = used_wires | {
+        wire: None for op in tape for wire in getattr(op, "work_wires", [])
+    }
+    full_wire_map = {wire: ind for ind, wire in enumerate(used_and_work_wires)}
+    return full_wire_map, used_wire_map
 
 
 def default_bit_map(tape):
-    """Create a dictionary mapping ``MidMeasureMP``'s to indices corresponding to classical
-    wires. We only add mid-circuit measurements that are used for classical conditions and for
-    collecting statistics to this dictionary.
+    """Create a dictionary mapping ``MidMeasure``'s and ``PauliMeasure``'s to indices
+    corresponding to classical wires. We only add mid-circuit measurements that are used
+    for classical conditions and for collecting statistics to this dictionary.
 
     Args:
         tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
 
     Returns:
-        dict: map from mid-circuit measurements to classical wires."""
+        dict: map from mid-circuit measurements to classical wires.
+
+    """
+
     bit_map = {}
     mcms = {}
 
     mcm_idx = 0
     for op in tape:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, (MidMeasure, PauliMeasure)):
             mcms[op] = mcm_idx
             mcm_idx += 1
 
@@ -83,20 +94,29 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
             or only include ones used by operations in ``ops``
 
     Returns:
-        dict: map from wire labels to sequential positive integers
+        tuple[dict]: Two maps from wire labels to sequential positive integers. The first map
+        includes work wires, the second map excludes work wires.
     """
-    default = default_wire_map(tape)
+    full_wire_map, used_wire_map = default_wire_map(tape)
 
     if wire_order is None:
-        return default
+        # If no external wire order is dictated, the tape ordering is all we need to consider
+        return full_wire_map, used_wire_map
 
-    wire_order = list(wire_order) + [wire for wire in default if wire not in wire_order]
+    # Create wire order complemented by all wires in the tape mapping that are not in the order yet
+    full_wire_order = list(wire_order) + [wire for wire in full_wire_map if wire not in wire_order]
+    used_wire_order = list(wire_order) + [wire for wire in used_wire_map if wire not in wire_order]
 
     if not show_all_wires:
-        used_wires = {wire for op in tape for wire in op.wires}
-        wire_order = [wire for wire in wire_order if wire in used_wires]
+        # Filter out wires that are in wire_order but not in full_wire_map/used_wire_map
+        full_wire_order = [wire for wire in full_wire_order if wire in full_wire_map]
+        used_wire_order = [wire for wire in used_wire_order if wire in used_wire_map]
 
-    return {wire: ind for ind, wire in enumerate(wire_order)}
+    # Create consecutive integer mapping from ordered list
+    full_wire_map = {wire: ind for ind, wire in enumerate(full_wire_order)}
+    used_wire_map = {wire: ind for ind, wire in enumerate(used_wire_order)}
+
+    return full_wire_map, used_wire_map
 
 
 def unwrap_controls(op):
@@ -121,11 +141,9 @@ def unwrap_controls(op):
     if isinstance(control_values, list):
         control_values = control_values.copy()
 
+    next_ctrl = op
     if isinstance(op, Controlled):
-        next_ctrl = op
-
         while hasattr(next_ctrl, "base"):
-
             if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
@@ -140,7 +158,7 @@ def unwrap_controls(op):
             next_ctrl = next_ctrl.base
 
     control_values = [bool(int(i)) for i in control_values] if control_values else control_values
-    return control_wires, control_values
+    return control_wires, control_values, next_ctrl
 
 
 def cwire_connections(layers, bit_map):
@@ -161,14 +179,16 @@ def cwire_connections(layers, bit_map):
         they contain the measured quantum wires and the largest quantum wire of conditionally
         applied operations (no entries for terminal statistics of mid-circuit measurements).
 
+    >>> from pennylane.drawer.utils import cwire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
     ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
-    >>> layers = drawable_layers(tape)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> layers = drawable_layers(tape, bit_map=bit_map)
     >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
     >>> new_bit_map == bit_map # No reusage happening
     True
@@ -191,7 +211,7 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, MidMeasureMP) and op in bit_map:
+            if isinstance(op, (MidMeasure, PauliMeasure)) and op in bit_map:
                 _meas = [op]
                 con_wire = op.wires[0]
 
@@ -263,7 +283,7 @@ def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
 def transform_deferred_measurements_tape(tape):
     """Helper function to replace MeasurementValues with wires for tapes using
     deferred measurements."""
-    if not any(isinstance(op, MidMeasureMP) for op in tape.operations) and any(
+    if not any(isinstance(op, (MidMeasure, PauliMeasure)) for op in tape.operations) and any(
         m.mv is not None for m in tape.measurements
     ):
         new_measurements = []

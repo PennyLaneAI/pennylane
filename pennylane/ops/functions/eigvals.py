@@ -15,16 +15,14 @@
 This module contains the qml.eigvals function.
 """
 import warnings
-
-# pylint: disable=protected-access
 from functools import partial, reduce
 
 import scipy
 
 import pennylane as qml
 from pennylane import transform
+from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 
@@ -73,7 +71,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     >>> x = torch.tensor(0.6, requires_grad=True)
     >>> eigval_fn = qml.eigvals(qml.RX)
     >>> eigval_fn(x, wires=0)
-    tensor([0.9553+0.2955j, 0.9553-0.2955j], grad_fn=<LinalgEigBackward>)
+    tensor([0.9553+0.2955j, 0.9553-0.2955j], grad_fn=<LinalgEigBackward0>)
 
     In its functional form, it is fully differentiable with respect to gate arguments:
 
@@ -95,7 +93,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
         Consider the following quantum function:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
@@ -107,13 +105,13 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         >>> eigvals_fn = qml.eigvals(circuit)
         >>> theta = np.pi / 4
         >>> eigvals_fn(theta)
-        array([ 0.92387953+0.38268343j,  0.92387953-0.38268343j,
-               -0.92387953+0.38268343j, -0.92387953-0.38268343j])
+        array([ 0.92387953+0.38268343j, -0.92387953-0.38268343j,
+            0.92387953-0.38268343j, -0.92387953+0.38268343j])
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
-        return _eigvals_tranform(op, k=k, which=which)
+        return _eigvals_transform(op, k=k, which=which)
 
     if isinstance(op, qml.SparseHamiltonian):
         sparse_matrix = op.sparse_matrix()
@@ -129,7 +127,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
 
 @partial(transform, is_informative=True)
-def _eigvals_tranform(
+def _eigvals_transform(
     tape: QuantumScript, k=1, which="SA"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     def processing_fn(res):

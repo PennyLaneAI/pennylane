@@ -14,9 +14,12 @@
 r"""
 Contains the CVNeuralNetLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+
+# pylint: disable=too-many-arguments
+from pennylane.operation import Operation
+from pennylane.ops.cv import Displacement, Kerr, Squeezing
+from pennylane.templates.subroutines import Interferometer
 
 
 class CVNeuralNetLayers(Operation):
@@ -81,7 +84,6 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(
@@ -106,7 +108,7 @@ class CVNeuralNetLayers(Operation):
 
         # check that first dimension is the same
         weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        shapes = [qml.math.shape(w) for w in weights_list]
+        shapes = [math.shape(w) for w in weights_list]
         first_dims = [s[0] for s in shapes]
         if len(set(first_dims)) > 1:
             raise ValueError(
@@ -175,7 +177,7 @@ class CVNeuralNetLayers(Operation):
 
         >>> theta_1 = torch.tensor([[0.4]])
         >>> phi_1 = torch.tensor([[-0.3]])
-        >>> varphi_1 = = torch.tensor([[1.7, 0.1]])
+        >>> varphi_1 = torch.tensor([[1.7, 0.1]])
         >>> r = torch.tensor([[-1., -0.2]])
         >>> phi_r = torch.tensor([[0.2, -0.2]])
         >>> theta_2 = torch.tensor([[1.4]])
@@ -196,10 +198,10 @@ class CVNeuralNetLayers(Operation):
         Kerr(tensor(0.2000), wires=['b'])]
         """
         op_list = []
-        n_layers = qml.math.shape(theta_1)[0]
+        n_layers = math.shape(theta_1)[0]
         for m in range(n_layers):
             op_list.append(
-                qml.Interferometer(
+                Interferometer(
                     theta=theta_1[m],
                     phi=phi_1[m],
                     varphi=varphi_1[m],
@@ -208,10 +210,10 @@ class CVNeuralNetLayers(Operation):
             )
 
             for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(qml.Squeezing(r[m, i], phi_r[m, i], wires=wires[i]))
+                op_list.append(Squeezing(r[m, i], phi_r[m, i], wires=wires[i]))
 
             op_list.append(
-                qml.Interferometer(
+                Interferometer(
                     theta=theta_2[m],
                     phi=phi_2[m],
                     varphi=varphi_2[m],
@@ -220,10 +222,10 @@ class CVNeuralNetLayers(Operation):
             )
 
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(qml.Displacement(a[m, i], phi_a[m, i], wires=wires[i]))
+                op_list.append(Displacement(a[m, i], phi_a[m, i], wires=wires[i]))
 
             for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(qml.Kerr(k[m, i], wires=wires[i]))
+                op_list.append(Kerr(k[m, i], wires=wires[i]))
 
         return op_list
 

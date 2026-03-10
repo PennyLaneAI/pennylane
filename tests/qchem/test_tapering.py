@@ -25,7 +25,6 @@ from pennylane import numpy as np
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _kernel,
-    _reduced_row_echelon,
     _split_pauli_sentence,
     _taper_pauli_sentence,
     clifford,
@@ -33,97 +32,6 @@ from pennylane.qchem.tapering import (
     taper_hf,
     taper_operation,
 )
-
-
-@pytest.mark.parametrize(
-    ("binary_matrix", "result"),
-    [
-        (
-            np.array(
-                [
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [1, 1, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 1, 1, 1, 1],
-                    [1, 1, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 1, 1, 1, 1, 1, 1],
-                    [0, 1, 1, 0, 1, 1, 1, 1],
-                    [1, 0, 1, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 1, 1, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 1, 0, 0, 0, 0],
-                ]
-            ),
-            np.array(
-                [
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                ]
-            ),
-        ),
-    ],
-)
-def test_reduced_row_echelon(binary_matrix, result):
-    r"""Test that _reduced_row_echelon returns the correct result."""
-
-    # build row echelon form of the matrix
-    shape = binary_matrix.shape
-    for irow in range(shape[0]):
-        pivot_index = 0
-        if np.count_nonzero(binary_matrix[irow, :]):
-            pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
-
-        for jrow in range(shape[0]):
-            if jrow != irow and binary_matrix[jrow, pivot_index]:
-                binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
-
-    indices = [
-        irow
-        for irow in range(shape[0] - 1)
-        if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
-    ]
-
-    temp_row_echelon_matrix = binary_matrix.copy()
-    for row in indices[::-1]:
-        temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
-
-    row_echelon_matrix = np.zeros(shape, dtype=int)
-    row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
-
-    # build reduced row echelon form of the matrix from row echelon form
-    for idx in range(len(row_echelon_matrix))[:0:-1]:
-        nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
-        if len(nonzeros) > 0:
-            redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
-            coeffs = (
-                (-row_echelon_matrix[:idx, nonzeros[0]] / row_echelon_matrix[idx, nonzeros[0]]) % 2
-            ).reshape(1, -1)
-            row_echelon_matrix[:idx, :] = (
-                row_echelon_matrix[:idx, :] + (coeffs.T * redrow) % 2
-            ) % 2
-
-    # get reduced row echelon form from the _reduced_row_echelon function
-    rref_bin_mat = _reduced_row_echelon(binary_matrix)
-
-    assert (rref_bin_mat == row_echelon_matrix).all()
-    assert (rref_bin_mat == result).all()
 
 
 @pytest.mark.parametrize(
@@ -200,7 +108,7 @@ def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qml.paulix_ops(generators, num_qubits)
     for p1, p2 in zip(pauli_ops, result):
-        assert p1.compare(p2)
+        qml.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]

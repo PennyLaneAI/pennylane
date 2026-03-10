@@ -27,25 +27,36 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.exceptions import (
+    DecompositionWarning,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow.set_shots import set_shots
+
+
+def test_transform_program_prop_is_deprecated():
+    """Tests that the deprecation warning is raised."""
+
+    @qml.qnode(qml.device("reference.qubit"))
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="The 'transform_program' property of the QNode has been renamed",
+    ):
+        _ = circuit.transform_program
 
 
 def dummyfunc():
     """dummy func."""
     return None
-
-
-def test_additional_kwargs_is_deprecated():
-    """Test that passing gradient_kwargs as additional kwargs raises a deprecation warning."""
-    dev = qml.device("default.qubit", wires=1)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
-    ):
-        QNode(dummyfunc, dev, atol=1)
 
 
 # pylint: disable=unused-argument
@@ -80,7 +91,7 @@ def test_no_measure():
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+    with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
         _ = circuit(0.65)
 
 
@@ -93,8 +104,8 @@ def test_copy():
     assert copied_qn is not qn
     assert copied_qn.execute_kwargs == qn.execute_kwargs
     assert copied_qn.execute_kwargs is not qn.execute_kwargs
-    assert list(copied_qn.transform_program) == list(qn.transform_program)
-    assert copied_qn.transform_program is not qn.transform_program
+    assert list(copied_qn.compile_pipeline) == list(qn.compile_pipeline)
+    assert copied_qn.compile_pipeline is not qn.compile_pipeline
     assert copied_qn.gradient_kwargs == qn.gradient_kwargs
     assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
 
@@ -175,12 +186,6 @@ class TestUpdate:
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
-        with pytest.warns(
-            UserWarning,
-            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
-        ):
-            circuit.update(gradient_kwargs={"blah": 1})
-
     def test_update_multiple_arguments(self):
         """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
@@ -211,15 +216,52 @@ class TestUpdate:
             qml.RY(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        assert qml.transforms.combine_global_phases in circuit.transform_program
-        assert len(circuit.transform_program) == 1
+        assert qml.transforms.combine_global_phases in circuit.compile_pipeline
+        assert len(circuit.compile_pipeline) == 1
         new_circuit = circuit.update(diff_method="parameter-shift")
         assert new_circuit.diff_method == "parameter-shift"
-        assert circuit.transform_program == new_circuit.transform_program
+        assert circuit.compile_pipeline == new_circuit.compile_pipeline
 
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
+
+    def test_shots_initialization(self):
+        """Test the initialization with shots."""
+
+        # Default behavior: no shots from either device or qnode
+        # shots should be None
+        @qml.qnode(qml.device("default.qubit"))
+        def f():
+            return qml.state()
+
+        assert not f.shots
+
+        # Shots should be set correctly set from the qnode init
+        @qml.qnode(qml.device("default.qubit"), shots=10)
+        def f2():
+            return qml.state()
+
+        assert f2._shots_override_device  # pylint: disable=protected-access
+        assert f2.shots == qml.measurements.Shots(10)
+
+        # Shots from device should be set correctly
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=5))
+            def f3():
+                return qml.state()
+
+        assert f3.shots == qml.measurements.Shots(5)
+
+        # Shots from device and also from qnode, then qnode should take precedence
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=500), shots=None)
+            def f4():
+                return qml.state()
+
+        assert f4.shots == qml.measurements.Shots(None)
 
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
@@ -228,7 +270,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is False
+        assert f.execute_kwargs["cache"] == "auto"
 
     def test_cache_initialization_maxdiff_2(self):
         """Test that when max_diff = 2, the cache initialization to True."""
@@ -237,7 +279,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is True
+        assert f.execute_kwargs["cache"] == "auto"
 
 
 # pylint: disable=too-many-public-methods
@@ -254,32 +296,14 @@ class TestValidation:
 
         assert isinstance(circuit(return_type), return_type)
 
-    def test_expansion_strategy_error(self):
-        """Test that an error is raised if expansion_strategy is passed to the qnode."""
-
-        with pytest.raises(ValueError, match="'expansion_strategy' is no longer"):
-
-            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
-            def _():
-                return qml.state()
-
-    def test_max_expansion_error(self):
-        """Test that an error is raised if max_expansion is passed to the QNode."""
-
-        with pytest.raises(ValueError, match="'max_expansion' is no longer a valid"):
-
-            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
-            def _():
-                qml.state()
-
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
-            QNode(dummyfunc, dev, interface="something")
+            QNode(dummyfunc, dev, interface=test_interface)
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
@@ -293,14 +317,14 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
     # pylint: disable=protected-access, too-many-statements
@@ -365,7 +389,8 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method hello not recognized"
+            QuantumFunctionError,
+            match="Differentiation method hello not recognized",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
 
@@ -375,7 +400,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
+            match="Differentiation method 5 must be a str, Transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -390,16 +415,16 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not support adjoint with requested circuit",
         ):
-            circ(shots=1)
+            qml.set_shots(circ, shots=1)()
 
     @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit", wires=2)
 
         @qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -407,9 +432,10 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with requested circuit"
+            QuantumFunctionError,
+            match="does not support backprop with requested circuit",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -423,14 +449,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
         )
 
     @pytest.mark.autograd
@@ -454,43 +480,6 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
-
-    # pylint: disable=unused-variable
-    def test_unrecognized_kwargs_raise_warning(self):
-        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            assert len(w) == 1
-            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
-
-    # pylint: disable=unused-variable
-    def test_incorrect_diff_method_kwargs_raise_warning(self):
-        """Tests that using one of the incorrect kwargs previously used in some examples in PennyLane
-        (grad_method, gradient_fn) to set the qnode diff_method raises a warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
-            def circuit0(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-            def circuit2(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-        assert len(w) == 2
-        assert "Use diff_method instead" in str(w[0].message)
-        assert "Use diff_method instead" in str(w[1].message)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
@@ -547,8 +536,9 @@ class TestPyTreeStructure:
     def test_pytree_structure_preservation(self, measurement):
         """Test that the result stucture matches the measurement structure."""
 
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit():
             qml.RX(1, wires=0)
@@ -575,7 +565,7 @@ class TestPyTreeStructure:
     )
     def test_tensor_measurement(self, measurement):
         """Tests that measurements of tensor type are handled correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit():
@@ -606,9 +596,7 @@ class TestTapeConstruction:
 
         qn = QNode(func0, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
         def func2(x, y):
@@ -619,9 +607,7 @@ class TestTapeConstruction:
 
         qn = QNode(func2, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
         def func3(x, y):
@@ -632,9 +618,7 @@ class TestTapeConstruction:
 
         qn = QNode(func3, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
     def test_inconsistent_measurement_order(self):
@@ -652,7 +636,7 @@ class TestTapeConstruction:
         qn = QNode(func, dev)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="measurements must be returned in the order they are measured",
         ):
             qn(5, 1)
@@ -689,7 +673,7 @@ class TestTapeConstruction:
         jitting raises an error."""
         import jax
 
-        dev = qml.device(dev_name, wires=2, shots=5)
+        dev = qml.device(dev_name, wires=2)
 
         def circuit1(param):
             qml.Hadamard(0)
@@ -697,7 +681,7 @@ class TestTapeConstruction:
             qml.CNOT([1, 0])
             return qml.counts()
 
-        qn = qml.QNode(circuit1, dev)
+        qn = qml.set_shots(qml.QNode(circuit1, dev), shots=5)
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
@@ -706,6 +690,7 @@ class TestTapeConstruction:
             _ = jitted_qnode1(0.123)
 
         # Test with qnode decorator syntax
+        @qml.set_shots(5)
         @qml.qnode(dev)
         def circuit2(param):
             qml.Hadamard(0)
@@ -751,7 +736,7 @@ class TestIntegration:
     """Integration tests."""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     def test_correct_number_of_executions(self, interface):
         """Test that number of executions can be tracked correctly and executiong
         returns results in the expected interface"""
@@ -854,8 +839,12 @@ class TestIntegration:
         x = pnp.array(0.543, requires_grad=True)
         y = pnp.array(-0.654, requires_grad=True)
 
+        gradient_kwargs = {"argnum": [1]}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
-            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
+            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -911,7 +900,7 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
@@ -919,32 +908,15 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
 
-    def test_dynamic_one_shot_if_mcm_unsupported(self):
-        """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
-        does not support mid circuit measurements.
-        """
-        dev = qml.device("default.mixed", wires=2, shots=100)
-
-        with pytest.raises(
-            TypeError,
-            match="does not support mid-circuit measurements and/or one-shot execution mode",
-        ):
-
-            @qml.transforms.dynamic_one_shot
-            @qml.qnode(dev)
-            def _():
-                qml.RX(1.23, 0)
-                ms = [qml.measure(0) for _ in range(10)]
-                return qml.probs(op=ms)
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3)
 
         first_par = np.pi
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
@@ -952,6 +924,7 @@ class TestIntegration:
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
@@ -973,7 +946,7 @@ class TestIntegration:
         assert np.allclose(r1, r2)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_conditional_ops_tensorflow(self, interface):
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
@@ -1062,7 +1035,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
@@ -1163,16 +1136,17 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        graph = nx.complete_graph(3)
-        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
-        res = qml.execute([tape], dev)
-        assert qml.math.get_interface(res) == "numpy"
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(DummyCustomGraphOp, null_decomp)
+            graph = nx.complete_graph(3)
+            tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+            res = qml.execute([tape], dev)
+            assert qml.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qml.devices.Device):
-
             def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
                 return 0
 
@@ -1186,7 +1160,7 @@ class TestIntegration:
         def circuit():
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+        with pytest.raises(QuantumFunctionError, match="device_vjp=True is not supported"):
             circuit()
 
     @pytest.mark.parametrize(
@@ -1211,17 +1185,33 @@ class TestIntegration:
         res = circuit(x)  # execution works fine
         assert qml.math.allclose(res, np.cos(0.5))
 
-        with pytest.raises(qml.QuantumFunctionError, match="with diff_method=None"):
+        with pytest.raises(QuantumFunctionError, match="with diff_method=None"):
             qml.math.grad(circuit)(x)
 
 
 class TestShots:
     """Unit tests for specifying shots per call."""
 
+    def test_shots_setter_error(self):
+        """Tests that an error is raised when setting shots on a QNode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
+            circuit.shots = 5
+
     # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qnode(dev)
         def circuit(a):
@@ -1229,15 +1219,19 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert len(circuit(0.8)) == 10
-        assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8, shots=3178)) == 3178
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=2)) == 2
+            assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
     def test_specify_shots_per_call_expval(self):
         """Tests that shots can be set per call for an expectation value.
         Note: this test has a vanishingly small probability to fail."""
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev)
         def circuit():
@@ -1250,7 +1244,11 @@ class TestShots:
         assert circuit.device._shots.total_shots is None
 
         # check that the circuit is temporary non-analytic
-        res1 = [circuit(shots=1) for _ in range(100)]
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
@@ -1263,7 +1261,11 @@ class TestShots:
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev = qml.device("default.qubit", wires=2, shots=10)
 
         def circuit(a, shots=0):
             qml.RX(a, wires=shots)
@@ -1290,7 +1292,11 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev = qml.device("default.qubit", wires=[0, 1], shots=10)
 
         def ansatz0(a, shots):
             qml.RX(a, wires=shots)
@@ -1306,13 +1312,13 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
         assert tape.operations[0].wires.labels == (1,)
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2)
 
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
 
-            @qnode(dev)
+            @qnode(dev, shots=10)
             def ansatz1(a, shots):
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
@@ -1321,42 +1327,11 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
-    def test_shots_passed_as_unrecognized_kwarg(self):
-        """Test that an error is raised if shots are passed to QNode initialization."""
-        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
-
-        def ansatz0():
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-            qml.QNode(ansatz0, dev, gradient_kwargs={"shots": 100})
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-
-            @qml.qnode(dev, gradient_kwargs={"shots": 100})
-            def _():
-                return qml.expval(qml.X(0))
-
-    # pylint: disable=unexpected-keyword-arg
-    def test_shots_setting_does_not_mutate_device(self):
-        """Tests that per-call shots setting does not change the number of shots in the device."""
-
-        dev = qml.device("default.qubit", wires=1, shots=3)
-
-        @qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(wires=0))
-
-        assert dev.shots.total_shots == 3
-        res = circuit(0.8, shots=2)
-        assert len(res) == 2
-        assert dev.shots.total_shots == 3
-
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=1, shots=5)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(5)
         @qml.qnode(dev, cache={})
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -1370,8 +1345,9 @@ class TestShots:
     # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=1, shots=5)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(5)
         @qml.qnode(dev, cache={})
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -1380,11 +1356,11 @@ class TestShots:
         # no warning on the first execution
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            circuit(0.3, shots=5)
+            qml.set_shots(circuit, shots=5)(0.3)
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=1, shots=5)
+        dev = qml.device("default.qubit", wires=1)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(0.3, wires=0)
@@ -1396,6 +1372,20 @@ class TestShots:
         qml.execute([tape], dev, None, cache=cache)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             qml.execute([tape], dev, None, cache=cache)
+
+        cache2 = {}
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qml.execute([tape, tape], dev, cache=cache2)
+
+    def test_no_caching_by_default(self):
+        """Test that caching is turned off by default."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        tape = qml.tape.QuantumScript([qml.H(0)], [qml.sample(wires=0)], shots=1000)
+
+        res1, res2 = qml.execute([tape, tape], dev)
+        assert not np.allclose(res1, res2)
 
     def test_no_warning_infinite_shots(self):
         """Tests that no warning is raised when caching is used with infinite shots."""
@@ -1414,8 +1404,9 @@ class TestShots:
     @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
-        dev = qml.device("default.qubit", wires=1, shots=5)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(5)
         @qml.qnode(dev, cache=True)
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -1423,7 +1414,7 @@ class TestShots:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnum=0)(0.3)
+            qml.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
@@ -1437,7 +1428,7 @@ class TestShots:
     )
     def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
         """test that shots are placed on the tape if they are specified during a call."""
-        dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device("default.qubit", wires=2)
 
         def func(x, y):
             qml.RX(x, wires=0)
@@ -1448,10 +1439,14 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
+        assert tape.shots.total_shots is None
 
         # Override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1464,15 +1459,55 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
+        assert tape.shots.total_shots is None
 
         # Override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
+    def test_shots_not_updated_with_device(self):
+        """Test that _shots is not updated when updating the QNode with a new device."""
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+            dev1 = qml.device("default.qubit", wires=1, shots=100)
+        qn = qml.QNode(dummyfunc, dev1)
+        assert qn._shots == qml.measurements.Shots(100)
 
-class TestTransformProgramIntegration:
+        # _shots should take precedence over device shots
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+            dev2 = qml.device("default.qubit", wires=1, shots=200)
+        with pytest.warns(
+            UserWarning, match="The device's shots value does not match the QNode's shots value."
+        ):
+            updated_qnode = qn.update(device=dev2)
+        assert updated_qnode._shots == qml.measurements.Shots(100)
+
+    def test_shots_preserved_in_other_updates(self):
+        """Test that _shots is preserved when updating other QNode parameters."""
+        dev = qml.device("default.qubit", wires=1)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=50)
+        assert qn._shots == qml.measurements.Shots(50)
+
+        # Update something unrelated to shots or device
+        updated_qnode = qn.update(diff_method="parameter-shift")
+        assert updated_qnode._shots == qml.measurements.Shots(50)
+
+    def test_shots_direct_update(self):
+        """Test that QNode shots can be updated directly using the update_shots method."""
+        dev = qml.device("default.qubit", wires=1)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=30)
+        assert qn._shots == qml.measurements.Shots(30)
+
+        # Update shots directly using update_shots method
+        updated_qnode = qn.update_shots(shots=75)
+        assert updated_qnode._shots == qml.measurements.Shots(75)
+
+
+class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
 
     def test_transform_program_modifies_circuit(self):
@@ -1496,7 +1531,7 @@ class TestTransformProgramIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.compile_pipeline[0].tape_transform == just_pauli_x_out.tape_transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1505,9 +1540,9 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
-    def tet_transform_program_modifies_results(self):
+    def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1521,14 +1556,14 @@ class TestTransformProgramIntegration:
 
             return (tape,), postprocessing
 
-        @partial(pin_result, requested_result=3.0)
+        @pin_result(requested_result=3.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
-        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
+        assert circuit.compile_pipeline[0].tape_transform == pin_result.tape_transform
+        assert circuit.compile_pipeline[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
 
@@ -1602,8 +1637,8 @@ class TestTransformProgramIntegration:
         def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
-        @partial(shift_output, shift=1.0)
-        @partial(scale_output, factor=2.0)
+        @shift_output(shift=1.0)
+        @scale_output(factor=2.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit1():
             return qml.expval(qml.PauliZ(0))
@@ -1611,8 +1646,8 @@ class TestTransformProgramIntegration:
         # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
         assert qml.math.allclose(circuit1(), 4.0)
 
-        @partial(scale_output, factor=2.0)
-        @partial(shift_output, shift=1.0)
+        @scale_output(factor=2.0)
+        @shift_output(shift=1.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit2():
             return qml.expval(qml.PauliZ(0))
@@ -1635,145 +1670,12 @@ class TestTransformProgramIntegration:
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
 
-        @partial(use_n_shots, n=100)
+        @use_n_shots(n=100)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit():
             return qml.sample(wires=0)
 
         assert circuit() == 100
-
-
-class TestGetGradientFn:
-    """Test the get_gradient_fn static method."""
-
-    dev = CustomDevice()
-
-    def test_get_gradient_fn_custom_device(self):
-        """Test get_gradient_fn is parameter for best for null device."""
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
-        assert gradient_fn is qml.gradients.param_shift
-        assert not kwargs
-        assert new_dev is self.dev
-
-    def test_get_gradient_fn_with_best_method_and_cv_ops(self):
-        """Test that get_gradient_fn returns 'parameter-shift-cv' when CV operations are present on tape"""
-        dev = qml.device("default.gaussian", wires=1)
-        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
-        res = qml.QNode.get_gradient_fn(dev, interface="autograd", diff_method="best", tape=tape)
-        assert res == (qml.gradients.param_shift_cv, {"dev": dev}, dev)
-
-    def test_get_gradient_fn_default_qubit(self):
-        """Tests the get_gradient_fn is backprop for best for default qubit2."""
-        dev = qml.devices.DefaultQubit()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
-        assert gradient_fn == "backprop"
-        assert not kwargs
-        assert new_dev is dev
-
-    def test_get_gradient_fn_custom_dev_adjoint(self):
-        """Test that an error is raised if adjoint is requested for a device that does not support it."""
-        with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
-        ):
-            QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
-
-    def test_error_for_backprop_with_custom_device(self):
-        """Test that an error is raised when backprop is requested for a device that does not support it."""
-        with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
-        ):
-            QNode.get_gradient_fn(self.dev, "autograd", "backprop")
-
-    def test_custom_device_that_supports_backprop(self):
-        """Test that a custom device and designate that it supports backprop derivatives."""
-
-        # pylint: disable=unused-argument
-        class BackpropDevice(qml.devices.Device):
-            """A device that says it supports backpropagation."""
-
-            def execute(self, circuits, execution_config=None):
-                return 0
-
-            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
-                return execution_config.gradient_method == "backprop"
-
-        dev = BackpropDevice()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            dev, interface="autograd", diff_method="backprop"
-        )
-        assert gradient_fn == "backprop"
-        assert not kwargs
-        assert new_dev is dev
-
-    def test_custom_device_with_device_derivative(self):
-        """Test that a custom device can specify that it supports device derivatives."""
-
-        # pylint: disable=unused-argument
-        class DerivativeDevice(qml.devices.Device):
-            """A device that says it supports device derivatives."""
-
-            def execute(self, circuits, execution_config=None):
-                return 0
-
-            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
-                return execution_config.gradient_method == "device"
-
-        dev = DerivativeDevice()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
-        assert gradient_fn == "device"
-        assert not kwargs
-        assert new_dev is dev
-
-    def test_diff_method_is_none(self):
-        """Test get_gradient_fn behaves correctly."""
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            self.dev, interface=None, diff_method=None
-        )
-        assert gradient_fn is None
-        assert not kwargs
-        assert new_dev is self.dev
-
-    def test_transform_dispatcher_as_diff_method(self):
-        """Test when diff_method is of type TransformDispatcher"""
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            self.dev, interface=None, diff_method=qml.gradients.param_shift
-        )
-        assert gradient_fn is qml.gradients.param_shift
-        assert not kwargs
-        assert new_dev is self.dev
-
-    def test_invalid_diff_method(self):
-        """Test that an invalid diff method raises an error."""
-        with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method invalid-method not recognized"
-        ):
-            QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
-
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
-    def test_valid_diff_method_str(self, diff_method):
-        """Test that gradient_fn are retrieved correctly."""
-        gradient_transform_map = {
-            "parameter-shift": qml.gradients.param_shift,
-            "finite-diff": qml.gradients.finite_diff,
-            "spsa": qml.gradients.spsa_grad,
-            "hadamard": qml.gradients.hadamard_grad,
-        }
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            self.dev, interface=None, diff_method=diff_method
-        )
-        assert gradient_fn is gradient_transform_map[diff_method]
-        assert not kwargs
-        assert new_dev is self.dev
-
-    def test_param_shift_method_with_cv_ops(self):
-        """Test that 'parameter-shift-cv' is used when CV operations are present."""
-        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            self.dev, interface=None, diff_method="parameter-shift", tape=tape
-        )
-        assert gradient_fn is qml.gradients.param_shift_cv
-        assert kwargs == {"dev": self.dev}
-        assert new_dev is self.dev
 
 
 class TestNewDeviceIntegration:
@@ -1797,7 +1699,10 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         qn = QNode(f, self.dev)
-        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
+        assert (
+            repr(qn)
+            == "<QNode: device='CustomDevice', interface='auto', diff_method='best', shots='Shots(total=None)'>"
+        )
 
     def test_device_with_custom_diff_method_name(self):
         """Test a device that has its own custom diff method."""
@@ -1808,15 +1713,15 @@ class TestNewDeviceIntegration:
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
-            def _setup_execution_config(self, execution_config=qml.devices.DefaultExecutionConfig):
-                if execution_config.gradient_method in {"best", "hello"}:
-                    return replace(
-                        execution_config, gradient_method="hello", use_device_gradient=True
-                    )
-                return execution_config
+            def setup_execution_config(
+                self, config: qml.devices.ExecutionConfig | None = None, circuit=None
+            ):
+                if config.gradient_method in {"best", "hello"}:
+                    return replace(config, gradient_method="hello", use_device_gradient=True)
+                return config
 
             def compute_derivatives(
-                self, circuits, execution_config=qml.devices.DefaultExecutionConfig
+                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 if self.tracker.active:
                     self.tracker.update(derivative_config=execution_config)
@@ -1847,14 +1752,18 @@ class TestNewDeviceIntegration:
         def circuit():
             return qml.sample(wires=(0, 1))
 
-        with pytest.raises(qml.DeviceError, match="not accepted for analytic simulation"):
+        with pytest.raises(DeviceError, match="not accepted for analytic simulation"):
             circuit()
 
-        results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
-        assert qml.math.allclose(results, np.zeros((10, 2)))
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
+            assert qml.math.allclose(results, np.zeros((10, 2)))
 
-        results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
-        assert qml.math.allclose(results, np.zeros((20, 2)))
+            results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
+            assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
 class TestMCMConfiguration:
@@ -1880,15 +1789,15 @@ class TestMCMConfiguration:
     def test_invalid_postselect_mode_error(self):
         """Test that an error is raised if the requested postselect_mode is invalid"""
         shots = 100
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
-            _ = qml.QNode(f, dev, postselect_mode="foo")
+        with pytest.raises(ValueError, match="'foo' is not a valid postselect_mode"):
+            _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
@@ -1900,11 +1809,12 @@ class TestMCMConfiguration:
         shots = 100
         postselect = 1
         param = jax.numpy.array(np.pi / 2)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_tape_transform")
 
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
         def f(x):
             qml.RX(x, 0)
@@ -1934,8 +1844,9 @@ class TestMCMConfiguration:
         postselect = 1
         param = jax.numpy.array(np.pi / 2)
 
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
         def f(x):
             qml.RX(x, 0)
@@ -1955,7 +1866,7 @@ class TestMCMConfiguration:
     def test_single_branch_statistics_error_without_qjit(self):
         """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
         without qml.qjit"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("reference.qubit", wires=1)
 
         @qml.qnode(dev, mcm_method="single-branch-statistics")
         def circuit(x):
@@ -1971,6 +1882,10 @@ class TestMCMConfiguration:
     @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
     def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
         """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+
+        if postselect_mode == "fill-shots" and mcm_method != "deferred":
+            pytest.skip("fill-shots is disabled for anything but deferred.")
+
         dev = qml.device("default.qubit", wires=2)
 
         original_config = qml.devices.MCMConfig(
@@ -1983,7 +1898,7 @@ class TestMCMConfiguration:
             qml.measure(0, postselect=1)
             return mp(qml.PauliZ(0))
 
-        _ = circuit(1.8, qml.expval, shots=10)
+        _ = qml.set_shots(circuit, shots=10)(1.8, qml.expval)
         assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
         assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
@@ -1992,7 +1907,7 @@ class TestMCMConfiguration:
             assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
             assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
-        _ = circuit(1.8, qml.expval, shots=10)
+        _ = qml.set_shots(circuit, shots=10)(1.8, qml.expval)
         assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
         assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
@@ -2017,6 +1932,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(param, wires):
+            qml.RX(3 * param, wires)
+
         @qnode(dev, diff_method=diff_method, grad_on_execution=grad_on_execution)
         def circuit(x):
             UnsupportedOp(x, wires=0)
@@ -2027,8 +1946,10 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = pnp.array(0.5)
-        circuit(x)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(UnsupportedOp, _decomp)
+            x = pnp.array(0.5)
+            circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -2037,8 +1958,8 @@ class TestTapeExpansion:
 
     @pytest.mark.autograd
     def test_no_gradient_expansion(self):
-        """Test that an unsupported operation with defined gradient recipe is
-        not expanded"""
+        """Test that an unsupported operation with defined gradient recipe is not expanded"""
+
         dev = qml.device("default.qubit", wires=1)
 
         # pylint: disable=too-few-public-methods
@@ -2048,26 +1969,36 @@ class TestTapeExpansion:
             num_wires = 1
 
             grad_method = "A"
+
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            UnsupportedOp(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        with qml.decomposition.local_decomps():
 
-        x = pnp.array(0.5, requires_grad=True)
-        qml.grad(circuit)(x)
+            @qml.register_resources({qml.RX: 1})
+            def _decomp(data, wires):
+                qml.RX(3 * data, wires)
 
-        # check second derivative
-        assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+            qml.add_decomps(UnsupportedOp, _decomp)
+
+            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                UnsupportedOp(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            x = pnp.array(0.5, requires_grad=True)
+            qml.grad(circuit)(x)
+
+            # check second derivative
+            assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
+
         dev = qml.device("default.qubit", wires=1)
 
         # pylint: disable=too-few-public-methods
@@ -2079,26 +2010,34 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.decomposition.local_decomps():
 
-        x = pnp.array(0.5, requires_grad=True)
-        circuit(x)
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
 
-        res = qml.grad(circuit)(x)
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
-        assert np.allclose(res, -3 * np.sin(3 * x))
+            @qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                PhaseShift(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        # test second order derivatives
-        res = qml.grad(qml.grad(circuit))(x)
-        assert np.allclose(res, -9 * np.cos(3 * x))
+            x = pnp.array(0.5, requires_grad=True)
+            circuit(x)
+
+            res = qml.grad(circuit)(x)
+
+            assert np.allclose(res, -3 * np.sin(3 * x))
+
+            # test second order derivatives
+            res = qml.grad(qml.grad(circuit))(x)
+            assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""
-        dev = qml.device("default.qubit", wires=3, shots=None)
+        dev = qml.device("default.qubit", wires=3)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
@@ -2127,8 +2066,13 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qml.state()
 
-    with pytest.raises(qml.DeviceError):
-        circuit(qml.numpy.array(0.1))
+    if qml.decomposition.enabled_graph():
+        with pytest.raises(DeviceError):
+            with pytest.warns(DecompositionWarning):
+                circuit(qml.numpy.array(0.1))
+    else:
+        with pytest.raises(DeviceError):
+            circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
 
@@ -2153,7 +2097,7 @@ class TestPrivateFunctions:
 
         assert config == expected_config
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax", "jax-jit"])
     def test_make_execution_config_with_qnode(self, interface):
         """Test that a execution config is made correctly with no QNode."""
         if "jax" in interface:
@@ -2180,3 +2124,579 @@ class TestPrivateFunctions:
         )
 
         assert config == expected_config
+
+
+class TestSetShots:
+    """Tests for the set_shots decorator functionality."""
+
+    def test_shots_initialization(self):
+        """Test that _shots is correctly initialized from the device with deprecation warning."""
+        # Test that QNode inherits shots from device (with deprecation warning)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev_with_shots = qml.device("default.qubit", wires=1, shots=42)
+        qn_with_device_shots = qml.QNode(dummyfunc, dev_with_shots)
+        assert qn_with_device_shots._shots == qml.measurements.Shots(42)
+
+        # Test that QNode defaults to analytic mode when device has no shots
+        dev_analytic = qml.device("default.qubit", wires=1)
+        qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
+        assert qnode_analytic._shots.total_shots is None
+
+        # Test that qnode creation with shots parameter initializes _shots correctly
+        qn_with_shots = qml.QNode(dummyfunc, dev_with_shots)
+        assert qn_with_shots._shots == qml.measurements.Shots(42)
+
+    def test_shots_override_warning(self):
+        """Test that a warning is raised when both set_shots transform and shots parameter are used."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # First apply set_shots to override device shots
+        modified_circuit = qml.set_shots(circuit, shots=50)
+        assert modified_circuit._shots == qml.measurements.Shots(50)
+        assert modified_circuit._shots_override_device is True
+
+        # Then try to pass shots parameter when calling the QNode
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            with pytest.warns(
+                UserWarning,
+                match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over",
+            ):
+                result = modified_circuit(shots=25)
+
+        # Verify that the set_shots value (50) was used, not the parameter value (25)
+        assert len(result) == 50
+
+    def test_set_shots_direct_decorator(self):
+        """Test set_shots with partial decorator syntax."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(shots=50)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(50)
+        result = circuit()
+        assert len(result) == 50
+
+    def test_set_shots_partial_decorator(self):
+        """Test set_shots with partial decorator syntax."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(shots=50)
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(50)
+        result = circuit()
+        assert len(result) == 50
+
+    def test_set_shots_direct_application_argshots(self):
+        """Test applying set_shots directly to an existing QNode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Apply set_shots directly
+        new_circuit = set_shots(original_circuit, 75)
+
+        assert original_circuit._shots == qml.measurements.Shots(10)
+        assert new_circuit._shots == qml.measurements.Shots(75)
+
+        result = new_circuit()
+        assert len(result) == 75
+
+    def test_set_shots_direct_application(self):
+        """Test applying set_shots directly to an existing QNode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Apply set_shots directly
+        new_circuit = set_shots(original_circuit, shots=75)
+
+        assert original_circuit._shots == qml.measurements.Shots(10)
+        assert new_circuit._shots == qml.measurements.Shots(75)
+
+        result = new_circuit()
+        assert len(result) == 75
+
+    def test_set_shots_with_shot_vector(self):
+        """Test set_shots with shot vectors."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        shot_vector = [(10, 3), (5, 2)]  # 10 shots × 3 times, 5 shots × 2 times
+        new_circuit = set_shots(circuit, shots=shot_vector)
+
+        assert new_circuit._shots.total_shots == 40  # 10*3 + 5*2
+        assert new_circuit._shots.shot_vector == ((10, 3), (5, 2))
+        result = new_circuit()
+        assert isinstance(result, tuple)
+        assert len(result) == 5  # 3 + 2 groups
+
+    def test_set_shots_analytic_mode(self):
+        """Test set_shots with None for analytic mode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(shots=None)
+        @qml.set_shots(100)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit._shots is None or circuit._shots.total_shots is None
+        result = circuit()
+        assert isinstance(result, (float, np.floating))
+        assert qml.math.allclose(result, np.cos(1.0))
+
+    def test_set_shots_preserves_original_qnode(self):
+        """Test that set_shots creates a new QNode without modifying the original."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.set_shots(20)
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        new_circuit = set_shots(original_circuit, shots=100)
+
+        # Original should be unchanged
+        assert original_circuit._shots == qml.measurements.Shots(20)
+        # New circuit should have updated shots
+        assert new_circuit._shots == qml.measurements.Shots(100)
+
+        # Both should be different objects
+        assert original_circuit is not new_circuit
+
+    @pytest.mark.parametrize(
+        "invalid_input,expected_error",
+        [
+            ("not a function", "set_shots can only be applied to QNodes"),
+            (42, "set_shots can only be applied to QNodes"),
+            (lambda: 42, "set_shots can only be applied to QNodes"),
+            (None, "set_shots can only be applied to QNodes"),
+        ],
+    )
+    def test_set_shots_error_on_invalid_input(self, invalid_input, expected_error):
+        """Test that set_shots raises appropriate errors for invalid inputs."""
+        with pytest.raises(ValueError, match=expected_error):
+            set_shots(invalid_input, shots=100)
+
+    @pytest.mark.parametrize(
+        "args,kwargs,error_message",
+        [
+            ((), {}, "Invalid arguments to set_shots"),
+            ((100, 200), {}, "set_shots can only be applied to QNodes"),
+        ],
+    )
+    def test_set_shots_error_on_invalid_argument_patterns(self, args, kwargs, error_message):
+        """Test that set_shots raises ValueError for invalid argument patterns."""
+        with pytest.raises(ValueError, match=error_message):
+            set_shots(*args, **kwargs)
+
+    def test_set_shots_with_measurements_requiring_shots(self):
+        """Test set_shots works correctly with measurements that require shots."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @set_shots(shots=1000)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.counts()
+
+        result = circuit()
+        assert isinstance(result, dict)
+        assert sum(result.values()) == 1000
+
+    def test_set_shots_preserves_qnode_properties(self):
+        """Test that set_shots preserves other QNode properties."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="parameter-shift", interface="autograd")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        new_circuit = set_shots(circuit, shots=100)
+
+        # Check that other properties are preserved
+        assert new_circuit.diff_method == circuit.diff_method
+        assert new_circuit.interface == circuit.interface
+        assert new_circuit.device is circuit.device
+
+    @pytest.mark.parametrize(
+        "original_shots,override_shots,expected_tracking",
+        [
+            (10, None, "no_tracking"),  # finite -> analytic
+            (None, 20, "shots_tracked"),  # analytic -> finite
+        ],
+    )
+    def test_device_shots_override_tracking(
+        self, original_shots, override_shots, expected_tracking
+    ):
+        """Test that QNode shots properly override device shots during execution."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.set_shots(original_shots)
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        # Test override behavior
+        modified_circuit = set_shots(circuit, shots=override_shots)
+        with qml.Tracker(dev) as tracker:
+            modified_circuit()
+
+        if expected_tracking == "no_tracking":
+            assert "shots" not in tracker.history
+        else:
+            assert tracker.history["shots"][-1] == override_shots
+
+    @pytest.mark.parametrize(
+        "device_shots,override_shots,expected_executions",
+        [
+            (100, None, (3, 1)),  # shots -> analytic: param-shift to backprop
+            (None, 100, (1, 3)),  # analytic -> shots: backprop to param-shift
+        ],
+    )
+    def test_diff_method_adaptation(self, device_shots, override_shots, expected_executions):
+        """Test that diff_method adapts when shots change."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.set_shots(device_shots)
+        @qml.qnode(dev, diff_method="best")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        param = qml.numpy.array(0.5, requires_grad=True)
+
+        # Test original execution count
+        with qml.Tracker(dev) as tracker:
+            qml.grad(circuit)(param)
+        assert len(tracker.history["executions"]) == expected_executions[0]
+
+        # Test modified execution count
+        modified_circuit = set_shots(circuit, shots=override_shots)
+        with qml.Tracker(dev) as tracker:
+            qml.grad(modified_circuit)(param)
+        assert len(tracker.history["executions"]) == expected_executions[1]
+
+    def test_set_shots_integer_to_shot_vector(self):
+        """Test converting from integer shots to shot vector."""
+        dev = qml.device("default.qubit", wires=1)  # Start with integer shots
+
+        @qml.set_shots(50)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Verify original has integer shots
+        assert circuit._shots == qml.measurements.Shots(50)
+        original_result = circuit()
+        assert len(original_result) == 50
+        assert not isinstance(original_result, tuple)  # Single array, not tuple of arrays
+
+        # Convert to shot vector
+        shot_vector = [(20, 2), (15, 3)]  # 20 shots × 2 times, 15 shots × 3 times = 85 total
+        vector_circuit = set_shots(circuit, shots=shot_vector)
+
+        # Verify shot vector conversion
+        assert vector_circuit._shots.total_shots == 85  # 20*2 + 15*3
+        assert vector_circuit._shots.shot_vector == ((20, 2), (15, 3))
+
+        vector_result = vector_circuit()
+        assert isinstance(vector_result, tuple)  # Now returns tuple of arrays
+        assert len(vector_result) == 5  # 2 + 3 groups
+
+        # Verify group sizes
+        assert len(vector_result[0]) == 20  # First group: 20 shots
+        assert len(vector_result[1]) == 20  # Second group: 20 shots
+        assert len(vector_result[2]) == 15  # Third group: 15 shots
+        assert len(vector_result[3]) == 15  # Fourth group: 15 shots
+        assert len(vector_result[4]) == 15  # Fifth group: 15 shots
+
+        # Original circuit should be unchanged
+        assert circuit._shots == qml.measurements.Shots(50)
+
+    def test_no_warning_if_shots_not_updated(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            with pytest.warns(
+                PennyLaneDeprecationWarning,
+                match="Specifying 'shots' when executing a QNode is deprecated",
+            ):
+                result = circuit.update(diff_method="parameter-shift")(shots=50)
+        # Filter for targeted warnings (by type and/or message)
+        targeted = [
+            w
+            for w in record
+            if issubclass(w.category, UserWarning)
+            and "Both 'shots=' parameter and 'set_shots' transform are specified." in str(w.message)
+        ]
+        assert len(targeted) == 0
+        assert len(result) == 50
+
+    def test_no_warning_if_shots_not_updated_set_shots(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @qml.set_shots(shots=100)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        result = circuit.update(diff_method="parameter-shift")()
+        assert len(result) == 100
+
+    def test_set_shots_positional_preserves_qnode_properties(self):
+        """Test that @set_shots(500) preserves QNode properties."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(100)
+        @qml.qnode(dev, diff_method="parameter-shift", interface="autograd")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Check that shots are set correctly
+        assert circuit._shots == qml.measurements.Shots(100)
+
+        # Check that other properties are preserved
+        assert circuit.diff_method == "parameter-shift"
+        assert circuit.interface == "autograd"
+        assert circuit.device is dev
+
+    def test_set_shots_positional_decorator_integer(self):
+        """Test @set_shots(500) positional decorator syntax with integer shots."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(500)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(500)
+        result = circuit()
+        assert len(result) == 500
+
+    def test_set_shots_positional_decorator_none(self):
+        """Test @set_shots(None) positional decorator syntax for analytic mode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(None)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit._shots is None or circuit._shots.total_shots is None
+        result = circuit()
+        assert isinstance(result, (float, np.floating))
+        # Analytic result should be cos(1.0)
+        assert qml.math.allclose(result, np.cos(1.0))
+
+    def test_set_shots_positional_decorator_shot_vector(self):
+        """Test @set_shots(shot_vector) positional decorator syntax with shot vectors."""
+        dev = qml.device("default.qubit", wires=1)
+
+        shot_vector = [(20, 2), (15, 3)]  # 20 shots × 2, 15 shots × 3
+
+        @set_shots(shot_vector)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots.total_shots == 85  # 20*2 + 15*3
+        assert circuit._shots.shot_vector == ((20, 2), (15, 3))
+        result = circuit()
+        assert isinstance(result, tuple)
+        assert len(result) == 5  # 2 + 3 groups
+
+    def test_set_shots_positional_vs_keyword_equivalence(self):
+        """Test that @set_shots(500) and @set_shots(shots=500) are equivalent."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(None)  # Use analytic mode for exact comparison
+        @qml.qnode(dev)
+        def positional_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @set_shots(shots=None)  # Use analytic mode for exact comparison
+        @qml.qnode(dev)
+        def keyword_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Both should have analytic mode
+        assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
+        assert keyword_circuit._shots is None or keyword_circuit._shots.total_shots is None
+
+        # Both should produce the same results for analytic case
+        pos_result = positional_circuit()
+        kw_result = keyword_circuit()
+        assert qml.math.allclose(pos_result, kw_result)
+
+        # Should equal the expected analytic result
+        expected = np.cos(1.0)
+        assert qml.math.allclose(pos_result, expected)
+        assert qml.math.allclose(kw_result, expected)
+
+    def test_set_shots_positional_vs_direct_equivalence(self):
+        """Test that @set_shots(500) and set_shots(qnode, shots=500) are equivalent."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def base_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @set_shots(None)  # Use analytic mode for exact comparison
+        @qml.qnode(dev)
+        def positional_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Apply set_shots directly to base circuit
+        direct_circuit = set_shots(base_circuit, shots=None)
+
+        # Both should have analytic mode
+        assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
+        assert direct_circuit._shots is None or direct_circuit._shots.total_shots is None
+
+        # Both should produce the same results
+        pos_result = positional_circuit()
+        direct_result = direct_circuit()
+        assert qml.math.allclose(pos_result, direct_result)
+
+        # Should equal the expected analytic result
+        expected = np.cos(1.0)
+        assert qml.math.allclose(pos_result, expected)
+        assert qml.math.allclose(direct_result, expected)
+
+    def test_set_shots_positional_analytic_vs_shot_difference(self):
+        """Test that @set_shots(None) vs @set_shots(1000) produce different behaviors."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(None)
+        @qml.qnode(dev)
+        def analytic_circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @set_shots(1000)
+        @qml.qnode(dev)
+        def shot_circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Analytic should be exactly 0.0
+        analytic_results = [analytic_circuit() for _ in range(10)]
+        assert all(result == 0.0 for result in analytic_results)
+
+        # Shot-based should have variance
+        shot_results = [shot_circuit() for _ in range(10)]
+        # Should be close to 0 but with some variance
+        assert abs(np.mean(shot_results)) < 0.1  # Should be close to 0
+        assert np.std(shot_results) > 0.001  # Should have some variance
+
+    def test_set_shots_positional_complex_shot_patterns(self):
+        """Test @set_shots with complex shot patterns."""
+        dev = qml.device("default.qubit", wires=2)
+
+        # Test with tuple (shots, copies) format
+        @set_shots([(10, 5), (20, 3), 50])
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample()
+
+        # Total shots: 10*5 + 20*3 + 50 = 50 + 60 + 50 = 160
+        assert circuit._shots.total_shots == 160
+        result = circuit()
+        assert isinstance(result, tuple)
+        # Should have 5 + 3 + 1 = 9 result groups
+        assert len(result) == 9
+
+    def test_set_shots_positional_nested_decorators(self):
+        """Test @set_shots works with other decorators."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.cancel_inverses  # Another transform
+        @set_shots(250)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            qml.RX(-1.0, wires=0)  # Should be cancelled
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(250)
+        result = circuit()
+        assert len(result) == 250
+
+    def test_set_shots_positional_multiple_calls_consistent(self):
+        """Test that @set_shots(500) produces consistent behavior across multiple calls."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @set_shots(None)  # Analytic mode
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.5, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Multiple calls should give exactly the same result in analytic mode
+        results = [circuit() for _ in range(5)]
+        expected = np.cos(0.5)
+
+        for result in results:
+            assert qml.math.allclose(result, expected)
+
+        # All results should be identical
+        assert all(qml.math.allclose(results[0], r) for r in results[1:])

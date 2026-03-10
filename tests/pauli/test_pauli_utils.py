@@ -165,9 +165,9 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(binary_to_pauli(vec), op)
 
     vecs_to_ops_abstract_wires = [
-        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("ancilla")),
-        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("ancilla")),
-        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("ancilla")),
+        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("auxiliary")),
+        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("auxiliary")),
+        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("auxiliary")),
         (np.zeros(6), Identity("alice")),
     ]
 
@@ -176,7 +176,7 @@ class TestGroupingUtils:
         """Test conversion of Pauli in binary vector representation to operator form when
         ``wire_map`` is specified."""
 
-        wire_map = {"alice": 0, "bob": 1, "ancilla": 2}
+        wire_map = {"alice": 0, "bob": 1, "auxiliary": 2}
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
@@ -588,7 +588,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
-        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
+        assert all(expected == (obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_valid_float_input(self):
         """Test that the single-qubit Pauli group is constructed correctly when a float
@@ -596,7 +596,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1.0))
-        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
+        assert all(expected == (obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_string_wire_map(self):
         """Test that the single-qubit Pauli group is constructed correctly with a wire
@@ -610,7 +610,7 @@ class TestPauliGroup:
             PauliY("qubit"),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
+        assert all(exp == (ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""

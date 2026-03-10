@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
 
-ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
+ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
 # pylint: disable=too-few-public-methods
@@ -86,6 +86,24 @@ class TestStatePrepBase:
         dm0 = circuit0()
         dm = circuit()
         assert np.allclose(dm0, dm)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
+    def test_state_prep_single_batch_size(self, interface):
+        """Test a special case, when the state is of shape (1, n)"""
+        state = np.zeros((1, 4))
+        state[0, 0] = 1.0
+
+        state = qml.math.asarray(state, like=interface)
+
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=[0, 1]), qml.X(0)],
+            measurements=[qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.state()],
+        )
+        # Dev Note: there used to be a shape-related bug that only appears in usage when you measure all wires.
+        res, _, dm = simulate(qs)
+        assert dm.shape == (1, 4, 4)
+        assert np.allclose(res, -1.0)
 
 
 @pytest.mark.parametrize("wires", [0, 1, 2])

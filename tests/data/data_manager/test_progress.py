@@ -169,11 +169,14 @@ class TestDefaultProgress:
 
             invisible.update(advance=50e6)
 
-            assert out.encode("utf-8") == (
-                f"{term.erase_line()}Task-1 50.00/100.00 MB\n"
-                f"{term.erase_line()}Task-2 0.00/300.00 MB\n"
-                f"{term.erase_line()}...\r{term.cursor_up(2)}"
-            ).encode("utf-8")
+            assert (
+                out.encode("utf-8")
+                == (
+                    f"{term.erase_line()}Task-1 50.00/100.00 MB\n"
+                    f"{term.erase_line()}Task-2 0.00/300.00 MB\n"
+                    f"{term.erase_line()}...\r{term.cursor_up(2)}"
+                ).encode()
+            )
 
     def test_description_truncated(self, progress: Progress, capsys: pytest.CaptureFixture):
         """Test that long task descriptions will be truncated."""

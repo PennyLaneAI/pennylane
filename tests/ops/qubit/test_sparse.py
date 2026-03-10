@@ -19,6 +19,7 @@ import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 
 SPARSEHAMILTONIAN_TEST_MATRIX = np.array(
     [
@@ -210,7 +211,7 @@ class TestSparse:
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -218,15 +219,15 @@ class TestSparse:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
         """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
-        dev = qml.device("default.qubit", wires=qubits, shots=None)
+        dev = qml.device("default.qubit", wires=qubits)
 
         hamiltonian = csr_matrix(hamiltonian)
 
@@ -237,12 +238,12 @@ class TestSparse:
             qml.DoubleExcitation(param, wires=[0, 1, 2, 3])
             return qml.expval(qml.SparseHamiltonian(hamiltonian, wires=range(qubits)))
 
-        assert np.allclose(qml.grad(circuit, argnum=0)(0.0), expected_output, atol=tol, rtol=0)
+        assert np.allclose(qml.grad(circuit, argnums=0)(0.0), expected_output, atol=tol, rtol=0)
 
     def test_sparse_no_all_wires_error(self, tol):
         """Tests that SparseHamiltonian can be used as expected when the operator wires don't cover
         all device wires."""
-        dev = qml.device("default.qubit", wires=6, shots=None)
+        dev = qml.device("default.qubit", wires=6)
 
         hamiltonian = qml.SparseHamiltonian(csr_matrix(H_hydrogen), wires=range(4))
 
@@ -308,9 +309,9 @@ class TestSparse:
 
         hamiltonian = csr_matrix(hamiltonian)
 
-        dev = qml.device("default.qubit", wires=qubits, shots=None)
+        dev = qml.device("default.qubit", wires=qubits)
         qs = qml.tape.QuantumScript(
-            operations, [qml.expval((qml.SparseHamiltonian(hamiltonian, range(qubits))))]
+            operations, [qml.expval(qml.SparseHamiltonian(hamiltonian, range(qubits)))]
         )
         expval = dev.execute(qs)
 

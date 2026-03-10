@@ -14,11 +14,13 @@
 """
 Contains the MPS template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import warnings
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):
@@ -149,19 +151,16 @@ class MPS(Operation):
                 return qml.state()
 
         >>> print(qml.draw(circuit, level='device')())
-        0: ─╭●─────────────┤  State
-        1: ─├●─╭●──────────┤  State
-        2: ─├●─├●─╭●───────┤  State
-        3: ─╰X─├●─├●─╭●────┤  State
-        4: ────╰X─├●─├●─╭●─┤  State
-        5: ───────╰X─├●─├●─┤  State
-        6: ──────────╰X─├●─┤  State
-        7: ─────────────╰X─┤  State
+            0: ─╭●─────────────┤ ╭State
+            1: ─├●─╭●──────────┤ ├State
+            2: ─├●─├●─╭●───────┤ ├State
+            3: ─╰X─├●─├●─╭●────┤ ├State
+            4: ────╰X─├●─├●─╭●─┤ ├State
+            5: ───────╰X─├●─├●─┤ ├State
+            6: ──────────╰X─├●─┤ ├State
+            7: ─────────────╰X─┤ ╰State
 
     """
-
-    num_wires = AnyWires
-    par_domain = "A"
 
     @classmethod
     def _primitive_bind_call(
@@ -209,7 +208,7 @@ class MPS(Operation):
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
         if template_weights is not None:
-            shape = qml.math.shape(template_weights)  # (n_blocks, n_params_block)
+            shape = math.shape(template_weights)  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
@@ -235,7 +234,7 @@ class MPS(Operation):
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, ind_gates=None, block=None, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -254,7 +253,7 @@ class MPS(Operation):
         """
         decomp = []
         itrweights = iter([]) if weights is None else iter(weights)
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         for w in ind_gates:
             weight = next(itrweights, None)
             decomp += (
@@ -262,7 +261,7 @@ class MPS(Operation):
                 if weight is None
                 else block_gen(weights=weight, wires=w, **kwargs)
             )
-        return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
+        return [apply(op) for op in decomp] if QueuingManager.recording() else decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires, offset=None):

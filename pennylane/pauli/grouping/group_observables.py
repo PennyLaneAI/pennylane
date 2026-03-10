@@ -16,10 +16,11 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 """
 
 from collections import defaultdict
+from collections.abc import Sequence
 from copy import copy
 from functools import cached_property
 from operator import itemgetter
-from typing import Literal, Optional, Sequence
+from typing import Literal
 
 import numpy as np
 import rustworkx as rx
@@ -52,7 +53,7 @@ except AttributeError:  # pragma: no cover
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
 
 
-class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
+class PauliGroupingStrategy:
     """
     Class for partitioning a list of Pauli words according to some binary symmetric relation.
 
@@ -292,7 +293,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         using ``Rustworkx`` graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
 
         Returns:
-            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
+            list[list[Operator]]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
         """
         # Get the observables from the indices. itemgetter outperforms list comprehension
         pauli_partitions = items_partitions_from_idx_partitions(
@@ -393,7 +394,7 @@ def compute_partition_indices(
     and graph colouring method.
 
     Args:
-        observables (list[Observable]): A list of Pauli Observables to be partitioned.
+        observables (list[Operator]): A list of Pauli operators to be partitioned.
         grouping_type (str): The type of binary relation between Pauli observables.
             It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover.
@@ -444,7 +445,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for partition in obs_groups:  # pylint:disable=too-many-nested-blocks
+    for partition in obs_groups:
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
@@ -462,7 +463,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
 
 def group_observables(
     observables: list["qml.operation.Operator"],
-    coefficients: Optional[TensorLike] = None,
+    coefficients: TensorLike | None = None,
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
     method: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
 ):
@@ -475,7 +476,7 @@ def group_observables(
     graph using graph-colouring heuristic algorithms.
 
     Args:
-        observables (list[Operator]): a list of Pauli word ``Observable`` instances (Pauli
+        observables (list[Operator]): a list of Pauli word ``Operator`` instances (Pauli
             operation instances and tensor products thereof)
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
@@ -488,8 +489,8 @@ def group_observables(
     Returns:
        tuple:
 
-           * list[list[Observable]]: A list of the obtained groupings. Each grouping
-             is itself a list of Pauli word ``Observable`` instances.
+           * list[list[Operator]]: A list of the obtained groupings. Each grouping
+             is itself a list of Pauli word ``Operator`` instances.
            * list[TensorLike]: A list of coefficient groupings. Each coefficient
              grouping is itself a tensor or list of the grouping's corresponding coefficients. This is only
              returned if coefficients are specified.
@@ -510,7 +511,7 @@ def group_observables(
     >>> obs_groupings
     [[Y(0), X(0) @ X(1)], [Z(1)]]
     >>> coeffs_groupings
-    [[1.43, 4.21], [0.97]]
+    [[np.float64(1.43), np.float64(4.21)], [np.float64(0.97)]]
     """
 
     if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):
@@ -565,7 +566,7 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
     # we cannot delete elements from the coefficients tensor, so we
     # use a proxy list memorising the indices for this logic
     coeff_indices = list(range(qml.math.shape(coefficients)[0]))
-    for i, partition in enumerate(partitioned_paulis):  # pylint:disable=too-many-nested-blocks
+    for i, partition in enumerate(partitioned_paulis):
         indices = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,

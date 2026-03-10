@@ -31,9 +31,9 @@ from ._loop_abstract_axes import (
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
-    Python for loop.
+    Python while loop.
 
     This decorator provides a functional version of the traditional while loop,
     similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
@@ -103,11 +103,29 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     .. details::
         :title: Usage Details
 
+        .. note::
+
+            The following examples may yield different outputs depending on how the
+            workflow function is executed. For instance, the function can be run
+            directly as:
+
+            >>> arg = 2
+            >>> workflow(arg)
+
+            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            which captures the abstract computational graph for the given input and generates the abstract shapes.
+            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+
+            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
 
         >>> import jax
+        >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
+        >>> qml.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
         If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
@@ -118,13 +136,14 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=True)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
             def f(x, y):
-                return jax.numpy.hstack([x, y]), 2*y
+                return jnp.hstack([x, y]), 2*y
 
             def workflow(i0):
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
+
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -135,7 +154,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 return x * y, 2*y
 
@@ -144,13 +163,14 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
 
+
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
         same shape, and keep the same shape as each other for each iteration.
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
@@ -170,16 +190,11 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
             def w():
                 @qml.while_loop(lambda i, x: i < 5)
                 def f(i, x):
-                    return i + 1, jax.numpy.append(x, i)
+                    return i + 1, jnp.append(x, i)
 
                 return f(0, jnp.array([]))
 
     """
-
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
 
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
@@ -205,16 +220,15 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    while_loop_prim = NonInterpPrimitive("while_loop")
+    while_loop_prim = QmlPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
     register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
-    # pylint: disable=too-many-arguments
     @while_loop_prim.def_impl
-    def _(
+    def _impl(
         *args,
         jaxpr_body_fn,
         jaxpr_cond_fn,
@@ -222,6 +236,9 @@ def _get_while_loop_qfunc_prim():
         cond_slice,
         args_slice,
     ):
+        body_slice = slice(*body_slice)
+        cond_slice = slice(*cond_slice)
+        args_slice = slice(*args_slice)
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
@@ -234,8 +251,8 @@ def _get_while_loop_qfunc_prim():
         return fn_res
 
     @while_loop_prim.def_abstract_eval
-    def _(*args, args_slice, **__):
-        return args[args_slice]
+    def _abstract_eval(*args, args_slice, **__):
+        return args[slice(*args_slice)]
 
     return while_loop_prim
 
@@ -283,7 +300,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
         flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_body_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
         else:
@@ -301,7 +318,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             handle_jaxpr_error(e, (self.cond_fn, self.body_fn), self.allow_array_resizing)
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(error_msg)
@@ -338,6 +355,13 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.while_loop(
+                self.cond_fn, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

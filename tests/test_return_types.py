@@ -18,7 +18,19 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import MeasurementProcess
+
+
+def _get_all_shots(shot_vector):
+    """Helper function to get the total number of shots from a shot vector."""
+    return qml.measurements.Shots(shot_vector).num_copies
+
+
+def _get_all_shot_copies(shot_vector):
+    """Helper function to get the total number of shot copies from a shot vector."""
+    return list(qml.measurements.Shots(shot_vector))
+
 
 test_wires = [2, 3, 4]
 
@@ -32,15 +44,15 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires, interface, shots):
         """Return state with default.qubit."""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
-        if dev.shots:
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
+        if shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         program = dev.preprocess_transforms()
         res = qml.execute(
@@ -58,16 +70,16 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device, interface, shots):
         """Return density matrix."""
-        dev = qml.device(device, wires=4, shots=shots)
+        dev = qml.device(device, wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=range(0, d_wires))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
-        if dev.shots:
+        if shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -82,14 +94,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device, interface, shots):
         """Return a single expval."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -104,14 +116,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_var(self, device, interface, shots):
         """Return a single var."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -126,16 +138,16 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device, interface, shots):
         """Return a single vn entropy."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
-        if dev.shots:
+        if shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -150,16 +162,16 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device, interface, shots):
         """Return a single mutual information."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
-        if dev.shots:
+        if shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -184,14 +196,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device, interface, shots):
         """Return a single prob."""
-        dev = qml.device(device, wires=3, shots=shots)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -212,14 +224,14 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -229,7 +241,7 @@ class TestSingleReturnExecute:
         )
 
         assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (shots,)
+        assert res[0].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, measurement, interface, shots):
@@ -237,14 +249,14 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -269,14 +281,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval(self, device, shots):
         """Return multiple expvals."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -294,14 +306,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     def test_multiple_var(self, device, shots):
         """Return multiple vars."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -333,14 +345,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device, shots):
         """Return multiple probs."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -368,7 +380,7 @@ class TestMultipleReturns:
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device, shots):
         """Return multiple different measurements."""
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -380,9 +392,9 @@ class TestMultipleReturns:
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
-        if dev.shots:
+        if shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -415,14 +427,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("wires", wires)
     def test_list_multiple_expval(self, wires, device, shots):
         """Return a comprehension list of multiple expvals."""
-        dev = qml.device(device, wires=wires, shots=shots)
+        dev = qml.device(device, wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -442,14 +454,14 @@ class TestMultipleReturns:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -461,7 +473,7 @@ class TestMultipleReturns:
 
         # Sample
         assert isinstance(res[0][1], (np.ndarray, np.float64))
-        assert res[0][1].shape == (shots,)
+        assert res[0][1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
@@ -470,14 +482,14 @@ class TestMultipleReturns:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -527,20 +539,20 @@ class TestShotVector:
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
     def test_scalar(self, shot_vector, measurement, device):
         """Test a single scalar-valued measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -549,20 +561,20 @@ class TestShotVector:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -572,22 +584,22 @@ class TestShotVector:
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
     def test_density_matrix(self, shot_vector, wires, device):
         """Test a density matrix measurement."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
-        if dev.shots:
+        if shot_vector:
             pytest.skip("cannot return analytic measurements with finite shots.")
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -597,50 +609,42 @@ class TestShotVector:
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement, device):
         """Test the sample measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
-            if shots == 1:
-                # Scalar tensors
-                assert r.shape == ()
-            else:
-                assert r.shape == (shots,)
+            assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement, device):
         """Test the counts measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -655,20 +659,20 @@ class TestSameMeasurementShotVector:
 
     def test_scalar(self, shot_vector, device):
         """Test multiple scalar-valued measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -688,20 +692,20 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
-        dev = qml.device(device, wires=4, shots=shot_vector)
+        dev = qml.device(device, wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -717,48 +721,47 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize("measurement2", [qml.sample(qml.PauliX(1)), qml.sample(wires=[1])])
     def test_samples(self, shot_vector, measurement1, measurement2, device):
         """Test multiple sample measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
-            shape = () if shots == 1 else (shots,)
-            assert all(res_item.shape == shape for res_item in r)
+            expected1 = (shots,) if measurement1.obs else (shots, 1)
+            assert r[0].shape == expected1
+
+            expected2 = (shots,) if measurement2.obs else (shots, 1)
+            assert r[1].shape == expected2
 
     @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement1, measurement2, device):
         """Test multiple counts measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -837,20 +840,20 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
     def test_scalar_probs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and probability measurements"""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -875,25 +878,21 @@ class TestMixMeasurementsShotVector:
     def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -906,7 +905,7 @@ class TestMixMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[0][idx]):
-                if i % 2 == 0 or shots == 1:
+                if i % 2 == 0:
                     assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
@@ -917,20 +916,20 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.xfail
     def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -941,39 +940,35 @@ class TestMixMeasurementsShotVector:
             for m in measurement_res
         )
 
-        for shot_tuple in dev.shots.shot_vector:
-            for idx in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    if i % 2 == 0 or shot_tuple.shots == 1:
-                        assert meas2.obs is not None
-                        expected_shape = ()
-                        assert r.shape == expected_shape
-                    else:
-                        assert r.shape == (shot_tuple.shots,)
+        all_shot_copies = _get_all_shot_copies(shot_vector)
+        for idx, shots in enumerate(all_shot_copies):
+            for i, r in enumerate(res[0][idx]):
+                if i % 2 == 0 or shots == 1:
+                    assert meas2.obs is not None
+                    expected_shape = ()
+                    assert r.shape == expected_shape
+                else:
+                    assert r.shape == (shots,)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_multi)
     def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -999,25 +994,21 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1036,16 +1027,13 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_sample(self, shot_vector, sample_obs, device):
         """Test probs and sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1057,13 +1045,13 @@ class TestMixMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1083,25 +1071,19 @@ class TestMixMeasurementsShotVector:
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
                 else:
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,) if sample_obs else (shots, 1)
+                    assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs, device):
         """Test probs and counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1113,13 +1095,13 @@ class TestMixMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.counts(wires=meas2_wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1148,13 +1130,10 @@ class TestMixMeasurementsShotVector:
     def test_sample_counts(self, shot_vector, sample_wires, counts_wires, device):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
-        dev = qml.device(device, wires=6, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=6)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1175,13 +1154,13 @@ class TestMixMeasurementsShotVector:
             # 4. Sample no obs and Counts no obs
             return qml.sample(wires=sample_wires), qml.counts(wires=counts_wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1194,10 +1173,8 @@ class TestMixMeasurementsShotVector:
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[0][idx]):
                 num_wires = len(sample_wires)
-                if shots == 1 and i % 2 == 0:
-                    expected_shape = () if num_wires == 1 else (num_wires,)
-                    assert r.shape == expected_shape
-                elif i % 2 == 0:
+                if i % 2 == 0:
+                    # uses observable if num_wires==1
                     expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
                     assert r.shape == expected_shape
                 else:
@@ -1207,12 +1184,8 @@ class TestMixMeasurementsShotVector:
     def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
-        dev = qml.device(device, wires=5, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in dev.shots.shot_vector
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=5)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1224,13 +1197,13 @@ class TestMixMeasurementsShotVector:
                 qml.counts(qml.PauliX(3)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1252,11 +1225,8 @@ class TestMixMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
                 elif sample:
                     shots = raw_shot_vector[res_idx]
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,)
+                    assert r.shape == expected
                 else:
                     # Return is Counts
                     assert isinstance(r, dict)
@@ -1279,7 +1249,8 @@ class TestDeviceNewUnits:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(
-            qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
+            DeviceError,
+            match="not accepted for analytic simulation on default.qubit",
         ):
             program = dev.preprocess_transforms()
             qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)

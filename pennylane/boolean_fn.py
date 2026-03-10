@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+
 """
 Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
@@ -19,7 +19,6 @@ of functions with boolean output.
 import functools
 
 
-# pylint: disable=unnecessary-lambda
 class BooleanFn:
     r"""Wrapper for simple callables with Boolean output that can be
     manipulated and combined with bitwise operators.
@@ -85,6 +84,8 @@ class BooleanFn:
         False
 
         >>> (has_bit_length_3 & is_int)(2.3)
+        Traceback (most recent call last):
+            ...
         AttributeError: 'float' object has no attribute 'bit_length'
 
     """

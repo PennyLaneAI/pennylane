@@ -16,6 +16,7 @@ This file provides a device that calculates derivatives via parameter shift.
 """
 
 import dataclasses
+from typing import Optional
 
 import pennylane as qml
 
@@ -26,17 +27,20 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
 
     name = "param_shift.qubit"
 
-    def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
-        if execution_config.gradient_method in {"device", "parameter-shift"}:
-            execution_config = dataclasses.replace(execution_config, use_device_gradient=True)
-            if execution_config.use_device_jacobian_product is None:
-                execution_config = dataclasses.replace(
-                    execution_config, use_device_jacobian_product=True
-                )
-        program, config = super().preprocess(execution_config)
+    def setup_execution_config(self, config=None, circuit=None):
+        config = config or qml.devices.ExecutionConfig()
+        if config.gradient_method in {"device", "parameter-shift"}:
+            config = dataclasses.replace(config, use_device_gradient=True)
+            if config.use_device_jacobian_product is None:
+                config = dataclasses.replace(config, use_device_jacobian_product=True)
+        config = super().setup_execution_config(config, circuit)
         config = dataclasses.replace(config, convert_to_numpy=True)
+        return config
+
+    def preprocess_transforms(self, execution_config=None):
+        program = super().preprocess_transforms(execution_config)
         program.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
-        return program, config
+        return program
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         if execution_config is None:
@@ -81,7 +85,9 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         jacs = fn(all_results[len(circuits) :])
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
-    def compute_jvp(self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig):
+    def compute_jvp(
+        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+    ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
             is_single_circuit = True
@@ -97,7 +103,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_jvp(
-        self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
+        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
@@ -121,7 +127,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
     def compute_vjp(
-        self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
+        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
@@ -138,7 +144,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
+        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):

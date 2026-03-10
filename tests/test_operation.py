@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+
 import copy
 
 import numpy as np
@@ -22,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -39,6 +41,37 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
+
+
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_is_deprecated(test_class):
+    """Tests that the 'id' argument is deprecated."""
+
+    class DummyOp(test_class):
+        """Custom dummy operator."""
+
+    _ = DummyOp(0.5, [0])
+    _ = DummyOp(0.5, [0], id=None)
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = DummyOp(0.5, [0], id="blah")
+
+
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_with_label_is_deprecated(test_class):
+    """Tests that using 'label' with a set 'id' argument gives useful warning."""
+
+    class DummyOp(test_class):
+        """Custom dummy operator."""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        op = DummyOp(0.5, [0], id="blah")
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Using 'id' to add a custom label to your operator is deprecated",
+    ):
+        _ = op.label()
 
 
 class TestOperatorConstruction:
@@ -78,13 +111,13 @@ class TestOperatorConstruction:
             DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):
-        """Test that num_wires is `AnyWires` by default."""
+        """Test that num_wires is None by default."""
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
 
-        assert DummyOp.num_wires == qml.operation.AnyWires
-        assert Operator.num_wires == qml.operation.AnyWires
+        assert DummyOp.num_wires is None
+        assert Operator.num_wires is None
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
@@ -230,6 +263,14 @@ class TestOperatorConstruction:
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(1.234)
+
+    def test_no_wires_for_op_with_any_wires(self):
+        """Test that an operator that allows any number of wires can have zero wires."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        assert DummyOp(wires=()).wires == qml.wires.Wires(())
 
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
@@ -561,15 +602,56 @@ class TestHasReprProperties:
         assert MyOp.has_decomposition is True
         assert MyOp(0.2, wires=1).has_decomposition is True
 
+    def test_has_decomposition_graph_decomp(self):
+        """Test that an operator provides a decomposition if it has a register graph decomp."""
+
+        class SomeRandomName(qml.operation.Operator):
+            pass
+
+        with qml.decomposition.local_decomps():
+
+            @qml.register_resources({qml.X: 1})
+            def decomp(x, wires):
+                qml.RX(x, wires)
+
+            qml.add_decomps(SomeRandomName, decomp)
+
+            assert SomeRandomName(0.5, wires=0).has_decomposition
+
+    def test_has_decomposition_graph_decomp_multiple_conditions(self):
+        """Test that operators with multiple decompositions and conditions have
+        correct has_decomposition properties."""
+
+        class MNBV(qml.operation.Operator):
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        @qml.register_condition(lambda num_wires: num_wires == 1)
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_condition(lambda num_wires: num_wires == 2)
+        @qml.register_resources({qml.CRX: 1})
+        def decomp2(x, wires):
+            qml.CRX(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MNBV, decomp1, decomp2)
+
+            assert MNBV(0.5, wires=0).has_decomposition
+            assert MNBV(0.5, wires=(0, 1)).has_decomposition
+            assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
+
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
         `decomposition` nor `compute_decomposition` are overwritten."""
 
-        class MyOp(qml.operation.Operator):
+        class TREWQ(qml.operation.Operator):
             num_wires = 1
 
-        assert MyOp.has_decomposition is False
-        assert MyOp(wires=0).has_decomposition is False
+        assert TREWQ(wires=0).has_decomposition is False
 
     def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
         """Test has_diagonalizing_gates property detects
@@ -837,7 +919,7 @@ class TestOperationConstruction:
         x = [0.654, 2.31, 0.1]
         op = DummyOp(*x, wires=0)
         with pytest.raises(
-            qml.operation.OperatorPropertyUndefined, match="DummyOp does not have parameter"
+            qml.exceptions.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
             _ = op.parameter_frequencies
 
@@ -887,6 +969,7 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
 
@@ -908,7 +991,7 @@ class TestOperationConstruction:
             num_wires = 1
             grad_method = None
 
-        op = DummyOp(1.0, wires=0, id="test")
+        op = DummyOp(1.0, wires=0)
         assert op.control_wires == qml.wires.Wires([])
 
     def test_is_hermitian(self):
@@ -921,7 +1004,7 @@ class TestOperationConstruction:
             grad_method = None
 
         op = DummyOp(wires=0)
-        assert op.is_hermitian is False
+        assert op.is_verified_hermitian is False
 
 
 class TestObservableConstruction:
@@ -930,7 +1013,7 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        class DummyObserv(qml.operation.Observable):
+        class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
             num_wires = 1
@@ -938,25 +1021,6 @@ class TestObservableConstruction:
 
         ob = DummyObserv([1])
         assert ob.wires == qml.wires.Wires(1)
-
-    def test_observable_is_not_operation_but_operator(self):
-        """Check that the Observable class inherits from an Operator, not from an Operation"""
-
-        assert issubclass(qml.operation.Observable, qml.operation.Operator)
-        assert not issubclass(qml.operation.Observable, qml.operation.Operation)
-
-    def test_observable_is_operation_as_well(self):
-        """Check that the Observable class inherits from an Operator class as well"""
-
-        class DummyObserv(qml.operation.Observable, qml.operation.Operation):
-            r"""Dummy custom observable"""
-
-            num_wires = 1
-            grad_method = None
-
-        assert issubclass(DummyObserv, qml.operation.Operator)
-        assert issubclass(DummyObserv, qml.operation.Observable)
-        assert issubclass(DummyObserv, qml.operation.Operation)
 
     def test_tensor_n_multiple_modes(self):
         """Checks that the TensorN operator was constructed correctly when
@@ -1008,10 +1072,11 @@ class TestObservableConstruction:
         expected = "Z('a')"
         assert str(m) == expected
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qml.operation.Observable):
+        class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
             num_wires = 1
@@ -1023,7 +1088,7 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        class DummyObservable(qml.operation.Observable):
+        class DummyObservable(qml.operation.Operator):
             num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
@@ -1032,14 +1097,14 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qml.operation.Observable):
+        class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
             num_wires = 1
             grad_method = None
 
         op = DummyObserv(wires=0)
-        assert op.is_hermitian is True
+        assert op.is_verified_hermitian is False
 
 
 class TestOperatorIntegration:
@@ -1276,9 +1341,19 @@ class TestOperatorIntegration:
 
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation with an id"""
-        op = qml.RX(1.344, wires=0, id="test_with_id")
-        assert '"test_with_id"' in op.label()
-        assert '"test_with_id"' in op.label(decimals=2)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            op = qml.RX(1.344, wires=0, id="test_with_id")
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label()
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label(decimals=2)
 
         op = qml.RX(1.344, wires=0)
         assert '"test_with_id"' not in op.label()
@@ -1304,10 +1379,75 @@ class TestDefaultRepresentations:
 
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
+
+        class Operator_with_no_decomp(Operator):
+            pass
+
+        op = Operator_with_no_decomp(wires=0)
         with pytest.raises(qml.operation.DecompositionUndefinedError):
-            MyOp.compute_decomposition(wires=[1])
+            Operator_with_no_decomp.compute_decomposition(wires=[1])
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
+
+    def test_decomposition_graph_fallback(self):
+        """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
+
+        class OpWithACustomName98786(qml.operation.Operator):
+            pass
+
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_resources({qml.RZ: 1})
+        def decomp2(x, wires):
+            qml.RZ(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+
+            [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
+            qml.assert_equal(out, qml.RX(0.5, wires=0))
+
+            op = OpWithACustomName98786(0.5, wires=0)
+            with qml.queuing.AnnotatedQueue() as q:
+                op.decomposition()
+
+            assert len(q.queue) == 1
+            qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
+
+    def test_graph_decomposition_fallback_conditions(self):
+        """Test the graph decomposition fallback is sensitive to conditions."""
+
+    def test_has_decomposition_graph_decomp_multiple_conditions(self):
+        """Test that operators with multiple decompositions and conditions have
+        correct has_decomposition properties."""
+
+        class BVCX(qml.operation.Operator):
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        @qml.register_condition(lambda num_wires: num_wires == 1)
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_condition(lambda num_wires: num_wires == 2)
+        @qml.register_resources({qml.CRX: 1})
+        def decomp2(x, wires):
+            qml.CRX(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(BVCX, decomp1, decomp2)
+
+            [op1] = BVCX(0.5, wires=0).decomposition()
+            qml.assert_equal(op1, qml.RX(0.5, wires=0))
+            [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
+            qml.assert_equal(op2, qml.CRX(0.5, wires=(0, 1)))
+
+            with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+                BVCX(0.5, wires=(0, 1, 2)).decomposition()
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
@@ -1587,69 +1727,6 @@ class TestCriteria:
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
     exp = qml.expval(qml.PauliZ(0))
 
-    def test_docstring(self):
-        expected = "Returns ``True`` if an operator has a generator defined."
-        assert qml.operation.has_gen.__doc__ == expected
-
-    def test_has_gen(self):
-        """Test has_gen criterion."""
-        assert qml.operation.has_gen(self.rx)
-        assert not qml.operation.has_gen(self.cnot)
-        assert not qml.operation.has_gen(self.rot)
-        assert not qml.operation.has_gen(self.exp)
-
-    def test_has_grad_method(self):
-        """Test has_grad_method criterion."""
-        assert qml.operation.has_grad_method(self.rx)
-        assert qml.operation.has_grad_method(self.rot)
-        assert not qml.operation.has_grad_method(self.cnot)
-
-    def test_gen_is_multi_term_hamiltonian(self):
-        """Test gen_is_multi_term_hamiltonian criterion."""
-        assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
-        assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
-        assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
-        assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
-
-        class SProdGen(Operator):
-
-            def generator(self):
-                return 2.0 * (qml.X(0) + qml.Y(0))
-
-        assert qml.operation.gen_is_multi_term_hamiltonian(SProdGen(wires=0))
-
-        class SumGen(Operator):
-
-            def generator(self):
-                return qml.X(0) + qml.Y(1)
-
-        assert qml.operation.gen_is_multi_term_hamiltonian(SumGen(wires=0))
-
-    def test_has_multipar(self):
-        """Test has_multipar criterion."""
-        assert not qml.operation.has_multipar(self.rx)
-        assert qml.operation.has_multipar(self.rot)
-        assert not qml.operation.has_multipar(self.cnot)
-
-    def test_has_nopar(self):
-        """Test has_nopar criterion."""
-        assert not qml.operation.has_nopar(self.rx)
-        assert not qml.operation.has_nopar(self.rot)
-        assert qml.operation.has_nopar(self.cnot)
-
-    def test_has_unitary_gen(self):
-        """Test has_unitary_gen criterion."""
-        assert qml.operation.has_unitary_gen(self.rx)
-        assert not qml.operation.has_unitary_gen(self.rot)
-        assert not qml.operation.has_unitary_gen(self.cnot)
-
-    def test_is_measurement(self):
-        """Test is_measurement criterion."""
-        assert not qml.operation.is_measurement(self.rx)
-        assert not qml.operation.is_measurement(self.rot)
-        assert not qml.operation.is_measurement(self.cnot)
-        assert qml.operation.is_measurement(self.exp)
-
     def test_is_trainable(self):
         """Test is_trainable criterion."""
         assert qml.operation.is_trainable(self.rx)
@@ -1657,14 +1734,6 @@ class TestCriteria:
         assert qml.operation.is_trainable(self.rot)
         assert not qml.operation.is_trainable(self.stiff_rot)
         assert not qml.operation.is_trainable(self.cnot)
-
-    def test_composed(self):
-        """Test has_gen criterion."""
-        both = qml.operation.has_gen & qml.operation.is_trainable
-        assert both(self.rx)
-        assert not both(self.cnot)
-        assert not both(self.rot)
-        assert not both(self.exp)
 
 
 pairs_of_ops = [
@@ -1850,7 +1919,6 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-        num_wires = qml.operation.AnyWires
         grad_method = "A"
 
         # pylint: disable=too-many-arguments,too-many-positional-arguments

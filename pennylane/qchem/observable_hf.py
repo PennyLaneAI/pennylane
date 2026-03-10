@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
-# pylint: disable= too-many-branches, too-many-return-statements
+
 import numpy as np
 
 import pennylane as qml
@@ -81,7 +81,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         operators = operators + operators_two
 
     sentence = FermiSentence({FermiWord({}): constant[0]})
-    for c, o in sorted(zip(coeffs, operators), key=lambda item: item[1]):
+    for c, o in sorted(zip(coeffs, operators, strict=True), key=lambda item: item[1]):
 
         if len(o) == 2:
             sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})

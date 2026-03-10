@@ -21,8 +21,9 @@ An exception is raised if this configuration is used:
 .. code-block:: python
 
     def print_grad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, diff_method='device')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -32,11 +33,7 @@ An exception is raised if this configuration is used:
         print(qml.grad(circuit)(x))
 
 >>> print_grad()
-Traceback (most recent call last):
-  ...
-  File "C:\pennylane\pennylane\qnode.py", line 448, in _validate_device_method
-    raise qml.QuantumFunctionError(
-pennylane.QuantumFunctionError: The default.qubit device does not provide a native method for computing the jacobian.
+QuantumFunctionError: Device <default.qubit device (wires=1) at 0x11ad22bf0> does not support device with requested circuit.
 
 .. _Analytic backpropagation:
 
@@ -54,8 +51,9 @@ Currently an exception is raised if this invalid configuration is used:
 .. code-block:: python
 
     def print_grad():
-        dev = qml.device('default.qubit', wires=1, shots=100)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -65,19 +63,16 @@ Currently an exception is raised if this invalid configuration is used:
         print(qml.grad(circuit)(x))
 
 >>> print_grad()
-Traceback (most recent call last):
-  ...
-  File "C:\pennylane\pennylane\qnode.py", line 375, in _validate_backprop_method
-    raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
-pennylane.QuantumFunctionError: Backpropagation is only supported when shots=None.
+QuantumFunctionError: Device <default.qubit device (wires=1, shots=100) at 0x119d6e8c0> does not support backprop with requested circuit.
 
 Changing to ``shots=None`` allows computing the analytic gradient:
 
 .. code-block:: python
 
     def print_grad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -103,8 +98,9 @@ In particular, the following code works as expected:
 .. code-block:: python
 
     def print_grad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, diff_method='adjoint')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -144,8 +140,9 @@ has ``shots>0``, an error is raised:
 .. code-block:: python
 
     def print_grad_ok():
-        dev = qml.device('default.qubit', wires=1, shots=100)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, diff_method='adjoint')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -175,8 +172,9 @@ code uses a scalar cost function dependent on the output state:
 .. code-block:: python
 
     def state_scalar_grad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -198,8 +196,9 @@ directly will fail with an error:
 .. code-block:: python
 
     def state_vector_grad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -220,8 +219,9 @@ Using a different interface that supports complex differentiation will fix this 
 .. code-block:: python
 
     def state_vector_grad_jax():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, interface='jax', diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -231,8 +231,9 @@ Using a different interface that supports complex differentiation will fix this 
         print(jax.jacrev(circuit, holomorphic=True)(x))
 
     def state_vector_grad_tf():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, interface='tf', diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -245,8 +246,9 @@ Using a different interface that supports complex differentiation will fix this 
         print(tape.jacobian(out, [x]))
 
     def state_vector_grad_torch():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=None)
         @qml.qnode(dev, interface='torch', diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -281,8 +283,9 @@ error, but the results will be incorrect:
 .. code-block:: python
 
     def sample_backward():
-        dev = qml.device('default.qubit', wires=1, shots=20)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=5)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -292,34 +295,24 @@ error, but the results will be incorrect:
         print(qml.jacobian(circuit)(x))
 
 >>> sample_backward()
-[[0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]]
+[[[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]]
 
 The forward pass is supported and will work as expected:
 
 .. code-block:: python
 
     def sample_forward():
-        dev = qml.device('default.qubit', wires=1, shots=20)
+        dev = qml.device('default.qubit', wires=1)
 
+        @qml.set_shots(shots=20)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -329,4 +322,23 @@ The forward pass is supported and will work as expected:
         print(circuit(x))
 
 >>> sample_forward()
-[0 1 0 0 0 1 1 0 0 1 1 1 0 0 0 1 1 0 0 0]
+[[0]
+ [0]
+ [0]
+ [0]
+ [1]
+ [1]
+ [0]
+ [0]
+ [1]
+ [1]
+ [1]
+ [1]
+ [0]
+ [1]
+ [1]
+ [0]
+ [1]
+ [0]
+ [0]
+ [1]]

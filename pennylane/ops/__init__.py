@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This module contains core quantum operations supported by PennyLane -
@@ -27,6 +26,7 @@ from .cv import __obs__ as _cv__obs__
 from .cv import __ops__ as _cv__ops__
 
 # we would like these to just live in .qubit, but can't because of circular imports
+from .identity import *
 from .op_math import *
 from .op_math import controlled_qubit_ops as _controlled_qubit__ops__
 from .qubit import *
@@ -39,10 +39,14 @@ from .qutrit import __obs__ as _qutrit__obs__
 from .qutrit import __ops__ as _qutrit__ops__
 from .qutrit import __channels__ as _qutrit__channel__ops__
 
+from .mid_measure import measure, MidMeasure, MeasurementValue, pauli_measure, PauliMeasure
+
 _qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 
 
-__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
+__all__ = (
+    _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__ + ["measure", "pauli_measure"]
+)
 __all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)

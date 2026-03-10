@@ -25,8 +25,7 @@ from pennylane.devices.qubit import sampling
 from pennylane.transforms.defer_measurements import DeferMeasurementsInterpreter
 
 pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.capture,
     pytest.mark.integration,
 ]
 
@@ -130,11 +129,11 @@ class TestExecutionAnalytic:
                 qml.RY(y, 0)
 
             @cond_fn.else_if(m1 == 0)
-            def _(y):
+            def _else_if(y):
                 qml.RY(2 * y, 0)
 
             @cond_fn.otherwise
-            def _(y):
+            def _else(y):
                 qml.RY(3 * y, 0)
 
             cond_fn(x)
@@ -165,12 +164,12 @@ class TestExecutionAnalytic:
                 # Final state |0>
 
             @cond_fn.else_if(x > 1.5)
-            def _():
+            def _else_if():
                 qml.PauliZ(0)
                 # Equal prob of |0> and |1>
 
             @cond_fn.otherwise
-            def _():
+            def _else():
                 qml.Hadamard(0)
                 m1 = qml.measure(0)
                 qml.RX(m1 * jnp.pi, 0)
@@ -252,9 +251,7 @@ class TestExecutionFiniteShots:
     def test_hw_like_samples(self, postselect, n_postselects):
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
-        )
+        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode="hw-like")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -266,7 +263,8 @@ class TestExecutionFiniteShots:
 
         jaxpr = jax.make_jaxpr(f)()
         res = tuple(
-            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)[0] for _ in range(10)
+            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
+            for _ in range(10)
         )
         assert all(qml.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
@@ -279,9 +277,7 @@ class TestExecutionFiniteShots:
     def test_fill_shots_samples(self, postselect, n_postselects):
         """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
-        )
+        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -293,7 +289,8 @@ class TestExecutionFiniteShots:
 
         jaxpr = jax.make_jaxpr(f)()
         res = tuple(
-            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)[0] for _ in range(5)
+            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
+            for _ in range(5)
         )
         assert all(qml.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
@@ -302,7 +299,7 @@ class TestExecutionFiniteShots:
     def test_correct_sampling(self, mocker):
         """Test that sampling is performed with the correct pipeline."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, shots=100, seed=jax.random.PRNGKey(1234))
+        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -326,7 +323,7 @@ class TestExecutionFiniteShots:
         expected_state = qml.math.reshape(expected_state, (2,) * num_wires)
         measure_spy = mocker.spy(sampling, "sample_state")
 
-        _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+        _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=100)
         measure_spy.assert_called()
         state = measure_spy.call_args.args[0]
         shots = measure_spy.call_args.kwargs["shots"]
@@ -338,9 +335,7 @@ class TestExecutionFiniteShots:
     def test_correct_sampling_postselection(self, postselect_mode, n_postselects, mocker):
         """Test that sampling is performed using the correct pipeline with postselection."""
         num_wires = 4
-        dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
-        )
+        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -364,7 +359,7 @@ class TestExecutionFiniteShots:
         measure_spy = mocker.spy(sampling, "sample_state")
 
         for _ in range(5):
-            _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+            _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)
 
             measure_spy.assert_called()
             state = measure_spy.call_args.args[0]
@@ -389,7 +384,7 @@ class TestExecutionFiniteShots:
     def test_mcm_samples_shape(self, postselect_mode, n_iters):
         """Test that returning samples of mcms has the correct shape."""
         num_wires = 4
-        dev = qml.device("default.qubit", wires=num_wires, shots=100, seed=jax.random.PRNGKey(1234))
+        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -402,21 +397,15 @@ class TestExecutionFiniteShots:
             return qml.sample(op=ms)
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=100)
 
         if postselect_mode == "fill-shots":
-            if n_iters == 1:
-                assert qml.math.shape(res[0]) == (100,)
-            else:
-                assert qml.math.shape(res[0]) == (100, n_iters)
+            assert qml.math.shape(res[0]) == (100, n_iters)
 
         if postselect_mode == "hw-like":
             shape = qml.math.shape(res[0])
             # Other tests have verified that the _number_ of samples
             # will be consisent with the expected behaviour of hw-like
             # execution, so we only verify the n_mcms dimension
-            if n_iters == 1:
-                assert len(shape) == 1
-            else:
-                assert len(shape) == 2
-                assert shape[1] == n_iters
+            assert len(shape) == 2
+            assert shape[1] == n_iters

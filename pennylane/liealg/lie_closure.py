@@ -13,29 +13,37 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
+from collections.abc import Iterable
 from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable, Union
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops.functions as op_func
+from pennylane import math
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, trace_inner_product
+from pennylane.pauli import (
+    PauliSentence,
+    PauliVSpace,
+    PauliWord,
+    pauli_sentence,
+    trace_inner_product,
+)
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
+) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
     r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -63,6 +71,7 @@ def lie_closure(
 
     **Example**
 
+    >>> from pennylane import X, Y, Z
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
 
@@ -84,13 +93,8 @@ def lie_closure(
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
-    >>> print(dla)
-    [X(1) @ X(0),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    >>> dla
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -108,15 +112,10 @@ def lie_closure(
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
         >>> dla = qml.lie_closure(ops, pauli=True)
-        >>> print(dla)
-        [1.0 * X(0) @ X(1),
-         1.0 * Z(0),
-         1.0 * Z(1),
-         -1.0 * Y(0) @ X(1),
-         -1.0 * X(0) @ Y(1),
-         -1.0 * Y(0) @ Y(1)]
+        >>> dla
+        [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
-        pennylane.pauli.pauli_arithmetic.PauliSentence
+        <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
@@ -130,6 +129,13 @@ def lie_closure(
         You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
 
         >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
+        >>> dla_ops
+        [1.0 * (X(0) @ X(1)),
+         1.0 * (Z(0) @ I(1)),
+         1.0 * (I(0) @ Z(1)),
+         1.0 * (Y(0) @ X(1)),
+         1.0 * (X(0) @ Y(1)),
+         1.0 * (Y(0) @ Y(1))]
 
     """
     if matrix:
@@ -142,8 +148,7 @@ def lie_closure(
             )
 
         generators = [
-            rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
-            for op in generators
+            rep if (rep := op.pauli_rep) is not None else pauli_sentence(op) for op in generators
         ]
 
     vspace = PauliVSpace(generators, tol=tol)
@@ -213,26 +218,26 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not qml.math.is_abstract(A):
-            if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
+        if not math.is_abstract(A):
+            if not math.allclose(math.transpose(math.conj(A)), A):
                 A = 1j * A
-                if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
+                if not math.allclose(math.transpose(math.conj(A)), A):
                     raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
 
         B = copy(A)
         if len(basis) > 0:
             lhs = trace_inner_product(basis, A)
-            B -= qml.math.tensordot(lhs, qml.math.stack(basis), axes=[[0], [0]])
+            B -= math.tensordot(lhs, math.stack(basis), axes=[[0], [0]])
         if (
-            norm := qml.math.real(qml.math.sqrt(trace_inner_product(B, B)))
+            norm := math.real(math.sqrt(trace_inner_product(B, B)))
         ) > tol:  # Tolerance for numerical stability
-            B /= qml.math.cast_like(norm, B)
+            B /= math.cast_like(norm, B)
             basis.append(B)
-    return qml.math.array(basis)
+    return math.array(basis)
 
 
 def _lie_closure_matrix(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | np.ndarray],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -281,23 +286,24 @@ def _lie_closure_matrix(
 
     if not isinstance(generators[0], TensorLike):
         # operator input
-        all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
+        all_wires = Wires.all_wires([_.wires for _ in generators])
+
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))
 
         generators = np.array(
-            [qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex
+            [op_func.matrix(op, wire_order=range(n)) for op in generators], dtype=complex
         )
         chi = 2**n
         assert np.shape(generators) == (len(generators), chi, chi)
 
     elif isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
         # list of matrices
-        interface = qml.math.get_interface(generators[0])
-        generators = qml.math.stack(generators, like=interface)
+        interface = math.get_interface(generators[0])
+        generators = math.stack(generators, like=interface)
 
-    chi = qml.math.shape(generators[0])[0]
-    assert qml.math.shape(generators) == (len(generators), chi, chi)
+    chi = math.shape(generators[0])[0]
+    assert math.shape(generators) == (len(generators), chi, chi)
 
     epoch = 0
     old_length = 0
@@ -314,20 +320,20 @@ def _lie_closure_matrix(
         # the commutators.
         # [m0, m1] = m0 m1 - m1 m0
         # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
-        m0m1 = qml.math.moveaxis(
-            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
+        m0m1 = math.moveaxis(
+            math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
         )
-        m0m1 = qml.math.reshape(m0m1, (-1, chi, chi))
+        m0m1 = math.reshape(m0m1, (-1, chi, chi))
 
         # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
-        m1m0 = qml.math.moveaxis(
-            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
+        m1m0 = math.moveaxis(
+            math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
         )
-        m1m0 = qml.math.reshape(m1m0, (-1, chi, chi))
+        m1m0 = math.reshape(m1m0, (-1, chi, chi))
         all_coms = m0m1 - m1m0
 
         # sub-select linearly independent subset
-        vspace = qml.math.concatenate([vspace, all_coms])
+        vspace = math.concatenate([vspace, all_coms])
         vspace = _hermitian_basis(vspace, tol, old_length)
 
         # Updated number of linearly independent PauliSentences from previous and current step

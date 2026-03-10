@@ -24,6 +24,68 @@ from pennylane.measurements import ShotCopies, Shots, add_shots
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
 
 
+@pytest.mark.jax
+class TestAbstractShots:
+
+    def test_shots_with_single_tracer(self):
+        """Test that Shots can accept a single dynamic shot number."""
+
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(num_shots):
+            shots_obj = Shots(num_shots)
+            assert shots_obj
+            assert not shots_obj.has_partitioned_shots
+            assert isinstance(shots_obj, Shots)
+
+            return shots_obj.total_shots, list(shots_obj)
+
+        total_shots, list_shots = f(3)
+        assert total_shots == 3
+        assert list_shots == [3]
+
+    def tests_with_two_tracers(self):
+        """Test that Shots can accept a two tracers"""
+
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(s1, s2):
+            shots_obj = Shots((s1, s2))
+            assert shots_obj
+            assert shots_obj.has_partitioned_shots
+            assert isinstance(shots_obj, Shots)
+
+            return shots_obj.total_shots, list(shots_obj)
+
+        total_shots, list_shots = f(4, 5)
+        assert total_shots == 9
+        assert list_shots == [4, 5]
+
+    @pytest.mark.parametrize("reversed", (True, False))
+    def tests_hybrid(self, reversed):
+        """Test that Shots can accept a two tracers"""
+
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(s1):
+            if reversed:
+                shots_obj = Shots((2, s1))
+            else:
+                shots_obj = Shots((s1, 2))
+            assert shots_obj
+            assert shots_obj.has_partitioned_shots
+            assert isinstance(shots_obj, Shots)
+
+            return shots_obj.total_shots, list(shots_obj)
+
+        total_shots, list_shots = f(100)
+        assert total_shots == 102
+        assert list_shots == [2, 100] if reversed else [100, 2]
+
+
 class TestShotCopies:
     """Test that the ShotCopies class displays well."""
 

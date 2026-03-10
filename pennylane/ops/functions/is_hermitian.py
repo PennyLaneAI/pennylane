@@ -14,8 +14,16 @@
 """
 This module contains the qml.is_hermitian function.
 """
-import pennylane as qml
-from pennylane.operation import Operator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pennylane.math import allclose
+from pennylane.ops import adjoint
+from pennylane.ops.functions.matrix import matrix
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
 
 
 def is_hermitian(op: Operator):
@@ -43,6 +51,6 @@ def is_hermitian(op: Operator):
     >>> qml.is_hermitian(op2)
     False
     """
-    if op.is_hermitian is True:
+    if op.is_verified_hermitian:
         return True
-    return qml.math.allclose(qml.matrix(op), qml.matrix(qml.adjoint(op)))
+    return allclose(matrix(op), matrix(adjoint(op)))

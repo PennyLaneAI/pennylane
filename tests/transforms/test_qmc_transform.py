@@ -61,12 +61,7 @@ def r_unitary(gate, alpha, control_wires, target_wire):
         return
 
     code = qml.templates.state_preparations.mottonen.gray_code(gray_code_rank)
-    num_selections = len(code)
-
-    control_indices = [
-        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
-        for i in range(num_selections)
-    ]
+    control_indices = np.log2(code ^ np.roll(code, -1)).astype(int)
 
     for i, control_index in enumerate(control_indices):
         if qml.math.all(theta[..., i] != 0.0):
@@ -246,7 +241,7 @@ class TestQuantumMonteCarlo:
         r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
 
         A_wires = [0, "a", -1.1, -10, "bbb"]
-        target_wire = "Ancilla"
+        target_wire = "Auxiliary"
         wires = A_wires + [target_wire]
         estimation_wires = ["bob", -3, 42, "penny", "lane"]
 

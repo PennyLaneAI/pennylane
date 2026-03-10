@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 
 from .conftest import get_legacy_capabilities
 
@@ -157,7 +158,7 @@ class TestCapabilities:
             pytest.skip("No passthru_interface capability specified by device.")
 
         interface = cap["passthru_interface"]
-        assert interface in ["tf", "autograd", "jax", "torch"]  # for new interface, add test case
+        assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
         qnode = qml.QNode(qfunc, dev, interface=interface)
@@ -219,7 +220,7 @@ class TestCapabilities:
         if cap["supports_tensor_observables"]:
             circuit()
         else:
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 circuit()
 
     def test_returns_state(self, device_kwargs):
@@ -238,7 +239,7 @@ class TestCapabilities:
         if not cap.get("returns_state"):
             # If the device is not defined to return state then the
             # access_state method should raise
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 dev.access_state()
 
             try:
@@ -323,4 +324,4 @@ class TestCapabilities:
                 assert pnp.array(dev.access_state()).shape == orig_shape
 
         assert pnp.ndim(res) == 2
-        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object
+        assert res.shape[0] == 3

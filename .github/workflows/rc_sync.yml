@@ -15,6 +15,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job to sync the master branch with changes from the rc
@@ -29,11 +32,29 @@ jobs:
         with:
           ref: master
 
+      # Sets up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.9.17
+          enable-cache: true  
+
+      # Ensure setuptools is up-to-date for pyproject.toml processing
+      - name: Install latest setuptools 
+        run: |
+          uv pip install --upgrade pip
+          uv pip install --upgrade setuptools
+
       # Check for the existence of an rc branch for the current PennyLane version
       - name: Check for rc branch
         run: |
           VERSION=$(python setup.py --version)
-          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev[0-9]*}"
+          IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
           RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
           if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_ENV
@@ -71,4 +92,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh pr create --title "Daily rc sync to master" --body "" --reviewer "PietropaoloFrisoni,albi3ro"
+          gh pr create --title "Daily rc sync to master" --body "" --reviewer "JerryChen97,albi3ro"

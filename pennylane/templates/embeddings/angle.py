@@ -14,10 +14,19 @@
 r"""
 Contains the ``AngleEmbedding`` template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
+from pennylane.wires import WiresLike
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -72,8 +81,9 @@ class AngleEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
+
+    resource_keys = {"rotation", "num_wires"}
 
     def _flatten(self):
         hyperparameters = (("rotation", self._rotation),)
@@ -86,7 +96,7 @@ class AngleEmbedding(Operation):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
-        shape = qml.math.shape(features)[-1:]
+        shape = math.shape(features)[-1:]
         n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
@@ -98,6 +108,10 @@ class AngleEmbedding(Operation):
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"rotation": self.hyperparameters["rotation"], "num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -132,9 +146,33 @@ class AngleEmbedding(Operation):
         [RX(tensor(1.), wires=['a']),
          RX(tensor(2.), wires=['b'])]
         """
-        batched = qml.math.ndim(features) > 1
+        batched = math.ndim(features) > 1
         # We will iterate over the first axis of `features` together with iterating over the wires.
         # If the leading dimension is a batch dimension, exchange the wire and batching axes.
-        features = qml.math.T(features) if batched else features
+        features = math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
+
+
+def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:
+    return {resource_rep(rotation): num_wires}
+
+
+@register_resources(_angle_embedding_resources)
+def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: Operation):
+    batched = math.ndim(features) > 1
+    # We will iterate over the first axis of `features` together with iterating over the wires.
+    # If the leading dimension is a batch dimension, exchange the wire and batching axes.
+    features = math.T(features) if batched else features
+
+    if has_jax and capture.enabled():
+        features, wires = jnp.array(features), jnp.array(wires)
+
+    @for_loop(len(wires))
+    def rotation_loop(i):
+        rotation(features[i], wires=wires[i])
+
+    rotation_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AngleEmbedding, _angle_embedding_decomposition)

@@ -1,0 +1,16 @@
+# Set default behaviour for normalizing line endings to LF
+* text=auto eol=lf
+
+# Make sure special files are correctly interpreted as textual files
+.coveragerc     text
+.pylintrc       text
+*.ini           text
+LICENCE         text
+CODEOWNERS      text
+
+# Binary files; should be ignored when normalizing EOL characters
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.pdf           binary
+*.gif           binary

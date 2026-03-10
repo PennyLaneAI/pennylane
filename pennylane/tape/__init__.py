@@ -18,7 +18,8 @@ validates quantum operations and measurements.
 
 from .operation_recorder import OperationRecorder
 from .qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch, make_qscript
-from .tape import QuantumTape, QuantumTapeBatch, TapeError, expand_tape_state_prep
+from .tape import QuantumTape, QuantumTapeBatch
+from .expand_tape import expand_tape, expand_tape_state_prep
 
 
 # pylint: disable=import-outside-toplevel

@@ -255,6 +255,38 @@ class TestKwargs:
             1.0,
         )
 
+    @pytest.mark.parametrize("as_qnode", (True, False))
+    def test_max_length(self, as_qnode):
+        """Test that long circuits can be broken up into multiple figures."""
+
+        def c():
+            for _ in range(15):
+                qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        if as_qnode:
+            c = qml.QNode(c, qml.device("default.qubit"))
+
+        figs_and_axes = qml.draw_mpl(c, max_length=5)()
+        assert len(figs_and_axes) == 3
+        for i in range(3):
+            assert isinstance(figs_and_axes[i][0], plt.Figure)
+            assert isinstance(figs_and_axes[i][1], plt.Axes)
+
+        ax0 = figs_and_axes[0][1]
+        ax1 = figs_and_axes[1][1]
+        ax2 = figs_and_axes[2][1]
+        assert len(ax0.patches) == 5
+        assert len(ax1.patches) == 5
+        assert len(ax2.patches) == 8  # three for measure box
+
+        assert ax0.texts[-1].get_text() == "···"
+        assert ax1.texts[-1].get_text() == "···"
+        assert ax2.texts[-1].get_text() == "X"
+
+        assert ax1.texts[1].get_text() == "···"
+        assert ax2.texts[1].get_text() == "···"
+
 
 class TestWireBehaviour:
     """Tests that involve how wires are displayed"""
@@ -568,7 +600,7 @@ def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
         return qml.probs(wires=0)
 
     draw_qnode = qml.draw_mpl(circ)
-    spy = mocker.spy(qml.defer_measurements, "_transform")
+    spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
     _ = draw_qnode()
     spy.assert_not_called()
@@ -585,8 +617,9 @@ def test_qnode_transform_program(mocker):
         return qml.state()
 
     draw_qnode = qml.draw_mpl(circuit, decimals=2)
-    qnode_transform = circuit.transform_program[0]
-    spy = mocker.spy(qnode_transform, "_transform")
+    qnode_transform = circuit.compile_pipeline[0]
+    # pylint: disable=protected-access
+    spy = mocker.spy(qnode_transform._transform, "_tape_transform")
 
     _ = draw_qnode()
     spy.assert_called_once()
@@ -649,6 +682,8 @@ def test_wire_sorting_if_no_wire_order(use_qnode):
     assert ax.texts[0].get_text() == "0"
     assert ax.texts[1].get_text() == "2"
     assert ax.texts[2].get_text() == "4"
+
+    plt.close()
 
 
 @pytest.mark.parametrize("use_qnode", (True, False))

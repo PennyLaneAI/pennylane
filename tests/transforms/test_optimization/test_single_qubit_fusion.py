@@ -44,9 +44,8 @@ class TestSingleQubitFusion:
 
         # Compare matrices
         matrix_expected = qml.matrix(qfunc, [0])()
-
         matrix_obtained = qml.matrix(transformed_qfunc, [0])()
-        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+        assert qml.math.allclose(matrix_obtained, matrix_expected)
 
     def test_single_qubit_full_fusion_qnode(self):
         """Test that a sequence of single-qubit gates all fuse."""
@@ -67,7 +66,7 @@ class TestSingleQubitFusion:
         optimized_qnode = single_qubit_fusion(circuit)
         optimized_qnode()
         matrix_obtained = qml.matrix(optimized_qnode)()
-        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+        assert qml.math.allclose(matrix_obtained, matrix_expected)
 
     def test_single_qubit_fusion_no_gates_after(self):
         """Test that gates with nothing after are applied without modification."""
@@ -79,8 +78,8 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["RZ", "Hadamard"]
-        wires_expected = [Wires(0), Wires(1)]
+        names_expected = ["RZ", "Hadamard", "GlobalPhase"]
+        wires_expected = [Wires(0), Wires(1), Wires([])]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
     def test_single_qubit_cancelled_fusion(self):
@@ -112,8 +111,8 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["Rot", "PauliRot", "Rot"]
-        wires_expected = [Wires(0)] * 3
+        names_expected = ["Rot", "PauliRot", "Rot", "GlobalPhase"]
+        wires_expected = [Wires(0)] * 3 + [Wires([])]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
     def test_single_qubit_fusion_exclude_gates(self):
@@ -138,9 +137,14 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc, exclude_gates=["RZ"])
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["RZ", "Rot", "RZ", "CNOT", "Hadamard", "RZ", "Rot", "RZ"]
+        names_expected = ["RZ", "Rot", "RZ", "CNOT", "Hadamard", "RZ", "Rot", "RZ", "GlobalPhase"]
         wires_expected = (
-            [Wires(0)] * 2 + [Wires(1)] + [Wires([0, 1])] + [Wires(0)] * 2 + [Wires(1)] * 2
+            [Wires(0)] * 2
+            + [Wires(1)]
+            + [Wires([0, 1])]
+            + [Wires(0)] * 2
+            + [Wires(1)] * 2
+            + [Wires([])]
         )
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
@@ -166,8 +170,8 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["Rot", "Rot", "CNOT", "Rot"]
-        wires_expected = [Wires("a"), Wires("b"), Wires(["b", "a"]), Wires("b")]
+        names_expected = ["Rot", "Rot", "CNOT", "Rot", "GlobalPhase"]
+        wires_expected = [Wires("a"), Wires("b"), Wires(["b", "a"]), Wires("b"), Wires([])]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Check matrix representation
@@ -199,8 +203,16 @@ def qfunc_all_ops(theta):
 
 transformed_qfunc_all_ops = single_qubit_fusion(qfunc_all_ops)
 
-expected_op_list = ["Rot", "Rot", "CNOT", "CRY", "CRY", "Rot"]
-expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([1, 2]), Wires(1)]
+expected_op_list = ["Rot", "Rot", "CNOT", "CRY", "CRY", "Rot", "GlobalPhase"]
+expected_wires_list = [
+    Wires(0),
+    Wires(1),
+    Wires([1, 2]),
+    Wires([1, 2]),
+    Wires([1, 2]),
+    Wires(1),
+    Wires([]),
+]
 
 
 class TestSingleQubitFusionInterfaces:
@@ -338,3 +350,36 @@ class TestSingleQubitFusionInterfaces:
         # Check operation list
         tape = qml.workflow.construct_tape(transformed_qnode)(input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
+
+    @pytest.mark.jax
+    def test_single_qubit_fusion_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RY(0.5, wires=0),
+                ]
+            )
+            [tape], _ = single_qubit_fusion(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RY(0.5, wires=0),
+                ]
+            )
+            [tape], _ = single_qubit_fusion(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 2
