@@ -23,7 +23,8 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy>=2.0"
+    "numpy>=2.0",
+    "gast>=0.6.0"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
