@@ -104,8 +104,8 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 source_suffix = ".rst"
 
-# The master toctree document.
-master_doc = "index"
+# The main toctree document.
+main_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
@@ -270,7 +270,7 @@ html_theme_options = {
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"
-edit_on_github_branch = "master/doc"
+edit_on_github_branch = "main/doc"
 
 # -- Sitemap settings -----------------------------------------------------
 sitemap_url_scheme = "{link}"
@@ -299,7 +299,7 @@ latex_additional_files = ["macros.tex"]
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "PennyLane.tex", "PennyLane Documentation", "Xanadu Inc.", "manual"),
+    (main_doc, "PennyLane.tex", "PennyLane Documentation", "Xanadu Inc.", "manual"),
 ]
 
 
@@ -307,7 +307,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pennylane", "PennyLane Documentation", [author], 1)]
+man_pages = [(main_doc, "pennylane", "PennyLane Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -317,7 +317,7 @@ man_pages = [(master_doc, "pennylane", "PennyLane Documentation", [author], 1)]
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        main_doc,
         "PennyLane",
         "PennyLane Documentation",
         author,
