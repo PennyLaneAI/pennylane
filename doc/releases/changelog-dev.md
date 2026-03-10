@@ -739,6 +739,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
+  decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
+  [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
+
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
