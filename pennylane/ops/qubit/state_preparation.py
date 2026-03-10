@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+from importlib.util import find_spec
+
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
@@ -190,100 +192,59 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(num_wires):
-    # Represent one of the X gates as a power of X for z=0, 1 each.
-    # used when jax-jit is used, without capture/qjit.
+def _jax_jit_basis_state_resources(num_wires):
     resources = {
-        # pow_resource_rep(qml.X, base_params={}, z=0): 1,
-        # pow_resource_rep(qml.X, base_params={}, z=1): 1,
-        qml.X: max((num_wires - 2) // 2, 1),
+        pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
+        pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
     }
     return resources
 
 
+def _jax_jit_basis_state_cond(**_):
+    if qml.capture.enabled() or qml.compiler.active():
+        return False
+
+    if find_spec("jax") is None:
+        return False
+
+    x = qml.math.array(0.2, like="jax")
+    # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
+    return qml.math.is_abstract(x)
+
+
+@register_condition(_jax_jit_basis_state_cond)
+@register_resources(_jax_jit_basis_state_resources, exact=False)
+def _jax_jit_basis_state_decomp(state, wires, **__):
+    _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+
+
+def _basis_state_decomp_resources(num_wires):
+    return {qml.X: num_wires - num_wires // 2}
+
+
+@register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    abstract_state = qml.math.is_abstract(state)
     if qml.capture.enabled() or qml.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
         import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
-        if not abstract_state:
+        if not qml.math.is_abstract(state):
             state = jnp.array(state)
 
         if not qml.math.is_abstract(wires):
             wires = jnp.array(wires)
-    else:
-        # This branch is for supporting jax-jit without capture/qjit. This is necessary if
-        # the state is traced
-        if abstract_state:
-            _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
-            return
 
-    @qml.for_loop(0, len(wires), 1)
+    @qml.for_loop(len(state))
     def _loop(i):
         qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _single_ctrl_basis_state_decomp_cond(num_control_wires, num_zero_control_values, **_):
-    return num_control_wires == 1
-
-
-def _single_ctrl_basis_state_decomp_resources(base_params, num_zero_control_values, **_):
-    num_wires = base_params["num_wires"]
-    # Represent one of the CX gates as a power of CX for z=0, 1 each.
-    # used when jax-jit is used, without capture/qjit.
-    resources = {
-        # pow_resource_rep(qml.CNOT, base_params={}, z=0): 1,
-        # pow_resource_rep(qml.CNOT, base_params={}, z=1): 1,
-        qml.CNOT: max(num_wires - 2, 1),
-        qml.X: num_zero_control_values * 2,
-    }
-    return resources
-
-
-@register_condition(_single_ctrl_basis_state_decomp_cond)
-@register_resources(_single_ctrl_basis_state_decomp_resources, exact=False)
-def _single_ctrl_basis_state_decomp(state, wires, control_values, **__):
-
-    abstract_state = qml.math.is_abstract(state)
-    cwire = wires[0]
-    if not control_values[0]:
-        qml.X(cwire)
-    target_wires = wires[1:]
-    if qml.capture.enabled() or qml.compiler.active():
-        # This branch makes sure that state and wires are cast to objects into which
-        # a traced loop index is allowed to index (if they aren't already traced)
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        if not abstract_state:
-            state = jnp.array(state)
-
-        if not qml.math.is_abstract(target_wires):
-            target_wires = jnp.array(target_wires)
-    else:
-        # This branch is for supporting jax-jit without capture/qjit. This is necessary if
-        # the state is traced
-        if abstract_state:
-            _ = [qml.CNOT(wires=[cwire, w]) ** basis for w, basis in zip(target_wires, state)]
-            return
-
-    @qml.for_loop(len(target_wires))
-    def _loop(i):
-        qml.cond(qml.math.allclose(state[i], 1), qml.CNOT)([cwire, target_wires[i]])
-
-    _loop()  # pylint: disable=no-value-for-parameter
-
-    if not control_values[0]:
-        qml.X(cwire)
-
-
-add_decomps(BasisState, _basis_state_decomp)
-add_decomps("C(BasisState)", _single_ctrl_basis_state_decomp)
+add_decomps(BasisState, _basis_state_decomp, _jax_jit_basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
