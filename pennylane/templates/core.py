@@ -202,7 +202,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.templates.core import AbstractArray, subroutine_resource_rep
 
         class MyOp(qml.operation.Operation):
             pass
@@ -464,7 +464,7 @@ class Subroutine:
     .. code-block:: python
 
         from functools import partial
-        from pennylane.templates import Subroutine
+        from pennylane.templates.core import Subroutine
 
         def resources(x, y, wires):
             return {qml.RX: 1, qml.RY: 1}
@@ -609,7 +609,7 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
 
-    >>> from pennylane.templates import AbstractArray
+    >>> from pennylane.templates.core import AbstractArray
     >>> abstract_params = AbstractArray((10,), float)
     >>> abstract_wires = AbstractArray((10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
@@ -620,7 +620,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.templates.core import AbstractArray, subroutine_resource_rep
 
         class MyOp(qml.operation.Operation):
             pass

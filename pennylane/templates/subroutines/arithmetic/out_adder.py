@@ -22,10 +22,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import Prod, adjoint, change_op_basis
+from pennylane.ops import Prod, change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
-    adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
@@ -270,9 +269,7 @@ class OutAdder(Operation):
         >>> ops = qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [<QFT(wires=(5, 6))>,
-         (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1])),
-         Adjoint(<QFT(wires=(5, 6))>)]
+        [(Adjoint(<QFT(wires=(5, 6))>)) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ <QFT(wires=(5, 6))>]
         """
         if mod != 2 ** len(output_wires) and mod is not None:
             qft_new_output_wires = work_wires[:1] + output_wires
