@@ -816,6 +816,9 @@ The following classes have been ported over:
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+  [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
+
 * Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
