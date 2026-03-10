@@ -58,10 +58,10 @@ def compile(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         pipeline (Sequence[transform]): A list of
-            tape and/or quantum function transforms to apply. If 
-            ``pipeline != None``, the default set of transformations 
-            (:func:`~.transforms.commute_controlled`, 
-            :func:`~.cancel_inverses`, and 
+            tape and/or quantum function transforms to apply. If
+            ``pipeline != None``, the default set of transformations
+            (:func:`~.transforms.commute_controlled`,
+            :func:`~.cancel_inverses`, and
             :func:`~.transforms.merge_rotations`) is not applied.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
