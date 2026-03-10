@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
+  This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
+  `qml.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
+  same-degree polynomial with different coefficients.
+  [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
+
 * Added the function :func:`~.drawer.label` to attach custom labels to operator instances
   for circuit drawing.
   [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
@@ -139,6 +145,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
+  [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
+  
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
@@ -815,6 +824,7 @@ Marcus Edwards,
 Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
+Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
 Omkar Sarkar,
