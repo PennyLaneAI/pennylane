@@ -22,6 +22,7 @@ from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
@@ -46,7 +47,12 @@ param_shift_cached_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.param_shift, cache_full_jacobian=True
 )
 hadamard_grad_jpc = TransformJacobianProducts(
-    inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
+    inner_execute_numpy,
+    qml.gradients.hadamard_grad,
+    {
+        "aux_wire": "aux",
+        "mode": "standard",
+    },
 )
 device_jacs = DeviceDerivatives(dev, adjoint_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
@@ -85,24 +91,16 @@ def test_no_gradients():
 
     jpc = NoGradients()
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.compute_jacobian(())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.compute_vjp((), ())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.execute_and_compute_jvp((), ())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.execute_and_compute_jacobian(())
 
 
@@ -128,12 +126,13 @@ class TestBasics:
         )
         assert repr(jpc) == expected_repr
 
-    def test_no_config_falls_back_to_default_config(self):
+    def test_device_derivatives_initialization_without_config(self):
+        """Test that not providing an execution config sets it to None."""
         device = qml.device("default.qubit")
 
         jpc = DeviceDerivatives(device)
 
-        assert jpc._execution_config == qml.devices.DefaultExecutionConfig
+        assert jpc._execution_config is None
 
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
@@ -163,7 +162,8 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
             r" device_options={}, interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True)>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
+            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected
@@ -182,7 +182,8 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
             r" interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True)>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
+            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected

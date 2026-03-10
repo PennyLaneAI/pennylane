@@ -14,11 +14,22 @@
 r"""
 Contains the quantum-number-preserving GateFabric template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operation
+from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
+from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class GateFabric(Operation):
@@ -172,8 +183,9 @@ class GateFabric(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
+
+    resource_keys = {"n_layers", "num_wires", "len_wire_pattern", "include_pi"}
 
     def __init__(self, weights, wires, init_state, include_pi=False, id=None):
         if len(wires) < 4:
@@ -185,7 +197,7 @@ class GateFabric(Operation):
                 f"This template requires an even number of qubits; got {len(wires)} wires"
             )
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
 
         if len(shape) != 3:
             raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
@@ -211,6 +223,27 @@ class GateFabric(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        len_wire_pattern = 0
+
+        num_wires = len(self.wires)
+        for i in range(0, num_wires, 4):
+            if len(self.wires[i : i + 4]) == 4:
+                len_wire_pattern += 1
+
+        if num_wires > 4:
+            for i in range(2, num_wires, 4):
+                if len(self.wires[i : i + 4]) == 4:
+                    len_wire_pattern += 1
+
+        return {
+            "n_layers": math.shape(self.parameters[0])[0],
+            "num_wires": num_wires,
+            "len_wire_pattern": len_wire_pattern,
+            "include_pi": self.hyperparameters["include_pi"],
+        }
 
     @staticmethod
     def compute_decomposition(
@@ -241,12 +274,11 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qml.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisEmbedding(wires=['a', 'b', 'c', 'd']),
-        DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']),
-        OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisEmbedding(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+
         """
         op_list = []
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = math.shape(weights)[0]
         wire_pattern = [
             wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
@@ -255,15 +287,15 @@ class GateFabric(Operation):
                 wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
-        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisEmbedding(init_state, wires=wires))
 
         for layer in range(n_layers):
             for idx, wires_ in enumerate(wire_pattern):
                 if include_pi:
-                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
+                    op_list.append(OrbitalRotation(np.pi, wires=wires_))
 
-                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires_))
-                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires_))
+                op_list.append(DoubleExcitation(weights[layer][idx][0], wires=wires_))
+                op_list.append(OrbitalRotation(weights[layer][idx][1], wires=wires_))
 
         return op_list
 
@@ -290,3 +322,64 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
+
+
+def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+    resources = {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
+    }
+
+    if include_pi:
+        resources[resource_rep(OrbitalRotation)] = 2 * n_layers * len_wire_pattern
+    else:
+        resources[resource_rep(OrbitalRotation)] = n_layers * len_wire_pattern
+
+    return resources
+
+
+@register_resources(_gate_fabric_resources)
+def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+    if isinstance(wires, Wires):
+        wires = wires.labels
+
+    n_layers = math.shape(weights)[0]
+
+    wire_pattern = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+    if len(wires) > 4:
+        wire_pattern += [
+            wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+        ]
+
+    if has_jax and capture.enabled():
+        weights, wires, init_state, wire_pattern, n_layers = (
+            jnp.array(weights),
+            jnp.array(wires),
+            jnp.array(init_state),
+            jnp.array(wire_pattern),
+            jnp.array(n_layers),
+        )
+
+    BasisEmbedding(init_state, wires=wires)
+
+    @for_loop(n_layers)
+    def layers_loop(layer):
+
+        @for_loop(len(wire_pattern))
+        def wires_loop(idx):
+            wires_ = wire_pattern[idx]
+
+            def true_body():
+                OrbitalRotation(np.pi, wires=wires_)
+
+            cond(include_pi, true_body)()
+
+            DoubleExcitation(weights[layer][idx][0], wires=wires_)
+            OrbitalRotation(weights[layer][idx][1], wires=wires_)
+
+        wires_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(GateFabric, _gate_fabric_decomposition)

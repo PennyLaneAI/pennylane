@@ -19,11 +19,12 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.ops import PauliRot
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
@@ -92,7 +93,7 @@ def _one_parameter_generators(op):
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
-    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in op.data]))
+    U_dagger = math.conj(_compute_matrix([math.detach(d) for d in op.data]))
 
     # Compute U^\dagger @ \partial U / \partial \theta_k
     # For each entry ``j`` in the tuple ``jac``,
@@ -100,9 +101,9 @@ def _one_parameter_generators(op):
     #    U_dagger, which we skipped above.
     # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
     # 3. Move the first two axis to the last two positions.
-    moveax = partial(qml.math.moveaxis, source=(0, 1), destination=(-2, -1))
+    moveax = partial(math.moveaxis, source=(0, 1), destination=(-2, -1))
     return tuple(
-        moveax(qml.math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
+        moveax(math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
         for j_r, j_i in zip(jac_real, jac_imag)
     )
 
@@ -133,7 +134,7 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
     # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
     # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
     # we prefer over a complex-valued tensor with vanishing imaginary part
-    return tuple(qml.math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
+    return tuple(math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
 
 
 def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
@@ -151,7 +152,7 @@ def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     new_coefficients = [[] for _ in coefficients]
     new_words = []
     for word, *coeffs in zip(words, *coefficients):
-        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
+        if all(math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
             continue
         new_words.append(word)
         for new_coeffs, c in zip(new_coefficients, coeffs):
@@ -176,7 +177,7 @@ def _insert_op(tape, ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
+        QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
         for insert in ops
     ]
 
@@ -227,7 +228,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     pauli_rots = [
-        qml.PauliRot(angle, word, wires=op.wires)
+        PauliRot(angle, word, wires=op.wires)
         for word in pauli_words
         for angle in [np.pi / 2, -np.pi / 2]
     ]
@@ -263,20 +264,18 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     def _parshift_and_contract_single(res_list, coeffs):
         """Execute the standard parameter-shift rule on a list of results
         and contract with Pauli basis coefficients."""
-        psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
-        return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+        psr_deriv = ((res := math.stack(res_list))[::2] - res[1::2]) / 2
+        return math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
     if single_measure and single_shot_entry:
         # single measurement and single shot entry
-        return _parshift_and_contract_single(results, qml.math.stack(coeffs))
+        return _parshift_and_contract_single(results, math.stack(coeffs))
     if single_measure or single_shot_entry:
         # single measurement or single shot entry, but not both
-        return tuple(
-            _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
-        )
+        return tuple(_parshift_and_contract_single(r, math.stack(coeffs)) for r in zip(*results))
 
     return tuple(
-        tuple(_parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r))
+        tuple(_parshift_and_contract_single(_r, math.stack(coeffs)) for _r in zip(*r))
         for r in zip(*results)
     )
 
@@ -326,7 +325,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
     gradient_tapes = []
     tape_params = tape.get_parameters()
     for idx, param in enumerate(tape_params):
-        shape = qml.math.shape(param)
+        shape = math.shape(param)
 
         if idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing

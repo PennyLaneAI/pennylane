@@ -15,12 +15,18 @@
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane._grad import jacobian
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.measurements import probs
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.workflow import execute
+
+from .metric_tensor import metric_tensor
 
 
 # TODO: create qml.math.jacobian and replace it here
@@ -38,7 +44,7 @@ def _torch_jac(circ):
 
 
 # TODO: create qml.math.jacobian and replace it here
-def _tf_jac(circ):
+def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """TF jacobian as a callable function"""
     import tensorflow as tf
 
@@ -55,18 +61,18 @@ def _compute_cfim(p, dp):
     I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
     # Exclude values where p=0 and calculate 1/p
-    nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
-    one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
+    nonzeros_p = math.where(p > 0, p, math.ones_like(p))
+    one_over_p = math.where(p > 0, math.ones_like(p), math.zeros_like(p))
     one_over_p = one_over_p / nonzeros_p
 
     # Multiply dp and p
     # Note that casting and being careful about dtypes is necessary as interfaces
     # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast_like(dp, p)
-    dp = qml.math.reshape(
+    dp = math.cast_like(dp, p)
+    dp = math.reshape(
         dp, (len(p), -1)
     )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
-    dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
+    dp_over_p = math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
 
     # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
     return dp_over_p @ dp
@@ -74,11 +80,11 @@ def _compute_cfim(p, dp):
 
 @transform
 def _make_probs(
-    tape: qml.tape.QuantumScript,
-) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
+    tape: QuantumScript,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
-    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
+    qscript = QuantumScript(tape.operations, [probs(tape.wires)], shots=tape.shots)
 
     def post_processing_fn(res):
         # only a single probs measurement, so no stacking needed
@@ -237,7 +243,7 @@ def classical_fisher(qnode, argnums=0):
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
         interface = qnode.interface
 
@@ -250,9 +256,11 @@ def classical_fisher(qnode, argnums=0):
             jac = _torch_jac(new_qnode)
 
         elif interface == "autograd":
-            jac = qml.jacobian(new_qnode)
+            jac = jacobian(new_qnode)
 
-        elif interface == "tf":
+        elif (
+            interface == "tf"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             jac = _tf_jac(new_qnode)
         else:
             raise ValueError(
@@ -271,7 +279,7 @@ def classical_fisher(qnode, argnums=0):
             for j_i in j:
                 res.append(_compute_cfim(p, j_i))
 
-            if len(j) == 1:
+            if len(j) == 1:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 return res[0]
 
             return res
@@ -283,8 +291,8 @@ def classical_fisher(qnode, argnums=0):
 
 @partial(transform, classical_cotransform=_contract_metric_tensor_with_cjac, is_informative=True)
 def quantum_fisher(
-    tape: qml.tape.QuantumScript, device, *args, **kwargs
-) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
+    tape: QuantumScript, device, *args, **kwargs
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -361,8 +369,9 @@ def quantum_fisher(
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
-    >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
-    >>> @qml.qnode(dev)
+    >>> dev = qml.device("default.qubit", wires=n_wires+1)
+    >>> @qml.set_shots(shots=1000)
+    ... @qml.qnode(dev)
     ... def circ(params):
     ...     qml.RY(params[0], wires=1)
     ...     qml.CNOT(wires=(1,0))
@@ -377,11 +386,11 @@ def quantum_fisher(
 
     """
 
-    if device.shots or not isinstance(device, DefaultQubit):
-        tapes, processing_fn = qml.gradients.metric_tensor(tape, *args, **kwargs)
+    if tape.shots or not isinstance(device, DefaultQubit):
+        tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):
-            res = qml.execute(res, device=device)
+            res = execute(res, device=device)
             return 4 * processing_fn(res)
 
         return tapes, processing_fn_multiply
@@ -389,7 +398,7 @@ def quantum_fisher(
     res = adjoint_metric_tensor(tape, *args, **kwargs)
 
     def processing_fn_multiply(r):  # pylint: disable=function-redefined
-        r = qml.math.stack(r)
+        r = math.stack(r)
         return 4 * r
 
     return res, processing_fn_multiply

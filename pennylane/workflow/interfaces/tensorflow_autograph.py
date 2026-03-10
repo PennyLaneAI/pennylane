@@ -15,7 +15,7 @@
 This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-statements
 from functools import reduce
 
 import numpy as np
@@ -32,12 +32,12 @@ def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
     # for a list of dy's and Jacobian matrices.
     vjps = []
 
-    for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
+    for dy_, jac_, multi in zip(dy, jacs, multi_measurements, strict=True):
         dy_ = dy_ if has_partitioned_shots else (dy_,)
         jac_ = jac_ if has_partitioned_shots else (jac_,)
 
         shot_vjps = []
-        for d, j in zip(dy_, jac_):
+        for d, j in zip(dy_, jac_, strict=True):
             # see xfail test: test_tensorflow_qnode_default_qubit_2.py:test_autograph_adjoint_multi_out
             # And Issue #5078
             # pragma: no cover
@@ -202,7 +202,7 @@ def execute(
         return res + jacs + output_sizes
 
     @tf.custom_gradient
-    def _execute(*all_params):  # pylint:disable=unused-argument
+    def _execute(*all_params):
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-total_measurements * num_shot_copies :]
 
@@ -250,7 +250,7 @@ def execute(
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
-                if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+                if isinstance(gradient_fn, qml.transforms.core.Transform):
                     # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes

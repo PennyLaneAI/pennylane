@@ -17,7 +17,15 @@ jobs:
     steps:
       - name: Check Comment Body
         id: comment_body
-        run: echo "triggers_benchmark=${{ github.event.comment.body == env.BENCHMARK_TRIGGER_COMMAND }}" >> $GITHUB_OUTPUT
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          BENCHMARK_TRIGGER_COMMAND: ${{ env.BENCHMARK_TRIGGER_COMMAND }}
+        run: |
+          if [ "$COMMENT_BODY" = "$BENCHMARK_TRIGGER_COMMAND" ]; then
+            echo "triggers_benchmark=true" >> $GITHUB_OUTPUT
+          else
+            echo "triggers_benchmark=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set Repository Info
         id: repo_info

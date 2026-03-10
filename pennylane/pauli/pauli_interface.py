@@ -15,7 +15,6 @@
 Utility functions to interact with and extract information from Pauli words and Pauli sentences.
 """
 from functools import singledispatch
-from typing import Union
 
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd
 
@@ -40,7 +39,7 @@ def pauli_word_prefactor(observable):
     >>> pauli_word_prefactor(qml.Identity(0))
     1
     >>> pauli_word_prefactor(qml.X(0) @ qml.Y(1))
-    1
+    1.0
     >>> pauli_word_prefactor(qml.X(0) @ qml.Y(0))
     1j
     """
@@ -58,8 +57,8 @@ def _pauli_word_prefactor(observable):
 @_pauli_word_prefactor.register(PauliZ)
 @_pauli_word_prefactor.register(Identity)
 def _pw_prefactor_pauli(
-    observable: Union[PauliX, PauliY, PauliZ, Identity],
-):  # pylint:disable=unused-argument
+    observable: PauliX | PauliY | PauliZ | Identity,
+):
     return 1
 
 
@@ -72,7 +71,7 @@ def _pw_prefactor_ham(observable: LinearCombination):
 
 @_pauli_word_prefactor.register(Prod)
 @_pauli_word_prefactor.register(SProd)
-def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
+def _pw_prefactor_prod_sprod(observable: Prod | SProd):
     ps = observable.pauli_rep
     if ps is not None and len(ps) == 1:
         return list(ps.values())[0]

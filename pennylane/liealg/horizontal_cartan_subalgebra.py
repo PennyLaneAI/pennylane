@@ -14,57 +14,61 @@
 """Functionality to compute the Cartan subalgebra"""
 # pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
 import copy
+from collections.abc import Iterable
 from itertools import combinations, combinations_with_replacement
-from typing import Iterable, List, Union
 
 from scipy.linalg import null_space, sqrtm
 
-import pennylane as qml
+from pennylane import math
 from pennylane.liealg.center import _intersect_bases
 from pennylane.operation import Operator
+from pennylane.ops import Identity
+from pennylane.ops.functions import commutator, equal, matrix, simplify
 from pennylane.pauli import PauliSentence, trace_inner_product
 from pennylane.typing import TensorLike
+
+from .structure_constants import structure_constants
 
 
 def _gram_schmidt(X):
     """Orthogonalize basis of column vectors in X"""
-    Q, _ = qml.math.linalg.qr(X.T, mode="reduced")
+    Q, _ = math.linalg.qr(X.T, mode="reduced")
     return Q.T
 
 
 def _is_independent(v, A, tol=1e-14):
     """Check whether ``v`` is independent of the columns of A."""
-    v /= qml.math.linalg.norm(v)
-    v = v - A @ qml.math.linalg.solve(A.conj().T @ A, A.conj().T) @ v
-    return qml.math.linalg.norm(v) > tol
+    v /= math.linalg.norm(v)
+    v = v - A @ math.linalg.solve(A.conj().T @ A, A.conj().T) @ v
+    return math.linalg.norm(v) > tol
 
 
 def _orthogonal_complement_basis(a, m, tol):
     """find mtilde = m - a"""
     # Step 1: Find the span of a
-    a = qml.math.array(a)
-    m = qml.math.array(m)
+    a = math.array(a)
+    m = math.array(m)
 
     # Compute the orthonormal basis of a using QR decomposition
 
     Q = _gram_schmidt(a)
 
     # Step 2: Project each vector in m onto the orthogonal complement of span(a)
-    projections = m - qml.math.dot(qml.math.dot(m, Q.T), Q)
-    assert qml.math.allclose(
-        qml.math.tensordot(a, projections, axes=[[1], [1]]), 0.0
-    ), f"{qml.math.tensordot(a, projections, axes=[[1], [1]])}"
+    projections = m - math.dot(math.dot(m, Q.T), Q)
+    assert math.allclose(
+        math.tensordot(a, projections, axes=[[1], [1]]), 0.0
+    ), f"{math.tensordot(a, projections, axes=[[1], [1]])}"
 
     # Step 3: Find a basis for the non-zero projections
     # We'll use SVD to find the basis
-    U, S, _ = qml.math.linalg.svd(projections.T)
+    U, S, _ = math.linalg.svd(projections.T)
 
     # Choose columns of U corresponding to non-zero singular values
-    rank = qml.math.sum(S > tol)
+    rank = math.sum(S > tol)
     basis = U[:, :rank]
-    assert qml.math.allclose(
-        qml.math.tensordot(a, basis, axes=[[1], [0]]), 0.0
-    ), f"{qml.math.tensordot(a, basis, axes=[[1], [0]])}"
+    assert math.allclose(
+        math.tensordot(a, basis, axes=[[1], [0]]), 0.0
+    ), f"{math.tensordot(a, basis, axes=[[1], [0]])}"
 
     return basis.T  # Transpose to get row vectors
 
@@ -84,7 +88,7 @@ def horizontal_cartan_subalgebra(
 
     where :math:`\mathfrak{a})` is the CSA and :math:`\tilde{\mathfrak{m}}` is the remainder of the horizontal subspace :math:`\mathfrak{m}`.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
@@ -95,7 +99,7 @@ def horizontal_cartan_subalgebra(
         tol (float): Numerical tolerance for linear independence check.
         verbose (bool): Whether or not to output progress during computation.
         return_adjvec (bool): Determine the output format. If ``False``, returns operators in their original
-            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func`~op_to_adjvec` and `~adjvec_to_op`).
+            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func:`~op_to_adjvec` and :func:`~adjvec_to_op`).
         is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
             and between ``g``, ``k`` and ``m``.
 
@@ -109,7 +113,6 @@ def horizontal_cartan_subalgebra(
 
     A quick example computing a Cartan subalgebra of :math:`\mathfrak{su}(4)` using the Cartan involution :func:`~even_odd_involution`.
 
-    >>> import pennylane as qml
     >>> g = list(qml.pauli.pauli_group(2)) # u(4)
     >>> g = g[1:] # remove identity -> su(4)
     >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
@@ -118,8 +121,8 @@ def horizontal_cartan_subalgebra(
     >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
     >>> newg == k + mtilde + a
     True
-    >>> a
-    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
+    >>> a # doctest: +SKIP
+    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     We can confirm that these all commute with each other, as the CSA is Abelian (i.e., all operators commute).
 
@@ -145,8 +148,8 @@ def horizontal_cartan_subalgebra(
     For convenience, we provide a helper function :func:`~adjvec_to_op` for conversion of the returned collections of adjoint vectors.
 
     >>> a = qml.liealg.adjvec_to_op(np_a, g)
-    >>> a
-    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
+    >>> a # doctest: +SKIP
+    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     .. details::
         :title: Usage Details
@@ -179,7 +182,6 @@ def horizontal_cartan_subalgebra(
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in ``k`` first, and then
         all remaining operators from ``m``.
 
-        >>> import numpy as np
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
         >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
 
@@ -210,7 +212,7 @@ def horizontal_cartan_subalgebra(
         >>> from pennylane.liealg import adjvec_to_op
         >>> a = adjvec_to_op(np_a, g)
         >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in a]
-        >>> h_op
+        >>> h_op # doctest: +SKIP
         [-1.0 * Y(1) @ Y(2), -1.0 * Z(1) @ Z(2), 1.0 * X(1) @ X(2)]
 
         In that case we chose a Cartan subalgebra from which we can readily see that it is commuting, but we also provide a small helper function to check that.
@@ -224,10 +226,10 @@ def horizontal_cartan_subalgebra(
     if isinstance(k, (list, tuple)) and isinstance(m, (list, tuple)):
         g = k + m
     else:
-        g = qml.math.vstack([k, m])
+        g = math.vstack([k, m])
 
     if adj is None:
-        adj = qml.structure_constants(g, matrix=isinstance(g[0], TensorLike))
+        adj = structure_constants(g, matrix=isinstance(g[0], TensorLike))
 
     g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
@@ -238,12 +240,11 @@ def horizontal_cartan_subalgebra(
         if verbose:
             print(f"iteration {iteration}: Found {len(np_a)} independent Abelian operators.")
         # todo: avoid re-computing this overlap in every while-loop iteration.
-        # todo: avoid re-computing this overlap in every while-loop iteration.
         kernel_intersection = np_m
         for h_i in np_a:
 
             # obtain adjoint rep of candidate h_i
-            adjoint_of_h_i = qml.math.tensordot(adj, h_i, axes=[[1], [0]])
+            adjoint_of_h_i = math.tensordot(adj, h_i, axes=[[1], [0]])
             # compute kernel of adjoint
             new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
@@ -252,8 +253,8 @@ def horizontal_cartan_subalgebra(
 
         kernel_intersection = _gram_schmidt(kernel_intersection)  # orthogonalize
         for vec in kernel_intersection:
-            if _is_independent(vec, qml.math.array(np_a).T, tol):
-                np_a = qml.math.vstack([np_a, vec])
+            if _is_independent(vec, math.array(np_a).T, tol):
+                np_a = math.vstack([np_a, vec])
                 break
         else:
             # No new vector was added from all the kernels
@@ -265,24 +266,24 @@ def horizontal_cartan_subalgebra(
     np_k = op_to_adjvec(
         k, g, is_orthogonal=is_orthogonal
     )  # adjoint vectors of k space for re-ordering
-    np_oldg = qml.math.vstack([np_k, np_m])
+    np_oldg = math.vstack([np_k, np_m])
     np_k = _gram_schmidt(np_k)
 
     np_mtilde = _orthogonal_complement_basis(np_a, np_m, tol=tol)  # the "rest" of m without a
-    np_newg = qml.math.vstack([np_k, np_mtilde, np_a])
+    np_newg = math.vstack([np_k, np_mtilde, np_a])
 
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
-    basis_change = qml.math.tensordot(np_newg, qml.math.linalg.pinv(np_oldg), axes=[[1], [0]])
+    basis_change = math.tensordot(np_newg, math.linalg.pinv(np_oldg), axes=[[1], [0]])
     new_adj = change_basis_ad_rep(adj, basis_change)
 
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_a, new_adj
 
-    newg, k, mtilde, a = [
+    newg, k, mtilde, a = (
         adjvec_to_op(adjvec, g_copy, is_orthogonal=is_orthogonal)
         for adjvec in [np_newg, np_k, np_mtilde, np_a]
-    ]
+    )
 
     return newg, k, mtilde, a, new_adj
 
@@ -314,14 +315,12 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     """
 
-    assert qml.math.shape(adj_vecs)[1] == len(basis)
+    assert math.shape(adj_vecs)[1] == len(basis)
 
     if all(isinstance(op, PauliSentence) for op in basis):
         if not is_orthogonal:
             gram = _gram_ps(basis)
-            adj_vecs = qml.math.tensordot(
-                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
-            )
+            adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -333,23 +332,19 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
         if not is_orthogonal:
             basis_ps = [op.pauli_rep for op in basis]
             gram = _gram_ps(basis_ps)
-            adj_vecs = qml.math.tensordot(
-                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
-            )
+            adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
-            op_j = qml.simplify(op_j)
+            op_j = simplify(op_j)
             res.append(op_j)
         return res
 
     if all(isinstance(op, TensorLike) for op in basis):
         if not is_orthogonal:
             gram = trace_inner_product(basis, basis).real
-            adj_vecs = qml.math.tensordot(
-                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
-            )
-        return qml.math.tensordot(adj_vecs, basis, axes=1)
+            adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
+        return math.tensordot(adj_vecs, basis, axes=1)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
@@ -358,7 +353,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
 
 def _gram_ps(basis: Iterable[PauliSentence]):
-    gram = qml.math.zeros((len(basis), len(basis)))
+    gram = math.zeros((len(basis), len(basis)))
     for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
         gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
     return gram
@@ -372,27 +367,27 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
         norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
     else:
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
-        norms_squared = qml.math.ones(len(basis))
+        norms_squared = math.ones(len(basis))
         gram = _gram_ps(basis)
-        inv_gram = qml.math.linalg.pinv(sqrtm(gram))
+        inv_gram = math.linalg.pinv(sqrtm(gram))
 
     for op in ops:
-        rep = qml.math.zeros((len(basis),))
+        rep = math.zeros((len(basis),))
         for i, basis_i in enumerate(basis):
             # v = ∑ (v · e_j / ||e_j||^2) * e_j
             rep[i] = (basis_i @ op).trace() / norms_squared[i]
 
         res.append(rep)
-    res = qml.math.array(res)
+    res = math.array(res)
     if not is_orthogonal:
-        res = qml.math.einsum("ij,kj->ki", inv_gram, res)
+        res = math.einsum("ij,kj->ki", inv_gram, res)
 
     return res
 
 
 def op_to_adjvec(
-    ops: Iterable[Union[PauliSentence, Operator, TensorLike]],
-    basis: Union[PauliSentence, Operator, TensorLike],
+    ops: Iterable[PauliSentence | Operator | TensorLike],
+    basis: PauliSentence | Operator | TensorLike,
     is_orthogonal: bool = True,
 ):
     r"""Decompose a batch of operators into a given operator basis.
@@ -451,22 +446,19 @@ def op_to_adjvec(
         isinstance(op, TensorLike) and not isinstance(op, (int, float, complex)) for op in basis
     ):
         if not all(isinstance(op, TensorLike) for op in ops):
-            _n = int(qml.math.round(qml.math.log2(basis[0].shape[-1])))
-            ops = qml.math.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
+            _n = int(math.round(math.log2(basis[0].shape[-1])))
+            ops = math.array([matrix(op, wire_order=range(_n)) for op in ops])
 
-        basis = qml.math.array(basis)
-        res = trace_inner_product(qml.math.array(ops), basis).real
+        basis = math.array(basis)
+        res = trace_inner_product(math.array(ops), basis).real
         if is_orthogonal:
-            norm = (
-                qml.math.real(qml.math.einsum("bij,bji->b", basis, basis))
-                / qml.math.shape(basis[0])[0]
-            )
+            norm = math.real(math.einsum("bij,bji->b", basis, basis)) / math.shape(basis[0])[0]
             return res / norm
-        gram = qml.math.real(trace_inner_product(basis, basis))
+        gram = math.real(trace_inner_product(basis, basis))
         sqrtm_gram = sqrtm(gram)
         # Imaginary component is an artefact
-        assert qml.math.allclose(qml.math.imag(sqrtm_gram), 0.0, atol=1e-16)
-        return qml.math.einsum("ij,kj->ki", qml.math.linalg.pinv(sqrtm_gram.real), res)
+        assert math.allclose(math.imag(sqrtm_gram), 0.0, atol=1e-16)
+        return math.einsum("ij,kj->ki", math.linalg.pinv(sqrtm_gram.real), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
@@ -509,15 +501,16 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     transform the old adjoint representation with the change of basis matrix.
 
     >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
-    np.allclose(new_adj, new_adj_re)
+    >>> np.allclose(new_adj, new_adj_re)
+    True
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
-    new_adj = qml.math.einsum("mnp,im->inp", adj, qml.math.linalg.pinv(basis_change.T))
-    new_adj = qml.math.einsum("mnp,in->mip", new_adj, basis_change)
-    return qml.math.einsum("mnp,ip->mni", new_adj, basis_change)
+    new_adj = math.einsum("mnp,im->inp", adj, math.linalg.pinv(basis_change.T))
+    new_adj = math.einsum("mnp,in->mip", new_adj, basis_change)
+    return math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
+def check_abelian(ops: list[PauliSentence | TensorLike | Operator]):
     r"""Helper function to check if all operators in ``ops`` commute, i.e., form an Abelian set of operators.
 
     .. warning:: This function is expensive to compute
@@ -550,8 +543,8 @@ def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
 
     if all(isinstance(op, Operator) for op in ops):
         for oi, oj in combinations(ops, 2):
-            com = qml.simplify(qml.commutator(oj, oi))
-            if not qml.equal(com, 0 * qml.Identity()):
+            com = simplify(commutator(oj, oi))
+            if not equal(com, 0 * Identity()):
                 return False
 
         return_True = True
@@ -559,7 +552,7 @@ def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
     if all(isinstance(op, TensorLike) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj @ oi - oi @ oj
-            if not qml.math.allclose(com, qml.math.zeros_like(com)):
+            if not math.allclose(com, math.zeros_like(com)):
                 return False
 
         return_True = True

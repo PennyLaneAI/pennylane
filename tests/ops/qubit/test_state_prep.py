@@ -14,15 +14,13 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
-from collections import defaultdict
-
 # pylint: disable=protected-access
 import numpy as np
 import pytest
 import scipy as sp
 
 import pennylane as qml
-from pennylane.wires import WireError
+from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
@@ -35,44 +33,95 @@ def test_basis_state_input_cast_to_int():
     assert op.data[0].dtype == np.int64
 
 
-@pytest.mark.jax
-def test_assert_valid():
-    """Tests that BasisState operators are valid"""
+class TestStandardValidity:
+    """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
-    op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    def test_assert_valid(self):
+        """Test standard validity."""
+        # pylint: disable=import-outside-toplevel
+        state = np.array([0, 1])
+        wires = qml.wires.Wires([0, 1])
+        op = qml.BasisState(state, wires=wires)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
-    def abstract_check(state):
-        op = qml.BasisState(state, wires=[0, 1])
-        op_matrices, decomp_matrices = [], []
-        for rule in qml.list_decomps(qml.BasisState):
-            resources = rule.compute_resources(**op.resource_params)
-            gate_counts = resources.gate_counts
+    @staticmethod
+    def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
+        """Create a function for JIT-related tests that creates tapes from the decomposition
+        rules registered for `BasisState` with the graph-based decomposition system."""
 
-            with qml.queuing.AnnotatedQueue() as q:
-                rule(*op.data, wires=op.wires, **op.hyperparameters)
-            tape = qml.tape.QuantumScript.from_queue(q)
-            actual_gate_counts = defaultdict(int)
-            for _op in tape.operations:
-                resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-                actual_gate_counts[resource_rep] += 1
-            assert gate_counts == actual_gate_counts
+        def abstract_check(state, wires):
+            """Function for JIT-related tests."""
+            if not state_traced:
+                # Using a closure variable avoids automatic tracing
+                state = closure_state
+            if not wires_traced:
+                # Using a closure variable avoids automatic tracing
+                wires = closure_wires
+            assert qml.math.is_abstract(state) == state_traced
+            assert qml.math.is_abstract(wires) == wires_traced
+            tapes = []
+            for rule in qml.list_decomps(qml.BasisState):
+                with qml.queuing.AnnotatedQueue() as q:
+                    rule(state, wires=wires)
+                tapes.append(qml.tape.QuantumScript.from_queue(q))
 
-            # Tests that the decomposition produces the same matrix
-            op_matrix = qml.matrix(op)
-            decomp_matrix = qml.matrix(tape, wire_order=op.wires)
-            op_matrices.append(op_matrix)
-            decomp_matrices.append(decomp_matrix)
+            return tapes
 
-        return op_matrices, decomp_matrices
+        return abstract_check
 
-    # pylint: disable=import-outside-toplevel
-    import jax
+    @pytest.mark.jax
+    @pytest.mark.parametrize("state_traced, expected", [(True, "continuous"), (False, "discrete")])
+    @pytest.mark.parametrize("wires_traced", [True, False])
+    def test_jit_compatibility(self, state_traced, expected, wires_traced):
+        """Test compatibility with jax.jit."""
+        # pylint: disable=import-outside-toplevel
+        import jax
 
-    op_matrices, decomp_matrices = jax.jit(abstract_check)(np.array([0, 1]))
-    assert qml.math.allclose(
-        op_matrices, decomp_matrices
-    ), "decomposition must produce the same matrix as the operator."
+        state = np.array([0, 1])
+        closure_state = state  # We can use a closure variable to avoid automatic tracing
+        wires = qml.wires.Wires([0, 1])
+        closure_wires = wires  # We can use a closure variable to avoid automatic tracing
+        if wires_traced:
+            wires = jax.numpy.array(wires)
+
+        abstract_check = self.make_abstract_check(
+            state_traced, wires_traced, closure_state, closure_wires
+        )
+
+        tapes = jax.jit(abstract_check)(state, wires)
+        for tape in tapes:
+            if expected == "discrete":
+                assert len(tape) == 1
+                assert isinstance(tape[0], qml.X)
+            else:
+                assert len(tape) == 3
+                assert isinstance(tape[0], qml.RX)
+                assert isinstance(tape[1], qml.RX)
+                assert isinstance(tape[2], qml.GlobalPhase)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("state_traced", [True, False])
+    @pytest.mark.parametrize("wires_traced", [True, False])
+    def test_qjit_compatibility(self, state_traced, wires_traced):
+        """Test compatibility with qml.qjit."""
+        state = np.array([0, 1])
+        closure_state = state  # We can use a closure variable to avoid automatic tracing
+
+        wires = qml.wires.Wires([0, 1])
+        closure_wires = wires
+        if wires_traced:
+            import jax  # pylint: disable=import-outside-toplevel
+
+            wires = jax.numpy.array(wires)
+
+        abstract_check = self.make_abstract_check(
+            state_traced, wires_traced, closure_state, closure_wires
+        )
+
+        tapes = qml.qjit(abstract_check)(state, wires)
+        for tape in tapes:
+            assert len(tape) == 1
+            assert isinstance(tape[0], qml.X)
 
 
 @pytest.mark.parametrize(
@@ -100,11 +149,11 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == f"{base}(M0)"
+    assert op.label(cache=cache) == f"{base}\n(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == f"{base}(M1)"
+    assert op.label(cache=cache) == f"{base}\n(M1)"
     assert len(cache["matrices"]) == 3
 
 
@@ -134,6 +183,33 @@ class TestDecomposition:
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
 
+    def test_stateprep_resources(self):
+        """Test the resources for StatePrep"""
+
+        assert qml.StatePrep.resource_keys == frozenset({"num_wires"})
+
+        op = qml.StatePrep([0, 0, 0, 1], wires=(0, 1))
+        assert op.resource_params == {"num_wires": 2}
+
+    def test_decomposition_rule_stateprep(self):
+        """Test that stateprep has a correct decomposition rule registered."""
+
+        decomp = qml.list_decomps(qml.StatePrep)[0]
+
+        resource_obj = decomp.compute_resources(num_wires=2)
+        assert resource_obj.num_gates == 1
+        assert resource_obj.gate_counts == {
+            qml.resource_rep(qml.MottonenStatePreparation, num_wires=2): 1
+        }
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(np.array([0, 0, 0, 1]), wires=(0, 1))
+
+        qml.assert_equal(q.queue[0], qml.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
+
+
+class TestStatePrepIntegration:
+
     @pytest.mark.parametrize(
         "state, pad_with, expected",
         [
@@ -162,14 +238,15 @@ class TestDecomposition:
             (np.array([1, 1j, 1j, 1])),
         ],
     )
-    def test_StatePrep_normalize(self, state):
+    @pytest.mark.parametrize("validate_norm", [True, False])
+    def test_StatePrep_normalize(self, state, validate_norm):
         """Test that StatePrep normalizes the input state correctly."""
 
         wires = (0, 1)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, normalize=True, wires=wires)
+            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=validate_norm)
             return qml.state()
 
         assert np.allclose(circuit(), state / 2)
@@ -248,7 +325,7 @@ class TestStateVector:
         assert np.array_equal(ket, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
@@ -256,7 +333,7 @@ class TestStateVector:
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(
@@ -276,7 +353,7 @@ class TestStateVector:
         """Tests that the state-vector provided must have norm equal to 1."""
 
         with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
-            _ = qml.StatePrep(vec, wires=[0, 1])
+            _ = qml.StatePrep(vec, wires=[0, 1], validate_norm=True)
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
@@ -429,7 +506,7 @@ class TestStateVector:
         assert not np.any(basis_state)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("dtype_like", [0, 0.0])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""

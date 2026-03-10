@@ -78,13 +78,13 @@ class TestIsHermitian:
     def test_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert qml.is_hermitian(op)
-        assert op.is_hermitian
+        assert op.is_verified_hermitian
 
     @pytest.mark.parametrize("op", non_hermitian_ops)
     def test_non_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert not qml.is_hermitian(op)
-        assert not op.is_hermitian
+        assert not op.is_verified_hermitian
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
     def test_arithmetic_ops(self, arithmetic_ops: list[Operator]):
@@ -102,12 +102,10 @@ class TestIsHermitian:
     def test_all_interfaces(self):
         """Test hermitian check with all available interfaces."""
         import jax
-        import tensorflow as tf
         import torch
 
         torch_param = torch.tensor(1.23)
         jax_param = jax.numpy.array(1.23)
-        tf_param = tf.Variable(1.23)
 
-        for param in [torch_param, jax_param, tf_param]:
+        for param in [torch_param, jax_param]:
             assert not qml.is_hermitian(qml.RX(param, 0))

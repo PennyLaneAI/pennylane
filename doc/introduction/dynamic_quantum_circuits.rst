@@ -41,9 +41,9 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`
-:doc:`how-to on collecting statistics of mid-circuit measurements <demos/tutorial_how_to_collect_mcm_stats>`,
-and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
+`how-to on collecting statistics of mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_collect_mcm_stats>`_,
+and `how-to on creating dynamic circuits with mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
 Resetting qubits
 ****************
@@ -94,9 +94,13 @@ Executing this QNode with 10 shots yields
 .. code-block:: pycon
 
     >>> func(np.pi / 2, shots=10)
-    array([1, 1, 1, 1, 1, 1, 1])
+    array([[1],
+       [1],
+       [1],
+       [1],
+       [1]])
 
-Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
 discarded. This behaviour can be customized, see the section
 :ref:`"Configuring mid-circuit measurements" <mcm_config>`.
 
@@ -127,8 +131,8 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
-and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+and the `how-to on creating dynamic circuits with mid-circuit measurements
+<https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
 .. _mid_circuit_measurements_statistics:
 
@@ -220,7 +224,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
 .. warning::
 
     When collecting statistics for a sequence of mid-circuit measurements, the
-    sequence must not contain arithmetic expressions.
+    sequence must not contain arithmetic combinations of more than one measurement.
 
 .. _simulation_techniques:
 
@@ -233,7 +237,7 @@ sampling, and a tree-traversal approach. These methods differ in their memory re
 and computational cost, as well as their compatibility with other features such as
 shots and differentiation methods.
 While the requirements depend on details of the simulation, the expected
-scalings  with respect to the number of mid-circuit measurements (and shots) are
+scalings with respect to the number of mid-circuit measurements (and shots) are
 
 .. role:: gr
 .. role:: or
@@ -241,13 +245,26 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 
 .. raw:: html
 
-   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
    <script>
-     $(document).ready(function() {
-       $('.gr').parent().parent().addClass('gr-parent');
-       $('.or').parent().parent().addClass('or-parent');
-       $('.rd').parent().parent().addClass('rd-parent');
-     });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.gr').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('gr-parent');
+            }
+        });
+
+        document.querySelectorAll('.or').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('or-parent');
+            }
+        });
+
+        document.querySelectorAll('.rd').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('rd-parent');
+            }
+        });
+    });
    </script>
    <style>
        .gr-parent {background-color:#e1eba8}
@@ -266,7 +283,7 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 | Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`                   | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
-| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
+| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :gr:`\ ` yes |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 
 
@@ -290,9 +307,7 @@ technique will depend on details of the simulation workflow. As a rule of thumb:
   support under (almost) all circumstances, but at large memory cost. It is the only method
   supporting analytic simulations.
 
-By default, ``QNode``\ s use deferred measurements and dynamic one-shot sampling (if supported)
-when executed without and with shots, respectively. The method can be configured with
-the keyword argument ``mcm_method`` at ``QNode`` creation
+The method can be configured with the keyword argument ``mcm_method`` at ``QNode`` creation
 (see :ref:`"Configuring mid-circuit measurements" <mcm_config>`).
 
 .. _deferred_measurements:
@@ -393,11 +408,19 @@ Since the counts of many nodes come out to be zero for shot-based simulations,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 cost.
 
-.. warning::
+.. note::
 
-    The tree-traversal algorithm is only supported by the
-    :class:`~.pennylane.devices.DefaultQubit` device, and currently does
-    not support just-in-time (JIT) compilation.
+    The tree-traversal algorithm is supported by the following devices:
+
+    * `default.qubit <https://pennylane.ai/devices/default-qubit>`_,
+
+    * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
+
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_
+
+    * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
+
+    Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
 
 .. _mcm_config:
 
@@ -408,17 +431,14 @@ As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
 :class:`~pennylane.QNode`, using the following keywords:
 
-* ``mcm_method``: Sets the method used for applying mid-circuit measurements. The options are
-  ``"deferred"``, ``"one-shot"``, and ``"tree-traversal"`` for the three techniques described above.
-  The default is ``mcm_method="one-shot"`` when executing with shots, and ``"deferred"`` otherwise.
-  When using :func:`~pennylane.qjit`, there is the additional (default) option
-  ``mcm_method="single-branch-statistics"``, which explores a single branch of the execution
-  tree at random.
-
-  .. warning::
-
-      If the ``mcm_method`` argument is provided, the transforms for deferred measurements
-      or dynamic one-shot sampling must not be applied manually to the :class:`~pennylane.QNode`.
+* ``mcm_method``: Sets the method used for applying mid-circuit measurements.
+  The three techniques described above can be specified with ``"deferred"``,
+  ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane.qjit`,
+  there is the additional option ``"single-branch-statistics"``, which
+  explores a single branch of the execution tree at random. If not provided,
+  the method is selected by the device. For ``default.qubit`` and ``lightning.qubit``,
+  the ``"one-shot"`` method is the default for finite-shots execution, and 
+  ``"deferred"`` is the default for analytic execution, i.e., when ``shots=None``.
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
@@ -429,15 +449,17 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
   .. code-block:: python3
 
-      dev = qml.device("default.qubit", wires=3, shots=10)
+      dev = qml.device("default.qubit", wires=3)
 
       def circ():
           qml.Hadamard(0)
           m_0 = qml.measure(0, postselect=1)
           return qml.sample(qml.PauliZ(0))
 
-      fill_shots = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="fill-shots")
-      hw_like = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      fill_shots = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="fill-shots")
+      hw_like = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="hw-like")
+      fill_shots = qml.set_shots(fill_shots, shots=10)
+      hw_like = qml.set_shots(hw_like, shots=10)
 
   .. code-block:: pycon
 

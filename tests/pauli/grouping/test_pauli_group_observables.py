@@ -369,8 +369,8 @@ def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
     We check this way since the partitions might vary in the order of the elements
 
     Args:
-        partition_1 (list[Observable]): list of Pauli word ``Observable`` instances corresponding to a partition.
-        partition_2 (list[Observable]): list of Pauli word ``Observable`` instances corresponding to a partition.
+        partition_1 (list[Operator]): list of Pauli word ``Operator`` instances corresponding to a partition.
+        partition_2 (list[Operator]): list of Pauli word ``Operator`` instances corresponding to a partition.
 
     """
     partition_3 = set(
@@ -585,7 +585,7 @@ class TestComputePartitionIndices:
         partition_indices = compute_partition_indices(
             observables, grouping_type="qwc", method=method
         )
-        assert set(partition_indices) == set(((0,), (1, 2)))
+        assert set(partition_indices) == {(0,), (1, 2)}
 
 
 class TestDifferentiable:

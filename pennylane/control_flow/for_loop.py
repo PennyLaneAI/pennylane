@@ -13,12 +13,15 @@
 # limitations under the License.
 """For loop."""
 import functools
+import logging
+import warnings
 from typing import Literal
 
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
     add_abstract_shapes,
@@ -27,6 +30,9 @@ from ._loop_abstract_axes import (
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def for_loop(
@@ -133,6 +139,22 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        .. note::
+
+            The following examples may yield different outputs depending on how the
+            workflow function is executed. For instance, the function can be run
+            directly as:
+
+            >>> arg = 2
+            >>> workflow(arg)
+
+            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            which captures the abstract computational graph and generates the abstract shapes.
+            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+
+            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+
         The following discussion applies to the experimental capture infrastructure, which can be
         turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
 
@@ -140,6 +162,7 @@ def for_loop(
         an experimental jax mode that can be turned on with:
 
         >>> import jax
+        >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
         >>> qml.capture.enable()
 
@@ -154,11 +177,12 @@ def for_loop(
 
             @qml.for_loop(3, allow_array_resizing=True)
             def f(i, x, y):
-                return jax.numpy.hstack([x, y]), 2*y
+                return jnp.hstack([x, y]), 2*y
 
             def workflow(i0):
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
+
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -177,6 +201,7 @@ def for_loop(
                 x0 = jnp.ones(i0)
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
+
 
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
@@ -214,11 +239,6 @@ def for_loop(
     if stop is None:
         start, stop = 0, start
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(start, stop, step)
-
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpreter.
     def _decorator(body_fn):
@@ -252,16 +272,22 @@ def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    for_loop_prim = NonInterpPrimitive("for_loop")
+    for_loop_prim = QmlPrimitive("for_loop")
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
     register_custom_staging_rule(for_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+    def _impl(
+        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    ):
+        # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
+        consts_slice = slice(*consts_slice)
+        args_slice = slice(*args_slice)
+        abstract_shapes_slice = slice(*abstract_shapes_slice)
 
         consts = args[consts_slice]
         init_state = args[args_slice]
@@ -277,7 +303,9 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
-    def _(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+    def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+        args_slice = slice(*args_slice)
+        abstract_shapes_slice = slice(*abstract_shapes_slice)
         return args[abstract_shapes_slice] + args[args_slice]
 
     return for_loop_prim
@@ -326,6 +354,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         for i in range(self.start, self.stop, self.step):
             fn_res = self.body_fn(i, *args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+            if len(args) == 0 and fn_res:
+                raise ValueError(
+                    "The for_loop function should not return anything if it only accepts the loop index."
+                    f" Got output {fn_res} even though the function accepted no additional inputs."
+                )
 
         return fn_res
 
@@ -345,7 +378,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
             abstracted_axes = ({},) + abstracted_axes  # add in loop index
@@ -357,11 +390,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 0, *dummy_init_state
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 # didn't work, so try with array resizing.
                 return self._get_jaxpr(init_state, allow_array_resizing=True)
@@ -374,9 +407,30 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
-            init_state, allow_array_resizing=self.allow_array_resizing
-        )
+        try:
+            jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
+                init_state, allow_array_resizing=self.allow_array_resizing
+            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.exception(e, exc_info=True)
+            warnings.warn(
+                (
+                    "Structured capture of qml.for_loop failed with error:"
+                    f"\n\n{e}.\n\nFull error logged at exception level. "
+                    "Use qml.logging.enable_logging() to view."
+                    "\nFalling back to unrolled Python for loop."
+                ),
+                CaptureWarning,
+            )
+            return self._call_capture_disabled(*init_state)
+
+        # don't fallback with this error, as will get similar error
+        if (ni := len(jaxpr_body_fn.in_avals)) != ((no := len(jaxpr_body_fn.out_avals)) + 1):
+            raise ValueError(
+                "The number of inputs must be one greater than the number of"
+                " outputs for the for_loop function. The additional input "
+                f"is the loop index. Got num_inputs {ni} and num_outputs {no}."
+            )
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
@@ -396,12 +450,23 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
         )
+
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
 
-        if enabled():
-            return self._call_capture_enabled(*init_state)
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.for_loop(
+                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
+        start_equals_stop = (
+            isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
+        )
+
+        if enabled() and not start_equals_stop:
+            return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)

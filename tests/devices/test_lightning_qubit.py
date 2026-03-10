@@ -19,6 +19,7 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 
 def test_integration():
@@ -53,37 +54,37 @@ def test_no_backprop_auto_interface():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
+    with pytest.raises(QuantumFunctionError, match="does not support backprop"):
         qml.QNode(circuit, dev, diff_method="backprop")
 
 
 def test_finite_shots_adjoint():
     """Test that shots and adjoint diff raises an error."""
 
-    dev = qml.device("lightning.qubit", wires=2, shots=2)
+    dev = qml.device("lightning.qubit", wires=2)
 
     def circuit():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(qml.QuantumFunctionError, match="does not support adjoint"):
-        qml.QNode(circuit, dev, diff_method="adjoint")()
+    with pytest.raises(QuantumFunctionError, match="does not support adjoint"):
+        qml.set_shots(qml.QNode(circuit, dev, diff_method="adjoint"), shots=2)()
 
 
 @flaky(max_runs=5)
-def test_finite_shots():
+def test_finite_shots(seed):
     """Test that shots in LQ and DQ give the same results."""
 
-    dev = qml.device("lightning.qubit", wires=2, shots=50000)
-    dq = qml.device("default.qubit", shots=50000)
+    dev = qml.device("lightning.qubit", wires=2, seed=seed)
+    dq = qml.device("default.qubit", seed=seed)
 
     def circuit():
         qml.RX(np.pi / 4, 0)
         qml.RY(-np.pi / 4, 1)
         return qml.expval(qml.PauliY(0))
 
-    circ0 = qml.QNode(circuit, dev, diff_method=None)
-    circ1 = qml.QNode(circuit, dq, diff_method=None)
+    circ0 = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=50000)
+    circ1 = qml.set_shots(qml.QNode(circuit, dq, diff_method=None), shots=50000)
 
     assert np.allclose(circ0(), circ1(), rtol=0.01)
 

@@ -25,18 +25,19 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     measure_prim,
+    transform_prim,
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
 from pennylane.transforms.optimization.single_qubit_fusion import (
     SingleQubitFusionInterpreter,
     single_qubit_plxpr_to_plxpr,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestSingleQubitFusionInterpreter:
@@ -340,12 +341,12 @@ class TestSingleQubitFusionInterpreter:
         assert len(jaxpr_ops) == 6
 
         expected_ops = [
-            qml.Rot(np.pi / 2, np.pi, -np.pi / 2, wires=[0]),  # X not fused converted to Rot
+            qml.X(wires=[0]),  # X not fused
             qml.Rot(0, np.pi, np.pi, wires=[1]),  # Y and Z fused
             qml.CNOT(wires=[0, 1]),
-            qml.Rot(np.pi, 0, 0, wires=[2]),  # Z not fused converted to Rot
-            qml.CNOT(wires=[0, 2]),
+            qml.Z(wires=[2]),  # Z not fused
             qml.Hadamard(wires=[3]),  # H not fused and not converted to Rot
+            qml.CNOT(wires=[0, 2]),
         ]
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
@@ -389,6 +390,131 @@ class TestSingleQubitFusionInterpreter:
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2, check_interface=False)
+
+    def test_dynamic_wires_between_static_wires(self):
+        """Test that operations with dynamic wires between operations with static
+        wires cause fusion to not happen."""
+
+        @SingleQubitFusionInterpreter()
+        def f(x, y, w):
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0)
+
+        dyn_wire = 0
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+        expected_meas = [qml.expval(qml.Z(0))]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 0), qml.RX(2.5, 0), qml.RY(3.5, 0)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+        dyn_wire = 1
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 1), qml.RX(2.5, 0), qml.RY(3.5, 1)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+    def test_same_dyn_wires_fuse(self):
+        """Test that ops on the same dynamic wires get fused."""
+
+        @SingleQubitFusionInterpreter()
+        def f(x, y, w):
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            qml.RY(y, w)
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0)
+
+        dyn_wire = 0
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        # We use jax.jit here to make `phi` abstract. Otherwise, a different pipeline
+        # is used to compute the fused angles, which leads to the true and expected
+        # angles to be different.
+        @jax.jit
+        def get_double_ry_rot_angles(angles):
+            return fuse_rot_angles(angles, angles)
+
+        angles = jax.numpy.array(qml.RY(3.5, 0).single_qubit_rot_angles())
+        fused_angles = get_double_ry_rot_angles(angles)
+        expected_ops = [qml.RX(2.5, 0), qml.Rot(*fused_angles, 0), qml.RX(2.5, 0)]
+        expected_meas = [qml.expval(qml.Z(0))]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+    def test_different_dyn_wires_interleaved(self):
+        """Test that ops on different dynamic wires interleaved with each other
+        do not fuse."""
+
+        @SingleQubitFusionInterpreter()
+        def f(x, y, w1, w2):
+            qml.RX(x, w1)
+            qml.RY(y, w2)
+            qml.RX(x, w1)
+            qml.RY(y, w2)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0, 0)
+
+        dyn_wires = (0, 0)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, *dyn_wires)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 0), qml.RX(2.5, 0), qml.RY(3.5, 0)]
+        expected_meas = [qml.expval(qml.Z(0))]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+        dyn_wires = (0, 1)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, *dyn_wires)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 1), qml.RX(2.5, 0), qml.RY(3.5, 1)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+    def test_diff_dyn_wires_non_fusible_op(self):
+        """Test that a non-fusible op with dynamic wires will cause all previous ops to be applied"""
+
+        @SingleQubitFusionInterpreter()
+        def f(w1, w2):
+            qml.H(w1)
+            qml.Z(0)
+            qml.CNOT([0, w2])
+
+        dyn_wires = (0, 1)
+        jaxpr = jax.make_jaxpr(f)(*dyn_wires)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *dyn_wires)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.H(0),
+            qml.Rot(np.pi, 0, 0, 0),  # Z not fused but changed to Rot
+            qml.CNOT([0, 1]),
+        ]
+        assert ops == expected_ops
 
 
 class TestSingleQubitFusionHigherOrderPrimitives:
@@ -451,7 +577,8 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
         jaxpr = jax.make_jaxpr(grad_fn(circuit))(input)
         assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert jaxpr.eqns[0].params["scalar_out"] == (grad_fn == qml.grad)
 
         # pylint: disable=inconsistent-return-statements
         def _find_eq_with_name(jaxpr, name):
@@ -654,7 +781,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
         # I test the jaxpr like this because `qml.assert_equal`
         # has issues with mid-circuit measurements
-        # (Got <class 'pennylane.measurements.mid_measure.MidMeasureMP'>
+        # (Got <class 'pennylane.measurements.mid_measure.MidMeasure'>
         # and <class 'pennylane.measurements.mid_measure.MeasurementValue'>.)
         assert jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert jaxpr.eqns[1].primitive == measure_prim
@@ -683,7 +810,7 @@ class TestSingleQubitFusionPLXPR:
         transformed_jaxpr = single_qubit_plxpr_to_plxpr(
             jaxpr.jaxpr, jaxpr.consts, [], {"atol": 1e-5, "exclude_gates": "RY"}
         )
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 3
         assert transformed_jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
@@ -704,7 +831,8 @@ class TestSingleQubitFusionPLXPR:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
-        assert jaxpr.eqns[0].primitive == qml.transforms.optimization.single_qubit_fusion._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.optimization.single_qubit_fusion
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()

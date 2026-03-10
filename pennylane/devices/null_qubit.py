@@ -15,35 +15,35 @@
 The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-# pylint:disable=unused-argument
+
 
 import inspect
 import logging
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
-from typing import Optional, Union
 
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.execution_config import ExecutionConfig
+from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     DensityMatrixMP,
     MeasurementProcess,
-    MeasurementValue,
     ProbabilityMP,
+    Shots,
     StateMP,
 )
+from pennylane.ops import MeasurementValue
 from pennylane.tape import QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
@@ -52,14 +52,14 @@ logger.addHandler(logging.NullHandler())
 
 @singledispatch
 def zero_measurement(
-    mp: MeasurementProcess, num_device_wires, shots: Optional[int], batch_size: int, interface: str
+    mp: MeasurementProcess, num_device_wires, shots: int | None, batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
     return _zero_measurement(mp, num_device_wires, shots, batch_size, interface)
 
 
 def _zero_measurement(
-    mp: MeasurementProcess, num_device_wires: int, shots: Optional[int], batch_size, interface
+    mp: MeasurementProcess, num_device_wires: int, shots: int | None, batch_size, interface
 ):
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
@@ -75,7 +75,7 @@ def _cached_zero_return(shape, interface, dtype):
 
 
 @zero_measurement.register
-def _(mp: ClassicalShadowMP, num_device_wires, shots: Optional[int], batch_size, interface):
+def _(mp: ClassicalShadowMP, num_device_wires, shots: int | None, batch_size, interface):
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
@@ -113,9 +113,9 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
 def _(
-    mp: Union[StateMP, ProbabilityMP],
+    mp: StateMP | ProbabilityMP,
     num_device_wires: int,
-    shots: Optional[int],
+    shots: int | None,
     batch_size,
     interface,
 ):
@@ -142,6 +142,12 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
+        track_resources (bool): If True, turn on Catalyst device resource tracking.
+        resources_filename (string): If set, the static filename to use when saving resource data.
+            If not set, the filename will match ``__pennylane_resources_data_*`` where the wildcard (asterisk)
+            is replaced by the timestamp of when execution began in nanoseconds since Unix EPOCH.
+        compute_depth (bool): If True, compute the circuit depth as part of resource tracking.
+        target_device (qml.devices.Device): The target device to use for preprocessing steps. If None, ``DefaultQubit`` is used.
 
     **Example:**
 
@@ -226,13 +232,37 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None) -> None:
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        wires=None,
+        shots=None,
+        track_resources=False,
+        resources_filename=None,
+        compute_depth=None,
+        target_device=None,
+    ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+
+        if isinstance(target_device, NullQubit):
+            target_device = target_device._target_device
+        self._target_device = target_device
+
+        # this is required by Catalyst to toggle the tracker at runtime
+        self.device_kwargs = {"track_resources": track_resources}
+        if resources_filename is not None:
+            self.device_kwargs["resources_filename"] = resources_filename
+        if compute_depth is not None:
+            self.device_kwargs["compute_depth"] = compute_depth
+
+        if target_device is not None:
+            self.config_filepath = target_device.config_filepath
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
+
         for s in circuit.shots or [None]:
             r = tuple(
                 zero_measurement(mp, num_device_wires, s, circuit.batch_size, interface)
@@ -277,24 +307,29 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    @property
-    def _max_workers(self):
-        """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
-        return None
-
     # pylint: disable=cell-var-from-loop
     def preprocess(
-        self, execution_config=DefaultExecutionConfig
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit.preprocess(self, execution_config)
+        self, execution_config: ExecutionConfig | None = None
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
+        if self._target_device is None:
+            target = DefaultQubit(wires=self.wires)
+        else:
+            target = self._target_device
+
+        program, _ = target.preprocess(execution_config)
+
         for t in program:
-            if t.transform == decompose.transform:
+            if t.tape_transform == decompose.tape_transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
-                    return (not op.has_decomposition) or original_stopping_condition(op)
+                    return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
+                t.kwargs["strict"] = False
 
                 original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
                 if original_shots_stopping_condition:
@@ -325,8 +360,10 @@ class NullQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -361,15 +398,19 @@ class NullQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
@@ -379,16 +420,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
@@ -398,33 +443,54 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    # pylint: disable= unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+        self,
+        jaxpr: "jax.extend.core.Jaxpr",
+        consts: list,
+        *args,
+        execution_config=None,
+        shots=Shots(None),
     ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,
         )
 
-        def zeros_like(var):
+        def zeros_like(var, shots):
             if isinstance(var.aval, AbstractMeasurement):
-                shots = self.shots.total_shots
                 s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
                 return math.zeros(s, dtype=dtype, like="jax")
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
-        return [zeros_like(var) for var in jaxpr.outvars]
+        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]
+
+
+def _op_has_decomp(op):
+    """Check if an operator has a decomposition, taking into account the graph-based decomposition system.
+
+    Args:
+        op (Operator): The operator to check.
+
+    Returns:
+        bool: True if the operator has a decomposition, False otherwise.
+    """
+    if enabled_graph():
+        return has_decomp(op)
+    return op.has_decomposition

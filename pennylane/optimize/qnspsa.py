@@ -16,8 +16,11 @@ import warnings
 
 from scipy.linalg import sqrtm
 
-import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.measurements import probs
+from pennylane.ops import adjoint
+from pennylane.tape import QuantumScript
+from pennylane.workflow import construct_tape, execute
 
 
 class QNSPSAOptimizer:
@@ -77,7 +80,22 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this :doc:`tutorial <demos/qnspsa>`.
+    You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
+
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
+            for numerical stability (default value: 1e-3).
+        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
+            gradient and the Fubini-Study metric tensor (default value: 1e-2).
+        resamplings (int): the number of samples to average for each parameter update (default value: 1).
+        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
+            loss value no larger than the loss value before update, plus a tolerance. The tolerance
+            is set with the hyperparameter ``history_length``. The ``blocking`` option is
+            observed to help the optimizer to converge significantly faster (default value: True).
+        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
+            the cost values in the last ``history_length`` steps (default value: 5).
+        seed (int): seed for the random sampling (default value: None).
 
     **Examples:**
 
@@ -107,25 +125,11 @@ class QNSPSAOptimizer:
     Step 30: cost = 0.0910
     Step 40: cost = -0.9369
     Step 50: cost = -0.9984
-
-    Keyword Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
-            for numerical stability (default: 1e-3)
-        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
-            gradient and the Fubini-Study metric tensor (default: 1e-2)
-        resamplings (int): the number of samples to average for each parameter update (default: 1)
-        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
-            loss value no larger than the loss value before update, plus a tolerance. The tolerance
-            is set with the hyperparameter ``history_length``. The ``blocking`` option is
-            observed to help the optimizer to converge significantly faster (default: True)
-        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
-            the cost values in the last ``history_length`` steps (default: 5)
-        seed (int): seed for the random sampling (default: None)
     """
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         stepsize=1e-3,
@@ -222,7 +226,7 @@ class QNSPSAOptimizer:
             all_tensor_dirs.append(tensor_dirs)
 
         # nosemgrep
-        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device)
+        raw_results = execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
@@ -357,9 +361,9 @@ class QNSPSAOptimizer:
             args_plus[index] = arg + self.finite_diff_step * direction
             args_minus[index] = arg - self.finite_diff_step * direction
 
-        tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
+        tape = construct_tape(cost)(*args_plus, **kwargs)
         tape_plus = tape.copy(copy_operations=True)
-        tape = qml.workflow.construct_tape(cost)(*args_minus, **kwargs)
+        tape = construct_tape(cost)(*args_minus, **kwargs)
         tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
 
@@ -412,34 +416,34 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        tape = qml.workflow.construct_tape(cost)(*args1, **kwargs)
-        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=tape.wires.labels)])
+        new_ops = op_forward + [adjoint(op) for op in reversed(op_inv)]
+        tape = construct_tape(cost)(*args1, **kwargs)
+        return QuantumScript(new_ops, [probs(wires=tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
-        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape = construct_tape(cost)(*args, **kwargs)
         return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
-        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape = construct_tape(cost)(*args, **kwargs)
         tape_loss_curr = tape.copy(copy_operations=True)
 
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
+        tape = construct_tape(cost)(*params_next, **kwargs)
         tape_loss_next = tape.copy(copy_operations=True)
 
         program = cost.device.preprocess_transforms()
 
-        loss_curr, loss_next = qml.execute(
+        loss_curr, loss_next = execute(
             [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
         )
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size
-        self.last_n_steps[ind] = loss_curr
+        self.last_n_steps[ind] = loss_curr.item()
 
         tol = (
             2 * self.last_n_steps.std()

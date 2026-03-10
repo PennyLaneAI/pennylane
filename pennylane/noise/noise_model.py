@@ -15,7 +15,7 @@
 
 import inspect
 
-import pennylane as qml
+from pennylane.boolean_fn import BooleanFn
 
 
 class NoiseModel:
@@ -73,11 +73,12 @@ class NoiseModel:
     >>> noise_model
     NoiseModel({
         OpEq(PauliX) | OpEq(PauliY): n0
-        OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
+        OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(gamma=0.4)
     },
     meas_map = {
-        MeasEq(expval) & WiresIn([0, 1]): PhaseFlip(p=0.2)
-    }, t1=0.04)
+        MeasEq('ExpectationMP') & WiresIn([0, 1]): PhaseFlip(p=0.2)
+    }, t1 = 0.04)
+
     """
 
     def __init__(self, model_map, meas_map=None, **kwargs):
@@ -166,7 +167,7 @@ class NoiseModel:
     def check_model(model: dict) -> None:
         """Method to validate a ``{conditional -> noise_fn}`` map for constructing a noise model."""
         for condition, noise in model.items():
-            if not isinstance(condition, qml.BooleanFn):
+            if not isinstance(condition, BooleanFn):
                 raise ValueError(
                     f"{condition} must be a boolean conditional, i.e., an instance of "
                     "BooleanFn or one of its subclasses."

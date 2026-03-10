@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError
-from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
+from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member, too-many-public-methods
 
@@ -29,29 +29,16 @@ class TestSample:
     def test_sample_dimension(self, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
-
-        output = circuit()
-
-        assert len(output) == 2
-        assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=2) == (
-            (n_sample,) if not n_sample == 1 else ()
-        )
-        assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=2) == (
-            (n_sample,) if not n_sample == 1 else ()
-        )
+        assert qml.sample(qml.PauliZ(0)).shape(shots=n_sample, num_device_wires=2) == ((n_sample,))
+        assert qml.sample(qml.PauliX(1)).shape(shots=n_sample, num_device_wires=2) == ((n_sample,))
 
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.54, wires=0)
@@ -70,8 +57,9 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
@@ -88,8 +76,9 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
@@ -110,8 +99,9 @@ class TestSample:
         in combination with expvals and vars"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
@@ -128,8 +118,9 @@ class TestSample:
     def test_observable_is_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -149,8 +140,9 @@ class TestSample:
     def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -172,9 +164,10 @@ class TestSample:
     def test_observable_is_measurement_value_list(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a measurement value list."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         @qml.defer_measurements
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -195,7 +188,7 @@ class TestSample:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0, qml.PauliZ(0)])
@@ -208,7 +201,7 @@ class TestSample:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0 + m1, m2])
@@ -231,8 +224,9 @@ class TestSample:
 
     def test_providing_no_observable_and_no_wires(self):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -251,8 +245,9 @@ class TestSample:
         shots1 = 1
         shots2 = 10
         shots3 = 1000
-        dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        dev = qml.device("default.qubit", wires=num_wires)
 
+        @qml.set_shots([shots1, shots2, shots3])
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -263,13 +258,13 @@ class TestSample:
 
         assert isinstance(res, tuple)
 
-        expected_shapes = [(num_wires,), (shots2, num_wires), (shots3, num_wires)]
+        expected_shapes = [(shots1, num_wires), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
         assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
         # assert first wire is always the same as second
         # pylint: disable=unsubscriptable-object
-        assert np.all(res[0][0] == res[0][1])
+        assert np.all(res[0][:, 0] == res[0][:, 1])
         assert np.all(res[1][:, 0] == res[1][:, 1])
         assert np.all(res[2][:, 0] == res[2][:, 1])
 
@@ -277,8 +272,9 @@ class TestSample:
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -326,6 +322,8 @@ class TestSample:
             expected_type = np.float64
         elif res.numeric_type == complex:
             expected_type = np.complex64
+        else:
+            raise ValueError("unexpected numeric type for result")
 
         assert expected_type == eigval_type
 
@@ -363,8 +361,9 @@ class TestSample:
     def test_shape_shot_vector_obs(self):
         """Test that the shape is correct with the shot vector and a observable too."""
         shot_vec = (2, 2)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shot_vec)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -386,8 +385,9 @@ class TestSample:
     @pytest.mark.parametrize("shots", [2, 100])
     def test_sample_no_arguments(self, shots):
         """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             return qml.sample()
@@ -401,15 +401,40 @@ class TestSample:
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+            """Dummy operator with no eigenvalues defined."""
+
             num_wires = 1
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
+    @pytest.mark.parametrize(
+        "coeffs, dtype",
+        [
+            (1, "int8"),
+            (1, "int16"),
+            (1, "int32"),
+            (1, "int64"),
+            (1, "float16"),
+            (1, "float32"),
+            (1, "float64"),
+            (1j, "complex64"),
+            (1 + 1j, "complex128"),
+        ],
+    )
+    def test_process_samples_dtype(self, coeffs, dtype):
+        """Test that the dtype argument changes the dtype of the returned samples."""
+        samples = np.zeros(10, dtype="int64")
+        processed_samples = qml.sample(coeffs * qml.X(0), dtype=dtype).process_samples(
+            samples, wire_order=[0]
+        )
+        assert processed_samples.dtype == np.dtype(dtype)
+
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
-        dev = qml.device("default.qubit", shots=10)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):
             qml.RX(angle, wires=0)
@@ -425,8 +450,9 @@ class TestSample:
         """Test that qml.sample executes with parameter-shift and jax."""
         import jax
 
-        dev = qml.device("default.qubit", shots=10)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):
             qml.RX(angle, wires=0)
@@ -435,9 +461,38 @@ class TestSample:
         angle = jax.numpy.array(0.1)
         _ = jax.jacobian(circuit)(angle)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("int8", None),
+            ("int16", None),
+            ("int32", None),
+            ("int64", None),
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+        ],
+    )
+    def test_sample_dtype_combined(self, interface, dtype, obs):
+        """Test that the dtype argument changes the dtype of the returned samples,
+        both with and without an observable."""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
+
+        samples = circuit()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == dtype
+
 
 @pytest.mark.jax
 class TestJAXCompatibility:
+    """Tests for JAX compatibility"""
 
     @pytest.mark.parametrize("samples", (1, 10))
     def test_jitting_with_sampling_on_subset_of_wires(self, samples):
@@ -448,8 +503,9 @@ class TestJAXCompatibility:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=3, shots=samples)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(samples)
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -457,7 +513,7 @@ class TestJAXCompatibility:
 
         results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
-        expected = (2,) if samples == 1 else (samples, 2)
+        expected = (samples, 2)
         assert results.shape == expected
         assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 
@@ -494,8 +550,9 @@ class TestJAXCompatibility:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=5, shots=100)
+        dev = qml.device("default.qubit", wires=5)
 
+        @qml.set_shots(100)
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -505,6 +562,32 @@ class TestJAXCompatibility:
 
         assert results.dtype == jax.numpy.float64
         assert np.all([r in [1, -1] for r in results])
+
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("int8", None),
+            ("int16", None),
+            ("int32", None),
+            ("int64", None),
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+        ],
+    )
+    def test_jitting_with_dtype(self, dtype, obs):
+        """Test that jitting works when the dtype argument is provided"""
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
+
+        samples = jax.jit(circuit)(jax.numpy.array(0.123))
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
 
     def test_process_samples_with_jax_tracer(self):
         """Test that qml.sample can be used when samples is a JAX Tracer"""
@@ -543,15 +626,37 @@ class TestSampleProcessCounts:
 
         assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
 
-    def test_process_counts_with_eigen_values(self):
+    @pytest.mark.parametrize(
+        "wire_order, expected_result", [((0, 1), [1, 1, -1, -1, -1]), ((1, 0), [1, 1, 1, 1, 1])]
+    )
+    def test_process_counts_with_eigen_values(self, wire_order, expected_result):
         """Test process_counts method with eigen values."""
         sample_mp = qml.sample(qml.Z(0))
         counts = {"00": 2, "10": 3}
-        wire_order = qml.wires.Wires((0, 1))
+        wire_order = qml.wires.Wires(wire_order)
 
         result = sample_mp.process_counts(counts, wire_order)
 
-        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+        assert np.array_equal(result, np.array(expected_result))
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result",
+        [
+            ((0, 1, 2), [1, -1, -1, 1, 1]),
+            ((0, 2, 1), [1, 1, -1, -1, -1]),
+            ((1, 2, 0), [1, 1, -1, -1, -1]),
+            ((2, 0, 1), [1, -1, 1, -1, -1]),
+        ],
+    )
+    def test_process_counts_with_eigen_values_multiple_wires(self, wire_order, expected_result):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0) @ qml.Z(1))
+        counts = {"000": 1, "101": 1, "011": 1, "110": 2}
+        wire_order = qml.wires.Wires(wire_order)
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array(expected_result))
 
     def test_process_counts_with_inverted_wire_order(self):
         """Test process_counts method with inverted wire order."""

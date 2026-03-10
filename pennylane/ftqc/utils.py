@@ -18,6 +18,19 @@ ftqc module.
 """
 from threading import RLock
 
+from pennylane import math
+from pennylane.ops import MeasurementValue
+
+
+def parity(*args):
+    """Get the parity of the arguments"""
+    if isinstance(args[0], MeasurementValue):
+        # special handling needed until we stop casting everything from the pennylane namespace to autograd
+        return math.reduce(math.bitwise_xor, math.array([*args]))
+    return math.reduce(
+        math.bitwise_xor, math.array([*args], like=math.interface_utils.get_interface(args[0]))
+    )
+
 
 class QubitMgr:
     r"""
@@ -35,9 +48,8 @@ class QubitMgr:
         The following MBQC example workload uses the ``QubitMgr`` to assist with recycling of indices
         between iterations
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            import pennylane as qml
             from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
             dev = qml.device('null.qubit')
 
@@ -95,12 +107,15 @@ class QubitMgr:
         self._lock = RLock()
         self._num_qubits = num_qubits
         self._active = set()
-        is_valid = lambda x: (isinstance(x, int) and x >= 0)
-        if is_valid(num_qubits) and is_valid(start_idx):
+
+        def is_positive_integer(x):
+            return isinstance(x, int) and x >= 0
+
+        if is_positive_integer(num_qubits) and is_positive_integer(start_idx):
             self._inactive = set(range(start_idx, start_idx + num_qubits, 1))
         else:
             raise TypeError(
-                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}"
+                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}."
             )
 
     def __repr__(self):

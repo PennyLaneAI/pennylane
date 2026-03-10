@@ -23,11 +23,11 @@ import logging
 
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
+import pennylane as qml
+from pennylane._version import __version__
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.wires import WireError
 
-from .._version import __version__
 from ._qutrit_device import QutritDevice
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class DefaultQutrit(QutritDevice):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
@@ -180,7 +180,7 @@ class DefaultQutrit(QutritDevice):
             "TSWAP": self._apply_tswap,
         }
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
@@ -201,7 +201,7 @@ class DefaultQutrit(QutritDevice):
         return dict(wire_map)
 
     @debug_logger
-    def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=arguments-differ
+    def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
@@ -209,9 +209,9 @@ class DefaultQutrit(QutritDevice):
         # Operations are enumerated so that the order of operations can eventually be used
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
-        for i, operation in enumerate(operations):  # pylint: disable=unused-variable
+        for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, qml.QutritBasisState):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )
@@ -273,10 +273,7 @@ class DefaultQutrit(QutritDevice):
         if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.name](state, axes)
-        elif (
-            isinstance(operation, qml.ops.Adjoint)  # pylint: disable=no-member
-            and operation.base.name in self._apply_ops
-        ):
+        elif isinstance(operation, qml.ops.Adjoint) and operation.base.name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base.name](state, axes, inverse=True)
 

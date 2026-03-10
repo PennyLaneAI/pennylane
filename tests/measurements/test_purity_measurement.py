@@ -68,7 +68,7 @@ class TestPurityUnitTest:
         assert meas.shape(shots, 1) == shape
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     def test_process_density_matrix_pure_state(self, interface):
         """Test purity calculation for a pure single-qubit state."""
         dm = qml.math.array([[1, 0], [0, 0]], like=interface)
@@ -79,11 +79,11 @@ class TestPurityUnitTest:
         if interface == "tensorflow":
             expected = qml.math.cast(expected, "float64")
         purity = qml.purity(wires=wires).process_density_matrix(dm, wires)
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
         assert qml.math.allclose(purity, expected, atol=atol), f"Expected {expected}, got {purity}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected_purity",
         [
@@ -117,7 +117,7 @@ class TestPurityUnitTest:
 
         # Set the tolerance for floating-point comparisons
         # TensorFlow and PyTorch may require a slightly higher tolerance due to numerical precision issues
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         # Assert that the calculated purity matches the expected value within the tolerance
         assert qml.math.allclose(

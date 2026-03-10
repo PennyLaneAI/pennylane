@@ -23,7 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError, MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -90,32 +91,6 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-def test_legacy_ops():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
-        _ = H.ops
-
-
-def test_legacy_coeffs():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
-        _ = H.coeffs
-
-
-def test_obs_attribute():
-    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
-    op = qml.prod(X(0), X(1), X(2))
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
-    ):
-        obs = op.obs
-
-    assert obs == (X(0), X(1), X(2))
-
-
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
@@ -160,12 +135,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
-        assert prod_op.id == id
 
         assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
@@ -490,10 +464,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_gen = prod(qfunc, lazy=False)
         prod_op = prod_gen(1.1)
 
-        assert prod_op.id == 123987  # id was set
         qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
@@ -542,6 +515,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
+
+
 # pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
@@ -560,8 +538,8 @@ class TestMatrix:
         true_mat = mat1 @ mat2
 
         prod_op = Prod(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         prod_mat = prod_op.matrix()
 
@@ -917,10 +895,10 @@ class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
-    def test_is_hermitian(self, ops_lst, hermitian_status):
-        """Test is_hermitian property updates correctly."""
+    def test_is_verified_hermitian(self, ops_lst, hermitian_status):
+        """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
-        assert prod_op.is_hermitian == hermitian_status
+        assert prod_op.is_verified_hermitian == hermitian_status
 
     @pytest.mark.tf
     def test_is_hermitian_tf(self):
@@ -1106,11 +1084,11 @@ class TestProperties:
     op_pauli_reps_nested = (
         (
             qml.prod(
-                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
-                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+                qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)),
+                qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)),
             ),
             qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
-        ),  # prod + pow
+        ),
         (
             qml.prod(
                 qml.s_prod(
@@ -1248,8 +1226,8 @@ class TestSimplify:
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
-            qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.RX(1.23, wires=0),
+            qml.RX(-1.23, wires=0),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
@@ -1262,6 +1240,33 @@ class TestSimplify:
         )
         final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_single_wire(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on one wire."""
+        prod_op = qml.prod(qml.X(0) @ qml.Y(0) @ qml.Z(0) @ qml.H(0))
+        final_op = 1j * qml.H(0)
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_two_wires(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on two wires."""
+        prod_op = qml.prod(
+            qml.X(0)
+            @ qml.Z("a")
+            @ qml.Y(0)
+            @ qml.Z(0)
+            @ qml.X("a")
+            @ qml.Y("a")
+            @ qml.H(0)
+            @ qml.H("a")
+        )
+        final_op = qml.simplify(-1 * qml.H(0) @ qml.H("a"))
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
         qml.assert_equal(simplified_op, final_op)
 
     def test_grouping_with_product_of_sums(self):
@@ -1337,10 +1342,9 @@ class TestWrapperFunc:
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "prod_op"
 
-        prod_func_op = prod(*factors, id=op_id)
-        prod_class_op = Prod(*factors, id=op_id)
+        prod_func_op = prod(*factors)
+        prod_class_op = Prod(*factors)
         qml.assert_equal(prod_func_op, prod_class_op)
 
     def test_lazy_mode(self):
@@ -1370,14 +1374,22 @@ class TestWrapperFunc:
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.prod(qml.QSVT)(qml.X(1), [qml.Z(1)])
-            qml.prod(qml.QSVT(qml.X(1), [qml.Z(1)]))
+        def f(op):
+            qml.apply(op)
 
-        for op in q.queue:
-            assert op.name == "QSVT"
+        def f2(op, op2=None):
+            qml.X(0)
+            qml.apply(op)
+            if op2:
+                qml.apply(op2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.prod(f)(qml.Z(0))
+            qml.prod(f2)(qml.Y(0), op2=qml.Z(0))
 
         assert len(q.queue) == 2
+        assert q.queue[0] == qml.Z(0)
+        assert q.queue[1] == qml.Z(0) @ qml.Y(0) @ qml.X(0)
 
 
 class TestIntegration:
@@ -1429,9 +1441,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1444,9 +1457,10 @@ class TestIntegration:
 
     def test_measurement_process_counts(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1485,7 +1499,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             my_circ()
 
     def test_operation_integration(self):
@@ -1679,3 +1693,45 @@ class TestSwappableOps:
     def test_non_swappable_ops(self, op1, op2):
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
+
+
+class TestDecomposition:
+
+    def test_resource_keys(self):
+        """Test that the resource keys of `Prod` are op_reps."""
+        assert Prod.resource_keys == frozenset({"resources"})
+        product = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
+        assert product.resource_params == {"resources": resources}
+
+    def test_registered_decomp(self):
+        """Test that the decomposition of prod is registered."""
+
+        decomps = qml.decomposition.list_decomps(Prod)
+
+        default_decomp = decomps[0]
+        _ops = [qml.X(0), qml.X(1), qml.X(2), qml.MultiRZ(0.5, wires=(0, 1))]
+        resources = {qml.resource_rep(qml.X): 3, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
+
+        resource_obj = default_decomp.compute_resources(resources=resources)
+
+        assert resource_obj.num_gates == 4
+        assert resource_obj.gate_counts == resources
+
+        with qml.queuing.AnnotatedQueue() as q:
+            default_decomp(operands=_ops)
+
+        assert q.queue == _ops[::-1]
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_integration(self):
+        """Test that prod's can be integrated into the decomposition."""
+
+        op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
+
+        graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
+        solution = graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            solution.decomposition(op)(**op.hyperparameters)
+
+        assert q.queue == list(op[::-1])

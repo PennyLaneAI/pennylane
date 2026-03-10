@@ -17,14 +17,14 @@ This submodule contains the ParametrizedHamiltonian class
 """
 from copy import copy
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops import Sum
+from pennylane.ops import LinearCombination, SProd, Sum, op_math
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
-# pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
@@ -259,7 +259,7 @@ class ParametrizedHamiltonian:
             return H_fixed
         if H_fixed == 0:
             return H_param
-        return qml.sum(self.H_fixed(), self.H_parametrized(params, t))
+        return op_math.sum(self.H_fixed(), self.H_parametrized(params, t))
 
     def __repr__(self):
         terms = []
@@ -299,8 +299,9 @@ class ParametrizedHamiltonian:
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
         operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``).
         """
-        if self.coeffs_fixed:
-            return sum(qml.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
+        with QueuingManager.stop_recording():
+            if self.coeffs_fixed:
+                return sum(op_math.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
         return 0
 
     def H_parametrized(self, params, t):
@@ -315,7 +316,10 @@ class ParametrizedHamiltonian:
             ``SProd`` operator in the event that there is only one term in ``H_parametrized``).
         """
         coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
-        return sum(qml.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized)) if coeffs else 0
+        if coeffs:
+            with QueuingManager.stop_recording():
+                return sum(op_math.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized))
+        return 0
 
     @property
     def coeffs(self):
@@ -342,13 +346,13 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(H, (LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = coeffs + list(H.coeffs.copy())
             new_ops = ops + H.ops.copy()
             return ParametrizedHamiltonian(new_coeffs, new_ops)
 
-        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(H, SProd):
             new_coeffs = coeffs + [H.scalar]
             new_ops = ops + [H.base]
             return ParametrizedHamiltonian(new_coeffs, new_ops)
@@ -367,13 +371,13 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(H, (LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = list(H.coeffs.copy()) + coeffs
             new_ops = H.ops.copy() + ops
             return ParametrizedHamiltonian(new_coeffs, new_ops)
 
-        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(H, SProd):
             new_coeffs = [H.scalar] + coeffs
             new_ops = [H.base] + ops
             return ParametrizedHamiltonian(new_coeffs, new_ops)
@@ -390,7 +394,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs_fixed = self.coeffs_fixed.copy()
         coeffs_parametrized = self.coeffs_parametrized.copy()
-        if isinstance(other, TensorLike) and qml.math.ndim(other) == 0:
+        if isinstance(other, TensorLike) and math.ndim(other) == 0:
             coeffs_fixed = [other * c for c in coeffs_fixed]
             coeffs_parametrized = [
                 lambda p, t, new_c=c: other * new_c(p, t) for c in coeffs_parametrized

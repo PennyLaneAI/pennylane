@@ -18,7 +18,7 @@ Contains the QutritBasisStatePreparation template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class QutritBasisStatePreparation(Operation):
@@ -49,12 +49,11 @@ class QutritBasisStatePreparation(Operation):
         basis_state = [0, 1, 1, 0]
         obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
 
-    >>> print(circuit(basis_state, obs))
-    [array(0.70710678), array(-0.70710678), array(-0.70710678), array(0.70710678)]
+    >>> print(circuit(basis_state, obs)) # doctest: +SKIP
+    [array(0.7071), array(-0.7071), array(-0.7071), array(0.7071)]
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, basis_state, wires, id=None):
@@ -109,9 +108,8 @@ class QutritBasisStatePreparation(Operation):
         **Example**
 
         >>> qml.QutritBasisStatePreparation.compute_decomposition(basis_state=[1, 2], wires=["a", "b"])
-        [Tshift(wires=['a']),
-        Tshift(wires=['b']),
-        TShift(wires=['b'])]
+        [TShift(wires=['a']), TShift(wires=['b']), TShift(wires=['b'])]
+
         """
 
         op_list = []

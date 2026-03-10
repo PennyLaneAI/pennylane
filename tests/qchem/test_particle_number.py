@@ -56,8 +56,8 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     function `'spin_z'`.
     """
     n = qchem.particle_number(orbitals)
-    n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-    assert n_ref.compare(n)
+    n_ref = qml.dot(coeffs_ref, ops_ref)
+    qml.assert_equal(n_ref, n)
     assert isinstance(n, qml.ops.Sum)
 
     wire_order = n_ref.wires

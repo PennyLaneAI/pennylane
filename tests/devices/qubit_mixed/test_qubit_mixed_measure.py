@@ -151,7 +151,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qml.operation.Observable):  # pylint: disable=too-few-public-methods
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])
@@ -170,7 +170,7 @@ class TestMeasurementDispatch:
     def test_hamiltonian_no_sparse_matrix_in_second_term(self):
         """Tests when not all terms of a Hamiltonian have sparse matrices, excluding the first term."""
 
-        class DummyOp(qml.operation.Observable):  # Custom observable with no sparse matrix
+        class DummyOp(qml.operation.Operator):  # Custom observable with no sparse matrix
             num_wires = 1
 
         H = qml.Hamiltonian([0.5, 0.5, 0.5], [qml.PauliX(0), DummyOp(wires=1), qml.PauliZ(2)])
@@ -180,7 +180,7 @@ class TestMeasurementDispatch:
     def test_sum_no_sparse_matrix(self):
         """Tests when not all terms in a Sum observable have sparse matrices."""
 
-        class DummyOp(qml.operation.Observable):  # Custom observable with no sparse matrix
+        class DummyOp(qml.operation.Operator):  # Custom observable with no sparse matrix
             num_wires = 1
 
         S = qml.sum(qml.PauliX(0), DummyOp(wires=1))
@@ -411,7 +411,7 @@ class TestBroadcasting:
         [
             (
                 qml.density_matrix(wires=[0, 1]),
-                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 4, 4)),
+                lambda x: math.reshape(x, (BATCH_SIZE, 4, 4)),
             ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
@@ -613,7 +613,7 @@ class TestSumOfTermsDifferentiability:
         the coefficients of Hamiltonians using new and old math."""
 
         coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
-        gradient = qml.grad(self.f, argnum=1)(self.x, coeffs)
+        gradient = qml.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = qml.grad(self.expected)(self.x, coeffs)
 
         assert len(gradient) == 2

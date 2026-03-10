@@ -15,7 +15,7 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -135,7 +135,7 @@ def _measure_with_samples_diagonalizing_gates(
     def _process_single_shot(samples):
         samples_processed = _process_samples(mp, samples, wires)
         if isinstance(mp, SampleMP):
-            return math.squeeze(samples_processed)
+            return samples_processed
         if isinstance(mp, CountsMP):
             process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)
         elif isinstance(mp, ExpectationMP):
@@ -146,10 +146,7 @@ def _measure_with_samples_diagonalizing_gates(
             raise NotImplementedError
 
         if is_state_batched:
-            ret = []
-            for processed_sample in samples_processed:
-                ret.append(process_func(processed_sample))
-            return math.squeeze(ret)
+            return qml.math.stack(tuple(process_func(s) for s in samples_processed))
         return process_func(samples_processed)
 
     # if there is a shot vector, build a list containing results for each shot entry
@@ -242,7 +239,6 @@ def _sample_state_jax(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    # pylint: disable=import-outside-toplevel
 
     total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))

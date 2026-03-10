@@ -20,14 +20,29 @@ from collections import defaultdict
 
 import pennylane as qml
 from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import _auto_wrap
+from pennylane.decomposition.decomposition_rule import auto_wrap
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_involutory,
+    pow_rotation,
+    self_adjoint,
+)
+from pennylane.ops.identity import _controlled_g_phase_decomp
+from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
 decompositions = defaultdict(list)
 
 
-def to_resources(gate_count: dict) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count > 0})
+    return Resources(
+        {auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
+        (
+            sum(count for gate, count in gate_count.items())
+            if weighted_cost is None
+            else weighted_cost
+        ),
+    )
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
@@ -35,7 +50,7 @@ def _cz_to_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CZ] = [_cz_to_cnot]
+decompositions["CZ"] = [_cz_to_cnot]
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CZ: 1})
@@ -43,7 +58,7 @@ def _cnot_to_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CNOT] = [_cnot_to_cz]
+decompositions["CNOT"] = [_cnot_to_cz]
 
 
 def _multi_rz_decomposition_resources(num_wires):
@@ -55,7 +70,7 @@ def _multi_rz_decomposition(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.MultiRZ] = [_multi_rz_decomposition]
+decompositions["MultiRZ"] = [_multi_rz_decomposition]
 
 
 @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
@@ -68,7 +83,7 @@ def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.Hadamard] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
+decompositions["Hadamard"] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
 
 
 @qml.register_resources({qml.RX: 1, qml.RZ: 2})
@@ -76,7 +91,7 @@ def _ry_to_rx_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.RY] = [_ry_to_rx_rz]
+decompositions["RY"] = [_ry_to_rx_rz]
 
 
 @qml.register_resources({qml.RX: 2, qml.CZ: 2})
@@ -84,7 +99,12 @@ def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CRX] = [_crx_to_rx_cz]
+@qml.register_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
+def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRX"] = [_crx_to_rx_cz, _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
 
 
 @qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})
@@ -92,7 +112,7 @@ def _cphase_to_rz_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.ControlledPhaseShift] = [_cphase_to_rz_cnot]
+decompositions["ControlledPhaseShift"] = [_cphase_to_rz_cnot]
 
 
 @qml.register_resources({qml.RZ: 1, qml.GlobalPhase: 1})
@@ -100,7 +120,7 @@ def _phase_shift_to_rz_gp(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.PhaseShift] = [_phase_shift_to_rz_gp]
+decompositions["PhaseShift"] = [_phase_shift_to_rz_gp]
 
 
 @qml.register_resources({qml.RX: 1, qml.GlobalPhase: 1})
@@ -108,7 +128,7 @@ def _x_to_rx(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.X] = [_x_to_rx]
+decompositions["PauliX"] = [_x_to_rx]
 
 
 @qml.register_resources({qml.PhaseShift: 1})
@@ -116,7 +136,7 @@ def _u1_ps(phi, wires, **__):
     qml.PhaseShift(phi, wires=wires)
 
 
-decompositions[qml.U1] = [_u1_ps]
+decompositions["U1"] = [_u1_ps]
 
 
 @qml.register_resources({qml.PhaseShift: 1})
@@ -124,4 +144,27 @@ def _t_ps(wires, **__):
     raise NotImplementedError
 
 
-decompositions[qml.T] = [_t_ps]
+decompositions["T"] = [_t_ps]
+
+
+@qml.register_resources({qml.RZ: 3, qml.RY: 2, qml.CNOT: 2})
+def _crot(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRot"] = [_crot]
+
+################################################
+# Custom Decompositions For Symbolic Operators #
+################################################
+
+decompositions["C(PauliX)"] = [_controlled_x_decomp]
+decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
+decompositions["C(Hadamard)"] = [_controlled_hadamard]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Pow(Hadamard)"] = [pow_involutory]
+decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Pow(RX)"] = [pow_rotation]
+decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
+decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]

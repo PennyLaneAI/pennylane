@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -34,6 +34,18 @@ from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-
 
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
+
+    def test_error_if_wrong_number_of_outputs(self):
+        """Test that a helpful error is raised if the function has the wrong number of outputs."""
+
+        @qml.for_loop(3)
+        def f(i):  # pylint: disable=unused-argument
+            return 2
+
+        with pytest.raises(
+            ValueError, match="number of inputs must be one greater than the number of outputs"
+        ):
+            f()
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_identity(self, array):
@@ -129,7 +141,7 @@ class TestCaptureForLoop:
 
     def test_for_loop_grad(self):
         """Test simple for-loop primitive with gradient."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
@@ -156,9 +168,17 @@ class TestCaptureForLoop:
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnum"] == [0]
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
@@ -261,7 +281,7 @@ class TestDynamicShapes:
 
     # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
-        """Test that for_loops can create dynamicly shaped arrays."""
+        """Test that for_loops can create dynamically shaped arrays."""
 
         def f(i, x):
             y = jax.numpy.arange(i)
@@ -280,14 +300,20 @@ class TestDynamicShapes:
 
         @qml.for_loop(3, allow_array_resizing=False)
         def f(i, a, b):
-            return jax.numpy.hstack([a, b]), 2 * b
+            a_size = a.shape[0]
+            b_size = b.shape[0]
+            return jax.numpy.ones(a_size + b_size), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
             return f(a0, b0)
 
-        with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
-            jax.make_jaxpr(w)(1)
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+        ):
+            jaxpr = jax.make_jaxpr(w)(1)
+
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     def test_error_is_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
@@ -300,10 +326,12 @@ class TestDynamicShapes:
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
             return f(a0, b0)
 
-        with pytest.raises(
-            ValueError, match="attempt to combine arrays with two different dynamic shapes."
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
-            jax.make_jaxpr(w)(2)
+            jaxpr = jax.make_jaxpr(w)(2)
+
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     def test_array_initialized_with_size_of_other_arg(self):
         """Test that one argument can have a shape that matches another argument, but
@@ -337,8 +365,11 @@ class TestDynamicShapes:
 
             return f(jnp.arange(i0))
 
-        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
-            jax.make_jaxpr(w)(3)
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+        ):
+            jaxpr = jax.make_jaxpr(w)(3)
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):
@@ -364,7 +395,7 @@ class TestDynamicShapes:
 
         @qml.for_loop(2, allow_array_resizing=allow_array_resizing)
         def f(i, x, y):
-            x = jnp.hstack([x, y])
+            x = jnp.ones(x.shape[0] + y.shape[0])
             return x, (i + 2) * x
 
         def workflow(i0):
@@ -375,7 +406,7 @@ class TestDynamicShapes:
         jaxpr = jax.make_jaxpr(workflow)(2)
         [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(s, 8)
-        x_expected = jnp.array([1, 1, 1, 1, 2, 2, 2, 2])
+        x_expected = jnp.ones(8)
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 3 * x_expected)
 
@@ -385,7 +416,7 @@ class TestDynamicShapes:
 
         @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
         def f(i, a, b):
-            return jnp.hstack((a, b)), b + 1
+            return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
             return f(jnp.zeros(i0), jnp.zeros(i0))
@@ -394,7 +425,7 @@ class TestDynamicShapes:
         [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
         assert jnp.allclose(shape2, 3)
-        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        expected = jnp.ones(15)
         assert jnp.allclose(a, expected)
         assert jnp.allclose(b, jnp.array([4, 4, 4]))
 
@@ -567,14 +598,11 @@ class TestCaptureCircuitsForLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_nested_for_and_while_loop(self, upper_bound, arg, expected, autograph):
+    def test_nested_for_and_while_loop(self, upper_bound, arg, expected):
         """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds

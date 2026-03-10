@@ -20,6 +20,7 @@ import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 # ==========================================================
 # pytest fixtures
@@ -62,6 +63,20 @@ def init_state():
         return state
 
     return _init_state
+
+
+@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
+def enable_and_disable_graph_decomp(request):
+    """
+    A fixture that parametrizes a test to run twice: once with graph
+    decomposition disabled and once with it enabled.
+
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+    """
+    use_graph_decomp = request.param
+    with qml.decomposition.toggle_graph_ctx(use_graph_decomp):
+        yield
 
 
 def get_legacy_capabilities(dev):
@@ -120,7 +135,7 @@ def fixture_device(device_kwargs):
 
         try:
             dev = qml.device(**device_kwargs)
-        except qml.DeviceError:
+        except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
@@ -171,8 +186,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
@@ -278,7 +291,7 @@ def pytest_runtest_makereport(item, call):
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (
-                call.excinfo.type == qml.DeviceError
+                call.excinfo.type == DeviceError
                 and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):

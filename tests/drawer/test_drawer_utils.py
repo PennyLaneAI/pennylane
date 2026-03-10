@@ -34,24 +34,40 @@ class TestDefaultWireMap:
     def test_empty(self):
         """Test creating an empty wire map"""
 
-        wire_map = default_wire_map([])
-        assert wire_map == {}
+        full_wire_map, used_wire_map = default_wire_map([])
+        assert full_wire_map == used_wire_map == {}
 
     def test_simple(self):
         """Test creating a wire map with wires that do not have successive ordering"""
 
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
 
-        wire_map = default_wire_map(ops)
-        assert wire_map == {0: 0, 2: 1, 1: 2}
+        full_wire_map, used_wire_map = default_wire_map(ops)
+        assert full_wire_map == used_wire_map == {0: 0, 2: 1, 1: 2}
 
     def test_string_wires(self):
         """Test wire map works with string labelled wires."""
 
         ops = [qml.PauliY("a"), qml.CNOT(wires=("b", "c"))]
 
-        wire_map = default_wire_map(ops)
-        assert wire_map == {"a": 0, "b": 1, "c": 2}
+        full_wire_map, used_wire_map = default_wire_map(ops)
+        assert full_wire_map == used_wire_map == {"a": 0, "b": 1, "c": 2}
+
+    def test_work_wires(self):
+        """Test wire map works with string work wires, leading to a difference
+        between full_wire_map and used_wire_map."""
+
+        ops = [qml.PauliY("a"), qml.MultiControlledX(["b", 0, 9, 4], work_wires=[1, 5, "a"])]
+
+        full_wire_map, used_wire_map = default_wire_map(ops)
+        assert full_wire_map == {"a": 0, "b": 1, 0: 2, 9: 3, 4: 4, 1: 5, 5: 6}
+        assert used_wire_map == {"a": 0, "b": 1, 0: 2, 9: 3, 4: 4}
+
+        ops = [qml.MultiControlledX(["b", 0, 9, 4], work_wires=[1, 5, "a"]), qml.PauliY("a")]
+        full_wire_map, used_wire_map = default_wire_map(ops)
+        # Work-only wires always come after used wires
+        assert full_wire_map == {"b": 0, 0: 1, 9: 2, 4: 3, "a": 4, 1: 5, 5: 6}
+        assert used_wire_map == {"b": 0, 0: 1, 9: 2, 4: 3, "a": 4}
 
 
 class TestDefaultBitMap:
@@ -63,7 +79,7 @@ class TestDefaultBitMap:
         bit_map = default_bit_map([])
         assert bit_map == {}
 
-        bit_map = default_bit_map([qml.measurements.MidMeasureMP(0)])
+        bit_map = default_bit_map([qml.ops.MidMeasure(0)])
         assert bit_map == {}
 
     def test_simple(self):
@@ -88,9 +104,8 @@ class TestConvertWireOrder:
 
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
 
-        wire_map = convert_wire_order(ops)
-
-        assert wire_map == {0: 0, 2: 1, 1: 2}
+        full_wire_map, used_wire_map = convert_wire_order(ops)
+        assert full_wire_map == used_wire_map == {0: 0, 2: 1, 1: 2}
 
     def test_wire_order_ints(self):
         """Tests wire map produced when initial wires are integers."""
@@ -98,8 +113,8 @@ class TestConvertWireOrder:
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
         wire_order = [2, 1, 0]
 
-        wire_map = convert_wire_order(ops, wire_order)
-        assert wire_map == {2: 0, 1: 1, 0: 2}
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order)
+        assert full_wire_map == used_wire_map == {2: 0, 1: 1, 0: 2}
 
     def test_wire_order_str(self):
         """Test wire map produced when initial wires are strings."""
@@ -107,8 +122,8 @@ class TestConvertWireOrder:
         ops = [qml.CNOT(wires=("a", "b")), qml.PauliX("c")]
         wire_order = ("c", "b", "a")
 
-        wire_map = convert_wire_order(ops, wire_order)
-        assert wire_map == {"c": 0, "b": 1, "a": 2}
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order)
+        assert full_wire_map == used_wire_map == {"c": 0, "b": 1, "a": 2}
 
     def test_show_all_wires_false(self):
         """Test when `show_all_wires` is set to `False` only used wires are in the map."""
@@ -116,17 +131,43 @@ class TestConvertWireOrder:
         ops = [qml.PauliX("a"), qml.PauliY("c")]
         wire_order = ["a", "b", "c", "d"]
 
-        wire_map = convert_wire_order(ops, wire_order, show_all_wires=False)
-        assert wire_map == {"a": 0, "c": 1}
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=False)
+        assert full_wire_map == used_wire_map == {"a": 0, "c": 1}
 
     def test_show_all_wires_true(self):
         """Test when `show_all_wires` is set to `True` everything in ``wire_order`` is included."""
 
-        ops = [qml.PauliX("a"), qml.PauliY("c")]
+        ops = [qml.X("a"), qml.PauliY("c")]
         wire_order = ["a", "b", "c", "d"]
 
-        wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
-        assert wire_map == {"a": 0, "b": 1, "c": 2, "d": 3}
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
+        assert full_wire_map == used_wire_map == {"a": 0, "b": 1, "c": 2, "d": 3}
+
+    def test_with_work_wires(self):
+        """Tests wire map produced when work wires are present."""
+
+        ops = [qml.X(0), qml.ctrl(qml.X(2), control=[3, 1, 5], work_wires=[4, 0]), qml.X(1)]
+
+        # The work-only wire 4 does not show up in used_wire_map
+        full_wire_map, used_wire_map = convert_wire_order(ops, None)
+        # Control wires are added before target wires
+        assert full_wire_map == {0: 0, 3: 1, 1: 2, 5: 3, 2: 4, 4: 5}
+        assert used_wire_map == {0: 0, 3: 1, 1: 2, 5: 3, 2: 4}
+
+    def test_with_work_wires_wire_order(self):
+        """Tests wire map produced when work wires are present."""
+
+        ops = [qml.X(0), qml.ctrl(qml.X(2), control=[3, 1, 5], work_wires=[4, 0]), qml.X(1)]
+
+        wire_order = [2, 1, 0, 4]
+        # If we set show_all_wires to False, the work-only wire 4 does not show in used_wire_map
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=False)
+        assert full_wire_map == {2: 0, 1: 1, 0: 2, 4: 3, 3: 4, 5: 5}
+        assert used_wire_map == {2: 0, 1: 1, 0: 2, 3: 3, 5: 4}
+
+        # If we set show_all_wires to True, the work-only wire 4 also appears in used_wire_map
+        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
+        assert full_wire_map == used_wire_map == {2: 0, 1: 1, 0: 2, 4: 3, 3: 4, 5: 5}
 
 
 class TestUnwrapControls:
@@ -135,20 +176,22 @@ class TestUnwrapControls:
     # pylint:disable=too-few-public-methods
 
     @pytest.mark.parametrize(
-        "op,expected_control_wires,expected_control_values",
+        "op,expected_control_wires,expected_control_values,expected_base_cls",
         [
-            (qml.PauliX(wires="a"), Wires([]), None),
-            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True]),
-            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
+            (qml.X(wires="a"), Wires([]), None, qml.X),
+            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True], qml.X),
+            (qml.ctrl(qml.X(wires="b"), control="a"), Wires("a"), [True], qml.X),
             (
-                qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
+                qml.ctrl(qml.X(wires="b"), control=["a", "c", "d"]),
                 Wires(["a", "c", "d"]),
                 [True, True, True],
+                qml.X,
             ),
             (
-                qml.ctrl(qml.PauliZ(wires="c"), control=["a", "d"], control_values=[True, False]),
+                qml.ctrl(qml.Z(wires="c"), control=["a", "d"], control_values=[True, False]),
                 Wires(["a", "d"]),
                 [True, False],
+                qml.Z,
             ),
             (
                 qml.ctrl(
@@ -158,16 +201,19 @@ class TestUnwrapControls:
                 ),
                 Wires(["a", "b", "d", "c"]),
                 [True, False, False, True],
+                qml.RX,
             ),
             (
                 qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]),
                 Wires(["a", "b", "c"]),
                 [True, True, True],
+                qml.X,
             ),
             (
                 qml.ctrl(qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]), control=["e"]),
                 Wires(["e", "a", "b", "c"]),
                 [True, True, True, True],
+                qml.X,
             ),
             (
                 qml.ctrl(
@@ -179,17 +225,19 @@ class TestUnwrapControls:
                 ),
                 Wires(["e", "a", "b", "c"]),
                 [False, False, True, True],
+                qml.X,
             ),
         ],
     )
     def test_multi_defined_control_values(
-        self, op, expected_control_wires, expected_control_values
+        self, op, expected_control_wires, expected_control_values, expected_base_cls
     ):
         """Test a multi-controlled single-qubit operation with defined control values."""
-        control_wires, control_values = unwrap_controls(op)
+        control_wires, control_values, base = unwrap_controls(op)
 
         assert control_wires == expected_control_wires
         assert control_values == expected_control_values
+        assert isinstance(base, expected_base_cls)
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison

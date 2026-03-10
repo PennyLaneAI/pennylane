@@ -14,7 +14,7 @@
 
 """The make_plxpr function and helper methods"""
 
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 import pennylane as qml
 
@@ -27,9 +27,7 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-def make_plxpr(
-    func: Callable, static_argnums: Union[int, Sequence[int]] = (), autograph=True, **kwargs
-):
+def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autograph=True, **kwargs):
     r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
     the function with the given args.
 
@@ -133,20 +131,16 @@ def make_plxpr(
             ] b True a a
           in (c,) }
 
-        We can evaulate this to get the results:
+        We can evaluate this to get the results:
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
         [Array(4, dtype=int64, weak_type=True)]
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
-    """
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the ``make_plxpr`` function. "
-            "You can install jax via: pip install jax"
-        )
 
+    """
+    assert has_jax
     if not qml.capture.enabled():
         raise RuntimeError(
             "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "

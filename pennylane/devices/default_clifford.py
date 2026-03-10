@@ -14,16 +14,17 @@
 """
 This module contains the Clifford simulator using ``stim``.
 """
+# pylint: disable=no-member
 
 import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math, ops
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -38,15 +39,18 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropyMP,
 )
+from pennylane.operation import Channel, Operator, StatePrepBase
 from pennylane.ops.qubit.observables import BasisStateProjector
+from pennylane.pauli import PauliWord, pauli_decompose
+from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms import convert_to_numpy_parameters, defer_measurements, transform
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
-from . import Device
 from .default_qubit import accepted_sample_measurement
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .device_api import Device
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -108,21 +112,21 @@ _OPERATIONS_MAP = {
 }
 
 
-def operation_stopping_condition(op: qml.operation.Operator) -> bool:
+def operation_stopping_condition(op: Operator) -> bool:
     """Specifies whether an operation is accepted by ``DefaultClifford``."""
     return op.name in _OPERATIONS_MAP
 
 
-def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+def observable_stopping_condition(obs: Operator) -> bool:
     """Specifies whether an observable is accepted by ``DefaultClifford``."""
     return obs.name in _OBSERVABLES_MAP
 
 
-@qml.transform
+@transform
 def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
-    if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):
-        raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
+    if not tape.shots and any(isinstance(op, Channel) for op in tape.operations):
+        raise DeviceError(f"Channel not supported on {name} without finite shots.")
 
     return (tape,), null_postprocessing
 
@@ -133,15 +137,17 @@ def _pl_op_to_stim(op):
         stim_op = _OPERATIONS_MAP[op.name]
         stim_tg = map(str, op.wires)
     except KeyError as e:
-        raise qml.DeviceError(
+        raise DeviceError(
             f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
     # Check if the operation is noisy
-    if isinstance(op, qml.operation.Channel):
+    if isinstance(op, Channel):
         stim_op += f"({op.parameters[-1]})"  # get the probability
         if op.name == "PauliError":
-            stim_tg = [pauli + wire for pauli, wire in zip(op.parameters[0], stim_tg)]
+            stim_tg = [
+                pauli + wire for pauli, wire in zip(op.hyperparameters["operators"], stim_tg)
+            ]
 
     return stim_op, " ".join(stim_tg)
 
@@ -152,8 +158,8 @@ def _pl_obs_to_linear_comb(meas_obs):
     meas_rep = meas_obs.pauli_rep
 
     # Use manual decomposition for enabling Hermitian and partial Projector support
-    if isinstance(meas_obs, (qml.Hermitian, BasisStateProjector)):
-        meas_rep = qml.pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
+    if isinstance(meas_obs, (ops.Hermitian, BasisStateProjector)):
+        meas_rep = pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
 
     # A Pauli decomposition for the observable must exist
     if meas_rep is None:
@@ -177,7 +183,6 @@ def _pl_obs_to_linear_comb(meas_obs):
     return coeffs, paulis
 
 
-# pylint:disable = too-many-instance-attributes
 @simulator_tracking
 @single_tape_support
 class DefaultClifford(Device):
@@ -350,9 +355,12 @@ class DefaultClifford(Device):
 
             import pennylane as qml
             import numpy as np
-            dev = qml.device("default.clifford", shots=1024, seed=42)
+
+            dev = qml.device("default.clifford", seed=42)
 
             num_wires = 3
+
+            @qml.set_shots(shots=1024)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(wires=[0])
@@ -392,7 +400,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments
+    # pylint:disable = too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         wires=None,
@@ -446,58 +454,65 @@ class DefaultClifford(Device):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device configuration.
+        execution_config: ExecutionConfig | None = None,
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
         This device currently does not intrinsically support parameter broadcasting.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
-            transform_program.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name=self.name
+            compile_pileline.add_transform(
+                decompose,
+                target_gates=set(_OPERATIONS_MAP.keys()),
+                stopping_condition=operation_stopping_condition,
+                name=self.name,
             )
-            transform_program.add_transform(_validate_channels, name=self.name)
-        transform_program.add_transform(
+            compile_pileline.add_transform(_validate_channels, name=self.name)
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        transform_program.add_transform(validate_adjoint_trainable_params)
+        compile_pileline.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
-            config.gradient_method = None
+            config = replace(config, gradient_method=None)
 
-        return transform_program, config
+        return compile_pileline, config
 
     def execute(
         self,
-        circuits: Union[QuantumScript, QuantumScriptBatch],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        circuits: QuantumScript | QuantumScriptBatch,
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))
@@ -514,10 +529,9 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
         return results
 
-    # pylint:disable=no-member,too-many-branches
     def simulate(
         self,
-        circuit: qml.tape.QuantumScript,
+        circuit: QuantumScript,
         seed=None,
         debugger=None,
     ) -> Result:
@@ -551,14 +565,14 @@ class DefaultClifford(Device):
 
         # Account for state preparation operation
         prep = None
-        if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+        if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 
         # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
             stim_tableau = stim.Tableau.from_state_vector(
-                qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+                math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
                 endian="big",
             )
             stim_circuit += stim_tableau.to_circuit()
@@ -571,13 +585,13 @@ class DefaultClifford(Device):
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
             else:
-                if isinstance(op, qml.GlobalPhase):
+                if isinstance(op, ops.GlobalPhase):
                     global_phase_ops.append(op)
-                if isinstance(op, qml.Snapshot):
+                if isinstance(op, ops.Snapshot):
                     self._apply_snapshot(circuit, stim_circuit, op, global_phase_ops, debugger)
 
         tableau_simulator.do_circuit(stim_circuit)
-        global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+        global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
         # Perform measurements based on whether shots are provided
         if circuit.shots:
@@ -613,12 +627,13 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
+    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
-        circuit: qml.tape.QuantumScript,
+        circuit: QuantumScript,
         stim_circuit,
-        operation: qml.Snapshot,
-        global_phase_ops: Sequence[qml.GlobalPhase],
+        operation: ops.Snapshot,
+        global_phase_ops: Sequence[ops.GlobalPhase],
         debugger=None,
     ):
         """Apply a snapshot operation to the stim circuit."""
@@ -627,7 +642,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 
@@ -636,7 +651,7 @@ class DefaultClifford(Device):
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
             snap_sim.do_circuit(stim_circuit)
-            global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+            global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
             snap_result = measurement_func(
                 meas,
@@ -658,7 +673,7 @@ class DefaultClifford(Device):
             stim_circ = stim_circuit.copy()
             stim_circ.append_from_stim_program_text("M " + " ".join(map(str, meas_obs.wires)))
             sampler = stim_circ.compile_sampler(seed=sample_seed)
-            return [qml.math.array(sampler.sample(shots=shots), dtype=int)], qml.math.array([1.0])
+            return [math.array(sampler.sample(shots=shots), dtype=int)], math.array([1.0])
 
         coeffs, paulis = _pl_obs_to_linear_comb(meas_obs)
 
@@ -669,11 +684,10 @@ class DefaultClifford(Device):
                 if op != "I":
                     stim_circ.append(meas_dict[op], wr)
             sampler = stim_circ.compile_sampler(seed=sample_seed)
-            samples.append(qml.math.array(sampler.sample(shots=shots), dtype=int))
+            samples.append(math.array(sampler.sample(shots=shots), dtype=int))
 
-        return samples, qml.math.array(coeffs)
+        return samples, math.array(coeffs)
 
-    # pylint:disable=protected-access
     def measure_statistical(self, circuit, stim_circuit, seed=None):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
@@ -690,13 +704,13 @@ class DefaultClifford(Device):
                 meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
                 # Decide measurement op
-                meas_op = meas.obs or qml.prod(*[qml.Z(idx) for idx in meas_wires])
+                meas_op = meas.obs or ops.prod(*[ops.Z(idx) for idx in meas_wires])
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]
                 # Check if the rotation was permissible
                 if len(samples) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
                     )
                 # Process the result from samples
@@ -738,13 +752,13 @@ class DefaultClifford(Device):
     def _measure_density_matrix(meas, tableau_simulator, **_):
         """Measure the density matrix from the state of simulator device."""
         wires = list(meas.wires)
-        state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
-        return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
+        state_vector = math.array(tableau_simulator.state_vector(endian="big"))
+        return math.reduce_dm(math.einsum("i, j->ij", state_vector, state_vector), wires)
 
     def _measure_state(self, _, tableau_simulator, **kwargs):
         """Measure the state of the simualtor device."""
         wires = kwargs.get("circuit").wires
-        global_phase = kwargs.get("global_phase", qml.GlobalPhase(0.0))
+        global_phase = kwargs.get("global_phase", ops.GlobalPhase(0.0))
         if self._tableau:
             # Stack according to Sec. III, arXiv:0406196 (2008)
             tableau = tableau_simulator.current_inverse_tableau().inverse()
@@ -759,26 +773,26 @@ class DefaultClifford(Device):
                 return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
             return pl_tableau
 
-        state = qml.math.array(tableau_simulator.state_vector(endian="big"))
+        state = math.array(tableau_simulator.state_vector(endian="big"))
         if state.shape == (1,) and len(wires):
             # following is faster than using np.eye(length=1, size, index)
-            state = qml.math.zeros(2 ** len(wires), dtype=complex)
+            state = math.zeros(2 ** len(wires), dtype=complex)
             state[0] = 1.0 + 0.0j
-        return state * qml.matrix(global_phase)[0][0]
+        return state * global_phase.matrix()[0][0]
 
     def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
         meas_obs = meas.obs
         if isinstance(meas_obs, BasisStateProjector):
-            kwargs["prob_states"] = qml.math.array([meas_obs.data[0]])
+            kwargs["prob_states"] = math.array([meas_obs.data[0]])
             return self._measure_probability(
-                qml.probs(wires=meas_obs.wires), tableau_simulator, **kwargs
+                ProbabilityMP(wires=meas_obs.wires), tableau_simulator, **kwargs
             ).squeeze()
 
         # Get the observable for the expectation value measurement
         coeffs, paulis = _pl_obs_to_linear_comb(meas_obs)
 
-        expecs = qml.math.zeros_like(coeffs)
+        expecs = math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
             pauli_term = ["I"] * max(np.max(list(wire)) + 1, tableau_simulator.num_qubits)
             for op, wr in zip(pauli, wire):
@@ -786,7 +800,7 @@ class DefaultClifford(Device):
             stim_pauli = stim.PauliString("".join(pauli_term))
             expecs[idx] = tableau_simulator.peek_observable_expectation(stim_pauli)
 
-        return qml.math.dot(coeffs, expecs)
+        return math.dot(coeffs, expecs)
 
     def _measure_variance(self, meas, tableau_simulator, **_):
         """Measure the variance with respect to the state of simulator device."""
@@ -803,14 +817,14 @@ class DefaultClifford(Device):
         """Measure the Von Neumann entropy with respect to the state of simulator device."""
         wires = kwargs.get("circuit").wires
         tableau = tableau_simulator.current_inverse_tableau().inverse()
-        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return self._measure_stabilizer_entropy(z_stabs, list(meas.wires), meas.log_base)
 
     def _measure_mutual_info(self, meas, tableau_simulator, **kwargs):
         """Measure the mutual information between the subsystems of simulator device."""
         wires = kwargs.get("circuit").wires
         tableau = tableau_simulator.current_inverse_tableau().inverse()
-        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         indices0, indices1 = getattr(meas, "_wires")
         return self._measure_stabilizer_entropy(
             z_stabs, list(indices0), meas.log_base
@@ -834,10 +848,10 @@ class DefaultClifford(Device):
         """
         wires = kwargs.get("circuit").wires
         if wires == meas.wires:
-            return qml.math.array(1.0)
+            return math.array(1.0)
 
         tableau = tableau_simulator.current_inverse_tableau().inverse()
-        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
     # pylint: disable=protected-access
@@ -859,7 +873,7 @@ class DefaultClifford(Device):
             (float): entanglement entropy of the subsystem
         """
         # Get the number of qubits for the system
-        num_qubits = qml.math.shape(stabilizer)[0]
+        num_qubits = math.shape(stabilizer)[0]
 
         # Von Neumann entropy of a stabilizer state is zero
         if len(wires) == num_qubits:
@@ -868,35 +882,30 @@ class DefaultClifford(Device):
         # Build a binary matrix desribing the stabilizers using the Pauli words
         pauli_dict = {0: "I", 1: "X", 2: "Y", 3: "Z"}
         terms = [
-            qml.pauli.PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)})
-            for row in stabilizer
+            PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)}) for row in stabilizer
         ]
-        binary_mat = qml.pauli.utils._binary_matrix_from_pws(terms, num_qubits)
+        binary_mat = _binary_matrix_from_pws(terms, num_qubits)
 
         # Partition the binary matrix to represent the subsystem
-        partition_mat = qml.math.hstack(
+        partition_mat = math.hstack(
             (
                 binary_mat[:, num_qubits:][:, wires],
                 binary_mat[:, :num_qubits][:, wires],
             )
         )
 
-        # Use the reduced row echelon form for finding rank efficiently
-        # tapering always come in handy :)
-        rank = qml.math.sum(
-            qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
-        )
+        rank = math.binary_matrix_rank(partition_mat)
 
         # Compute the entropy
-        entropy = qml.math.log(2) * (rank - len(wires))
+        entropy = math.log(2) * (rank - len(wires))
 
         # Determine wether to use any log base
         if log_base is None:
             return entropy
 
-        return entropy / qml.math.log(log_base)
+        return entropy / math.log(log_base)
 
-    # pylint: disable=too-many-branches, too-many-statements
+    # pylint: disable=too-many-branches
     def _measure_probability(self, meas, _, **kwargs):
         r"""Measure the probability of each computational basis state.
 
@@ -933,7 +942,7 @@ class DefaultClifford(Device):
         if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
+            tgt_states = ((basis_vec & (1 << np.arange(num_wires)[::-1])) > 0).astype(int)
 
         # Rotate the circuit basis to computational basis
         diagonalizing_cit = kwargs.get("stim_circuit").copy()
@@ -1017,11 +1026,10 @@ class DefaultClifford(Device):
             return len(matches) / shots
 
         expecs = [
-            qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))
-            for sample in samples
+            math.mean(math.power([-1] * shots, math.sum(sample, axis=1))) for sample in samples
         ]
 
-        return qml.math.dot(coeffs, expecs)
+        return math.dot(coeffs, expecs)
 
     def _sample_variance(self, meas, stim_circuit, shots, seed):
         """Measure the variance with respect to samples from simulator device."""
@@ -1031,8 +1039,8 @@ class DefaultClifford(Device):
 
         # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
         return (
-            self._sample_expectation(qml.expval(meas_obs2), stim_circuit, shots, seed)
-            - self._sample_expectation(qml.expval(meas_obs1), stim_circuit, shots, seed) ** 2
+            self._sample_expectation(ExpectationMP(obs=meas_obs2), stim_circuit, shots, seed)
+            - self._sample_expectation(ExpectationMP(obs=meas_obs1), stim_circuit, shots, seed) ** 2
         )
 
     @staticmethod
@@ -1067,8 +1075,12 @@ class DefaultClifford(Device):
     def _sample_expval_shadow(self, meas, stim_circuit, shots, seed):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+            ClassicalShadow,
+        )
+
         bits, recipes = self._sample_classical_shadow(meas, stim_circuit, shots, seed)
         # TODO: Benchmark scaling for larger number of circuits for this existing functionality
         wires_map = list(range(stim_circuit.num_qubits))
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=wires_map)
+        shadow = ClassicalShadow(bits, recipes, wire_map=wires_map)
         return shadow.expval(meas.H, meas.k)

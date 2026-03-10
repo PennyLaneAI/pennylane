@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture import make_plxpr
-from pennylane.capture.autograph import AutoGraphWarning
 
 pytestmark = pytest.mark.jax
 
@@ -32,13 +31,12 @@ jax = pytest.importorskip("jax")
 from jax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-import-order
 
 
-@pytest.mark.parametrize("autograph", [True, False])
-def test_error_is_raised_with_capture_disabled(autograph):
+def test_error_is_raised_with_capture_disabled():
     """Test that an error is raised."""
 
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, autograph=autograph)
+    @qml.qnode(dev)
     def circ(x):
         qml.RX(x, 0)
         qml.Hadamard(0)
@@ -48,12 +46,11 @@ def test_error_is_raised_with_capture_disabled(autograph):
         _ = make_plxpr(circ)(1.2)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestMakePLxPR:
     """Tests the basic make_plxpr functionality"""
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_make_plxpr(self, mocker, autograph):
+    def test_make_plxpr(self, mocker):
         """Test that make_plxpr uses make_jaxpr, and returns a callable that will
         create a jaxpr representation of the qnode"""
 
@@ -61,24 +58,17 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circ(x):
             qml.RX(x, 0)
             qml.Hadamard(0)
             return qml.expval(qml.X(0))
 
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                plxpr = make_plxpr(circ)(1.2)
-        else:
-            plxpr = make_plxpr(circ)(1.2)
+        plxpr = make_plxpr(circ)(1.2)
 
         spy.assert_called()
         assert hasattr(plxpr, "jaxpr")
-        isinstance(plxpr, jax._src.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(plxpr, jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
@@ -89,7 +79,7 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circ(x, y):
             qml.RX(x, 0)
             qml.RY(y, 0)
@@ -98,16 +88,7 @@ class TestMakePLxPR:
 
         params = [1.2, 2.3]
         non_static_params = [params[i] for i in (0, 1) if i not in static_argnums]
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                plxpr = make_plxpr(circ, autograph=autograph, static_argnums=static_argnums)(
-                    *params
-                )
-        else:
-            plxpr = make_plxpr(circ, autograph=autograph, static_argnums=static_argnums)(*params)
+        plxpr = make_plxpr(circ, autograph=autograph, static_argnums=static_argnums)(*params)
 
         if not autograph:
             # when using autograph, we don't have the function make_jaxpr was called with
@@ -126,19 +107,12 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circ():
             qml.Hadamard(0)
             return qml.expval(qml.X(0))
 
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                output = make_plxpr(circ, autograph=autograph, return_shape=True)()
-        else:
-            output = make_plxpr(circ, autograph=autograph, return_shape=True)()
+        output = make_plxpr(circ, autograph=autograph, return_shape=True)()
 
         # assert new value for return_shape is passed to make_jaxpr
         if not autograph:
@@ -148,17 +122,16 @@ class TestMakePLxPR:
 
         # output is as expected for return_shape=True
         assert len(output) == 2
-        isinstance(output[0], jax._src.core.ClosedJaxpr)  # pylint: disable=protected-access
-        isinstance(output[0], jax._src.api.ShapeDtypeStruct)  # pylint: disable=protected-access
+        isinstance(output[0], jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestAutoGraphIntegration:
     """Test autograph integration for converting Python control flow into native PennyLane
     `cond`, `for_loop` and `while_loop`. Note that autograph defaults to True in make_plxpr."""
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_if_stmt(self, autograph):
+    def test_if_stmt(self):
         """Test that an if statement is converted to a jaxpr with a ``cond`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
 
@@ -170,18 +143,10 @@ class TestAutoGraphIntegration:
             return qml.state()
 
         dev = qml.device("default.qubit", wires=1)
-        qnode = qml.QNode(func, dev, autograph=autograph)
+        qnode = qml.QNode(func, dev)
 
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                plxpr1 = qml.capture.make_plxpr(func)(2)
-                plxpr2 = qml.capture.make_plxpr(qnode)(2)
-        else:
-            plxpr1 = qml.capture.make_plxpr(func)(2)
-            plxpr2 = qml.capture.make_plxpr(qnode)(2)
+        plxpr1 = qml.capture.make_plxpr(func)(2)
+        plxpr2 = qml.capture.make_plxpr(qnode)(2)
 
         # the plxpr includes a representation of a `cond` function
         assert "cond[" in str(plxpr1)
@@ -193,8 +158,7 @@ class TestAutoGraphIntegration:
         assert np.allclose(eval(2), [0.70710678, 0.70710678])
         assert np.allclose(eval(1), [0, 1j])
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop(self, autograph):
+    def test_while_loop(self):
         """Test that a while loop is converted to a jaxpr with a ``while_loop`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
 
@@ -206,18 +170,10 @@ class TestAutoGraphIntegration:
             return qml.expval(qml.Z(0))
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev, autograph=autograph)
+        qnode = qml.QNode(func, dev)
 
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                plxpr1 = qml.capture.make_plxpr(func)(0)
-                plxpr2 = qml.capture.make_plxpr(qnode)(0)
-        else:
-            plxpr1 = qml.capture.make_plxpr(func)(0)
-            plxpr2 = qml.capture.make_plxpr(qnode)(0)
+        plxpr1 = qml.capture.make_plxpr(func)(0)
+        plxpr2 = qml.capture.make_plxpr(qnode)(0)
 
         # the plxpr includes a representation of a `while_loop` function
         assert "while_loop[" in str(plxpr1)
@@ -229,8 +185,7 @@ class TestAutoGraphIntegration:
         assert np.allclose(eval(0), [-1])
         assert np.allclose(eval(5), [0])
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_for_loop(self, autograph):
+    def test_for_loop(self):
         """Test that a for loop is converted to a jaxpr with a ``for_loop`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
 
@@ -241,18 +196,10 @@ class TestAutoGraphIntegration:
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev, autograph=autograph)
+        qnode = qml.QNode(func, dev)
 
-        if autograph:
-            with pytest.warns(
-                AutoGraphWarning,
-                match=r"AutoGraph will not transform the function .* as it has already been transformed\.",
-            ):
-                plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
-                plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
-        else:
-            plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
-            plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
+        plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
+        plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
 
         # the plxpr includes a representation of a `for_loop` function
         assert "for_loop[" in str(plxpr1)

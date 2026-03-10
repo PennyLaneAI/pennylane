@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
 
-ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
+ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
 def allzero_vec(num_wires, interface="numpy"):
@@ -49,8 +49,6 @@ class TestInitializeState:
     # pylint:disable=unused-argument,too-few-public-methods
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
-
-        num_wires = qml.operation.AllWires
 
         def __init__(self, *args, **kwargs):
             self.dtype = kwargs.pop("dtype", None)

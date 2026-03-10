@@ -32,9 +32,8 @@ def _stop_autograph(f):
     return new_f
 
 
-# pylint: disable=no-self-argument, too-few-public-methods
 class CaptureMeta(type):
-    """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
+    """A metatype that dispatches class creation to ``cls._primitive_bind_call`` instead
     of normal class creation.
 
     See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
@@ -47,11 +46,9 @@ class CaptureMeta(type):
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 
-        jax.core.raise_to_shaped_mappings[AbstractMyObj] = lambda aval, _: aval
-
         class MyObj(metaclass=qml.capture.CaptureMeta):
 
-            primitive = jax.core.Primitive("MyObj")
+            primitive = jax.extend.core.Primitive("MyObj")
 
             @classmethod
             def _primitive_bind_call(cls, a):

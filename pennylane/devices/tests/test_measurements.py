@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use,pointless-statement, no-member
+# pylint: disable=no-self-use,no-member
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementTransform,
@@ -709,7 +710,7 @@ class TestSample:
 
         res = circuit()
         assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
-        assert qml.math.shape(res) == (dev.shots.total_shots,)
+        assert qml.math.shape(res) == (dev.shots.total_shots, 1)
         assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol):
@@ -1681,6 +1682,12 @@ def _skip_test_for_braket(dev):
         pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
 
 
+def _skip_test_for_ionq(dev):
+    """Skip the specific test because the IonQ plugin does not yet support custom measurement processes."""
+    if "ionq" in getattr(dev, "short_name", dev.name):
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
@@ -1731,7 +1738,7 @@ class TestSampleMeasurement:
             qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.raises((ValueError, qml.DeviceError)):
+        with pytest.raises((ValueError, DeviceError)):
             circuit()
 
     def test_method_overriden_by_device(self, device):
@@ -1813,7 +1820,7 @@ class TestStateMeasurement:
                 match="MyMeasurement with finite shots; the returned state information is analytic",
             )
             if isinstance(dev, qml.devices.LegacyDevice)
-            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
+            else pytest.raises(DeviceError, match="not accepted with finite shots")
         ):
             circuit()
 
@@ -1843,6 +1850,7 @@ class TestCustomMeasurement:
         """Test the execution of a custom measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
+        _skip_test_for_ionq(dev)
 
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""
@@ -1854,7 +1862,7 @@ class TestCustomMeasurement:
             tape = qml.tape.QuantumScript([], [MyMeasurement()])
             try:
                 dev.preprocess_transforms()((tape,))
-            except qml.DeviceError:
+            except DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
         @qml.qnode(dev)

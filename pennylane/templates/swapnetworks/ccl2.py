@@ -19,8 +19,8 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
 from pennylane.ops import SWAP, FermionicSWAP
 
 
@@ -45,57 +45,52 @@ class TwoLocalSwapNetwork(Operation):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> import pennylane as qml
-        >>> dev = qml.device('default.qubit', wires=5)
-        >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
-        >>> @qml.qnode(dev)
-        ... def swap_network_circuit():
-        ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
-        ...    return qml.state()
-        >>> qml.draw(swap_network_circuit, level='device')()
-        0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤  State
-        1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
-        2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤  State
-        3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
-        4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤  State
+    >>> import pennylane as qml
+    >>> dev = qml.device('default.qubit', wires=5)
+    >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
+    >>> @qml.qnode(dev)
+    ... def swap_network_circuit():
+    ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
+    ...    return qml.state()
+    >>> print(qml.draw(swap_network_circuit, level='device')())
+    0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤ ╭State
+    1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤ ├State
+    3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤ ╰State
 
     .. details::
         :title: Usage Details
 
         More complex acquaintances can be utilized with the template. For example:
 
-        .. code-block:: python
-
-            >>> dev = qml.device('default.qubit', wires=5)
-            >>> weights = np.random.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
-            >>> print(weights)
-            tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
-                    0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
-            >>> acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
-            ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
-            >>> @qml.qnode(dev)
-            ... def swap_network_circuit():
-            ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
-            ...    return qml.state()
-            >>> qml.draw(swap_network_circuit, level='device')()
-            0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
-            1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
-            2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
-            3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
-            4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
+        >>> dev = qml.device('default.qubit', wires=5)
+        >>> rng = np.random.default_rng(12345)
+        >>> weights = rng.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
+        >>> print(weights) # doctest: +SKIP
+        [0.2273 0.3168 0.7974 0.6763 0.3911 0.3328 0.5983 0.1867 0.6728 0.9418]
+        >>> acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
+        ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
+        >>> @qml.qnode(dev)
+        ... def swap_network_circuit():
+        ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+        ...    return qml.state()
+        >>> print(qml.draw(swap_network_circuit, level='device')())
+        0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤ ╭State
+        1: ─╰RY(0.23)─╰SWAP─╭●────────╭SWAP─╰RY(0.39)─╰SWAP─╭●────────╭SWAP─╰RY(0.67)─╰SWAP─┤ ├State
+        2: ─╭●────────╭SWAP─╰RY(0.80)─╰SWAP─╭●────────╭SWAP─╰RY(0.60)─╰SWAP─╭●────────╭SWAP─┤ ├State
+        3: ─╰RY(0.32)─╰SWAP─╭●────────╭SWAP─╰RY(0.33)─╰SWAP─╭●────────╭SWAP─╰RY(0.94)─╰SWAP─┤ ├State
+        4: ─────────────────╰RY(0.68)─╰SWAP─────────────────╰RY(0.19)─╰SWAP─────────────────┤ ╰State
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
-        new_op._weights = data[0]  # pylint: disable=protected-access
+        new_op._hyperparameters = dict(metadata[1])
+        new_op._weights = data[0]
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
@@ -123,11 +118,11 @@ class TwoLocalSwapNetwork(Operation):
         if (
             weights is not None
             and acquaintances is not None
-            and qml.math.shape(weights)[0] != int(len(wires) * (len(wires) - 1) / 2)
+            and math.shape(weights)[0] != int(len(wires) * (len(wires) - 1) / 2)
         ):
             raise ValueError(
                 f"Weight tensor must be of length {int(len(wires) * (len(wires) - 1) / 2)}, \
-                    got {qml.math.shape(weights)[0]}"
+                    got {math.shape(weights)[0]}"
             )
 
         self._weights = weights
@@ -154,7 +149,7 @@ class TwoLocalSwapNetwork(Operation):
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, acquaintances=None, fermionic=True, shift=False, **kwargs
-    ):  # pylint: disable=arguments-differ too-many-arguments
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -174,23 +169,21 @@ class TwoLocalSwapNetwork(Operation):
 
         **Example**
 
-        .. code-block:: python
-
-            >>> import pennylane as qml
-            >>> dev = qml.device('default.qubit', wires=5)
-            >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
-            >>> qml.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,
-            ...        acquaintances=acquaintances, fermionic=True, shift=False)
-            [CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
-             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
-             CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
-             CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
-             CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
-             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
-             CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
-             CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
-             CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
-             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3])]
+        >>> import pennylane as qml
+        >>> dev = qml.device('default.qubit', wires=5)
+        >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
+        >>> qml.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,
+        ...        acquaintances=acquaintances, fermionic=True, shift=False)
+        [CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+        CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
+        CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
+        CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
+        CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+        CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
+        CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
+        CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
+        CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+        CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3])]
         """
 
         if wires is None or len(wires) < 2:

@@ -17,10 +17,10 @@ of tapes.
 """
 import autograd
 
-# pylint: disable=no-member, too-many-branches
+# pylint: disable=too-many-branches
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 
 
 def _convert(jac, dy_row):
@@ -28,13 +28,13 @@ def _convert(jac, dy_row):
     if isinstance(jac, (tuple, list)):
         jac_new = []
         for j in jac:
-            j_ = qml.math.convert_like(j, dy_row)
-            j_ = qml.math.cast_like(j_, dy_row)
+            j_ = math.convert_like(j, dy_row)
+            j_ = math.cast_like(j_, dy_row)
             jac_new.append(j_)
         jac = tuple(jac_new)
     else:
-        jac = qml.math.convert_like(jac, dy_row)
-        jac = qml.math.cast_like(jac, dy_row)
+        jac = math.convert_like(jac, dy_row)
+        jac = math.cast_like(jac, dy_row)
     return jac
 
 
@@ -45,7 +45,7 @@ def _all_close_to_zero(dy):
     close to 0
     """
     if not isinstance(dy, (list, tuple)):
-        return qml.math.allclose(dy, 0)
+        return math.allclose(dy, 0)
 
     # call this method recursively
     return all(_all_close_to_zero(dy_) for dy_ in dy)
@@ -108,10 +108,10 @@ def compute_vjp_single(dy, jac, num=None):
     if jac is None:
         return None
 
-    dy_row = qml.math.reshape(dy, [-1])
+    dy_row = math.reshape(dy, [-1])
 
     if num is None:
-        num = qml.math.shape(dy_row)[0]
+        num = math.shape(dy_row)[0]
 
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
@@ -123,39 +123,45 @@ def compute_vjp_single(dy, jac, num=None):
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
-            res = qml.math.zeros((1, 0))
+            res = math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval or with dimension e.g. probs
         if num == 1:
-            jac = qml.math.squeeze(jac)
-        jac = qml.math.reshape(jac, (-1, 1))
+            jac = math.squeeze(jac)
+        jac = math.reshape(jac, (-1, 1))
         try:
             res = dy_row @ jac
 
         except Exception:  # pylint: disable=broad-except
-            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+            res = math.tensordot(jac, dy_row, [[0], [0]])
 
     # Single measurement with multiple params
     else:
         # No trainable parameters (adjoint)
         if len(jac) == 0:
-            res = qml.math.zeros((1, 0))
+            res = math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval
         if num == 1:
-            jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
+            jac = math.reshape(math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
-            except Exception:  # pylint: disable=broad-except
-                res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+            # pylint: disable=broad-except
+            except (
+                Exception
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                res = math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
         else:
-            jac = qml.math.reshape(qml.math.stack(jac), (-1, num))
+            jac = math.reshape(math.stack(jac), (-1, num))
             try:
                 res = jac @ dy_row
-            except Exception:  # pylint: disable=broad-except
-                res = qml.math.tensordot(jac, dy_row, [[1], [0]])
+            # pylint: disable=broad-except
+            except (
+                Exception
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                res = math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
 
@@ -204,25 +210,27 @@ def compute_vjp_multi(dy, jac, num=None):
         res = []
         for d, j_ in zip(dy, jac):
             res.append(compute_vjp_single(d, j_, num=num))
-        res = qml.math.sum(qml.math.stack(res), axis=0)
+        res = math.sum(math.stack(res), axis=0)
     # Multiple parameters
     else:
         try:
-            dy_interface = qml.math.get_interface(dy[0])
+            dy_interface = math.get_interface(dy[0])
             # dy  -> (i,j)      observables, entries per observable
             # jac -> (i,k,j)    observables, parameters, entries per observable
             # Contractions over observables and entries per observable
-            dy_shape = qml.math.shape(dy)
+            dy_shape = math.shape(dy)
             if len(dy_shape) > 1:  # multiple values exist per observable output
-                return qml.math.array(qml.math.einsum("ij,i...j", dy, jac), like=dy[0])
+                return math.array(math.einsum("ij,i...j", dy, jac), like=dy[0])
 
-            if dy_interface == "tensorflow":
+            if (
+                dy_interface == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 # TF needs a different path for Hessian support
-                return qml.math.array(
-                    qml.math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
+                return math.array(
+                    math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
                 )  # Scalar value per observable output
-            return qml.math.array(
-                qml.math.einsum("i,i...", dy, jac), like=dy[0]
+            return math.array(
+                math.einsum("i,i...", dy, jac), like=dy[0]
             )  # Scalar value per observable output
         # NOTE: We want any potential failure to fall back here, so catch every exception type
         # TODO: Catalogue and update for expected exception types
@@ -231,10 +239,10 @@ def compute_vjp_multi(dy, jac, num=None):
             for d, j_ in zip(dy, jac):
                 sub_res = []
                 for j in j_:
-                    sub_res.append(qml.math.squeeze(compute_vjp_single(d, j, num=num)))
+                    sub_res.append(math.squeeze(compute_vjp_single(d, j, num=num)))
                 res.append(sub_res)
-            res = qml.math.stack([qml.math.stack(r) for r in res])
-            res = qml.math.sum(res, axis=0)
+            res = math.stack([math.stack(r) for r in res])
+            res = math.sum(res, axis=0)
     return res
 
 
@@ -348,13 +356,13 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # and we can avoid a quantum computation.
 
             def func(_, num=None):  # pylint: disable=unused-argument
-                res = qml.math.convert_like(np.zeros([num_params]), dy)
+                res = math.convert_like(np.zeros([num_params]), dy)
                 multi = len(tape.measurements) > 1
                 if multi:
                     multi_dy = dy[0]
-                    res = qml.math.convert_like(res, multi_dy)
-                    return qml.math.cast_like(res, multi_dy)
-                return qml.math.cast_like(res, dy)
+                    res = math.convert_like(res, multi_dy)
+                    return math.cast_like(res, multi_dy)
+                return math.cast_like(res, dy)
 
             return [], func
     except (AttributeError, TypeError, NotImplementedError):
@@ -373,12 +381,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             return comp_vjp_fn(dy, jac, num=num)
 
         vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
-        return qml.math.sum(qml.math.stack(vjp_), 0)
+        return math.sum(math.stack(vjp_), 0)
 
     return gradient_tapes, processing_fn
 
 
-# pylint: disable=too-many-arguments
 def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
@@ -525,7 +532,9 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
             if isinstance(reduction, str):
                 getattr(vjps, reduction)(vjp_)
-            elif callable(reduction):
+            elif callable(
+                reduction
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 reduction(vjps, vjp_)
 
         return vjps

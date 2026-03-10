@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access, inconsistent-return-statements
+
 """
 This file defines classes and functions for creating lattice objects that store topological
 connectivity information.

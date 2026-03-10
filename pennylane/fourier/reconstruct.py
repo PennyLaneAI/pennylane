@@ -14,13 +14,14 @@
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
 import warnings
-from functools import wraps
 from inspect import signature
 
 import numpy as np
 from autoray import numpy as anp
 
-import pennylane as qml
+from pennylane import math
+from pennylane.capture.autograph import wraps
+from pennylane.workflow.qnode import QNode
 
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
@@ -60,9 +61,9 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     a = (num_frequency + 0.5) / np.pi
     b = 0.5 / np.pi
 
-    shifts_pos = qml.math.arange(1, num_frequency + 1) / a
+    shifts_pos = math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
-    shifts = qml.math.concatenate([shifts_neg, [0.0], shifts_pos])
+    shifts = math.concatenate([shifts_neg, [0.0], shifts_pos])
     shifts = anp.asarray(shifts, like=interface)
     f0 = fun(0.0) if f0 is None else f0
     evals = (
@@ -78,8 +79,8 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
         use the Fourier transform reconstruction if this derivative is needed.
         """
         _x = x - x0 - shifts
-        return qml.math.tensordot(
-            qml.math.sinc(a * _x) / qml.math.sinc(b * _x),
+        return math.tensordot(
+            math.sinc(a * _x) / math.sinc(b * _x),
             evals,
             axes=[[0], [0]],
         )
@@ -119,30 +120,30 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=unused-argument, too-many-arguments
+    # pylint: disable=too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None
 
     spectrum = anp.asarray(spectrum, like=interface)
     spectrum = spectrum[spectrum > 0]
-    f_max = qml.math.max(spectrum)
+    f_max = math.max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
     need_f0 = True
     if not have_shifts:
-        R = qml.math.shape(spectrum)[0]
-        shifts = qml.math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
+        R = math.shape(spectrum)[0]
+        shifts = math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
     elif have_f0:
-        zero_idx = qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
+        zero_idx = math.where(math.isclose(shifts, math.zeros_like(shifts[0])))
         zero_idx = zero_idx[0][0] if (len(zero_idx) > 0 and len(zero_idx[0]) > 0) else None
         need_f0 = zero_idx is not None
 
     # Take care of shifts close to zero if f0 was provided
     if have_f0 and need_f0:
         # Only one shift may be zero at a time
-        shifts = qml.math.concatenate(
+        shifts = math.concatenate(
             [shifts[zero_idx : zero_idx + 1], shifts[:zero_idx], shifts[zero_idx + 1 :]]
         )
         shifts = anp.asarray(shifts, like=interface)
@@ -155,19 +156,19 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
 
     L = len(shifts)
     # Construct the coefficient matrix case by case
-    C1 = qml.math.ones((L, 1))
-    C2 = qml.math.cos(qml.math.tensordot(shifts, spectrum, axes=0))
-    C3 = qml.math.sin(qml.math.tensordot(shifts, spectrum, axes=0))
-    C = qml.math.hstack([C1, C2, C3])
+    C1 = math.ones((L, 1))
+    C2 = math.cos(math.tensordot(shifts, spectrum, axes=0))
+    C3 = math.sin(math.tensordot(shifts, spectrum, axes=0))
+    C = math.hstack([C1, C2, C3])
 
     # Solve the system of linear equations
-    cond = qml.math.linalg.cond(C)
+    cond = math.linalg.cond(C)
     if cond > 1e8:
         warnings.warn(
             f"The condition number of the Fourier transform matrix is very large: {cond}.",
             UserWarning,
         )
-    W = qml.math.linalg.solve(C, evals)
+    W = math.linalg.solve(C, evals)
 
     # Extract the Fourier coefficients
     R = (L - 1) // 2
@@ -183,8 +184,8 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         x = x - x0
         return (
             a0
-            + qml.math.tensordot(qml.math.cos(spectrum * x), a, axes=[[0], [0]])
-            + qml.math.tensordot(qml.math.sin(spectrum * x), b, axes=[[0], [0]])
+            + math.tensordot(math.cos(spectrum * x), a, axes=[[0], [0]])
+            + math.tensordot(math.sin(spectrum * x), b, axes=[[0], [0]])
         )
 
     return _reconstruction
@@ -224,7 +225,7 @@ def _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0):
                 f"number of frequencies (2R+1={2*R+1}) for parameter {par_idx} in "
                 f"argument {arg_name}."
             )
-        if any(qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)):
+        if any(math.isclose(_shifts, math.zeros_like(_shifts), rtol=0, atol=atol)):
             # If 0 is among the shifts, f0 is needed
             return _shifts, True
         # If 0 is not among the shifts, f0 is not needed
@@ -392,9 +393,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     `Wierichs, Izaac, Wang and Lin (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__ .
     An introduction to the concept of quantum circuits as Fourier series can also be found in
     the
-    :doc:`Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`
+    `Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`__
     and
-    :doc:`General parameter-shift rules <demos/tutorial_general_parshift>`
+    `General parameter-shift rules <demos/tutorial_general_parshift>`__
     demos as well as the
     :mod:`qml.fourier <pennylane.fourier>` module docstring.
 
@@ -412,11 +413,11 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             qml.RY(Y[0], wires=0)
             qml.RY(Y[1], wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.RY(5*  Y[1], wires=1)
+            qml.RY(5*Y[1], wires=1)
             return qml.expval(qml.Z(0) @ qml.Z(1))
 
-        x = 0.4
-        Y = np.array([1.9, -0.5])
+        x = pnp.array(0.4)
+        Y = pnp.array([1.9, -0.5])
         f = 2.3
 
         circuit_value = circuit(x, Y)
@@ -434,13 +435,13 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     >>> rec.keys()
     dict_keys(['Y'])
     >>> print(*rec["Y"].items(), sep="\n")
-    ((0,), <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd685aee50>)
-    ((1,), <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd6866eee0>)
+    ((0,), <function _reconstruct_equ.<locals>._reconstruction at 0x...>)
+    ((1,), <function _reconstruct_equ.<locals>._reconstruction at 0x...>)
     >>> recon_Y0 = rec["Y"][(0,)]
     >>> recon_Y1 = rec["Y"][(1,)]
-    >>> np.isclose(recon_Y0(Y[0]), circuit_value)
+    >>> print(np.isclose(recon_Y0(Y[0]), circuit_value))
     True
-    >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3))
+    >>> print(np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3)))
     True
 
     We successfully reconstructed the dependence on the two entries of ``Y`` ,
@@ -460,10 +461,10 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     >>> spectra.keys()
     dict_keys(['x', 'Y'])
     >>> spectra["x"]
-    {(): [-1.0, 0.0, 1.0]}
+    {(): [np.float64(-1.0), 0.0, np.float64(1.0)]}
     >>> print(*spectra["Y"].items(), sep="\n")
-    ((0,), [-1.0, 0.0, 1.0])
-    ((1,), [-6.0, -5.0, -4.0, -1.0, 0.0, 1.0, 4.0, 5.0, 6.0])
+    ((0,), [np.float64(-1.0), 0.0, np.float64(1.0)])
+    ((1,), [np.float64(-6.0), np.float64(-5.0), np.float64(-4.0), np.float64(-1.0), 0.0, np.float64(1.0), np.float64(4.0), np.float64(5.0), np.float64(6.0)])
 
     For more detailed explanations, usage details and additional examples, see
     the usage details section below.
@@ -568,7 +569,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         >>> with qml.Tracker(circuit.device) as tracker:
         ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
         >>> tracker.totals
-        {'executions': 13}
+        {'batches': 13, 'simulations': 13, 'executions': 13}
 
         As expected, we required :math:`2R+1=2\cdot 6+1=13` circuit executions. However, not
         all frequencies below :math:`f_\text{max}=6` are present in the circuit, so that
@@ -578,7 +579,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         >>> with tracker:
         ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
         >>> tracker.totals
-        {'executions': 9}
+        {'batches': 9, 'simulations': 9, 'executions': 9}
 
         We again obtain the full univariate dependence on ``Y[1]`` but with considerably
         fewer executions on the quantum device.
@@ -588,6 +589,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         >>> with tracker:
         ...     for Y1 in np.arange(-np.pi, np.pi, 20):
         ...         rec["Y"][(1,)](-2.1)
+        tensor(0.013..., requires_grad=True)
         >>> tracker.totals
         {}
 
@@ -600,9 +602,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         >>> with tracker:
         ...     rec = qml.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
         >>> tracker.totals
-        {'executions': 5}
+        {'batches': 5, 'simulations': 5, 'executions': 5}
         >>> recon_x = rec["x"][()]
-        >>> np.isclose(recon_x(x+0.5), circuit(x+0.5, Y, f=f)
+        >>> print(np.isclose(recon_x(x+0.5), circuit(x+0.5, Y, f=f)))
         True
 
         Note that by convention, the parameter index for a scalar variable is ``()`` and
@@ -619,7 +621,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
-    sign_fn = qnode.func if isinstance(qnode, qml.QNode) else qnode
+    sign_fn = qnode.func if isinstance(qnode, QNode) else qnode
     arg_names = list(signature(sign_fn).parameters.keys())
     arg_idx_from_names = {arg_name: i for i, arg_name in enumerate(arg_names)}
 
@@ -628,7 +630,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         if f0 is None and need_f0:
             f0 = qnode(*args, **kwargs)
 
-        interface = qml.math.get_interface(args[0])
+        interface = math.get_interface(args[0])
 
         def constant_fn(x):
             """Univariate reconstruction of a constant Fourier series."""
@@ -644,12 +646,12 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                 if job is None:
                     _reconstructions[par_idx] = constant_fn
                 else:
-                    if len(qml.math.shape(args[arg_idx])) == 0:
-                        shift_vec = qml.math.ones_like(args[arg_idx])
+                    if len(math.shape(args[arg_idx])) == 0:
+                        shift_vec = math.ones_like(args[arg_idx])
                         x0 = args[arg_idx]
                     else:
-                        shift_vec = qml.math.zeros_like(args[arg_idx])
-                        shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
+                        shift_vec = math.zeros_like(args[arg_idx])
+                        shift_vec = math.scatter_element_add(shift_vec, par_idx, 1.0)
                         x0 = args[arg_idx][par_idx]
 
                     def _univariate_fn(x):

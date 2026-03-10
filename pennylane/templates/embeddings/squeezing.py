@@ -14,9 +14,11 @@
 r"""
 Contains the SqueezingEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+
+# pylint: disable=too-many-arguments
+from pennylane.operation import Operation
+from pennylane.ops.cv import Squeezing
 
 
 class SqueezingEmbedding(Operation):
@@ -99,7 +101,6 @@ class SqueezingEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @classmethod
@@ -109,9 +110,9 @@ class SqueezingEmbedding(Operation):
         return new_op
 
     def __init__(self, features, wires, method="amplitude", c=0.1, id=None):
-        shape = qml.math.shape(features)
+        shape = math.shape(features)
         constants = [c] * shape[0]
-        constants = qml.math.convert_like(constants, features)
+        constants = math.convert_like(constants, features)
 
         if len(shape) != 1:
             raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
@@ -121,10 +122,10 @@ class SqueezingEmbedding(Operation):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if method == "amplitude":
-            pars = qml.math.stack([features, constants], axis=1)
+            pars = math.stack([features, constants], axis=1)
 
         elif method == "phase":
-            pars = qml.math.stack([constants, features], axis=1)
+            pars = math.stack([constants, features], axis=1)
 
         else:
             raise ValueError(f"did not recognize method {method}")
@@ -160,5 +161,5 @@ class SqueezingEmbedding(Operation):
         Squeezing(tensor(2.), tensor(0.), wires=['b'])]
         """
         return [
-            qml.Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
+            Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
         ]

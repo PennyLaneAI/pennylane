@@ -14,10 +14,8 @@
 """The bosonic representation classes and functions."""
 from copy import copy
 
-import pennylane as qml
+from pennylane import math
 from pennylane.typing import TensorLike
-
-# pylint: disable= too-many-nested-blocks, too-many-branches, invalid-name
 
 
 class BoseWord(dict):
@@ -72,7 +70,7 @@ class BoseWord(dict):
     @property
     def wires(self):
         r"""Return wires in a BoseWord."""
-        return set(i[1] for i in self.sorted_dic.keys())
+        return {i[1] for i in self.sorted_dic.keys()}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in BoseWord."""
@@ -155,7 +153,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot add {type(other)} to a BoseWord.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -184,7 +182,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a BoseWord.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -197,7 +195,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a BoseWord from {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -242,7 +240,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply BoseWord by {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -282,8 +280,8 @@ class BoseWord(dict):
 
         >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
-        4.0 * b⁺(0) b(0)
-        + 2.0 * I
+        2.0 * I
+        + 4.0 * b⁺(0) b(0)
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
         """
         bw_terms = sorted(self)
@@ -415,7 +413,6 @@ class BoseWord(dict):
         return bs
 
 
-# pylint: disable=useless-super-delegation
 class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
@@ -443,7 +440,7 @@ class BoseSentence(dict):
         adjoint_dict = {}
         for key, value in self.items():
             word = key.adjoint()
-            scalar = qml.math.conj(value)
+            scalar = math.conj(value)
             adjoint_dict[word] = scalar
 
         return BoseSentence(adjoint_dict)
@@ -474,7 +471,7 @@ class BoseSentence(dict):
         if not isinstance(other, (TensorLike, BoseWord, BoseSentence)):
             raise TypeError(f"Cannot add {type(other)} to a BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -510,7 +507,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -525,7 +522,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a BoseSentence from {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -557,7 +554,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply BoseSentence by {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -576,7 +573,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply {type(other)} by BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -610,9 +607,9 @@ class BoseSentence(dict):
 
         >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> bs = qml.BoseSentence({bw: 1})
-        >>> print(bw.normal_order())
-        4.0 * b⁺(0) b(0)
-        + 2.0 * I
+        >>> print(bs.normal_order())
+        2.0 * I
+        + 4.0 * b⁺(0) b(0)
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
         """
 

@@ -69,12 +69,12 @@ class PauliVSpace:
 
     Take a linearly dependent set of operators and span the PauliVSpace.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         ops = [
-            X(0) @ X(1) + Y(0) @ Y(1),
-            X(0) @ X(1),
-            Y(0) @ Y(1)
+            qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1),
+            qml.X(0) @ qml.X(1),
+            qml.Y(0) @ qml.Y(1)
         ]
 
         vspace = PauliVSpace(ops)
@@ -96,7 +96,7 @@ class PauliVSpace:
 
     Again, checks of linear independence are always performed. So in the following example no operator is added.
 
-    >>> vspace.add(Y(0) @ Y(1))
+    >>> vspace.add(qml.Y(0) @ qml.Y(1))
     [1.0 * X(0) @ X(1)
      + 1.0 * Y(0) @ Y(1),
      1.0 * X(0) @ X(1),
@@ -164,15 +164,14 @@ class PauliVSpace:
 
         We can generate a ``PauliVSpace`` and add a linearly independent operator to its basis.
 
-        >>> ops = [X(0), X(1)]
+        >>> ops = [qml.X(0), qml.X(1)]
         >>> vspace = qml.pauli.PauliVSpace(ops)
-        >>> vspace.add(Y(0))
-        >>> vspace
+        >>> vspace.add(qml.Y(0))
         [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0)]
 
         We can add a list of operators at once. Only those that are linearly dependent with the current ``PauliVSpace`` are added.
 
-        >>> vspace.add([Z(0), X(0)])
+        >>> vspace.add([qml.Z(0), qml.X(0)])
         [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0), 1.0 * Z(0)]
 
         """
@@ -214,11 +213,11 @@ class PauliVSpace:
 
         **Example**
 
-        >>> ops = [X(0), X(1)]
+        >>> ops = [qml.X(0), qml.X(1)]
         >>> vspace = PauliVSpace([op.pauli_rep for op in ops])
-        >>> vspace.is_independent(X(0).pauli_rep)
+        >>> vspace.is_independent(qml.X(0).pauli_rep)
         False
-        >>> vspace.is_independent(Y(0).pauli_rep)
+        >>> vspace.is_independent(qml.Y(0).pauli_rep)
         True
 
         """

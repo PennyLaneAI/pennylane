@@ -19,7 +19,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, Channel
+from pennylane.operation import Channel
 
 QUDIT_DIM = 3
 
@@ -141,50 +141,51 @@ class QutritDepolarizingChannel(Channel):
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the qutrit depolarizing channel.
 
-         Args:
-             p (float): Each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
+        Args:
+            p (float): Each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
 
-         Returns:
-             list (array): list of Kraus matrices
+        Returns:
+            list (array): list of Kraus matrices
 
-         **Example**
+        **Example**
 
-         >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
-         array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
-
-        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
-
-        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
-
-        [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
-
-        [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
-
-        [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
-
-        [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
-
-        [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
-
-        [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
+        >>> import pprint
+        >>> pprint.pprint(np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3))
+        array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
+        <BLANKLINE>
+            [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
+        <BLANKLINE>
+            [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
+        <BLANKLINE>
+            [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        <BLANKLINE>
+            [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        <BLANKLINE>
+            [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        <BLANKLINE>
+            [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
+        <BLANKLINE>
+            [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
+        <BLANKLINE>
+            [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+                [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -195,7 +196,9 @@ class QutritDepolarizingChannel(Channel):
         one = 1
         z = 0
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.cast_like(p, 1j)
             w = math.cast_like(w, p)
             one = math.cast_like(one, p)
@@ -311,21 +314,20 @@ class QutritAmplitudeDamping(Channel):
 
         **Example**
 
-        >>> qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25, 0.36)
-        [
-        array([ [1.        , 0.        , 0.        ],
+        >>> from pprint import pprint
+        >>> pprint(qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25, 0.36))
+        [array([[1.        , 0.        , 0.        ],
                 [0.        , 0.70710678, 0.        ],
                 [0.        , 0.        , 0.6244998 ]]),
-        array([ [0.        , 0.70710678, 0.        ],
-                [0.        , 0.        , 0.        ],
-                [0.        , 0.        , 0.        ]]),
-        array([ [0.        , 0.        , 0.5       ],
-                [0.        , 0.        , 0.        ],
-                [0.        , 0.        , 0.        ]])
-        array([ [0.        , 0.        , 0.        ],
-                [0.        , 0.        , 0.6       ],
-                [0.        , 0.        , 0.        ]])
-        ]
+        array([[0.        , 0.70710678, 0.        ],
+            [0.        , 0.        , 0.        ],
+            [0.        , 0.        , 0.        ]]),
+        array([[0. , 0. , 0.5],
+            [0. , 0. , 0. ],
+            [0. , 0. , 0. ]]),
+        array([[0. , 0. , 0. ],
+            [0. , 0. , 0.6],
+            [0. , 0. , 0. ]])]
         """
         K0 = math.diag(
             [1, math.sqrt(1 - gamma_10 + math.eps), math.sqrt(1 - gamma_20 - gamma_21 + math.eps)]
@@ -428,21 +430,20 @@ class TritFlip(Channel):
 
         **Example**
 
-        >>> qml.TritFlip.compute_kraus_matrices(0.05, 0.01, 0.10)
-        [
-        array([ [0.91651514, 0.        , 0.        ],
-                [0.        , 0.91651514, 0.        ],
-                [0.        , 0.        , 0.91651514]]),
-        array([ [0.        , 0.2236068 , 0.       ],
-                [0.2236068 , 0.        , 0.       ],
-                [0.        , 0.        , 0.2236068]]),
-        array([ [0.        , 0.        , 0.1      ],
-                [0.        , 0.1       , 0.       ],
-                [0.1       , 0.        , 0.       ]]),
-        array([ [0.31622777, 0.        , 0.        ],
-                [0.        , 0.        , 0.31622777],
-                [0.        , 0.31622777, 0.        ]])
-        ]
+        >>> from pprint import pprint
+        >>> pprint(qml.TritFlip.compute_kraus_matrices(0.05, 0.01, 0.10))
+        [array([[0.91651514, 0.        , 0.        ],
+            [0.        , 0.91651514, 0.        ],
+            [0.        , 0.        , 0.91651514]]),
+        array([[0.       , 0.2236068, 0.       ],
+            [0.2236068, 0.       , 0.       ],
+            [0.       , 0.       , 0.2236068]]),
+        array([[0. , 0. , 0.1],
+            [0. , 0.1, 0. ],
+            [0.1, 0. , 0. ]]),
+        array([[0.31622777, 0.        , 0.        ],
+            [0.        , 0.        , 0.31622777],
+            [0.        , 0.31622777, 0.        ]])]
         """
         K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + math.eps) * math.convert_like(
             math.cast_like(np.eye(3), p_01), p_01
@@ -478,7 +479,6 @@ class QutritChannel(Channel):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, K_list, wires=None, id=None):
@@ -523,7 +523,7 @@ class QutritChannel(Channel):
 
         >>> K_list = qml.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
         >>> res = qml.QutritChannel.compute_kraus_matrices(K_list)
-        >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
+        >>> all(np.allclose(r, k) for r, k  in zip(res[0], K_list))
         True
         """
         return list(kraus_matrices)

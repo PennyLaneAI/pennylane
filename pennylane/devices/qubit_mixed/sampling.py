@@ -14,21 +14,20 @@
 """
 Submodule for sampling a qubit mixed state.
 """
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-from typing import Callable, Union
+# pylint: disable=too-many-positional-arguments
+from collections.abc import Callable
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
 from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
-from pennylane.measurements import CountsMP, ExpectationMP, SampleMeasurement, Shots
+from pennylane.measurements import ExpectationMP, SampleMeasurement, Shots
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import _get_num_wires, apply_operation
-from .measure import _reshape_state_as_matrix, measure
+from .measure import measure
 
 
 def _apply_diagonalizing_gates(
@@ -87,15 +86,7 @@ def _measure_with_samples_diagonalizing_gates(
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = math.squeeze(res)
-
-            processed.append(res)
-
-        return tuple(processed)
+        return tuple(mp.process_samples(samples, wires) for mp in mps)
 
     prng_key, _ = jax_random_split(prng_key)
     samples = sample_state(
@@ -119,7 +110,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -154,95 +145,32 @@ def _measure_classical_shadow(
     wires = qml.wires.Wires(range(_get_num_wires(state, is_state_batched)))
 
     if shots.has_partitioned_shots:
-        return [
-            tuple(
-                process_state_with_shots(
-                    mp, state, wires, s, rng=rng, is_state_batched=is_state_batched
-                )
-                for s in shots
-            )
-        ]
+        return [tuple(process_state_with_shots(mp, state, wires, s, rng=rng) for s in shots)]
 
-    return [
-        process_state_with_shots(
-            mp, state, wires, shots.total_shots, rng=rng, is_state_batched=is_state_batched
-        )
-    ]
+    return [process_state_with_shots(mp, state, wires, shots.total_shots, rng=rng)]
 
 
-def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_batched=False):
+def process_state_with_shots(mp, state, wire_order, shots, rng=None):
     """Sample 'shots' classical shadow snapshots from the given density matrix `state`.
 
     Args:
+        mp (ClassicalShadowMP or ShadowExpvalMP): The classical shadow measurement to perform
         state (np.ndarray): A (2^N, 2^N) density matrix for N qubits
         wire_order (qml.wires.Wires): The global wire ordering
         shots (int): Number of classical-shadow snapshots
         rng (None or int or Generator): Random seed for measurement bits
-        is_state_batched (bool): Whether the state is batched or not
 
     Returns:
         np.ndarray[int]: shape (2, shots, num_shadow_qubits).
             First row: measurement outcomes (0 or 1).
             Second row: Pauli basis recipe (0=X, 1=Y, 2=Z).
     """
-    if isinstance(mp, ShadowExpvalMP):
-        classical_shadow = ClassicalShadowMP(wires=mp.wires, seed=mp.seed)
-        bits, recipes = process_state_with_shots(
-            classical_shadow,
-            state,
-            wire_order,
-            shots,
-            rng=rng,
-        )
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=mp.wires.tolist())
-        return shadow.expval(mp.H, mp.k)
-    wire_map = {w: i for i, w in enumerate(wire_order)}
-    wires = mp.wires
-    mapped_wires = [wire_map[w] for w in wires]
-    n_snapshots = shots
-
-    # slow implementation but works for all devices
-    n_qubits = len(wires)
-
-    # seed the random measurement generation so that recipes
-    # are the same for different executions with the same seed
-    seed = mp.seed
-    recipe_rng = np.random.RandomState(seed)
-    recipes = recipe_rng.randint(0, 3, size=(n_snapshots, n_qubits))
-
-    outcomes = np.zeros((n_snapshots, n_qubits))
-    # Single-qubit diagonalizing ops for X, Y, Z
-    diag_list = [
-        qml.Hadamard.compute_matrix(),  # X
-        qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),  # Y
-        qml.Identity.compute_matrix(),  # Z
-    ]
-    bit_rng = np.random.default_rng(rng)
-
-    for t in range(n_snapshots):
-        for q_idx, q_wire in enumerate(mapped_wires):
-            # (A) partial trace out all other qubits to get 2x2 block for qubit q_wire
-            rho_matrix = _reshape_state_as_matrix(
-                state, _get_num_wires(state, is_state_batched=is_state_batched)
-            )
-            rho_q = math.reduce_dm(rho_matrix, [q_wire])
-
-            # (B) rotate that 2x2 block to Z-basis if recipe is X or Y
-            recipe = recipes[t, q_idx]
-            U = diag_list[recipe]
-            U = math.convert_like(U, rho_q)
-            U_dag = math.conjugate(math.transpose(U))
-            rotated = math.dot(U, math.dot(rho_q, U_dag))
-
-            # (C) probability of outcome 0 => rotated[0,0].real
-            p0 = np.clip(math.real(rotated[0, 0]), 0.0, 1.0)
-            if bit_rng.random() < p0:
-                outcomes[t, q_idx] = 0
-            else:
-                outcomes[t, q_idx] = 1
-
-    res = np.stack([outcomes, recipes]).astype(np.int8)
-    return res
+    return mp.process_density_matrix_with_shots(
+        state,
+        wire_order,
+        shots,
+        rng=rng,
+    )
 
 
 def _measure_hamiltonian_with_samples(
@@ -352,7 +280,7 @@ def sample_state(
 
 
 def measure_with_samples(
-    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,

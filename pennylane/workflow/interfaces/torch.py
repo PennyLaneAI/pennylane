@@ -48,8 +48,8 @@ To use the ``CustomFunction`` class, we call it with the static ``apply`` method
 >>> res
 tensor(4., grad_fn=<CustomFunctionBackward>)
 >>> res.backward()
->>> val.grad
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
+>>> val.grad
 tensor(4.)
 
 Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
@@ -59,7 +59,7 @@ modifies the output of ``forward`` and the input to ``backward`` to unpack and r
 result object.
 
 """
-# pylint: disable=too-many-arguments,protected-access,abstract-method,unused-argument
+# pylint: disable=protected-access
 import inspect
 import logging
 
@@ -132,14 +132,16 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = [p for t in tapes for p in t.get_parameters()]
-    >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
-    >>> ExecuteTapes.apply(kwargs, *parameters)
+    .. code-block:: python3
+
+        parameters = [p for t in tapes for p in t.get_parameters()]
+        kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
+        ExecuteTapes.apply(kwargs, *parameters)
 
     """
 
     @staticmethod
-    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
+    def forward(ctx, kwargs, *parameters):
         """Implements the forward pass batch tape evaluation."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(

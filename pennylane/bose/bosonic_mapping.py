@@ -15,17 +15,15 @@
 
 from collections import defaultdict
 from functools import singledispatch
-from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .bosonic import BoseSentence, BoseWord
 
 
-# pylint: disable=too-many-branches
 def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_i}\bra{x_j}``
     to qubit operators as given in :math:`Eq. (6-9)` in `arXiv.1909.12847 <https://arxiv.org/abs/1909.12847>_`.
@@ -40,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 
 
 def binary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -69,13 +67,13 @@ def binary_mapping(
     >>> qml.binary_mapping(w, n_states=4)
     (
         0.6830127018922193 * X(0)
-      + -0.1830127018922193 * X(0) @ Z(1)
+      + -0.1830127018922193 * (X(0) @ Z(1))
       + -0.6830127018922193j * Y(0)
-      + 0.1830127018922193j * Y(0) @ Z(1)
-      + 0.3535533905932738 * X(0) @ X(1)
-      + -0.3535533905932738j * X(0) @ Y(1)
-      + 0.3535533905932738j * Y(0) @ X(1)
-      + (0.3535533905932738+0j) * Y(0) @ Y(1)
+      + 0.1830127018922193j * (Y(0) @ Z(1))
+      + 0.3535533905932738 * (X(0) @ X(1))
+      + -0.3535533905932738j * (X(0) @ Y(1))
+      + 0.3535533905932738j * (Y(0) @ X(1))
+      + (0.3535533905932738+0j) * (Y(0) @ Y(1))
     )
     """
 
@@ -105,7 +103,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         raise ValueError(
             f"Number of allowed bosonic states cannot be less than 2, provided {n_states}."
         )
-    nqub_per_boson = int(np.ceil(np.log2(n_states)))
+    nqub_per_boson = math.ceil_log2(n_states)
 
     creation = np.zeros((n_states, n_states))
     for s in range(n_states - 1):
@@ -137,8 +135,8 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         qubit_operator @= op
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -156,8 +154,8 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -165,7 +163,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def unary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -193,18 +191,18 @@ def unary_mapping(
     >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     (
-        0.25 * X(0) @ X(1)
-      + -0.25j * X(0) @ Y(1)
-      + 0.25j * Y(0) @ X(1)
-      + (0.25+0j) * Y(0) @ Y(1)
-      + 0.3535533905932738 * X(1) @ X(2)
-      + -0.3535533905932738j * X(1) @ Y(2)
-      + 0.3535533905932738j * Y(1) @ X(2)
-      + (0.3535533905932738+0j) * Y(1) @ Y(2)
-      + 0.4330127018922193 * X(2) @ X(3)
-      + -0.4330127018922193j * X(2) @ Y(3)
-      + 0.4330127018922193j * Y(2) @ X(3)
-      + (0.4330127018922193+0j) * Y(2) @ Y(3)
+        0.25 * (X(0) @ X(1))
+      + -0.25j * (X(0) @ Y(1))
+      + 0.25j * (Y(0) @ X(1))
+      + (0.25+0j) * (Y(0) @ Y(1))
+      + 0.3535533905932738 * (X(1) @ X(2))
+      + -0.3535533905932738j * (X(1) @ Y(2))
+      + 0.3535533905932738j * (Y(1) @ X(2))
+      + (0.3535533905932738+0j) * (Y(1) @ Y(2))
+      + 0.4330127018922193 * (X(2) @ X(3))
+      + -0.4330127018922193j * (X(2) @ Y(3))
+      + 0.4330127018922193j * (Y(2) @ X(3))
+      + (0.4330127018922193+0j) * (Y(2) @ Y(3))
     )
     """
 
@@ -274,8 +272,8 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         qubit_operator @= op
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
     qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
@@ -292,8 +290,8 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -301,7 +299,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def christiansen_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
@@ -387,8 +385,8 @@ def _(bose_operator: BoseWord, tol=None):
         )
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -406,8 +404,8 @@ def _(bose_operator: BoseSentence, tol=None):
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 

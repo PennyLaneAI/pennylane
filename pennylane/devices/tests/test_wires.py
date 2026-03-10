@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
-# pylint: disable=no-self-use,too-many-arguments,too-few-public-methods
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qml
@@ -48,9 +48,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )

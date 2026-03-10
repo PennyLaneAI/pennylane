@@ -23,8 +23,9 @@ from pennylane.shadows.transforms import _replace_obs
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     """Hadamard circuit to put all qubits in equal superposition (locally)"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for i in range(wires):
@@ -36,8 +37,9 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
@@ -50,11 +52,12 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
 def qft_circuit(wires, shots=10000, interface="autograd"):
     """Quantum Fourier Transform circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
     one_state = np.zeros(wires)
     one_state[-1] = 1
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.BasisState(one_state, wires=range(wires))
@@ -65,8 +68,9 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
 
 
 def basic_entangler_circuit(n_wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=n_wires, shots=shots)
+    dev = qml.device("default.qubit", wires=n_wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(x):
         qml.BasicEntanglerLayers(weights=x, wires=range(n_wires))
@@ -182,8 +186,9 @@ class TestStateForward:
     def test_multi_measurement_error(self):
         """Test that an error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit_shadow():
             qml.Hadamard(wires=0)
@@ -193,6 +198,7 @@ class TestStateForward:
         res = circuit_shadow()
         assert isinstance(res, tuple) and len(res) == 2
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit_expval():
             qml.Hadamard(wires=0)
@@ -207,7 +213,7 @@ class TestStateForward:
 class TestStateForwardInterfaces:
     """Test that state reconstruction works for all interfaces"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("diffable", [True, False])
     def test_qft_state(self, interface, diffable):
         """Test that the state reconstruction is correct for a QFT state"""

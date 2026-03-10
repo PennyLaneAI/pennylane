@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Transform that eliminates the swap operators by reordering the wires."""
-# pylint: disable=too-many-branches
+
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -21,7 +21,7 @@ from pennylane.typing import PostprocessingFn
 
 
 def null_postprocessing(results):
-    """A postprocesing function returned by a transform that only converts the batch of results
+    """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
     """
     return results[0]
@@ -78,9 +78,9 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         >>> dev = qml.device('default.qubit', wires=3)
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)())
-            0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
-            1: ──X──╰SWAP──│─────────┤
-            2: ────────────╰SWAP─────┤
+        0: ──H─╭SWAP─╭SWAP──Y─┤  <Z>
+        1: ──X─╰SWAP─│────────┤
+        2: ──────────╰SWAP────┤
 
 
         We can remove the SWAP gates by running the ``undo_swap`` transform:
@@ -88,9 +88,9 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         >>> optimized_qfunc = undo_swaps(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)())
-            0: ──Y──┤ ⟨Z⟩
-            1: ──H──┤
-            2: ──X──┤
+        0: ──Y─┤  <Z>
+        1: ──H─┤
+        2: ──X─┤
 
     """
 

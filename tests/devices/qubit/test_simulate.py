@@ -24,11 +24,11 @@ import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import (
     TreeTraversalStack,
+    _find_post_processed_mcms,
     _FlexShots,
     branch_state,
     combine_measurements_core,
     counts_to_probs,
-    find_post_processed_mcms,
     samples_to_counts,
     simulate_one_shot_native_mcm,
     simulate_tree_mcm,
@@ -435,7 +435,8 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
-        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+        qml.assert_equal(spy.call_args_list[0].args[0], qs)
+        assert spy.call_args_list[0].args[1] == {2: 0, 1: 1, 0: 2}
 
 
 class TestPostselection:
@@ -465,7 +466,7 @@ class TestPostselection:
             _ = simulate(tape)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "autograd"])
     def test_nan_state(self, interface):
         """Test that a state with nan values is returned if the probability of a postselection state
         is 0."""
@@ -1302,11 +1303,40 @@ class TestTreeTraversalStack:
 class TestMidMeasurements:
     """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
+    @pytest.mark.parametrize(
+        "shots, postselect_mode, error",
+        [
+            (10, "fill-shots", True),
+            (None, "fill-shots", False),
+            (10, "hw-like", False),
+            (None, "hw-like", False),
+        ],
+    )
+    def test_defer_measurements_fill_shots_zero_prob_postselection_error(
+        self, shots, postselect_mode, error
+    ):
+        """Test that an error is raised if `postselect_mode="fill-shots"` with finite shots
+        and the postselection probability is zero when using defer_measurements."""
+
+        # State is |0>, so postselection probability is zero
+        qs = qml.tape.QuantumScript(
+            [qml.ops.MidMeasure(0, postselect=1)], [qml.expval(qml.Z(0))], shots=shots
+        )
+        [deferred_qs], _ = qml.defer_measurements(qs)
+
+        if error:
+            with pytest.raises(RuntimeError, match="The probability of the postselected"):
+                simulate(deferred_qs, mcm_method="deferred", postselect_mode=postselect_mode)
+
+        else:
+            # No error should be raised
+            simulate(deferred_qs, mcm_method="deferred", postselect_mode=postselect_mode)
+
     @pytest.mark.parametrize("val", [0, 1])
     def test_basic_mid_meas_circuit(self, val):
         """Test execution with a basic circuit with mid-circuit measurements."""
         qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.measurements.MidMeasureMP(0, postselect=val)],
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.ops.MidMeasure(0, postselect=val)],
             [qml.expval(qml.X(0)), qml.expval(qml.Z(0))],
         )
         result = simulate_tree_mcm(qs)
@@ -1474,9 +1504,7 @@ class TestMidMeasurements:
             )
 
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-    @pytest.mark.parametrize(
-        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
-    )
+    @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
         # pylint:disable = singleton-comparison, import-outside-toplevel
@@ -1518,8 +1546,7 @@ class TestMidMeasurements:
         p4 = [qml.math.mean(res4 == -1), qml.math.mean(res4 == 1)]
         assert qml.math.allclose(qml.math.sum(sp.special.rel_entr(p3, p4)), 0.0, atol=0.05)
 
-    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
-    def test_tree_traversal_postselect_mode(self, postselect_mode):
+    def test_tree_traversal_postselect_mode(self):
         """Test that invalid shots are discarded if requested"""
 
         shots = 100
@@ -1533,9 +1560,9 @@ class TestMidMeasurements:
             shots=shots,
         )
 
-        res = simulate_tree_mcm(qscript, postselect_mode=postselect_mode)
+        res = simulate_tree_mcm(qscript, postselect_mode="hw-like")
 
-        assert (len(res) < shots) if postselect_mode == "hw-like" else (len(res) == shots)
+        assert len(res) < shots
         assert np.all(res != np.iinfo(np.int32).min)
 
     def test_tree_traversal_deep_circuit(self):
@@ -1559,17 +1586,13 @@ class TestMidMeasurements:
             shots=20,
         )
 
-        mcms = find_post_processed_mcms(qscript)
+        mcms = _find_post_processed_mcms(qscript)
         assert len(mcms) == n_circs
 
         split_circs = split_circuit_at_mcms(qscript)
         assert len(split_circs) == n_circs + 1
         for circ in split_circs:
-            assert not [o for o in circ.operations if isinstance(o, qml.measurements.MidMeasureMP)]
-
-        res = simulate_tree_mcm(qscript, postselect_mode="fill-shots")
-        assert len(res[0]) == 20
-        assert isinstance(res[1], dict) and sum(list(res[1].values())) == 20
+            assert not [o for o in circ.operations if isinstance(o, qml.ops.MidMeasure)]
 
     @pytest.mark.parametrize(
         "measurements, expected",
@@ -1591,11 +1614,8 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-    @pytest.mark.parametrize(
-        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
-    )
+    @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
         """Unit tests for simulate_one_shot_native_mcm"""
 
@@ -1620,31 +1640,62 @@ class TestMidMeasurements:
         ]
         terminal_results, mcm_results = zip(*results)
 
-        if postselect_mode == "fill-shots":
-            assert all(ms == 0 for ms in mcm_results)
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
+        )
+        expected_result = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(mcm_results, expected_result, threshold=0.01)
 
-        else:
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
-            )
-            expected_result = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(mcm_results, expected_result)
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+        )
+        expected_sample = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+        )
+        expected_sample = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+    def test_tree_traversal_non_standard_wire_order(self):
+        """Test that tree-traversal still works with a non-standard wire order."""
+
+        ops = [qml.H(0), qml.CNOT((0, 2)), qml.ops.MidMeasure(wires=0), qml.S(1)]
+
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, 0)
+
+    def test_tree_traversal_sample_dtype(self):
+        """Test that tree-traversal returns samples of the correct dtype (int)."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, mcm_method="tree-traversal", shots=10)
+        def circuit(phi):
+            qml.RX(phi, wires=0)
+            m_0 = qml.measure(wires=0)
+            return qml.sample([m_0])
+
+        res = circuit(1.23)
+        assert res.dtype == int
+        assert res.shape == (10, 1)
+
+    def test_measurement_on_non_op_wire(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.ops.MidMeasure(wires=0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([1, 0, 0, 0, 0, 0, 0, 0]))
+
+    def test_measurement_on_non_op_wire_with_nonstandard_order(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.ops.MidMeasure(wires=1), qml.X(1)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([0, 0, 1, 0, 0, 0, 0, 0]))

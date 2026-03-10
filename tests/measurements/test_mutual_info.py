@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -64,7 +65,7 @@ class TestMutualInfoUnitTests:
         assert m1.hash != m2.hash
 
         m3 = MutualInfoMP(wires=[Wires((0, 1)), Wires(2)])
-        m4 = MutualInfoMP(wires=[Wires((0)), Wires((1, 2))])
+        m4 = MutualInfoMP(wires=[Wires(0), Wires((1, 2))])
         assert m3.hash != m4.hash
 
     def test_map_wires(self):
@@ -85,13 +86,13 @@ class TestMutualInfoUnitTests:
         wires = qml.wires.Wires(range(2))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Subsystems for computing mutual information must not overlap.",
         ):
             qml.mutual_info(wires0=[0], wires1=[0, 1]).process_density_matrix(dm, wires)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "wires0, wires1, log_base, expected_mutual_info",
         [
@@ -119,7 +120,7 @@ class TestMutualInfoUnitTests:
         ).process_density_matrix(dm, wires)
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(
             mutual_info, expected_mutual_info, atol=atol
@@ -135,7 +136,7 @@ class TestIntegration:
     """Tests for the mutual information functions"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -160,24 +161,23 @@ class TestIntegration:
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with mutual_info."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.raises(
-            qml.DeviceError, match="not accepted with finite shots on default.qubit"
-        ):
+        with pytest.raises(DeviceError, match="not accepted with finite shots on default.qubit"):
             circuit(0.5)
 
     diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
         """Test that the mutual information works for QNodes by comparing
@@ -203,7 +203,7 @@ class TestIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
     def test_qnode_mutual_info(self, device, interface, params):
         """Test that the measurement process for mutual information works for QNodes
@@ -465,7 +465,7 @@ class TestIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
@@ -484,11 +484,11 @@ class TestIntegration:
             return qml.mutual_info(wires0=[0, 1], wires1=[1, 2])
 
         msg = "Subsystems for computing mutual information must not overlap"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             circuit(params)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("params", [np.array([0.0, 0.0]), np.array([0.3, 0.4])])
     def test_custom_wire_labels_works(self, interface, params):
         """Tests that no error is raised when mutual information is measured
