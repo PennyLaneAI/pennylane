@@ -787,7 +787,7 @@ The following classes have been ported over:
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Fixes a `MemoryError` in `default.clifford` when preparing a `qml.BasisState` with a large number of wires.
+* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
   [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
 <h3>Contributors ✍️</h3>
