@@ -153,6 +153,8 @@ def test_givens_decomposition(shape, seed):
         pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
     ],
 )
+@pytest.mark.jax
+@pytest.mark.external
 def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
     import jax
@@ -351,6 +353,8 @@ def test_givens_matrix_jaxpr():
         pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
     ],
 )
+@pytest.mark.jax
+@pytest.mark.external
 def test_set_unitary_matrix_real(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
@@ -451,6 +455,8 @@ def test_set_unitary_matrix_real(
         pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
     ],
 )
+@pytest.mark.jax
+@pytest.mark.external
 def test_set_unitary_matrix_complex(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
