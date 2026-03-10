@@ -17,7 +17,8 @@ Contains the QSVT template and qsvt wrapper function.
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
-from functools import reduce
+from functools import partial, reduce
+from importlib import import_module, util
 from typing import Literal
 
 import numpy as np
@@ -35,6 +36,31 @@ from pennylane.wires import Wires
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
+
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    is_jax_available = True
+else:  # pragma: no cover
+    is_jax_available = False
+    jax = None
+
+if util.find_spec("optax") is not None:  # pragma: no cover
+    optax = import_module("optax")
+    is_optax_available = True
+else:
+    is_optax_available = False
+    optax = None
+
+
+def jit_if_jax_available(f, **kwargs):
+    r"""thin wrapper around jax.jit
+    that jit the function if jax is available
+    otherwise return the input function
+    """
+
+    if is_jax_available:
+        return jax.jit(f, **kwargs)
+    return f  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -166,7 +192,13 @@ def qsvt(
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000`
+            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+              the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
+            - ``"iterative-optax"``: Recommended for high-degree polynomials
+              **when using polynomials of the same degree and running repeatedly**;
+              may be slower for a single run due to JIT compilation overhead.
+              Uses JAX and Optax. Requires ``jax`` and ``optax`` installed
+              and JAX enabled in 64-bit mode. 
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -804,20 +836,7 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-def _cheby_pol(x, degree):
-    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
-
-    Args:
-        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
-        degree (int): degree of the Chebyshev polynomial
-
-    Returns:
-        float: value of cos(degree*arcos(x))
-    """
-    return math.cos(degree * math.arccos(x))
-
-
-def _poly_func(coeffs, parity, x):
+def _poly_func_scipy(coeffs, parity, x):
     r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
 
     Args:
@@ -828,12 +847,11 @@ def _poly_func(coeffs, parity, x):
     Returns:
         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
     """
-
     ind = math.arange(len(coeffs))
     return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
 
 
-def _z_rotation(phi, interface):
+def _z_rotation_scipy(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
     Args:
@@ -842,11 +860,10 @@ def _z_rotation(phi, interface):
     Returns:
         tensor_like: Z rotation matrix
     """
-
     return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
 
 
-def _W_of_x(x, interface):
+def _W_of_x_scipy(x, interface):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
     Args:
@@ -855,17 +872,22 @@ def _W_of_x(x, interface):
     Returns:
         tensor_like: 2x2 matrix of W(x)
     """
-
     return math.array(
         [
-            [_cheby_pol(x=x, degree=1.0), 1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2)],
-            [1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2), _cheby_pol(x=x, degree=1.0)],
+            [
+                _cheby_pol(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+            ],
+            [
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
+            ],
         ],
         like=interface,
     )
 
 
-def _qsp_iterate(phi, x, interface):
+def _qsp_iterate_scipy(phi, x, interface):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
 
@@ -876,12 +898,12 @@ def _qsp_iterate(phi, x, interface):
     Returns:
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
+    return math.dot(
+        _W_of_x_scipy(x=x, interface=interface), _z_rotation_scipy(phi=phi, interface=interface)
+    )
 
-    a = math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
-    return a
 
-
-def _qsp_iterate_broadcast(phis, x, interface):
+def _qsp_iterate_broadcast_scipy(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
     Args:
@@ -890,44 +912,27 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-
     # pylint: disable=import-outside-toplevel
     try:
         from jax import vmap
 
         interface = "jax"
-        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+        qsp_iterate_list = vmap(_qsp_iterate_scipy, in_axes=(0, None, None))(phis[1:], x, interface)
     except ModuleNotFoundError:
-        qsp_iterate_list = math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
-            phis[1:], x, interface
-        )
+        qsp_iterate_list = math.vectorize(
+            _qsp_iterate_scipy, excluded=(1, 2), signature="()->(m,n)"
+        )(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
-    matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
+    matrix_iterate = math.dot(_z_rotation_scipy(phi=phis[0], interface=interface), matrix_iterate)
 
     return math.real(matrix_iterate[0, 0])
 
 
-def _grid_pts(degree, interface):
-    r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
-    are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
-
-    Args:
-        degree (int): degree of polynomial function
-
-    Returns:
-        tensor_like: optimization grid points
-    """
-
-    d = (degree + 1) // 2 + (degree + 1) % 2
-    return math.array(
-        [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
-    )
-
-
-def _qsp_optimization(degree, coeffs_target_func, interface=None):
+def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     r"""
-    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
+    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing
+    the distance between the target and qsp polynomial over the grid
 
     Args:
         degree (int): degree of polynomial function
@@ -952,7 +957,7 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
     initial_guess = math.array(initial_guess, like=interface)
 
-    targets = [_poly_func(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
+    targets = [_poly_func_scipy(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
     targets = math.array(targets, like=interface)
 
     def obj_function(phi):
@@ -962,14 +967,16 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
         try:
             from jax import jit, vmap
 
-            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+            qsp_iterates = jit(_qsp_iterate_broadcast_scipy, static_argnames=["interface"])
 
             obj_func = (
                 vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
             )
         except ModuleNotFoundError:
             obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
+                math.vectorize(_qsp_iterate_broadcast_scipy, excluded=(0, 2))(
+                    phi, grid_points, interface
+                )
                 - targets
             )
 
@@ -997,8 +1004,11 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
     return phis, cost_func
 
 
-def _compute_qsp_angles_iteratively(poly):
-    """Calculates the angles given a polynomial in canonical base
+def _compute_qsp_angles_iteratively_scipy(poly):
+    """Calculates the angles given a polynomial in canonical base using Scipy optimizer.
+
+    This is the legacy implementation that uses scipy.optimize.minimize with L-BFGS-B.
+    It has no mandatory dependencies beyond numpy/scipy.
 
     Args:
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
@@ -1014,8 +1024,236 @@ def _compute_qsp_angles_iteratively(poly):
     else:
         coeffs_target_func = math.array(coeffs_odd)
 
-    angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
+    angles, *_ = _qsp_optimization_scipy(degree=degree, coeffs_target_func=coeffs_target_func)
 
+    return angles
+
+
+@jit_if_jax_available
+def _cheby_pol(x, degree):
+    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
+
+    Args:
+        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
+        degree (int): degree of the Chebyshev polynomial
+
+    Returns:
+        float: value of cos(degree*arcos(x))
+    """
+    return math.cos(degree * math.arccos(x))
+
+
+@jit_if_jax_available
+def _poly_func_optax(coeffs, x):
+    r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
+    return jax.numpy.sum(
+        coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
+    )
+
+
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _z_rotation_optax(phi, interface):
+    r"""Returns the matrix of the `RZ(2 \phi)` gate.
+
+    Args:
+        phi (float): angle parameter
+
+    Returns:
+        tensor_like: Z rotation matrix
+    """
+    return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
+
+
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _W_of_x_optax(x, interface):
+    r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+
+    Args:
+        x (float): point at which to evaluate the parametric operator W
+
+    Returns:
+        tensor_like: 2x2 matrix of W(x)
+    """
+    return math.array(
+        [
+            [
+                _cheby_pol(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+            ],
+            [
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
+            ],
+        ],
+        like=interface,
+    )
+
+
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _qsp_iterate_optax(phi, x, interface):
+    r"""
+    Signal operator defined as the product of RZ(phi) and W(x)
+
+    Args:
+        phi (float): angle parameter
+        x (float): point at which to evaluate the parametric operator W
+
+    Returns:
+        tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
+    return math.dot(
+        _W_of_x_optax(x=x, interface=interface), _z_rotation_optax(phi=phi, interface=interface)
+    )
+
+
+@partial(jit_if_jax_available, static_argnames=["interface"])
+def _qsp_iterate_broadcast_optax(phis, x, interface):
+    r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
+
+    Args:
+        phis (tensor_like): array of QSP angles implementing a given polynomial
+        x (float):point at which to evaluate the polynomial
+    Returns:
+        tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
+    """
+    qsp_iterate_list = jax.vmap(_qsp_iterate_optax, in_axes=(0, None, None))(phis[1:], x, interface)
+
+    matrix_iterate = reduce(math.dot, qsp_iterate_list)
+    matrix_iterate = math.dot(_z_rotation_optax(phi=phis[0], interface=interface), matrix_iterate)
+
+    return math.real(matrix_iterate[0, 0])
+
+
+def _grid_pts(degree, interface):
+    r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
+    are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
+
+    Args:
+        degree (int): degree of polynomial function
+
+    Returns:
+        tensor_like: optimization grid points
+    """
+    d = (degree + 1) // 2 + (degree + 1) % 2
+    return math.array(
+        [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
+    )
+
+
+@jit_if_jax_available
+def _obj_function_optax(phi, x, y):
+    r"""Objective function to be optimized in Equation (23)
+
+    Args:
+        phi (tensor_like): optimization parameters
+        x (tensor_like): grid points over which we optimize
+        y (tensor_like): expected values
+
+    Returns:
+        float: \frac{\|f_\Phi(x) - y\|^2}{N}
+    """
+    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    import jax
+
+    obj_func = jax.vmap(_qsp_iterate_broadcast_optax, in_axes=(None, 0, None))(phi, x, "jax") - y
+    obj_func = jax.numpy.dot(obj_func, obj_func)
+    return 1 / x.shape[0] * obj_func
+
+
+@partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
+def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
+    """Dispatch optimization to the L-BFGS of optax."""
+    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    import jax
+    import optax
+
+    opt = optax.lbfgs()
+    init_carry = (initial_guess, opt.init(initial_guess))
+
+    def lambda_obj_function(phi):
+        return _obj_function_optax(phi, x=x, y=y)
+
+    val_and_grad = optax.value_and_grad_from_state(lambda_obj_function)
+
+    def optimizer_iter_update(carry):
+        params, state = carry
+        val, g = val_and_grad(params, state=state)
+        updates, state = opt.update(
+            g, state, params, value=val, grad=g, value_fn=lambda_obj_function
+        )
+        params = optax.apply_updates(params, updates)
+        return (params, state)
+
+    def while_loop_cond(params):
+        _, state = params
+        num_iter = optax.tree.get(state, "count")
+        cost_val = optax.tree.get(state, "value")
+        return (num_iter == 0) | ((num_iter < maxiter) & (cost_val > tol))
+
+    carry = jax.lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
+    return carry[0]
+
+
+def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
+    r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
+    minimizing the distance between the target and qsp polynomial over the grid.
+    """
+    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    import jax
+
+    grid_points = _grid_pts(degree, "jax")
+    initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
+
+    initial_guess = jax.numpy.array(initial_guess)
+    targets = jax.vmap(_poly_func_optax, in_axes=(None, 0))(coeffs_target_func, grid_points)
+
+    opt_params = _optax_lbfgs_opt(initial_guess, grid_points, targets, maxiter, tol)
+    cost_fun = _obj_function_optax(opt_params, grid_points, targets)
+
+    return opt_params, cost_fun
+
+
+def _compute_qsp_angles_iteratively_optax(poly):
+    """Calculates the angles given a polynomial in canonical base using Optax optimizer.
+
+    This is the implementation contributed in PR #8685.
+    Requires JAX and Optax to be installed.
+
+    Args:
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
+
+    Raises:
+        ModuleNotFoundError: if JAX or Optax are not installed
+    """
+    if not is_jax_available:
+        raise ModuleNotFoundError("jax is required!")  # pragma: no cover
+
+    if not is_optax_available:
+        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
+
+    poly_cheb = chebyshev.poly2cheb(poly)
+    degree = len(poly_cheb) - 1
+
+    # Separate the odd and even parts
+    # Replacing the odd/even items by 0 for odd/even parts of the polynomial allows to keep the same array shape
+    # Therefore we avoid second jit-compilation that was triggered if we were to
+    # extract the odd/even coeff arrays separately!
+    coeffs_odd = jax.numpy.copy(poly_cheb)
+    coeffs_odd = coeffs_odd.at[0::2].set(0.0)
+
+    coeffs_even = jax.numpy.copy(poly_cheb)
+    coeffs_even = coeffs_even.at[1::2].set(0.0)
+
+    if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
+        coeffs_target_func = math.array(coeffs_even)
+        degree_even = degree - degree % 2
+        degree = degree_even
+    else:
+        coeffs_target_func = math.array(coeffs_odd)
+        degree_odd = degree + (degree % 2 - 1)
+        degree = degree_odd
+
+    angles, *_ = _qsp_optimization_optax(degree=degree, coeffs_target_func=coeffs_target_func)
     return angles
 
 
@@ -1172,7 +1410,8 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
+# pylint: disable=unused-argument,too-many-return-statements,too-many-branches
+def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),
     quantum singular value transformation (QSVT) or generalized quantum signal processing (GQSP).
@@ -1189,15 +1428,22 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         angle_solver (str): Specifies the method used to calculate the angles. Options include:
 
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000` for
-              the ``"QSP"`` and ``"QSVT"`` routines.
+            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+              the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
+            - ``"iterative-optax"``: Recommended for high-degree polynomials
+              when repeatedly evaluating polynomials of the same degree;
+              may be slower for a single usage due to JIT compilation overhead.
+              Uses JAX and Optax. Requires ``jax`` and ``optax`` installed
+              and JAX enabled in 64-bit mode.
+
+        **kwargs: Additional keyword arguments passed to the underlying solver.
 
     Returns:
         (tensor-like): computed angles for the specified routine
 
     Raises:
         AssertionError: if ``poly`` is not valid
-        AssertionError: if ``routine`` or ``angle_solver`` is not supported
+        ValueError: if ``angle_solver`` is not supported
 
     **Example**
 
@@ -1273,19 +1519,25 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         if angle_solver == "iterative":
-            return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
+            return transform_angles(_compute_qsp_angles_iteratively_scipy(poly), "QSP", "QSVT")
+        if angle_solver == "iterative-optax":
+            return transform_angles(_compute_qsp_angles_iteratively_optax(poly), "QSP", "QSVT")
 
-        raise AssertionError(
-            "Invalid angle solver method. We currently support 'root-finding' and 'iterative'"
+        raise ValueError(
+            f"Invalid angle solver method: '{angle_solver}'. "
+            "Supported solvers: ['root-finding', 'iterative', 'iterative-optax']"
         )
 
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         if angle_solver == "iterative":
-            return _compute_qsp_angles_iteratively(poly)
-        raise AssertionError(
-            "Invalid angle solver method. Valid value is 'root-finding' and 'iterative'"
+            return _compute_qsp_angles_iteratively_scipy(poly)
+        if angle_solver == "iterative-optax":
+            return _compute_qsp_angles_iteratively_optax(poly)
+        raise ValueError(
+            f"Invalid angle solver method: '{angle_solver}'. "
+            "Supported solvers: ['root-finding', 'iterative', 'iterative-optax']"
         )
 
     if routine == "GQSP":

@@ -14,6 +14,7 @@
 """
 Tests for the QSVT template and qsvt wrapper function.
 """
+
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
@@ -27,12 +28,12 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
-    _poly_func,
-    _qsp_iterate,
-    _qsp_iterate_broadcast,
-    _qsp_optimization,
-    _W_of_x,
-    _z_rotation,
+    _poly_func_scipy,
+    _qsp_iterate_broadcast_scipy,
+    _qsp_iterate_scipy,
+    _qsp_optimization_scipy,
+    _W_of_x_scipy,
+    _z_rotation_scipy,
 )
 from pennylane.transforms import decompose
 
@@ -977,7 +978,7 @@ class TestRootFindingSolver:
     def test_raise_error(self, poly, routine, angle_solver, msg_match):
         """Test that proper errors are raised"""
 
-        with pytest.raises(AssertionError, match=msg_match):
+        with pytest.raises((AssertionError, ValueError), match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
 
 
@@ -998,7 +999,7 @@ class TestIterativeSolver:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
+        phis, cost_func = _qsp_optimization_scipy(degree, target_polynomial_coeffs)
 
         rng = np.random.default_rng(123)
         x_point = rng.uniform(size=1, low=-1.0, high=1.0)
@@ -1027,8 +1028,8 @@ class TestIterativeSolver:
         )
 
         assert qml.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, None),
-            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            _qsp_iterate_broadcast_scipy(phis, x_point, None),
+            _poly_func_scipy(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
 
@@ -1054,21 +1055,21 @@ class TestIterativeSolver:
             (generate_polynomial_coeffs(12, 0), 0, 0.3),
         ],
     )
-    def test_poly_func(self, coeffs, parity, x):
-        """Test internal function _poly_func"""
-        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
+    def test_poly_func_scipy(self, coeffs, parity, x):
+        """Test internal function _poly_func_scipy"""
+        val = _poly_func_scipy(coeffs=coeffs[parity::2], parity=parity, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    def test_z_rotation(self, angle):
-        """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+    def test_z_rotation_scipy(self, angle):
+        """Test internal function _z_rotation_scipy"""
+        assert np.allclose(_z_rotation_scipy(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    def test_qsp_iterate(self, phi):
-        """Test internal function _qsp_iterate"""
-        mtx = _qsp_iterate(0.0, phi, None)
+    def test_qsp_iterate_scipy(self, phi):
+        """Test internal function _qsp_iterate_scipy"""
+        mtx = _qsp_iterate_scipy(0.0, phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -1078,19 +1079,19 @@ class TestIterativeSolver:
         list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
-    def test_qsp_iterate_broadcast(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast"""
+    def test_qsp_iterate_broadcast_scipy(self, x, degree):
+        """Test internal function _qsp_iterate_broadcast_scipy"""
         from jax import numpy as jnp
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
+        qsp_be = _qsp_iterate_broadcast_scipy(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    def test_W_of_x(self, x):
-        """Test internal function _W_of_x"""
-        mtx = _W_of_x(x, None)
+    def test_W_of_x_scipy(self, x):
+        """Test internal function _W_of_x_scipy"""
+        mtx = _W_of_x_scipy(x, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
