@@ -1,4 +1,4 @@
-# Release 0.44.1
+# Release 0.44.1 (current release)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -11,4 +11,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Jerry
+Yushao Chen,
+
+View dwierichs's full-sized avatar
+David Wierichs
