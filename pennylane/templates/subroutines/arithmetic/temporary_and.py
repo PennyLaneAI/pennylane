@@ -195,10 +195,14 @@ def _temporary_and_resources():
 def _temporary_and(wires: WiresLike, **kwargs):
 
     control_values = kwargs["control_values"]
-    if control_values[0] == 0:
-        ops.X(wires[0])
-    if control_values[1] == 0:
-        ops.X(wires[1])
+    if math.is_abstract(control_values) or any(math.is_abstract(val) for val in control_values):
+        ops.cond(control_values[0], ops.X)(wires[0])
+        ops.cond(control_values[1], ops.X)(wires[1])
+    else:
+        if control_values[0] == 0:
+            ops.X(wires[0])
+        if control_values[1] == 0:
+            ops.X(wires[1])
 
     ops.change_op_basis(
         ops.prod(
@@ -218,10 +222,14 @@ def _temporary_and(wires: WiresLike, **kwargs):
 
     ops.adjoint(ops.S(wires=wires[2]))
 
-    if control_values[0] == 0:
-        ops.X(wires[0])
-    if control_values[1] == 0:
-        ops.X(wires[1])
+    if math.is_abstract(control_values) or any(math.is_abstract(val) for val in control_values):
+        ops.cond(control_values[0], ops.X)(wires[0])
+        ops.cond(control_values[1], ops.X)(wires[1])
+    else:
+        if control_values[0] == 0:
+            ops.X(wires[0])
+        if control_values[1] == 0:
+            ops.X(wires[1])
 
 
 add_decomps(TemporaryAND, _temporary_and)
