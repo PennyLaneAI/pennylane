@@ -147,7 +147,7 @@ The following classes have been ported over:
 
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
-  
+
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
@@ -657,9 +657,12 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated the `diastatic-malt` dependency to version v2.15.3.
+  [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
+
 * Workflow created to sync the `main` branch to `master`.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
-  
+
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
