@@ -31,7 +31,7 @@ Phase optimization with JAX (PHOX)
 
 
 Circuit construction utilities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.phox
 
