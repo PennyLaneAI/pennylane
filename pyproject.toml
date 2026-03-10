@@ -24,7 +24,7 @@ dependencies = [
     "packaging",
     "diastatic-malt",
     "numpy>=2.0",
-    "gast>=0.6.0"
+    "gast"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
