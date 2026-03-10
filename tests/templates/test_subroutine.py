@@ -27,10 +27,10 @@ from pennylane.templates.core import (
     AbstractArray,
     Subroutine,
     SubroutineOp,
-    subroutine_resource_rep,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
+    subroutine_resource_rep,
 )
 
 
