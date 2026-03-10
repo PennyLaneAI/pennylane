@@ -103,6 +103,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         # decomposition costs, using information about angle_wires etc from the outer scope
 
         num_control_wires = num_wires - 1
+        if num_control_wires == 0:
+            match rot_axis:
+                case "X":
+                    return {resource_rep(qml.RX): 1}
+                case "Y":
+                    return {resource_rep(qml.RY): 1}
+                case "Z":
+                    return {resource_rep(qml.RZ): 1}
 
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
@@ -172,6 +180,17 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     @qml.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
+
+        if len(control_wires) == 0:
+            assert len(angles) == 1
+            match rot_axis:
+                case "X":
+                    qml.RX(angles[0], target_wire)
+                case "Y":
+                    qml.RY(angles[0], target_wire)
+                case "Z":
+                    qml.RZ(angles[0], target_wire)
+            return
 
         with qml.QueuingManager.stop_recording():
             pg_op = _select_pauli_rot_phase_gradient(
