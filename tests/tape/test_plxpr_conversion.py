@@ -260,6 +260,27 @@ class TestCollectOpsandMeas:
         ):
             collector(grad_fn)(0.5)
 
+    def test_value_and_grad_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the value_and_grad of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        collector = CollectOpsandMeas()
+        grad_fn = qml.value_and_grad(g)
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the value_and_grad primitive",
+        ):
+            collector(grad_fn)(0.5)
+
     def test_vjp_not_implemented_error(self):
         """Test that an error is raised if user tries to collect the vjp of a function"""
 
