@@ -145,8 +145,8 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* ``qml.math.givens_decomposition`` and ``qml.BasisRotation`` are now compatible with ``qjit`` when
-  ``capture`` is disabled.
+* `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
+  `capture` is disabled.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
