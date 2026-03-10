@@ -87,6 +87,7 @@ def _real_unitary(unitary, wires):
     if _qjit_or_capture():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(givens_list))
     def givens_loop(idx):
@@ -106,6 +107,7 @@ def _complex_unitary(unitary, wires):
         phase_list = math.array(phase_list, like="jax")
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(phase_list))
     def phase_loop(idx):
