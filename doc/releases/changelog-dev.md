@@ -2,13 +2,19 @@
 
 <h3>New features since last release</h3>
 
+* A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
+  This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
+  `qml.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
+  same-degree polynomial with different coefficients.
+  [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
+
 * Added the function :func:`~.drawer.label` to attach custom labels to operator instances
   for circuit drawing.
-  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
 
 * Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
-  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
 
 * A new state preparation method called :class:`~.SumOfSlatersPrep` is now available.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and
@@ -67,7 +73,7 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-  logarithm of its input and casts the result to an ``int``. It is equivalent 
+  logarithm of its input and casts the result to an ``int``. It is equivalent
   to ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
@@ -118,10 +124,10 @@ The following classes have been ported over:
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
-* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
-  
+
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
@@ -134,9 +140,28 @@ The following classes have been ported over:
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+* A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
+  This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
+  [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
+
 <h3>Improvements 🛠</h3>
 
-* When using :func:`~.specs` with multiple levels, printing the returned
+* `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
+  [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
+  
+* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
+
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  the returned :class:`~.resource.CircuitSpecs` will no longer display a
+  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
+  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
+  In scenarios with at least one tape transform,
+  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
+  is the level after all tape transforms but before the first MLIR pass.
+  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+
+* When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
   This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
@@ -179,8 +204,8 @@ The following classes have been ported over:
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
-* Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
-  preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
+* Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device
+  preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through
   to the graph-based decomposition system.
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
@@ -189,8 +214,8 @@ The following classes have been ported over:
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
-  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
-  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
+  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
+  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless
   of how many markers are present.
 
   Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
@@ -213,7 +238,7 @@ The following classes have been ported over:
     return qml.probs()
   ```
 
-  The compilation pipeline has a new string representation that can be used to 
+  The compilation pipeline has a new string representation that can be used to
   inspect the transforms and markers,
 
   ```pycon
@@ -237,12 +262,12 @@ The following classes have been ported over:
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
-  
-* Raises a more informative error if something that is not a measurement process is returned from a 
+
+* Raises a more informative error if something that is not a measurement process is returned from a
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
 
-* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
+* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
@@ -393,17 +418,17 @@ The following classes have been ported over:
 
   All operators are de-queued when used to construct new operators, so the following example
   does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
-  
+
   ```python
   import pennylane as qml
   import numpy as np
   coeff = np.array([0.2, 0.1])
 
-  @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+  @qml.qnode(qml.device("lightning.qubit", wires=3))
   def expval(x: float):
       qml.RX(x, 1)
       A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
-      B = A @ qml.Z(2)  
+      B = A @ qml.Z(2)
       return qml.expval(B)
   ```
 
@@ -417,11 +442,11 @@ The following classes have been ported over:
   However, if we convert an operator ``A`` to numerical data, from which a new
   operator ``B`` is constructed, the chain of operator dependencies is broken and de-queuing will
   not work as expected:
-  
+
   ```python
   coeff = np.array([0.2, 0.1])
 
-  @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+  @qml.qnode(qml.device("lightning.qubit", wires=3))
   def expval(x: float):
       qml.RX(x, 1)
       A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
@@ -433,7 +458,7 @@ The following classes have been ported over:
   ```pycon
   >>> print(qp.draw(expval)(0.4))
   0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
-  1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
+  1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │
   2: ─────────────────────────┤ ╰<𝓗(M0)>
   ```
 
@@ -549,18 +574,18 @@ The following classes have been ported over:
   of a QNode.
   [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
 
-* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46.
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46.
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46.
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
-* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46.
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
-  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
+  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)
 
   The ``id`` argument previously served two purposes: (1) adding custom labels
   to operator instances which were rendered in circuit drawings and (2)
@@ -593,7 +618,7 @@ The following classes have been ported over:
       # New method:
       qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
       ```
-  
+
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
   Operator classes that used to have `_queue_category=None` have been updated
@@ -633,19 +658,22 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
+  [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
+
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
-  
-* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
+
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane.
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
-  
+
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
-  
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. 
+
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
-  
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
@@ -701,11 +729,11 @@ The following classes have been ported over:
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
-* Though the documentation for this function is now solely in the Catalyst repository, a correction was 
-  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the 
+* Though the documentation for this function is now solely in the Catalyst repository, a correction was
+  made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
-  
+
 
 <h3>Bug fixes 🐛</h3>
 
@@ -792,7 +820,10 @@ Yushao Chen,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Korbinian Kottmann,
 Christina Lee,
+Oumarou Oumarou,
+Mudit Pandey,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
