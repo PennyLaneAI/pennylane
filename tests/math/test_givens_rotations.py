@@ -144,11 +144,15 @@ def test_givens_decomposition(shape, seed):
     assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
 
 
-@pytest.mark.external
-@pytest.mark.catalyst
-@pytest.mark.jax
 @pytest.mark.parametrize("shape", [2, 3, 7])
-@pytest.mark.parametrize("compiler", [None, "jit", "qjit"])
+@pytest.mark.parametrize(
+    "compiler",
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
+)
 def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
     import jax
@@ -339,10 +343,14 @@ def test_givens_matrix_jaxpr():
         (True, [[1.0, 0.0], [0.0, 1.0]], (1, (0, 1)), [1.0, 2 - 0j], "jax", [[1, 0], [1, 2]]),
     ],
 )
-@pytest.mark.parametrize("compiler", [None, "jit", "qjit"])
-@pytest.mark.jax
-@pytest.mark.external
-@pytest.mark.catalyst
+@pytest.mark.parametrize(
+    "compiler",
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
+)
 def test_set_unitary_matrix_real(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
@@ -435,10 +443,14 @@ def test_set_unitary_matrix_real(
         ),
     ],
 )
-@pytest.mark.parametrize("compiler", [None, "jit", "qjit"])
-@pytest.mark.jax
-@pytest.mark.external
-@pytest.mark.catalyst
+@pytest.mark.parametrize(
+    "compiler",
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
+)
 def test_set_unitary_matrix_complex(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
