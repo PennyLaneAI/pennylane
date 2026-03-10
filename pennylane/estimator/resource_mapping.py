@@ -101,7 +101,7 @@ def _register_subroutine(subroutine: qtemps.Subroutine):
 
 
 @_map_to_resource_op.register
-def _resources_for_subroutine(op: qtemps.SubroutineOp):
+def _resources_for_subroutine(op: qtemps.core.SubroutineOp):
     if op.subroutine in _Subroutine_map:
         return _Subroutine_map[op.subroutine](op)
     with QueuingManager.stop_recording():

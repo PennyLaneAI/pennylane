@@ -24,7 +24,7 @@ from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
-from pennylane.templates import Subroutine
+from pennylane.templates.core import Subroutine
 from pennylane.wires import Wires, WiresLike
 
 

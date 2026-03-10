@@ -47,7 +47,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
-from pennylane.ops import ChangeOpBasis
+from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 

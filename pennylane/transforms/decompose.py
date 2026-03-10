@@ -29,7 +29,7 @@ from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
-from pennylane.templates import SubroutineOp
+from pennylane.templates.core import SubroutineOp
 from pennylane.transforms.core import transform
 
 
