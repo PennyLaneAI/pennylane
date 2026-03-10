@@ -80,7 +80,7 @@ def test_as_fixed_decomps(prec, num_controls):
         }
         assert expected_specs == specs
 
-    op = qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
+    op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
     _test_decomposition_rule(op, custom_decomp)
 
 
