@@ -22,6 +22,8 @@ This module contains the abstractions for defining subroutines.
     ~Subroutine
     ~SubroutineOp
     ~AbstractArray
+    ~change_op_basis_subroutine_resource_rep
+    ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
 
 """
@@ -836,4 +838,5 @@ __all__ = [
     "AbstractArray",
     "subroutine_resource_rep",
     "adjoint_subroutine_resource_rep",
+    "change_op_basis_subroutine_resource_rep",
 ]
