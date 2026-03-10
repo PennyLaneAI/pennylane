@@ -323,7 +323,11 @@
   These bypass generic einsum/tensordot dispatch and use direct NumPy contractions for pure-numpy
   states, with correct fallbacks for autodiff interfaces (autograd, torch, JAX, TensorFlow).
   
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the `default.qubit` device.
+  These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
+  states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+
 * Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
