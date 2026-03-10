@@ -725,6 +725,7 @@ class TestCatalyst:
     """Unit tests for catalyst integration."""
 
     # pylint: disable=import-outside-toplevel
+    @pytest.mark.xfail(reason="remove after #2554 in Catalyst")
     @pytest.mark.external
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
