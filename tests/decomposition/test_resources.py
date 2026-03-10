@@ -245,7 +245,7 @@ class TestCompressedResourceOp:
         assert repr(op) == "DummyOp(bar=1, foo=2)"
 
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
-        assert repr(op) == "DummyOp(foo=2, bar=1)"
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
 
     @pytest.mark.parametrize(
         "op, expected_name",
