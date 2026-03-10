@@ -420,12 +420,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         elif issubclass(op.op_type, qml.ops.Pow):
             # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-# Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-# approach we take to decompose powers of operators. 
+            # approach we take to decompose powers of operators.
             decomps.extend(self._get_pow_decompositions(op))
 
         elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
