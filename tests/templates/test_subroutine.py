@@ -572,17 +572,17 @@ class TestGraphDecomposition:
     def test_creating_abstract_array(self):
         """Test basic checks for creating an AbstractArray."""
 
-        a = qml.templates.AbstractArray((2, 2, 3), np.float64)
+        a = qml.templates.core.AbstractArray((2, 2, 3), np.float64)
         assert a.shape == (2, 2, 3)
         assert a.dtype is np.dtype(np.float64)
 
-        b = qml.templates.AbstractArray(())
+        b = qml.templates.core.AbstractArray(())
         assert b.shape == ()
         assert b.dtype is np.dtype(np.int64)
 
         assert a != b
         assert hash(a)
-        assert b == qml.templates.AbstractArray(())
+        assert b == qml.templates.core.AbstractArray(())
 
     @pytest.mark.torch
     def test_torch_dtype_converted_to_numpy(self):
@@ -591,7 +591,7 @@ class TestGraphDecomposition:
         import torch
 
         x = torch.tensor(0.5, dtype=torch.float64)
-        a = qml.templates.AbstractArray((), x.dtype)
+        a = qml.templates.core.AbstractArray((), x.dtype)
         assert a.dtype is np.dtype(np.float64)
 
     def test_inbuilt_type_promotion_to_numpy(self):
@@ -603,7 +603,7 @@ class TestGraphDecomposition:
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
 
-        a = qml.templates.AbstractArray((2, 3, 3))
+        a = qml.templates.core.AbstractArray((2, 3, 3))
         assert len(a) == 18
 
     def test_resource_keys(self):
