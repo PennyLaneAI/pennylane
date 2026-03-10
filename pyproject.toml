@@ -23,6 +23,7 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
+    "gast",
     "numpy"
 ]
 classifiers = [
