@@ -15,7 +15,7 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter, defaultdict
-from functools import reduce
+from functools import reduce, partial
 
 from pennylane import math, pytrees, queuing
 from pennylane.decomposition import (
@@ -37,14 +37,14 @@ from pennylane.ops.op_math import adjoint, ctrl
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+def change_op_basis(compute_op: Operator | partial, target_op: Operator | partial, uncompute_op: Operator | partial = None):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator`): An optional single operator or a product that applies quantum
+        compute_op (:class:`~.Operator` | partial): A single operator or product that applies quantum operations.
+        target_op (:class:`~.Operator` | partial): A single operator or a product that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | partial): An optional single operator or a product that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
@@ -85,9 +85,16 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
-
-    return ChangeOpBasis(compute_op, target_op, uncompute_op)
-
+    if isinstance(compute_op, Operator) and isinstance(target_op, Operator) and (isinstance(uncompute_op, Operator) or uncompute_op is None):
+        return ChangeOpBasis(compute_op, target_op, uncompute_op)
+    elif isinstance(compute_op, partial) and isinstance(target_op, partial):
+        compute_op()
+        target_op()
+        if uncompute_op is None:
+            raise ValueError("When using partials, uncompute_op must be provided.")
+        uncompute_op()
+    else:
+        raise TypeError("When providing a partial to change_op_basis, all parameters must be partials.")
 
 class ChangeOpBasis(CompositeOp):
     """

@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.decomposition import resource_rep
+from pennylane.decomposition import resource_rep, gate_sets
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -49,13 +49,12 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
 
-@pytest.mark.capture
 def test_change_op_basis_partials():
     """Tests that partials can be provided to change_op_basis."""
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
-    def f(a, reg1, reg2, x):
-        qml.BasisState(np.zeroes(len(reg2)), reg2)
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
         qml.QFT(reg1)
         qml.RX(a, reg1[0])
 
@@ -64,25 +63,26 @@ def test_change_op_basis_partials():
         qml.PauliX(wires[0])
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
-    def h(a, reg1, reg2, x):
+    def h(a, reg1, reg2):
         qml.adjoint(qml.RX)(a, reg1[0])
         qml.adjoint(qml.QFT)(reg1)
-        qml.adjoint(qml.BasisState)(np.zeroes(len(reg2)), reg2)
+        qml.adjoint(qml.BasisState)(np.zeros(len(reg2)), reg2)
 
+    @qml.decompose(gate_set=gate_sets.ALL_QUBIT_OPS, max_expansion=1)
     def circuit():
-        qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires[1]), partial(g, Wires([0])), partial(f, 0.2, Wires([0]), Wires[1]))
+        qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])), partial(h, 0.2, Wires([0]), Wires([1])))
 
     with AnnotatedQueue() as q:
         circuit()
 
     expected = [
-        qml.BasisState(np.zeroes(1), [1]),
+        qml.BasisState(np.zeros(1), [1]),
         qml.QFT([0]),
         qml.RX(0.1, 0),
         qml.PauliX(0),
         qml.adjoint(qml.RX)(0.2, 0),
         qml.adjoint(qml.QFT)([0]),
-        qml.adjoint(qml.BasisState)(np.zeroes(1), [1])
+        qml.adjoint(qml.BasisState)(np.zeros(1), [1])
     ]
 
     for i, op in enumerate(q.queue):
