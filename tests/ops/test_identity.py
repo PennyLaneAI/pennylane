@@ -89,6 +89,16 @@ class TestIdentity:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    def test_sparse_matrix_format(self, wires):
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        op = qml.Identity(wires=wires)
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
+        assert qml.math.allclose(op.matrix(), op.sparse_matrix().toarray())
+
 
 @pytest.mark.parametrize("wires, expected_repr", op_params)
 def test_repr(wires, expected_repr):

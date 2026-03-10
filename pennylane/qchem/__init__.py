@@ -14,20 +14,20 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
+from pennylane.math.decomposition import givens_decomposition
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
 from .convert_openfermion import from_openfermion, to_openfermion
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular_dipole
 from .factorization import basis_rotation, factorize, symmetry_shift
-from .givens_decomposition import givens_decomposition
 from .hamiltonian import (
+    diff_hamiltonian,
     electron_integrals,
     fermionic_hamiltonian,
-    diff_hamiltonian,
     molecular_hamiltonian,
 )
-from .hartree_fock import scf, nuclear_energy, hf_energy
+from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
     attraction_integral,
     contracted_norm,
@@ -83,12 +83,18 @@ from .tapering import (
     taper_operation,
 )
 from .vibrational import (
-    optimize_geometry,
-    localize_normal_modes,
     VibrationalPES,
+    christiansen_bosonic,
+    christiansen_dipole,
+    christiansen_hamiltonian,
+    christiansen_integrals,
+    christiansen_integrals_dipole,
+    localize_normal_modes,
+    optimize_geometry,
     taylor_bosonic,
     taylor_coeffs,
     taylor_dipole_coeffs,
     taylor_hamiltonian,
+    vibrational_pes,
     vscf_integrals,
 )

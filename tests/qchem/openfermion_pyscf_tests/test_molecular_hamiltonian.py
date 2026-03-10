@@ -365,12 +365,12 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
     assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
@@ -593,12 +593,12 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
     assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
@@ -607,7 +607,7 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     ("wiremap"),
     [
         ["a", "b", "c", "d"],
-        [0, "z", 3, "ancilla"],
+        [0, "z", 3, "auxiliary"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -633,7 +633,7 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     ("wiremap"),
     [
         ["a", "b", "c", "d"],
-        [0, "z", 3, "ancilla"],
+        [0, "z", 3, "auxiliary"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -658,11 +658,11 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             None,
         ),
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -698,11 +698,11 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             None,
         ),
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -747,7 +747,7 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
     f_name = "h2.xyz"
     filename = tmpdir.join(f_name)
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf8") as f:
         f.write(file_content)
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
@@ -762,7 +762,7 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
     f_name = "h2.xyz"
     filename = tmpdir.join(f_name)
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf8") as f:
         f.write(file_content)
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
@@ -1113,7 +1113,7 @@ def test_error_raised_for_missing_molecule_information():
                 ],
             ),
         ),
-        (
+        pytest.param(
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             0,
@@ -1160,6 +1160,10 @@ def test_error_raised_for_missing_molecule_information():
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
                 ],
+            ),
+            marks=pytest.mark.xfail(
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
+                strict=True,
             ),
         ),
         (
@@ -1232,7 +1236,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
         h_coeffs, h_ops = h.terms()
 
         assert np.allclose(np.sort(h_coeffs), np.sort(h_ref_coeffs))
-        assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops).compare(
+        assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops) == (
             qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
         )
 

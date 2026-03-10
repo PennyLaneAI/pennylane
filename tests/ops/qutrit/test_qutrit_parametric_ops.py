@@ -101,7 +101,7 @@ class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         """Check that parameter frequencies of parametrized operations are defined correctly."""
-        if not qml.operation.has_gen(op):
+        if not op.has_generator:
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
         gen = op.generator()

@@ -3,6 +3,16 @@
 TensorFlow interface
 =====================
 
+.. warning::
+
+    Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
+    Future versions of PennyLane are not guaranteed to work with TensorFlow.
+    Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
+    machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
+    a comprehensive guide on JAX and PyTorch: 
+    `Turning quantum nodes into Torch Layers <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`_ and 
+    `How to optimize a QML model using JAX and Optax <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
+
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
 QNode decorator or QNode class constructor.
@@ -193,11 +203,3 @@ The final weights and circuit value are:
 <tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
 >>> circuit4(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
-
-Keras integration
------------------
-
-Once you have a TensorFlow-compaible QNode, it is easy to convert this into a Keras layer. To
-help automate this process, PennyLane also provides a :class:`~.qnn.KerasLayer` class to easily
-convert a QNode to a Keras layer. Please see the corresponding :class:`~.qnn.KerasLayer`
-documentation for more details and examples.

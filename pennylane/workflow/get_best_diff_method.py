@@ -13,13 +13,20 @@
 # limitations under the License.
 """Contains a function for getting the best differentiation method for a given QNode."""
 
+from __future__ import annotations
+
 from functools import wraps
+from typing import TYPE_CHECKING
 
 import pennylane as qml
-from pennylane.workflow.qnode import QNode, _make_execution_config
+from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow.resolution import _resolve_execution_config
+
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 
-def get_best_diff_method(qnode: QNode):
+def get_best_diff_method(qnode: QNode) -> str:
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 
@@ -39,13 +46,13 @@ def get_best_diff_method(qnode: QNode):
     .. seealso::
 
         For a detailed comparison of the backpropagation and parameter-shift methods,
-        refer to the :doc:`quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`.
+        refer to the `quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`__.
 
     Args:
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
 
     Returns:
-        str: the gradient transform.
+        str: the gradient method name.
     """
 
     def handle_return(transform):
@@ -57,20 +64,20 @@ def get_best_diff_method(qnode: QNode):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         device = qnode.device
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
 
-        config = _make_execution_config(None, "best")
+        # Construct the tape using the same method as the execution workflow
+        batch, _ = qml.workflow.construct_batch(qnode, level="user")(*args, **kwargs)
 
-        if device.supports_derivatives(config, circuit=tape):
-            new_config = device.setup_execution_config(config)
-            transform = new_config.gradient_method
-            return handle_return(transform)
+        # Create execution config with "best" method - this matches the workflow behavior
+        mcm_config = qml.devices.MCMConfig(
+            postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
+            mcm_method=qnode.execute_kwargs.get("mcm_method"),
+        )
+        config = _make_execution_config(qnode, "best", mcm_config)
 
-        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
-            transform = qml.gradients.param_shift_cv
-            return handle_return(transform)
+        # Use the same resolution logic as execute() and construct_batch()
+        resolved_config = _resolve_execution_config(config, device, batch)
 
-        transform = qml.gradients.param_shift
-        return handle_return(transform)
+        return handle_return(resolved_config.gradient_method)
 
     return wrapper

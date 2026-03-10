@@ -25,13 +25,58 @@ Modules
     :toctree: api
 
 """
-from warnings import warn
-from pennylane import ExperimentalWarning
-
-warn(
-    ExperimentalWarning(
-        "This module is currently experimental and will not maintain API stability between releases."
-    )
+from .operations import RotXZX
+from .decomposition import (
+    convert_to_mbqc_formalism,
+    convert_to_mbqc_gateset,
+    ppr_to_mbqc,
+)
+from .parametric_midmeasure import (
+    ParametricMidMeasure,
+    XMidMeasure,
+    YMidMeasure,
+    measure_arbitrary_basis,
+    measure_x,
+    measure_y,
+    measure_z,
+    diagonalize_mcms,
+)
+from .conditional_measure import cond_measure
+from .lattice import Lattice, generate_lattice
+from .graph_state_preparation import GraphStatePrep, make_graph_state
+from .qubit_graph import QubitGraph
+from .utils import QubitMgr
+from .pauli_tracker import (
+    get_byproduct_corrections,
+    pauli_to_xz,
+    xz_to_pauli,
+    pauli_prod,
+    commute_clifford_op,
 )
 
-__all__ = []
+__all__ = [
+    "GraphStatePrep",
+    "RotXZX",
+    "Lattice",
+    "QubitGraph",
+    "QubitMgr",
+    "ParametricMidMeasure",
+    "XMidMeasure",
+    "YMidMeasure",
+    "cond_measure",
+    "measure_arbitrary_basis",
+    "measure_x",
+    "measure_y",
+    "measure_z",
+    "diagonalize_mcms",
+    "convert_to_mbqc_formalism",
+    "convert_to_mbqc_gateset",
+    "ppr_to_mbqc",
+    "generate_lattice",
+    "make_graph_state",
+    "get_byproduct_corrections",
+    "pauli_to_xz",
+    "xz_to_pauli",
+    "pauli_prod",
+    "commute_clifford_op",
+]

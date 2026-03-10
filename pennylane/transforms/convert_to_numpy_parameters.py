@@ -23,7 +23,6 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-# pylint: disable=no-member
 def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
     if math.get_interface(*op.data) == "numpy":
         return op
@@ -31,7 +30,6 @@ def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Opera
     return qml.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
 
 
-# pylint: disable=no-member
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
@@ -46,7 +44,6 @@ def _convert_measurement_to_numpy_data(
     return type(m)(obs=new_obs)
 
 
-# pylint: disable=protected-access
 @transform
 def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transforms a circuit to one with purely numpy parameters.
@@ -89,7 +86,7 @@ def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch
     )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

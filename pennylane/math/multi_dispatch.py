@@ -15,9 +15,9 @@
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import functools
 from collections.abc import Sequence
+from operator import attrgetter
 
 # pylint: disable=wrong-import-order
-import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -164,13 +164,19 @@ def kron(*args, like=None, **kwargs):
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
 
     if like == "torch":
-        mats = [
-            ar.numpy.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg
-            for arg in args
-        ]
-        return ar.numpy.kron(*mats)
+        # Extract all the devices for the incoming tensors
+        devs = set(map(attrgetter("device"), args))
+        devs = list(devs)
+        # If multiple devices found, choose the non-CPU device as the default
+        if len(devs) > 1:  # Assuming "cpu" and non-"cpu" are the only options
+            dev = devs[0] if getattr(devs[0], "type", str(devs[0])) != "cpu" else devs[1]
+        else:
+            dev = devs[0]
+        # Migrate the tensors to all be on the chosen device, if necessary
+        mats = [np.asarray(arg, like="torch", device=dev) for arg in args]
+        return np.kron(*mats)
 
-    return ar.numpy.kron(*args, like=like, **kwargs)
+    return np.kron(*args, like=like, **kwargs)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -235,26 +241,45 @@ def concatenate(values, axis=0, like=None):
     if like == "torch":
         import torch
 
-        device = (
-            "cuda"
-            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
-            else "cpu"
-        )
+        device_set = set()
+        dev_indices = set()
+        torch_device = None
+        for t in values:
+            if isinstance(t, torch.Tensor):
+                device_set.add(t.device.type)
+                dev_indices.add(t.device.index)
+
+        # TODO: Remove the no-cover pragma once we are able to test with multiple GPUs on CI.
+        if device_set:  # pragma: no cover
+            # If data exists on two separate GPUs, outright fail
+            if len(dev_indices) > 1:
+                device_names = ", ".join(str(d) for d in device_set)
+
+                raise RuntimeError(
+                    f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+                )
+
+            device = device_set.pop()
+            dev_id = dev_indices.pop() if dev_indices else None
+            torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
+
+        else:  # pragma: no cover
+            torch_device = torch.device("cpu")
 
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
             values = [
-                np.flatten(torch.as_tensor(t, device=torch.device(device)))  # pragma: no cover
+                np.flatten(torch.as_tensor(t, device=torch_device))  # pragma: no cover
                 for t in values
             ]
             axis = 0
         else:
-            values = [
-                torch.as_tensor(t, device=torch.device(device)) for t in values  # pragma: no cover
-            ]
+            values = [torch.as_tensor(t, device=torch_device) for t in values]  # pragma: no cover
 
-    if like == "tensorflow" and axis is None:
+    if (
+        like == "tensorflow" and axis is None
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # flatten and then concatenate zero'th dimension
         # to reproduce numpy's behaviour
         values = [np.flatten(np.array(t)) for t in values]
@@ -309,11 +334,11 @@ def matmul(tensor1, tensor2, like=None):
     """Returns the matrix product of two tensors."""
     if like == "torch":
         if get_interface(tensor1) != "torch":
-            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+            tensor1 = np.asarray(tensor1, like="torch")
         if get_interface(tensor2) != "torch":
-            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+            tensor2 = np.asarray(tensor2, like="torch")
         tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
-    return ar.numpy.matmul(tensor1, tensor2, like=like)
+    return np.matmul(tensor1, tensor2, like=like)
 
 
 @multi_dispatch(argnum=[0, 1])
@@ -370,6 +395,14 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
+    if like == "scipy":
+        # See https://github.com/scipy/scipy/issues/18938 for the issue
+        # with scipy sparse and np dot product
+
+        # Avoid the case when one is a scalar - using a robust check for scalars
+        if onp.isscalar(x) or onp.isscalar(y):
+            return x * y
+        return x.dot(y)
     return np.dot(x, y, like=like)
 
 
@@ -556,7 +589,7 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Unpacking and casting necessary for higher order derivatives,
         # and avoiding implicit fp32 down-conversions.
         op1, op2 = operands
@@ -628,7 +661,9 @@ def where(condition, x=None, y=None):
         interface = get_interface(condition)
         res = np.where(condition, like=interface)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             return np.transpose(np.stack(res))
 
         return res
@@ -703,8 +738,11 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
+# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(tensor, index, value, like=None):
+def scatter_element_add(
+    tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
+):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
@@ -713,6 +751,13 @@ def scatter_element_add(tensor, index, value, like=None):
         index (tuple or list[tuple]): Indices to which to add the value
         value (float or tensor_like[float]): Value to add to ``tensor``
         like (str): Manually chosen interface to dispatch to.
+
+    Keyword Args:
+        indices_are_sorted=False (bool): If ``True``, jax will assume that the indices are in
+            ascending order. Required to be ``True`` with catalyst.
+        unique_indices=False (bool): If ``True``, jax will assume each index is unique.
+            Required to be ``True`` with catalyst.
+
     Returns:
         tensor_like[float]: The tensor with the value added at the given indices.
 
@@ -737,7 +782,14 @@ def scatter_element_add(tensor, index, value, like=None):
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 
-    return np.scatter_element_add(tensor, index, value, like=like)
+    return np.scatter_element_add(
+        tensor,
+        index,
+        value,
+        like=like,
+        indices_are_sorted=indices_are_sorted,
+        unique_indices=unique_indices,
+    )
 
 
 def unwrap(values, max_depth=None):
@@ -814,7 +866,7 @@ def add(*args, like=None, **kwargs):
 @multi_dispatch()
 def iscomplex(tensor, like=None):
     """Return True if the tensor has a non-zero complex component."""
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         imag_tensor = tf.math.imag(tensor)
@@ -845,7 +897,7 @@ def expm(tensor, like=None):
         from jax.scipy.linalg import expm as jax_expm
 
         return jax_expm(tensor)
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         return tf.linalg.expm(tensor)
@@ -860,7 +912,9 @@ def norm(tensor, like=None, **kwargs):
     if like == "jax":
         from jax.numpy.linalg import norm
 
-    elif like == "tensorflow":
+    elif (
+        like == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         from tensorflow import norm
 
     elif like == "torch":
@@ -874,6 +928,9 @@ def norm(tensor, like=None, **kwargs):
         like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
     ):
         norm = _flat_autograd_norm
+
+    elif like == "scipy":
+        from scipy.sparse.linalg import norm
 
     else:
         from scipy.linalg import norm
@@ -902,7 +959,7 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``True`` or ``None``, or only the singular values
         if ``compute_uv`` is ``False``
     """
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         from tensorflow.linalg import adjoint, svd
 
         # Tensorflow results need some post-processing to keep it similar to other frameworks.
@@ -994,7 +1051,7 @@ def detach(tensor, like=None):
     if like == "torch":
         return tensor.detach()
 
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         return tf.stop_gradient(tensor)
@@ -1008,7 +1065,7 @@ def detach(tensor, like=None):
 @multi_dispatch(tensor_list=[1])
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
-    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX or Tensorflow.
 
     Args:
         array (tensor_like): array to be modified
@@ -1019,8 +1076,6 @@ def set_index(array, idx, val, like=None):
         a new copy of the array with the specified index updated to ``val``.
 
     Whether the original array is modified is interface-dependent.
-
-    .. note:: TensorFlow EagerTensor does not support item assignment
     """
     if like == "jax":
         from jax import numpy as jnp
@@ -1028,6 +1083,11 @@ def set_index(array, idx, val, like=None):
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.array(array)
         return jax_array.at[idx].set(val)
+
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+        import tensorflow as tf
+
+        return tf.concat([array[:idx], val[None], array[idx + 1 :]], 0)
 
     array[idx] = val
     return array

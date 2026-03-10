@@ -19,15 +19,16 @@ from unittest.mock import patch
 
 import numpy as onp
 import pytest
+import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import math as fn
 from pennylane import numpy as np
+from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -36,35 +37,6 @@ sci = pytest.importorskip("scipy")
 
 class TestGetMultiTensorbox:
     """Tests for the get_interface utility function"""
-
-    def test_exception_tensorflow_and_torch(self):
-        """Test that an exception is raised if the sequence of tensors contains
-        tensors from incompatible dispatch libraries"""
-        x = tf.Variable([1.0, 2.0, 3.0])
-        y = onp.array([0.5, 0.1])
-        z = torch.tensor([0.6])
-
-        with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn.get_interface(x, y, z)
-
-    def test_exception_tensorflow_and_jax(self):
-        """Test that an exception is raised if the sequence of tensors contains
-        tensors from incompatible dispatch libraries"""
-        x = tf.Variable([1.0, 2.0, 3.0])
-        y = onp.array([0.5, 0.1])
-        z = jnp.array([0.6])
-
-        with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn.get_interface(x, y, z)
-
-    def test_warning_tensorflow_and_autograd(self):
-        """Test that a warning is raised if the sequence of tensors contains
-        both tensorflow and autograd tensors."""
-        x = tf.Variable([1.0, 2.0, 3.0])
-        y = np.array([0.5, 0.1])
-
-        with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
-            fn.get_interface(x, y)
 
     def test_warning_torch_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
@@ -92,14 +64,6 @@ class TestGetMultiTensorbox:
         y = np.array([0.5, 0.1])
 
         fn.get_interface(x, y)
-
-    def test_return_tensorflow_box(self):
-        """Test that TensorFlow is correctly identified as the dispatching library."""
-        x = tf.Variable([1.0, 2.0, 3.0])
-        y = onp.array([0.5, 0.1])
-
-        res = fn.get_interface(y, x)
-        assert res == "tensorflow"
 
     def test_return_torch_box(self):
         """Test that Torch is correctly identified as the dispatching library."""
@@ -147,8 +111,6 @@ test_abs_data = [
     onp.array([1, -2, 3 + 4j]),
     np.array([1, -2, 3 + 4j]),
     torch.tensor([1, -2, 3 + 4j], dtype=torch.complex128),
-    tf.Variable([1, -2, 3 + 4j], dtype=tf.complex128),
-    tf.constant([1, -2, 3 + 4j], dtype=tf.complex128),
 ]
 
 
@@ -166,8 +128,6 @@ test_data = [
     onp.array([1, 2, 3]),
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
-    tf.Variable([1, 2, 3]),
-    tf.constant([1, 2, 3]),
 ]
 
 unequal_test_data = [
@@ -176,8 +136,6 @@ unequal_test_data = [
     onp.array([1, 2, 39]),
     np.array([1, 2, 4]),
     torch.tensor([1, 20, 3]),
-    tf.Variable([2, 21, 3]),
-    tf.constant([2, 1, 3]),
 ]
 
 
@@ -185,12 +143,6 @@ unequal_test_data = [
 def test_allequal(t1, t2):
     """Test that the allequal function works for a variety of inputs."""
     res = fn.allequal(t1, t2)
-
-    if isinstance(t1, tf.Variable):
-        t1 = tf.convert_to_tensor(t1)
-
-    if isinstance(t2, tf.Variable):
-        t2 = tf.convert_to_tensor(t2)
 
     expected = all(float(x) == float(y) for x, y in zip(t1, t2))
     assert res == expected
@@ -203,9 +155,7 @@ test_all_vectors = [
 ]
 
 
-@pytest.mark.parametrize(
-    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
-)
+@pytest.mark.parametrize("array_fn", [tuple, list, onp.array, np.array, torch.tensor])
 @pytest.mark.parametrize("t1, expected", test_all_vectors)
 def test_all(array_fn, t1, expected):
     """Test that the all function works for a variety of inputs."""
@@ -221,9 +171,7 @@ test_any_vectors = [
 ]
 
 
-@pytest.mark.parametrize(
-    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
-)
+@pytest.mark.parametrize("array_fn", [tuple, list, onp.array, np.array, torch.tensor])
 @pytest.mark.parametrize("t1, expected", test_any_vectors)
 def test_any(array_fn, t1, expected):
     """Test that the any function works for a variety of inputs."""
@@ -243,14 +191,105 @@ def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
 
-    if isinstance(t1, tf.Variable):
-        t1 = tf.convert_to_tensor(t1)
-
-    if isinstance(t2, tf.Variable):
-        t2 = tf.convert_to_tensor(t2)
-
     expected = all(float(x) == float(y) for x, y in zip(t1, t2))
     assert res == expected
+
+
+class TestAllCloseSparse:
+    """Test that the sparse-matrix specialized allclose functions works well"""
+
+    @pytest.mark.parametrize("v", [0, 1, 2.0, 3.0j, 1e-9])
+    def test_sparse_scalar(self, v):
+        """Test comparing a scalar to a sparse matrix"""
+        dense = v
+
+        sparse = sp.sparse.csr_matrix([v] * 10)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+        # Shift one element of the sparse matrix
+        sparse_wrong = sp.sparse.csr_matrix([v + 0.1] + [v] * 9)
+        assert not fn.allclose(dense, sparse_wrong)
+        assert not fn.allclose(sparse_wrong, dense)
+
+        # Empty one element of the sparse matrix
+        v_nonzero = not np.isclose(v, 0)
+        sparse_wrong = sp.sparse.csr_matrix([0 if v_nonzero else 1] + [v] * 9)
+        assert not fn.allclose(dense, sparse_wrong)
+        assert not fn.allclose(sparse_wrong, dense)
+
+    def test_dense_sparse_small_matrix(self):
+        """Test comparing small dense and sparse matrices"""
+        dense = np.array([[1, 0, 2], [0, 3, 0]])
+        sparse = sp.sparse.csr_matrix(dense)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+    def test_dense_sparse_zero_nnz(self):
+        """Test comparing dense matrix with empty sparse matrix"""
+        dense = np.zeros((2, 3))
+        sparse = sp.sparse.csr_matrix(dense)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+    def test_dense_sparse_different_shapes(self):
+        """Test comparing matrices with different shapes"""
+        dense = np.array([[1, 2], [3, 4]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 2]]))
+
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    def test_dense_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+        # When size is large enough, a very small perturbation
+        # will override the tolerance.
+        dense[-1, 0] = np.finfo(float).eps
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    def test_sparse_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse0 = sp.sparse.csr_matrix(dense)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(sparse0, sparse)
+
+        dense[-1, 0] = 0.001
+
+        sparse0 = sp.sparse.csr_matrix(dense)
+
+        assert not fn.allclose(sparse0, sparse)
+
+    def test_dense_sparse_different_nonzero(self):
+        """Test comparing matrices with different nonzero patterns"""
+        dense = np.array([[1, 0], [0, 1]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 1], [0, 1]]))
+
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    @pytest.mark.parametrize("rtol,atol", [(1e-7, 1e-8), (1e-5, 1e-6)])
+    def test_dense_sparse_tolerances(self, rtol, atol):
+        """Test comparing matrices with different tolerances"""
+        dense = np.array([[1.0, 0.0], [0.0, 1.0 + 1e-7]])
+        sparse = sp.sparse.csr_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+        allclose_result = fn.allclose(dense, sparse, rtol=rtol, atol=atol)
+        expected = np.allclose(dense, sparse.toarray(), rtol=rtol, atol=atol)
+        assert allclose_result == expected
 
 
 test_angle_data = [
@@ -259,8 +298,6 @@ test_angle_data = [
     onp.array([1.0, 1.0j, 1 + 1j]),
     np.array([1.0, 1.0j, 1 + 1j]),
     torch.tensor([1.0, 1.0j, 1 + 1j], dtype=torch.complex128),
-    tf.Variable([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
-    tf.constant([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
 ]
 
 
@@ -278,8 +315,6 @@ test_arcsin_data = [
     onp.array([1, 0.2, -0.5]),
     np.array([1, 0.2, -0.5]),
     torch.tensor([1, 0.2, -0.5], dtype=torch.float64),
-    tf.Variable([1, 0.2, -0.5], dtype=tf.float64),
-    tf.constant([1, 0.2, -0.5], dtype=tf.float64),
 ]
 
 
@@ -297,8 +332,6 @@ test_conj_data = [
     np.array([1.0, 1.0j, 1 + 1j]),
     jnp.array([1.0, 1.0j, 1 + 1j]),
     torch.tensor([1.0, 1.0j, 1 + 1j], dtype=torch.complex128),
-    tf.Variable([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
-    tf.constant([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
 ]
 
 
@@ -357,14 +390,6 @@ class TestCast:
         assert onp.issubdtype(onp.asarray(t).dtype, onp.integer)
         assert res.dtype.type is onp.float64
 
-    def test_cast_tensorflow_dtype(self):
-        """If the tensor is a TensorFlow tensor, casting using a TensorFlow dtype
-        will also work"""
-        t = tf.Variable([1, 2, 3])
-        res = fn.cast(t, tf.complex128)
-        assert isinstance(res, tf.Tensor)
-        assert res.dtype is tf.complex128
-
     def test_cast_torch_dtype(self):
         """If the tensor is a Torch tensor, casting using a Torch dtype
         will also work"""
@@ -380,15 +405,11 @@ cast_like_test_data = [
     onp.array([1, 2, 3], dtype=onp.int64),
     np.array([1, 2, 3], dtype=np.int64),
     torch.tensor([1, 2, 3], dtype=torch.int64),
-    tf.Variable([1, 2, 3], dtype=tf.int64),
-    tf.constant([1, 2, 3], dtype=tf.int64),
     (1.0, 2.0, 3.0),
     [1.0, 2.0, 3.0],
     onp.array([1, 2, 3], dtype=onp.float64),
     np.array([1, 2, 3], dtype=np.float64),
     torch.tensor([1, 2, 3], dtype=torch.float64),
-    tf.Variable([1, 2, 3], dtype=tf.float64),
-    tf.constant([1, 2, 3], dtype=tf.float64),
 ]
 
 
@@ -432,17 +453,6 @@ class TestConcatenate:
         res = fn.concatenate([t1, t2, t3])
         assert jnp.all(res == jnp.concatenate([t1, t2, t3]))
 
-    def test_concatenate_tensorflow(self):
-        """Test that concatenate, called without the axis arguments,
-        concatenates across the 0th dimension"""
-        t1 = tf.constant([0.6, 0.1, 0.6])
-        t2 = tf.Variable([0.1, 0.2, 0.3])
-        t3 = onp.array([5.0, 8.0, 101.0])
-
-        res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, tf.Tensor)
-        assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
-
     def test_concatenate_torch(self):
         """Test that concatenate, called without the axis arguments,
         concatenates across the 0th dimension"""
@@ -454,9 +464,7 @@ class TestConcatenate:
         assert isinstance(res, torch.Tensor)
         assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
 
-    @pytest.mark.parametrize(
-        "t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])]
-    )
+    @pytest.mark.parametrize("t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]])])
     def test_concatenate_axis(self, t1):
         """Test that passing the axis argument allows for concatenating along
         a different axis"""
@@ -470,9 +478,7 @@ class TestConcatenate:
         assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
         assert list(res.shape) == [2, 2]
 
-    @pytest.mark.parametrize(
-        "t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])]
-    )
+    @pytest.mark.parametrize("t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]])])
     def test_concatenate_flattened_arrays(self, t1):
         """Concatenating arrays with axis=None will result in all arrays being pre-flattened"""
         t2 = onp.array([5])
@@ -504,13 +510,22 @@ class TestConvertLike:
         assert fn.allequal(res, t1)
         assert isinstance(res, np.ndarray if isinstance(t2, (list, tuple)) else t2.__class__)
 
-    @pytest.mark.parametrize("t_like", [np.array([1]), tf.constant([1]), torch.tensor([1])])
+    @pytest.mark.parametrize("t_like", [np.array([1]), torch.tensor([1])])
     def test_convert_scalar(self, t_like):
         """Test that a python scalar is converted to a scalar tensor"""
         res = fn.convert_like(5, t_like)
         assert isinstance(res, t_like.__class__)
         assert res.ndim == 0
         assert fn.allequal(res, [5])
+
+    def test_convert_like_sparse(self):
+        """Test that a numpy array can be converted to a scipy array."""
+
+        np_array = np.array([[1, 0], [1, 0]])
+        sp_array = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+        out = qml.math.convert_like(np_array, sp_array)
+        assert isinstance(out, sci.sparse.csr_matrix)
+        assert qml.math.allclose(out.todense(), np_array)
 
 
 class TestDot:
@@ -521,9 +536,6 @@ class TestDot:
         [np.array(2), np.array(6)],
         [torch.tensor(2), onp.array(6)],
         [torch.tensor(2), torch.tensor(6)],
-        [tf.Variable(2), onp.array(6)],
-        [tf.constant(2), onp.array(6)],
-        [tf.Variable(2), tf.Variable(6)],
         [jnp.array(2), jnp.array(6)],
     ]
 
@@ -538,9 +550,6 @@ class TestDot:
         [np.array([1, 2, 3]), np.array([1, 2, 3])],
         [torch.tensor([1, 2, 3]), onp.array([1, 2, 3])],
         [torch.tensor([1, 2, 3]), torch.tensor([1, 2, 3])],
-        [tf.Variable([1, 2, 3]), onp.array([1, 2, 3])],
-        [tf.constant([1, 2, 3]), onp.array([1, 2, 3])],
-        [tf.Variable([1, 2, 3]), tf.Variable([1, 2, 3])],
         [jnp.array([1, 2, 3]), jnp.array([1, 2, 3])],
     ]
 
@@ -555,9 +564,6 @@ class TestDot:
         [np.array([[1, 2], [3, 4]]), np.array([6, 7])],
         [torch.tensor([[1, 2], [3, 4]]), onp.array([6, 7])],
         [torch.tensor([[1, 2], [3, 4]]), torch.tensor([6, 7])],
-        [tf.Variable([[1, 2], [3, 4]]), onp.array([6, 7])],
-        [tf.constant([[1, 2], [3, 4]]), onp.array([6, 7])],
-        [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
         [jnp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
         [onp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
     ]
@@ -582,20 +588,6 @@ class TestDot:
         res = fn.dot(t2, t2)
         assert fn.allequal(res, 85)
 
-    def test_matrix_vector_product_tensorflow_autograph(self):
-        """Test that the matrix-matrix dot product of two vectors results in a matrix
-        when using TensorFlow autograph mode"""
-        t1, t2 = tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])
-
-        @tf.function
-        def cost(t1, t2):
-            return fn.dot(t1, t2)
-
-        with tf.GradientTape():
-            res = cost(t1, t2)
-
-        assert fn.allequal(res, [20, 46])
-
     multidim_product_data = [
         [
             np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -608,18 +600,6 @@ class TestDot:
         [
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             torch.tensor([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
-        ],
-        [
-            onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            tf.Variable([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
-        ],
-        [
-            tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            onp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
-        ],
-        [
-            tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            tf.constant([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
         ],
         [
             jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -887,11 +867,11 @@ class TestTensordotDifferentiability:
         v2 = np.array(self.v2, requires_grad=True)
 
         # Test inner product
-        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnum=(0, 1))(v0, v1)
+        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnums=(0, 1))(v0, v1)
         assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
 
         # Test outer product
-        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnum=(0, 1))(v0, v2)
+        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
         assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
@@ -926,27 +906,6 @@ class TestTensordotDifferentiability:
 
         # Test outer product
         jac = jac_fn(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
-        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
-        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
-
-    def test_tensorflow(self):
-        """Tests differentiability of tensordot with TensorFlow."""
-
-        def jac_fn(func, args):
-            with tf.GradientTape() as tape:
-                out = func(*args)
-            return tape.jacobian(out, args)
-
-        v0 = tf.Variable(self.v0, dtype=tf.float64)
-        v1 = tf.Variable(self.v1, dtype=tf.float64)
-        v2 = tf.Variable(self.v2, dtype=tf.float64)
-
-        # Test inner product
-        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), (v0, v1))
-        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
-
-        # Test outer product
-        jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
         assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
@@ -993,14 +952,6 @@ class TestExpandDims:
         assert t2.shape == new_shape
         assert isinstance(t2, torch.Tensor)
 
-    def test_expand_dims_tf(self, shape, axis, new_shape):
-        """Test that the expand dimensions works correctly
-        when given a TF tensor"""
-        t1 = tf.ones(shape)
-        t2 = fn.expand_dims(t1, axis=axis)
-        assert t2.shape == new_shape
-        assert isinstance(t2, tf.Tensor)
-
 
 interface_test_data = [
     [(1, 2, 3), "numpy"],
@@ -1008,8 +959,6 @@ interface_test_data = [
     [onp.array([1, 2, 3]), "numpy"],
     [np.array([1, 2, 3]), "autograd"],
     [torch.tensor([1, 2, 3]), "torch"],
-    [tf.Variable([1, 2, 3]), "tensorflow"],
-    [tf.constant([1, 2, 3]), "tensorflow"],
     [jnp.array([1, 2, 3]), "jax"],
 ]
 
@@ -1017,15 +966,130 @@ interface_test_data = [
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
     """Test that the interface of a tensor-like object
-
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
 
 
+class TestScipySparse:
+    """Test the scipy.sparse objects get correctly dispatched"""
+
+    matrix = [sci.sparse.csr_matrix([[0, 1], [1, 0]])]
+
+    matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
+
+    dispatched_linalg_methods = [
+        fn.linalg.expm,
+        fn.linalg.inv,
+        fn.linalg.norm,
+    ]
+
+    dispatched_linalg_methods_factorization = [
+        fn.linalg.eigs,
+        fn.linalg.eigsh,
+        fn.linalg.svds,
+    ]
+
+    dispatched_linalg_methods_linear_solver = [
+        fn.linalg.spsolve,
+    ]
+
+    @pytest.mark.parametrize("matrix", matrix)
+    def test_get_interface_scipy(self, matrix):
+        """Test that the interface of a scipy sparse matrix is correctly returned."""
+
+        assert fn.get_interface(matrix) == "scipy"
+        assert fn.get_interface(matrix, matrix) == "scipy"
+
+    @pytest.mark.parametrize("matrix", matrix)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods)
+    def test_dispatched_linalg_methods_single(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_factorization)
+    def test_dispatched_linalg_methods_factorization(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, 1)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_linear_solver)
+    def test_dispatched_linalg_methods_linear_solver(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, sci.sparse.eye(matrix.shape[0]))
+
+    @pytest.mark.parametrize("matrix", matrix + matrix_4)
+    def test_dispatched_linalg_methods_matrix_power(self, matrix):
+        """Test that the matrix power method dispatched"""
+        _sparse_matrix_power_bruteforce(matrix, 2)
+
+    def test_matrix_power(self):
+        """Test our customized matrix power function"""
+        A = sci.sparse.csr_matrix([[2, 0], [0, 2]])
+
+        # Test n = 0 (identity matrix)
+        result = _sparse_matrix_power_bruteforce(A, 0)
+        expected = sci.sparse.eye(2, dtype=A.dtype, format=A.format)
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 1 (should be the same matrix)
+        result = _sparse_matrix_power_bruteforce(A, 1)
+        assert np.allclose(result.toarray(), A.toarray())
+
+        # Test n = 2 (square of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 2)
+        expected = A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 3 (cube of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 3)
+        expected = A @ A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Simple benchmark with the dispatcher
+        result0 = fn.linalg.matrix_power(A, 3)
+        assert np.allclose(result0.toarray(), expected.toarray())
+
+        # Test negative exponent (should raise an error)
+        with pytest.raises(ValueError):
+            _sparse_matrix_power_bruteforce(A, -1)
+
+        # Test non-integer exponent (should raise an error)
+        with pytest.raises(ValueError, match="exponent must be an integer"):
+            _sparse_matrix_power_bruteforce(A, 1.5)
+
+
 # pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
     """Test the Interface enum class"""
+
+    @pytest.mark.parametrize("user_input", [None, "numpy", "scipy"])
+    def test_numpy(self, user_input):
+        """Test that the numpy interface is correctly returned"""
+        assert fn.Interface(user_input) == fn.Interface.NUMPY
+
+    def test_autograd(self):
+        """Test that the autograd interface is correctly returned"""
+        assert fn.Interface("autograd") == fn.Interface.AUTOGRAD
+
+    @pytest.mark.parametrize("user_input", ["torch", "pytorch"])
+    def test_torch(self, user_input):
+        """Test that the torch interface is correctly returned"""
+        assert fn.Interface(user_input) == fn.Interface.TORCH
+
+    @pytest.mark.parametrize("user_input", ["JAX", "jax", "jax-python"])
+    def test_jax(self, user_input):
+        """Test that the jax interface is correctly returned"""
+        assert fn.Interface(user_input) == fn.Interface.JAX
+
+    def test_jax_jit(self):
+        """Test that the jax-jit interface is correctly returned"""
+        assert fn.Interface("jax-jit") == fn.Interface.JAX_JIT
+
+    def test_auto(self):
+        """Test that the auto interface is correctly returned"""
+        assert fn.Interface("auto") == fn.Interface.AUTO
 
     def test_eq(self):
         """Test that an error is raised if comparing to string"""
@@ -1227,25 +1291,6 @@ class TestRequiresGrad:
         t = torch.tensor([1.0, 2.0], requires_grad=False)
         assert not fn.requires_grad(t)
 
-    def test_tf(self):
-        """TensorFlow tensors will True *if* they are being watched by a gradient tape"""
-        t1 = tf.Variable([1.0, 2.0])
-        t2 = tf.constant([1.0, 2.0])
-        assert not fn.requires_grad(t1)
-        assert not fn.requires_grad(t2)
-
-        with tf.GradientTape():
-            # variables are automatically watched within a context,
-            # but constants are not
-            assert fn.requires_grad(t1)
-            assert not fn.requires_grad(t2)
-
-        with tf.GradientTape() as tape:
-            # watching makes all tensors trainable
-            tape.watch([t1, t2])
-            assert fn.requires_grad(t1)
-            assert fn.requires_grad(t2)
-
     def test_unknown_interface(self):
         """Test that an error is raised if the interface is unknown"""
         with pytest.raises(ValueError, match="unknown object"):
@@ -1308,50 +1353,6 @@ class TestInBackprop:
             qml.grad(cost_fn)(t, s)
         assert res == [False, False]
 
-    def test_tf(self):
-        """The value of in_backprop for TensorFlow tensors is True *if* they are being watched by a gradient tape"""
-        t1 = tf.Variable([1.0, 2.0])
-        t2 = tf.constant([1.0, 2.0])
-        assert not fn.in_backprop(t1)
-        assert not fn.in_backprop(t2)
-
-        with tf.GradientTape():
-            # variables are automatically watched within a context,
-            # but constants are not
-            assert fn.in_backprop(t1)
-            assert not fn.in_backprop(t2)
-
-        with tf.GradientTape() as tape:
-            # watching makes all tensors trainable
-            tape.watch([t1, t2])
-            assert fn.in_backprop(t1)
-            assert fn.in_backprop(t2)
-
-    def test_tf_autograph(self):
-        """TensorFlow tensors will True *if* they are being watched by a gradient tape with Autograph."""
-        t1 = tf.Variable([1.0, 2.0])
-        t2 = tf.constant([1.0, 2.0])
-        assert not fn.in_backprop(t1)
-        assert not fn.in_backprop(t2)
-
-        @tf.function
-        def f_pow(x):
-            return tf.math.pow(x, 3)
-
-        with tf.GradientTape():
-            # variables are automatically watched within a context,
-            # but constants are not
-            _ = f_pow(t1)
-            assert fn.in_backprop(t1)
-            assert not fn.in_backprop(t2)
-
-        with tf.GradientTape() as tape:
-            # watching makes all tensors trainable
-            tape.watch([t1, t2])
-            _ = f_pow(t1)
-            assert fn.in_backprop(t1)
-            assert fn.in_backprop(t2)
-
     @pytest.mark.torch
     def test_unknown_interface_in_backprop(self):
         """Test that an error is raised if the interface is unknown"""
@@ -1379,7 +1380,6 @@ shape_test_data = [
         ("autograd", np.empty),
         ("torch", torch.empty),
         ("jax", jnp.ones),
-        ("tf", tf.ones),
     ],
 )
 @pytest.mark.parametrize("shape", shape_test_data)
@@ -1392,7 +1392,7 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
 def test_shape_and_ndim_deep(interface):
     val = [[fn.asarray(1, like=interface)]]
     assert fn.shape(val) == (1, 1)
@@ -1410,8 +1410,6 @@ def test_shape_and_ndim_deep(interface):
         (np.array(0.5), "float64"),
         (np.array(0.5, dtype="complex64"), "complex64"),
         # skip jax as output is dependent on global configuration
-        (tf.Variable(0.1, dtype="float32"), "float32"),
-        (tf.Variable(0.1, dtype="float64"), "float64"),
         (torch.tensor(0.1, dtype=torch.float32), "float32"),
         (torch.tensor(0.5, dtype=torch.float64), "float64"),
         (torch.tensor(0.1, dtype=torch.complex128), "complex128"),
@@ -1452,16 +1450,6 @@ class TestStack:
         res = fn.stack([t1, t2, t3])
         assert np.all(res == np.stack([t1, t2, t3]))
 
-    def test_stack_tensorflow(self):
-        """Test that stack, called without the axis arguments, stacks vertically"""
-        t1 = tf.constant([0.6, 0.1, 0.6])
-        t2 = tf.Variable([0.1, 0.2, 0.3])
-        t3 = onp.array([5.0, 8.0, 101.0])
-
-        res = fn.stack([t1, t2, t3])
-        assert isinstance(res, tf.Tensor)
-        assert np.all(res.numpy() == np.stack([t1.numpy(), t2.numpy(), t3]))
-
     def test_stack_torch(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
         t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
@@ -1472,7 +1460,7 @@ class TestStack:
         assert isinstance(res, torch.Tensor)
         assert np.all(res.numpy() == np.stack([t1, t2.numpy(), t3.numpy()]))
 
-    @pytest.mark.parametrize("t1", [onp.array([1, 2]), torch.tensor([1, 2]), tf.constant([1, 2])])
+    @pytest.mark.parametrize("t1", [onp.array([1, 2]), torch.tensor([1, 2])])
     def test_stack_axis(self, t1):
         """Test that passing the axis argument allows for stacking along
         a different axis"""
@@ -1497,13 +1485,6 @@ class TestSum:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, 2.1)
 
-    def test_tensorflow(self):
-        """Test that sum, called without the axis arguments, returns a scalar"""
-        t = tf.Variable([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-        res = fn.sum(t)
-        assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, 2.1)
-
     def test_torch(self):
         """Test that sum, called without the axis arguments, returns a scalar"""
         t = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
@@ -1522,7 +1503,6 @@ class TestSum:
         [
             np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         ],
     )
@@ -1543,7 +1523,6 @@ class TestSum:
         [
             np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         ],
     )
@@ -1585,8 +1564,6 @@ class TestTake:
         np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-        tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         jnp.asarray([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     ]
 
@@ -1679,8 +1656,6 @@ where_data = [
     np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
 ]
 
@@ -1706,7 +1681,6 @@ def test_where(t):
 squeeze_data = [
     np.ones((1, 2, 3, 1, 5, 1)),
     torch.ones((1, 2, 3, 1, 5, 1)),
-    tf.ones((1, 2, 3, 1, 5, 1)),
     jnp.ones((1, 2, 3, 1, 5, 1)),
     onp.ones((1, 2, 3, 1, 5, 1)),
 ]
@@ -1787,22 +1761,6 @@ class TestScatterElementAdd:
         exp_jac_y[0, 1, 0] = 2 * y[0]
         exp_jac_y[1, 2, 1] = 2 * y[1]
         assert fn.allclose(jac[1], exp_jac_y)
-
-    def test_tensorflow(self):
-        """Test that a TF tensor is differentiable when using scatter addition"""
-        x = tf.Variable(self.x)
-        y = tf.Variable(self.y)
-
-        with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.index, y**2)
-            loss = res[self.index[0], self.index[1]]
-
-        assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, self.expected_val)
-
-        grad = tape.gradient(loss, [x, y])
-        assert fn.allclose(grad[0], self.expected_grad_x)
-        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_torch(self):
         """Test that a torch tensor is differentiable when using scatter addition"""
@@ -1895,26 +1853,6 @@ class TestScatterElementAddMultiValue:
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
-    def test_tensorflow(self):
-        """Test that a TF tensor is differentiable when using scatter addition
-        with multiple values."""
-        x = tf.Variable(self.x)
-        y = tf.Variable(self.y)
-
-        with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y**2])
-            loss = (
-                res[self.indices[0][0], self.indices[1][0]]
-                + res[self.indices[0][1], self.indices[1][1]]
-            )
-
-        assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, self.expected_val)
-
-        grad = tape.gradient(loss, [x, y])
-        assert fn.allclose(grad[0], self.expected_grad_x)
-        assert fn.allclose(grad[1], self.expected_grad_y)
-
     def test_torch(self):
         """Test that a torch tensor is differentiable when using scatter addition
         with multiple values."""
@@ -1972,7 +1910,6 @@ class TestDiag:
         "a, interface",
         [
             [np.array(0.5), "autograd"],
-            [tf.Variable(0.5), "tensorflow"],
             [torch.tensor(0.5), "torch"],
         ],
     )
@@ -1994,32 +1931,6 @@ class TestDiag:
 
         res = fn.diag(t, k=1)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
-
-    def test_tensorflow(self):
-        """Test that a tensorflow tensor is automatically converted into
-        a diagonal tensor"""
-        t = tf.Variable([0.1, 0.2, 0.3])
-        res = fn.diag(t)
-        assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
-
-        res = fn.diag(t, k=1)
-        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
-
-    def test_array_to_vector_tensorflow(self):
-        """Test that calling diag on a 2D array returns the diagonal."""
-
-        x = tf.Variable([[1.0, 2.0], [3.0, 4.0]])
-        res = fn.diag(x)
-        assert fn.allclose(res, tf.Variable([1.0, 4.0]))
-
-    def test_error_on_higher_dim_tensorflow(self):
-        """Test that a ValueError is raised if diag is called on a 3D tensor."""
-
-        x = tf.reshape(tf.range(27), (3, 3, 3))
-
-        with pytest.raises(ValueError, match="Input must be 1- or 2-d."):
-            fn.diag(x)
 
     def test_torch(self):
         """Test that a torch tensor is automatically converted into
@@ -2181,37 +2092,6 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-    def test_tf(self, tol):
-        """Test that the covariance matrix computes the correct
-        result, and is differentiable, using the TF interface"""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(weights):
-            """Returns the shared probability distribution of ansatz
-            in the joint basis for obs_list"""
-            self.ansatz(weights, wires=dev.wires)
-
-            for o in self.obs_list:
-                o.diagonalizing_gates()
-
-            return qml.probs(wires=[0, 1, 2])
-
-        weights = np.array([0.1, 0.2, 0.3])
-        weights_t = tf.Variable(weights)
-
-        with tf.GradientTape() as tape:
-            probs = circuit(weights_t)
-            cov = fn.cov_matrix(probs, self.obs_list)
-            loss = cov[0, 1]
-
-        expected = self.expected_cov(weights)
-        assert np.allclose(cov, expected, atol=tol, rtol=0)
-
-        grad = tape.gradient(loss, weights_t)
-        expected = self.expected_grad(weights)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
-
     @pytest.mark.slow
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
@@ -2250,7 +2130,6 @@ class TestCovMatrix:
 
 block_diag_data = [
     [onp.array([[1, 2], [3, 4]]), torch.tensor([[1, 2], [-1, -6]]), torch.tensor([[5]])],
-    [onp.array([[1, 2], [3, 4]]), tf.Variable([[1, 2], [-1, -6]]), tf.constant([[5]])],
     [np.array([[1, 2], [3, 4]]), np.array([[1, 2], [-1, -6]]), np.array([[5]])],
     [jnp.array([[1, 2], [3, 4]]), jnp.array([[1, 2], [-1, -6]]), jnp.array([[5]])],
 ]
@@ -2319,19 +2198,6 @@ class TestBlockDiagDiffability:
         assert fn.allclose(exp[0], res[0])
         assert fn.allclose(exp[1], res[1])
 
-    def test_tf(self):
-        """Tests for differentiating the block diagonal function with Tensorflow."""
-        x, y = [tf.Variable([[0.2]]), tf.Variable([[0.1, 0.2], [0.3, 0.4]])]
-        with tf.GradientTape() as tape:
-            out = fn.block_diag([x, y])
-        res = tape.jacobian(out, (x, y))
-        exp_0 = np.zeros((3, 3, 1, 1))
-        exp_0[0, 0, 0, 0] = 1.0
-        exp_1 = np.zeros((3, 3, 2, 2))
-        exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
-        assert fn.allclose(exp_0, res[0])
-        assert fn.allclose(exp_1, res[1])
-
     def test_torch(self):
         """Tests for differentiating the block diagonal function with Torch."""
         x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
@@ -2350,7 +2216,6 @@ class TestBlockDiagDiffability:
 
 gather_data = [
     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
-    tf.Variable([[1, 2, 3], [-1, -6, -3]]),
     jnp.array([[1, 2, 3], [-1, -6, -3]]),
     np.array([[1, 2, 3], [-1, -6, -3]]),
 ]
@@ -2366,14 +2231,21 @@ def test_gather(tensor):
 
 
 class TestCoercion:
-    """Test that TensorFlow and PyTorch correctly coerce types"""
+    """Test that qml.math.coerce works for all supported interfaces."""
 
-    def test_tensorflow_coercion(self):
-        """Test tensorflow coercion"""
-        tensors = [tf.Variable([0.2]), np.array([1, 2, 3]), tf.constant(1 + 3j, dtype=tf.complex64)]
-        res = qml.math.coerce(tensors, like="tensorflow")
-        dtypes = [r.dtype for r in res]
-        assert all(d is tf.complex64 for d in dtypes)
+    @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
+    def test_trivial_coercions(self, coercion_interface):
+        """Test coercion is trivial for JAX, Autograd, and Scipy."""
+        tensors = [
+            jnp.array([0.2]),
+            onp.array([1, 2, 3]),
+            torch.tensor(1 + 3j, dtype=torch.complex64),
+            np.array([1, 2, 3]),
+        ]
+        expected_interfaces = ["jax", "numpy", "torch", "autograd"]
+        res = qml.math.coerce(tensors, like=coercion_interface)
+        for tensor, interface in zip(res, expected_interfaces, strict=True):
+            assert fn.get_interface(tensor) == interface
 
     def test_torch_coercion(self):
         """Test Torch coercion"""
@@ -2386,39 +2258,9 @@ class TestCoercion:
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
 
-    @pytest.mark.gpu
-    def test_torch_coercion_error(self):
-        """Test Torch coercion error if multiple devices were specified."""
-
-        if not torch.cuda.is_available():
-            pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
-
-        tensors = [
-            torch.tensor([0.2], device="cpu"),
-            np.array([1, 2, 3]),
-            torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
-        ]
-
-        with pytest.raises(
-            RuntimeError,
-            match="Expected all tensors to be on the same device, but found at least two devices",
-        ):
-            _ = qml.math.coerce(tensors, like="torch")
-
 
 class TestUnwrap:
     """Test tensor unwrapping"""
-
-    def test_tensorflow_unwrapping(self):
-        """Test that a sequence of TensorFlow values is properly unwrapped"""
-        values = [
-            onp.array([0.1, 0.2]),
-            tf.Variable(0.1, dtype=tf.float64),
-            tf.constant([0.5, 0.2]),
-        ]
-        res = qml.math.unwrap(values)
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected))
 
     def test_torch_unwrapping(self):
         """Test that a sequence of Torch values is properly unwrapped"""
@@ -2465,7 +2307,7 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
+        _ = qml.grad(cost_fn, argnums=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
@@ -2515,32 +2357,6 @@ class TestUnwrap:
 
 class TestGetTrainable:
     """Tests for getting trainable indices"""
-
-    def test_tensorflow(self):
-        """Test that the trainability indices of a sequence of TensorFlow values
-        is correctly extracted"""
-        values = [
-            onp.array([0.1, 0.2]),
-            tf.Variable(0.1, dtype=tf.float64),
-            tf.constant([0.5, 0.2]),
-        ]
-
-        # outside of a gradient tape, no indices are trainable
-        res = qml.math.get_trainable_indices(values)
-        assert not res
-
-        # within a gradient tape, Variables are automatically watched
-        with tf.GradientTape():
-            res = qml.math.get_trainable_indices(values)
-
-        assert res == {1}
-
-        # Watching can be set manually
-        with tf.GradientTape() as tape:
-            tape.watch([values[2]])
-            res = qml.math.get_trainable_indices(values)
-
-        assert res == {1, 2}
 
     def test_torch(self):
         """Test that the trainability indices of a sequence of Torch values
@@ -2594,8 +2410,6 @@ test_sort_data = [
     (np.array([1, 3, 4, 2]), np.array([1, 2, 3, 4])),
     (jnp.array([1, 3, 4, 2]), jnp.array([1, 2, 3, 4])),
     (torch.tensor([1, 3, 4, 2]), torch.tensor([1, 2, 3, 4])),
-    (tf.Variable([1, 3, 4, 2]), tf.Variable([1, 2, 3, 4])),
-    (tf.constant([1, 3, 4, 2]), tf.constant([1, 2, 3, 4])),
 ]
 
 
@@ -2631,9 +2445,7 @@ class TestExpm:
 
         return self._compare_mat
 
-    @pytest.mark.parametrize(
-        "phi", [qml.numpy.array(0.3), torch.tensor(0.3), tf.Variable(0.3), jnp.array(0.3)]
-    )
+    @pytest.mark.parametrize("phi", [qml.numpy.array(0.3), torch.tensor(0.3), jnp.array(0.3)])
     def test_expm(self, phi):
         """Test expm function for all interfaces against taylor expansion approximation."""
         orig_mat = qml.RX.compute_matrix(phi)
@@ -2660,7 +2472,6 @@ class TestSize:
         "interface",
         [
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ],
     )
     @pytest.mark.parametrize(("array", "size"), array_and_size)
@@ -2848,46 +2659,6 @@ class TestFft:
         print(self.exp_jac_fft[name])
         assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
-    @pytest.mark.tf
-    def test_tf(self, name):
-        """Test that the functions are available in TensorFlow."""
-        func = getattr(qml.math.fft, name)
-        arg = tf.Variable(qml.math.cast_like(self.arg[name], 1j))
-        with tf.GradientTape(persistent=True) as t:
-            out = func(arg)
-        assert qml.math.allclose(out, self.exp_fft[name])
-        jac = t.jacobian(out, arg)
-        # The tensorflow Jacobian is the complex conjugate of the holomorphic derivative
-        assert qml.math.allclose(jac, qml.math.conj(self.exp_jac_fft[name]))
-
-
-class TestIfft2Tensorflow:
-    """Test that custom behaviour is correct in qml.math.fft submodule for Tensorflow."""
-
-    def test_errors(self):
-        """Test that qml.math.fft.ifft2 raises errors correctly when used with Tensorflow
-        and unsupported kwargs."""
-        x = tf.Variable([0.4])
-        with pytest.raises(ValueError, match="does not support passing axes"):
-            _ = qml.math.fft.ifft2(x, axes=(0, 2))
-
-        with pytest.raises(ValueError, match="does not support the 'norm' keyword"):
-            _ = qml.math.fft.ifft2(x, norm="ortho")
-
-        with pytest.raises(ValueError, match="does not support the 's' keyword"):
-            _ = qml.math.fft.ifft2(x, s=(0, 2))
-
-    @pytest.mark.parametrize(
-        "dtype_in, exp_dtype_out", [(tf.float32, tf.complex64), (tf.float64, tf.complex128)]
-    )
-    def test_casting(self, dtype_in, exp_dtype_out):
-        """Test that qml.math.fft.ifft2 casts real-valued inputs correctly to the
-        corresponding complex values."""
-        x = onp.outer([0, np.pi / 2, np.pi], [0, np.pi])
-        x = tf.Variable(x, dtype=dtype_in)
-        out = qml.math.fft.ifft2(x)
-        assert out.dtype == exp_dtype_out
-
 
 def test_jax_ndim():
     """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
@@ -2912,7 +2683,7 @@ class TestSetIndex:
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
-    @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
+    @pytest.mark.parametrize("array", [qml.numpy.zeros(4), torch.zeros(4), jnp.zeros(4)])
     def test_set_index_jax_1d_array(self, array):
         """Test that an array can be created that is a copy of the
         original array, with the value at the specified index updated"""
@@ -2982,9 +2753,55 @@ class TestSetIndex:
         assert isinstance(array2, jnp.ndarray)
 
 
-def test_unstack_tensorflow():
-    """Test that unstack works with tensorflow variables."""
-    x = tf.Variable([0.1, 0.2])
-    r1, r2 = qml.math.unstack(x)
-    assert qml.math.allclose(r1, tf.Variable(0.1))
-    assert qml.math.allclose(r2, tf.Variable(0.2))
+class TestScatter:
+    """Tests for qml.math.scatter functionality"""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
+    def test_scatter_basic(self, interface):
+        """Test basic scatter operation - placing values at specific indices in a zero array"""
+        indices = [0, 2, 4]
+        updates = [1.0, 2.0, 3.0]
+        shape = [6]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
+    def test_scatter_complex(self, interface):
+        """Test scatter with complex values"""
+        indices = [1, 3]
+        updates = [1.0 + 1.0j, 2.0 - 1.0j]
+        shape = [4]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray(
+            [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
+        )
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
+    def test_scatter_multidimensional(self, interface):
+        """Test scatter with multidimensional target shape"""
+        indices = [0, 2]
+        updates = [[1.0, 2.0], [3.0, 4.0]]
+        shape = [3, 2]  # 3x2 target array
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+
+        assert qml.math.allclose(result, expected)

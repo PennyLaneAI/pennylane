@@ -11,67 +11,98 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains functions and classes to generate a pes object.
-This object stores all the necessary information to construct
+"""This module contains functions and classes to generate data needed to construct a
 vibrational Hamiltonian for a given molecule."""
 
 from dataclasses import dataclass
 
 import numpy as np
 
-from ..openfermion_pyscf import _import_pyscf
+from pennylane.qchem.openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
 
 @dataclass
 class VibrationalPES:
-    r"""Data class to save potential energy surface information computed along vibrational normal modes.
+    r"""Data class to store information needed to construct a vibrational Hamiltonian for a molecule.
 
     Args:
-        freqs (list[float]): normal-mode frequencies in atomic units
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
-        uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
-        pes_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
-        dipole_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
-        localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
-        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
-            1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 1.
+        freqs (array[float]): normal-mode frequencies in atomic units
+        grid (array[float]): grid points to compute potential energy surface data.
+            Should be the sample points of the Gauss-Hermite quadrature.
+        gauss_weights (array[float]): weights associate with each point in ``grid``.
+            Should be the weights of the Gauss-Hermite quadrature.
+        uloc (TensorLike[float]): normal mode localization matrix with shape ``(m, m)`` where
+            ``m = len(freqs)``
+        pes_data (list[TensorLike[float]]): list of one-mode, two-mode and three-mode potential
+            energy surface data, with shapes ``(m, l)``, ``(m, m, l, l)`` ``(m, m, m, l, l, l)``,
+            respectively, where ``m = len(freqs)`` and ``l > 0``
+        dipole_data (list[TensorLike[float]]): list of  one-mode, two-mode and three-mode dipole
+            moment data, with shapes ``(m, l, 3)``, ``(m, m, l, l, 3)`` ``(m, m, m, l, l, l, 3)``,
+            respectively, where ``m = len(freqs)`` and ``l > 0``
+        localized (bool): Whether the potential energy surface data correspond to localized normal
+            modes. Default is ``True``.
+        dipole_level (int): The level up to which dipole moment data are to be calculated. Input
+            values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
+            three-mode dipole, respectively. Default value is ``1``.
 
     **Example**
 
+    This example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES` object for a
+    linear diatomic molecule, e.g., :math:`H_2`, with only one vibrational normal mode. The one-mode
+    potential energy surface data is obtained by sampling ``9`` points along the normal mode, with
+    grid points and weights that correspond to a Gauss-Hermite quadrature.
+
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
-    >>> pes_onebody = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
+    >>> pes_onemode = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
     ...                 0.00584504, 0.02881817, 0.08483433, 0.22025702]]
-    >>> pes_twobody = None
-    >>> dipole_onebody = [[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
-    ...                    [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
-    ...                    [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
-    ...                    [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
-    ...                    [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
-    ...                    [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
-    ...                    [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
-    ...                    [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
-    ...                    [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]]
-    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
-    ...                          uloc=None, pes_data=[pes_onebody, pes_twobody],
-    ...                          dipole_data=[dipole_onebody], localized=False)
-    >>> vib_obj.freqs
+    >>> vib_pes = qml.qchem.VibrationalPES(freqs=freqs, grid=grid,
+    ...           gauss_weights=weights, pes_data=[pes_onemode])
+    >>> vib_pes.freqs
     array([0.01885397])
 
+    The following example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES`
+    object for a nonlinear triatomic molecule, e.g., :math:`H_3^+`, with three vibrational
+    normal modes. We assume that the potential energy surface and dipole data are obtained by
+    sampling ``5`` points along the normal mode, with grid points and weights that correspond to a
+    Gauss-Hermite quadrature.
+
+    >>> freqs = np.array([0.00978463, 0.00978489, 0.01663723])
+    >>> grid, weights = np.polynomial.hermite.hermgauss(5)
+    >>>
+    >>> uloc = np.array([[-0.99098585,  0.13396657,  0.],
+    ...                  [-0.13396657, -0.99098585,  0.],
+    ...                  [ 0.        ,  0.        ,  1.]])
+    >>>
+    >>> pes_onemode = np.random.rand(3, 5)
+    >>> pes_twomode = np.random.rand(3, 3, 5, 5)
+    >>> pes_threemode = np.random.rand(3, 3, 3, 5, 5, 5)
+    >>>
+    >>> dipole_onemode = np.random.rand(3, 5, 3)
+    >>> dipole_twomode = np.random.rand(3, 3, 5, 5, 3)
+    >>> dipole_threemode = np.random.rand(3, 3, 3, 5, 5, 5, 3)
+    >>>
+    >>> localized = True
+    >>> dipole_level = 3
+    >>>
+    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
+    ...           uloc=uloc, pes_data=[pes_onemode, pes_twomode, pes_threemode],
+    ...           dipole_data=[dipole_onemode, dipole_twomode, dipole_threemode],
+    ...           localized=True, dipole_level=3)
+    >>> print(vib_obj.dipole_threemode.shape)
+    (3, 3, 3, 5, 5, 5, 3)
     """
 
     def __init__(
         self,
-        freqs,
-        grid,
-        gauss_weights,
-        uloc,
-        pes_data,
-        dipole_data,
+        freqs=None,
+        grid=None,
+        gauss_weights=None,
+        uloc=None,
+        pes_data=None,
+        dipole_data=None,
         localized=True,
         dipole_level=1,
     ):
@@ -79,10 +110,10 @@ class VibrationalPES:
         self.grid = grid
         self.gauss_weights = gauss_weights
         self.uloc = uloc
-        self.pes_onemode = pes_data[0]
-        self.pes_twomode = pes_data[1]
-        self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
-        self.dipole_onemode = dipole_data[0]
+        self.pes_onemode = pes_data[0] if pes_data else None
+        self.pes_twomode = pes_data[1] if pes_data and len(pes_data) > 1 else None
+        self.pes_threemode = pes_data[2] if pes_data and len(pes_data) > 2 else None
+        self.dipole_onemode = dipole_data[0] if dipole_data else None
         self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
         self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
         self.localized = localized
@@ -165,9 +196,10 @@ def optimize_geometry(molecule, method="rhf"):
     r"""Computes the equilibrium geometry of a molecule.
 
     Args:
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        molecule (~qchem.molecule.Molecule): the molecule object
+        method (str): Electronic structure method used to perform geometry optimization.
+            Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
+            Hartree-Fock, respectively. Default is ``"rhf"``.
 
     Returns:
         array[array[float]]: optimized atomic positions in Cartesian coordinates
@@ -227,7 +259,6 @@ def _get_rhf_dipole(scf_result):
     for num_atom in range(len(charges)):
         centered_coords[num_atom, :] -= nuc_mass_center
     dipole_n = np.einsum("z,zx->x", charges, centered_coords)
-
     dipole = -dipole_e + dipole_n
     return dipole
 

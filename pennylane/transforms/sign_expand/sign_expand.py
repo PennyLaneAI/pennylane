@@ -12,7 +12,7 @@
 """
 Contains the sign (and xi) decomposition tape transform, implementation of ideas from arXiv:2207.09479
 """
-# pylint: disable=protected-access
+
 import json
 from os import path
 
@@ -40,11 +40,12 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
         list[Operator]: decomposition that make up the controlled evolution
     """
     active_wires, active_gates = zip(
-        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+        strict=True,
     )
 
     ops = []
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
@@ -54,7 +55,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
     ops.append(qml.ctrl(op=qml.MultiRZ(theta, wires=list(active_wires)), control=controls[0]))
     ops.append(qml.CNOT(wires=[controls[1], wires[0]]))
 
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
@@ -68,12 +69,12 @@ def evolve_under(ops, coeffs, time, controls):
     Evolves under the given Hamiltonian deconstructed into its Pauli words
 
     Args:
-        ops (List[Observables]): List of Pauli words that comprise the Hamiltonian
+        ops (List[Operator): List of Pauli words that comprise the Hamiltonian
         coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
         time (float): At what time to evaluate these Pauliwords
     """
     ops_temp = []
-    for op, coeff in zip(ops, coeffs):
+    for op, coeff in zip(ops, coeffs, strict=True):
         pauli_word = qml.pauli.pauli_word_to_string(op)
         ops_temp.append(
             controlled_pauli_evolution(
@@ -168,18 +169,18 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
       tapes (List[qml.tape]): Expanded tapes from the original tape that measures the terms
         via the approximate sgn decomposition
     """
-    coeffs = hamiltonian.data
+    coeffs = hamiltonian.terms()[0]
     tapes = []
-    for mu, time in zip(mus, times):
+    for mu, time in zip(mus, times, strict=True):
         added_operations = []
-        # Put QSP and Hadamard test on the two ancillas Target and Control
+        # Put QSP and Hadamard test on the two auxiliarys Target and Control
         added_operations.append(qml.Hadamard(controls[0]))
         for i, phi in enumerate(phis):
             added_operations.append(qml.CRX(phi, wires=controls))
             if i == len(phis) - 1:
                 added_operations.append(qml.CRY(np.pi, wires=controls))
             else:
-                for ops in evolve_under(hamiltonian.ops, coeffs, 2 * time, controls):
+                for ops in evolve_under(hamiltonian.terms()[1], coeffs, 2 * time, controls):
                     added_operations.extend(ops)
                 added_operations.append(qml.CRZ(-2 * mu * time, wires=controls))
         added_operations.append(qml.Hadamard(controls[0]))
@@ -198,7 +199,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
 
 @transform
-def sign_expand(  # pylint: disable=too-many-arguments
+def sign_expand(
     tape: QuantumScript, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
@@ -227,19 +228,19 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     Given a Hamiltonian,
 
-    .. code-block:: python3
+    .. code-block:: python
 
         H = qml.Z(0) + 0.5 * qml.Z(2) + qml.Z(1)
 
     a device with auxiliary qubits,
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
 
     and a circuit of the form, with the transform as decorator.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.transforms.sign_expand
         @qml.qnode(dev)
@@ -250,28 +251,28 @@ def sign_expand(  # pylint: disable=too-many-arguments
             return qml.expval(H)
 
     >>> circuit()
-    -0.4999999999999999
+    np.float64(-0.499...)
 
     You can also work directly on tapes:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
-            measurements = [qml.expval(H)]
-            tape = qml.tape.QuantumTape(operations, measurements)
+        operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
+        measurements = [qml.expval(H)]
+        tape = qml.tape.QuantumTape(operations, measurements)
 
     We can use the ``sign_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian in these new decompositions
 
     >>> tapes, fn = qml.transforms.sign_expand(tape)
 
-    We can evaluate these tapes on a device, it needs two additional ancilla gates labeled 'Hadamard' and 'Target' if
+    We can evaluate these tapes on a device, it needs two additional auxiliary gates labeled 'Hadamard' and 'Target' if
     one wants to make the circuit approximation of the decomposition:
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
     >>> res = dev.execute(tapes)
     >>> fn(res)
-    -0.4999999999999999
+    np.float64(-0.499...)
 
     To evaluate the circuit approximation of the decomposition one can construct the sgn-decomposition by changing the
     kwarg circuit to True:
@@ -279,29 +280,30 @@ def sign_expand(  # pylint: disable=too-many-arguments
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
     >>> dev.execute(tapes)
+    (np.float64(0.017...), np.float64(0.006...), np.float64(-0.0009...), np.float64(0.0023...), np.float64(-0.977...))
     >>> fn(res)
-    -0.24999999999999994
+    np.float64(-0.249...)
 
 
     Lastly, as the paper is about minimizing variance, one can also calculate the variance of the estimator by
     changing the tape:
 
 
-    .. code-block:: python3
+    .. code-block:: python
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
-            measurements = [qml.var(H)]
-            tape = qml.tape.QuantumTape(operations, measurements)
+        operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
+        measurements = [qml.var(H)]
+        tape = qml.tape.QuantumTape(operations, measurements)
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
     >>> res = dev.execute(tapes)
     >>> fn(res)
-    10.108949481425782
+    np.float64(10.108...)
 
     """
     path_str = path.dirname(__file__)
-    with open(path_str + "/sign_expand_data.json", "r", encoding="utf-8") as f:
+    with open(path_str + "/sign_expand_data.json", encoding="utf-8") as f:
         data = json.load(f)
     phis = list(filter(lambda data: data["delta"] == delta and data["order"] == J, data))[0][
         "opt_params"
@@ -311,14 +313,14 @@ def sign_expand(  # pylint: disable=too-many-arguments
     wires = hamiltonian.wires
 
     if (
-        not isinstance(hamiltonian, qml.ops.LinearCombination)
+        not isinstance(hamiltonian, qml.ops.Sum)
         or len(tape.measurements) > 1
         or not isinstance(
             tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP)
         )
     ):
         raise ValueError(
-            "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
+            "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.ops.Sum`"
         )
 
     hamiltonian.compute_grouping()
@@ -330,15 +332,15 @@ def sign_expand(  # pylint: disable=too-many-arguments
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
         if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
-            # pylint: disable=function-redefined
+
             def processing_fn(res):
-                products = [a * b for a, b in zip(res, dEs)]
+                products = [a * b for a, b in zip(res, dEs, strict=True)]
                 return qml.math.sum(products)
 
         else:
-            # pylint: disable=function-redefined
+
             def processing_fn(res):
-                products = [a * b for a, b in zip(res, dEs)]
+                products = [a * b for a, b in zip(res, dEs, strict=True)]
                 return qml.math.sum(products) * len(products)
 
         return tapes, processing_fn

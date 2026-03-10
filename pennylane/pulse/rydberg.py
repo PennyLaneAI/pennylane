@@ -17,9 +17,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import Identity, Projector, Z
+from pennylane.ops.op_math import prod
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -109,7 +112,7 @@ def rydberg_interaction(
     observables = []
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
         for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
-            atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+            atom_distance = np.linalg.norm(math.array(pos2) - pos1)
             if atom_distance > max_distance:
                 continue
             # factor 2pi converts interaction coefficient from standard to angular frequency
@@ -117,8 +120,8 @@ def rydberg_interaction(
                 2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
             )  # van der Waals potential
             coeffs.append(Vij)
-            with qml.QueuingManager.stop_recording():
-                observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
+            with QueuingManager.stop_recording():
+                observables.append(prod(Projector([1], wire1), Projector([1], wire2)))
                 # Rydberg projectors
 
     settings = RydbergSettings(register, interaction_coeff)
@@ -273,9 +276,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
      Array(-0.02205843, dtype=float64)]
     """
     wires = Wires(wires)
-    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
+    trivial_detuning = not callable(detuning) and math.isclose(detuning, 0.0)
 
-    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
+    if not callable(amplitude) and math.isclose(amplitude, 0.0):
         if trivial_detuning:
             raise ValueError(
                 "Expected non-zero value for at least one of either amplitude or detuning, but "
@@ -292,9 +295,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         # 2pi factors are to convert detuning frequency to angular frequency
         detuning_obs.append(
             # Global phase from the number operator
-            -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
+            -0.5 * sum(Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.Z(wire) for wire in wires) * np.pi * 2
+            + 0.5 * sum(Z(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 
@@ -321,7 +324,7 @@ class RydbergSettings:
 
     def __eq__(self, other):
         return (
-            qml.math.all(self.register == other.register)
+            math.all(self.register == other.register)
             and self.interaction_coeff == other.interaction_coeff
         )
 

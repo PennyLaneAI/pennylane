@@ -30,11 +30,28 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
+from .binary_linalg import (
+    binary_decimals,
+    binary_finite_reduced_row_echelon,
+    binary_is_independent,
+    binary_matrix_rank,
+    binary_select_basis,
+    binary_solve_linear_system,
+    int_to_binary,
+)
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
+from .matrix_manipulation import (
+    expand_matrix,
+    expand_vector,
+    reduce_matrices,
+    get_batch_size,
+    convert_to_su2,
+    convert_to_su4,
+)
 from .multi_dispatch import (
     add,
     array,
@@ -76,11 +93,13 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
     vn_entanglement_entropy,
     max_entropy,
     min_entropy,
     trace_distance,
+    choi_matrix,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -88,23 +107,33 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    ceil_log2,
     convert_like,
     in_backprop,
-    requires_grad,
     is_abstract,
+    requires_grad,
 )
 from .interface_utils import (
-    get_canonical_interface_name,
-    SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
     Interface,
-    InterfaceLike,
 )
 from .grad import grad, jacobian
+from . import decomposition
 
 sum = ar.numpy.sum
+conj = ar.numpy.conj
+transpose = ar.numpy.transpose
+sqrt = ar.numpy.sqrt
+zeros = ar.numpy.zeros
+moveaxis = ar.numpy.moveaxis
+mean = ar.numpy.mean
+round = ar.numpy.round
+shape = ar.numpy.shape
+flatten = ar.numpy.flatten
+reshape = ar.numpy.reshape
+multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
@@ -119,7 +148,44 @@ def get_dtype_name(x) -> str:
     return ar.get_dtype_name(x)
 
 
-class NumpyMimic(ar.autoray.NumpyMimic):
+def is_real_obj_or_close(obj):
+    """Convert an array to its real part if it is close to being real-valued, and afterwards
+    return whether the resulting data type is real.
+
+    Args:
+        obj (array): Array to check for being (close to) real.
+
+    Returns:
+        bool: Whether the array ``obj``, after potentially converting it to a real matrix,
+        has a real data type. This is obtained by checking whether the data type name starts with
+        ``"complex"`` and returning the negated result of this.
+
+    >>> x = jnp.array(0.4)
+    >>> qml.math.is_real_obj_or_close(x)
+    True
+
+    >>> x = tf.Variable(0.4+0.2j)
+    >>> qml.math.is_real_obj_or_close(x)
+    False
+
+    >>> x = torch.tensor(0.4+1e-13j)
+    >>> qml.math.is_real_obj_or_close(x)
+    True
+
+    Default absolute and relative tolerances of
+    ``qml.math.allclose`` are used to determine whether the
+    input is close to real-valued.
+    """
+    if (
+        type(obj).__name__ != "AbstractArray"
+        and not is_abstract(obj)
+        and allclose(ar.imag(obj), 0.0)
+    ):
+        obj = ar.real(obj)
+    return not get_dtype_name(obj).startswith("complex")
+
+
+class NumpyMimic(ar.autoray.AutoNamespace):
     """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
 
@@ -132,7 +198,7 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 
 
 numpy_mimic = NumpyMimic()
-numpy_fft = ar.autoray.NumpyMimic("fft")
+numpy_fft = ar.autoray.AutoNamespace(submodule="fft")
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
@@ -147,11 +213,20 @@ __all__ = [
     "allclose",
     "allequal",
     "array",
+    "binary_finite_reduced_row_echelon",
+    "binary_is_independent",
+    "binary_matrix_rank",
+    "binary_decimals",
+    "binary_select_basis",
+    "binary_solve_linear_system",
     "block_diag",
     "cast",
     "cast_like",
+    "ceil_log2",
     "concatenate",
     "convert_like",
+    "convert_to_su2",
+    "convert_to_su4",
     "cov_matrix",
     "detach",
     "diag",
@@ -161,35 +236,46 @@ __all__ = [
     "expand_matrix",
     "expand_vector",
     "expectation_value",
+    "expm",
     "eye",
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
+    "gammainc",
     "get_dtype_name",
     "get_interface",
-    "get_canonical_interface_name",
+    "get_batch_size",
     "get_deep_interface",
     "get_trainable_indices",
     "grad",
+    "int_to_binary",
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "is_real_obj_or_close",
     "iscomplex",
     "jacobian",
+    "kron",
+    "Interface",
+    "matmul",
     "marginal_prob",
     "max_entropy",
     "min_entropy",
     "multi_dispatch",
     "mutual_info",
+    "norm",
     "ones_like",
     "partial_trace",
     "purity",
     "reduce_dm",
+    "reduce_matrices",
     "reduce_statevector",
     "relative_entropy",
     "requires_grad",
-    "sqrt_matrix",
+    "scatter",
     "scatter_element_add",
+    "set_index",
+    "sqrt_matrix",
     "stack",
     "svd",
     "tensordot",
@@ -198,4 +284,5 @@ __all__ = [
     "vn_entropy",
     "vn_entanglement_entropy",
     "where",
+    "choi_matrix",
 ]

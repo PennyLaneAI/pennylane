@@ -14,6 +14,7 @@
 """Unit tests for create_initial_state in devices/qubit."""
 
 import pytest
+import scipy as sp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -28,8 +29,6 @@ class TestInitializeState:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        num_wires = qml.operation.AllWires
-
         def __init__(self, *args, **kwargs):
             self.dtype = kwargs.pop("dtype", None)
             super().__init__(*args, **kwargs)
@@ -41,7 +40,7 @@ class TestInitializeState:
             return sv
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
@@ -50,7 +49,7 @@ class TestInitializeState:
         assert "complex" in str(state.dtype)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         prep_op = self.DefaultPrep(qml.math.array([1 / 2] * 4, like=interface), wires=[0, 1])
@@ -114,3 +113,16 @@ class TestInitializeState:
         state = qml.devices.qubit.create_initial_state((0, 1))
         assert qml.math.get_interface(state) == "numpy"
         assert state.dtype == np.complex128
+
+    @pytest.mark.parametrize("mat_type", (sp.sparse.csr_matrix, sp.sparse.csr_array))
+    def test_create_initial_state_with_sparse(self, mat_type):
+        """Test create_initial_state with a sparse state input."""
+        sparse_vec = mat_type([0, 1, 0, 0])
+        prep_op = qml.StatePrep(sparse_vec, wires=[0, 1])
+        state = create_initial_state([0, 1], prep_operation=prep_op)
+        # Should directly return the sparse vector cast to an appropriate dtype
+        assert not sp.sparse.issparse(state), "State should be converted to dense."
+        # The single 1 should be at index 1
+        assert state[0, 1] == 1.0
+        assert qml.math.get_interface(state) == "numpy"
+        assert state.shape == (2, 2)

@@ -15,10 +15,9 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
+
 
 import itertools
-import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
@@ -61,6 +60,8 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
         But it doesn't support batching of operators:
 
         >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        Traceback (most recent call last):
+            ...
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. note::
@@ -77,8 +78,8 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
     >>> summed_op
     X(0) + Z(0)
     >>> summed_op.matrix()
-    array([[ 1,  1],
-           [ 1, -1]])
+    array([[ 1.+0.j,  1.+0.j],
+           [ 1.+0.j, -1.+0.j]])
 
     .. details::
         :title: Grouping
@@ -97,7 +98,7 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
             op = qml.sum(a, b, c, grouping_type="qwc")
 
         >>> op.grouping_indices
-        ((2,), (0, 1))
+        ((0, 1), (2,))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
         ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
@@ -146,7 +147,10 @@ class Sum(CompositeOp):
         (3, 4, 4)
 
         But it doesn't support batching of operators:
+
         >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        Traceback (most recent call last):
+            ...
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. note::
@@ -163,10 +167,10 @@ class Sum(CompositeOp):
     >>> summed_op
     X(0) + Z(0)
     >>> qml.matrix(summed_op)
-    array([[ 1,  1],
-           [ 1, -1]])
+    array([[ 1.+0.j,  1.+0.j],
+           [ 1.+0.j, -1.+0.j]])
     >>> summed_op.terms()
-    ([1.0, 1.0], (X(0), Z(0)))
+    ([1.0, 1.0], [X(0), Z(0)])
 
     .. details::
         :title: Usage Details
@@ -176,14 +180,14 @@ class Sum(CompositeOp):
 
         >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.I(wires=1))
         >>> summed_op.matrix()
-        array([[1.81677345-0.57695852j, 0.        +0.j        ,
+        array([[1.816...-0.57...j, 0.        +0.j        ,
                 0.        +0.j        , 0.        +0.j        ],
-               [0.        +0.j        , 1.81677345-0.57695852j,
+               [0.        +0.j        , 1.816...-0.57...j,
                 0.        +0.j        , 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
-                1.81677345+0.57695852j, 0.        +0.j        ],
+                1.816...+0.57...j, 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
-                0.        +0.j        , 1.81677345+0.57695852j]])
+                0.        +0.j        , 1.816...+0.57...j]])
 
         The Sum operation can also be measured inside a qnode as an observable.
         If the circuit is parametrized, then we can also differentiate through the
@@ -202,13 +206,14 @@ class Sum(CompositeOp):
                 qml.RX(weights[2], wires=1)
                 return qml.expval(sum_op)
 
-        >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> import pennylane.numpy as pnp
+        >>> weights = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.grad(circuit)(weights)
-        array([-0.09347337, -0.18884787, -0.28818254])
+        array([-0.093..., -0.188..., -0.288...])
     """
 
     _op_symbol = "+"
-    _math_op = math.sum
+    _math_op = staticmethod(math.sum)
     grad_method = "A"
 
     def _flatten(self):
@@ -281,12 +286,16 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def __str__(self):
         """String representation of the Sum."""
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
     @handle_recursion_error
     def __repr__(self):
         """Terminal representation for Sum"""
+        if len(self) == 0:
+            return "Sum()"
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
@@ -297,7 +306,7 @@ class Sum(CompositeOp):
 
     @property
     @handle_recursion_error
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         if self.pauli_rep is not None:
             coeffs_list = list(self.pauli_rep.values())
@@ -306,7 +315,7 @@ class Sum(CompositeOp):
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
-        return all(s.is_hermitian for s in self)
+        return all(s.is_verified_hermitian for s in self)
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
@@ -352,9 +361,9 @@ class Sum(CompositeOp):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -362,17 +371,7 @@ class Sum(CompositeOp):
 
         wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
-
-    @property
-    def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns: None
-        """
-        return None
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -423,7 +422,7 @@ class Sum(CompositeOp):
         return new_summands
 
     @handle_recursion_error
-    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+    def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()
@@ -448,18 +447,17 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+        >>> op = 0.5 * qml.X(0) + 0.7 * qml.X(1) + 1.5 * qml.Y(0) @ qml.Y(1)
         >>> op.terms()
-        ([0.5, 0.7, 1.5],
-         [X(0), X(1), Y(1) @ Y(0)])
+        ([np.float64(0.5), np.float64(0.7), np.float64(1.5)], [X(0), X(1), Y(0) @ Y(1)])
 
         Note that this method disentangles nested structures of ``Sum`` instances like so.
 
-        >>> op = 0.5 * X(0) + (2. * (X(1) + 3. * X(2)))
+        >>> op = 0.5 * qml.X(0) + (2. * (qml.X(1) + 3. * qml.X(2)))
         >>> print(op)
-        (0.5*(PauliX(wires=[0]))) + (2.0*((0.5*(PauliX(wires=[1]))) + (3.0*(PauliX(wires=[2])))))
+        0.5 * X(0) + 2.0 * (X(1) + 3.0 * X(2))
         >>> print(op.terms())
-        ([0.5, 1.0, 6.0], [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])])
+        ([np.float64(0.5), np.float64(2.0), np.float64(6.0)], [X(0), X(1), X(2)])
 
         """
         # try using pauli_rep:
@@ -518,7 +516,7 @@ class Sum(CompositeOp):
         True
         >>> op.compute_grouping(grouping_type="qwc")
         >>> op.grouping_indices
-        ((2,), (0, 1))
+        ((0, 1), (2,))
         """
         if not self.pauli_rep:
             raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
@@ -529,36 +527,6 @@ class Sum(CompositeOp):
             self._grouping_indices = qml.pauli.compute_partition_indices(
                 ops, grouping_type=grouping_type, method=method
             )
-
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
-
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
@@ -614,7 +582,7 @@ class _SumSummandsGrouping:
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
-        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(summand, qml.ops.SProd):
             coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
             self.add(summand=summand.base, coeff=coeff)
         else:

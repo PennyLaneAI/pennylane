@@ -47,8 +47,6 @@ other compiler-specific decorators and functions:
     :toctree: api
 
     ~qjit
-    ~for_loop
-    ~while_loop
     ~jvp
     ~vjp
 
@@ -257,4 +255,4 @@ if no function is provided:
 """
 
 from .compiler import active, active_compiler, available, available_compilers
-from .qjit_api import for_loop, qjit, while_loop
+from .qjit_api import qjit

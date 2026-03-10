@@ -22,6 +22,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -161,7 +162,7 @@ class PauliWord(dict):
     >>> w1 = PauliWord({0:"X", 1:"Y"})
     >>> w2 = PauliWord({1:"X", 2:"Z"})
     >>> w1 @ w2
-    -1j * Z(1) @ Z(2) @ X(0)
+    -1j * X(0) @ Z(1) @ Z(2)
 
     We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
 
@@ -504,6 +505,7 @@ class PauliWord(dict):
             current_size *= 2
         return indices
 
+    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
@@ -540,9 +542,9 @@ class PauliSentence(dict):
     **Examples**
 
     >>> ps = PauliSentence({
-            PauliWord({0:'X', 1:'Y'}): 1.23,
-            PauliWord({2:'Z', 0:'Y'}): -0.45j
-        })
+    ...     PauliWord({0:'X', 1:'Y'}): 1.23,
+    ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+    ... })
     >>> ps
     1.23 * X(0) @ Y(1)
     + (-0-0.45j) * Z(2) @ Y(0)
@@ -574,6 +576,8 @@ class PauliSentence(dict):
     Or, alternatively, use :func:`~commutator`.
 
     >>> qml.commutator(op1, op2, pauli=True)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
 
     Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
 
@@ -812,7 +816,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return Wires.all_wires((pw.wires for pw in self.keys()))
+        return Wires.all_wires(pw.wires for pw in self.keys())
 
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.
@@ -835,11 +839,11 @@ class PauliSentence(dict):
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
                 return np.zeros((2**n, 2**n))
-            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128").asformat(format)
 
         if format == "dense":
             return self._to_dense_mat(wire_order)
-        return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
+        return self._to_sparse_mat(wire_order, buffer_size=buffer_size).asformat(format)
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
@@ -1001,6 +1005,7 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
+    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
@@ -1012,7 +1017,9 @@ class PauliSentence(dict):
             pw_op = pw.operation(wire_order=list(wire_order))
             rep = PauliSentence({pw: coeff})
             summands.append(
-                pw_op if qml.math.all(coeff == 1) else SProd(coeff, pw_op, _pauli_rep=rep)
+                pw_op
+                if not math.is_abstract(coeff) and qml.math.all(coeff == 1)
+                else SProd(coeff, pw_op, _pauli_rep=rep)
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
@@ -1020,7 +1027,7 @@ class PauliSentence(dict):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for pw, coeff in items:
-            if abs(coeff) <= tol:
+            if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
         if len(self) == 0:
             self = PauliSentence({})  # pylint: disable=self-cls-assignment

@@ -617,7 +617,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     broadcasted_ops = [
         qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.RZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
         qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.CRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
@@ -630,7 +632,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         qml.PauliZ(2),
         qml.CNOT([1, 2]),
         qml.RX(np.pi, wires=2),
+        qml.RZ(np.pi, wires=2),
         qml.PhaseShift(np.pi / 2, wires=2),
+        qml.CRZ(np.pi / 2, wires=[1, 2]),
         qml.IsingXX(np.pi / 2, wires=[1, 2]),
         qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
@@ -828,3 +832,233 @@ class TestSnapshot:
             assert isinstance(snapshot_result, dict)
             assert all(isinstance(k, str) for k in snapshot_result.keys())
             assert sum(snapshot_result.values()) == 1000
+
+
+def get_valid_density_matrix(num_wires):
+    """Helper function to create a valid density matrix"""
+    # Create a pure state first
+    state = np.zeros(2**num_wires, dtype=np.complex128)
+    state[0] = 1 / np.sqrt(2)
+    state[-1] = 1 / np.sqrt(2)
+    # Convert to density matrix
+    return np.outer(state, state.conjugate())
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestDensityMatrix:
+    """Test that apply_operation works for QubitDensityMatrix"""
+
+    num_qubits = [1, 2, 3]
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_valid_density_matrix(self, num_q, ml_framework):
+        """Test applying a valid density matrix to the state"""
+        density_matrix = get_valid_density_matrix(num_q)
+        # Convert density matrix to the given ML framework and ensure complex dtype
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)  # ensure complex
+
+        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+
+        # Create the initial state as zeros in the same framework and ensure complex dtype
+        shape = (2,) * (2 * num_q)
+        state = np.zeros(shape, dtype=np.complex128)
+        state = math.asarray(state, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        # Apply operation
+        result = qml.devices.qubit_mixed.apply_operation(op, state)
+
+        # Reshape and cast expected result
+        expected = math.reshape(density_matrix, shape)
+        expected = math.cast(expected, dtype=complex)
+
+        assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_state(self, num_q, ml_framework):
+        """Test applying density matrix to batched states"""
+        batch_size = 3
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+
+        shape = (batch_size,) + (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = qml.devices.qubit_mixed.apply_operation(op, state, is_state_batched=True)
+
+        expected_single = math.reshape(density_matrix, (2,) * (2 * num_q))
+        expected_single = math.cast(expected_single, dtype=complex)
+        # Tile along batch dimension
+        expected = math.stack([expected_single] * batch_size, axis=0)
+
+        assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_eigvals(self, num_q, ml_framework):
+        """Test applying density matrix with batched eigenvalues"""
+
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        batched_params = math.asarray([0, 1, 2], like=ml_framework)
+        op = qml.RX(batched_params, wires=0)
+
+        shape = (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = apply_operation(op, state)
+        assert result.shape == (len(batched_params),) + shape
+
+    def test_partial_trace_single_qubit_update(self, ml_framework):
+        """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""
+
+        # Initial 2-qubit state as a (4,4) density matrix representing |00><00|
+        # |00> in vector form = [1,0,0,0]
+        # |00><00| as a 4x4 matrix = diag([1,0,0,0])
+        initial_state = np.zeros((4, 4), dtype=complex)
+        initial_state[0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the single-qubit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
+        plus_state = np.array([[0.5, 0.5], [0.5, 0.5]], dtype=complex)
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first wire (wire=0)
+        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0|
+        # |0><0| = [[1,0],[0,0]]
+        zero_dm = np.array([[1, 0], [0, 0]], dtype=complex)
+        expected = np.kron(plus_state, zero_dm)  # shape (4,4)
+        expected = math.reshape(expected, [2] * 4)
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_batched_update(self, ml_framework):
+        """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires, batched."""
+
+        batch_size = 3
+
+        # Initial 2-qubit state as a (4,4) density matrix representing |00><00| batched
+        initial_state = np.zeros((batch_size, 4, 4), dtype=complex)
+        for b in range(batch_size):
+            initial_state[b, 0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the single-qubit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
+        plus_state = np.array([[0.5, 0.5], [0.5, 0.5]], dtype=complex)
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first wire (wire=0)
+        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0| for each batch
+        zero_dm = np.array([[1, 0], [0, 0]], dtype=complex)
+        expected_single = np.kron(plus_state, zero_dm)  # shape (4,4)
+        expected = np.stack([expected_single] * batch_size, axis=0)
+        expected = math.reshape(expected, [batch_size] + [2] * 4)
+
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
+
+        assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state(self, ml_framework):
+        """Test partial tracing with state in tensor format (as used by the actual mixed device).
+
+        This test reproduces the bug from GitHub issue #8932 where QubitDensityMatrix
+        fails when applied to a subset of wires because the state is in tensor format
+        (2, 2, ..., 2) rather than 2D matrix format (dim, dim).
+        """
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2) representing |0000><0000|
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the 2-qubit density matrix for GHZ state: (|00> + |11>)/sqrt(2)
+        ghz = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (4, 4)
+        ghz_dm = math.asarray(ghz_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first 2 wires (wires=[0, 1])
+        op = qml.QubitDensityMatrix(ghz_dm, wires=[0, 1])
+
+        # Apply the operation - this should not raise ValueError
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        # Trace should be 1
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state_noncontiguous_wires(self, ml_framework):
+        """Test partial tracing with non-contiguous wire indices in tensor format state."""
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2)
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define a 2-qubit Bell state density matrix
+        bell = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        bell_dm = np.outer(bell, np.conj(bell))
+        bell_dm = math.asarray(bell_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on non-contiguous wires [0, 2]
+        op = qml.QubitDensityMatrix(bell_dm, wires=[0, 2])
+
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+
+def test_qubit_density_matrix_qnode_integration():
+    """Integration test for QubitDensityMatrix on subset of wires using QNode.
+
+    This reproduces the exact bug scenario from GitHub issue #8932.
+    """
+    n = 2
+    dev = qml.device("default.mixed", wires=2 * n)
+
+    @qml.qnode(dev)
+    def test_circuit(rho):
+        # Only initialize n of the 2n qubits using with rho
+        qml.QubitDensityMatrix(rho, wires=range(0, n))
+
+        # Apply Hadamard gate to ancilla qubits
+        for a in range(n, 2 * n):
+            qml.H(a)
+
+        return qml.probs(wires=range(n))
+
+    # GHZ state: (|00> + |11>)/sqrt(2)
+    GHZ = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    rho = qml.math.dm_from_state_vector(GHZ)
+
+    # This should not raise ValueError
+    result = test_circuit(rho)
+
+    # Expected: probabilities for GHZ state are [0.5, 0, 0, 0.5]
+    expected = np.array([0.5, 0.0, 0.0, 0.5])
+    assert np.allclose(result, expected, atol=1e-8)

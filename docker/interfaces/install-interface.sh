@@ -32,7 +32,7 @@ case $INTERFACE_NAME in
 # Build Tensorflow interface
   "tensorflow")
   echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
-  pip3 install tensorflow==2.12.0
+  pip3 install tensorflow==2.18.0
   ;;
 	*)
   echo "##########-No-Interface-Installed-##########"

@@ -19,7 +19,7 @@ import pickle
 import numpy as np
 import pytest
 from gate_data import H, I, X, Y, Z
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
@@ -107,6 +107,13 @@ STATEVECTORPROJECTOR_TEST_MATRICES = [
 STATEVECTORPROJECTOR_TEST_DATA = zip(
     STATEVECTORPROJECTOR_TEST_STATES, STATEVECTORPROJECTOR_TEST_MATRICES
 )
+
+SPARSE_MATRIX_FORMATS = [
+    ("coo", coo_matrix),
+    ("csr", csr_matrix),
+    ("lil", lil_matrix),
+    ("csc", csc_matrix),
+]
 
 projector_sv = [qml.Projector(np.array([0.5, 0.5, 0.5, 0.5]), [0, 1])]
 
@@ -343,17 +350,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
                 qml.matrix(observable), wires=list(range(num_wires))
             )
 
-    @pytest.mark.parametrize("test_num_wires", list(range(1, 11)))
-    def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
-        """Tests the performance of the compute_decomposition method of the Hermitian class.
-        Used to determine the minimum matrix dimension to raise an inefficiency warning"""
-        observable = qml.Identity(0)
-        for i in range(test_num_wires):
-            observable = observable @ qml.X(i)
-        benchmark(
-            qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
-        )
-
     @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
     def test_hermitian_decomposition(self, observable):
         """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
@@ -564,7 +560,7 @@ class TestProjector:
         second_projector = qml.Projector(state_vector, wires)
         qml.assert_equal(second_projector, state_vector_projector)
 
-        qml.ops.functions.assert_valid(state_vector_projector)
+        qml.ops.functions.assert_valid(state_vector_projector, skip_differentiation=True)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
@@ -605,12 +601,11 @@ class TestProjector:
     def test_serialization(self):
         """Tests that Projector is pickle-able."""
         # Basis state projector
-        proj = qml.Projector([1], wires=[0], id="Timmy")
+        proj = qml.Projector([1], wires=[0])
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
         proj = qml.Projector([0, 1], wires=[0])
@@ -619,7 +614,6 @@ class TestProjector:
 
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
     def test_single_qubit_basis_state_0(self):
         """Tests the function with a single-qubit basis state |0>."""
@@ -838,6 +832,20 @@ class TestBasisStateProjector:
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
+    @pytest.mark.parametrize("sparse_matrix_format", SPARSE_MATRIX_FORMATS)
+    def test_projector_sparse_matrix_format(self, sparse_matrix_format):
+        """Test that the sparse matrix accepts the format parameter."""
+
+        format, expected_type = sparse_matrix_format
+        basis_state = [0, 1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state, format=format)
+        assert isinstance(actual_matrix, expected_type)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
 
 class TestStateVectorProjector:
     """Tests for state vector projector observable."""
@@ -944,9 +952,9 @@ def test_hermitian_labelling_w_cache():
     op = qml.Hermitian(X, wires=0)
 
     cache = {"matrices": [Z]}
-    assert op.label(cache=cache) == "𝓗(M1)"
+    assert op.label(cache=cache) == "𝓗\n(M1)"
     assert qml.math.allclose(cache["matrices"][1], X)
 
     cache = {"matrices": [Z, Y, X]}
-    assert op.label(cache=cache) == "𝓗(M2)"
+    assert op.label(cache=cache) == "𝓗\n(M2)"
     assert len(cache["matrices"]) == 3

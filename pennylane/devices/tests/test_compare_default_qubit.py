@@ -14,7 +14,7 @@
 """Tests that a device gives the same output as the default device."""
 import numpy as np
 
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-self-use
 import pytest
 from flaky import flaky
 
@@ -31,7 +31,7 @@ pytestmark = pytest.mark.skip_unsupported
 class TestComparison:
     """Test that a device different to default.qubit gives the same result"""
 
-    def test_hermitian_expectation(self, device, tol, benchmark):
+    def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -64,8 +64,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -75,7 +75,7 @@ class TestComparison:
                 grad_def(theta, phi),
             )
 
-        qnode_res, qnode_def_res, grad_res, grad_def_res = benchmark(workload)
+        qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
         assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
         assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
@@ -97,7 +97,7 @@ class TestComparison:
             np.array([1, 1, 1, 1]) / 2,
         ],
     )
-    def test_projector_expectation(self, device, state, tol, benchmark):
+    def test_projector_expectation(self, device, state, tol):
         """Test that arbitrary multi-mode Projector expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -124,8 +124,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -135,7 +135,7 @@ class TestComparison:
                 grad_def(theta, phi, state),
             )
 
-        qnode_res, qnode_def_res, grad_res, grad_def_res = benchmark(workload)
+        qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
         assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
         assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
@@ -171,8 +171,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
@@ -209,8 +209,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=0)
-        grad = qml.grad(qnode, argnum=0)
+        grad_def = qml.grad(qnode_def, argnums=0)
+        grad = qml.grad(qnode, argnums=0)
 
         assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
         assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
@@ -251,7 +251,8 @@ class TestComparison:
         ]
 
         layers = 3
-        rng = pnp.random.default_rng(1967)
+        # Avoid seed 1967 until https://github.com/Qiskit/qiskit/issues/15278 is fixed.
+        rng = pnp.random.default_rng(1968)
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():

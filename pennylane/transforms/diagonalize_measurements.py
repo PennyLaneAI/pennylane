@@ -17,6 +17,7 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -25,7 +26,7 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=protected-access,unused-argument
+# pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
 
@@ -46,7 +47,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -73,7 +74,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     This transform allows us to transform QNode measurements into the measurement basis by adding
     the relevant diagonalizing gates to the end of the tape operations.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from pennylane.transforms import diagonalize_measurements
 
@@ -102,7 +103,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     2: ──Z─────────S──H─┤        ╰Var[𝓗(0.50)]
 
     >>> circuit([np.pi/4, np.pi/4])
-    (0.5, 0.75)
+    (np.float64(0.5), np.float64(0.749...))
 
     .. details::
         :title: Usage Details
@@ -110,7 +111,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes
         X, Y, Z, and Hadamard. Any other observable will be unaffected:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.X(0) + qml.Hermitian([[1, 0], [0, 1]], wires=[1]))
@@ -128,7 +129,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         X, Y and Z, but doesn't provide support for Hadamard? We can set this by passing
         ``supported_base_obs`` to the transform. Let's create a tape with some measurements:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.X(0) + qml.Hadamard(1)),
@@ -178,7 +179,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
                 tape, to_eigvals=to_eigvals
             )
-        except qml.QuantumFunctionError:
+        except QuantumFunctionError:
             # the pauli_rep based method sometimes fails unnecessarily -
             # if it fails, fall back on the less efficient method (which may also fail)
             diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
@@ -235,7 +236,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Args:
         tape: the observable to be diagonalized
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -263,7 +264,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
             wires_sampled_in_computational_basis.extend(list(m.wires))
 
     _visited_obs = (
-        set(qml.Z(w) for w in wires_sampled_in_computational_basis),
+        {qml.Z(w) for w in wires_sampled_in_computational_basis},
         set(wires_sampled_in_computational_basis),
     )  # tracks which observables and wires are already used and shouldn't be diagonalized
     diagonalizing_gates = []

@@ -15,23 +15,37 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-
+from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
+from pennylane import numpy
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.capture
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.qnn
-import pennylane.templates
-import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane import compiler
+from pennylane.compiler import qjit
+from pennylane import capture
+from pennylane import control_flow
+from pennylane.control_flow import for_loop, while_loop
+from pennylane import kernels
+from pennylane import math
+from pennylane import operation
+from pennylane import allocation
+from pennylane.allocation import allocate, deallocate
+from pennylane import decomposition
+from pennylane.decomposition import (
+    register_resources,
+    register_condition,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
+from pennylane import templates
+from pennylane import pauli
+from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
-import pennylane.resource
-import pennylane.qchem
+from pennylane import resource
+from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -57,18 +71,15 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._grad import grad, jacobian, vjp, jvp
+from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration
-from pennylane.tracker import Tracker
+from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
-from pennylane.io import *
 from pennylane.measurements import (
     counts,
     density_matrix,
-    measure,
     expval,
     probs,
     sample,
@@ -81,8 +92,9 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod, measure
 from pennylane.ops import LinearCombination as Hamiltonian
+from pennylane.decomposition import gate_sets
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -91,13 +103,16 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots, marker
+from pennylane import workflow
+
 from pennylane.transforms import (
     transform,
     batch_params,
     batch_input,
     batch_partial,
     compile,
+    decompose,
     defer_measurements,
     dynamic_one_shot,
     quantum_monte_carlo,
@@ -106,7 +121,17 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    gridsynth,
+    CompilePipeline,
+)
+from pennylane.noise import (
     add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -137,52 +162,72 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-import pennylane.pulse
+from pennylane import pulse
 
-import pennylane.fourier
+from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
+
 # pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
+from pennylane import logging  # pylint:disable=wrong-import-order
 
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
+from pennylane import data
 
-import pennylane.data
-
-import pennylane.noise
+from pennylane import noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
-import pennylane.spin
+from pennylane import spin
 
-# Look for an existing configuration file
-default_config = Configuration("config.toml")
+from pennylane import liealg
+from pennylane.liealg import lie_closure, structure_constants, center
+from pennylane import qnn
 
+from pennylane import estimator
 
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
+from importlib.metadata import version as _metadata_version
+from importlib.util import find_spec as _find_spec
+from packaging.version import Version as _Version
 
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-class ExperimentalWarning(UserWarning):
-    """Warning raised to indicate experimental/non-stable feature or support."""
+if _find_spec("numpy") is not None:
+    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version(
+        "2.0.0"
+    ):  # pragma: no cover
+        warnings.warn(
+            "PennyLane v0.44 has dropped maintainence support for NumPy < 2.0.0. "
+            f"You have version {numpy_version} installed. "
+            "Future versions of PennyLane will not work with NumPy<2.0. "
+            "Please consider upgrading NumPy using "
+            "`python -m pip install numpy --upgrade`. ",
+            exceptions.PennyLaneDeprecationWarning,
+        )
 
 
 def __getattr__(name):
 
     if name == "plugin_devices":
-        return pennylane.devices.device_constructor.plugin_devices
+        # pylint: disable=import-outside-toplevel
+        from pennylane.devices.device_constructor import plugin_devices
+
+        return plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

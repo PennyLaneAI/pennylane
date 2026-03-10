@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions for circuit optimization."""
-# pylint: disable=too-many-return-statements,import-outside-toplevel
+
 import pennylane as qml
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
@@ -34,6 +34,8 @@ def find_next_gate(wires, op_list):
     next_gate_idx = None
 
     for op_idx, op in enumerate(op_list):
+        if any(qml.math.is_abstract(w) for w in op.wires):
+            break
         if len(Wires.shared_wires([wires, op.wires])) > 0:
             next_gate_idx = op_idx
             break

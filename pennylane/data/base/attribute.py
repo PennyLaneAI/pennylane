@@ -20,7 +20,7 @@ from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequenc
 from functools import lru_cache
 from numbers import Number
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, overload
+from typing import Any, ClassVar, Generic, Literal, TypeVar, overload
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group
@@ -35,22 +35,23 @@ class AttributeInfo(MutableMapping):
     attribute. Is stored in the HDF5 object's ``attrs`` dict.
 
     Attributes:
-        attrs_bind: The HDF5 attrs dict that this instance is bound to,
-            or any mutable mapping
         **kwargs: Extra metadata to include. Must be a string, number
             or numpy array
     """
 
     attrs_namespace: ClassVar[str] = "qml.data"
     attrs_bind: MutableMapping[str, Any]
+    """The HDF5 attrs dict that this instance is bound to,
+        or any mutable mapping
+    """
 
     @overload
     def __init__(  # overload to specify known keyword args
         self,
-        attrs_bind: Optional[MutableMapping[str, Any]] = None,
+        attrs_bind: MutableMapping[str, Any] | None = None,
         *,
-        doc: Optional[str] = None,
-        py_type: Optional[str] = None,
+        doc: str | None = None,
+        py_type: str | None = None,
         **kwargs: Any,
     ):
         pass
@@ -59,7 +60,7 @@ class AttributeInfo(MutableMapping):
     def __init__(self):  # need at least two overloads when using @overload
         pass
 
-    def __init__(self, attrs_bind: Optional[MutableMapping[str, Any]] = None, **kwargs: Any):
+    def __init__(self, attrs_bind: MutableMapping[str, Any] | None = None, **kwargs: Any):
         object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})
 
         for k, v in kwargs.items():
@@ -75,16 +76,16 @@ class AttributeInfo(MutableMapping):
         info.save(self)
 
     @property
-    def py_type(self) -> Optional[str]:
+    def py_type(self) -> str | None:
         """String representation of this attribute's python type."""
         return self.get("py_type")
 
     @py_type.setter
-    def py_type(self, type_: Union[str, Type]):
+    def py_type(self, type_: str | type):
         self["py_type"] = get_type_str(type_)
 
     @property
-    def doc(self) -> Optional[str]:
+    def doc(self) -> str | None:
         """Documentation for this attribute."""
         return self.get("doc")
 
@@ -140,7 +141,7 @@ class AttributeInfo(MutableMapping):
         return f"{type(self).__name__}({repr(dict(self))})"
 
     @classmethod
-    @lru_cache()
+    @lru_cache
     def bind_key(cls, __name: str) -> str:
         """Returns ``__name`` dot-prefixed with ``attrs_namespace``."""
         return ".".join((cls.attrs_namespace, __name))
@@ -157,13 +158,10 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     The DatasetAttribute class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
     DatasetAttribute, and Python types to compatible AttributeTypes.
-
-    Attributes:
-        type_id: Unique identifier for this DatasetAttribute class. Must be declared
-            in subclasses.
     """
 
     type_id: ClassVar[str]
+    """Unique identifier for this DatasetAttribute class. Must be declared in subclasses."""
 
     @abstractmethod
     def hdf5_to_value(self, bind: HDF5) -> ValueType:
@@ -176,10 +174,10 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     @overload
     def __init__(
         self,
-        value: Union[InitValueType, Literal[UNSET]] = UNSET,
-        info: Optional[AttributeInfo] = None,
+        value: InitValueType | Literal[UNSET] = UNSET,
+        info: AttributeInfo | None = None,
         *,
-        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
+        parent_and_key: tuple[HDF5Group, str] | None = None,
     ):
         """Initialize a new dataset attribute from ``value``.
 
@@ -203,11 +201,11 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
     def __init__(
         self,
-        value: Union[InitValueType, Literal[UNSET]] = UNSET,
-        info: Optional[AttributeInfo] = None,
+        value: InitValueType | Literal[UNSET] = UNSET,
+        info: AttributeInfo | None = None,
         *,
-        bind: Optional[HDF5] = None,
-        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
+        bind: HDF5 | None = None,
+        parent_and_key: tuple[HDF5Group, str] | None = None,
     ) -> None:
         """
         Initialize a new dataset attribute, or load from an existing
@@ -245,9 +243,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
     def _value_init(
         self,
-        value: Union[InitValueType, Literal[UNSET]],
-        info: Optional[AttributeInfo],
-        parent_and_key: Optional[tuple[HDF5Group, str]],
+        value: InitValueType | Literal[UNSET],
+        info: AttributeInfo | None,
+        parent_and_key: tuple[HDF5Group, str] | None,
     ):
         """Constructor for value initialization. See __init__()."""
 
@@ -277,13 +275,13 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         return self._bind
 
     @classmethod
-    def default_value(cls) -> Union[InitValueType, Literal[UNSET]]:
+    def default_value(cls) -> InitValueType | Literal[UNSET]:
         """Returns a valid default value for this type, or ``UNSET`` if this type
         must be initialized with a value."""
         return UNSET
 
     @classmethod
-    def py_type(cls, value_type: Type[InitValueType]) -> str:
+    def py_type(cls, value_type: type[InitValueType]) -> str:
         """Determines the ``py_type`` of an attribute during value initialization,
         if it was not provided in the ``info`` argument. This method returns
         ``f"{value_type.__module__}.{value_type.__name__}``.
@@ -313,7 +311,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         return self.get_value()
 
     def _set_value(
-        self, value: InitValueType, info: Optional[AttributeInfo], parent: HDF5Group, key: str
+        self, value: InitValueType, info: AttributeInfo | None, parent: HDF5Group, key: str
     ) -> HDF5:
         """Converts ``value`` into HDF5 format and sets the attribute info."""
         if info is None:
@@ -363,20 +361,18 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     def __str__(self) -> str:
         return str(self.get_value())
 
-    __registry: Mapping[str, Type["DatasetAttribute"]] = {}
-    __type_consumer_registry: Mapping[type, Type["DatasetAttribute"]] = {}
+    __registry: Mapping[str, type["DatasetAttribute"]] = {}
+    __type_consumer_registry: Mapping[type, type["DatasetAttribute"]] = {}
 
-    registry: Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
+    registry: Mapping[str, type["DatasetAttribute"]] = MappingProxyType(__registry)
     """Maps type_ids to their DatasetAttribute classes."""
 
-    type_consumer_registry: Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
+    type_consumer_registry: Mapping[type, type["DatasetAttribute"]] = MappingProxyType(
         __type_consumer_registry
     )
     """Maps types to their default DatasetAttribute"""
 
-    def __init_subclass__(  # pylint: disable=arguments-differ
-        cls, *, abstract: bool = False
-    ) -> None:
+    def __init_subclass__(cls, *, abstract: bool = False) -> None:
         if abstract:
             return super().__init_subclass__()
 
@@ -401,9 +397,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         return super().__init_subclass__()
 
 
-def attribute(
-    val: T, doc: Optional[str] = None, **kwargs: Any
-) -> DatasetAttribute[HDF5Any, T, Any]:
+def attribute(val: T, doc: str | None = None, **kwargs: Any) -> DatasetAttribute[HDF5Any, T, Any]:
     """Creates a dataset attribute that contains both a value and associated metadata.
 
     Args:
@@ -436,7 +430,7 @@ def attribute(
     return match_obj_type(val)(val, AttributeInfo(doc=doc, py_type=type(val), **kwargs))
 
 
-def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
+def get_attribute_type(h5_obj: HDF5) -> type[DatasetAttribute[HDF5, Any, Any]]:
     """
     Returns the ``DatasetAttribute`` of the dataset attribute contained
     in ``h5_obj``.
@@ -447,8 +441,8 @@ def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
 
 
 def match_obj_type(
-    type_or_obj: Union[ValueType, Type[ValueType]],
-) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
+    type_or_obj: ValueType | type[ValueType],
+) -> type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``
     as a value.

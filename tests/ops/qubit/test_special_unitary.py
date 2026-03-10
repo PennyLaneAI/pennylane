@@ -741,6 +741,40 @@ class TestSpecialUnitary:
         expected = tape.jacobian(loss, theta)
         assert np.allclose(jac, expected)
 
+    @pytest.mark.torch
+    @pytest.mark.jax
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
+    def test_large_wire_jacobian_regression(self, interface):
+        """Regression test for compute_matrix with num_wires > 5.
+
+        This test specifically addresses a bug where the interface conversion
+        was not properly handled for large wire counts, causing tensor type
+        mismatches in the itertools.product path vs pauli_basis_matrices path.
+        """
+        # Use 6 wires to trigger itertools.product path
+        num_wires = 6  # This triggers the itertools.product code path (num_wires > 5)
+
+        # Create just 10 parameters for testing - this is sufficient to test interface conversion
+        num_params = 10
+        theta_np = (
+            np.random.randn(num_params) * 0.01 + 0.0j
+        )  # crucial for jax to proceed with holomorphic
+        theta = qml.math.asarray(theta_np, like=interface, requires_grad=True)
+
+        # This should not raise an error about tensor type mismatches
+        matrix = qml.SpecialUnitary.compute_matrix(theta, num_wires=num_wires)
+
+        expected_shape = (2**num_wires, 2**num_wires)
+        assert qml.math.shape(matrix) == expected_shape
+
+        # Test that gradients can be computed (this was the main issue https://github.com/PennyLaneAI/pennylane/issues/7583)
+
+        def g(theta):
+            return qml.math.real(qml.SpecialUnitary.compute_matrix(theta, num_wires=num_wires))
+
+        jac = qml.math.jacobian(g)(theta)
+        assert qml.math.shape(jac) == expected_shape + (num_params,)
+
 
 @pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestSpecialUnitaryIntegration:
@@ -799,9 +833,9 @@ class TestSpecialUnitaryIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method, shots=shots)
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -836,9 +870,11 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(
+            self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots
+        )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
@@ -868,9 +904,9 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method, shots=shots)
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:

@@ -22,10 +22,9 @@ from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
-    MeasurementValue,
     StateMeasurement,
 )
-from pennylane.ops import LinearCombination, Sum
+from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -180,7 +179,7 @@ def get_measurement_function(
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 
-        if isinstance(measurementprocess, ExpectationMP):
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs is not None:
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 

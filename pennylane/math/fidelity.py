@@ -22,10 +22,9 @@ from functools import lru_cache
 import autograd
 import autoray as ar
 
-import pennylane as qml
+from pennylane import math
 
 from .quantum import _check_density_matrix, _check_state_vector
-from .utils import cast
 
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
@@ -69,28 +68,28 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     """
     # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-    state1 = cast(state1, dtype=c_dtype)
+    state0 = math.cast(state0, dtype=c_dtype)
+    state1 = math.cast(state1, dtype=c_dtype)
 
     if check_state:
         _check_state_vector(state0)
         _check_state_vector(state1)
 
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+    if math.shape(state0)[-1] != math.shape(state1)[-1]:
+        raise ValueError("The two states must have the same number of wires.")
 
-    batched0 = len(qml.math.shape(state0)) > 1
-    batched1 = len(qml.math.shape(state1)) > 1
+    batched0 = len(math.shape(state0)) > 1
+    batched1 = len(math.shape(state1)) > 1
 
     # Two pure states, squared overlap
     indices0 = "ab" if batched0 else "b"
     indices1 = "ab" if batched1 else "b"
     target = "a" if batched0 or batched1 else ""
-    overlap = qml.math.einsum(
-        f"{indices0},{indices1}->{target}", state0, qml.math.conj(state1), optimize="greedy"
+    overlap = math.einsum(
+        f"{indices0},{indices1}->{target}", state0, math.conj(state1), optimize="greedy"
     )
 
-    overlap = qml.math.abs(overlap) ** 2
+    overlap = math.abs(overlap) ** 2
     return overlap
 
 
@@ -140,28 +139,28 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     """
     # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-    state1 = cast(state1, dtype=c_dtype)
+    state0 = math.cast(state0, dtype=c_dtype)
+    state1 = math.cast(state1, dtype=c_dtype)
 
     if check_state:
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+    if math.shape(state0)[-1] != math.shape(state1)[-1]:
+        raise ValueError("The two states must have the same number of wires.")
 
-    batch_size0 = qml.math.shape(state0)[0] if qml.math.ndim(state0) > 2 else None
-    batch_size1 = qml.math.shape(state1)[0] if qml.math.ndim(state1) > 2 else None
+    batch_size0 = math.shape(state0)[0] if math.ndim(state0) > 2 else None
+    batch_size1 = math.shape(state1)[0] if math.ndim(state1) > 2 else None
 
-    if qml.math.get_interface(state0) == "jax" or qml.math.get_interface(state1) == "jax":
+    if math.get_interface(state0) == "jax" or math.get_interface(state1) == "jax":
         if batch_size0 and not batch_size1:
-            state1 = qml.math.broadcast_to(state1, (batch_size0, *qml.math.shape(state1)))
+            state1 = math.broadcast_to(state1, (batch_size0, *math.shape(state1)))
         elif not batch_size0 and batch_size1:
-            state0 = qml.math.broadcast_to(state0, (batch_size1, *qml.math.shape(state0)))
+            state0 = math.broadcast_to(state0, (batch_size1, *math.shape(state0)))
 
     # Two mixed states
     _register_vjp(state0, state1)
-    fid = qml.math.compute_fidelity(state0, state1)
+    fid = math.compute_fidelity(state0, state1)
     return fid
 
 
@@ -172,12 +171,14 @@ def _register_vjp(state0, state1):
     This function is needed because we don't want to register the custom
     VJPs at PennyLane import time.
     """
-    interface = qml.math.get_interface(state0, state1)
+    interface = math.get_interface(state0, state1)
     if interface == "jax":
         _register_jax_vjp()
     elif interface == "torch":
         _register_torch_vjp()
-    elif interface == "tensorflow":
+    elif (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         _register_tf_vjp()
 
 
@@ -188,17 +189,17 @@ def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
             F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
     """
     # Implementation in single dispatches (sqrt(rho))
-    sqrt_mat = qml.math.sqrt_matrix(density_matrix0)
+    sqrt_mat = math.sqrt_matrix(density_matrix0)
 
     # sqrt(rho) * sigma * sqrt(rho)
     sqrt_mat_sqrt = sqrt_mat @ density_matrix1 @ sqrt_mat
 
     # extract eigenvalues
-    evs = qml.math.eigvalsh(sqrt_mat_sqrt)
-    evs = qml.math.real(evs)
-    evs = qml.math.where(evs > 0.0, evs, 0)
+    evs = math.eigvalsh(sqrt_mat_sqrt)
+    evs = math.real(evs)
+    evs = math.where(evs > 0.0, evs, 0)
 
-    trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2
+    trace = (math.sum(math.sqrt(evs), -1)) ** 2
 
     return trace
 
@@ -208,42 +209,42 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
     Compute the VJP of fidelity with respect to the first density matrix
     """
     # sqrt of sigma
-    sqrt_dm1 = qml.math.sqrt_matrix(dm1)
+    sqrt_dm1 = math.sqrt_matrix(dm1)
 
     # eigendecomposition of sqrt(sigma) * rho * sqrt(sigma)
-    evs0, u0 = qml.math.linalg.eigh(sqrt_dm1 @ dm0 @ sqrt_dm1)
-    evs0 = qml.math.real(evs0)
-    evs0 = qml.math.where(evs0 > 1e-15, evs0, 1e-15)
-    evs0 = qml.math.cast_like(evs0, sqrt_dm1)
+    evs0, u0 = math.linalg.eigh(sqrt_dm1 @ dm0 @ sqrt_dm1)
+    evs0 = math.real(evs0)
+    evs0 = math.where(evs0 > 1e-15, evs0, 1e-15)
+    evs0 = math.cast_like(evs0, sqrt_dm1)
 
-    if len(qml.math.shape(dm0)) == 2 and len(qml.math.shape(dm1)) == 2:
-        u0_dag = qml.math.transpose(qml.math.conj(u0))
-        grad_dm0 = sqrt_dm1 @ u0 @ (1 / qml.math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
+    if len(math.shape(dm0)) == 2 and len(math.shape(dm1)) == 2:
+        u0_dag = math.transpose(math.conj(u0))
+        grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
         # torch and tensorflow use the Wirtinger derivative which is a different convention
         # than the one autograd and jax use for complex differentiation
-        if qml.math.get_interface(dm0) in ["torch", "tensorflow"]:
-            grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1) * grad_dm0
+        if math.get_interface(dm0) in ["torch", "tensorflow"]:
+            grad_dm0 = math.sum(math.sqrt(evs0), -1) * grad_dm0
         else:
-            grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1) * qml.math.transpose(grad_dm0)
+            grad_dm0 = math.sum(math.sqrt(evs0), -1) * math.transpose(grad_dm0)
 
-        res = grad_dm0 * qml.math.cast_like(grad_out, grad_dm0)
+        res = grad_dm0 * math.cast_like(grad_out, grad_dm0)
         return res
 
     # broadcasting case
-    u0_dag = qml.math.transpose(qml.math.conj(u0), (0, 2, 1))
-    grad_dm0 = sqrt_dm1 @ u0 @ (1 / qml.math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
+    u0_dag = math.transpose(math.conj(u0), (0, 2, 1))
+    grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
     # torch and tensorflow use the Wirtinger derivative which is a different convention
     # than the one autograd and jax use for complex differentiation
-    if qml.math.get_interface(dm0) in ["torch", "tensorflow"]:
-        grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1)[:, None, None] * grad_dm0
+    if math.get_interface(dm0) in ["torch", "tensorflow"]:
+        grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * grad_dm0
     else:
-        grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1)[:, None, None] * qml.math.transpose(
+        grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * math.transpose(
             grad_dm0, (0, 2, 1)
         )
 
-    return grad_dm0 * qml.math.cast_like(grad_out, grad_dm0)[:, None, None]
+    return grad_dm0 * math.cast_like(grad_out, grad_dm0)[:, None, None]
 
 
 def _compute_fidelity_vjp1(dm0, dm1, grad_out):
@@ -324,7 +325,7 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    # pylint: disable=import-outside-toplevel,abstract-method,arguments-differ
+    # pylint: disable=import-outside-toplevel
     import torch
 
     class _TorchFidelity(torch.autograd.Function):
@@ -348,7 +349,7 @@ def _register_torch_vjp():
 
 
 @lru_cache(maxsize=None)
-def _register_tf_vjp():
+def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """
     Register the custom VJP for tensorflow
     """

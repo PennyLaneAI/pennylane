@@ -15,16 +15,150 @@
 This module contains the qml.state measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
-import pennylane as qml
+from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
-from .measurements import State, StateMeasurement
+from .measurements import StateMeasurement
 
 
-def state() -> "StateMP":
+class StateMP(StateMeasurement):
+    """Measurement process that returns the quantum state in the computational basis.
+
+    Please refer to :func:`pennylane.state` for detailed documentation.
+
+    Args:
+        wires (.Wires): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    _shortname = "state"
+
+    def __init__(self, wires: Wires | None = None, id: str | None = None):
+        super().__init__(wires=wires, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: int | None = None,
+        has_eigvals=False,
+        shots: int | None = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires,)
+        return shape, complex
+
+    @property
+    def numeric_type(self):
+        return complex
+
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int]:
+        num_wires = len(self.wires) if self.wires else num_device_wires
+        return (2**num_wires,)
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        def cast_to_complex(state):
+            dtype = str(state.dtype)
+            if "complex" in dtype:
+                return state
+            if (
+                math.get_interface(state) == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                return math.cast(state, "complex128")
+            floating_single = "float32" in dtype or "complex64" in dtype
+            return math.cast(state, "complex64" if floating_single else "complex128")
+
+        if not self.wires or wire_order == self.wires:
+            return cast_to_complex(state)
+
+        if not all(w in self.wires for w in wire_order):
+            bad_wires = [w for w in wire_order if w not in self.wires]
+            raise WireError(
+                f"State wire order has wires {bad_wires} not present in "
+                f"measurement with wires {self.wires}. StateMP.process_state cannot trace out wires."
+            )
+
+        shape = (2,) * len(wire_order)
+        batch_size = None if math.ndim(state) == 1 else math.shape(state)[0]
+        shape = (batch_size,) + shape if batch_size else shape
+        state = math.reshape(state, shape)
+
+        if wires_to_add := Wires(set(self.wires) - set(wire_order)):
+            for _ in wires_to_add:
+                state = math.stack([state, math.zeros_like(state)], axis=-1)
+            wire_order = wire_order + wires_to_add
+
+        desired_axes = [wire_order.index(w) for w in self.wires]
+        if batch_size:
+            desired_axes = [0] + [i + 1 for i in desired_axes]
+        state = math.transpose(state, desired_axes)
+
+        flat_shape = (2 ** len(self.wires),)
+        if batch_size:
+            flat_shape = (batch_size,) + flat_shape
+        state = math.reshape(state, flat_shape)
+        return cast_to_complex(state)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        raise ValueError("Processing from density matrix to state is not supported.")
+
+
+class DensityMatrixMP(StateMP):
+    """Measurement process that returns the quantum state in the computational basis.
+
+    Please refer to :func:`density_matrix` for detailed documentation.
+
+    Args:
+        wires (.Wires): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    def __init__(self, wires: Wires, id: str | None = None):
+        super().__init__(wires=wires, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: int | None = None,
+        has_eigvals=False,
+        shots: int | None = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires, 2**n_wires)
+        return shape, complex
+
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int]:
+        dim = 2 ** len(self.wires)
+        return (dim, dim)
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
+            kwargs["c_dtype"] = state.dtype
+        return math.reduce_statevector(state, **kwargs)
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
+            kwargs["c_dtype"] = density_matrix.dtype
+        return math.reduce_dm(density_matrix, **kwargs)
+
+
+def state() -> StateMP:
     r"""Quantum state in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its state. A
@@ -83,7 +217,7 @@ def state() -> "StateMP":
     return StateMP()
 
 
-def density_matrix(wires) -> "DensityMatrixMP":
+def density_matrix(wires) -> DensityMatrixMP:
     r"""Quantum density matrix in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its density
@@ -125,137 +259,3 @@ def density_matrix(wires) -> "DensityMatrixMP":
     """
     wires = Wires(wires)
     return DensityMatrixMP(wires=wires)
-
-
-class StateMP(StateMeasurement):
-    """Measurement process that returns the quantum state in the computational basis.
-
-    Please refer to :func:`pennylane.state` for detailed documentation.
-
-    Args:
-        wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
-    """
-
-    _shortname = State  #! Note: deprecated. Change the value to "state" in v0.42
-
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
-    @classmethod
-    def _abstract_eval(
-        cls,
-        n_wires: Optional[int] = None,
-        has_eigvals=False,
-        shots: Optional[int] = None,
-        num_device_wires: int = 0,
-    ):
-        n_wires = n_wires or num_device_wires
-        shape = (2**n_wires,)
-        return shape, complex
-
-    @property
-    def numeric_type(self):
-        return complex
-
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
-        num_wires = len(self.wires) if self.wires else num_device_wires
-        return (2**num_wires,)
-
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        def cast_to_complex(state):
-            dtype = str(state.dtype)
-            if "complex" in dtype:
-                return state
-            if qml.math.get_interface(state) == "tensorflow":
-                return qml.math.cast(state, "complex128")
-            floating_single = "float32" in dtype or "complex64" in dtype
-            return qml.math.cast(state, "complex64" if floating_single else "complex128")
-
-        if not self.wires or wire_order == self.wires:
-            return cast_to_complex(state)
-
-        if not all(w in self.wires for w in wire_order):
-            bad_wires = [w for w in wire_order if w not in self.wires]
-            raise WireError(
-                f"State wire order has wires {bad_wires} not present in "
-                f"measurement with wires {self.wires}. StateMP.process_state cannot trace out wires."
-            )
-
-        shape = (2,) * len(wire_order)
-        batch_size = None if qml.math.ndim(state) == 1 else qml.math.shape(state)[0]
-        shape = (batch_size,) + shape if batch_size else shape
-        state = qml.math.reshape(state, shape)
-
-        if wires_to_add := Wires(set(self.wires) - set(wire_order)):
-            for _ in wires_to_add:
-                state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
-            wire_order = wire_order + wires_to_add
-
-        desired_axes = [wire_order.index(w) for w in self.wires]
-        if batch_size:
-            desired_axes = [0] + [i + 1 for i in desired_axes]
-        state = qml.math.transpose(state, desired_axes)
-
-        flat_shape = (2 ** len(self.wires),)
-        if batch_size:
-            flat_shape = (batch_size,) + flat_shape
-        state = qml.math.reshape(state, flat_shape)
-        return cast_to_complex(state)
-
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        raise ValueError("Processing from density matrix to state is not supported.")
-
-
-class DensityMatrixMP(StateMP):
-    """Measurement process that returns the quantum state in the computational basis.
-
-    Please refer to :func:`density_matrix` for detailed documentation.
-
-    Args:
-        wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
-    """
-
-    def __init__(self, wires: Wires, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
-    @classmethod
-    def _abstract_eval(
-        cls,
-        n_wires: Optional[int] = None,
-        has_eigvals=False,
-        shots: Optional[int] = None,
-        num_device_wires: int = 0,
-    ):
-        n_wires = n_wires or num_device_wires
-        shape = (2**n_wires, 2**n_wires)
-        return shape, complex
-
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
-        dim = 2 ** len(self.wires)
-        return (dim, dim)
-
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
-            kwargs["c_dtype"] = state.dtype
-        return qml.math.reduce_statevector(state, **kwargs)
-
-    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(density_matrix) and qml.math.any(
-            qml.math.iscomplex(density_matrix)
-        ):
-            kwargs["c_dtype"] = density_matrix.dtype
-        return qml.math.reduce_dm(density_matrix, **kwargs)

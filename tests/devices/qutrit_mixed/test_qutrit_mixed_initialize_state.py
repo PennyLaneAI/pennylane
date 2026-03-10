@@ -29,13 +29,11 @@ class TestInitializeState:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        num_wires = qml.operation.AllWires
-
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
@@ -45,7 +43,7 @@ class TestInitializeState:
         assert qml.math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         prep_op = self.DefaultPrep(
@@ -66,7 +64,7 @@ class TestInitializeState:
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
         assert state[1, 2, 0, 1, 2, 0] == 1
         state[1, 2, 0, 1, 2, 0] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros(([3] * 6)))
+        assert qml.math.allequal(state, np.zeros([3] * 6))
 
     @pytest.mark.parametrize("wires", [(0, 1), qml.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):

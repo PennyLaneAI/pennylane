@@ -20,7 +20,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 
@@ -46,7 +45,7 @@ class TestPurity:
     @pytest.mark.parametrize("density_matrix,subsystems_purity,_", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_density_matrices_purity_single_wire(
         self, density_matrix, wires, check_state, subsystems_purity, _, interface
     ):
@@ -61,7 +60,7 @@ class TestPurity:
     @pytest.mark.parametrize("density_matrix,_,full_purity", density_matrices)
     @pytest.mark.parametrize("wires", full_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_density_matrices_purity_full_wire(
         self, density_matrix, wires, check_state, _, full_purity, interface
     ):
@@ -95,7 +94,7 @@ class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_density_matrices_entropy(
         self, density_matrix, pure, wires, base, check_state, interface
     ):
@@ -116,7 +115,7 @@ class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -159,7 +158,7 @@ class TestMutualInformation:
 class TestEntanglementEntropy:
     """Tests for the vn entanglement entropy function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -219,7 +218,7 @@ class TestRelativeEntropy:
     bases = [None, 2]
     check_states = [True, False]
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "state0, state1, expected",
         [
@@ -254,7 +253,7 @@ class TestRelativeEntropy:
         """Test that an error is raised when the dimensions do not match"""
         msg = "The two states must have the same number of wires"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(ValueError, match=msg):
             qml.math.relative_entropy(state0, state1)
 
 
@@ -279,7 +278,7 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_density_matrices_max_entropy(
         self, density_matrix, pure, wires, base, check_state, interface
     ):
@@ -324,22 +323,6 @@ class TestMaxEntropy:
         max_entropy = qml.math.max_entropy(params, wires, base, check_state)
         max_entropy.backward()
         gradient = params.grad
-
-        assert qml.math.allclose(gradient, 0.0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("check_state", check_state)
-    def test_max_entropy_grad_tf(self, params, wires, base, check_state):
-        """Test `max_entropy` differentiability with tensorflow interface."""
-        params = tf.Variable(params)
-
-        with tf.GradientTape() as tape:
-            max_entropy = qml.math.max_entropy(params, wires, base, check_state)
-
-        gradient = tape.gradient(max_entropy, params)
 
         assert qml.math.allclose(gradient, 0.0)
 
@@ -390,7 +373,7 @@ class TestMinEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_density_matrices_min_entropy(
         self, density_matrix, pure, wires, base, check_state, interface
     ):
@@ -440,23 +423,6 @@ class TestMinEntropy:
 
         assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("check_state", check_state)
-    def test_min_entropy_grad_tf(self, params, wires, base, check_state):
-        """Test `min_entropy` differentiability with tensorflow interface."""
-
-        params = tf.Variable(params)
-
-        with tf.GradientTape() as tape:
-            min_entropy = qml.math.min_entropy(params, wires, base, check_state)
-
-        gradient = tape.gradient(min_entropy, params)
-
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -493,7 +459,7 @@ class TestEntropyBroadcasting:
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_purity_broadcast_dm(self, wires, check_state, interface):
         """Test broadcasting for purity and density matrices"""
         density_matrix = [
@@ -511,7 +477,7 @@ class TestEntropyBroadcasting:
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_vn_entropy_broadcast_dm(self, wires, check_state, interface):
         """Test broadcasting for vn_entropy and density matrices"""
         density_matrix = [
@@ -526,7 +492,7 @@ class TestEntropyBroadcasting:
         entropy = qml.math.vn_entropy(density_matrix, wires, check_state=check_state)
         assert qml.math.allclose(entropy, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_mutual_info_broadcast_dm(self, interface):
         """Test broadcasting for mutual_info and density matrices"""
         state = [
@@ -542,7 +508,7 @@ class TestEntropyBroadcasting:
         actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("check_state", check_state)
     def test_relative_entropy_broadcast_dm(self, interface, check_state):
         """Test broadcasting for relative entropy and density matrices"""
@@ -556,7 +522,7 @@ class TestEntropyBroadcasting:
         actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
         assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("check_state", check_state)
     def test_relative_entropy_broadcast_dm_unbatched(self, interface, check_state):
         """Test broadcasting for relative entropy and density matrices when one input is unbatched"""
@@ -572,7 +538,7 @@ class TestEntropyBroadcasting:
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
     def test_max_entropy_broadcast_dm(self, wires, check_state, interface):
         """Test broadcasting for max entropy and density matrices"""
         density_matrix = [

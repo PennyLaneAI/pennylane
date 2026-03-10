@@ -114,6 +114,23 @@ state preparation is typically used as the first operation.
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
+.. gallery-item::
+    :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
+    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+
+.. gallery-item::
+    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
+
+.. gallery-item::
+    :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane.MultiplexerStatePreparation>`
+    :figure: _static/templates/state_preparations/multiplexerSP_template.png
+
+.. gallery-item::
+    :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
+    :figure: _static/templates/state_preparations/sumofslatersprep_template.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -133,6 +150,10 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`Adder <../code/api/pennylane.Adder>`
     :figure: _static/templates/arithmetic/adder.png
+
+.. gallery-item::
+    :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
+    :figure: _static/templates/arithmetic/semiadder.png
 
 .. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
@@ -247,6 +268,10 @@ Other subroutines
 Other useful templates which do not belong to the previous categories can be found here.
 
 .. gallery-item::
+    :description: :doc:`Instantaneous Quantum Polynomial Circuit <../code/api/pennylane.IQP>`
+    :figure: _static/templates/subroutines/iqp.png
+
+.. gallery-item::
     :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
     :figure: _static/templates/subroutines/grover.svg
 
@@ -332,7 +357,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
-    :figure: _static/templates/subroutines/select.png
+    :figure: _static/templates/subroutines/select_cropped.png
 
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
@@ -351,8 +376,28 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
+    :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
+    :figure: _static/templates/qram/bbqram_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`Select Only QRAM <../code/api/pennylane.SelectOnlyQRAM>`
+    :figure: _static/templates/qram/select_qram_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
+    :figure: _static/templates/qram/hybrid_qram_thumbnail.png
+
+.. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
+
+.. gallery-item::
+    :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
+    :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
+
+.. gallery-item::
+    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
+    :figure: _static/templates/subroutines/temporary_and.png
 
 .. raw:: html
 

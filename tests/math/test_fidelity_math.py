@@ -21,7 +21,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -49,8 +48,6 @@ class TestFidelityMath:
         np.array,
         jnp.array,
         torch.tensor,
-        tf.Variable,
-        tf.constant,
     ]
 
     check_state = [True, False]
@@ -143,18 +140,14 @@ class TestFidelityMath:
         """Test that the two states must act on the same number of wires"""
         state0 = [0, 1, 0, 0]
         state1 = [1, 0]
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.fidelity_statevector(state0, state1, check_state=True)
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
         state0 = np.diag([0, 1, 0, 0])
         state1 = [[1, 0], [0, 0]]
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.fidelity(state0, state1, check_state=True)
 
     @pytest.mark.parametrize("check_state", check_state)
@@ -358,21 +351,6 @@ class TestGradient:
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
-    @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
-    def test_grad_tf(self, x, cost_fn, expected_res, expected_grad, tol):
-        """Test gradients are correct for tf"""
-        x = tf.Variable(x, trainable=True, dtype="float64")
-
-        with tf.GradientTape() as tape:
-            res = cost_fn(x)
-
-        grad = tape.gradient(res, x)
-
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_broadcast_autograd(self, cost_fn, expected_res, expected_grad, tol):
@@ -418,22 +396,6 @@ class TestGradient:
 
         res = cost_fn(x)
         grad = qml.math.diag(torch.autograd.functional.jacobian(cost_fn, x))
-
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
-    def test_broadcast_tf(self, cost_fn, expected_res, expected_grad, tol):
-        """Test gradients are correct for a broadcasted input for tf"""
-        x = tf.Variable(
-            [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2], trainable=True, dtype="float64"
-        )
-
-        with tf.GradientTape() as tape:
-            res = cost_fn(x)
-
-        grad = tape.gradient(res, x)
 
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)

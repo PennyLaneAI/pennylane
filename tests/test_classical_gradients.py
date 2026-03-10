@@ -94,7 +94,7 @@ class TestGradientMultiVar:
                 np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
             ]
         )
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -105,7 +105,7 @@ class TestGradientMultiVar:
         """Tests gradients with a quadratic function."""
         multi_var = lambda x: np.sum([x_**2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -201,7 +201,7 @@ class TestGradientMultivarMultidim:
 
     def test_sin(self, tol):
         """Tests gradients with multivariate multidimensional sin and cos."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: ([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
@@ -215,7 +215,7 @@ class TestGradientMultivarMultidim:
 
     def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array(
@@ -233,7 +233,7 @@ class TestGradientMultivarMultidim:
 
     def test_linear(self, tol):
         """Tests gradients with multivariate multidimensional linear func."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array([[2 * x_[0]] for x_ in x])
@@ -254,7 +254,7 @@ class TestGrad:
         def cost(x):
             return np.sin(x)
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=True)
 
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
@@ -327,26 +327,26 @@ class TestGrad:
 class TestJacobian:
     """Tests for the jacobian function"""
 
-    def test_single_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for a single argnum"""
+    def test_single_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for a single argnums"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnum=0)
+        jac_fn = qml.jacobian(cost_fn, argnums=0)
         res = jac_fn(x, y)
         expected = np.array([np.cos(x) * np.cos(y), y**2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for multiple argnums"""
+    def test_multiple_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for multiple argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnum=[0, 1])
+        jac_fn = qml.jacobian(cost_fn, argnums=[0, 1])
         res = jac_fn(x, y)
         expected = (
             np.array([np.cos(x) * np.cos(y), y**2]),
@@ -354,8 +354,8 @@ class TestJacobian:
         )
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    def test_no_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for inferred argnums"""
+    def test_no_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for inferred argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)

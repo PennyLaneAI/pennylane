@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
-# pylint: disable=too-many-branches
+from collections.abc import Sequence
 from functools import partial
 
 import pennylane as qml
-from pennylane.ops import __all__ as all_ops
+from pennylane.decomposition import gate_sets
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, transform
+from pennylane.transforms.core import Transform, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -28,14 +28,23 @@ from pennylane.transforms.optimization import (
 )
 from pennylane.typing import PostprocessingFn
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
+default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove_barrier)
 
 
 @transform
 def compile(
-    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1
+    tape: QuantumScript,
+    pipeline: Sequence[Transform] = default_pipeline,
+    basis_set=None,
+    num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
+
+    .. note::
+
+        While ``qml.compile`` is useful for initial exploration by appliying a default set of
+        transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
+        constructing large & modular compilation pipelines in a natural way.
 
     The default set of transforms includes (in order):
 
@@ -49,7 +58,7 @@ def compile(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         pipeline (list[Callable]): A list of
-            tape and/or quantum function transforms to apply. If 
+            tape and/or quantum function transforms to apply. If
             ``pipeline != None``, the default set of transformations (``commute_controlled``,
             ``cancel_inverses``, and ``merge_rotations``) is not applied to the
             quantum circuit.
@@ -140,7 +149,7 @@ def compile(
     of gates into which the compiler will first attempt to decompose the
     existing operations prior to applying any optimization transforms.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         compiled_qnode = qml.compile(
             qnode,
@@ -167,14 +176,10 @@ def compile(
 
     """
 
-    # Ensure that everything in the pipeline is a valid qfunc or tape transform
-    if pipeline is None:
-        pipeline = default_pipeline
-    else:
-        for p in pipeline:
-            p_func = p.func if isinstance(p, partial) else p
-            if not isinstance(p_func, TransformDispatcher):
-                raise ValueError("Invalid transform function {p} passed to compile.")
+    for p in pipeline:
+        p_func = p.func if isinstance(p, partial) else p
+        if not isinstance(p_func, Transform):
+            raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
@@ -186,7 +191,7 @@ def compile(
 
     with QueuingManager.stop_recording():
         if basis_set is None:
-            basis_set = all_ops
+            basis_set = gate_sets.ALL_OPS
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
@@ -197,10 +202,12 @@ def compile(
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
+            target_gates=basis_set,
             stopping_condition=stop_at,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
             skip_initial_state_prep=False,
+            strict=False,
         )
 
         # Apply the full set of compilation transforms num_passes times
@@ -209,7 +216,7 @@ def compile(
                 [expanded_tape], _ = transf(expanded_tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

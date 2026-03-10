@@ -19,6 +19,7 @@ from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
+import scipy as sp
 from gate_data import CNOT, H, I
 from gate_data import Rotx as RX
 from gate_data import Roty as RY
@@ -49,6 +50,41 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 
 class TestSingleOperation:
+
+    def test_unsupported_operator(self):
+        """Test that an error is raised when the operator is not supported, that means,
+        it is an operator without matrix, sparse matrix or decomposition defined."""
+
+        class CustomOp(qml.operation.Operation):
+            has_matrix = False
+            has_sparse_matrix = False
+            has_decomposition = False
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, param, wires):
+                super().__init__(param, wires=wires)
+
+        dummy_op = CustomOp(0.5, wires=0)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="Operator must define a matrix, sparse matrix, or decomposition",
+        ):
+            qml.matrix(dummy_op)
+
+    @pytest.mark.parametrize("op_class", [qml.QubitUnitary])
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    def test_sparse_operators_supported(self, op_class, n_wires):
+        """Test that sparse operators are supported and directly output as dense."""
+        matrix = X
+        for _ in range(n_wires - 1):
+            matrix = np.kron(matrix, X)
+        X_csr = sp.sparse.csr_matrix(matrix)
+        op = op_class(X_csr, wires=range(n_wires))
+        res = qml.matrix(op)
+        assert np.allclose(res, matrix, atol=0, rtol=0)
+
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct
@@ -142,9 +178,6 @@ class TestSingleOperation:
         expected = reduce(np.kron, [Y, Z, I]) - 0.5 * np.kron(X, np.eye(4))
         assert qml.math.allclose(mat, expected)
 
-    @pytest.mark.xfail(
-        reason="This test will fail because Hamiltonians are not queued to tapes yet!"
-    )
     def test_hamiltonian_qfunc(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
 
@@ -202,8 +235,19 @@ class TestSingleOperation:
         ]
         assert all(np.allclose(mat, np.eye(4)) for mat in mats)
 
+    def test_matrix_dequeues_operation(self):
+        """Tests that the operator is dequeued."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(qml.X(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
+
 
 class TestMultipleOperations:
+
     def test_multiple_operations_tape(self):
         """Check the total matrix for a tape containing multiple gates"""
         wire_order = ["a", "b", "c"]
@@ -224,6 +268,20 @@ class TestMultipleOperations:
 
         assert np.allclose(qs_matrix, expected_matrix)
 
+    def test_multiple_operations_sequence(self):
+        """Check the total matrix for a sequence containing multiple gates"""
+        wire_order = ["a", "b", "c"]
+
+        op_list = [
+            qml.PauliX(wires="a"),
+            qml.S(wires="b"),
+            qml.Hadamard(wires="c"),
+            qml.CNOT(wires=["b", "c"]),
+        ]
+        matrix = qml.matrix(op_list, wire_order)
+        expected_matrix = I_CNOT @ X_S_H
+        assert np.allclose(matrix, expected_matrix)
+
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
         wire_order = ["a", "b", "c"]
@@ -237,6 +295,21 @@ class TestMultipleOperations:
         matrix = qml.matrix(testcircuit, wire_order)()
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
+
+    def test_qfunc_arguments_dequeued(self):
+        """Tests that operators passed as arguments to the qfunc are dequeued"""
+
+        def func(op, op1=None):
+            qml.apply(op)
+            if op1:
+                qml.apply(op1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(func, wire_order=[0])(qml.X(0), op1=qml.Z(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
 
     def test_multiple_operations_qnode(self):
         """Check the total matrix for a QNode containing multiple gates"""
@@ -530,7 +603,9 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = CustomOp(weights, wires=[0, 1])
-        res = qml.matrix(op)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(op)
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
         with qml.queuing.AnnotatedQueue() as q:
@@ -557,7 +632,10 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
@@ -864,12 +942,15 @@ class TestWireOrderErrors:
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
+    @pytest.mark.parametrize("type_", ["tape", "sequence"])
     @pytest.mark.parametrize("ops", [[qml.PauliX(1), qml.PauliX(0)], []])
-    def test_error_tape_multiple_wires(self, ops):
+    def test_error_tape_multiple_wires(self, ops, type_):
         """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
-        qs = qml.tape.QuantumScript(ops)
+        if type_ == "tape":
+            ops = qml.tape.QuantumScript(ops)
+
         with pytest.raises(ValueError, match=r"wire_order is required"):
-            _ = qml.matrix(qs)
+            _ = qml.matrix(ops)
 
     def test_error_qnode(self):
         """Test that an error is raised when calling qml.matrix without wire_order on a QNode."""

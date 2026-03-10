@@ -1268,7 +1268,9 @@ class TestStochPulseGrad:
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
+        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1380,10 +1382,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1411,12 +1414,13 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T_x = 0.1
         T_y = 0.2
         ham_x = qml.pulse.constant * qml.PauliX(0)
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1445,10 +1449,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1475,10 +1480,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1493,13 +1499,13 @@ class TestStochPulseGradIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
-                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        if isinstance(shots, list):
+            for j_shots in jac:
+                for j, e in zip(j_shots, exp_jac):
+                    assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         else:
             for j, e in zip(jac, exp_jac):
-                assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+                assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         jax.clear_caches()
 
     @pytest.mark.xfail  # TODO: [sc-82874]
@@ -1566,9 +1572,10 @@ class TestStochPulseGradIntegration:
             grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
-
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 
@@ -1581,10 +1588,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1599,10 +1607,10 @@ class TestStochPulseGradIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
-                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        if isinstance(shots, list):
+            for j_shots in jac:
+                for j, e in zip(j_shots, exp_jac):
+                    assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         else:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)

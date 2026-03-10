@@ -17,16 +17,18 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
-from pennylane.operation import Channel
+from pennylane.operation import Channel, Operator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.typing import TensorLike
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = math.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
@@ -146,6 +148,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         - The phase shift operator U for single-qubit case is:
           U = [[1, 0],
                [0, phase_factor]]
+
     """
     n_dim = math.ndim(state)
     sl_0 = _get_slice(0, axis, n_dim)
@@ -163,7 +166,16 @@ def _get_num_wires(state, is_state_batched):
     """
     For density matrix, we need to infer the number of wires from the state.
     """
-    return (math.ndim(state) - is_state_batched) // 2
+
+    shape = qml.math.shape(state)
+    batch_size = shape[0] if is_state_batched else 1
+    total_dim = math.prod(shape) // batch_size
+
+    # total_dim should be 2^(2*num_wires)
+    # Solve for num_wires: 2*num_wires = log2(total_dim) -> num_wires = log2(total_dim)/2
+    num_wires = int(math.log2(total_dim) / 2)
+
+    return num_wires
 
 
 def _conjugate_state_with(k, state, axes_left, axes_right):
@@ -260,7 +272,9 @@ def apply_operation_tensordot(
         kraus = [mat]
     kraus = [math.reshape(k, kraus_shape) for k in kraus]
     kraus = math.array(kraus)  # Necessary for Jax
-    # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
+    # Small trick: _apply_channel_tensordot, here for the contraction on the right side we
+    # also directly contract the column indices of the channel instead of rows
+    # for simplicity. This can also save a step when transposing the Kraus operators.
     row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
     channel_col_ids = list(range(-num_ch_wires, 0))
@@ -292,31 +306,32 @@ def apply_operation(
     Args:
         op (Operator): The operation to apply to ``state``
         state (TensorLike): The starting state.
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (_Debugger): The debugger to use
+        is_state_batched (bool): Boolean representing whether the state is batched or not.
+        debugger (_Debugger): The debugger to use.
 
     Keyword Arguments:
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``.
+            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
-        tape_shots (Shots): the shots object of the tape
+        tape_shots (Shots): The shots object of the tape.
 
     Returns:
-        ndarray: output state
+        ndarray: The output state.
 
     .. warning::
 
         ``apply_operation`` is an internal function, and thus subject to change without a deprecation cycle.
 
     .. warning::
+
         ``apply_operation`` applies no validation to its inputs.
 
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or
-        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where `2`` is
+        The shape of the state should be ``[2] * (num_wires * 2)`` (the original tensor form) or
+        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where ``2`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
@@ -331,35 +346,28 @@ def apply_operation(
     **Example:**
 
     >>> state = np.zeros((2, 2, 2, 2))
-    >>> state[0][0] = 1
+    >>> state[0][0][0][0] = 1
     >>> state
     array([[[[1., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
     >>> apply_operation(qml.PauliX(0), state)
     array([[[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [1., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [1., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
 
     """
+
     return _apply_operation_default(op, state, is_state_batched, debugger, **_)
 
 
@@ -368,7 +376,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     of apply_operation, as well as conditionally in other dispatches.
     """
     if op in diagonal_in_z_basis:
-        return apply_diagonal_unitary(op, state, is_state_batched, debugger, **_)
+        return apply_diagonal_unitary(op, state, is_state_batched, **_)
     num_op_wires = len(op.wires)
     interface = math.get_interface(state)
 
@@ -415,7 +423,9 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -435,7 +445,9 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -455,7 +467,9 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -475,7 +489,9 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # Common constants always needed
@@ -530,15 +546,19 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
-@apply_operation.register(qml.CNOT)
-@apply_operation.register(qml.MultiControlledX)
-@apply_operation.register(qml.Toffoli)
-@apply_operation.register(qml.SWAP)
-@apply_operation.register(qml.CSWAP)
-@apply_operation.register(qml.CZ)
-@apply_operation.register(qml.CH)
+SYMMETRIC_REAL_OPS = (
+    qml.CNOT,
+    qml.MultiControlledX,
+    qml.Toffoli,
+    qml.SWAP,
+    qml.CSWAP,
+    qml.CZ,
+    qml.CH,
+)
+
+
 def apply_symmetric_real_op(
-    op,
+    op: qml.CNOT | qml.MultiControlledX | qml.Toffoli | qml.SWAP | qml.CSWAP | qml.CZ | qml.CH,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -580,6 +600,13 @@ def apply_symmetric_real_op(
     return state
 
 
+# NOTE: this loop is for a nice doc rendering for `apply_operation`. With a direct multiple single
+# registers over different op class there will be severe rendering issue as discussed in
+# https://github.com/PennyLaneAI/pennylane/pull/6684#pullrequestreview-2565634328
+for op_class in SYMMETRIC_REAL_OPS:
+    apply_operation.register(op_class)(apply_symmetric_real_op)
+
+
 @apply_operation.register
 def apply_grover(
     op: qml.GroverOperator,
@@ -599,25 +626,33 @@ def apply_grover(
     return state
 
 
-def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=None, **_):
-    """_summary_
+def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bool = False, **_):
+    """Apply a diagonal unitary operation to the density matrix state using its eigenvalues.
 
     Args:
-        op (_type_): _description_
-        state (_type_): _description_
-        is_state_batched (bool, optional): _description_. Defaults to False.
-        debugger (_type_, optional): _description_. Defaults to None.
+        op (qml.Operation): The diagonal unitary operation to apply.
+        state (TensorLike): The density matrix state to apply the operation to.
+        is_state_batched (bool, optional): Whether the state has a batch dimension. Defaults to False.
 
     Returns:
-        _type_: _description_
+        TensorLike: The transformed density matrix state.
     """
     channel_wires = op.wires
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
-    eigvals = op.eigvals()
-    eigvals = math.stack(eigvals)
-    eigvals = math.reshape(eigvals, [2] * len(channel_wires))
+    eigvals = math.stack(op.eigvals())
+    expand_shape = (
+        [-1] + [2] * len(channel_wires) if op.batch_size is not None else [2] * len(channel_wires)
+    )
+    eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
+
+    # Handle the case when op is batched but state is not
+    if op.batch_size is not None and not is_state_batched:
+        # Broadcast state to have a batch dimension matching op.batch_size
+        # Stack the state op.batch_size times
+        state = math.stack([state] * op.batch_size)
+        is_state_batched = True
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]
 
@@ -627,10 +662,15 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     row_indices = "".join(alphabet_array[row_wires_list].tolist())
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
-    # Basically, we want to do, lambda_a rho_ab lambda_b
-    einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
+    # For batched operations, use explicit batch index instead of ellipsis
+    # When is_state_batched=True, the first character of state_indices is the batch index
+    if op.batch_size is not None:
+        batch_index = state_indices[0] if is_state_batched else ""
+        einsum_indices = f"{batch_index}{row_indices},{state_indices},{batch_index}{col_indices}->{state_indices}"
+    else:
+        einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
-    return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
+    return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
 
 
 @apply_operation.register
@@ -651,19 +691,22 @@ def apply_snapshot(
         measurement = op.hyperparameters.get(
             "measurement", None
         )  # default: None, meaning no measurement, simply copy the state
-        shots = execution_kwargs.get("tape_shots", None)  # default: None, analytic
+        if op.hyperparameters["shots"] == "workflow":
+            shots = execution_kwargs.get("tape_shots")
+        else:
+            shots = op.hyperparameters["shots"]
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qubit_mixed.measure_with_samples(
-                measurement,
+                [measurement],
                 state,
                 shots,
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )
+            )[0]
 
         # Store snapshot with optional tag
         if op.tag:
@@ -672,3 +715,167 @@ def apply_snapshot(
             debugger.snapshots[len(debugger.snapshots)] = snapshot
 
     return state
+
+
+@apply_operation.register
+def apply_density_matrix(
+    op: qml.QubitDensityMatrix,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
+):
+    """
+    Applies a QubitDensityMatrix operation by initializing or replacing
+    the quantum state with the provided density matrix.
+
+    - If the QubitDensityMatrix covers all wires, we directly return the provided density matrix as the new state.
+    - If only a subset of the wires is covered, we:
+      1. Partial trace out those wires from the current state to get the density matrix of the complement wires.
+      2. Take the tensor product of the complement density matrix and the provided density_matrix.
+      3. Reshape to the correct final shape and return.
+
+    Args:
+        op (qml.QubitDensityMatrix): The QubitDensityMatrix operation.
+        state (array-like): The current quantum state.
+        is_state_batched (bool): Whether the state is batched.
+        debugger: A debugger instance for diagnostics.
+        **execution_kwargs: Additional kwargs.
+
+    Returns:
+        array-like: The updated quantum state.
+
+    Raises:
+        ValueError: If the density matrix is invalid.
+    """
+    density_matrix = op.parameters[0]
+    num_wires = len(op.wires)
+    expected_dim = 2**num_wires
+
+    # Cast density_matrix to the same type and device as state
+    density_matrix = math.cast_like(density_matrix, state)
+
+    # Extract total wires
+    num_state_wires = _get_num_wires(state, is_state_batched)
+    all_wires = list(range(num_state_wires))
+    op_wires = op.wires
+    complement_wires = [w for w in all_wires if w not in op_wires]
+
+    # If the operation covers the full system, just return it
+    if len(op_wires) == num_state_wires:
+        # If batched, broadcast
+        if is_state_batched:
+            batch_size = math.shape(state)[0]
+            density_matrix = math.broadcast_to(
+                density_matrix, (batch_size,) + math.shape(density_matrix)
+            )
+
+        # Reshape to match final shape of state
+        return math.reshape(density_matrix, math.shape(state))
+
+    # Partial system update:
+    # 1. Partial trace out op_wires from state
+    # partial_trace reduces the dimension to only the complement wires
+    # Note: partial_trace expects state in 2D (dim, dim) or 3D (batch, dim, dim) format,
+    # but the mixed device stores state in tensor format (2, 2, ..., 2).
+    # We need to reshape state to 2D/3D format first.
+    state_dim = 2**num_state_wires
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        state_2d = math.reshape(state, (batch_size, state_dim, state_dim))
+    else:
+        state_2d = math.reshape(state, (state_dim, state_dim))
+
+    sigma = qml.math.partial_trace(state_2d, indices=op_wires)
+    # sigma now has shape:
+    # (batch_size, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
+
+    # 2. Take kron(sigma, density_matrix)
+    sigma_dim = 2 ** len(complement_wires)  # dimension of complement subsystem
+    dm_dim = expected_dim  # dimension of the replaced subsystem
+    if is_state_batched:
+        batch_size = math.shape(sigma)[0]
+        sigma_2d = math.reshape(sigma, (batch_size, sigma_dim, sigma_dim))
+        dm_2d = math.reshape(density_matrix, (dm_dim, dm_dim))
+
+        # Initialize new_dm and fill via a loop or vectorized kron if available
+        new_dm = []
+        for b in range(batch_size):
+            new_dm.append(math.kron(sigma_2d[b], dm_2d))
+        rho = math.stack(new_dm, axis=0)
+    else:
+        sigma_2d = math.reshape(sigma, (sigma_dim, sigma_dim))
+        dm_2d = math.reshape(density_matrix, (dm_dim, dm_dim))
+        rho = math.kron(sigma_2d, dm_2d)
+
+    # rho now has shape (batch_size?, 2^n, 2^n)
+
+    # 3. Reshape rho into the full tensor form [2]*(2*n) or [batch_size, 2]*(2*n)
+    final_shape = ([batch_size] if is_state_batched else []) + [2] * (2 * num_state_wires)
+    rho = math.reshape(rho, final_shape)
+
+    # Return the updated state
+    return reorder_after_kron(rho, complement_wires, op_wires, is_state_batched)
+
+
+def reorder_after_kron(rho, complement_wires, op_wires, is_state_batched):
+    """
+    Reorder the wires of `rho` from [complement_wires + op_wires] back to [0,1,...,N-1].
+
+    Args:
+        rho (tensor): The density matrix after kron(sigma, density_matrix).
+        complement_wires (list[int]): The wires not affected by the QubitDensityMatrix update.
+        op_wires (Wires): The wires affected by the QubitDensityMatrix.
+        is_state_batched (bool): Whether the state is batched.
+
+    Returns:
+        tensor: The density matrix with wires in the original order.
+    """
+    # Final order after kron is complement_wires + op_wires (for both left and right sides).
+    all_wires = complement_wires + list(op_wires)
+    num_wires = len(all_wires)
+
+    batch_offset = 1 if is_state_batched else 0
+
+    # The current axis mapping is:
+    # Left side wires: offset to offset+num_wires-1
+    # Right side wires: offset+num_wires to offset+2*num_wires-1
+    #
+    # We want to reorder these so that the left side wires are [0,...,num_wires-1] and
+    # the right side wires are [num_wires,...,2*num_wires-1].
+
+    # Create a lookup from wire label to its position in the current order.
+    wire_to_pos = {w: i for i, w in enumerate(all_wires)}
+
+    # We'll construct a permutation of axes. `rho` has dimensions:
+    # [batch?] + [2]*num_wires (left side) + [2]*num_wires (right side)
+    #
+    # After transpose, dimension i in the new tensor should correspond to dimension new_axes[i] in the old tensor.
+
+    old_ndim = rho.ndim
+    new_axes = [None] * old_ndim
+
+    # If batched, batch dimension remains at axis 0
+    if is_state_batched:
+        new_axes[0] = 0
+
+    # For the left wires:
+    # Desired final order: 0,1,...,num_wires-1
+    # Currently: all_wires in some order
+    # old axis = batch_offset + wire_to_pos[w]
+    # new axis = batch_offset + w
+    for w in range(num_wires):
+        old_axis = batch_offset + wire_to_pos[w]
+        new_axes[batch_offset + w] = old_axis
+
+    # For the right wires:
+    # Desired final order: num_wires,...,2*num_wires-1
+    # Currently: batch_offset+num_wires+wire_to_pos[w]
+    # new axis: batch_offset+num_wires+w
+    for w in range(num_wires):
+        old_axis = batch_offset + num_wires + wire_to_pos[w]
+        new_axes[batch_offset + num_wires + w] = old_axis
+
+    # Apply the transpose
+    rho = math.transpose(rho, axes=tuple(new_axes))
+    return rho

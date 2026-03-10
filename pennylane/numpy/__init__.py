@@ -80,10 +80,12 @@ For more details, please consult the `Autograd
 docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`__.
 
 """
-# pylint: disable=wrong-import-position,wildcard-import,undefined-variable
+# pylint: disable=wrong-import-position,undefined-variable
+
 from autograd import numpy as _np
 from autograd.numpy import *
 
+from pennylane.exceptions import NonDifferentiableError
 from .wrapper import extract_tensors, tensor_wrapper, wrap_arrays
 
 wrap_arrays(_np.__dict__, globals())
@@ -95,7 +97,6 @@ del linalg
 del random
 
 from . import fft, linalg, random
-from .tensor import NonDifferentiableError
 from .tensor import asarray as _asarray
 from .tensor import tensor
 

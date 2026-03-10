@@ -21,7 +21,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -71,8 +70,6 @@ class TestTraceDistanceMath:
         np.array,
         jnp.array,
         torch.tensor,
-        tf.Variable,
-        tf.constant,
     ]
 
     check_state = [True, False]
@@ -261,14 +258,10 @@ class TestTraceDistanceMath:
         """Test that the two states must act on the same number of wires"""
         state0, state1 = states
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.trace_distance(state0, state1, check_state=True)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.trace_distance(state1, state0, check_state=True)
 
     d_mat_different_batch_sizes = [

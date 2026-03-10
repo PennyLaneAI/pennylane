@@ -16,13 +16,13 @@
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
+import scipy as sp
 
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
-from . import single_dispatch  # pylint:disable=unused-import
-from .interface_utils import get_interface
+from pennylane import math
 
 
 def allequal(tensor1, tensor2, **kwargs):
@@ -56,12 +56,156 @@ def allequal(tensor1, tensor2, **kwargs):
     return np.all(t1 == t2, **kwargs)
 
 
+def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
+    """Compare two sparse matrices for approximate equality.
+
+    Args:
+        a, b: scipy sparse matrices to compare
+        rtol (float): relative tolerance
+        atol (float): absolute tolerance
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    if (a != b).nnz == 0:
+        return True
+
+    diff = abs(a - b)
+
+    # Handle cases where the matrix might be empty
+    max_diff = diff.data.max() if diff.nnz > 0 else 0
+    max_b = abs(b).data.max() if b.nnz > 0 else 0
+
+    return max_diff <= atol + rtol * max_b
+
+
+def _mixed_shape_match(a, b):
+    """Check if the shapes of two matrices of mixed types are compatible for comparison.
+
+    Args:
+        a, b: matrices to compare
+
+    Returns:
+        bool: True if the shapes are compatible
+    """
+    a_shapes = a.shape
+    b_shapes = b.shape
+    # Take the product, if inequal then false
+    if np.prod(a_shapes) != np.prod(b_shapes):
+        return False
+    # Make the sets of shapes, and ignore '1'
+    a_shape_set = set(a_shapes) - {1}
+    b_shape_set = set(b_shapes) - {1}
+    if len(a_shape_set) == len(b_shape_set) == 1:
+        return True  # For intrinsic one-dimensional arrays
+    return a_shapes == b_shapes
+
+
+def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
+    """Helper function for comparing dense and sparse matrices with correct tolerance reference.
+
+    Args:
+        a: first matrix (dense or sparse)
+        b: second matrix (sparse or dense)
+        rtol: relative tolerance
+        atol: absolute tolerance
+        b_is_sparse: True if b is sparse matrix, False if a is sparse matrix
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    sparse = b if b_is_sparse else a
+    dense = a if b_is_sparse else b
+
+    if sparse.nnz == 0:
+        return np.allclose(dense, 0, rtol=rtol, atol=atol)
+
+    if not _mixed_shape_match(dense, sparse):
+        return False
+
+    SIZE_THRESHOLD = 10000
+    if np.prod(dense.shape) < SIZE_THRESHOLD:
+        # Use dense comparison but maintain b as reference
+        if b_is_sparse:
+            return np.allclose(a, sparse.toarray(), rtol=rtol, atol=atol)
+        return np.allclose(sparse.toarray(), b, rtol=rtol, atol=atol)
+
+    dense_coords = dense.nonzero()
+    sparse_coords = sparse.nonzero()
+
+    coord_diff = set(zip(*dense_coords, strict=True)) ^ set(zip(*sparse_coords, strict=True))
+    if coord_diff:
+        return False
+
+    # Maintain asymmetric comparison with correct reference
+    if b_is_sparse:
+        a_data = dense[dense_coords]
+        b_data = sparse.data
+    else:
+        a_data = sparse.data
+        b_data = dense[sparse_coords]
+    return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
+
+
+def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08):
+    """Compare a sparse matrix to a scalar value.
+
+    This function checks if a sparse matrix is approximately equal to a scalar value
+    by considering three cases:
+    1. Empty/zero sparse matrix compared to any scalar -> scalar must be close to zero
+    2. Sparse matrix with non-zero values compared to a scalar -> all non-zero values must match
+    3. Following case 2, if scalar is zero, any sparsity pattern is allowed
+    4. If the scalar is non-zero, all elements must be non-zero, e.g. size match nnz
+
+
+    Args:
+        sparse_mat: A scipy sparse matrix
+        scalar: A scalar value to compare against
+        rtol: Relative tolerance
+        atol: Absolute tolerance
+
+    Returns:
+        bool: True if the sparse matrix is approximately equal to the scalar
+    """
+    # Case 1: Empty sparse matrix - only close to zero scalar
+    if sparse_mat.nnz == 0:
+        return np.isclose(scalar, 0, rtol=rtol, atol=atol)
+
+    # Case 2: Sparse matrix with all non-zero values matching scalar
+    # Check if all non-zeros in the sparse matrix match the scalar
+    if not np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol):
+        return False
+
+    # Note that from this step all the data already close to scalar
+    # Case 3: Special handling for scalar = 0 or fully populated sparse matrix
+    # If scalar is approximately zero, allow any sparsity pattern
+    if np.isclose(scalar, 0, rtol=rtol, atol=atol):
+        return True
+
+    # If scalar is non-zero, all elements must be non-zero
+    # Use size property for efficiency with very large matrices
+    return sparse_mat.nnz == np.prod(sparse_mat.shape)
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
     try:
         # Some frameworks may provide their own allclose implementation.
         # Try and use it if available.
+        if sp.sparse.issparse(a) and sp.sparse.issparse(b):
+            return _allclose_sparse(a, b, rtol=rtol, atol=atol)
+        # Add handling for sparse matrix compared with scalar
+        if sp.sparse.issparse(a) and np.isscalar(b):
+            return _allclose_sparse_scalar(a, b, rtol=rtol, atol=atol)
+        if sp.sparse.issparse(b) and np.isscalar(a):
+            return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol)
+
+        if sp.sparse.issparse(a):
+
+            return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=False)
+        if sp.sparse.issparse(b):
+            return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=True)
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
     except (TypeError, AttributeError, ImportError, RuntimeError):
         # Otherwise, convert the input to NumPy arrays.
@@ -118,6 +262,9 @@ def cast(tensor, dtype):
         except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
+        if math.get_interface(dtype) == "torch":
+            tensor = np.asarray(tensor, like="torch")
+
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
 
@@ -141,12 +288,17 @@ def cast_like(tensor1, tensor2):
     """
     if isinstance(tensor2, tuple) and len(tensor2) > 0:
         tensor2 = tensor2[0]
-    if isinstance(tensor2, ArrayBox):
-        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
-    elif not is_abstract(tensor2):
-        dtype = ar.to_numpy(tensor2).dtype.type
-    else:
+
+    # Check for abstract tensors FIRST before trying to convert to numpy
+    # This is important for JAX 0.7.0+ which has additional tracer types
+    if is_abstract(tensor2):
         dtype = tensor2.dtype
+    elif isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif hasattr(tensor2, "dtype"):
+        dtype = tensor2.dtype
+    else:
+        dtype = ar.to_numpy(tensor2).dtype.type
     return cast(tensor1, dtype)
 
 
@@ -168,11 +320,14 @@ def convert_like(tensor1, tensor2):
     >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    interface = get_interface(tensor2)
+    interface = math.get_interface(tensor2)
 
     if interface == "torch":
         dev = tensor2.device
         return np.asarray(tensor1, device=dev, like=interface)
+
+    if interface == "scipy":
+        return sp.sparse.csr_matrix(tensor1)
 
     return np.asarray(tensor1, like=interface)
 
@@ -262,28 +417,24 @@ def is_abstract(tensor, like=None):
     Abstract: True
     <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
     """
-    interface = like or get_interface(tensor)
+    interface = like or math.get_interface(tensor)
 
     if interface == "jax":
         import jax
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(
-            tensor,
-            (
-                jax.interpreters.ad.JVPTracer,
-                jax.interpreters.batching.BatchTracer,
-                jax.interpreters.partial_eval.JaxprTracer,
-            ),
-        ):
+        # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
+        # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
+        if isinstance(tensor, jax.core.Tracer):
             # Tracer objects will be used when computing gradients or applying transforms.
-            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # If the value of the tracer is known, jax.core.is_concrete will return True.
             # Otherwise, it will be abstract.
-            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+            return not jax.core.is_concrete(tensor)
 
-        return isinstance(tensor, DynamicJaxprTracer)
+        return False
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
         from tensorflow.python.framework.ops import EagerTensor
 
@@ -368,9 +519,11 @@ def requires_grad(tensor, interface=None):
     ...     print(requires_grad(x))
     True
     """
-    interface = interface or get_interface(tensor)
+    interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -420,9 +573,11 @@ def in_backprop(tensor, interface=None):
 
     .. seealso:: :func:`~.requires_grad`
     """
-    interface = interface or get_interface(tensor)
+    interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -440,3 +595,39 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
+
+
+def ceil_log2(n: int) -> int:
+    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+
+    Args:
+        n (int): Integer to compute the rounded-up base-2 logarithm of.
+
+    Returns:
+        int: Rounded-up base-2 logarithm of ``n``.
+
+    **Example**
+
+    On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qml.math.ceil_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qml.math.log2(14)
+    3.807354922057604
+    >>> qml.math.ceil_log2(14)
+    4
+
+    Note that we always round up:
+
+    >>> qml.math.round(qml.math.log2(9))
+    3.0
+    >>> qml.math.ceil_log2(9)
+    4
+    """
+    if is_abstract(n):
+        return np.ceil(np.log2(n)).astype(int)
+    return int(np.ceil(np.log2(n)))

@@ -17,19 +17,19 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-renamed
 import itertools
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.exceptions import EigvalsUndefinedError, QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
 from ._qubit_device import QubitDevice
 
 
-class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
+class QutritDevice(QubitDevice):
     """Abstract base class for PennyLane qutrit devices.
 
     The following abstract method **must** be defined:
@@ -60,7 +60,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
     Args:
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
@@ -159,7 +159,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # TODO: Add support for DensityMatrix return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable density matrix"
         )
 
@@ -179,7 +179,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable Von Neumann entropy"
         )
 
@@ -203,7 +203,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable mutual information"
         )
 
@@ -223,9 +223,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             QuantumFunctionError: Classical shadow is currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for ClassicalShadowMP
-        raise qml.QuantumFunctionError(
-            "Qutrit devices don't support classical shadow measurements."
-        )
+        raise QuantumFunctionError("Qutrit devices don't support classical shadow measurements.")
 
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
@@ -243,7 +241,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             QuantumFunctionError: Shadow Expectation values are currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for ShadowExpvalMP
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Qutrit devices don't support shadow expectation value measurements."
         )
 
@@ -407,11 +405,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             indices = np.array(indices)  # Add np.array here for Jax support.
             try:
                 samples = observable.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
+            except EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {observable.name}."
-                ) from e
+                raise EigvalsUndefinedError(f"Cannot compute samples of {observable.name}.") from e
 
         if bin_size is None:
             if counts:
@@ -433,7 +429,5 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     # TODO: Implement function. Currently unimplemented due to lack of decompositions available
     # for existing operations and lack of non-parametrized observables.
-    def adjoint_jacobian(
-        self, tape, starting_state=None, use_device_state=False
-    ):  # pylint: disable=missing-function-docstring
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         raise NotImplementedError

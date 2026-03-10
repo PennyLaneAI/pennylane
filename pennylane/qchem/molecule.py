@@ -18,9 +18,11 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 """
 import collections
 
-# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import warnings
+
+from scipy.constants import angstrom, physical_constants
 
 import pennylane as qml
 
@@ -28,8 +30,7 @@ from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 class Molecule:
@@ -129,7 +130,7 @@ class Molecule:
             )
 
         if self.unit == "angstrom":
-            self.coordinates = self.coordinates / bohr_angs
+            self.coordinates = self.coordinates / BOHR_TO_ANG
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 

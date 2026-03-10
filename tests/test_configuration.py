@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import os
 
 import pytest
-import toml
+import tomlkit as toml
 
 import pennylane as qml
 from pennylane import Configuration
@@ -26,9 +26,6 @@ config_filename = "default_config.toml"
 
 
 test_config = """\
-[main]
-shots = 1000
-
 [default.gaussian]
 hbar = 2
 
@@ -58,11 +55,17 @@ backend = "qasm_simulator"
 """
 
 
+def load_toml_file(file_path: str) -> dict:
+    """Loads a TOML file and returns the parsed dict."""
+    with open(file_path, encoding="utf-8") as file:
+        return toml.load(file)
+
+
 @pytest.fixture(scope="function", name="default_config")
 def default_config_fixture(tmpdir):
     config_path = os.path.join(tmpdir, config_filename)
 
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         f.write(test_config)
 
     return Configuration(name=config_path)
@@ -72,10 +75,10 @@ def default_config_fixture(tmpdir):
 def default_config_toml_fixture(tmpdir):
     config_path = os.path.join(tmpdir, config_filename)
 
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         f.write(test_config)
 
-    return toml.load(config_path), config_path
+    return load_toml_file(config_path), config_path
 
 
 class TestConfigurationFileInteraction:
@@ -134,7 +137,7 @@ class TestConfigurationFileInteraction:
         temp_config_path = tmp_path / "test_config.toml"
         config.save(temp_config_path)
 
-        result = toml.load(temp_config_path)
+        result = load_toml_file(temp_config_path)
         assert config._config == result
 
 
@@ -144,8 +147,6 @@ class TestProperties:
     def test_get_item(self, default_config):
         """Test getting items."""
         # get existing options
-        assert default_config["main.shots"] == 1000
-        assert default_config["main"]["shots"] == 1000
         assert default_config["strawberryfields.global.hbar"] == 1
         assert default_config["strawberryfields.global"]["hbar"] == 1
 
@@ -192,7 +193,7 @@ class TestProperties:
         """Test string value of the Configuration object."""
         config = Configuration("noconfig")
 
-        assert config.__str__() == ""
+        assert str(config) == ""
 
     def test_str_loaded_config(self, monkeypatch, default_config_toml):
         """Test string value of the Configuration object that has been
@@ -203,14 +204,14 @@ class TestProperties:
         monkeypatch.setenv("PENNYLANE_CONF", "")
         config = Configuration(name=config_path)
 
-        assert config.__str__() == f"{config_toml}"
+        assert str(config) == f"{config_toml}"
 
     def test_repr(self):
         """Test repr value of the Configuration object."""
         path = "noconfig"
         config = Configuration(path)
 
-        assert config.__repr__() == "PennyLane Configuration <noconfig>"
+        assert repr(config) == "PennyLane Configuration <noconfig>"
 
 
 # pylint: disable=too-few-public-methods
@@ -223,4 +224,4 @@ class TestPennyLaneInit:
         dev = qml.device("default.gaussian", wires=2, config=default_config)
 
         assert dev.hbar == 2
-        assert dev.shots == qml.measurements.Shots(1000)
+        assert not dev.shots

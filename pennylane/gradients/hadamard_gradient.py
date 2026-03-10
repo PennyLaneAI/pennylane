@@ -15,103 +15,87 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
+from itertools import islice
+from typing import Literal
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
-from pennylane.gradients.metric_tensor import _get_aux_wire
-from pennylane.operation import has_grad_method, is_measurement, is_trainable, not_tape
+from pennylane import math, ops
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.measurements import ProbabilityMP, expval
+from pennylane.operation import Operator
+from pennylane.ops import Sum
+from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.tape_expand import create_expand_fn
-from pennylane.typing import PostprocessingFn
+from pennylane.transforms import decompose, split_to_single_terms
+from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn, ResultBatch
+from pennylane.wires import Wires
 
 from .gradient_transform import (
-    _all_zero_grad,
     _no_trainable_grad,
+    _try_zero_grad_from_graph_or_get_grad_method,
+    assert_no_probability,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
-    choose_trainable_params,
-    find_and_validate_gradient_methods,
+    choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
-
-# pylint: disable=unused-argument,invalid-unary-operand-type
-
-_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
-of requested operations with the Hadamard test gradient.
-
-This is achieved by decomposing all trainable operations that
-are not in the Hadamard compatible list until all resulting operations
-are in the list up to maximum depth ``depth``. Note that this
-might not be possible, in which case the gradient rule will fail to apply.
-
-Args:
-    tape (.QuantumTape): the input tape to expand
-    depth (int) : the maximum expansion depth
-    **kwargs: additional keyword arguments are ignored
-
-Returns:
-    .QuantumTape: the expanded tape
-"""
+from .metric_tensor import _get_aux_wire
 
 
-hadamard_comp_list = [
-    "RX",
-    "RY",
-    "RZ",
-    "Rot",
-    "PhaseShift",
-    "U1",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "IsingXX",
-    "IsingYY",
-    "IsingZZ",
-]
+def _hadamard_stopping_condition(op) -> bool:
+    if not op.has_decomposition:
+        # let things without decompositions through without error
+        # error will happen when calculating hadamard grad
+        return True
+    if isinstance(op, Operator) and any(math.requires_grad(p) for p in op.data):
+        return op.has_generator
+    return True
 
 
-@qml.BooleanFn
-def _is_hadamard_grad_compatible(obj):
-    """Check if the operation is compatible with Hadamard gradient transform."""
-    return obj.name in hadamard_comp_list
+def _inplace_set_trainable_params(tape):
+    """Update all the trainable params in place."""
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = math.get_trainable_indices(params)
 
 
-expand_invalid_trainable_hadamard_gradient = create_expand_fn(
-    depth=None,
-    stop_at=not_tape
-    | is_measurement
-    | (~is_trainable)
-    | (_is_hadamard_grad_compatible & has_grad_method),
-    docstring=_expand_invalid_trainable_doc_hadamard,
-)
-
-
+# pylint: disable=unused-argument
 def _expand_transform_hadamard(
     tape: QuantumScript,
     argnum=None,
     aux_wire=None,
     device_wires=None,
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
-    expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [expanded_tape], null_postprocessing
+    batch, postprocessing = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=_hadamard_stopping_condition,
+        strict=False,
+    )
+    if any(math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])):
+        try:
+            batch, postprocessing = split_to_single_terms(batch[0])
+        except RuntimeError as e:
+            raise ValueError(
+                "Can only differentiate Hamiltonian "
+                f"coefficients for expectations, not {tape.measurements}."
+            ) from e
+    if len(batch) > 1 or batch[0] is not tape:  # split to single terms modified the tape
+        _ = [_inplace_set_trainable_params(t) for t in batch]
+    return batch, postprocessing
 
 
 @partial(
     transform,
     expand_transform=_expand_transform_hadamard,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def hadamard_grad(
@@ -119,9 +103,15 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "standard",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
+
+    .. warning::
+        Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"``
+        or ``mode="standard"`` has been deprecated and will no longer be supported in 0.46. An ``aux_wire`` will
+        no longer be automatically assigned.
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
@@ -129,11 +119,16 @@ def hadamard_grad(
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned. Note that the indices are with respect to
             the list of trainable parameters.
-        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
-            If ``None`` (the default), a suitable wire is inferred from the wires used in
-            the original circuit and ``device_wires``.
+        aux_wire (pennylane.wires.Wires or None): Auxiliary wire to be used for the Hadamard tests.
+            If ``None`` (the default) and ``mode`` is "standard" or "reversed", a suitable wire
+            is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
+        mode (str): Specifies the gradient computation mode. Accepted values are
+            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. Defaults to ``"standard"``.
+            The ``"auto"`` mode chooses the method that leads to the
+            fewest total executions, based on the circuit observable and whether or not an
+            auxiliary wire has been provided.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
@@ -156,10 +151,12 @@ def hadamard_grad(
     .. math::
 
         \frac{\partial f}{\partial \mathbf{p}} = -2 \Im[\bra{0} \hat{O} G \ket{0}] = i \left(\bra{0} \hat{O} G \ket{
-        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} ctrl-G^{\dagger} (\hat{Y} \otimes \hat{O}) ctrl-G
+        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} \texttt{ctrl}\left(G^{\dagger}\right) (\hat{Y} \otimes \hat{O}) \texttt{ctrl}\left(G\right)
         \ket{+}\ket{0}
 
-    Here, :math:`G` is the generator of the unitary :math:`U`.
+    Here, :math:`G` is the generator of the unitary :math:`U`. ``hadamard_grad`` will work on any :math:`U` so long
+    as it has a generator :math:`G` defined (i.e., ``op.has_generator == True``). Otherwise, it will try to decompose
+    into gates where this is satisfied.
 
     **Example**
 
@@ -168,7 +165,7 @@ def hadamard_grad(
 
     >>> import jax
     >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
@@ -176,12 +173,38 @@ def hadamard_grad(
     ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
-     Array([[-0.1937586 , -0.09442394, -0.19177852],
-            [ 0.1937586 ,  0.09442394,  0.19177852]], dtype=float64))
+    (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
+           [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float64))
 
     .. details::
         :title: Usage Details
+
+        This gradient method can work with any operator that has a generator:
+
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit')
+            >>> @qml.qnode(dev)
+            ... def circuit(x):
+            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x )
+            ...     return qml.expval(qml.Z(0))
+            ...
+            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, aux_wire=2))(qml.numpy.array(0.5)) )
+            0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
+            2: ──H─────────────╰●──H─┤ ╰<Z@Y>
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭X@X────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─├X@X────┤ │
+            2: ──H─────────────╰●────H─┤ ╰<Z@Y>
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
+            2: ──H─────────────╰●──H─┤ ╰<Z@Y>
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Z@Z────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─├Z@Z────┤ │
+            2: ──H─────────────╰●────H─┤ ╰<Z@Y>
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
         objects. However, for performance reasons, we recommend providing the gradient transform
@@ -195,8 +218,8 @@ def hadamard_grad(
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.hadamard_grad(circuit)(params)
+        >>> params = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
         tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
@@ -207,7 +230,7 @@ def hadamard_grad(
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
+        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=1)
         >>> gradient_tapes
         [<QuantumScript: wires=[0, 1], params=3>,
          <QuantumScript: wires=[0, 1], params=3>,
@@ -224,7 +247,7 @@ def hadamard_grad(
         ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.hadamard_grad(tape, argnum=1)
+        >>> qml.gradients.hadamard_grad(tape, argnum=1, mode="auto", aux_wire=1)  # doctest: +SKIP
 
         The code above will differentiate the third parameter rather than the second.
 
@@ -232,15 +255,13 @@ def hadamard_grad(
 
         >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (tensor(-0.3875172, requires_grad=True),
-         tensor(-0.18884787, requires_grad=True),
-         tensor(-0.38355704, requires_grad=True))
+        [np.float64(-0.3875172020222171), np.float64(-0.18884787122715604), np.float64(-0.38355704238148114)]
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
 
         >>> dev = qml.device("default.qubit")
-        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
@@ -248,13 +269,14 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
-        If you use custom wires on your device, you need to pass an auxiliary wire.
+        If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
 
         >>> dev_wires = ("a", "c")
         >>> dev = qml.device("default.qubit", wires=dev_wires)
-        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
+        >>> gradient_kwargs = {"aux_wire": "c"}
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
         >>> def circuit(params):
         ...    qml.RX(params[0], wires="a")
         ...    qml.RY(params[1], wires="a")
@@ -262,31 +284,144 @@ def hadamard_grad(
         ...    return qml.expval(qml.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
-    .. note::
+    .. details::
+        :title: Variants of the standard hadamard gradient
 
-        ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
+        This gradient method has three modes that are adaptations of the standard Hadamard gradient
+        method (these are outlined in detail in `arXiv:2408.05406 <https://arxiv.org/pdf/2408.05406>`__).
 
-        - :class:`~.pennylane.RX`
-        - :class:`~.pennylane.RY`
-        - :class:`~.pennylane.RZ`
-        - :class:`~.pennylane.Rot`
-        - :class:`~.pennylane.PhaseShift`
-        - :class:`~.pennylane.U1`
-        - :class:`~.pennylane.CRX`
-        - :class:`~.pennylane.CRY`
-        - :class:`~.pennylane.CRZ`
-        - :class:`~.pennylane.IsingXX`
-        - :class:`~.pennylane.IsingYY`
-        - :class:`~.pennylane.IsingZZ`
+        **Reversed mode**
 
-        The expansion will fail if a suitable decomposition in terms of supported operation is not found.
-        The number of trainable parameters may increase due to the decomposition.
+        With the ``"reversed"`` mode, the observable being measured and the generators of the unitary
+        operations in the circuit are reversed; the generators are now the observables, and the Pauli
+        decomposition of the observables are now gates in the circuit:
 
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit')
+            >>> @qml.qnode(dev)
+            ... def circuit(x):
+            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
+            ...     return qml.expval(qml.Z(0))
+            ...
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed', aux_wire=2)
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
+            2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
+
+        **Direct mode**
+
+        With the ``"direct"`` mode, the additional auxiliary qubit needed in the standard Hadamard gradient
+        is exchanged for additional circuit executions:
+
+        .. code-block:: pycon
+
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j X@X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j X@X)─┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j X@X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j X@X)─┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j Z@Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j Z@Z)─┤
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j Z@Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j Z@Z)─┤
+
+        **Reversed direct mode**
+
+        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"reversed"`` modes,
+        where the role of the observable and the generators of the unitary operations in the circuit
+        swap, and the additional auxiliary qubit is exchanged for additional circuit executions:
+
+        .. code-block:: pycon
+
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
+            <BLANKLINE>
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤ ╭<-1.00*𝓗>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤ ╰<-1.00*𝓗>
+
+        **Auto mode**
+
+        Using auto mode will result in an automatic selection of the method which results in the fewest
+        total executions, given the wires available. Any auxiliary wires must be provided explicitly.
+        This method takes into account the number of observables and the number of generators involved
+        in each problem to choose whether the standard or reversed order is preferred. It also takes
+        into account whether we have one or multiple measurements, and whether we have an auxiliary wire.
+
+        ===============  ===============  ==============================
+        Auxiliary Wire   Standard Order   Method
+        ===============  ===============  ==============================
+        False            True             Direct Hadamard test
+        False            False            Reversed direct Hadamard test
+        True             True             Hadamard test
+        True             False            Reversed Hadamard test
+        ===============  ===============  ==============================
+
+        i.e. in the below, the direct method is automatically selected. We can verify that it is the
+        most efficient choice. We don't supply an auxilliary wire, so we are choosing between ``direct``
+        and ``reversed-direct`` modes.
+
+        >>> dev = qml.device('default.qubit')
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.evolve(qml.X(0) @ qml.X(1), x)
+        ...     return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
+        >>> grad = qml.gradients.hadamard_grad(circuit, mode='auto')
+        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
+        <BLANKLINE>
+        0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j X@X)─┤ ╭<𝓗>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
+
+        >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
+        <BLANKLINE>
+        0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
+        <BLANKLINE>
+        0: ─╭Exp(-0.50j X@X)──Exp(-0.79j Y)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)────────────────┤ ╰<-1.00*X@X>
+        <BLANKLINE>
+        0: ─╭Exp(-0.50j X@X)──Exp(0.79j Y)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)───────────────┤ ╰<-1.00*X@X>
     """
 
-    transform_name = "Hadamard test"
+    modes = {
+        "standard": ("Hadamard test", _hadamard_test),
+        "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
+        "direct": ("Direct hadamard test", _direct_hadamard_test),
+        "reversed-direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
+        "auto": ("Quantum automatic differentiation", _quantum_automatic_differentiation),
+    }
+    try:
+        transform_name, gradient_method = modes[mode]
+    except KeyError as exc:
+        raise ValueError(f"Invalid mode: {mode}") from exc
+
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
     assert_no_trainable_tape_batching(tape, transform_name)
@@ -294,233 +429,336 @@ def hadamard_grad(
         raise NotImplementedError(
             "hadamard gradient does not support multiple measurements with partitioned shots."
         )
+    if mode in ["reversed", "direct", "reversed-direct"]:
+        assert_no_probability(tape.measurements, transform_name)
+    if mode in ["reversed", "reversed-direct"]:
+        if len(tape.measurements) > 1:
+            raise NotImplementedError(
+                "Reversed hadamard gradient does not support multiple measurements."
+            )
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
-
-    if all(g == "0" for g in diff_methods.values()):
-        return _all_zero_grad(tape)
-
-    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
+    trainable_param_indices = choose_trainable_param_indices(tape, argnum)
 
     # Validate or get default for aux_wire
-    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+    # unless using direct or reversed-direct modes
 
-    g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
+    if mode in ["standard", "reversed"] and aux_wire is None:
+        warnings.warn(
+            """
+            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
+            no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
+            """,
+            PennyLaneDeprecationWarning,
+        )
 
-    return g_tapes, processing_fn
+    aux_wire = (
+        _get_aux_wire(aux_wire, tape, device_wires)
+        if mode in ["standard", "reversed"] or (mode == "auto" and aux_wire is not None)
+        else None
+    )
 
-
-def _expval_hadamard_grad(tape, argnum, aux_wire):
-    r"""Compute the Hadamard test gradient of a tape that returns an expectation value (probabilities are expectations
-    values) with respect to a given set of all trainable gate parameters.
-    The auxiliary wire is the wire which is used to apply the Hadamard gates and controlled gates.
-    """
-    # pylint: disable=too-many-statements
-    argnums = argnum or tape.trainable_params
     g_tapes = []
     coeffs = []
+    generators_per_parameter = []
 
-    gradient_data = []
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
-        if trainable_param_idx not in argnums:
-            # parameter has zero gradient
-            gradient_data.append(0)
-            continue
-
-        trainable_op, idx, p_idx = tape.get_operation(trainable_param_idx)
-
-        ops_to_trainable_op = tape.operations[: idx + 1]
-        ops_after_trainable_op = tape.operations[idx + 1 :]
-
-        # Get a generator and coefficients
-        sub_coeffs, generators = _get_generators(trainable_op)
-        coeffs.extend(sub_coeffs)
-
-        num_tape = 0
-
-        for gen in generators:
-            if isinstance(trainable_op, qml.Rot):
-                # We only registered PauliZ as generator for Rot, therefore we need to apply some gates
-                # before and after the generator for the first two parameters.
-                if p_idx == 0:
-                    # Move the Rot gate past the generator
-                    op_before_trainable_op = ops_to_trainable_op.pop(-1)
-                    ops_after_trainable_op = [op_before_trainable_op] + ops_after_trainable_op
-                elif p_idx == 1:
-                    # Apply additional rotations that effectively move the generator to the middle of Rot
-                    ops_to_add_before = [
-                        qml.RZ(-trainable_op.data[2], wires=trainable_op.wires),
-                        qml.RX(np.pi / 2, wires=trainable_op.wires),
-                    ]
-                    ops_to_trainable_op.extend(ops_to_add_before)
-
-                    ops_to_add_after = [
-                        qml.RX(-np.pi / 2, wires=trainable_op.wires),
-                        qml.RZ(trainable_op.data[2], wires=trainable_op.wires),
-                    ]
-                    ops_after_trainable_op = ops_to_add_after + ops_after_trainable_op
-
-            ctrl_gen = [qml.ctrl(gen, control=aux_wire)]
-            hadamard = [qml.Hadamard(wires=aux_wire)]
-            ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
-
-            measurements = []
-            # Add the Y measurement on the aux qubit
-            for m in tape.measurements:
-                if m.obs:
-                    obs_new = [m.obs]
-                else:
-                    m_wires = m.wires if len(m.wires) > 0 else tape.wires
-                    obs_new = [qml.Z(i) for i in m_wires]
-
-                obs_new.append(qml.Y(aux_wire))
-                obs_new = qml.prod(*obs_new)
-
-                if isinstance(m, qml.measurements.ExpectationMP):
-                    measurements.append(qml.expval(op=obs_new))
-                else:
-                    measurements.append(qml.probs(op=obs_new))
-
-            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=tape.shots)
-            _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
-            new_ops = new_tape.operations + _rotations
-            new_tape = qml.tape.QuantumScript(
-                new_ops,
-                _measurements,
-                shots=new_tape.shots,
-                trainable_params=new_tape.trainable_params,
+        if (
+            trainable_param_idx not in trainable_param_indices
+            or _try_zero_grad_from_graph_or_get_grad_method(
+                tape, tape.trainable_params[trainable_param_idx], True
             )
+            == "0"
+        ):
+            generators_per_parameter.append(0)
+        else:
+            # can dispatch between different algorithms here in the future
+            # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
+            batch, new_coeffs = gradient_method(tape, trainable_param_idx, aux_wire)
+            g_tapes += batch
+            coeffs += new_coeffs
+            generators_per_parameter.append(len(batch))
 
-            num_tape += 1
+    return g_tapes, partial(
+        processing_fn, coeffs=coeffs, tape=tape, generators_per_parameter=generators_per_parameter
+    )
 
-            g_tapes.append(new_tape)
 
-        gradient_data.append(num_tape)
+def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
-    multi_measurements = len(tape.measurements) > 1
-    multi_params = len(tape.trainable_params) > 1
-    measurements_probs = [
-        idx
-        for idx, m in enumerate(tape.measurements)
-        if isinstance(m, qml.measurements.ProbabilityMP)
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_to_trainable_op = tape.operations[: idx + 1]
+    ops_after_trainable_op = tape.operations[idx + 1 :]
+
+    # Get a generator and coefficients
+    sub_coeffs, generators = _get_pauli_generators(trainable_op)
+
+    measurements = [_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements]
+
+    new_batch = []
+    for gen in generators:
+        ctrl_gen = [ops.op_math.ctrl(gen, control=aux_wire)]
+        hadamard = [ops.H(wires=aux_wire)]
+        operators = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
+
+        new_tape = QuantumScript(operators, measurements, shots=tape.shots)
+        new_batch.append(new_tape)
+    return new_batch, sub_coeffs
+
+
+def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_to_trainable_op = tape.operations[: idx + 1]
+    ops_after_trainable_op = tape.operations[idx + 1 :]
+
+    # Get a generator and coefficients
+    sub_coeffs, generators = _get_pauli_generators(trainable_op)
+
+    measurements = tape.measurements
+
+    new_batch = []
+    new_coeffs = []
+    for idx, gen in enumerate(generators):
+        pos_rot = [ops.functions.evolve(gen, np.pi / 4)]
+        neg_rot = [ops.functions.evolve(gen, -np.pi / 4)]
+        pos_ops = ops_to_trainable_op + pos_rot + ops_after_trainable_op
+        neg_ops = ops_to_trainable_op + neg_rot + ops_after_trainable_op
+
+        pos_tape = QuantumScript(pos_ops, measurements, shots=tape.shots)
+        neg_tape = QuantumScript(neg_ops, measurements, shots=tape.shots)
+        new_batch.append(pos_tape)
+        new_batch.append(neg_tape)
+        new_coeffs.append(-1 / 2 * sub_coeffs[idx])
+        new_coeffs.append(1 / 2 * sub_coeffs[idx])
+    return new_batch, new_coeffs
+
+
+def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_before_trainable_op = tape.operations[:]
+    ops_after_trainable_op = [
+        ops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
     ]
 
-    def _postprocess_probs(res, measurement, projector):
-        num_wires_probs = len(measurement.wires)
-        if num_wires_probs == 0:
-            num_wires_probs = tape.num_wires
-        res = qml.math.reshape(res, (2**num_wires_probs, 2))
-        return qml.math.tensordot(res, projector, axes=[[1], [0]])
+    # Create measurement with gate generators
+    mp = expval(trainable_op.generator() @ ops.Y(aux_wire))
+    measurements = [mp]
 
-    def processing_fn(results):  # pylint: disable=too-many-branches
-        """Post processing function for computing a hadamard gradient."""
-        final_res = []
-        for coeff, res in zip(coeffs, results):
-            if isinstance(res, tuple):
-                new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
-            else:
-                new_val = qml.math.convert_like(2 * coeff * res, res)
-            final_res.append(new_val)
+    # Get the observable from tape measurement
+    # Assume there's only one observable in the tape ################ processing function aggregation
+    coeffs, observables = _get_pauli_terms(tape.measurements[0].obs)
+    coeffs = [-c for c in coeffs]
 
-        # Post process for probs
-        if measurements_probs:
-            projector = np.array([1, -1])
-            like = final_res[0][0] if multi_measurements else final_res[0]
-            projector = qml.math.convert_like(projector, like)
-            for idx, res in enumerate(final_res):
-                if multi_measurements:
-                    for prob_idx in measurements_probs:
-                        final_res[idx][prob_idx] = _postprocess_probs(
-                            res[prob_idx], tape.measurements[prob_idx], projector
-                        )
-                else:
-                    prob_idx = measurements_probs[0]
-                    final_res[idx] = _postprocess_probs(res, tape.measurements[prob_idx], projector)
-        grads = []
-        idx = 0
-        for num_tape in gradient_data:
-            if num_tape == 0:
-                grads.append(qml.math.zeros(()))
-            elif num_tape == 1:
-                grads.append(final_res[idx])
-                idx += 1
-            else:
-                result = final_res[idx : idx + num_tape]
-                if multi_measurements:
-                    grads.append(
-                        [qml.math.array(qml.math.sum(res, axis=0)) for res in zip(*result)]
-                    )
-                else:
-                    grads.append(qml.math.array(qml.math.sum(result)))
-                idx += num_tape
+    new_batch = []
+    for obs in observables:
+        ctrl_obs = [ops.op_math.ctrl(obs, control=aux_wire)]
+        hadamard = [ops.H(wires=aux_wire)]
+        operators = (
+            ops_before_trainable_op + hadamard + ctrl_obs + hadamard + ops_after_trainable_op
+        )
 
-        if not multi_measurements and not multi_params:
-            return grads[0]
-
-        if not (multi_params and multi_measurements):
-            if multi_measurements:
-                return tuple(grads[0])
-            return tuple(grads)
-
-        # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
-
-        for i in range(len(tape.measurements)):
-            for j in range(len(tape.trainable_params)):
-                grads_reorder[i][j] = grads[j][i]
-
-        grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
-
-        return grads_tuple
-
-    return g_tapes, processing_fn
+        new_tape = QuantumScript(operators, measurements, shots=tape.shots)
+        new_batch.append(new_tape)
+    return new_batch, coeffs
 
 
-def _get_generators(trainable_op):
-    """From a trainable operation, extract the unitary generators and their coefficients. If an operation is added here
-    one needs to also update the list of supported operation in the expand function given to the gradient transform.
-    """
-    # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
-    if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
-        generators = [qml.Z(trainable_op.wires)]
-        coeffs = [-0.5]
-    elif isinstance(trainable_op, qml.CRX):
-        generators = [
-            qml.X(trainable_op.wires[1]),
-            qml.prod(qml.Z(trainable_op.wires[0]), qml.X(trainable_op.wires[1])),
-        ]
-        coeffs = [-0.25, 0.25]
-    elif isinstance(trainable_op, qml.CRY):
-        generators = [
-            qml.Y(trainable_op.wires[1]),
-            qml.prod(qml.Z(trainable_op.wires[0]), qml.Y(trainable_op.wires[1])),
-        ]
-        coeffs = [-0.25, 0.25]
-    elif isinstance(trainable_op, qml.CRZ):
-        generators = [
-            qml.Z(trainable_op.wires[1]),
-            qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1])),
-        ]
-        coeffs = [-0.25, 0.25]
-    elif isinstance(trainable_op, qml.IsingXX):
-        generators = [qml.prod(qml.X(trainable_op.wires[0]), qml.X(trainable_op.wires[1]))]
-        coeffs = [-0.5]
-    elif isinstance(trainable_op, qml.IsingYY):
-        generators = [qml.prod(qml.Y(trainable_op.wires[0]), qml.Y(trainable_op.wires[1]))]
-        coeffs = [-0.5]
-    elif isinstance(trainable_op, qml.IsingZZ):
-        generators = [qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1]))]
-        coeffs = [-0.5]
-    # For rotation it is possible to only use PauliZ by applying some other rotations in the main function
-    elif isinstance(trainable_op, qml.Rot):
-        generators = [qml.Z(trainable_op.wires)]
-        coeffs = [-0.5]
+def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_before_trainable_op = tape.operations[:]
+    ops_after_trainable_op = [
+        ops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
+    ]
+
+    # Create measurement with gate generators
+    measurements = [expval(trainable_op.generator())]
+
+    # Get the observable from tape measurement
+    # Assume there's only one observable in the tape ################ processing function aggregation
+    coeffs, observables = _get_pauli_terms(tape.measurements[0].obs)
+
+    new_batch = []
+    new_coeffs = []
+    for idx, obs in enumerate(observables):
+        pos_rot = [ops.functions.evolve(obs, np.pi / 4)]
+        neg_rot = [ops.functions.evolve(obs, -np.pi / 4)]
+        pos_ops = ops_before_trainable_op + pos_rot + ops_after_trainable_op
+        neg_ops = ops_before_trainable_op + neg_rot + ops_after_trainable_op
+
+        pos_tape = QuantumScript(pos_ops, measurements, shots=tape.shots)
+        neg_tape = QuantumScript(neg_ops, measurements, shots=tape.shots)
+        new_batch.append(pos_tape)
+        new_batch.append(neg_tape)
+        new_coeffs.append(1 / 2 * coeffs[idx])
+        new_coeffs.append(-1 / 2 * coeffs[idx])
+    return new_batch, new_coeffs
+
+
+def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    # We check if we have a work wire -> direct or standard differentiation.
+    # We also check if we are doing forward or reversed (switch the generator with the measured op) based how many
+    # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian, for example.
+    # i.e. if the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
+    # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
+    # the number of shots need for the expectations. See Table III in https://arxiv.org/pdf/2408.05406 for exact
+    # formulas.
+
+    direct = not aux_wire
+
+    if any(isinstance(m, ProbabilityMP) for m in tape.measurements):
+        if aux_wire:
+            return _hadamard_test(tape, trainable_param_idx, aux_wire)
+        raise ValueError(
+            "Computing the gradient of probabilities is only possible with the standard "
+            "Hadamard gradient, which requires an auxiliary wire. Please provide a value for aux_wire."
+        )
+
+    if len(tape.measurements) > 1:
+        standard = True
     else:
-        generators = trainable_op.generator().ops
-        coeffs = trainable_op.generator().coeffs
+        trainable_op, _, _ = tape.get_operation(trainable_param_idx)
+        _, generators = _get_pauli_generators(trainable_op)
 
-    return coeffs, generators
+        _, observables = _get_pauli_terms(tape.measurements[0].obs)
+
+        def _count_groupings(paulis):
+            op = Sum(*paulis)
+            op.compute_grouping()
+            return len(op.grouping_indices)
+
+        expectations_groupings = _count_groupings(generators)
+        observables_groupings = _count_groupings(observables)
+
+        standard = observables_groupings * len(generators) <= expectations_groupings * len(
+            observables
+        )
+
+    # Logic Table
+    # Direct (No Aux) | Standard Order | Function
+    # ----------------|----------------|---------
+    # True            | True           | _direct_hadamard_test
+    # True            | False          | _reversed_direct_hadamard_test
+    # False           | True           | _hadamard_test
+    # False           | False          | _reversed_hadamard_test
+
+    if direct:
+        if standard:
+            return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+        return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+
+    if standard:
+        return _hadamard_test(tape, trainable_param_idx, aux_wire)
+    return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
+
+
+def _new_measurement(mp, aux_wire, all_wires: Wires):
+    obs = mp.obs or ops.op_math.prod(*(ops.Z(w) for w in mp.wires or all_wires))
+    new_obs = ops.functions.simplify(obs @ ops.Y(aux_wire))
+    return type(mp)(obs=new_obs)
+
+
+def _get_pauli_terms(op):
+    """Extract the Pauli terms (generators) and their coefficients for an operator.
+
+    If the operator has no pre-computed pauli_rep, the function computes the matrix
+    and performs a Pauli decomposition.
+
+    Parameters:
+        op: The operator (e.g., a Hamiltonian) for which to extract the Pauli terms.
+
+    Returns:
+        The Pauli terms (generators) and their coefficients.
+    """
+    if op.pauli_rep is None:
+        mat = ops.functions.matrix(op, wire_order=op.wires)
+        pauli_rep = pauli_decompose(mat, wire_order=op.wires, pauli=True)
+    else:
+        pauli_rep = op.pauli_rep
+
+    # Remove identity term if present.
+    id_pw = PauliWord({})
+    if id_pw in pauli_rep:
+        del pauli_rep[PauliWord({})]
+
+    # qml.PauliZ has no defined terms() behavior
+    return (
+        pauli_rep.operation().terms()
+        if isinstance(pauli_rep.operation(), ops.op_math.Sum)
+        else (1 * pauli_rep.operation()).terms()
+    )
+
+
+def _get_pauli_generators(trainable_op):
+    """From a trainable operation, extract the unitary generators and their coefficients.
+    Any operator with a generator is supported.
+    """
+    generator = trainable_op.generator()
+    return _get_pauli_terms(generator)
+
+
+def _postprocess_probs(res, measurement, tape):
+    projector = np.array([1, -1])
+    projector = math.convert_like(projector, res)
+
+    num_wires_probs = len(measurement.wires)
+    if num_wires_probs == 0:
+        num_wires_probs = tape.num_wires
+    res = math.reshape(res, (2**num_wires_probs, 2))
+    return math.tensordot(res, projector, axes=[[1], [0]])
+
+
+def processing_fn(results: ResultBatch, tape, coeffs, generators_per_parameter):
+    """Post processing function for computing a hadamard gradient."""
+
+    final_res = []
+    for coeff, res in zip(coeffs, results):
+        if not isinstance(res, (tuple, list)):
+            res = [res]  # add singleton dimension back in for one measurement
+        final_res.append([math.convert_like(2 * coeff * r, r) for r in res])
+
+    # Post process for probs
+    measurements_probs = [
+        idx for idx, m in enumerate(tape.measurements) if isinstance(m, ProbabilityMP)
+    ]
+    if measurements_probs:
+        for idx, res in enumerate(final_res):
+            for prob_idx in measurements_probs:
+                final_res[idx][prob_idx] = _postprocess_probs(
+                    res[prob_idx], tape.measurements[prob_idx], tape
+                )
+
+    mps = (
+        tape.measurements * tape.shots.num_copies
+        if tape.shots.has_partitioned_shots
+        else tape.measurements
+    )
+    # first index = into measurements, second index = into parameters
+    grads = tuple([] for _ in mps)
+    results = iter(final_res)
+    for num_generators in generators_per_parameter:
+        if num_generators == 0:
+            for g_for_parameter, mp in zip(grads, mps):
+                zeros_like_mp = np.zeros(
+                    mp.shape(num_device_wires=len(tape.wires)), dtype=mp.numeric_type
+                )
+                g_for_parameter.append(zeros_like_mp)
+        else:
+            sub_results = islice(results, num_generators)  # take the next number of results
+            # sum over batch, iterate over measurements
+            summed_sub_results = (sum(r) for r in zip(*sub_results))
+
+            for g_for_parameter, r in zip(grads, summed_sub_results, strict=True):
+                g_for_parameter.append(r)
+
+    if len(mps) == 1:
+        return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
+    return tuple(g[0] for g in grads) if len(tape.trainable_params) == 1 else grads

@@ -14,20 +14,34 @@
 """
 This module contains the qml.bind_new_parameters function.
 """
-# pylint: disable=missing-docstring
+# pylint:disable=missing-function-docstring
 
 import copy
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import Union
 
-import pennylane as qml
+from pennylane import ops
 from pennylane.operation import Operator
+from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Identity,
+    Pow,
+    Projector,
+    ScalarSymbolicOp,
+    SProd,
+    SymbolicOp,
+)
+from pennylane.templates.embeddings import AngleEmbedding
+from pennylane.templates.subroutines import (
+    ApproxTimeEvolution,
+    CommutingEvolution,
+    ControlledSequence,
+    FermionicDoubleExcitation,
+    QDrift,
+    TrotterProduct,
+)
 from pennylane.typing import TensorLike
-
-from ..identity import Identity
-from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
-from ..qubit import Projector
 
 
 @singledispatch
@@ -57,62 +71,67 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
 @bind_new_parameters.register
 def bind_new_parameters_approx_time_evolution(
-    op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]
+    op: ApproxTimeEvolution, params: Sequence[TensorLike]
 ):
     new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[:-1])
     time = params[-1]
     n = op.hyperparameters["n"]
 
-    return qml.ApproxTimeEvolution(new_hamiltonian, time, n)
+    return ApproxTimeEvolution(new_hamiltonian, time, n)
 
 
 @bind_new_parameters.register
-def bind_new_parameters_commuting_evolution(
-    op: qml.CommutingEvolution, params: Sequence[TensorLike]
-):
+def _(op: TrotterProduct, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
+
+    hp = op.hyperparameters
+    return TrotterProduct(new_hamiltonian, time, n=hp["n"], order=hp["order"])
+
+
+@bind_new_parameters.register
+def bind_new_parameters_commuting_evolution(op: CommutingEvolution, params: Sequence[TensorLike]):
     new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[1:])
     freq = op.hyperparameters["frequencies"]
     shifts = op.hyperparameters["shifts"]
     time = params[0]
 
-    return qml.CommutingEvolution(new_hamiltonian, time, frequencies=freq, shifts=shifts)
+    return CommutingEvolution(new_hamiltonian, time, frequencies=freq, shifts=shifts)
 
 
 @bind_new_parameters.register
-def bind_new_parameters_qdrift(op: qml.QDrift, params: Sequence[TensorLike]):
+def bind_new_parameters_qdrift(op: QDrift, params: Sequence[TensorLike]):
     new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
     time = params[-1]
     n = op.hyperparameters["n"]
     seed = op.hyperparameters["seed"]
 
-    return qml.QDrift(new_hamiltonian, time, n=n, seed=seed)
+    return QDrift(new_hamiltonian, time, n=n, seed=seed)
 
 
 @bind_new_parameters.register
 def bind_new_parameters_fermionic_double_excitation(
-    op: qml.FermionicDoubleExcitation, params: Sequence[TensorLike]
+    op: FermionicDoubleExcitation, params: Sequence[TensorLike]
 ):
     wires1 = op.hyperparameters["wires1"]
     wires2 = op.hyperparameters["wires2"]
 
-    return qml.FermionicDoubleExcitation(params[0], wires1=wires1, wires2=wires2)
+    return FermionicDoubleExcitation(params[0], wires1=wires1, wires2=wires2)
 
 
 @bind_new_parameters.register
-def bind_new_parameters_angle_embedding(op: qml.AngleEmbedding, params: Sequence[TensorLike]):
+def bind_new_parameters_angle_embedding(op: AngleEmbedding, params: Sequence[TensorLike]):
     rotation = op.hyperparameters["rotation"].basis
-    return qml.AngleEmbedding(params[0], wires=op.wires, rotation=rotation)
+    return AngleEmbedding(params[0], wires=op.wires, rotation=rotation)
 
 
 @bind_new_parameters.register
 def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
-    return qml.Identity(*params, wires=op.wires)
+    return Identity(*params, wires=op.wires)
 
 
 @bind_new_parameters.register
-def bind_new_parameters_linear_combination(
-    op: qml.ops.LinearCombination, params: Sequence[TensorLike]
-):
+def bind_new_parameters_linear_combination(op: ops.LinearCombination, params: Sequence[TensorLike]):
     new_coeffs, new_ops = [], []
     i = 0
     for o in op.ops:
@@ -125,7 +144,7 @@ def bind_new_parameters_linear_combination(
         else:
             new_ops.append(o)
 
-    new_H = qml.ops.LinearCombination(new_coeffs, new_ops)
+    new_H = ops.LinearCombination(new_coeffs, new_ops)
 
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices
@@ -146,26 +165,26 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
-@bind_new_parameters.register(qml.CY)
-@bind_new_parameters.register(qml.CZ)
-@bind_new_parameters.register(qml.CH)
-@bind_new_parameters.register(qml.CCZ)
-@bind_new_parameters.register(qml.CSWAP)
-@bind_new_parameters.register(qml.CNOT)
-@bind_new_parameters.register(qml.Toffoli)
-@bind_new_parameters.register(qml.MultiControlledX)
-def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
+@bind_new_parameters.register(ops.CY)
+@bind_new_parameters.register(ops.CZ)
+@bind_new_parameters.register(ops.CH)
+@bind_new_parameters.register(ops.CCZ)
+@bind_new_parameters.register(ops.CSWAP)
+@bind_new_parameters.register(ops.CNOT)
+@bind_new_parameters.register(ops.Toffoli)
+@bind_new_parameters.register(ops.MultiControlledX)
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
     return copy.copy(op)
 
 
-@bind_new_parameters.register(qml.CRX)
-@bind_new_parameters.register(qml.CRY)
-@bind_new_parameters.register(qml.CRZ)
-@bind_new_parameters.register(qml.CRot)
-@bind_new_parameters.register(qml.ControlledPhaseShift)
-@bind_new_parameters.register(qml.ControlledQubitUnitary)
+@bind_new_parameters.register(ops.CRX)
+@bind_new_parameters.register(ops.CRY)
+@bind_new_parameters.register(ops.CRZ)
+@bind_new_parameters.register(ops.CRot)
+@bind_new_parameters.register(ops.ControlledPhaseShift)
+@bind_new_parameters.register(ops.ControlledQubitUnitary)
 def bind_new_parameters_parametric_controlled_ops(
-    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    op: ops.CRX | ops.CRY | ops.CRZ | ops.CRot | ops.ControlledPhaseShift,
     params: Sequence[TensorLike],
 ):
     return op.__class__(*params, wires=op.wires)
@@ -181,9 +200,7 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 
 
 @bind_new_parameters.register
-def bind_new_parameters_controlled_sequence(
-    op: qml.ControlledSequence, params: Sequence[TensorLike]
-):
+def bind_new_parameters_controlled_sequence(op: ControlledSequence, params: Sequence[TensorLike]):
     new_base = bind_new_parameters(op.base, params)
     return op.__class__(new_base, control=op.control)
 
@@ -235,8 +252,8 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_conditional(op: qml.ops.Conditional, params: Sequence[TensorLike]):
+def bind_new_parameters_conditional(op: ops.Conditional, params: Sequence[TensorLike]):
     then_op = bind_new_parameters(op.base, params)
     mv = copy.deepcopy(op.meas_val)
 
-    return qml.ops.Conditional(mv, then_op)
+    return ops.Conditional(mv, then_op)

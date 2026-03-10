@@ -14,36 +14,42 @@
 """
 Defines a function for converting plxpr to a tape.
 """
+
 from copy import copy
 
-import pennylane as qml
-from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+import numpy as np
+
+from pennylane import ops
+from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
+from pennylane.capture import pause
+from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
+    jacobian_prim,
+    jvp_prim,
     measure_prim,
+    pauli_measure_prim,
+    qnode_prim,
+    value_and_grad_prim,
+    vjp_prim,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.operation import Operator
+from pennylane.ops.mid_measure import (
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+    get_mcm_predicates,
+    measure,
+    pauli_measure,
+)
+from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
 
 
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    # copy from ops.op_math.condition.py
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
-
-
-class CollectOpsandMeas(PlxprInterpreter):
+class CollectOpsandMeas(FlattenedInterpreter):
     """Collect the dropped operations and measurements in a plxpr. Used by ``convert_to_tape``.
 
     .. code-block:: python
@@ -67,13 +73,7 @@ class CollectOpsandMeas(PlxprInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-    {'ops': [X(0),
-    X(1),
-    X(2),
-    Adjoint(S(0)),
-    measure(wires=[0]),
-    RX(Array(2.4, dtype=float32, weak_type=True), wires=[0])],
-    'measurements': [probs(wires=[0]), expval(Z(1))]}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
@@ -97,9 +97,9 @@ class CollectOpsandMeas(PlxprInterpreter):
 
     def setup(self):
         if self.state is None:
-            self.state = {"ops": [], "measurements": []}
+            self.state = {"ops": [], "measurements": [], "dynamic_wire_map": {}}
 
-    def interpret_operation(self, op: "pennylane.operation.Operator"):
+    def interpret_operation(self, op: Operator):
         self.state["ops"].append(op)
 
     def interpret_measurement(self, measurement):
@@ -107,14 +107,8 @@ class CollectOpsandMeas(PlxprInterpreter):
         return measurement
 
 
-# pylint: disable=protected-access
-CollectOpsandMeas._primitive_registrations.update(
-    FlattenedHigherOrderPrimitives
-)  # pylint: disable=protected-access
-
-
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):
+def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
     consts = invals[:n_consts]
@@ -124,13 +118,13 @@ def _(self, *invals, jaxpr, lazy, n_consts):
     assert child.state
 
     for op in reversed(child.state["ops"]):
-        self.state["ops"].append(qml.adjoint(op, lazy=lazy))
+        self.state["ops"].append(ops.adjoint(op, lazy=lazy))
 
     return []
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
@@ -143,16 +137,16 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
     assert child.state
 
     for op in child.state["ops"]:
-        self.state["ops"].append(qml.ctrl(op, control=control, **params))
+        self.state["ops"].append(ops.ctrl(op, control=control, **params))
 
     return []
 
 
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
-    args = all_args[args_slice]
+    args = all_args[slice(*args_slice)]
 
     # Find predicates that use mid-circuit measurements. We don't check the last
     # condition as that is always `True`.
@@ -163,42 +157,97 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
                 "Cannot use qml.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
-        conditions = _get_mcm_predicates(mcm_conditions)
+        conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = all_args[const_slice]
-        if jaxpr is None:
-            continue
-        if isinstance(pred, qml.measurements.MeasurementValue):
+        consts = all_args[slice(*const_slice)]
+        if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
                 raise ValueError(
-                    (
-                        "Conditional branches of mid circuit measurements are not allowed to"
-                        f" return anything with plxpr_to_tape and CollectOpsandMeas. Branch returns {outvals}"
-                    )
+                    "Conditional branches of mid circuit measurements are not allowed to"
+                    f" return anything with plxpr_to_tape and CollectOpsandMeas. Branch returns {outvals}"
                 )
             child = CollectOpsandMeas()
             child.eval(jaxpr, consts, *args)
             assert child.state
-            self.state["ops"].extend(qml.ops.Conditional(pred, op) for op in child.state["ops"])
+            self.state["ops"].extend(ops.Conditional(pred, op) for op in child.state["ops"])
         elif pred:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
 
 
 @CollectOpsandMeas.register_primitive(measure_prim)
-def _(self, wires, reset, postselect):
-    m0 = qml.measure(wires, reset=reset, postselect=postselect)
+def _measure_primitive(self, wires, reset, postselect):
+    m0 = measure(wires, reset=reset, postselect=postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
 
 
-def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+@CollectOpsandMeas.register_primitive(pauli_measure_prim)
+def _(self, *wires, pauli_word="", postselect=None):
+    m0 = pauli_measure(pauli_word, wires, postselect)
+    self.state["ops"].extend(m0.measurements)
+    return m0
+
+
+@CollectOpsandMeas.register_primitive(jacobian_prim)
+def _jacobian_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(value_and_grad_prim)
+def _value_and_grad_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the value_and_grad primitive")
+
+
+@CollectOpsandMeas.register_primitive(vjp_prim)
+def _vjp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the vjp primitive")
+
+
+@CollectOpsandMeas.register_primitive(jvp_prim)
+def _jvp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jvp primitive")
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(qnode_prim)
+def _qnode_primitive(
+    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
+):  # pylint: disable=too-many-arguments
+    consts = invals[shots_len : shots_len + n_consts]
+    args = invals[shots_len + n_consts :]
+
+    child = CollectOpsandMeas()
+    out = child.eval(qfunc_jaxpr, consts, *args)
+    assert child.state
+    self.state["ops"].extend(child.state["ops"])
+    self.state["measurements"].extend(child.state["measurements"])
+    return out
+
+
+@CollectOpsandMeas.register_primitive(allocate_prim)
+def _allocate_primitive(self, *, num_wires, state, restored):
+    wires = [DynamicWire() for _ in range(num_wires)]
+    num_dynamic_wires = len(self.state["dynamic_wire_map"])
+    int_wires = [np.iinfo(np.int32).max - i - num_dynamic_wires for i in range(num_wires)]
+    self.state["dynamic_wire_map"].update(dict(zip(int_wires, wires, strict=True)))
+    self.state["ops"].append(Allocate(int_wires, state=state, restored=restored))
+    return int_wires
+
+
+@CollectOpsandMeas.register_primitive(deallocate_prim)
+def _deallocate_primitive(self, *wires):
+    self.state["ops"].append(Deallocate(wires))
+    return []
+
+
+def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
 
@@ -238,4 +287,28 @@ def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
     collector = CollectOpsandMeas()
     collector.eval(plxpr, consts, *args)
     assert collector.state
-    return QuantumScript(collector.state["ops"], collector.state["measurements"], shots=shots)
+    wire_map = collector.state["dynamic_wire_map"]
+    mcm_map = {}
+    with pause():
+        operations = [_map_op_wires(op, wire_map, mcm_map) for op in collector.state["ops"]]
+        measurements = [
+            _map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]
+        ]
+    return QuantumScript(operations, measurements, shots=shots)
+
+
+def _map_op_wires(op, wire_map, mcm_map):
+    new_op = op.map_wires(wire_map)
+    if isinstance(op, (MidMeasure, PauliMeasure)):
+        mcm_map[op] = new_op
+    return new_op
+
+
+def _map_meas_wires(m, wire_map, mcm_map):
+    new_meas = m.map_wires(wire_map)
+    if m.mv is None:
+        return new_meas
+    for i, meas in enumerate(m.mv.measurements):
+        if meas in mcm_map:
+            new_meas.mv.measurements[i] = mcm_map[meas]
+    return new_meas

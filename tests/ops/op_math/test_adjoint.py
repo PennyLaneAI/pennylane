@@ -48,7 +48,6 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, AdjointOperation)
 
         # checking we can call `dir` without problems
@@ -69,36 +68,11 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, AdjointOperation)
 
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
-
-    def test_observable(self):
-        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
-        # pylint: disable=too-few-public-methods
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob = Adjoint(base)
-
-        assert isinstance(ob, Adjoint)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, AdjointOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.ops.Prod)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
 
     @pytest.mark.parametrize(
         "op",
@@ -128,12 +102,11 @@ class TestInitialization:
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Adjoint(base, id="something")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -146,12 +119,11 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Adjoint(base, id="id")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
-        assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -301,16 +273,16 @@ class TestProperties:
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
-    def test_is_hermitian(self, value):
-        """Test `is_hermitian` property mirrors that of the base."""
+    def test_is_verified_hermitian(self, value):
+        """Test `is_verified_hermitian` property mirrors that of the base."""
 
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op = Adjoint(DummyOp(0))
-        assert op.is_hermitian == value
+        assert op.is_verified_hermitian == value
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -319,6 +291,15 @@ class TestProperties:
         op = Adjoint(base)
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
+
+    def test_pauli_rep(self):
+        """Test pauli_rep works after adjoint operation."""
+        coeffs = [1 - 0.5j, 0.2, -3j]
+        paulis = [qml.X(0), qml.Y(0), qml.Z(0)]
+        op = qml.dot(coeffs, paulis)
+        adjoint_ps = qml.adjoint(op).pauli_rep
+        assert (list(adjoint_ps.values()) == qml.math.conjugate(coeffs)).all()
+        assert (qml.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
 
 
 class TestSimplify:
@@ -526,6 +507,28 @@ class TestQueueing:
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        with qml.queuing.AnnotatedQueue() as q:
+            op = Adjoint(base)
+
+        assert len(q) == 1
+        assert q.queue[0] is op
+
+    def test_queueing_observable(self):
+        """Test queuing and metadata when both Adjoint and a Hermitian
+        base defined inside a recording context."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            base = qml.Hermitian(np.eye(4), wires=[0, "x"])
+            _ = Adjoint(base)
+
+        assert base not in q
+        assert len(q) == 1
+
+    def test_queuing_base_defined_outside_observable(self):
+        """Test that a Hermitian base isn't added to queue if it's
+        defined outside the recording context."""
+
+        base = qml.Hermitian(np.eye(4), wires=[0, "x"])
         with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
@@ -784,6 +787,13 @@ def test_error_adjoint_on_noncallable(obj):
         adjoint(obj)
 
 
+def test_error_on_None():
+    """Test that the error on None points to Subroutines needing to be treated as a Quantum Function."""
+
+    with pytest.raises(ValueError, match="if you apply adjoint to the output of a Subroutine"):
+        adjoint(None)
+
+
 class TestAdjointConstructorPreconstructedOp:
     """Test providing an already initialized operator to the transform."""
 
@@ -988,18 +998,6 @@ class TestAdjointConstructorOutsideofQueuing:
 
         assert isinstance(out, qml.RX)
         assert out.data == (-x,)
-
-    def test_observable(self):
-        """Test providing a preconstructed Observable outside of a queuing context."""
-
-        base = 1.0 * qml.PauliX(0)
-        obs = adjoint(base)
-
-        assert isinstance(obs, Adjoint)
-        assert isinstance(base, qml.operation.Observable) == isinstance(
-            obs, qml.operation.Observable
-        )
-        assert obs.base is base
 
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""

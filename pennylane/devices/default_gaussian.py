@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=inconsistent-return-statements
+
 """
 The :code:`default.gaussian` device is a simulator for Gaussian continuous-variable
 quantum computations, and can be used as a template for writing PennyLane
@@ -21,18 +21,18 @@ It implements the necessary :class:`~pennylane.devices._legacy_device.Device` me
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
-import cmath
-
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
+import cmath
 import math
 
 import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
+from pennylane._version import __version__
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity
 
-from .._version import __version__
 from ._legacy_device import Device
 
 # tolerance for numerical errors
@@ -55,7 +55,7 @@ def partitions(s, include_singles=True):
     Returns:
         tuple: returns a nested tuple, containing all partitions of the sequence.
     """
-    # pylint: disable=too-many-branches
+
     if len(s) == 2:
         if include_singles:
             yield (s[0],), (s[1],)
@@ -358,7 +358,7 @@ def vacuum_state(wires, hbar=2.0):
     Returns:
         array: the vacuum state
     """
-    means = np.zeros((2 * wires))
+    means = np.zeros(2 * wires)
     cov = np.identity(2 * wires) * hbar / 2
     state = [cov, means]
     return state
@@ -394,7 +394,7 @@ def squeezed_state(r, phi, hbar=2.0):
     Returns:
         array: the squeezed state
     """
-    means = np.zeros((2))
+    means = np.zeros(2)
     state = [squeezed_cov(r, phi, hbar), means]
     return state
 
@@ -517,33 +517,27 @@ def photon_number(cov, mu, params, hbar=2.0):
     return ex, var
 
 
-def homodyne(phi=None):
+def homodyne(phi: float | None = None):
     """Function factory that returns the Homodyne expectation of a one mode state.
 
     Args:
-        phi (float): the default phase space axis to perform the Homodyne measurement
+        phi (Optional[float]): the default phase space axis to perform the Homodyne measurement
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
         and phase space angle phi, and returns the quadrature expectation
         value and variance.
     """
-    if phi is not None:
 
-        def _homodyne(cov, mu, params, hbar=2.0):
-            """Arbitrary angle homodyne expectation."""
-            # pylint: disable=unused-argument
-            rot = rotation(phi)
-            muphi = rot.T @ mu
-            covphi = rot.T @ cov @ rot
-            return muphi[0], covphi[0, 0]
-
-        return _homodyne
-
+    # pylint: disable=unused-argument
     def _homodyne(cov, mu, params, hbar=2.0):
-        """Arbitrary angle homodyne expectation."""
-        # pylint: disable=unused-argument
-        rot = rotation(params[0])
+        """Calculates the arbitrary angle homodyne expectation."""
+
+        # Use the fixed outer `phi` if it was provided,
+        # otherwise use the dynamic `phi` from the parameters.
+        measurement_phi = phi if phi is not None else params[0]
+
+        rot = rotation(measurement_phi)
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
         return muphi[0], covphi[0, 0]
@@ -616,7 +610,7 @@ def fock_expectation(cov, mu, params, hbar=2.0):
     Returns:
         tuple: the Fock state expectation and variance
     """
-    # pylint: disable=unused-argument
+
     ex = fock_prob(cov, mu, params[0], hbar=hbar)
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
@@ -644,7 +638,7 @@ class DefaultGaussian(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. If ``None``, the results are analytically computed and hence deterministic.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
@@ -895,7 +889,7 @@ class DefaultGaussian(Device):
     # pylint: disable=arguments-differ
     def execute(self, operations, observables):
         if len(observables) > 1:
-            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+            raise QuantumFunctionError("Default gaussian only support single measurements.")
         return super().execute(operations, observables)
 
     def batch_execute(self, circuits):

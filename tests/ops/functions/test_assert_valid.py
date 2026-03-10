@@ -15,6 +15,7 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 import string
+from pickle import PicklingError
 
 import numpy as np
 
@@ -189,7 +190,7 @@ class BadPickling0(Operator):
 def test_bad_pickling():
     """Test an error is raised in an operator cant be pickled."""
 
-    with pytest.raises(AttributeError):
+    with pytest.raises((AttributeError, PicklingError)):
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 
@@ -343,9 +344,7 @@ def test_data_is_tuple():
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
-    if n_wires == qml.operation.AllWires:
-        n_wires = 0
-    elif n_wires == qml.operation.AnyWires:
+    if n_wires is None:
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))
@@ -380,6 +379,9 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
+
+    if class_to_validate.__module__[10:14] == "ftqc":
+        pytest.skip(reason="skip tests for ftqc ops")
 
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:

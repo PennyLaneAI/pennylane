@@ -19,11 +19,11 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.transforms import decompose
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
@@ -32,11 +32,12 @@ from .gradient_transform import (
     _all_zero_grad,
     _no_trainable_grad,
     assert_no_trainable_tape_batching,
-    choose_trainable_params,
+    choose_trainable_param_indices,
+    contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):
@@ -61,6 +62,11 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     return direction
 
 
+def _stop_at_expand_invalid_trainable(obj):
+    return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
+
+
+# pylint: disable=too-many-positional-arguments
 def _expand_transform_spsa(
     tape: QuantumScript,
     argnum=None,
@@ -75,10 +81,14 @@ def _expand_transform_spsa(
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
-    expanded_tape = expand_invalid_trainable(tape)
+    [expanded_tape], _ = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=_stop_at_expand_invalid_trainable,
+    )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]
@@ -89,9 +99,10 @@ def _expand_transform_spsa(
 @partial(
     transform,
     expand_transform=_expand_transform_spsa,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
+# pylint: disable=too-many-positional-arguments
 def spsa_grad(
     tape: QuantumScript,
     argnum=None,
@@ -264,7 +275,8 @@ def spsa_grad(
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", shots=shots)
+        >>> dev = qml.device("default.qubit")
+        >>> @qml.set_shots(shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
@@ -289,11 +301,11 @@ def spsa_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
     diff_methods = (
-        find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params_indices)
         if validate_params
-        else {idx: "F" for idx in trainable_params}
+        else {idx: "F" for idx in trainable_params_indices}
     )
 
     if all(g == "0" for g in diff_methods.values()):
@@ -333,12 +345,12 @@ def spsa_grad(
         direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
         # the `where` arg is being cast to list to avoid unexpected side effects from types that
         # override __array_ufunc__. See https://github.com/numpy/numpy/pull/23240 for more details
-        inv_direction = qml.math.divide(
-            1, direction, where=list(direction != 0), out=qml.math.zeros_like(direction)
+        inv_direction = math.divide(
+            1, direction, where=list(direction != 0), out=math.zeros_like(direction)
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
-        _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
-        all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
+        _shifts = math.tensordot(h * shifts, direction[indices], axes=0)
+        all_coeffs.append(math.tensordot(coeffs / h**n, inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
 
@@ -354,15 +366,14 @@ def spsa_grad(
                 res = list(results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad])
                 if r0 is not None:
                     res.insert(0, r0)
-                res = qml.math.stack(res)
+                res = math.stack(res)
                 grads = (
-                    qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
-                    + grads
+                    math.tensordot(math.convert_like(_coeffs, res), res, axes=[[0], [0]]) + grads
                 )
             grads = grads * (1 / num_directions)
             if num_trainable_params == 1:
-                return qml.math.convert_like(grads[0], res)
-            return tuple(qml.math.convert_like(g, res) for g in grads)
+                return math.convert_like(grads[0], res)
+            return tuple(math.convert_like(g, res) for g in grads)
 
         grads = []
         for i in range(num_measurements):
@@ -371,13 +382,10 @@ def spsa_grad(
                 res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
                 if r0 is not None:
                     res.insert(0, r0[i])
-                res = qml.math.stack(res)
-                grad = (
-                    qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
-                    + grad
-                )
+                res = math.stack(res)
+                grad = math.tensordot(math.convert_like(_coeffs, res), res, axes=[[0], [0]]) + grad
             grad = grad / num_directions
-            grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
+            grads.append(tuple(math.convert_like(g, grad) for g in grad))
 
         if num_trainable_params == 1:
             return tuple(g[0] for g in grads)

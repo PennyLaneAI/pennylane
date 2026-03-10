@@ -16,90 +16,56 @@ Support functions for cut_circuit and cut_circuit_mc.
 """
 
 
-import uuid
 import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
-from networkx import MultiDiGraph, has_path, weakly_connected_components
 
-import pennylane as qml
+from pennylane import ops
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operation
+from pennylane.ops import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
-
-
-class MeasureNode(Operation):
-    """Placeholder node for measurement operations"""
-
-    num_wires = 1
-    grad_method = None
-    num_params = 0
-
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
-
-        super().__init__(wires=wires, id=id)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
-
-
-class PrepareNode(Operation):
-    """Placeholder node for state preparations"""
-
-    num_wires = 1
-    grad_method = None
-    num_params = 0
-
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
-
-        super().__init__(wires=wires, id=id)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
+from .ops import MeasureNode, PrepareNode
+from .tapes import graph_to_tape
 
 
 def _prep_zero_state(wire):
-    return [qml.Identity(wire)]
+    return [ops.Identity(wire)]
 
 
 def _prep_one_state(wire):
-    return [qml.X(wire)]
+    return [ops.X(wire)]
 
 
 def _prep_plus_state(wire):
-    return [qml.Hadamard(wire)]
+    return [ops.Hadamard(wire)]
 
 
 def _prep_minus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire)]
+    return [ops.X(wire), ops.Hadamard(wire)]
 
 
 def _prep_iplus_state(wire):
-    return [qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def _prep_iminus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.X(wire), ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def find_and_place_cuts(
-    graph: MultiDiGraph,
+    graph,
     cut_method: Callable = kahypar_cut,
-    cut_strategy: CutStrategy = None,
+    cut_strategy: CutStrategy | None = None,
     replace_wire_cuts=False,
     local_measurement=False,
     **kwargs,
-) -> MultiDiGraph:
+):
     """Automatically finds and places optimal :class:`~.WireCut` nodes into a given tape-converted graph
     using a customizable graph partitioning function. Preserves existing placed cuts.
 
@@ -342,7 +308,7 @@ def find_and_place_cuts(
     return cut_graph
 
 
-def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
+def replace_wire_cut_node(node: WireCut, graph):
     """
     Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
     and :class:`~.PrepareNode`.
@@ -420,7 +386,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             graph.add_edge(prep_node, successor, wire=wire)
 
 
-def replace_wire_cut_nodes(graph: MultiDiGraph):
+def replace_wire_cut_nodes(graph):
     """
     Replace each :class:`~.WireCut` node in the graph with a
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
@@ -466,9 +432,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
             replace_wire_cut_node(op.obj, graph)
 
 
-def place_wire_cuts(
-    graph: MultiDiGraph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
-) -> MultiDiGraph:
+def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]):
     """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
 
     Args:
@@ -542,7 +506,7 @@ def place_wire_cuts(
     return cut_graph
 
 
-def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
+def _remove_existing_cuts(graph):
     """Removes all existing, manually or automatically placed, cuts from a circuit graph, be it
     ``WireCut``s or ``MeasureNode``-``PrepareNode`` pairs.
 
@@ -572,7 +536,7 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 
 
 # pylint: disable=too-many-branches
-def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGraph]:
+def fragment_graph(graph):
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
@@ -643,12 +607,16 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
+    # pylint: disable=import-outside-toplevel
+    from networkx import MultiDiGraph, weakly_connected_components
+
     subgraph_nodes = weakly_connected_components(graph_copy)
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
 
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
+    start_fragment, end_fragment = 0, 0
     for node1, node2, _ in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
@@ -674,6 +642,8 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
+        from networkx import has_path  # pylint: disable=import-outside-toplevel
+
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)
         else:
@@ -693,6 +663,7 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     return subgraphs_connected_to_measurements, communication_graph
 
 
+# pylint: disable=too-many-positional-arguments
 def _is_valid_cut(
     fragments,
     num_cuts,
@@ -709,9 +680,9 @@ def _is_valid_cut(
 
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
-    # pylint: disable=no-member
+
     all_fragments_fit = all(
-        len(qml.qcut.graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
+        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
     return correct_num_fragments and best_candidate_yet and all_fragments_fit

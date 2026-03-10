@@ -16,19 +16,20 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
-from typing import Callable, Literal, Optional, Union
-from warnings import warn
+import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import Interface, InterfaceLike
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.typing import ResultBatch
-from pennylane.workflow.resolution import SupportedDiffMethods
+from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+from pennylane.math.interface_utils import Interface
+from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -38,47 +39,59 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+if TYPE_CHECKING:
+    from pennylane.concurrency.executors import ExecBackends
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import Transform
+    from pennylane.typing import ResultBatch
+    from pennylane.workflow.qnode import SupportedDeviceAPIs
+    from pennylane.workflow.resolution import SupportedDiffMethods
+
+
 # pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
-    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
-    interface: Optional[InterfaceLike] = Interface.AUTO,
+    device: SupportedDeviceAPIs,
+    diff_method: Callable | SupportedDiffMethods | Transform | None = None,
+    interface: Interface | str | None = Interface.AUTO,
     *,
-    transform_program: TransformProgram = None,
-    grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache] = True,
+    grad_on_execution: bool | Literal["best"] = "best",
+    cache: bool | dict | Cache | Literal["auto"] | None = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: Union[bool, None] = False,
-    postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-    mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-    gradient_kwargs: dict = None,
-    mcm_config="unset",
-    config="unset",
-    inner_transform="unset",
+    device_vjp: bool | None = False,
+    postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+    gradient_kwargs: dict | None = None,
+    transform_program: CompilePipeline | None = None,
+    executor_backend: ExecBackends | str | None = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
+        device (pennylane.devices.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        diff_method (None, str, TransformDispatcher): The gradient transform function to use
+        diff_method (Optional[str | Transform]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
-        transform_program(.TransformProgram): A transform program to be applied to the initial tape.
+        transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
-            a significant reduction in quantum evaluations during gradient computations.
+        cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
+            ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
+            a reduction in quantum evaluations during higher order gradient computations.
+            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
+            execution. If ``False``, no caching is used. You may also pass your own cache
+            to be used; this can be any object that implements the special methods
+            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
         cachesize (int): the size of the cache.
         max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
@@ -86,22 +99,19 @@ def execute(
             (classical) computational overhead during the backward pass.
         device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+        postselect_mode (Optional[str]): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. Default is ``None``.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+        mcm_method (Optional[str]): Strategy to use when executing circuits with mid-circuit measurements.
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+        gradient_kwargs (Optional[dict]): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
-            and ``mcm_method`` and will be removed in v0.42.
-        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
-            will be removed in v0.42.
-        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
-            and will be removed in v0.42.
+        executor_backend (Optional[str | ExecBackends]): concurrent task-based executor for function dispatch.
+            If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
+
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -142,52 +152,28 @@ def execute(
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> x = np.array([0.5], requires_grad=True)
-    >>> cost_fn(params, x)
-    1.93050682
+    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> x = pnp.array([0.5], requires_grad=True)
+    >>> print(cost_fn(params, x))
+    1.93...
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> qml.grad(cost_fn)(params, x)
+    >>> print(qml.grad(cost_fn)(params, x)) # doctest: +SKIP
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> qml.jacobian(qml.grad(cost_fn))(params, x)
-    array([[-0.97517033,  0.01983384,  0.        ],
-           [ 0.01983384, -0.97517033,  0.        ],
-           [ 0.        ,  0.        , -0.95533649]])
+    >>> print(qml.jacobian(qml.grad(cost_fn))(params, x)) # doctest: +SKIP
+    [[-0.97517033  0.01983384  0.        ]
+     [ 0.01983384 -0.97517033  0.        ]
+     [ 0.          0.         -0.95533649]]
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
-
-    if config != "unset":
-        warn(
-            "The config argument has been deprecated and will be removed in v0.42. "
-            "The provided config argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if inner_transform != "unset":
-        warn(
-            "The inner_transform argument has been deprecated and will be removed in v0.42. "
-            "The provided inner_transform argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if mcm_config != "unset":
-        warn(
-            "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        mcm_method = mcm_config.mcm_method
-        postselect_mode = mcm_config.postselect_mode
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
@@ -215,9 +201,21 @@ def execute(
     if not tapes:
         return ()
 
-    ### Specifying and preprocessing variables ####
+    ### Apply the user transforms ####
+    transform_program = transform_program or CompilePipeline()
+    tapes, user_post_processing = transform_program(tapes)
+    if transform_program.is_informative:
+        return user_post_processing(tapes)
+
+    if not tapes:
+        return user_post_processing(())
+
+    ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
+
+    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qml.devices.ExecutionConfig(
         interface=interface,
@@ -227,19 +225,16 @@ def execute(
         mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
+        executor_backend=executor_backend,
     )
-    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
+    config = _resolve_execution_config(config, device, tapes)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
-    transform_program, inner_transform = _setup_transform_program(
-        transform_program, device, config, cache, cachesize
-    )
+    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
-    tapes, post_processing = transform_program(tapes)
+    tapes, outer_post_processing = outer_transform(tapes)
 
-    if transform_program.is_informative:
-        return post_processing(tapes)
+    assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
-    return post_processing(results)
+    return user_post_processing(outer_post_processing(results))

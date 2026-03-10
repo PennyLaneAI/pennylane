@@ -16,8 +16,6 @@ Unit tests for the qml.map_wires function
 """
 
 # pylint: disable=too-few-public-methods
-from functools import partial
-
 import pytest
 
 import pennylane as qml
@@ -90,11 +88,6 @@ class TestMapWiresOperators:
         assert len(q) == 1
         assert q.queue[0] is m_op
 
-    def test_map_wires_unsupported_object_raises_error(self):
-        """Test that an error is raised when trying to map the wires of an unsupported object."""
-        with pytest.raises(qml.transforms.core.TransformError, match="Decorating a QNode with"):
-            qml.map_wires("unsupported type", wire_map=wire_map)
-
 
 class TestMapWiresTapes:
     """Tests for the qml.map_wires method used with tapes."""
@@ -105,34 +98,22 @@ class TestMapWiresTapes:
 
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
+            qml.expval(op=qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
         tape.trainable_params = [0, 2]
 
         [s_tape], _ = qml.map_wires(tape, wire_map=wire_map)
-        assert len(s_tape) == 1
+        assert len(s_tape) == 2
         assert s_tape.trainable_params == [0, 2]
         assert s_tape.shots == tape.shots
+        # check ops
         s_op = s_tape[0]
         qml.assert_equal(s_op, mapped_op)
-
-    @pytest.mark.parametrize("shots", [None, 5000])
-    def test_execute_mapped_tape(self, shots):
-        """Test the execution of a mapped tape."""
-        dev = qml.device("default.qubit", wires=5)
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            build_op()
-            qml.expval(op=qml.PauliZ(1))
-
-        tape = QuantumScript.from_queue(q_tape, shots=shots)
-
-        [m_tape], _ = qml.map_wires(tape, wire_map=wire_map)
-        m_op = m_tape.operations[0]
-        m_obs = m_tape.observables[0]
-        qml.assert_equal(m_op, mapped_op)
-        assert tape.shots == m_tape.shots
-        assert m_obs.wires == Wires(wire_map[1])
-        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
+        # check observables
+        s_obs = s_tape.observables
+        assert len(s_obs) == 1
+        assert s_obs[0].wires == Wires(wire_map[1])
 
     def test_map_wires_batch(self):
         """Test that map_wires can be applied to a batch of tapes."""
@@ -204,10 +185,11 @@ class TestMapWiresCallables:
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a mapped quantum function."""
+
         import jax
 
         @jax.jit
-        @partial(qml.map_wires, wire_map=wire_map)
+        @qml.map_wires(wire_map=wire_map)
         @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
