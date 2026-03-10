@@ -629,6 +629,7 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
+    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis."""
 
