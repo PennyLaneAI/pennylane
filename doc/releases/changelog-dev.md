@@ -657,6 +657,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Workflow created to sync the `main` branch to `master`.
+  [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+  
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
@@ -739,6 +742,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
+  decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
+  [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
+
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
@@ -811,6 +818,12 @@ The following classes have been ported over:
 
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+  [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
+
+* Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+  [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
 <h3>Contributors ✍️</h3>
 
