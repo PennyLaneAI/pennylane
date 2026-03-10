@@ -266,7 +266,7 @@ expected:
     @qml.qjit(capture=True)
     @qml.qnode(dev)
     def circuit(angle):
-        qml.RX(phi=angle, wires=0)
+        qml.RX(angle, wires=0)
         return qml.expval(qml.Z(0))
 
 >>> angle = jnp.array(0.1)
