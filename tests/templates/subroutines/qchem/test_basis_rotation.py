@@ -706,7 +706,7 @@ class TestInterfaces:
     ],
 )
 def test_catalyst(unitary, tol):
-    """Test the jax interface."""
+    """Test with qjit."""
 
     import jax.numpy as jnp
 
