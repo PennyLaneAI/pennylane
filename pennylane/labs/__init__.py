@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,13 +26,15 @@ Modules
     :toctree: api
 
     dla
-    resource_estimation
+    estimator_beta
+    transforms
     trotter_error
 
 """
 
 from pennylane.labs import dla
-from pennylane.labs import resource_estimation
+from pennylane.labs import estimator_beta
+from pennylane.labs import transforms
 from pennylane.labs import trotter_error
 
 __all__ = []

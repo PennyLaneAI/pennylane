@@ -14,9 +14,8 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
-
 import copy
-import math
+from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from typing import Literal
@@ -25,7 +24,9 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops
+from pennylane import math, ops, pytrees
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
@@ -91,7 +92,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
         # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
 
-        fable_norm = int(np.ceil(np.log2(max_dimension)))
+        fable_norm = math.ceil_log2(max_dimension)
         encoding = FABLE(2**fable_norm * A, wires=encoding_wires)
 
         projectors = [ops.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
@@ -359,8 +360,8 @@ class QSVT(Operation):
     ... def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
     ...     return qml.expval(qml.Z(0))
-    ... 
-    
+    ...
+
     >>> example_circuit()
     np.float64(0.5403...)
 
@@ -369,11 +370,13 @@ class QSVT(Operation):
     >>> print(qml.draw(example_circuit)())
     0: ──QSVT─┤  <Z>
 
-    To see the implementation details, we can expand the circuit:
+    To see the implementation details, we can expand the circuit via :func:`qml.decompose <.transforms.decompose>`:
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
-    >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    >>> q_scripts, func = qml.decompose(q_script, gate_set=qml.decomposition.gate_sets.ALL_QUBIT_OPS)
+    >>> q_script = func(q_scripts)
+    >>> print(q_script.draw(decimals=2))
+    0: ──RZ(-2.46)──H──RZ(1.00)──H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
@@ -472,6 +475,8 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
+    resource_keys = {"UA", "projectors"}
+
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
@@ -484,6 +489,13 @@ class QSVT(Operation):
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "UA": self.hyperparameters["UA"],
+            "projectors": self.hyperparameters["projectors"],
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -576,24 +588,23 @@ class QSVT(Operation):
         """
 
         op_list = []
-        UA_adj = copy.copy(UA)
 
-        for idx, op in enumerate(projectors[:-1]):
-            if QueuingManager.recording():
-                apply(op)
-            op_list.append(op)
-
-            if idx % 2 == 0:
-                if QueuingManager.recording():
-                    apply(UA)
-                op_list.append(UA)
-
-            else:
-                op_list.append(ops.adjoint(UA_adj))
-
+        op_list.append(projectors[0])
         if QueuingManager.recording():
-            apply(projectors[-1])
-        op_list.append(projectors[-1])
+            apply(projectors[0])
+
+        for i in range(1, len(projectors) - 1, 2):
+            op_list.append(ops.change_op_basis(UA, projectors[i]))
+            op_list.append(projectors[i + 1])
+            if QueuingManager.recording():
+                apply(projectors[i + 1])
+
+        if len(projectors) % 2 == 0:
+            op_list.append(UA)
+            op_list.append(projectors[-1])
+            if QueuingManager.recording():
+                apply(UA)
+                apply(projectors[-1])
 
         return op_list
 
@@ -645,6 +656,41 @@ class QSVT(Operation):
 
         return mat
 
+
+def _QSVT_resources(projectors, UA):
+    resources = defaultdict(int)
+    resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
+    for i in range(1, len(projectors) - 1, 2):
+        resources[
+            change_op_basis_resource_rep(
+                resource_rep(type(UA), **UA.resource_params),
+                resource_rep(type(projectors[i]), **projectors[i].resource_params),
+            )
+        ] += 1
+        resources[resource_rep(type(projectors[i + 1]), **projectors[i + 1].resource_params)] += 1
+
+    if len(projectors) % 2 == 0:
+        resources[resource_rep(type(UA), **UA.resource_params)] += 1
+        resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] += 1
+
+    return dict(resources)
+
+
+@register_resources(_QSVT_resources)
+def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+
+    pytrees.unflatten(*pytrees.flatten(projectors[0]))
+
+    for i in range(1, len(projectors) - 1, 2):
+        ops.change_op_basis(UA, projectors[i])
+        pytrees.unflatten(*pytrees.flatten(projectors[i + 1]))
+
+    if len(projectors) % 2 == 0:
+        pytrees.unflatten(*pytrees.flatten(UA))
+        pytrees.unflatten(*pytrees.flatten(projectors[-1]))
+
+
+add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
 if QSVT._primitive is not None:
@@ -1207,7 +1253,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if math.abs(math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+        if math.abs(sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 

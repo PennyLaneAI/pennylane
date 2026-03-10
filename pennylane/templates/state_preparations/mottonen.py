@@ -169,11 +169,13 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
+    _ATOL = np.finfo(qml.math.get_dtype_name(theta)).eps
+
     if gray_code_rank == 0:
         if (
             qml.math.is_abstract(theta)
             or qml.math.requires_grad(theta)
-            or qml.math.all(theta[..., 0] != 0.0)
+            or qml.math.all(qml.math.abs(theta[..., 0]) > _ATOL)
         ):
             gate(theta[..., 0], wires=[target_wire])
         return
@@ -186,38 +188,16 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
-            (theta != 0.0) if qml.math.ndim(theta) == 1 else qml.math.any(theta != 0.0, axis=0)
+            qml.math.abs(theta) > _ATOL
+            if qml.math.ndim(theta) == 1
+            else qml.math.any(qml.math.abs(theta) > _ATOL, axis=0)
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
-        if skip_none or qml.math.all(theta[..., i] != 0.0):
+        if skip_none or qml.math.all(qml.math.abs(theta[..., i]) > _ATOL):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
-
-
-def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
-    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
-
-    Args:
-        gate (.Operation): gate to be applied, needs to have exactly one parameter
-        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
-        control_wires (array[int]): wires that act as control
-        target_wire (int): wire that acts as target
-
-    Returns:
-          list[.Operator]: sequence of operators defined by this function
-
-    """
-
-    with qml.queuing.AnnotatedQueue() as q:
-        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
-
-    if qml.queuing.QueuingManager.recording():
-        for op in q.queue:
-            qml.apply(op)
-
-    return q.queue
 
 
 def _get_alpha_z(omega, n, k):

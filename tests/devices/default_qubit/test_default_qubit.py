@@ -158,9 +158,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
 
-        circuit = qml.tape.QuantumScript(
-            [qml.measurements.MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))]
-        )
+        circuit = qml.tape.QuantumScript([qml.ops.MidMeasure(0)], [qml.expval(qml.PauliZ(0))])
         assert dev.supports_derivatives(config, circuit=circuit) is False
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
@@ -1573,8 +1571,9 @@ class TestHamiltonianSamples:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
 
+        shots = 30000
         dev = DefaultQubit(seed=seed, max_workers=max_workers)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=30000)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=shots)
         res = dev.execute(qs)
 
         phase = offset + scale * np.array(range(n_wires))
@@ -1582,7 +1581,14 @@ class TestHamiltonianSamples:
         sines = qml.math.sin(phase)
         expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
-        assert np.allclose(res, expected, rtol=0.05)
+        # Theoretical Standard Error Calculation
+        # <H^2> = 2.5^2 + 6.2^2 because cross terms vanish (<X> = 0 for RX states)
+        var_h_theoretical = (2.5**2 + 6.2**2) - expected**2
+        std_error = np.sqrt(var_h_theoretical / shots)
+
+        # Use 4-sigma tolerance to prevent flaky tests
+        # We use atol (absolute) because noise does not scale with the expectation value
+        assert np.allclose(res, expected, atol=4 * std_error)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_complex_hamiltonian(self, max_workers, seed):
@@ -1887,7 +1893,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        if isinstance(mp, qml.measurements.ClassicalShadowMP):
+        if isinstance(mp, qml.measurements.ShadowExpvalMP):
             mp.seed = seed
 
         dev = qml.device("default.qubit", seed=seed)

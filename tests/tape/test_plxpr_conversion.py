@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.ops.mid_measure import MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
@@ -118,7 +118,7 @@ class TestCollectOpsandMeas:
         obj(f)()
 
         assert len(obj.state["ops"]) == 1
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasure)
         assert obj.state["ops"][0].wires == qml.wires.Wires(0)
 
         assert isinstance(obj.state["measurements"][0], qml.measurements.SampleMP)
@@ -141,7 +141,7 @@ class TestCollectOpsandMeas:
         mv = obj(f)(x)
 
         assert len(obj.state["ops"]) == 2
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasure)
         assert mv.measurements[0] is obj.state["ops"][0]
 
         qml.assert_equal(obj.state["ops"][1], qml.ops.Conditional(mv, qml.RX(x, 2)))
@@ -256,9 +256,55 @@ class TestCollectOpsandMeas:
         grad_fn = fn(g)
         with pytest.raises(
             NotImplementedError,
-            match=f"CollectOpsandMeas cannot handle the {fn.__name__} primitive",
+            match="CollectOpsandMeas cannot handle the jacobian primitive",
         ):
             collector(grad_fn)(0.5)
+
+    def test_vjp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the vjp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.vjp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the vjp primitive",
+        ):
+            collector(w)(0.5)
+
+    def test_jvp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the jvp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.jvp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the jvp primitive",
+        ):
+            collector(w)(0.5)
 
     def test_qnode(self):
         """Test that collecting ops from a QNode works."""
@@ -392,7 +438,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(tape.operations) == 1
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasure)
         assert tape.operations[0].wires == qml.wires.Wires(0)
 
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
@@ -415,7 +461,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasure)
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
         mp = tape.measurements[0]
         assert mp.mv.measurements[0] is tape.operations[0]
@@ -443,8 +489,8 @@ class TestPlxprToTape:
         jaxpr = jax.make_jaxpr(f)(x)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
         assert len(tape.operations) == 5
-        assert isinstance(tape.operations[0], MidMeasureMP)
-        assert isinstance(tape.operations[1], MidMeasureMP)
+        assert isinstance(tape.operations[0], MidMeasure)
+        assert isinstance(tape.operations[1], MidMeasure)
         for i in range(2, 5):
             assert isinstance(tape.operations[i], Conditional)
 
@@ -523,3 +569,21 @@ class TestPlxprToTape:
         assert tape.operations[2].wires == tape.operations[1].wires
         assert isinstance(tape.operations[3], qml.allocation.Deallocate)
         assert tape.operations[3].wires == tape.operations[1].wires
+
+    def test_subroutine(self):
+        """Test that jaxpr's with subroutines can be converted to a tape."""
+
+        @qml.capture.subroutine
+        def some_func(x):
+            qml.RX(x, 0)
+
+        def c(x):
+            some_func(x)
+            some_func(x)
+
+        jaxpr = jax.make_jaxpr(c)(0.5)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5)
+        assert isinstance(tape, qml.tape.QuantumScript)
+        assert len(tape) == 2
+        qml.assert_equal(tape[0], qml.RX(0.5, 0))
+        qml.assert_equal(tape[1], qml.RX(0.5, 0))

@@ -15,7 +15,6 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 # pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
-from functools import partial
 
 import pytest
 
@@ -27,7 +26,7 @@ def test_simple_circuit():
     """Test that batching works for a simple circuit"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)
@@ -47,7 +46,7 @@ def test_simple_circuit_one_batch():
     """Test that batching works for a simple circuit when the batch size is 1"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)
@@ -67,7 +66,7 @@ def test_simple_circuit_with_prep():
     """Test that batching works for a simple circuit with a state preparation"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev)
     def circuit(inputs, weights):
         qml.StatePrep(np.array([0, 0, 1, 0]), wires=[0, 1])
@@ -88,7 +87,7 @@ def test_circuit_non_param_operator_before_batched_operator():
     """Test a circuit where a non-parametric operation is located before a batched operator."""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=0)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev)
     def circuit(input):
         qml.CNOT(wires=[0, 1])
@@ -119,7 +118,7 @@ def test_value_error():
         def ndim_params(self):
             return self._ndim_params
 
-    @partial(qml.batch_input, argnum=[0, 2])
+    @qml.batch_input(argnum=[0, 2])
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(input1, input2, weights):
         Embedding(input1, wires=range(2), rotation="Y")
@@ -141,7 +140,7 @@ def test_batch_input_with_trainable_parameters_raises_error():
     """Test that using the batch_input method with trainable parameters raises a ValueError."""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=0)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev)
     def circuit(input):
         qml.RY(input, wires=1)
@@ -166,7 +165,7 @@ def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qml.device("default.qubit", wires=3)
 
-    @partial(qml.batch_input, argnum=0)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
@@ -205,7 +204,7 @@ def test_qubit_state_prep(mocker):
 
     dev = qml.device("default.qubit", wires=3)
 
-    @partial(qml.batch_input, argnum=0)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.StatePrep(data, wires=[0, 1, 2])
@@ -244,7 +243,7 @@ def test_multi_returns():
     """Test that batching works for a simple circuit with multiple returns"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)
@@ -268,7 +267,7 @@ def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
@@ -294,7 +293,7 @@ def test_multi_returns_shot_vector():
     and with a shot vector"""
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.batch_input, argnum=1)
+    @qml.batch_input(argnum=1)
     @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
@@ -326,7 +325,7 @@ class TestDiffSingle:
         """Test derivatives when using autograd"""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -356,7 +355,7 @@ class TestDiffSingle:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -389,7 +388,7 @@ class TestDiffSingle:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -418,7 +417,7 @@ class TestDiffSingle:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -450,7 +449,7 @@ class TestDiffSingle:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -479,7 +478,7 @@ class TestDiffSingle:
         dev = qml.device("default.qubit", wires=2)
 
         @tf.function
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=1)
@@ -508,7 +507,7 @@ class TestDiffMulti:
         """Test derivatives when using autograd"""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(input, x):
             qml.RY(input, wires=0)
@@ -562,7 +561,7 @@ class TestDiffMulti:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=0)
@@ -627,7 +626,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=0)
@@ -688,7 +687,7 @@ class TestDiffMulti:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=0)
@@ -749,7 +748,7 @@ class TestDiffMulti:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=0)
@@ -802,7 +801,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @tf.function
-        @partial(qml.batch_input, argnum=0)
+        @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
             qml.RY(input, wires=0)

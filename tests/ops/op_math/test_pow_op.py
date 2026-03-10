@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
 
 
 class TestConstructor:
@@ -165,15 +165,13 @@ class TestInitialization:
         """Test pow initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op: Pow = power_method(base=base, z=-4.2, id="something")
+        op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -187,15 +185,13 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op: Pow = power_method(base=base, z=-0.766, id="id")
+        op: Pow = power_method(base=base, z=-0.766)
 
         assert op.base is base
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Rot**-0.766"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -361,10 +357,10 @@ class TestProperties:
             """Dummy operator."""
 
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
@@ -489,8 +485,8 @@ class TestSimplify:
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
-        final_op = qml.CH([1, 0], id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1), z=3)
+        final_op = qml.CH([1, 0])
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 

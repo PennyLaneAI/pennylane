@@ -1607,10 +1607,10 @@ class TestStochPulseGradIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
-                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        if isinstance(shots, list):
+            for j_shots in jac:
+                for j, e in zip(j_shots, exp_jac):
+                    assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         else:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)

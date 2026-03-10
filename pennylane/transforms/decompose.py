@@ -15,7 +15,6 @@
 A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 
-
 from __future__ import annotations
 
 import warnings
@@ -25,12 +24,12 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.decomposition import DecompositionGraph, enabled_graph
+from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
-from pennylane.decomposition.utils import translate_op_alias
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
+from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
 
@@ -88,11 +87,12 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             gate_set=None,
             stopping_condition=None,
             max_expansion=None,
-            max_work_wires=0,
+            num_work_wires=0,
+            minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
+            strict=True,
         ):  # pylint: disable=too-many-arguments
-
             self.max_expansion = max_expansion
             self._current_depth = 0
 
@@ -106,7 +106,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._decomp_graph_solution = None
             self._target_gate_names = None
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
-            self._max_work_wires = max_work_wires
+            self._num_work_wires = num_work_wires
+            self._minimize_work_wires = minimize_work_wires
 
             # We use a ChainMap to store the environment frames, which allows us to push and pop
             # environments without copying the interpreter instance when we evaluate a jaxpr of
@@ -117,6 +118,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
             self._gate_set = gate_set
             self.stopping_condition = stopping_condition
+            self._strict = strict
+            self.subroutine_cache = {}
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -163,7 +166,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                         self.stopping_condition,
                         max_expansion=max_expansion,
                         graph_solution=self._decomp_graph_solution,
-                        max_work_wires=self._max_work_wires,
+                        num_work_wires=self._num_work_wires,
                     )
                 )
 
@@ -178,20 +181,14 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if self.stopping_condition(op):
                 return self.interpret_operation(op)
 
-            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
-                op, num_work_wires=self._max_work_wires
-            ):
-                rule = self._decomp_graph_solution.decomposition(
-                    op, num_work_wires=self._max_work_wires
-                )
-                num_wires = len(op.wires)
+            rule = self._decomp_graph_solution.decomposition(
+                op, num_work_wires=self._num_work_wires
+            )
+            num_wires = len(op.wires)
 
-                def compute_qfunc_decomposition(*_args, **_kwargs):
-                    wires = math.array(_args[-num_wires:], like="jax")
-                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
-
-            else:
-                compute_qfunc_decomposition = op.compute_qfunc_decomposition
+            def compute_qfunc_decomposition(*_args, **_kwargs):
+                wires = math.array(_args[-num_wires:], like="jax")
+                rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
 
@@ -225,29 +222,29 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 self._env_map[constvar] = const
 
             if enabled_graph() and not self._decomp_graph_solution:
-
                 with pause():
-
                     collector = CollectResourceOps()
                     collector.eval(jaxpr, consts, *args)
                     operations = collector.state["ops"]
 
                 if operations:
+                    operations = [op for op in operations if not self.stopping_condition(op)]
                     self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
-                        self._max_work_wires,
+                        self._num_work_wires,
+                        self._minimize_work_wires,
                         self._fixed_decomps,
                         self._alt_decomps,
+                        self._strict,
                     )
+                    self._num_work_wires = self._decomp_graph_solution.num_work_wires
 
             for eq in jaxpr.eqns:
-
                 prim_type = getattr(eq.primitive, "prim_type", "")
                 custom_handler = self._primitive_registrations.get(eq.primitive, None)
 
                 if custom_handler:
-
                     invals = [self.read(invar) for invar in eq.invars]
                     outvals = custom_handler(self, *invals, **eq.params)
 
@@ -260,10 +257,10 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                     subfuns, params = eq.primitive.get_bind_params(eq.params)
                     outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
-                    if self._max_work_wires is not None and eq.primitive.name == "allocate":
-                        self._max_work_wires -= params["num_wires"]
-                    if self._max_work_wires is not None and eq.primitive.name == "deallocate":
-                        self._max_work_wires += len(invals)
+                    if self._num_work_wires is not None and eq.primitive.name == "allocate":
+                        self._num_work_wires -= params["num_wires"]
+                    if self._num_work_wires is not None and eq.primitive.name == "deallocate":
+                        self._num_work_wires += len(invals)
 
                 if not eq.primitive.multiple_results:
                     outvals = [outvals]
@@ -304,13 +301,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
 
-            # _evaluate_jaxpr_decomposition should be used when the operator defines a
-            # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
-            # a solution is found for this operator in the graph.
-            if (
-                op.has_qfunc_decomposition
-                or self._decomp_graph_solution
-                and self._decomp_graph_solution.is_solved_for(op, self._max_work_wires)
+            # _evaluate_jaxpr_decomposition should be used when graph-based
+            # decomposition is enabled and a solution is found for this
+            # operator in the graph.
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+                op, self._num_work_wires
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -335,6 +330,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
@@ -356,9 +353,11 @@ def decompose(
     gate_set=None,
     stopping_condition=None,
     max_expansion=None,
-    max_work_wires: int | None = 0,
+    num_work_wires: int | None = 0,
+    minimize_work_wires: bool = False,
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
+    strict: bool = True,
 ):  # pylint: disable=too-many-arguments
     """Decomposes a quantum circuit into a user-specified gate set.
 
@@ -376,22 +375,23 @@ def decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[str or type], Dict[type or str, float] or Callable, optional): The
+        gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
-            decomposition system is enabled), or (3) a function that returns ``True`` if the
-            operator belongs to the target gate set (not supported with the new graph-based
-            decomposition system). If ``None``, the gate set is considered to be all operations in
-            ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>` for this list.
+            decomposition system is enabled). If ``None``, the gate set is considered to be
+            all operations in ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
+            for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
             section below for more details.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
-        max_work_wires (int): The maximum number of work wires that can be simultaneously
+        num_work_wires (int): The maximum number of work wires that can be simultaneously
             allocated. If ``None``, assume an infinite number of work wires. Defaults to ``0``.
+        minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
+            allocated throughout the circuit. Defaults to ``False``.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
@@ -404,6 +404,8 @@ def decompose(
             decomposition rules defined for this operator, and one of them may be chosen if they
             lead to a more resource-efficient decomposition. This is only used when :func:`~pennylane.decomposition.enable_graph`
             is present.
+        strict (bool): If ``False``, operators that do not define a decomposition will be treated
+            as supported. Defaults to ``True``
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -435,7 +437,7 @@ def decompose(
 
     You can decompose the circuit into a set of gates:
 
-    >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
+    >>> batch, fn = qml.decompose(tape, gate_set={qml.CNOT, qml.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
@@ -443,9 +445,7 @@ def decompose(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.transforms.decompose, gate_set={qml.Toffoli, "RX", "RZ"})
+        @qml.decompose(gate_set={qml.Toffoli, "RX", "RZ"})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -459,11 +459,13 @@ def decompose(
     1: ───────────────────────────────├●─┤
     2: ───────────────────────────────╰X─┤
 
-    You can also use a function to build a decomposition gate set:
+    You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``. In this case
+    the operator decomposition will stop once either it is given in terms of the gates in the ``gate_set`` or
+    the ``stopping_condition`` is satisfied.
 
     .. code-block:: python
 
-        @partial(qml.transforms.decompose, gate_set=lambda op: len(op.wires)<=2)
+        @qml.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -501,19 +503,23 @@ def decompose(
                 estimation_wires=estimation_wires,
             )
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=0))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=1))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
     3: ──H─────────────────╰●──────╰QFT†─┤
+    <BLANKLINE>
+    M0 =
+    [[0.877...+0.j         0.        -0.479...j]
+     [0.        -0.479...j 0.877...+0.j        ]]
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=2))())
     0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
     1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
     2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
@@ -545,26 +551,23 @@ def decompose(
                 qml.CRX(0.5, wires=[0, 1])
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+            [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
-        .. code-block:: pycon
-
-            >>> new_tape.operations
-            [RZ(1.5707963267948966, wires=[1]),
-             RY(0.25, wires=[1]),
-             CNOT(wires=[0, 1]),
-             RY(-0.25, wires=[1]),
-             CNOT(wires=[0, 1]),
-             RZ(-1.5707963267948966, wires=[1])]
+        >>> from pprint import pprint
+        >>> pprint(new_tape.operations)
+        [RZ(np.float64(1.57...), wires=[1]),
+         RY(0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(-0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(np.float64(-1.57...), wires=[1])]
 
         With the new system enabled, the transform produces the expected outcome.
 
-        .. code-block:: pycon
-
-            >>> qml.decomposition.enable_graph()
-            >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
-            >>> new_tape.operations
-            [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
+        >>> qml.decomposition.enable_graph()
+        >>> [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+        >>> new_tape.operations
+        [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
         **Weighted Gate Sets**
 
@@ -572,8 +575,7 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -582,17 +584,14 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ───────────╭●────────────╭●─╭●─┤  <Z>
-            1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
-            2: ────────────────────────────╰X─┤
+        >>> print(qml.draw(circuit)())
+        0: ───────────╭●────────────╭●─╭●─┤  <Z>
+        1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
+        2: ────────────────────────────╰X─┤
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -601,12 +600,10 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ────╭●───────────╭●─┤  <Z>
-            1: ──H─╰RZ(0.10)──H─├●─┤
-            2: ─────────────────╰X─┤
+        >>> print(qml.draw(circuit)())
+        0: ────╭●───────────╭●─┤  <Z>
+        1: ──H─╰RZ(0.10)──H─├●─┤
+        2: ─────────────────╰X─┤
 
 
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
@@ -629,7 +626,6 @@ def decompose(
 
         .. code-block:: python
 
-            from functools import partial
             import pennylane as qml
 
             qml.decomposition.enable_graph()
@@ -650,8 +646,7 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.decompose(
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
@@ -660,15 +655,13 @@ def decompose(
                 qml.QubitUnitary(U, wires=[0, 1])
                 return qml.expval(qml.PauliZ(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
-            1: ──U(M0)────────────────────────┤
-
-            M0 =
-            [[1.+0.j 0.+0.j]
-             [0.+0.j 1.+0.j]]
+        >>> print(qml.draw(circuit)())
+        0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
+        1: ──U(M0)────────────────────────┤
+        <BLANKLINE>
+        M0 =
+        [[1.+0.j 0.+0.j]
+            [0.+0.j 1.+0.j]]
 
         We can see that the ``QubitUnitary`` on wire 1 is not decomposed due to the stopping
         condition, despite ``QubitUnitary`` not being in the target gate set.
@@ -716,8 +709,7 @@ def decompose(
                 qml.RY(np.pi/2, wires[1])
                 qml.Z(wires[1])
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
                 alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qml.IsingXX: isingxx_decomp},
@@ -728,12 +720,21 @@ def decompose(
                 qml.IsingXX(0.5, wires=[0, 1])
                 return qml.state()
 
+        >>> qml.specs(circuit)()["resources"].gate_types
+        {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
+        >>> qml.decomposition.disable_graph()
 
-        .. code-block:: pycon
+        **Degenerate Graph Solutions**
 
-            >>> qml.specs(circuit)()["resources"].gate_types
-            defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
-
+        There could be cases that arise where the decomposition graph solution is non-deterministic
+        if there are intermediate gate decompositions that have the same overall costs. This is not
+        normally an issue, except for in cases where graph decompositions are being used with
+        ``qjit`` and intermediate gates include operations that are non-executable by Catalyst.
+        An example of such a gate is the ``PauliRot`` operation. If an intermediate decomposition is
+        chosen that includes a ``qml.PauliRot`` instance, Catalyst cannot execute the program. If
+        this behaviour is encountered, this can be counteracted by adding a prohibitively large
+        penalty to the graph solution should it encounter a ``qml.PauliRot`` instance (e.g.,
+        ``qml.transforms.decomopose(..., gate_set={..., qml.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):
@@ -753,14 +754,17 @@ def decompose(
     decomp_graph_solution = None
 
     if enabled_graph():
-
+        unsupported_ops = [op for op in tape.operations if not stopping_condition(op)]
         decomp_graph_solution = _construct_and_solve_decomp_graph(
-            tape.operations,
+            unsupported_ops,
             gate_set,
-            num_work_wires=max_work_wires,
+            num_work_wires=num_work_wires,
+            minimize_work_wires=minimize_work_wires,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
+            strict=strict,
         )
+        num_work_wires = decomp_graph_solution.num_work_wires
 
     try:
         new_ops = [
@@ -770,7 +774,7 @@ def decompose(
                 op,
                 stopping_condition,
                 max_expansion=max_expansion,
-                max_work_wires=max_work_wires,
+                num_work_wires=num_work_wires,
                 graph_solution=decomp_graph_solution,
             )
         ]
@@ -791,7 +795,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
     current_depth: int = 0,
-    max_work_wires: int | None = 0,
+    num_work_wires: int | None = 0,
     graph_solution: DecompGraphSolution | None = None,
     custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     strict: bool = False,
@@ -803,7 +807,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         acceptance_function: Returns True if the operator does not need further decomposition.
         max_expansion: The maximum level of expansion.
         current_depth: The current depth of expansion.
-        max_work_wires: The number of available work wires at the top level.
+        num_work_wires: The number of available work wires at the top level.
         graph_solution: The solution to the decomposition graph.
         custom_decomposer: A custom function that decomposes an operator. This is only relevant
             with the graph enabled, and only used by ``preprocess.decompose``.
@@ -844,13 +848,16 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     elif acceptance_function(op) or max_depth_reached:
         yield op
 
-    elif graph_solution and graph_solution.is_solved_for(op, max_work_wires):
-        op_rule = graph_solution.decomposition(op, max_work_wires)
+    elif isinstance(op, SubroutineOp):
+        decomp = op.decomposition()
+
+    elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
+        op_rule = graph_solution.decomposition(op, num_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
-        if max_work_wires is not None:
-            max_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+        if num_work_wires is not None:
+            num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
 
     elif enabled_graph() and isinstance(op, GlobalPhase):
         warnings.warn(
@@ -879,12 +886,16 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         )
 
     else:
-        warnings.warn(
-            f"Operator {op.name} does not define a decomposition to the target gate set and was not found in the "
-            f"target gate set. To remove this warning, add the operator name ({op.name}) or "
-            f"type ({type(op)}) to the gate set.",
-            UserWarning,
-        )
+        if not enabled_graph():
+            # Only warn about this if graph mode is not enabled, because if it is, the
+            # graph would have already raised this warning. There is no need to raise
+            # duplicate warnings.
+            warnings.warn(
+                f"Operator {op.name} does not define a decomposition to the target gate set "
+                "and was not found in the target gate set. To remove this warning, add the "
+                f"operator name ({op.name}) or type ({type(op)}) to the gate set.",
+                UserWarning,
+            )
         yield op
 
     current_depth += 1
@@ -894,81 +905,61 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             acceptance_function,
             max_expansion=max_expansion,
             current_depth=current_depth,
-            max_work_wires=max_work_wires,
+            num_work_wires=num_work_wires,
             graph_solution=graph_solution,
             custom_decomposer=custom_decomposer,
             strict=strict,
         )
 
 
+def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
+    """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
+
+    if gate_set is None and enabled_graph():
+        raise TypeError(
+            "The gate_set argument is required when the graph-based decomposition system "
+            "is enabled via qml.decomposition.enable_graph()"
+        )
+
+    gate_set = gate_set or {}
+    if isinstance(gate_set, Iterable):
+        gate_set = GateSet(gate_set)
+        return gate_set, lambda op: op in gate_set
+
+    raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
+
+
 def _resolve_gate_set(
-    gate_set: set[type | str] | dict[type | str, float] | Callable | None = None,
+    gate_set: Iterable[type | str] | dict[type | str, float] | None = None,
     stopping_condition: Callable[[Operator], bool] | None = None,
-) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
+) -> tuple[GateSet, Callable[[Operator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
 
     The ``gate_set`` can be provided in various forms, and the ``stopping_condition`` may or
     may not be provided. This function will resolve the gate set and the stopping condition
     to the following standardized form:
 
-    - The ``gate_set`` is set of operator **types** and/or names, or a dictionary mapping operator
-      types and/or names to their respective costs. This is only used by the DecompositionGraph
+    - The ``gate_set`` is set of operator **types** and/or names, a dictionary mapping operator
+      types and/or names to their respective costs. This is only used by the DecompositionGraph.
     - The ``stopping_condition`` is a function that takes an operator **instances** and returns
       ``True`` if the operator does not need to be decomposed. This is used during decomposition.
 
     """
 
-    if not enabled_graph() and gate_set and stopping_condition:
-        # In the old decomposition system, we don't make the distinction between a set of
-        # target gates and the stopping condition, so to avoid ambiguity, we don't allow both
-        # to be specified at the same time.
-        raise TypeError(
-            "Specifying both gate_set and stopping_condition is only supported with the new "
-            "experimental graph-based decomposition system. Use qml.decomposition.enable_graph() "
-            "to enable the new system."
-        )
+    # This is a special case when the decompose transform is called without a gate set or
+    # a stopping condition. In this case, we assume all PennyLane operations are supported,
+    # i.e., we only decompose templates and custom gates defined by the user.
+    if gate_set is None and stopping_condition is None:
+        gate_set = gate_sets.ALL_OPS
+        return gate_set, lambda op: op.name in gate_set
 
-    if gate_set is None:
-        gate_set = set(ops.__all__)
-
-    if isinstance(gate_set, (str, type)):
+    if isinstance(gate_set, (type, str)):
+        # when a single gate is provided as the gate set
         gate_set = {gate_set}
 
-    if isinstance(gate_set, dict):
-
-        if any(v < 0 for v in gate_set.values()):
-            raise ValueError("Negative gate weights provided to gate_set are not supported.")
-
-        if not enabled_graph():
-            raise TypeError(
-                "Specifying the gate_set with a dictionary of operator types and their weights "
-                "is only supported with the new experimental graph-based decomposition system. "
-                "Enable the new system using qml.decomposition.enable_graph()."
-            )
-
-    if isinstance(gate_set, Iterable):
-
-        gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
-
-        def gate_set_contains(op: Operator) -> bool:
-            return (op.name in gate_names) or isinstance(op, gate_types)
-
-    elif isinstance(gate_set, Callable):
-
-        gate_set_contains = gate_set
-
-        if enabled_graph():
-            raise TypeError(
-                "Specifying gate_set as a function is not supported with the new "
-                "graph-based decomposition system enabled."
-            )
-
-    else:
-        raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
+    gate_set, gate_set_contains = _process_gate_set(gate_set)
 
     if stopping_condition:
-
         # Even when the user provides a stopping condition, we still need to check
         # whether an operator belongs to the target gate set. This is to prevent
         # the case of an operator missing the stopping condition but doesn't have
@@ -984,18 +975,25 @@ def _resolve_gate_set(
     return gate_set, _stopping_condition
 
 
-def _construct_and_solve_decomp_graph(
-    operations, target_gates, num_work_wires, fixed_decomps, alt_decomps
+def _construct_and_solve_decomp_graph(  # pylint: disable=too-many-arguments
+    operations,
+    target_gates,
+    num_work_wires,
+    minimize_work_wires,
+    fixed_decomps,
+    alt_decomps,
+    strict,
 ):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
-    decomp_graph = DecompositionGraph(
+    graph = DecompositionGraph(
         operations,
         target_gates,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
+        strict=strict,
     )
 
     # Find the efficient pathways to the target gate set
-    return decomp_graph.solve(num_work_wires=num_work_wires)
+    return graph.solve(num_work_wires=num_work_wires, minimize_work_wires=minimize_work_wires)

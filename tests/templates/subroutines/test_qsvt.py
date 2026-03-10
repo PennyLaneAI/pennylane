@@ -23,6 +23,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -33,6 +34,7 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
+from pennylane.transforms import decompose
 
 
 def qfunc(A):
@@ -76,8 +78,9 @@ def generate_polynomial_coeffs(degree, parity=None):
     raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
 
 
-class TestQSVT:
-    """Test the qml.QSVT template."""
+@pytest.mark.unit
+class TestQSVTBasics:
+    """Basic validity checks for QSVT."""
 
     @pytest.mark.jax
     def test_standard_validity(self):
@@ -91,6 +94,111 @@ class TestQSVT:
         for the block-encoding."""
         with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
             qml.QSVT(1.23, [qml.Identity(wires=0)])
+
+    def test_decomposition_queues_its_contents(self):
+        """Test that the decomposition method queues the decomposition in the correct order."""
+        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+        op = qml.QSVT(qml.PauliX(wires=0), lst_projectors)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp = op.decomposition()
+
+        ops, _ = qml.queuing.process_queue(q)
+        for op1, op2 in zip(ops, decomp):
+            qml.assert_equal(op1, op2)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("UA", "projectors"),
+        [
+            (
+                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+            ),
+        ],
+    )
+    def test_decomposition_new(self, UA, projectors):
+        """Test the decomposition of the QSVT template."""
+        op = qml.QSVT(UA, projectors)
+        for rule in qml.list_decomps(qml.QSVT):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("UA", "projectors"),
+        [
+            (
+                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+            ),
+        ],
+    )
+    def test_decomposition(self, UA, projectors):
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QSVT.compute_decomposition(UA=UA, projectors=projectors)
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        # Tests that the decomposition produces the right matrix
+        op_matrix = qml.QSVT.compute_matrix(UA=UA, projectors=projectors)
+        decomp_matrix = qml.matrix(tape, wire_order=tape.wires)
+        assert qml.math.allclose(
+            op_matrix, decomp_matrix
+        ), "decomposition must produce the same matrix as the operator."
+
+    def test_wire_order(self):
+        """Test that the wire order is preserved."""
+
+        op1 = qml.GroverOperator(wires=[0, 3])
+        op2 = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op2, [op1]).wires
+        assert qsvt_wires == op1.wires + op2.wires
+
+    def test_label(self):
+        """Test that the label method returns the correct string label"""
+        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
+        assert op.label() == "QSVT"
+        assert op.label(base_label="custom_label") == "custom_label"
+
+    def test_data(self):
+        """Test that the data property gets and sets the correct values"""
+        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        assert op.data == (1, 2, 3)
+        op.data = [4, 5, 6]
+        assert op.data == (4, 5, 6)
+
+    def test_copy(self):
+        """Test that a QSVT operator can be copied."""
+        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        copy_op = copy(orig_op)
+        qml.assert_equal(orig_op, copy_op)
+
+        # Ensure the (nested) operations are copied instead of aliased.
+        assert orig_op is not copy_op
+        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
+
+        orig_projectors = orig_op.hyperparameters["projectors"]
+        copy_projectors = copy_op.hyperparameters["projectors"]
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
+
+
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+@pytest.mark.integration
+class TestQSVTIntegration:
+    """Test the qml.QSVT template."""
 
     @pytest.mark.parametrize(
         ("U_A", "lst_projectors", "wires", "operations"),
@@ -163,9 +271,9 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.PauliZ(wires=[0]),
+                    qml.Z(0),
                     qml.RY(0.2, wires=[0]),
-                    qml.adjoint(qml.PauliZ(wires=[0])),
+                    qml.Z(0),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),
@@ -176,45 +284,52 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(U_A, lst_projectors)
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
-    def test_queuing_ops_defined_in_circuit(self):
-        """Test that qml.QSVT queues operations correctly when they are called in the qnode."""
-        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        results = [
-            qml.PCPhase(0.2, dim=1, wires=[0]),
-            qml.PauliX(wires=[0]),
-            qml.PCPhase(0.3, dim=1, wires=[0]),
-        ]
+    @pytest.mark.parametrize(
+        ("U_A", "lst_projectors", "results"),
+        [
+            (
+                qml.PauliX(wires=0),
+                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                [
+                    qml.PCPhase(0.2, dim=1, wires=[0]),
+                    qml.PauliX(wires=0),
+                    qml.PCPhase(0.3, dim=1, wires=[0]),
+                ],
+            ),
+            (
+                qml.PauliZ(wires=0),
+                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                [
+                    qml.RZ(0.1, wires=[0]),
+                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
+                    qml.RZ(0.3, wires=[1]),
+                ],
+            ),
+        ],
+    )
+    def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
+        """Test that qml.QSVT queues operations correctly."""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT(qml.PauliX(wires=0), lst_projectors)
+            qml.QSVT(U_A, lst_projectors)
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        for expected, val in zip(results, tape.expand().operations):
-            qml.assert_equal(expected, val)
-
-    def test_decomposition_queues_its_contents(self):
-        """Test that the decomposition method queues the decomposition in the correct order."""
-        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        op = qml.QSVT(qml.PauliX(wires=0), lst_projectors)
         with qml.queuing.AnnotatedQueue() as q:
-            decomp = op.decomposition()
+            qml.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
 
-        ops, _ = qml.queuing.process_queue(q)
-        for op1, op2 in zip(ops, decomp):
-            qml.assert_equal(op1, op2)
+        tape2 = qml.tape.QuantumScript.from_queue(q)
 
-    def test_wire_order(self):
-        """Test that the wire order is preserved."""
+        [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"}, max_expansion=1)
 
-        op1 = qml.GroverOperator(wires=[0, 3])
-        op2 = qml.QFT(wires=[2, 1])
-        qsvt_wires = qml.QSVT(op2, [op1]).wires
-        assert qsvt_wires == op1.wires + op2.wires
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
+            qml.assert_equal(expected, val1)
+            qml.assert_equal(expected, val2)
 
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
@@ -237,7 +352,8 @@ class TestQSVT:
                 np.array([0.1, 0.2]),
                 [
                     qml.PCPhase(0.1, dim=2, wires=[0]),
-                    qml.prod(qml.PauliX(wires=0), qml.RZ(0.1, wires=0)),
+                    qml.RZ(0.1, wires=0),
+                    qml.PauliX(wires=0),
                     qml.PCPhase(0.2, dim=2, wires=[0]),
                 ],
             ),
@@ -249,9 +365,14 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "X", "RX", "RZ"})
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
+
+
+class TestQSVTMatrix:
+    """Tests the matrix of qsvt is correct."""
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -407,33 +528,6 @@ class TestQSVT:
 
         for idx, result in enumerate(manual_phi_results):
             assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
-
-    def test_label(self):
-        """Test that the label method returns the correct string label"""
-        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
-        assert op.label() == "QSVT"
-        assert op.label(base_label="custom_label") == "custom_label"
-
-    def test_data(self):
-        """Test that the data property gets and sets the correct values"""
-        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
-        assert op.data == (1, 2, 3)
-        op.data = [4, 5, 6]
-        assert op.data == (4, 5, 6)
-
-    def test_copy(self):
-        """Test that a QSVT operator can be copied."""
-        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
-        copy_op = copy(orig_op)
-        qml.assert_equal(orig_op, copy_op)
-
-        # Ensure the (nested) operations are copied instead of aliased.
-        assert orig_op is not copy_op
-        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
-
-        orig_projectors = orig_op.hyperparameters["projectors"]
-        copy_projectors = copy_op.hyperparameters["projectors"]
-        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
 phase_angle_data = (

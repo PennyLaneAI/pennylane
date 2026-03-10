@@ -200,7 +200,7 @@ class GellMann(Operator):
 
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""

@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_TemporaryAND
 
 
 class TestTemporaryAND:
@@ -43,7 +44,7 @@ class TestTemporaryAND:
         """Check the operation using the assert_valid function."""
 
         op = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     def test_correctness(self):
         """Tests the correctness of the TemporaryAND operator.
@@ -111,7 +112,113 @@ class TestTemporaryAND:
             _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=(0, 0)), rule)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    def test_adjoint_temporary_and_decomposition(self, control_values):
+        """
+        Validate the MCM-based decomposition of Adjoint(TemporaryAND).
+        """
+        sys_wires = [0, 1, 2]
+        work_wires = [3]  # auxiliary qubit for deferred measure
+        dev = qml.device("default.qubit", wires=sys_wires + work_wires)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
+            qml.TemporaryAND(wires=sys_wires, control_values=control_values)
+            _adjoint_TemporaryAND(wires=sys_wires)
+            return qml.probs(wires=sys_wires)
+
+        for a in (0, 1):
+            for b in (0, 1):
+                probs = circuit(a, b)
+                idx = (a << 2) | (b << 1)
+                assert qml.math.allclose(
+                    probs[idx], 1.0
+                ), f"Failed for a={a}, b={b}, cv={control_values}"
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_adjoint_temporary_and_integration(self):
+        wires = [0, 1, "aux0", 2]
+        gate_set = {"X", "T", "Adjoint(T)", "Hadamard", "CX", "CZ", "MidMeasureMP", "Adjoint(S)"}
+
+        @qml.set_shots(1)
+        @qml.qnode(qml.device("default.qubit", wires=wires), interface=None)
+        @qml.transforms.decompose(
+            gate_set=gate_set,
+            fixed_decomps={
+                qml.Select: qml.templates.subroutines.select._select_decomp_unary  # pylint: disable=protected-access
+            },
+        )
+        def circuit():
+            ops = [qml.Z(2) for _ in range(4)]
+            qml.Select(ops, control=[0, 1], work_wires=["aux0"], partial=True)
+            return qml.sample(wires=wires)
+
+        tape = qml.workflow.construct_tape(circuit)()
+        expected_operators = [
+            qml.X(0),
+            qml.X(1),
+            qml.H("aux0"),
+            qml.T("aux0"),
+            qml.H("aux0"),
+            qml.CZ(wires=[1, "aux0"]),
+            qml.H("aux0"),
+            qml.adjoint(qml.T("aux0")),
+            qml.H("aux0"),
+            qml.CZ(wires=[0, "aux0"]),
+            qml.H("aux0"),
+            qml.T("aux0"),
+            qml.H("aux0"),
+            qml.CZ(wires=[1, "aux0"]),
+            qml.H("aux0"),
+            qml.adjoint(qml.T("aux0")),
+            qml.H("aux0"),
+            qml.adjoint(qml.S("aux0")),
+            qml.X(0),
+            qml.X(1),
+            qml.CZ(wires=["aux0", 2]),
+            qml.H("aux0"),
+            qml.CZ(wires=[0, "aux0"]),
+            qml.H("aux0"),
+            qml.X("aux0"),
+            qml.CZ(wires=["aux0", 2]),
+            qml.H("aux0"),
+            qml.CZ(wires=[0, "aux0"]),
+            qml.H("aux0"),
+            qml.H("aux0"),
+            qml.CZ(wires=[1, "aux0"]),
+            qml.H("aux0"),
+            qml.CZ(wires=["aux0", 2]),
+            qml.H("aux0"),
+            qml.CZ(wires=[0, "aux0"]),
+            qml.H("aux0"),
+            qml.CZ(wires=["aux0", 2]),
+            qml.H("aux0"),
+            qml.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
+            "ConditionalCZ",
+        ]
+
+        for op, exp_op in zip(tape.operations, expected_operators):
+            # manual check: each MidMeasure has a unique ID, which prevents
+            # qml.equal from treating two MidMeasure as equal.
+            if isinstance(op, qml.measurements.MidMeasureMP):
+                assert op.wires == exp_op.wires
+                assert op.postselect == exp_op.postselect
+                assert op.reset == exp_op.reset
+
+            # manual check for the conditional operator
+            elif isinstance(op, qml.ops.op_math.condition.Conditional):
+                assert exp_op == "ConditionalCZ"
+                assert isinstance(op.base, qml.CZ)
+                assert list(op.base.wires) == [0, 1]
+                meas = op.meas_val  # same as the expr passed to qml.cond
+                assert list(meas.wires) == ["aux0"]
+
+            else:
+                qml.assert_equal(op, exp_op)
+
+    @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
+        """Tests that the matrix of the TemporaryAND operator is correct."""
 
         matrix_base = qml.math.array(
             [

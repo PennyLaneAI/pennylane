@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -52,49 +53,12 @@ def test_flatten_unflatten():
     assert op is not new_op
 
 
-class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:
+    """Tests the correctness of the template."""
 
-    @pytest.mark.parametrize("features", [[1, 1, 1], [1, 1]])
-    def test_expansion(self, features):
-        """Checks the queue for the default settings."""
-
-        op = qml.AngleEmbedding(features=features, wires=range(4))
-        tape = qml.tape.QuantumScript(op.decomposition())
-
-        assert len(tape.operations) == len(features)
-        for gate in tape.operations:
-            assert gate.name == "RX"
-            assert gate.parameters[0] == 1
-
-    def test_expansion_broadcasted(self):
-        """Checks the queue for the default settings."""
-
-        features = np.ones((5, 3))
-
-        op = qml.AngleEmbedding(features=features, wires=range(4))
-        assert op.batch_size == 5
-        tape = qml.tape.QuantumScript(op.decomposition())
-
-        assert len(tape.operations) == 3
-        for gate in tape.operations:
-            assert gate.name == "RX"
-            assert gate.batch_size == 5
-            assert qml.math.allclose(gate.parameters[0], np.ones(5))
-
-    @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
-    def test_rotations(self, rotation):
-        """Checks the queue for the specified rotation settings."""
-
-        op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
-        tape = qml.tape.QuantumScript(op.decomposition())
-
-        for gate in tape.operations:
-            assert gate.name == "R" + rotation
-
-    def test_state(
-        self,
-    ):
+    def test_state(self):
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
@@ -152,6 +116,60 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
+class TestDecomposition:
+    """Tests that the template defines the correct decomposition."""
+
+    @pytest.mark.parametrize("features", [[1, 1, 1], [1, 1]])
+    def test_expansion(self, features):
+        """Checks the queue for the default settings."""
+
+        op = qml.AngleEmbedding(features=features, wires=range(4))
+        tape = qml.tape.QuantumScript(op.decomposition())
+
+        assert len(tape.operations) == len(features)
+        for gate in tape.operations:
+            assert gate.name == "RX"
+            assert gate.parameters[0] == 1
+
+    def test_expansion_broadcasted(self):
+        """Checks the queue for the default settings."""
+
+        features = np.ones((5, 3))
+
+        op = qml.AngleEmbedding(features=features, wires=range(4))
+        assert op.batch_size == 5
+        tape = qml.tape.QuantumScript(op.decomposition())
+
+        assert len(tape.operations) == 3
+        for gate in tape.operations:
+            assert gate.name == "RX"
+            assert gate.batch_size == 5
+            assert qml.math.allclose(gate.parameters[0], np.ones(5))
+
+    @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
+    def test_rotations(self, rotation):
+        """Checks the queue for the specified rotation settings."""
+
+        op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
+        tape = qml.tape.QuantumScript(op.decomposition())
+
+        for gate in tape.operations:
+            assert gate.name == "R" + rotation
+
+    DECOMP_PARAMS = [
+        ([1.2, 1.3, 0, 0, 1.4], range(5), "Z"),
+        ([1.1, 1.2, 0, 0], range(4), "X"),
+        ([1.5, 1.6, 0], range(3), "Y"),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
+    def test_decomposition_new(self, features, wires, rotation):
+        op = qml.AngleEmbedding(features, wires, rotation=rotation)
+        for rule in qml.list_decomps(qml.AngleEmbedding):
+            _test_decomposition_rule(op, rule)
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
@@ -184,6 +202,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")

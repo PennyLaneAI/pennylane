@@ -83,7 +83,8 @@ def _check_decomposition(op, skip_wire_mapping):
             orig_decomp = op.decomposition()
             for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
                 assert (
-                    mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+                    mapped_op.wires
+                    == qml.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
                 ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
@@ -99,7 +100,7 @@ def _check_decomposition(op, skip_wire_mapping):
         )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
-def _check_decomposition_new(op):
+def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
     op_type = type(op)
     if op_type.resource_params is qml.operation.Operator.resource_params:
@@ -113,16 +114,16 @@ def _check_decomposition_new(op):
     ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qml.list_decomps(op_type):
-        _test_decomposition_rule(op, rule)
+        _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
     for rule in qml.list_decomps(f"Adjoint({op_type.__name__})"):
         adj_op = qml.ops.Adjoint(op)
-        _test_decomposition_rule(adj_op, rule)
+        _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
     for rule in qml.list_decomps(f"Pow({op_type.__name__})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = qml.ops.Pow(op, z)
-            _test_decomposition_rule(pow_op, rule)
+            _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
     for rule in qml.list_decomps(f"C({op_type.__name__})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
@@ -132,10 +133,10 @@ def _check_decomposition_new(op):
                 control_values=[c_value] * n_ctrl_wires,
                 work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
             )
-            _test_decomposition_rule(ctrl_op, rule)
+            _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule):
+def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
     if not rule.is_applicable(**op.resource_params):
@@ -157,14 +158,18 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
 
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
+        if isinstance(_op, qml.ops.Conditional):
+            _op = _op.base
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 
-    if rule.exact_resources:
+    if rule.exact_resources and not (
+        isinstance(op, qml.templates.SubroutineOp) and not op.subroutine.exact_resources
+    ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
-            f"\nActual gate counts:\n{actual_gate_counts}"
+            f"\nActual gate counts:\n{dict(actual_gate_counts)}"
         )
     else:
         # If the resource estimate is not expected to match exactly to the actual
@@ -172,7 +177,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
         assert all(op in gate_counts for op in actual_gate_counts)
 
     # Tests that the decomposition produces the same matrix
-    if op.has_matrix:
+    if op.has_matrix and not skip_decomp_matrix_check:
         # Add projector to the additional wires (work wires) on the tape
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires
@@ -317,7 +322,10 @@ def _check_copy(op, skip_deepcopy):
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
     if not skip_deepcopy:
-        assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
+        try:
+            assert_equal(copy.deepcopy(op), op)
+        except AssertionError as e:
+            raise AssertionError("deep copied op must also be equal") from e
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -339,8 +347,12 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
-    assert op == new_op, "metadata and data must be able to reproduce the original operation"
-
+    try:
+        assert_equal(op, new_op)
+    except AssertionError as e:
+        raise AssertionError(
+            "metadata and data must be able to reproduce the original operation"
+        ) from e
     try:
         import jax
     except ImportError:
@@ -356,6 +368,8 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+    if isinstance(op, qml.templates.SubroutineOp):
+        return
     try:
         import jax
     except ImportError:
@@ -442,7 +456,6 @@ def _check_differentiation(op):
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
-
     if skip_wire_mapping:
         return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
@@ -458,6 +471,7 @@ def assert_valid(
     skip_deepcopy=False,
     skip_differentiation=False,
     skip_new_decomp=False,
+    skip_decomp_matrix_check=False,
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
@@ -473,6 +487,9 @@ def assert_valid(
         skip_differentiation=False: If ``True``, differentiation tests are not run.
         skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
             defined using the new system.
+        skip_decomp_matrix_check: If ``True``, the decomposition rule check will only
+            verify that the produced operators match the resource function, and does not
+            test that the matrix of the decomposition matches the operator itself.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
@@ -527,7 +544,7 @@ def assert_valid(
     _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
-        _check_decomposition_new(op)
+        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

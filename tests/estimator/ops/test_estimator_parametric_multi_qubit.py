@@ -35,7 +35,7 @@ class TestMultiRZ:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.MultiRZ()
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
@@ -187,7 +187,7 @@ class TestPauliRot:
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
-    params = zip(pauli_words, expected_h_count, expected_s_count)
+    params = tuple(zip(pauli_words, expected_h_count, expected_s_count))
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
@@ -225,16 +225,13 @@ class TestPauliRot:
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
     def test_resources_from_rep(self, pauli_string, expected_h_count, expected_s_count):
         """Test that the resources can be computed from the compressed representation and params."""
-        op = qre.PauliRot(0.5, pauli_string, wires=range(len(pauli_string)))
+        op = qre.PauliRot(pauli_string, 0.5, wires=range(len(pauli_string)))
         active_wires = len(pauli_string.replace("I", ""))
 
         if set(pauli_string) == {"I"}:
             expected = [qre.GateCount(qre.GlobalPhase.resource_rep())]
         else:
-            expected = [
-                qre.GateCount(qre.RZ.resource_rep()),
-                qre.GateCount(qre.CNOT.resource_rep(), 2 * (active_wires - 1)),
-            ]
+            expected = []
 
             if expected_h_count:
                 expected.append(qre.GateCount(qre.Hadamard.resource_rep(), expected_h_count))
@@ -248,18 +245,86 @@ class TestPauliRot:
                     )
                 )
 
+            expected.append(qre.GateCount(qre.RZ.resource_rep(precision=0.5)))
+            expected.append(qre.GateCount(qre.CNOT.resource_rep(), 2 * (active_wires - 1)))
+
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize(
-        "pauli_string, expected", (("X", qre.RX), ("Y", qre.RY), ("Z", qre.RZ))
+        "pauli_string, precision, expected",
+        (
+            (
+                "X",
+                None,
+                [qre.GateCount(qre.RX.resource_rep(precision=None))],
+            ),
+            (
+                "Y",
+                None,
+                [qre.GateCount(qre.RY.resource_rep(precision=None))],
+            ),
+            (
+                "Z",
+                None,
+                [qre.GateCount(qre.RZ.resource_rep(precision=None))],
+            ),
+            (
+                "XX",
+                None,
+                [
+                    qre.GateCount(qre.RX.resource_rep(precision=None)),
+                    qre.GateCount(qre.CNOT.resource_rep(), 2),
+                ],
+            ),
+            (
+                "YY",
+                None,
+                [
+                    qre.GateCount(qre.RY.resource_rep(precision=None)),
+                    qre.GateCount(qre.CY.resource_rep(), 2),
+                ],
+            ),
+            (
+                "X",
+                1e-3,
+                [qre.GateCount(qre.RX.resource_rep(precision=1e-3))],
+            ),
+            (
+                "Y",
+                1e-3,
+                [qre.GateCount(qre.RY.resource_rep(precision=1e-3))],
+            ),
+            (
+                "Z",
+                1e-3,
+                [qre.GateCount(qre.RZ.resource_rep(precision=1e-3))],
+            ),
+            (
+                "XX",
+                1e-3,
+                [
+                    qre.GateCount(qre.RX.resource_rep(precision=1e-3)),
+                    qre.GateCount(qre.CNOT.resource_rep(), 2),
+                ],
+            ),
+            (
+                "YY",
+                1e-3,
+                [
+                    qre.GateCount(qre.RY.resource_rep(precision=1e-3)),
+                    qre.GateCount(qre.CY.resource_rep(), 2),
+                ],
+            ),
+        ),
     )
-    def test_resource_decomp_single_pauli_string(self, pauli_string, expected):
-        """Test that the resources method produces the correct result for a single pauli string."""
-        expected = [qre.GateCount(expected.resource_rep(precision=1e-3))]
-        assert qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=1e-3) == expected
+    def test_resource_decomp_special_cases(self, pauli_string, expected, precision):
+        """Test that the resources method produces the correct result for all special cases."""
+        assert (
+            qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=precision) == expected
+        )
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_word", pauli_words)
@@ -409,3 +474,89 @@ class TestPauliRot:
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
         assert op.pow_resource_decomp(z, op.resource_params) == expected_res
+
+
+class TestPCPhase:
+    """Test the PCPhase class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            qre.PCPhase(num_wires=2, dim=2, wires=[0, 1, 2])
+
+    @pytest.mark.parametrize(
+        "num_wires, dim, rot_precision",
+        [
+            (2, 2, 1e-5),
+            (3, 4, 1e-5),
+        ],
+    )
+    def test_resource_params(self, num_wires, dim, rot_precision):
+        """Test that the resource params are correct."""
+        op = qre.PCPhase(num_wires, dim, rotation_precision=rot_precision)
+        assert op.resource_params == {
+            "num_wires": num_wires,
+            "dim": dim,
+            "rotation_precision": rot_precision,
+        }
+
+    @pytest.mark.parametrize(
+        "num_wires, dim, rot_precision",
+        [
+            (2, 2, 1e-5),
+            (3, 4, 1e-5),
+        ],
+    )
+    def test_resource_rep(self, num_wires, dim, rot_precision):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.PCPhase,
+            num_wires,
+            {"num_wires": num_wires, "dim": dim, "rotation_precision": rot_precision},
+        )
+        assert qre.PCPhase.resource_rep(num_wires, dim, rot_precision) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires, dim, rot_precision, expected_res",
+        [
+            (
+                2,
+                2,
+                1e-5,
+                [
+                    qre.GateCount(qre.PhaseShift.resource_rep(1e-5), 1),
+                    qre.GateCount(qre.GlobalPhase.resource_rep(), 1),
+                ],
+            ),
+            (
+                3,
+                4,
+                1e-5,
+                [
+                    qre.GateCount(qre.PhaseShift.resource_rep(1e-5), 1),
+                    qre.GateCount(qre.GlobalPhase.resource_rep(), 1),
+                ],
+            ),
+            (
+                2,
+                3,
+                1e-5,
+                [
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.PhaseShift.resource_rep(1e-5),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(qre.X.resource_rep(), 0),
+                    qre.GateCount(qre.GlobalPhase.resource_rep(), 1),
+                ],
+            ),
+        ],
+    )
+    def test_resources(self, num_wires, dim, rot_precision, expected_res):
+        """Test that the resources are correct."""
+        res = qre.PCPhase.resource_decomp(num_wires, dim, rot_precision)
+        assert res == expected_res

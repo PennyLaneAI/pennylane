@@ -148,14 +148,22 @@ def test_hybrid_capture_parametrization():
         np.array([0]),
     ),
 )
-def test_different_wires(w, as_kwarg):
+@pytest.mark.parametrize("autograph", (True, False))
+def test_different_wires(w, as_kwarg, autograph):
     """Test that wires can be passed positionally and as a keyword in a variety of different types."""
 
-    def qfunc():
-        if as_kwarg:
+    if as_kwarg:
+
+        def qfunc():
             qml.X(wires=w)
-        else:
+
+    else:
+
+        def qfunc():
             qml.X(w)
+
+    if autograph:
+        qfunc = qml.capture.run_autograph(qfunc)
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
@@ -365,6 +373,25 @@ class TestOpmath:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.X(0)))
 
+    def test_adjoint_op_outside_qfunc(self):
+        """Test that an op can be constructed outside a function and still be adjointed."""
+
+        op = qml.X(0)
+
+        def f():
+            qml.adjoint(op)
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
+
+        eqn = jaxpr.eqns[1]
+        assert eqn.primitive == qml.ops.Adjoint._primitive
+        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert eqn.params == {}
+
     def test_Controlled(self):
         """Test a nested control operation."""
 
@@ -384,7 +411,7 @@ class TestOpmath:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {
-            "control_values": [0, 1],
+            "control_values": (0, 1),
             "work_wires": None,
             "work_wire_type": "borrowed",
         }
@@ -395,6 +422,32 @@ class TestOpmath:
         assert len(q) == 1
         expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
         qml.assert_equal(q.queue[0], expected)
+
+    def test_ctrl_op_constructed_outside_qfunc(self):
+        """Test an op constructed outside the qfunc can be controlled."""
+
+        op = qml.IsingXX(1.2, wires=(0, 1))
+
+        def f():
+            qml.ctrl(op, control=(3, 4), control_values=[0, 1])
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.IsingXX._primitive
+
+        eqn = jaxpr.eqns[1]
+        assert eqn.primitive == qml.ops.Controlled._primitive
+        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
+        assert eqn.invars[1].val == 3
+        assert eqn.invars[2].val == 4
+
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert eqn.params == {
+            "control_values": (0, 1),
+            "work_wires": None,
+            "work_wire_type": "borrowed",
+        }
 
 
 class TestAbstractDunders:

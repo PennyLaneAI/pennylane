@@ -2,9 +2,12 @@ name: Build nightly PennyLane releases for TestPyPI
 
 on:
   schedule:
-    # Run every weekday at 5:50 EDT (cron is in UTC)
-    - cron: "50 9 * * 1-5"
+    # Run Tuesday-Saturday at 01:00 EDT (cron is in UTC)
+    - cron: "0 5 * * 2-6"
   workflow_dispatch:
+
+env:
+  UV_SYSTEM_PYTHON: 1
 
 jobs:
   setup:
@@ -15,6 +18,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: 0.9.17
+        enable-cache: true  
 
     - name: Bump dev version
       run: |
@@ -30,8 +39,7 @@ jobs:
 
     - name: Build wheels
       run: |
-        python -m pip install build
-        python -m build --wheel --outdir dist
+        uv build --wheel --out-dir dist
   
     - uses: actions/upload-artifact@v4
       with:

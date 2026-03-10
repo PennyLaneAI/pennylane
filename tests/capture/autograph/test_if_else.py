@@ -39,6 +39,38 @@ check_cache = TRANSFORMER.has_cache
 class TestConditionals:
     """Test that the autograph transformations produce correct results on conditionals."""
 
+    def test_cond_on_known_truthy_values(self):
+        """Test that autograph runs without error with branches if the predicates are known."""
+
+        def f(x):
+            if "abc":  # pylint: disable=using-constant-test
+                return 2 * x
+            return (4 * x, 5)
+
+        ag_f = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        assert len(jaxpr.eqns) == 1
+        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        assert qml.math.allclose(out, 4.0)
+
+    def test_elif_on_known_truthy_values(self):
+        """Test elifs with known truthy values run without error."""
+
+        def f(x):
+            if None:  # pylint: disable=using-constant-test
+                out = 1
+            elif (1, 2):  # pylint: disable=using-constant-test
+                out = 2 * x
+            else:
+                out = 4 + x**2 * 5
+            return out
+
+        ag_f = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        assert len(jaxpr.eqns) == 1
+        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        assert qml.math.allclose(out, 4.0)
+
     def test_simple_cond(self):
         """Test basic function with conditional."""
 
@@ -248,8 +280,8 @@ class TestConditionals:
         """
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val):
+            if val:
                 res = measure(wires=0)
 
             return qml.expval(res)  # pylint: disable=possibly-used-before-assignment
@@ -257,16 +289,16 @@ class TestConditionals:
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"
         ):
-            qml.capture.autograph.run_autograph(circuit)()
+            jax.make_jaxpr(qml.capture.autograph.run_autograph(circuit))(True)
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val1, val2):
+            if val1:
                 res = 1
-            elif False:
+            elif val2:
                 res = 0.0
             else:
                 res = 2
@@ -274,7 +306,7 @@ class TestConditionals:
             return res
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            run_autograph(circuit)()
+            jax.make_jaxpr(run_autograph(circuit))(True, False)
 
     def test_multiple_return_different_measurements(self):
         """Test that different measurements be used in the return in different branches, as

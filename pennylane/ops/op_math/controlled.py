@@ -29,7 +29,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math
+from pennylane import math, pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.decomposition.resources import resolve_work_wire_type
@@ -234,6 +234,13 @@ def create_controlled_op(
             work_wire_type=work_wire_type,
         )
 
+    if op is None:
+        raise ValueError(
+            "None is not callable. "
+            "This error might occur if you apply ctrl to the output of a "
+            "Subroutine (template). Subroutines should now be treated "
+            "as Quantum Functions, rather than operators."
+        )
     if not callable(op):
         raise ValueError(
             f"The object {op} of type {type(op)} is not an Operator or callable. "
@@ -288,7 +295,7 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+    def _impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -304,7 +311,7 @@ def _get_ctrl_qfunc_prim():
         return []
 
     @ctrl_prim.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return []
 
     return ctrl_prim
@@ -362,7 +369,7 @@ def _try_wrap_in_custom_ctrl_op(
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
-    if isinstance(op, qml.Barrier):
+    if isinstance(op, (qml.Barrier, qml.Snapshot)):
         if qml.QueuingManager.recording():
             # for example
             # op = Barrier(), qml.X(), qml.ctrl(op, 1)
@@ -387,13 +394,17 @@ def _try_wrap_in_custom_ctrl_op(
 def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires, work_wire_type):
     """Handles PauliX-based controlled operations."""
 
-    op_map = {
-        (qml.PauliX, 1): qml.CNOT,
-        (qml.PauliX, 2): qml.Toffoli,
-        (qml.CNOT, 1): qml.Toffoli,
+    # We map some small combinations of base operators and control wires to custom operators.
+    # However, we only should map to custom operators if there is no benefit from having work wires
+    # or if no work wires are provided
+    op_map = {  # Key: (base cls, num_control_wires, has work wires)
+        (qml.PauliX, 1, False): qml.CNOT,
+        (qml.PauliX, 1, True): qml.CNOT,
+        (qml.PauliX, 2, False): qml.Toffoli,
+        (qml.CNOT, 1, False): qml.Toffoli,
     }
 
-    custom_key = (type(op), len(control))
+    custom_key = (type(op), len(control), bool(work_wires))
     if custom_key in op_map and all(control_values):
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
@@ -565,6 +576,9 @@ class Controlled(SymbolicOp):
         work_wire_type="borrowed",
         id=None,
     ):
+        if isinstance(base, Operator):
+            qml.QueuingManager.remove(base)
+            base = pytrees.unflatten(*pytrees.flatten(base))
         control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base,
@@ -710,6 +724,7 @@ class Controlled(SymbolicOp):
             control=new_control_wires,
             control_values=self.control_values,
             work_wires=new_work_wires,
+            work_wire_type=self.work_wire_type,
         )
 
     # Properties for resource estimation ###############
@@ -1075,6 +1090,8 @@ class ControlledOp(Controlled, Operation):
 
     @property
     def parameter_frequencies(self):
+        if isinstance(self.base, qml.GlobalPhase):
+            return [(1,)]
         if self.base.num_params == 1:
             try:
                 base_gen = qml.generator(self.base, format="observable")
@@ -1108,7 +1125,7 @@ class ControlledOp(Controlled, Operation):
 if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
-    def _(
+    def _impl(
         base,
         *control_wires,
         control_values=None,

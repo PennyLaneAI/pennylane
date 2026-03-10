@@ -566,14 +566,16 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
-    def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
+    def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis):
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
-        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        expected_tape = qml.tape.QuantumScript(
+            [qml.RZ(np.pi / 2, 0), qml.GlobalPhase(-0.7853981633974483, wires=[])],
+            [qml.expval(qml.PauliZ(0))],
+        )
         dev = mock_device_supporting_paulis(wires=1)
-        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
+        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=2)
         qml.assert_equal(expanded_tape, expected_tape)
-        assert len(recwarn) == 0
 
     def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
         """Test that Device.stopping_condition passes with non-observable measurements"""
@@ -899,7 +901,7 @@ class TestDeviceInit:
         """Test that an exception is raised if plugin that targets an old API is loaded"""
 
         with monkeypatch.context() as m:
-            m.setattr(qml, "version", lambda: "0.0.1")
+            m.setattr(qml.devices.device_constructor, "__version__", "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qutrit", wires=0)
 
@@ -1105,7 +1107,8 @@ class TestGrouping:
 
         H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "split_non_commuting")
+        # pylint: disable=protected-access
+        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.use_grouping = use_grouping
@@ -1122,7 +1125,8 @@ class TestGrouping:
         """Tests that batch_transform does not expand Sums if they are supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "split_non_commuting")
+        # pylint: disable=protected-access
+        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice(shots=None)
         new_qscripts, _ = dev.batch_transform(qs)
@@ -1134,7 +1138,8 @@ class TestGrouping:
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "split_non_commuting")
+        # pylint: disable=protected-access
+        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False
@@ -1148,7 +1153,8 @@ class TestGrouping:
 
         H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "split_non_commuting")
+        # pylint: disable=protected-access
+        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False

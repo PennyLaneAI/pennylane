@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the cond_measure function"""
-
 from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionWarning
 from pennylane.ftqc import (
-    ParametricMidMeasureMP,
-    XMidMeasureMP,
-    YMidMeasureMP,
+    ParametricMidMeasure,
+    XMidMeasure,
+    YMidMeasure,
     cond_measure,
     diagonalize_mcms,
     measure_arbitrary_basis,
@@ -30,7 +30,7 @@ from pennylane.ftqc import (
     measure_y,
     measure_z,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.ops import MeasurementValue
 
 
 class TestCondMeas:
@@ -62,8 +62,8 @@ class TestCondMeas:
             assert meas.base.postselect == postselect
 
         # bases are correct
-        assert isinstance(conditional_mps[0].base, XMidMeasureMP)
-        assert isinstance(conditional_mps[1].base, YMidMeasureMP)
+        assert isinstance(conditional_mps[0].base, XMidMeasure)
+        assert isinstance(conditional_mps[1].base, YMidMeasure)
 
         # they have opposite conditions
         fn_x, fn_y = (m.meas_val.processing_fn for m in conditional_mps)
@@ -97,13 +97,13 @@ class TestCondMeas:
         # expected measurements were created
         for meas in ops[1:]:
             assert isinstance(meas, qml.ops.Conditional)
-            assert isinstance(meas.base, ParametricMidMeasureMP)
+            assert isinstance(meas.base, ParametricMidMeasure)
         assert ops[1].base.angle == 1.2
         assert ops[1].base.plane == "ZX"
         assert ops[2].base.angle == 2.4
         assert ops[2].base.plane == "XY"
 
-    @pytest.mark.parametrize("val, meas_type", [(1, XMidMeasureMP), (0, YMidMeasureMP)])
+    @pytest.mark.parametrize("val, meas_type", [(1, XMidMeasure), (0, YMidMeasure)])
     def test_condition_is_not_mcm(self, val, meas_type):
         """Test that passing a boolean rather than a MeasurementValue
         simplifies to applying the appropriate measurement"""
@@ -135,7 +135,7 @@ class TestValidation:
             m = qml.measure(0)
             cond_measure(m, measure_x, inp)(0)
 
-    @pytest.mark.parametrize("inp", [qml.X, XMidMeasureMP])
+    @pytest.mark.parametrize("inp", [qml.X, XMidMeasure])
     def test_incorrect_callable_raises_error(self, inp):
         """Test that an error is raised when the callable does not return a MeasurementValue"""
 
@@ -203,7 +203,7 @@ class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_execution_in_cond(self, mcm_method, shots):
-        """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
+        """Test that we can execute a QNode with a ParametricMidMeasure applied in a conditional,
         and produce an accurate result"""
 
         dev = qml.device("default.qubit")
@@ -228,7 +228,11 @@ class TestWorkflows:
         # without the transform, the mid-circuit measurements are all treated as computational
         # basis measurements, and they are inside Conditional, which doesn't execute correctly,
         # so we return incorrect results, even with a high atol (± ~20-30% of expected outcome)
-        assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        if qml.decomposition.enabled_graph():
+            with pytest.warns(DecompositionWarning):
+                assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        else:
+            assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
@@ -266,5 +270,10 @@ class TestWorkflows:
         # this can't be executed without diagonalize_mcms, because without the transform, it
         # tries to get concrete values for measurements that weren't executed when it hits
         # the conditional that depends on m2, and can't find it in the measurements dictionary
-        with pytest.raises(KeyError):
-            circ(x, y)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(KeyError):
+                with pytest.warns(DecompositionWarning):
+                    circ(x, y)
+        else:
+            with pytest.raises(KeyError):
+                circ(x, y)

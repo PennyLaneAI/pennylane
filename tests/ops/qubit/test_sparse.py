@@ -222,7 +222,7 @@ class TestSparse:
             QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
@@ -238,7 +238,7 @@ class TestSparse:
             qml.DoubleExcitation(param, wires=[0, 1, 2, 3])
             return qml.expval(qml.SparseHamiltonian(hamiltonian, wires=range(qubits)))
 
-        assert np.allclose(qml.grad(circuit, argnum=0)(0.0), expected_output, atol=tol, rtol=0)
+        assert np.allclose(qml.grad(circuit, argnums=0)(0.0), expected_output, atol=tol, rtol=0)
 
     def test_sparse_no_all_wires_error(self, tol):
         """Tests that SparseHamiltonian can be used as expected when the operator wires don't cover

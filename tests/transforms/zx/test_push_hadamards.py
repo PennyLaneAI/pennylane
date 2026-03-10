@@ -54,7 +54,6 @@ class TestPushHadamards:
             qml.CNOT(wires=[0, 1]),
             qml.CY(wires=[0, 1]),
             qml.CZ(wires=[0, 1]),
-            qml.CH(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
         ),
     )

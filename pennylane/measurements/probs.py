@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops import LinearCombination
+from pennylane.ops import LinearCombination, MeasurementValue
 from pennylane.ops.qubit.observables import Hermitian
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -29,7 +29,6 @@ from pennylane.wires import Wires
 
 from .counts import CountsMP
 from .measurements import SampleMeasurement, StateMeasurement
-from .mid_measure import MeasurementValue
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):

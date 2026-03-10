@@ -19,6 +19,8 @@ accept a unitary matrix as a parameter.
 import warnings
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -59,6 +61,8 @@ class QutritUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, *params, wires):
         wires = Wires(wires)
 
@@ -93,6 +97,10 @@ class QutritUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -135,6 +143,18 @@ class QutritUnitary(Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+def _adjoint_qutrit_unitary_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {resource_rep(QutritUnitary, num_wires=base_params["num_wires"]): 1}
+
+
+@qml.register_resources(_adjoint_qutrit_unitary_resource)
+def _adjoint_qutrit_unitary(U, wires, **_):
+    QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=wires)
+
+
+add_decomps("Adjoint(QutritUnitary)", _adjoint_qutrit_unitary)
 
 
 class ControlledQutritUnitary(QutritUnitary):
@@ -198,6 +218,8 @@ class ControlledQutritUnitary(QutritUnitary):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"num_u_wires", "num_control_wires"}
+
     def __init__(self, *params, control_wires=None, wires=None, control_values=None):
         if control_wires is None:
             raise ValueError("Must specify control wires")
@@ -218,6 +240,13 @@ class ControlledQutritUnitary(QutritUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_u_wires": len(self._hyperparameters["u_wires"]),
+            "num_control_wires": len(self._hyperparameters["control_wires"]),
+        }
 
     @staticmethod
     def compute_matrix(
@@ -334,3 +363,27 @@ class ControlledQutritUnitary(QutritUnitary):
             wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
+
+
+def _adjoint_controlled_qu_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {
+        resource_rep(
+            ControlledQutritUnitary,
+            num_u_wires=base_params["num_u_wires"],
+            num_control_wires=base_params["num_control_wires"],
+        ): 1
+    }
+
+
+# pylint: disable=unused-argument
+@register_resources(_adjoint_controlled_qu_resource)
+def _adjoint_controlled_qu(U, wires, base, **_):
+    ControlledQutritUnitary(
+        qml.math.conj(qml.math.moveaxis(U, -2, -1)),
+        wires=base.hyperparameters["u_wires"],
+        control_wires=base.hyperparameters["control_wires"],
+        control_values=base.hyperparameters["control_values"],
+    )
+
+
+add_decomps("Adjoint(ControlledQutritUnitary)", _adjoint_controlled_qu)

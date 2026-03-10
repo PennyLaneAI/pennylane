@@ -117,16 +117,13 @@ class TestInitialization:
     """Test the initialization."""
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
-    @pytest.mark.parametrize("id", ("foo", "bar"))
-    def test_init_sum_op(self, id, sum_method):
+    def test_init_sum_op(self, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        if sum_method.__name__ == sum.__name__:
-            assert sum_op.id == id
 
         assert sum_op.data == (0.23,)
         assert sum_op.parameters == [0.23]
@@ -142,7 +139,6 @@ class TestInitialization:
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        assert sum_op.id is None
 
         assert sum_op.data == (0.23, 9.87)
         assert sum_op.parameters == [0.23, 9.87]
@@ -677,16 +673,16 @@ class TestProperties:
         true_hermitian_state = True
 
         for op in ops_lst:
-            true_hermitian_state = true_hermitian_state and op.is_hermitian
+            true_hermitian_state = true_hermitian_state and op.is_verified_hermitian
 
-        assert sum_op.is_hermitian == true_hermitian_state
+        assert sum_op.is_verified_hermitian == true_hermitian_state
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category(self, ops_lst, sum_method):
-        """Test queue_category property is always None."""  # currently not supporting queuing Sum
+        """Test queue_category property is "_ops" by inheritance."""
         sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category is None  # pylint: disable=protected-access
+        assert sum_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
@@ -1171,10 +1167,9 @@ class TestWrapperFunc:
         created using the class."""
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "sum_op"
 
-        sum_func_op = qml.sum(*summands, id=op_id)
-        sum_class_op = Sum(*summands, id=op_id)
+        sum_func_op = qml.sum(*summands)
+        sum_class_op = Sum(*summands)
         qml.assert_equal(sum_func_op, sum_class_op)
 
     def test_lazy_mode(self):

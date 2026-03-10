@@ -19,7 +19,6 @@ from collections.abc import Callable
 from functools import partial
 
 import numpy as np
-from networkx import MultiDiGraph
 
 from pennylane import ops
 from pennylane.measurements import SampleMP, sample
@@ -123,10 +122,9 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=1000)
+        @qml.set_shots(shots=1000)
         @qml.cut_circuit_mc
         @qml.qnode(dev)
         def circuit(x):
@@ -169,9 +167,7 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.cut_circuit_mc, auto_cutter=True)
+        @qml.cut_circuit_mc(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(0.89, wires=0)
@@ -391,14 +387,13 @@ def cut_circuit_mc(
 
         .. code-block::
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=2)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
-            @partial(qml.set_shots, shots=10000)
-            @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
+            @qml.set_shots(shots=10000)
+            @qml.cut_circuit_mc(classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.89, wires=0)
@@ -552,7 +547,7 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int, seed=None
+    tapes: QuantumScriptBatch, communication_graph, shots: int, seed=None
 ) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
@@ -643,8 +638,8 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {pair[0].obj.node_uid: setting for pair, setting in zip(pairs, settings)}
+    prep_settings = {pair[1].obj.node_uid: setting for pair, setting in zip(pairs, settings)}
 
     all_configs = []
     for tape in tapes:
@@ -655,12 +650,14 @@ def expand_fragment_tapes_mc(
             for op in tape.operations:
                 w = op.wires[0]
                 if isinstance(op, PrepareNode):
-                    expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
+                    expanded_circuit_operations.extend(
+                        MC_STATES[prep_settings[op.node_uid][shot]](w)
+                    )
                 elif not isinstance(op, MeasureNode):
                     expanded_circuit_operations.append(op)
                 else:
                     expanded_circuit_measurements.append(
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                        MC_MEASUREMENTS[meas_settings[op.node_uid][shot]](w)
                     )
 
             frag_config.append(

@@ -131,23 +131,23 @@ def batch_params(
     that have a batch dimension. For example,
 
     >>> batch_size = 3
-    >>> x = np.linspace(0.1, 0.5, batch_size)
+    >>> x = pnp.linspace(0.1, 0.5, batch_size)
     >>> rng = np.random.default_rng(seed=1234)
-    >>> weights = rng.random((batch_size, 10, 3, 3), requires_grad=True)
+    >>> weights = pnp.array(rng.random((batch_size, 10, 3, 3)))
 
     If we evaluate the QNode with these inputs, we will get an output
     of shape ``(batch_size,)``:
 
     >>> circuit(x, weights)
-    tensor([ 0.00800498,  0.2735391 , -0.24395442], requires_grad=True)
+    tensor([ 0.008...,  0.273..., -0.24...], requires_grad=True)
 
     QNodes with a batch dimension remain fully differentiable:
 
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
+    >>> def cost_fn(x, weights): return qml.math.sum(circuit(x, weights))
     >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
+    tensor(0.037..., requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
-    array([-0.30262974,  0.06320878,  0.00811555])
+    array([-0.302...,  0.0632...  0.0081...])
 
     If we pass the ``all_operations`` argument, we can specify that
     *all* operation parameters in the transformed QNode, regardless of whether they
@@ -155,9 +155,7 @@ def batch_params(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)
@@ -165,12 +163,12 @@ def batch_params(
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.expval(qml.Hadamard(0))
 
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
+    >>> def cost_fn(x, weights): return qml.math.sum(circuit(x, weights))
     >>> weights.requires_grad = False
     >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
+    tensor(0.037..., requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
-    -0.30262974103192636
+    np.float64(-0.302...)
     """
 
     params = tape.get_parameters(trainable_only=False)

@@ -77,7 +77,8 @@ class PennyLaneTransformer(PyToPy):
             try:
                 new_fn, module, source_map = self.transform_function(fn, user_context)
             except KeyError as e:
-                if "Lambda object" in str(e) and "while_loop" in inspect.getsource(fn):
+                # py3.14: "Lambda(...) is not supported"
+                if "Lambda" in str(e) and "while_loop" in inspect.getsource(fn):
                     raise AutoGraphError(
                         "AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`."
                         " Please define the condition using a named function rather than a lambda function."

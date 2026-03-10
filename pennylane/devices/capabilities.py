@@ -14,6 +14,7 @@
 """
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
+
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -22,9 +23,11 @@ from itertools import repeat
 
 import tomlkit as toml
 
-import pennylane as qml
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.ops import CompositeOp, SymbolicOp
+
+from .execution_config import MCM_METHOD
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
@@ -132,6 +135,14 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     supported_mcm_methods: list[str] = field(default_factory=list)
     """List of supported methods of mid-circuit measurements."""
 
+    def __post_init__(self):
+        """Validate the device's capabilities."""
+        _valid_mcm_methods = {item.value for item in MCM_METHOD}
+        if not set(self.supported_mcm_methods).issubset(_valid_mcm_methods):
+            raise ValueError(
+                f"The device's supported mcm methods must be a subset of the following supported mid-circuit measurement methods available: {_valid_mcm_methods}"
+            )
+
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":
         """Returns the device capabilities conditioned on the given program features."""
 
@@ -174,6 +185,28 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         capabilities = parse_toml_document(document)
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
+
+    def gate_set(self, differentiable=False) -> set[str]:
+        """Get the names of the set of supported gates.
+
+        Args:
+            differentiable (bool): Whether to include gates that are not differentiable.
+                If True, gates that are not differentiable will be excluded.
+
+        Returns:
+            set[str]: The target gate set.
+
+        """
+        gate_set = set()
+        for op, prop in self.operations.items():
+            if differentiable and not prop.differentiable:
+                continue
+            gate_set.add(op)
+            if prop.controllable:
+                gate_set.add(f"C({op})")
+            if prop.invertible:
+                gate_set.add(f"Adjoint({op})")
+        return gate_set
 
     def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
@@ -407,7 +440,7 @@ def update_device_capabilities(
 
 def observable_stopping_condition_factory(
     capabilities: DeviceCapabilities,
-) -> Callable[[qml.operation.Operator], bool]:
+) -> Callable[[Operator], bool]:
     """Returns a default observable validation check from a capabilities object.
 
     The returned function checks if an observable is supported, for composite and nested
@@ -415,15 +448,14 @@ def observable_stopping_condition_factory(
 
     """
 
-    def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-
+    def observable_stopping_condition(obs: Operator) -> bool:
         if not capabilities.supports_observable(obs.name):
             return False
 
-        if isinstance(obs, qml.ops.CompositeOp):
+        if isinstance(obs, CompositeOp):
             return all(observable_stopping_condition(op) for op in obs.operands)
 
-        if isinstance(obs, qml.ops.SymbolicOp):
+        if isinstance(obs, SymbolicOp):
             return observable_stopping_condition(obs.base)
 
         return True
@@ -431,9 +463,10 @@ def observable_stopping_condition_factory(
     return observable_stopping_condition
 
 
-def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
+def validate_mcm_method(
+    capabilities: DeviceCapabilities | None, mcm_method: str | None, shots_present: bool
+):
     """Validates an MCM method against the device's capabilities."""
-
     if mcm_method is None or mcm_method == "deferred":
         return  # no need to validate if requested deferred or if no method is requested.
 
@@ -451,7 +484,6 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
         return
 
     if mcm_method not in capabilities.supported_mcm_methods:
-
         supported_methods = capabilities.supported_mcm_methods + ["deferred"]
         supported_method_strings = [f'"{m}"' for m in supported_methods]
         raise QuantumFunctionError(

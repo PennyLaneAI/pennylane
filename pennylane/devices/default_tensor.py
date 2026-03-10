@@ -46,7 +46,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch, TensorLike
 
 has_quimb = True
@@ -188,6 +188,7 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
         warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
+# pylint: disable=unused-argument
 @simulator_tracking
 @single_tape_support
 class DefaultTensor(Device):
@@ -608,14 +609,14 @@ class DefaultTensor(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ):
-        """This function defines the device transform program to be applied and an updated device configuration.
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns :class:`~.QuantumTape`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -630,7 +631,7 @@ class DefaultTensor(Device):
 
         config = self._setup_execution_config(execution_config)
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
@@ -800,10 +801,12 @@ class DefaultTensor(Device):
         """
 
         obs = measurementprocess.obs
-
+        assert obs is not None, "variance must have an observable"
         obs_mat = qml.matrix(obs)
         expect_op = self.expval(measurementprocess)
-        expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
+        expect_squar_op = self._local_expectation(
+            obs_mat @ qml.math.conj(obs_mat).T, tuple(obs.wires)
+        )
 
         return expect_squar_op - np.square(expect_op)
 
@@ -957,6 +960,7 @@ class DefaultTensor(Device):
         )
 
 
+# pylint: disable=no-member
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
@@ -1037,9 +1041,8 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        device._quimb_circuit.apply_gate(
-            qml.matrix(o).astype(device._c_dtype), *o.wires, parametrize=None
-        )
+        mat = qml.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
+        device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
 
 
 @singledispatch
@@ -1053,7 +1056,8 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
+        mat = qml.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
+        ket.apply_gate(mat, *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 
 

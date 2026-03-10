@@ -18,11 +18,10 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops import I
+from pennylane.ops import I, MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement, StateMeasurement
 from .probs import probs
 from .sample import SampleMP

@@ -302,7 +302,7 @@ def quantum_monte_carlo(
 
         The ``quantum_monte_carlo`` transform can then be used:
 
-        .. code-block::
+        .. code-block:: python
 
             from pennylane.templates.state_preparations.mottonen import (
                 _apply_uniform_rotation_dagger as r_unitary,
@@ -332,27 +332,34 @@ def quantum_monte_carlo(
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-        0.42663476277231915
+        np.float64(0.426...)
 
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> qml.specs(qmc, level="device")()
-        {'resources': Resources(
-            num_wires=12,
-            num_gates=31882,
-            gate_types=defaultdict(<class 'int'>, {'RY': 7747, 'CNOT': 7874, 'Hadamard': 258, 'CZ': 126, 'Adjoint(CNOT)': 7812, 'Adjoint(RY)': 7686, 'PauliX': 252, 'MultiControlledX': 126, 'Adjoint(QFT)': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {1: 15943, 2: 15812, 7: 126, 6: 1}), depth=30610, shots=Shots(total_shots=None, shot_vector=()),
-         ),
-         'num_observables': 1,
-         'num_diagonalizing_gates': 0,
-         'num_trainable_params': 15433,
-         'num_device_wires': 12,
-         'device_name': 'default.qubit',
-         'gradient_options': {},
-         'interface': 'auto',
-         'diff_method': 'best',
-         'gradient_fn': 'backprop'}
+        >>> specs = qml.specs(qmc, level="device")()
+        >>> from pprint import pprint
+        >>> pprint(specs)
+        CircuitSpecs(device_name='default.qubit',
+                     num_device_wires=12,
+                     shots=Shots(total_shots=None, shot_vector=()),
+                     level='device',
+                     resources=SpecsResources(gate_types={'Adjoint(CNOT)': 7812,
+                                                          'Adjoint(QFT)': 1,
+                                                          'Adjoint(RY)': 3150,
+                                                          'CNOT': 7874,
+                                                          'CZ': 126,
+                                                          'Hadamard': 258,
+                                                          'MultiControlledX': 126,
+                                                          'PauliX': 252,
+                                                          'RY': 3175},
+                                              gate_sizes={1: 6835,
+                                                          2: 15812,
+                                                          6: 1,
+                                                          7: 126},
+                                              measurements={'probs(6 wires)': 1},
+                                              num_allocs=12,
+                                              depth=21502))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

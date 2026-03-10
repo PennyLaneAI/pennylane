@@ -26,7 +26,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -47,10 +47,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-observables = {
-    "THermitian",
-    "GellMann",
-}
+observables = {"THermitian", "GellMann"}
+
+
+ALL_DQT_MIXED_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
@@ -67,8 +67,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
-    return op.name in expected_set
+    return op.name in ALL_DQT_MIXED_GATES
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -330,8 +329,8 @@ class DefaultQutritMixed(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device
         configuration.
 
         Args:
@@ -339,7 +338,7 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -353,28 +352,29 @@ class DefaultQutritMixed(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             decompose,
+            target_gates=ALL_DQT_MIXED_GATES,
             stopping_condition=stopping_condition,
             name=self.name,
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.qutrit")
 
         if self.readout_errors is not None:
-            transform_program.add_transform(warn_readout_error_state)
+            compile_pileline.add_transform(warn_readout_error_state)
 
-        return transform_program, config
+        return compile_pileline, config
 
     @debug_logger
     def execute(

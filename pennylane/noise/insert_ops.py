@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 from types import FunctionType
 
 from pennylane import templates
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
 from pennylane.ops.op_math import Adjoint
@@ -101,11 +102,9 @@ def insert(
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.noise.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+        @qml.noise.insert(op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -144,7 +143,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @partial(qml.noise.insert, op=op, op_args=[0.2, 0.3], position="end")
+            @qml.noise.insert(op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -223,7 +222,11 @@ def insert(
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(
-        tape, stopping_condition=stop_at, name="insert", error=DecompositionUndefinedError
+        tape,
+        target_gates=gate_sets.ALL_OPS,
+        stopping_condition=stop_at,
+        name="insert",
+        error=DecompositionUndefinedError,
     )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
@@ -258,7 +261,10 @@ def insert(
 
         if req_ops:
             for operation in req_ops:
-                if operation == type(circuit_op):
+                # Use `isinstance` rather than checking `operation == type(circuit_op)`
+                # circuit_op is an instance of an operation.
+                # operation is a type; either Operator or some subclass of Operator.
+                if isinstance(circuit_op, operation):
                     for w in circuit_op.wires:
                         sub_tape = make_qscript(op)(*op_args, wires=w)
                         new_operations.extend(sub_tape.operations)
@@ -274,7 +280,7 @@ def insert(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

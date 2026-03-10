@@ -19,9 +19,8 @@ from functools import singledispatch, wraps
 from typing import Any, overload
 
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
@@ -52,6 +51,7 @@ OPENQASM_GATES = {
     "Toffoli": "ccx",
     "CSWAP": "cswap",
     "PhaseShift": "u1",
+    "GlobalPhase": "gphase",
 }
 """
 dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
@@ -90,7 +90,7 @@ def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int
 
 
 @_obj_string.register
-def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
+def _mid_measure_str(op: MidMeasure, wires: Wires, bit_map: dict, precision: None | int) -> str:
     if op.reset:
         raise NotImplementedError(f"Unable to translate mid circuit measurements with reset {op}.")
     if op.postselect:
@@ -128,11 +128,18 @@ def _tape_openqasm(
 
     # create the quantum and classical registers
     lines.append(f"qreg q[{len(wires)}];")
-    lines.append(f"creg c[{len(wires)}];")
 
-    num_mcms = sum(isinstance(o, MidMeasureMP) for o in tape.operations)
+    terminally_measured_wires = (
+        wires
+        if measure_all
+        else Wires.all_wires([m.wires for m in tape.measurements if m.mv is None])
+    )
+    if terminally_measured_wires:
+        lines.append(f"creg c[{len(terminally_measured_wires)}];")
+
+    num_mcms = sum(isinstance(o, MidMeasure) for o in tape.operations)
     if num_mcms:
-        lines.append(f"creg mcms[{num_mcms}]")
+        lines.append(f"creg mcms[{num_mcms}];")
     bit_map = {}
 
     # get the user applied circuit operations without interface information
@@ -147,10 +154,11 @@ def _tape_openqasm(
     just_ops = QuantumScript(operations)
 
     def stopping_condition(op):
-        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasureMP, Conditional))
+        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasure, Conditional))
 
     [new_tape], _ = decompose(
         just_ops,
+        target_gates=OPENQASM_GATES.keys() | {"MidMeasure"},
         stopping_condition=stopping_condition,
         skip_initial_state_prep=False,
         name="to_openqasm",
@@ -170,11 +178,9 @@ def _tape_openqasm(
         for wire in range(len(wires)):
             lines.append(f"measure q[{wire}] -> c[{wire}];")
     else:
-        measured_wires = Wires.all_wires([m.wires for m in tape.measurements])
-
-        for w in measured_wires:
-            wire_indx = tape.wires.index(w)
-            lines.append(f"measure q[{wire_indx}] -> c[{wire_indx}];")
+        for creg_indx, w in enumerate(terminally_measured_wires):
+            qreg_indx = tape.wires.index(w)
+            lines.append(f"measure q[{qreg_indx}] -> c[{creg_indx}];")
 
     return "\n".join(lines) + "\n"
 

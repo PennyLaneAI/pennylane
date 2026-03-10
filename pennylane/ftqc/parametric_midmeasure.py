@@ -27,7 +27,7 @@ from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import is_abstract, isscalar, ndim, unwrap
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
 from pennylane.queuing import QueuingManager
@@ -55,10 +55,10 @@ def _create_parametrized_mid_measure_primitive():
     measure_in_basis_p = QmlPrimitive("measure_in_basis")
 
     @measure_in_basis_p.def_impl
-    def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
+    def _impl(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
         return _measure_impl(
             wires,
-            measurement_class=ParametricMidMeasureMP,
+            measurement_class=ParametricMidMeasure,
             angle=angle,
             plane=plane,
             reset=reset,
@@ -66,7 +66,7 @@ def _create_parametrized_mid_measure_primitive():
         )
 
     @measure_in_basis_p.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return jax.core.ShapedArray((), jax.numpy.bool)
 
     return measure_in_basis_p
@@ -106,7 +106,7 @@ def measure_arbitrary_basis(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasure``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -180,7 +180,7 @@ def measure_arbitrary_basis(
         return primitive.bind(angle, wires, plane=plane, reset=reset, postselect=postselect)
 
     return _measure_impl(
-        wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
+        wires, ParametricMidMeasure, angle=angle, plane=plane, reset=reset, postselect=postselect
     )
 
 
@@ -215,7 +215,7 @@ def measure_x(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasure``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -230,7 +230,7 @@ def measure_x(
         primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(0.0, wires, plane="XY", reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
+    return _measure_impl(wires, XMidMeasure, reset=reset, postselect=postselect)
 
 
 def measure_y(
@@ -264,7 +264,7 @@ def measure_y(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasure``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -279,7 +279,7 @@ def measure_y(
         primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(np.pi / 2, wires, plane="XY", reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
+    return _measure_impl(wires, YMidMeasure, reset=reset, postselect=postselect)
 
 
 def measure_z(
@@ -305,7 +305,7 @@ def measure_z(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasure``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -317,7 +317,7 @@ def measure_z(
 
 def _measure_impl(
     wires: Hashable | Wires,
-    measurement_class=MidMeasureMP,
+    measurement_class=MidMeasure,
     **kwargs,
 ):
     """Concrete implementation of qml.measure"""
@@ -325,11 +325,11 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
+    mp = measurement_class(wires=wires, meas_uid=measurement_id, **kwargs)
     return MeasurementValue([mp])
 
 
-class ParametricMidMeasureMP(MidMeasureMP):
+class ParametricMidMeasure(MidMeasure):
     """Parametric mid-circuit measurement. The basis for the measurement is parametrized by
     a plane ("XY", "YZ" or "ZX"), and an angle within the plane.
 
@@ -369,10 +369,15 @@ class ParametricMidMeasureMP(MidMeasureMP):
         plane: str | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
         self.batch_size = None
-        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
+        super().__init__(
+            wires=Wires(wires), reset=reset, postselect=postselect, id=id, meas_uid=meas_uid
+        )
         self.hyperparameters["plane"] = plane
         self.hyperparameters["angle"] = angle
 
@@ -404,7 +409,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
             self.plane,
             param_hash,
             tuple(self.wires.tolist()),
-            self.id,
+            self.meas_uid,
         )
 
         return hash(fingerprint)
@@ -412,11 +417,11 @@ class ParametricMidMeasureMP(MidMeasureMP):
     # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
     def _primitive_bind_call(
-        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
+        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
         wires = () if wires is None else wires
         return cls._primitive.bind(
-            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
+            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, meas_uid=meas_uid
         )
 
     def __repr__(self):
@@ -466,26 +471,41 @@ class ParametricMidMeasureMP(MidMeasureMP):
         return _label
 
 
-class XMidMeasureMP(ParametricMidMeasureMP):
-    """A subclass of ParametricMidMeasureMP that uses the X measurement basis
+class XMidMeasure(ParametricMidMeasure):
+    """A subclass of ParametricMidMeasure that uses the X measurement basis
     (angle=0, plane="XY"). For labels and visualizations, this will be represented
     as a X measurement. It is otherwise identical to the parent class."""
 
     _shortname = "measure_x"
 
     def _flatten(self):
-        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        metadata = (
+            ("reset", self.reset),
+            ("postselect", self.postselect),
+            ("meas_uid", self.meas_uid),
+            ("id", self._id),
+        )
         return (), (self.wires, metadata)
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
-            wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
+            wires=Wires(wires),
+            angle=0,
+            plane="XY",
+            reset=reset,
+            postselect=postselect,
+            id=id,
+            meas_uid=meas_uid,
         )
 
     def __repr__(self):
@@ -520,24 +540,33 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         return [H(self.wires)]
 
 
-class YMidMeasureMP(ParametricMidMeasureMP):
-    """A subclass of ParametricMidMeasureMP that uses the Y measurement basis
+class YMidMeasure(ParametricMidMeasure):
+    """A subclass of ParametricMidMeasure that uses the Y measurement basis
     (angle=pi/2, plane="XY"). For labels and visualizations, this will be represented
     as a Y measurement. It is otherwise identical to the parent class."""
 
     _shortname = "measure_y"
 
     def _flatten(self):
-        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        metadata = (
+            ("reset", self.reset),
+            ("postselect", self.postselect),
+            ("meas_uid", self.meas_uid),
+            ("id", self._id),
+        )
         return (), (self.wires, metadata)
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=np.pi / 2,
@@ -545,6 +574,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
             reset=reset,
             postselect=postselect,
             id=id,
+            meas_uid=meas_uid,
         )
 
     def __repr__(self):
@@ -581,10 +611,10 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
 
 @_add_operation_to_drawer.register
-def _(op: ParametricMidMeasureMP, drawer, layer, _):
-    if isinstance(op, XMidMeasureMP):
+def _(op: ParametricMidMeasure, drawer, layer, _):
+    if isinstance(op, XMidMeasure):
         text = "X"
-    elif isinstance(op, YMidMeasureMP):
+    elif isinstance(op, YMidMeasure):
         text = "Y"
     else:
         text = op.plane
@@ -625,14 +655,12 @@ def diagonalize_mcms(tape):
 
     .. code-block:: python
 
-        from functools import partial
-
-        from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
+        from pennylane.ftqc import ParametricMidMeasure, diagonalize_mcms
 
         dev = qml.device("default.qubit")
 
         @diagonalize_mcms
-        @partial(qml.set_shots, shots=1000)
+        @qml.set_shots(shots=1000)
         @qml.qnode(dev, mcm_method="one-shot")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -705,30 +733,29 @@ def diagonalize_mcms(tape):
     curr_idx = 0
 
     for i, op in enumerate(tape.operations):
-
         if i != curr_idx:
             continue
 
-        if isinstance(op, ParametricMidMeasureMP):
-
+        if isinstance(op, ParametricMidMeasure):
             # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
             new_operations.extend(diag_gates)
 
             # add computational basis MCM to tape
             with QueuingManager.stop_recording():
-                new_mp = MidMeasureMP(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
+                new_mp = MidMeasure(
+                    op.wires, reset=op.reset, postselect=op.postselect, meas_uid=op.meas_uid
+                )
             new_operations.append(new_mp)
 
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
 
         elif isinstance(op, Conditional):
-
             # from MCM mapping, map any MCMs in the condition if needed
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
 
-            if isinstance(op.base, MidMeasureMP):
+            if isinstance(op.base, MidMeasure):
                 # the only user-facing API for creating Conditionals with MCMs is meas_cond,
                 # which ensures both and true_fn and false_fn are included, so here we assume the
                 # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
@@ -759,8 +786,11 @@ def diagonalize_mcms(tape):
                         for gate in false_cond.diagonalizing_gates()
                     ]
 
-                    new_mp = MidMeasureMP(
-                        op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+                    new_mp = MidMeasure(
+                        op.wires,
+                        reset=op.base.reset,
+                        postselect=op.base.postselect,
+                        meas_uid=op.base.meas_uid,
                     )
 
                 new_operations.extend(diag_gates_true)

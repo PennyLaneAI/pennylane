@@ -517,33 +517,27 @@ def photon_number(cov, mu, params, hbar=2.0):
     return ex, var
 
 
-def homodyne(phi=None):
+def homodyne(phi: float | None = None):
     """Function factory that returns the Homodyne expectation of a one mode state.
 
     Args:
-        phi (float): the default phase space axis to perform the Homodyne measurement
+        phi (Optional[float]): the default phase space axis to perform the Homodyne measurement
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
         and phase space angle phi, and returns the quadrature expectation
         value and variance.
     """
-    if phi is not None:
 
-        def _homodyne(cov, mu, params, hbar=2.0):
-            """Arbitrary angle homodyne expectation."""
-            # pylint: disable=unused-argument
-            rot = rotation(phi)
-            muphi = rot.T @ mu
-            covphi = rot.T @ cov @ rot
-            return muphi[0], covphi[0, 0]
-
-        return _homodyne
-
+    # pylint: disable=unused-argument
     def _homodyne(cov, mu, params, hbar=2.0):
-        """Arbitrary angle homodyne expectation."""
-        # pylint: disable=unused-argument
-        rot = rotation(params[0])
+        """Calculates the arbitrary angle homodyne expectation."""
+
+        # Use the fixed outer `phi` if it was provided,
+        # otherwise use the dynamic `phi` from the parameters.
+        measurement_phi = phi if phi is not None else params[0]
+
+        rot = rotation(measurement_phi)
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
         return muphi[0], covphi[0, 0]

@@ -20,8 +20,12 @@ from sys import version_info
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
-import pennylane as qml
+from pennylane._version import __version__
+from pennylane.configuration import default_config
 from pennylane.exceptions import DeviceError
+
+from ._legacy_device import Device as LegacyDevice
+from .legacy_facade import LegacyDeviceFacade
 
 
 def _get_device_entrypoints():
@@ -102,9 +106,7 @@ def device(name, *args, **kwargs):
 
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device-specific configurations.
-        custom_decomps (Dict[Union(str, Operator), Callable]): Custom
-            decompositions to be applied by the device at runtime.
+            that contains global and/or device specific configurations.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
@@ -159,59 +161,6 @@ def device(name, *args, **kwargs):
     >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
-
-    When constructing a device, we may optionally pass a dictionary of custom
-    decompositions to be applied to certain operations upon device execution.
-    This is useful for enabling support of gates on devices where they would normally
-    be unsupported.
-
-    For example, suppose we are running on an ion trap device that does not
-    natively implement the CNOT gate, but we would still like to write our
-    circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
-    using the ``IsingXX`` gate. We first define a decomposition function
-    (such functions have the signature ``decomposition(*params, wires)``):
-
-    .. code-block:: python
-
-        def ion_trap_cnot(wires, **_):
-            return [
-                qml.RY(np.pi/2, wires=wires[0]),
-                qml.IsingXX(np.pi/2, wires=wires),
-                qml.RX(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[1])
-            ]
-
-    Next, we create a device and a QNode for testing. When constructing the
-    QNode, we can set the expansion strategy to ``"device"`` to ensure the
-    decomposition is applied and will be viewable when we draw the circuit.
-    Note that custom decompositions should accept keyword arguments even when
-    it is not used.
-
-    .. code-block:: python
-
-        # As the CNOT gate normally has no decomposition, we can use default.qubit
-        # here for expository purposes.
-        dev = qml.device(
-            'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
-        )
-
-        @qml.qnode(dev)
-        def run_cnot():
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.X(1))
-
-    >>> print(qml.draw(run_cnot, level="device")())
-    0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
-    1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
-
-    Some devices may accept additional arguments. For instance,
-    ``default.gaussian`` accepts the keyword argument ``hbar``, to set
-    the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
-    (by default set to 2).
-
-    Please refer to the documentation for the individual devices to see any
-    additional arguments that might be required or supported.
     """
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
@@ -223,7 +172,7 @@ def device(name, *args, **kwargs):
         options = {}
 
         # load global configuration settings if available
-        config = kwargs.get("config", qml.default_config)
+        config = kwargs.get("config", default_config)
 
         if config:
             # combine configuration options with keyword arguments.
@@ -232,10 +181,6 @@ def device(name, *args, **kwargs):
             options.update(config["main"])
             options.update(config[name.split(".")[0] + ".global"])
             options.update(config[name])
-
-        # Pop the custom decomposition keyword argument; we will use it here
-        # only and not pass it to the device.
-        custom_decomps = kwargs.pop("custom_decomps", None)
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -253,39 +198,18 @@ def device(name, *args, **kwargs):
 
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
-            current_version = Version(qml.version())
+            current_version = Version(__version__)
             if current_version not in required_versions:
                 raise DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
-                    f"however PennyLane version {qml.version()} is installed."
+                    f"however PennyLane version {__version__} is installed."
                 )
 
         # Construct the device
         dev = plugin_device_class(*args, **options)
 
-        # Once the device is constructed, we set its custom expansion function if
-        # any custom decompositions were specified.
-        if custom_decomps is not None:
-            if isinstance(dev, qml.devices.LegacyDevice):
-                custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev
-                )
-                dev.custom_expand(custom_decomp_expand_fn)
-
-            else:
-                override_method = (
-                    "preprocess_transforms"
-                    if type(dev).preprocess == qml.devices.Device.preprocess
-                    else "preprocess"
-                )
-
-                new_method = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev, override_method=override_method
-                )
-                setattr(dev, override_method, new_method)
-
-        if isinstance(dev, qml.devices.LegacyDevice):
-            dev = qml.devices.LegacyDeviceFacade(dev)
+        if isinstance(dev, LegacyDevice):
+            dev = LegacyDeviceFacade(dev)
 
         return dev
 

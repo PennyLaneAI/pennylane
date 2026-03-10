@@ -15,8 +15,8 @@
 This module contains a helper function to sort operations into layers.
 """
 
-from pennylane.measurements import MeasurementProcess, MidMeasureMP
-from pennylane.ops import Conditional, GlobalPhase, Identity
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import Conditional, GlobalPhase, Identity, MidMeasure, PauliMeasure
 
 from .utils import default_wire_map, unwrap_controls
 
@@ -80,15 +80,17 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
 
 def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
-    if isinstance(op, MidMeasureMP):
-        mapped_wire = wire_map[op.wires[0]]
+    if isinstance(op, (MidMeasure, PauliMeasure)):
+        mapped_wires = [wire_map[wire] for wire in op.wires]
 
         if op in bit_map:
-            min_wire = mapped_wire
+            min_wire = min(mapped_wires)
             max_wire = max(wire_map.values())
             return set(range(min_wire, max_wire + 1))
 
-        return {mapped_wire}
+        min_wire = min(mapped_wires)
+        max_wire = max(mapped_wires)
+        return set(range(min_wire, max_wire + 1))
 
     if isinstance(op, Conditional):
         mapped_wires = [wire_map[wire] for wire in op.base.wires]
@@ -160,7 +162,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-
         if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have
             # op.mv != None.

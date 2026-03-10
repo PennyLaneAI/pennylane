@@ -20,7 +20,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import grad_prim, jacobian_prim, qnode_prim
+from pennylane.capture.primitives import jacobian_prim, qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
@@ -268,11 +268,11 @@ class TestDeferMeasurementsInterpreter:
                 qml.RX(phi, 0)
 
             @cond_fn.else_if(m1)
-            def _(phi):
+            def _else_if(phi):
                 qml.RY(phi, 0)
 
             @cond_fn.otherwise
-            def _(phi):
+            def _else(phi):
                 qml.RZ(phi, 0)
 
             cond_fn(x)
@@ -517,13 +517,13 @@ class TestDeferMeasurementsHigherOrderPrimitives:
                 qml.measure(1)
 
             @cond_fn.else_if(x > 1.0)
-            def _(phi):
+            def _else_if(phi):
                 qml.measure(2, postselect=postselect)
                 qml.RY(phi, 0)
                 qml.measure(2)
 
             @cond_fn.otherwise
-            def _(phi):
+            def _else(phi):
                 qml.measure(3, postselect=postselect)
                 qml.RZ(phi, 0)
                 qml.measure(3)
@@ -693,10 +693,8 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         ]
         assert measurements == expected_measurements
 
-    @pytest.mark.parametrize(
-        "diff_fn, diff_prim", [(qml.grad, grad_prim), (qml.jacobian, jacobian_prim)]
-    )
-    def test_grad_jac(self, diff_fn, diff_prim, postselect):
+    @pytest.mark.parametrize("diff_fn", [(qml.grad), (qml.jacobian)])
+    def test_grad_jac(self, diff_fn, postselect):
         """Test that differentiation primitives are transformed correctly."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -715,7 +713,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         x = 1.5
         transformed_fn = DeferMeasurementsInterpreter(num_wires=4)(diff_fn(circuit))
         jaxpr = jax.make_jaxpr(transformed_fn)(x)
-        assert jaxpr.eqns[0].primitive == diff_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]

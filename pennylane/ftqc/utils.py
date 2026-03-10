@@ -19,7 +19,7 @@ ftqc module.
 from threading import RLock
 
 from pennylane import math
-from pennylane.measurements import MeasurementValue
+from pennylane.ops import MeasurementValue
 
 
 def parity(*args):

@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the measurements module"""
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MeasurementValue,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -46,8 +45,34 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods, unused-argument
 
 
+def test_measurements_module_getattr():
+    """Test that the getattr raises an attribute error for things that dont exist."""
+    with pytest.raises(AttributeError):
+        qml.measurements.not_here  # pylint: disable=pointless-statement
+
+
+def test_mid_measure_deprecations():
+    assert qml.measurements.MidMeasureMP == qml.ops.MidMeasure
+    assert qml.measurements.MeasurementValue == qml.ops.MeasurementValue
+    assert qml.measurements.measure == qml.ops.measure
+    assert qml.measurements.get_mcm_predicates == qml.ops.mid_measure.get_mcm_predicates
+    from pennylane.devices.qubit.simulate import _find_post_processed_mcms
+
+    assert qml.measurements.find_post_processed_mcms == _find_post_processed_mcms
+
+
 class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
+
+
+def test_id_deprecation():
+    """Tests that using 'id' is deprecated."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = DummyMP(wires=qml.wires.Wires(0), id="something")
 
 
 def test_no_measure():
@@ -129,7 +154,6 @@ valid_meausurements = [
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
     ExpectationMP(obs=mv),
-    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
@@ -278,9 +302,9 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
-        m0.measurements[0]._id = "abc"  # pylint: disable=protected-access
+        m0.measurements[0]._hyperparameters["meas_uid"] = "abc"  # pylint: disable=protected-access
         m1 = qml.measure(1)
-        m1.measurements[0]._id = "def"  # pylint: disable=protected-access
+        m1.measurements[0]._hyperparameters["meas_uid"] = "def"  # pylint: disable=protected-access
 
         mp1 = qml.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
@@ -325,8 +349,8 @@ class TestProperties:
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
-        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
-        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m0 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(0), meas_uid="0")], lambda v: v)
+        m1 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(1), meas_uid="1")], lambda v: v)
         m = ProbabilityMP(obs=[m0, m1])
         expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
         assert repr(m) == expected
@@ -341,8 +365,12 @@ class TestProperties:
         m1 = qml.measure("b")
         m2 = qml.measure(0)
         m3 = qml.measure(1)
-        m2.measurements[0]._id = m0.measurements[0].id  # pylint: disable=protected-access
-        m3.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
+        m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]  # pylint: disable=protected-access
+        m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]  # pylint: disable=protected-access
 
         wire_map = {"a": 0, "b": 1}
 

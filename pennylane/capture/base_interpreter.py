@@ -33,9 +33,11 @@ from .primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
+    jvp_prim,
     qnode_prim,
+    quantum_subroutine_prim,
+    vjp_prim,
     while_loop_prim,
 )
 
@@ -83,7 +85,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
     for s in shape:
         if s is not None:
             new_shape.append(s)
-        else:
+        else:  # pragma: no cover
             # pull from iterable of dynamic shapes
             next_s = next(dyn_shape_iter)
             if not qml.math.is_abstract(next_s):
@@ -226,8 +228,9 @@ class PlxprInterpreter:
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
 
-    def __init__(self):
+    def __init__(self, *, subroutine_cache=None):
         self._env = {}
+        self.subroutine_cache = subroutine_cache or {}
 
     @classmethod
     def register_primitive(
@@ -442,7 +445,7 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape, sharding):
+def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -497,9 +500,10 @@ def handle_for_loop(
     self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle a for loop primitive."""
-    consts = args[consts_slice]
-    init_state = args[args_slice]
-    abstract_shapes = args[abstract_shapes_slice]
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    consts = args[slice(*consts_slice)]
+    init_state = args[slice(*args_slice)]
+    abstract_shapes = args[slice(*abstract_shapes_slice)]
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
@@ -524,6 +528,10 @@ def handle_for_loop(
 @PlxprInterpreter.register_primitive(cond_prim)
 def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle a cond primitive."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
+
     args = invals[args_slice]
 
     new_jaxprs = []
@@ -561,6 +569,11 @@ def handle_while_loop(
     args_slice,
 ):
     """Handle a while loop primitive."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -609,15 +622,15 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     )
 
 
-@PlxprInterpreter.register_primitive(grad_prim)
-def handle_grad(self, *invals, jaxpr, n_consts, **params):
-    """Handle the grad primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return grad_prim.bind(
-        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
-    )
+@PlxprInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *invals, jaxpr, **params):
+    if jaxpr in self.subroutine_cache:
+        new_jaxpr = self.subroutine_cache[jaxpr]
+    else:
+        new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr.jaxpr, jaxpr.consts, *invals)
+        self.subroutine_cache[jaxpr] = new_jaxpr
+
+    return quantum_subroutine_prim.bind(*invals, jaxpr=new_jaxpr, **params)
 
 
 @PlxprInterpreter.register_primitive(jacobian_prim)
@@ -628,6 +641,36 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(
         *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+    )
+
+
+@PlxprInterpreter.register_primitive(vjp_prim)
+def handle_vjp(self, *invals, jaxpr, argnums, **params):
+    """Handle the vector-jacobian-product primitive."""
+
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
+
+    j = new_jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    argnums = tuple(a + len(j.constvars) for a in argnums)
+
+    return vjp_prim.bind(
+        *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
+    )
+
+
+@PlxprInterpreter.register_primitive(jvp_prim)
+def handle_jvp(self, *invals, jaxpr, argnums, **params):
+    """Handle the jacobian-vector-product primitive."""
+
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
+
+    j = new_jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    argnums = tuple(a + len(j.constvars) for a in argnums)
+
+    return jvp_prim.bind(
+        *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
     )
 
 
@@ -646,13 +689,18 @@ else:  # pragma: no cover
 
 
 @FlattenedInterpreter.register_primitive(pjit_p)
-def _(self, *invals, jaxpr, **params):
+def _pjit_primitive(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
     subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
     return pjit_p.bind(*subfuns, *invals, **params)
+
+
+@FlattenedInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
@@ -666,6 +714,11 @@ def flatten_while_loop(
     args_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -683,6 +736,10 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 @FlattenedInterpreter.register_primitive(cond_prim)
 def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
+
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
     args = invals[args_slice]
@@ -706,6 +763,11 @@ def flattened_for(
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle the for loop by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    consts_slice = slice(*consts_slice)
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
+
     consts = invals[consts_slice]
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]

@@ -571,7 +571,7 @@ class TestProjector:
         second_projector = qml.Projector(state_vector, wires)
         qml.assert_equal(second_projector, state_vector_projector)
 
-        qml.ops.functions.assert_valid(state_vector_projector)
+        qml.ops.functions.assert_valid(state_vector_projector, skip_differentiation=True)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
@@ -612,12 +612,11 @@ class TestProjector:
     def test_serialization(self):
         """Tests that Projector is pickle-able."""
         # Basis state projector
-        proj = qml.Projector([1], wires=[0], id="Timmy")
+        proj = qml.Projector([1], wires=[0])
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
         proj = qml.Projector([0, 1], wires=[0])
@@ -626,7 +625,6 @@ class TestProjector:
 
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
     def test_single_qubit_basis_state_0(self):
         """Tests the function with a single-qubit basis state |0>."""

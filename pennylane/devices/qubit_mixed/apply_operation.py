@@ -641,9 +641,18 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
     eigvals = math.stack(op.eigvals())
-    expand_shape = [-1, 2 * len(channel_wires)] if bool(op.batch_size) else [2] * len(channel_wires)
+    expand_shape = (
+        [-1] + [2] * len(channel_wires) if op.batch_size is not None else [2] * len(channel_wires)
+    )
     eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
+
+    # Handle the case when op is batched but state is not
+    if op.batch_size is not None and not is_state_batched:
+        # Broadcast state to have a batch dimension matching op.batch_size
+        # Stack the state op.batch_size times
+        state = math.stack([state] * op.batch_size)
+        is_state_batched = True
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]
 
@@ -653,9 +662,13 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
     row_indices = "".join(alphabet_array[row_wires_list].tolist())
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
-    # Use ellipsis to represent the batch dimensions as eigvals.shape = (batch, 2 * len(channel_wires))
-    ellipsis = "..." if bool(op.batch_size) else ""
-    einsum_indices = f"{ellipsis}{row_indices},{ellipsis}{state_indices},{ellipsis}{col_indices}->{ellipsis}{state_indices}"
+    # For batched operations, use explicit batch index instead of ellipsis
+    # When is_state_batched=True, the first character of state_indices is the batch index
+    if op.batch_size is not None:
+        batch_index = state_indices[0] if is_state_batched else ""
+        einsum_indices = f"{batch_index}{row_indices},{state_indices},{batch_index}{col_indices}->{state_indices}"
+    else:
+        einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
 
@@ -763,7 +776,17 @@ def apply_density_matrix(
     # Partial system update:
     # 1. Partial trace out op_wires from state
     # partial_trace reduces the dimension to only the complement wires
-    sigma = qml.math.partial_trace(state, indices=op_wires)
+    # Note: partial_trace expects state in 2D (dim, dim) or 3D (batch, dim, dim) format,
+    # but the mixed device stores state in tensor format (2, 2, ..., 2).
+    # We need to reshape state to 2D/3D format first.
+    state_dim = 2**num_state_wires
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        state_2d = math.reshape(state, (batch_size, state_dim, state_dim))
+    else:
+        state_2d = math.reshape(state, (state_dim, state_dim))
+
+    sigma = qml.math.partial_trace(state_2d, indices=op_wires)
     # sigma now has shape:
     # (batch_size, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
 

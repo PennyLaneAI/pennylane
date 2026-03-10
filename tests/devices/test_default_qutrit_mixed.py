@@ -809,7 +809,7 @@ class TestSumOfTermsDifferentiability:
         the coefficients of Hamiltonians using new and old math."""
 
         coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
-        gradient = qml.grad(self.f, argnum=1)(self.x, coeffs)
+        gradient = qml.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = qml.grad(self.expected)(self.x, coeffs)
 
         assert len(gradient) == 2

@@ -19,8 +19,7 @@ from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qml
-from pennylane.measurements.mid_measure import MeasurementValue
-from pennylane.ops import Adjoint
+from pennylane.ops import Adjoint, MeasurementValue
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
@@ -378,8 +377,11 @@ class _CachedCallable:
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
             case "gridsynth":
-                self.decompose_fn = lru_cache(maxsize=cache_size)(
-                    partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
+                rs_decomp = partial(
+                    rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs
+                )
+                self.decompose_fn = (
+                    rs_decomp if is_qjit else lru_cache(maxsize=cache_size)(rs_decomp)
                 )
             case _:
                 raise NotImplementedError(
@@ -391,7 +393,11 @@ class _CachedCallable:
         self.cache_size = cache_size
         self.is_qjit = is_qjit
         self.method_kwargs = method_kwargs
-        self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
+        self.query = (
+            self.cached_decompose
+            if is_qjit
+            else lru_cache(maxsize=cache_size)(self.cached_decompose)
+        )
 
     # pylint: disable=too-many-arguments
     def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
@@ -425,12 +431,20 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
+# pylint: disable=unused-argument
+def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
+    raise NotImplementedError(
+        "The clifford_t_decomposition is incompatible with program capture. "
+        "Please use qml.decompose and qml.transforms.gridsynth instead."
+    )
+
+
 # pylint: disable=too-many-branches,too-many-statements
-@transform
+@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    method="sk",
+    method="gridsynth",
     cache_size=1000,
     cache_eps_rtol=None,
     **method_kwargs,
@@ -445,16 +459,23 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
-    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
-    Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
-    can be used by setting the ``method`` to ``"gridsynth"``.
+    :math:`\epsilon > 0` error. By default, the Ross-Selinger algorithm described in
+    `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ is used for this. Alternatively,
+    the Solovay-Kitaev algorithm described in `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_
+    is available by setting ``method="sk"``.
+
+    .. note::
+
+        The ``clifford_t_decomposition`` transform is incompatible with program capture.
+        For compatibility with :func:`~.qjit`, either turn off program capture with ``qml.capture.disable()``
+        or use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with
+        :func:`~.transforms.gridnsynth` .
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
-            the Ross-Selinger algorithm can be used with ``"gridsynth"``.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for the Ross-Selinger algorithm.
+            Alternatively, use the value ``"sk"`` for the Solovay-Kitaev algorithm.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
             Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
@@ -466,23 +487,23 @@ def clifford_t_decomposition(
 
     **Keyword Arguments**
 
-    - Solovay-Kitaev decomposition --
-        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
-        where the decomposition is performed using the :func:`~.sk_decomposition` method.
-
     - Ross-Selinger (``gridsynth``) decomposition --
         **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
         where the decomposition is performed using the :func:`~.rs_decomposition` method.
+
+    - Solovay-Kitaev decomposition --
+        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
+        where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for the Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
@@ -496,8 +517,13 @@ def clifford_t_decomposition(
         result = circuit(x, y)
         approx = decomposed_circuit(x, y)
 
-    >>> qml.math.allclose(result, approx, atol=1e-4)
+    >>> result
+    np.float64(-0.2669...)
+    >>> approx
+    np.float64(-0.26...)
+    >>> qml.math.allclose(result, approx, atol=1e-2)
     True
+
     """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass
@@ -565,6 +591,11 @@ def clifford_t_decomposition(
         # note: the last operator in the decomposition must be a GlobalPhase
 
         is_qjit = qml.compiler.active_compiler() == "catalyst"
+        if number_ops > 0 and is_qjit and method == "sk":
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT or JAX-JIT. "
+                "Use Ross-Selinger decomposition (method='gridsynth') instead."
+            )
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
@@ -614,7 +645,7 @@ def clifford_t_decomposition(
         [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]
