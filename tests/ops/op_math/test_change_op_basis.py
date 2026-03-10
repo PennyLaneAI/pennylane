@@ -15,7 +15,9 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 import re
+from functools import partial
 
+import numpy as np
 # pylint:disable=protected-access, unused-argument
 import pytest
 
@@ -25,6 +27,8 @@ from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.queuing import AnnotatedQueue
+from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -44,6 +48,45 @@ def test_basic_validity():
     op = qml.change_op_basis(op1, op2, op3)
     qml.ops.functions.assert_valid(op)
 
+
+@pytest.mark.capture
+def test_change_op_basis_partials():
+    """Tests that partials can be provided to change_op_basis."""
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2, x):
+        qml.BasisState(np.zeroes(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    @partial(Subroutine, wire_argnames=("wires"))
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def h(a, reg1, reg2, x):
+        qml.adjoint(qml.RX)(a, reg1[0])
+        qml.adjoint(qml.QFT)(reg1)
+        qml.adjoint(qml.BasisState)(np.zeroes(len(reg2)), reg2)
+
+    def circuit():
+        qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires[1]), partial(g, Wires([0])), partial(f, 0.2, Wires([0]), Wires[1]))
+
+    with AnnotatedQueue() as q:
+        circuit()
+
+    expected = [
+        qml.BasisState(np.zeroes(1), [1]),
+        qml.QFT([0]),
+        qml.RX(0.1, 0),
+        qml.PauliX(0),
+        qml.adjoint(qml.RX)(0.2, 0),
+        qml.adjoint(qml.QFT)([0]),
+        qml.adjoint(qml.BasisState)(np.zeroes(1), [1])
+    ]
+
+    for i, op in enumerate(q.queue):
+        assert op == expected[i]
 
 @pytest.mark.jax
 @pytest.mark.capture
