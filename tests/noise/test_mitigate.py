@@ -380,13 +380,6 @@ class TestMitiqIntegration:
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
 
-    @pytest.mark.xfail(
-        reason="Mitiq 0.47.0 uses removed QuantumScript.to_openqasm. Note that Mitiq 0.48.1 "
-        "no longer raises this error as per https://github.com/unitaryfoundation/mitiq/issues/2814. "
-        "However, as there is no stable dependency resolution for qualtran, cirq and mitiq==0.48.1, "
-        "we cannot test this case for the time being. Qualtran should update soon and enable this "
-        "test case to pass."
-    )
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
