@@ -673,7 +673,7 @@ class TestGraphDecomposition:
         }
 
         rr = change_op_basis_subroutine_resource_rep(
-            qml.PauliX(0),
+            resource_rep(qml.PauliX),
             partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
         )
         assert isinstance(rr, qml.decomposition.CompressedResourceOp)
@@ -698,7 +698,7 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].op_type == Adjoint
 
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qml.CNOT),
+            qml.CNOT([0, 1]),
             qml.PauliX(0),
             subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
         )
