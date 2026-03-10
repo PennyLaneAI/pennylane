@@ -27,7 +27,6 @@ from pennylane.operation import Operation
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.templates.core import (
     AbstractArray,
-    adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
