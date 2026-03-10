@@ -22,6 +22,7 @@ This module contains the abstractions for defining subroutines.
     ~Subroutine
     ~SubroutineOp
     ~AbstractArray
+    ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
 
 """
@@ -773,4 +774,4 @@ class Subroutine:
         return op.output
 
 
-__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep"]
+__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep", "adjoint_subroutine_resource_rep"]
