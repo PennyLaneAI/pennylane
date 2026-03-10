@@ -145,6 +145,11 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
+  available in PennyLane instead of only Catalyst. These compilation passes simplify rendundant
+  ``CNOT`` and ``SWAP`` gates.
+  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
@@ -261,6 +266,9 @@ The following classes have been ported over:
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
+
+* Catalyst's :func:`~.draw_graph` function is now accessible from PennyLane.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 * Raises a more informative error if something that is not a measurement process is returned from a
   QNode when program capture is turned on.
@@ -731,14 +739,39 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Documentation has been added to :func:`~.transforms.cancel_inverses` and
+  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
+  [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
+* Infrastructure has been put in place for features that should be accessible from both PennyLane and
+  Catalyst to have a single source of truth for documentation, which will provide a better overall
+  experience when consulting our documentation.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
+  The process for Catalyst frontend features to be automatically accessible from PennyLane while
+  ensuring that such features' documentation is properly sourced from Catalyst and hosted on
+  PennyLane's documentation is outlined in the
+  :doc:`documentation development guide <../development/guide/documentation>` under the section
+  titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
+  found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
+
+  In addition to the added infrastructure to make the above happen, the follow changes were made:
+
+  * Documentation for Pauli-based computation passes was removed as part of migrating documentation in
+    PennyLane to where its source code lives (in Catalyst). The reason for the removal is for there to
+    be one single source of truth for documentation of a feature if it is desired to be accessible
+    from both PennyLane and Catalyst.
+
+  * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to
+    render in PennyLane's documentation.
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
-
 
 <h3>Bug fixes 🐛</h3>
 

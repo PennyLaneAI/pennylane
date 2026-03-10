@@ -29,7 +29,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 ## CLOSED module(s)
 # No module can define dependencies to the following set of modules in this tach.toml file.
 
-# NOTE: visibility = [] just means no module in this file can declare 
+# NOTE: visibility = [] just means no module in this file can declare
 # `depends_on = [<insert-closed-module>]` within this file.
 
 [[modules]]
@@ -52,6 +52,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.concurrency"
 utility = true
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane._entry_points_utils"
+utility = true
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## CORE module(s)
@@ -179,7 +184,7 @@ path = "pennylane.pulse"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-# TEMPLATES MODULE 
+# TEMPLATES MODULE
 
 [[modules]]
 path = "pennylane.templates"
@@ -309,7 +314,7 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## UNSORTED module(s)
-# Due to circular import problems, these modules below have incorrect dependencies 
+# Due to circular import problems, these modules below have incorrect dependencies
 # and need to be parsed and fixed accordingly.
 
 # These are left temporarily to depend on ANYTHING but the closed modules at the top of this file.
