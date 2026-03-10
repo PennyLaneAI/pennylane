@@ -48,14 +48,14 @@ class TestMapToResourceOp:
     def test_unknown_subroutine_decomposition(self):
         """Test that if an unknown subroutine is provided, it just uses the decomposition."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             qml.X(wires)
 
         r_op = _map_to_resource_op(f.operator(0))
         assert r_op == re_ops.X()
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def g(wires):
             qml.X(wires)
             qml.Y(wires)

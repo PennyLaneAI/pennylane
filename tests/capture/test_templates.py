@@ -1585,8 +1585,8 @@ unsupported_templates = [
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
-    qml.templates.SubroutineOp,
-    qml.templates.Subroutine,
+    qml.templates.core.SubroutineOp,
+    qml.templates.core.Subroutine,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
@@ -1598,7 +1598,7 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qml.templates.SubroutineOp:
+    if template == qml.templates.core.SubroutineOp:
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 

@@ -23,8 +23,11 @@ import pytest
 import pennylane as qml
 from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX
-from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
+    AbstractArray,
+    Subroutine,
+    SubroutineOp,
+    subroutine_resource_rep,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
@@ -366,7 +369,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             assert wires.shape == (1,)
             qml.X(wires[0])
@@ -397,7 +400,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             return [qml.measure(w) for w in wires]
 
@@ -511,7 +514,7 @@ class TestTapePLIntegration:
     def test_mcm_integration(self):
         """Test that subroutines can return the results of mid circuit measurements."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def MCMTester(wires):
             return [qml.measure(wires=w, reset=True) for w in wires]
 
@@ -530,7 +533,7 @@ class TestTapePLIntegration:
     def test_drawing(self):
         """Test that subroutines can be drawn."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -549,7 +552,7 @@ class TestTapePLIntegration:
     def test_specs(self):
         """Test that subroutines show up as gate types in specs."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -863,7 +866,7 @@ class TestGraphDecomposition:
     def test_pytree_array_input_resource_params(self):
         """Test calculating the resource params when the dynamic input has a pytree structure."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
@@ -887,7 +890,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -905,7 +908,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -929,7 +932,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -937,7 +940,7 @@ class TestGraphDecomposition:
         def RYLayerResources(params, wires):
             return {qml.RY: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RYLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RYLayerResources)
         def RYLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RY(params[i], wires[i])

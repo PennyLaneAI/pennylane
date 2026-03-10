@@ -3166,11 +3166,11 @@ class TestCompareSubroutines:
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine1(wires):
             qml.X(wires)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine2(wires):
             qml.Y(wires)
 
@@ -3184,7 +3184,7 @@ class TestCompareSubroutines:
     def test_different_static_args(self):
         """Test they are different if they have different static args."""
 
-        @partial(qml.templates.Subroutine, static_argnames=("a",))
+        @partial(qml.templates.core.Subroutine, static_argnames=("a",))
         def f(a, wires):
             pass
 
@@ -3198,7 +3198,7 @@ class TestCompareSubroutines:
     def test_different_wires(self):
         """Test they are different if their wires are different."""
 
-        @partial(qml.templates.Subroutine, wire_argnames=("reg1", "reg2"))
+        @partial(qml.templates.core.Subroutine, wire_argnames=("reg1", "reg2"))
         def f(reg1, reg2):
             pass
 
@@ -3211,7 +3211,7 @@ class TestCompareSubroutines:
     def test_different_pytree_inputs(self):
         """Test that if the pytrees for an input are different, the ops are different."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
@@ -3225,7 +3225,7 @@ class TestCompareSubroutines:
     def test_different_data(self):
         """Test that if there is different data, they are different operators."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
