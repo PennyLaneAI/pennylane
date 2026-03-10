@@ -45,7 +45,9 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
+from pennylane.decomposition.resources import auto_wrap
+from pennylane.operation import Operation, Operator
+from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -80,6 +82,70 @@ class AbstractArray:
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
+def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
+    bound = subroutine.signature.bind(*args, **kwargs)
+    bound.apply_defaults()
+    for arg in subroutine.dynamic_argnames:
+        leaves, struct = flatten(bound.arguments[arg])
+        bound.arguments[arg] = (struct, tuple(leaves))
+    return tuple(bound.arguments.values())
+
+
+def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, CompressedResourceOp):
+        return auto_wrap(initial)
+    if isinstance(initial, Operator):
+        return resource_rep(type(initial), **initial.resource_params)
+    return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
+
+
+def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, Operator):
+        return adjoint_resource_rep(type(initial), initial.resource_params)
+    if isinstance(initial, CompressedResourceOp):
+        return adjoint_resource_rep(initial.op_type, initial.params)
+    return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
+
+
+def change_op_basis_subroutine_resource_rep(
+    compute: "Operator | CompressedResourceOp | Subroutine",
+    target: "Operator | CompressedResourceOp | Subroutine",
+    uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
+) -> CompressedResourceOp:
+    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
+    in advance.
+
+    Args:
+        compute (Operator | CompressedResourceOp | Subroutine): the compute op. May be a subroutine.
+        target (Operator | CompressedResourceOp | Subroutine): the target op. May be a subroutine.
+        target Optional(Operator | CompressedResourceOp | Subroutine): the optional uncompute op. May be a subroutine.
+    Returns:
+        CompressedResourceOp: a condensed representation of the change_op_basis involving a subroutine that can be
+        used in specifying the resources of another operator, template or subroutine.
+
+    .. note::
+
+        See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
+    """
+    compute_rep = _get_non_adjoint_rep(compute)
+    target_rep = _get_non_adjoint_rep(target)
+    if not uncompute:
+        uncompute_rep = _get_adjoint_rep(compute)
+    else:
+        uncompute_rep = _get_non_adjoint_rep(uncompute)
+    return CompressedResourceOp(
+        ChangeOpBasis,
+        {
+            "compute_op": compute_rep,
+            "target_op": target_rep,
+            "uncompute_op": uncompute_rep,
+        },
+    )
+
+
 def adjoint_subroutine_resource_rep(
     subroutine: "Subroutine", *args, **kwargs
 ) -> CompressedResourceOp:
@@ -92,67 +158,11 @@ def adjoint_subroutine_resource_rep(
         CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
         the resources of another function.
 
-    .. warning:: Note that the following features only work with tape-based PennyLane, and
-        do not work with Catalyst.
+    .. note::
 
-    Suppose we have a ``Subroutine`` and we want to use its adjoint in the decomposition of another ``Operator``.
-
-    .. code-block:: python
-
-        from functools import partial
-
-        def S0_resources(params, wires, rotation):
-            return {qml.resource_rep(rotation): params.shape[0]}
-
-        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S0_resources)
-        def S0(params, wires, rotation):
-            for x in params:
-                rotation(x, wires)
-
-    We can add the ``S0`` adjoint to the resources of another ``Operator`` by using this function together with
-    an abstract form of what it will be called with using :class:`~.AbstractArray`.
-
-    .. code-block:: python
-
-        from pennylane.templates import AbstractArray, adjoint_subroutine_resource_rep
-        from pennylane.ops import adjoint
-
-        class MyOp(qml.operation.Operation):
-            pass
-
-        abstract_params = AbstractArray((4, ), float)
-        abstract_wires = AbstractArray(()) # a single wire
-        S0_resources = adjoint_subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
-
-        @qml.decomposition.register_resources({S0_resources: 1})
-        def MyOpDecomposition(wires):
-            # data of shape (4, ) and dtype float
-            params = np.array([1.0, 2.0, 3.0, 4.0])
-            adjoint(S0)(params, wires, qml.RX)
-
-        qml.add_decomps(MyOp, MyOpDecomposition)
-
-    We can now see ``MyOp`` decompose into the relevant subroutine:
-
-    .. code-block:: python
-
-        qml.decomposition.enable_graph()
-        @qml.qnode(qml.device('reference.qubit', wires=1))
-        def c():
-            MyOp(wires=0)
-            return qml.state()
-
-    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
-    0: ──S0(M0)†─┤  State
-    <BLANKLINE>
-    M0 =
-    [1. 2. 3. 4.]
+        See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
     """
-    bound = subroutine.signature.bind(*args, **kwargs)
-    for arg in subroutine.dynamic_argnames:
-        leaves, struct = flatten(bound.arguments[arg])
-        bound.arguments[arg] = (struct, tuple(leaves))
-    signature_key = tuple(bound.arguments.values())
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return adjoint_resource_rep(
         SubroutineOp, {"subroutine": subroutine, "signature_key": signature_key}
     )
@@ -227,12 +237,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
     [1. 2. 3. 4.]
 
     """
-    bound = subroutine.signature.bind(*args, **kwargs)
-    bound.apply_defaults()
-    for arg in subroutine.dynamic_argnames:
-        leaves, struct = flatten(bound.arguments[arg])
-        bound.arguments[arg] = (struct, tuple(leaves))
-    signature_key = tuple(bound.arguments.values())
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return resource_rep(SubroutineOp, subroutine=subroutine, signature_key=signature_key)
 
 
