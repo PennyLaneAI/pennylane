@@ -59,7 +59,7 @@ class AbstractArray:
     """An abstract representation of an array that contains the shape and dtype
     attributes necessary for resource calculations.
 
-    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
+    This class is used with :func:`~pennylane.templates.core.subroutine_resource_rep`
     for specifying abstract information about a :class:`~.Subroutine` for
     purposes of resource calculations used with graph decompositions.
 
@@ -192,7 +192,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         def S_resources(params, wires, rotation):
             return {qml.resource_rep(rotation): params.shape[0]}
 
-        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
+        @partial(qml.templates.core.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
             for x in params:
                 rotation(x, wires)
@@ -601,7 +601,7 @@ class Subroutine:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -674,7 +674,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             if x < 0:
                 qml.X(wires)
@@ -701,7 +701,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         @qml.capture.run_autograph
         def UsingAutograph(x, wires):
             if x < 0:
@@ -709,7 +709,7 @@ class Subroutine:
             else:
                 qml.Y(wires)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def UsingCond(x, wires):
             qml.cond(x  > 0, qml.X, qml.Y)(wires)
 
