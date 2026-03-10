@@ -888,12 +888,12 @@ def _convert_to_real_diagonal(q):
     return q * math.reshape(math.exp(-1j * exp_angles), (1, 2))
 
 
-def _param_su2(ar, ai, br, bi):
+def _param_su2(ar, ai, br):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
+    return math.array([[ar + 1j * ai, -br], [br, ar + 1j * -ai]])
 
 
 def _bisect_compute_a(u):
@@ -913,8 +913,7 @@ def _bisect_compute_a(u):
         mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
         ai = zi * mul
         br = x * mul
-        bi = 0
-        return _param_su2(ar, ai, br, bi)
+        return _param_su2(ar, ai, br)
 
     return math.cond(
         math.allclose(zr, -1),
@@ -986,7 +985,7 @@ def _bisect_compute_b(u):
         (),
     )
 
-    return _param_su2(c, d, b, 0)
+    return _param_su2(c, d, b)
 
 
 def _single_control_zyz(phi, theta, omega, wires):
