@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 
 
-@pytest.mark.xfail(reason="remove after #2554 in Catalyst")
 @pytest.mark.external
 def test_catalyst_integration():
     """Test that scatter_element_add can be used with catalyst by specifying indices_are_sorted and unique_indices."""
@@ -37,6 +36,4 @@ def test_catalyst_integration():
 
     out = f(x0, y)
     expected = jnp.array([[1.0, 0.0], [0.0, 2.0]])
-    assert qml.math.allclose(out, expected)
-    assert qml.math.allclose(out, expected)
     assert qml.math.allclose(out, expected)
