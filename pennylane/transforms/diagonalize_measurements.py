@@ -34,18 +34,19 @@ _default_supported_obs = (qml.Z, qml.Identity)
 def diagonalize_final_measurements_setup_inputs(
     supported_base_obs: tuple[str] = ("PauliZ", "Identity"), to_eigvals: bool = False
 ):
-    r"""The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
+    """The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
     would allow users to activate the xDSL pass with the ``qp.transforms.diagonalize_measurements``
     decorator. Users can pass ``supported_base_obs`` and ``to_eigvals`` args to the xDSL pass.
 
     Args:
-        supported_base_obs (tuple[str]): A list of supported base observable classes. A subset of
+        supported_base_obs (tuple[str]): A tuple of supported base observable name str. A subset of
             ("PauliX", "PauliY", "PauliZ", "Hadamard", "Identity") is supported. Defaults to ("PauliZ",
             "Identity").
         to_eigvals (bool): Whether the diagonalization should create measurements using
             eigvals and wires rather than observables. Defaults to ``False``.
 
     .. note::
+
         An error will be raised if non-commuting terms are encountered.
 
     **Example**
@@ -68,7 +69,7 @@ def diagonalize_final_measurements_setup_inputs(
     0.9687151001182651
     >>> qjitted_circuit(1.1) # doctest: +SKIP
     0.9687151001182651
-    >>> expected_substr in qjitted_circuit.mlir
+    >>> expected_substr in qjitted_circuit.mlir # doctest: +SKIP
     True
 
         .. warning::
@@ -127,6 +128,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
+
         An error will be raised if non-commuting terms are encountered. To avoid non-commuting
         terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
         transform can be applied.
@@ -217,6 +219,27 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
         >>> tapes[0].measurements
         [expval(X(0) + Z(1)), expval(X(0) + 0.2 * Z(1)), var(Y(2) + X(0))]
+
+    .. details::
+        :title: Usage with Catalyst
+
+        This transform is compatible with ``qjit``, where it will be applied as an MLIR pass rather than a tape-level transform.
+        That being said, there are a few differences to be aware of when using the MLIR pass:
+
+        - ``supported_base_obs`` only accepts a tuple of supported base observable name string.
+        - ``to_eigvals`` can be specified as ``False``.
+
+        .. code-block:: python
+
+            @qp.qjit
+            @qp.transforms.diagonalize_measurements(supported_base_obs=("PauliX",))
+            @qp.qnode(qp.device("lightning.qubit", wires=1))
+            def circuit(x):
+                qp.Hadamard(0)
+                qp.RZ(x, 0)
+                qp.PhaseShift(x * 0.2, 0)
+                return qp.expval(qp.Y(0))
+
     """
 
     bad_obs_input = [
