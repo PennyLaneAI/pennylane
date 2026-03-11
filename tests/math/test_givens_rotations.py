@@ -463,16 +463,17 @@ def test_set_unitary_matrix_complex(
     """Test the _set_unitary function on different interfaces with complex-valued matrices."""
     if like == "numpy" and compiler is not None:
         pytest.skip(reason="Can't use numpy interface with jit compilation.")
-    import jax
-    import jax.numpy as jnp
-
     if use_jax:
+        import jax.numpy as jnp
+
         unitary_matrix = jnp.array(unitary_matrix)
         value = jnp.array(value)
     else:
         value = onp.array(value)
 
     if compiler == "jit":
+        import jax
+
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
         catalyst = pytest.importorskip("catalyst")
