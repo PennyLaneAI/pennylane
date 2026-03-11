@@ -426,10 +426,10 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == for_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert len(inner_jaxpr.eqns) == 4
+        assert inner_jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[3].primitive == qml.RZ._primitive
 
     def test_while_loop_higher_order_primitive(self):
         """Test that the while_loop primitive is correctly interpreted"""
@@ -449,10 +449,10 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == while_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert len(inner_jaxpr.eqns) == 4
-        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert len(inner_jaxpr.eqns) == 5
+        assert inner_jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[3].primitive == qml.RZ._primitive
 
     def test_qnode_higher_order_primitive(self):
         """Test that the qnode primitive is correctly interpreted"""
@@ -469,11 +469,11 @@ class TestDecomposeInterpreter:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
     def test_grad_and_jac_higher_order_primitive(self, grad_fn):
@@ -495,11 +495,11 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestControlledDecompositions:
@@ -632,9 +632,9 @@ def test_decompose_plxpr_to_plxpr():
         jaxpr.jaxpr, jaxpr.consts, [], {"gate_set": gate_set}, *args
     )
     assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
-    assert len(transformed_jaxpr.eqns) == 5
-    assert transformed_jaxpr.eqns[0].primitive == qml.RZ._primitive
-    assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive
-    assert transformed_jaxpr.eqns[2].primitive == qml.RZ._primitive
-    assert transformed_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-    assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+    assert len(transformed_jaxpr.eqns) == 7
+    assert transformed_jaxpr.eqns[1].primitive == qml.RZ._primitive
+    assert transformed_jaxpr.eqns[2].primitive == qml.RY._primitive
+    assert transformed_jaxpr.eqns[3].primitive == qml.RZ._primitive
+    assert transformed_jaxpr.eqns[5].primitive == qml.PauliZ._primitive
+    assert transformed_jaxpr.eqns[6].primitive == qml.measurements.ExpectationMP._obs_primitive
