@@ -15,6 +15,7 @@ jobs:
         with:
           ref: master
           token: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+          fetch-depth: 0 
 
       - name: Sync main to master
         run: |
