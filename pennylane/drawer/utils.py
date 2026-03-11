@@ -19,6 +19,13 @@ import numpy as np
 
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
+
+
+def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
+    leaves = flatten(op.output)[0]
+    return [mv for mv in leaves if isinstance(mv, MeasurementValue)]
 
 
 def default_wire_map(tape):
@@ -61,6 +68,13 @@ def default_bit_map(tape):
 
     mcm_idx = 0
     for op in tape:
+        if isinstance(op, SubroutineOp):
+            mvs = _get_subroutine_mvs(op)
+            for mv in mvs:
+                for mcm in mv.measurements:
+                    mcms[mcm] = mcm_idx
+                    mcm_idx += 1
+
         if isinstance(op, (MidMeasure, PauliMeasure)):
             mcms[op] = mcm_idx
             mcm_idx += 1
@@ -76,9 +90,7 @@ def default_bit_map(tape):
             else:
                 for m in op.mv:
                     bit_map[m.measurements[0]] = None
-
     bit_map = {mcm: i for i, mcm in enumerate(sorted(bit_map, key=mcms.get))}
-
     return bit_map
 
 
@@ -161,6 +173,7 @@ def unwrap_controls(op):
     return control_wires, control_values, next_ctrl
 
 
+# pylint: disable=too-many-branches
 def cwire_connections(layers, bit_map):
     """Extract the information required for classical control wires.
 
@@ -211,7 +224,13 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, (MidMeasure, PauliMeasure)) and op in bit_map:
+            if isinstance(op, SubroutineOp):
+                _meas = []
+                for mcm in (mcm for mv in _get_subroutine_mvs(op) for mcm in mv.measurements):
+                    if mcm in bit_map:
+                        _meas.append(mcm)
+                con_wire = max(op.wires)
+            elif isinstance(op, (MidMeasure, PauliMeasure)) and op in bit_map:
                 _meas = [op]
                 con_wire = op.wires[0]
 

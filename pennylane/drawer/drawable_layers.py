@@ -17,6 +17,8 @@ This module contains a helper function to sort operations into layers.
 
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import Conditional, GlobalPhase, Identity, MidMeasure, PauliMeasure
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
 
 from .utils import default_wire_map, unwrap_controls
 
@@ -78,8 +80,21 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
     )
 
 
+# pylint: disable=too-many-return-statements, too-many-branches
 def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
+    if isinstance(op, SubroutineOp):
+        mapped_wires = [wire_map[wire] for wire in op.wires]
+
+        if any(m in bit_map for mv in flatten(op.output)[0] for m in mv.measurements):
+            min_wire = min(mapped_wires)
+            max_wire = max(wire_map.values())
+            return set(range(min_wire, max_wire + 1))
+
+        min_wire = min(mapped_wires)
+        max_wire = max(mapped_wires)
+        return set(range(min_wire, max_wire + 1))
+
     if isinstance(op, (MidMeasure, PauliMeasure)):
         mapped_wires = [wire_map[wire] for wire in op.wires]
 
