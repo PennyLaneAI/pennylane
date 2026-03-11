@@ -114,11 +114,12 @@ Operator Types
     ~CVObservable
     ~CVOperation
     ~Channel
+    ~Gate
     ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation Gate StatePrepBase
     :parts: 1
 
 
@@ -2004,13 +2005,13 @@ class Gate(Operation):
 
     def __init_subclass__(cls, **_):
         if len(cls.resource_keys) > 0:
-            raise ValueError("Gate's must not have any resource keys.")
+            raise ValueError("Gate's must not have any resource_keys.")
         if not isinstance(cls.num_wires, int):
-            raise ValueError("Gate's must have a fixed integer number of wires.")
+            raise ValueError("Gate's must have a fixed integer num_wires.")
         if not isinstance(cls.num_params, int):
-            raise ValueError(
-                "Gate's must have a fixed integer number of parameters set ahead of time."
-            )
+            raise ValueError("Gate's must have a fixed integer num_params.")
+        if cls.resource_params != Gate.resource_params:
+            raise ValueError("resource_params should not be overwritten on Gate classes.")
         if cls.ndim_params == Operator.ndim_params:  # pylint: disable=comparison-with-callable
             cls.ndim_params = tuple(0 for _ in range(cls.num_params))
         elif any(dim != 0 for dim in cls.ndim_params):

@@ -37,13 +37,13 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if Operation not in operation.__bases__:
+                if Operation not in operation.__mro__:
                     not_op = True
             except AttributeError:
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if Operation in position.__bases__:
+            if Operation in position.__mro__:
                 req_ops = [position]
             else:
                 not_op = True

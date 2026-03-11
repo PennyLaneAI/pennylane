@@ -26,6 +26,7 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
+    Gate,
     Operation,
     Operator,
     StatePrepBase,
@@ -2005,3 +2006,71 @@ def test_get_attr():
     assert (
         StatePrep is qml.operation.StatePrepBase
     )  # StatePrep imported from operation.py is an alias for StatePrepBase
+
+
+# pylint: disable=unused-variable
+class TestGate:
+    """Unit tests for the Gate class."""
+
+    def test_error_if_resource_keys(self):
+        """Test an error is raised if the gate has resource_keys"""
+
+        with pytest.raises(ValueError, match="must not have any resource_keys"):
+
+            class MyGate(Gate):
+                resource_keys = {
+                    "my_keys",
+                }
+
+                num_wires = 1
+                num_params = 1
+
+    def test_no_override_resource_params(self):
+        """Test that resource_params can't be overwritten."""
+
+        with pytest.raises(ValueError, match="resource_params hsould not be overwritten"):
+
+            class MyGate(Gate):
+                num_wires = 1
+                num_params = 1
+
+                @property
+                def resource_keys(self):
+                    return {"a": 1}
+
+    def test_error_if_no_num_wires(self):
+        """Test that an error is raised if num_wires is not set."""
+
+        with pytest.raises(ValueError, match="must have a fixed integer num_wires"):
+
+            class MyGate(Gate):
+                num_params = 1
+
+    def test_error_if_no_num_params(self):
+        """Test that an error is raised in num_params is not set."""
+
+        with pytest.raises(ValueError, match="must have a fixed integer num_params"):
+
+            class MyGate(Gate):
+                num_wires = 1
+
+    def test_error_if_nonscalar_ndim_params(self):
+        """Test that an error is raised if ndim_params indicates the existance of a non-scalar parameter."""
+
+        with pytest.raises(ValueError, match="must only have scalar parameter inputs."):
+
+            class MyGate(Gate):
+                num_wires = 1
+                num_params = 1
+                ndim_params = (2, 0)
+
+    def test_resource_params_keys(self):
+        """Test that the resource_params default to {} and resource_keys default to"""
+
+        class MyGate(Gate):
+            num_wires = 1
+            num_params = 1
+
+        assert MyGate.resource_keys == frozenset()
+        op = MyGate(0.5, 0)
+        assert op.resource_params == {}
