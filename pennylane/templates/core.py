@@ -668,7 +668,7 @@ class Subroutine:
             if argname not in self._signature.parameters:
                 raise ValueError(
                     f"wire argname '{argname}' not present in function signature. "
-                    "Please update wire_argnames."
+                    "Please update the function's signature or 'wire_argnames'."
                 )
 
     @property
