@@ -104,7 +104,7 @@ def adjoint_subroutine_resource_rep(
 
     .. note::
 
-        See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
+        See :func:`~pennylane.templates.core.subroutine_resource_rep` for more information.
     """
     signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return adjoint_resource_rep(
