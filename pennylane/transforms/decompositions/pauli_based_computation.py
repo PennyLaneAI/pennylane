@@ -86,11 +86,11 @@ def to_ppr_setup_inputs():
     To inspect programs compiled with ``to_ppr`` via :func:`~.specs`, ensure that ``target="mlir"``
     is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: to-ppr (MLIR-1)
+    Level: to-ppr
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 11
@@ -189,11 +189,11 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``commute_ppr`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: commute-ppr (MLIR-2)
+    Level: commute-ppr
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 7
@@ -291,11 +291,11 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: merge-ppr-ppm (MLIR-2)
+    Level: merge-ppr-ppm
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 1
@@ -405,11 +405,11 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: ppr-to-ppm (MLIR-2)
+    Level: ppr-to-ppm
     <BLANKLINE>
     Wire allocations: 9
     Total gates: 24
@@ -517,11 +517,11 @@ def ppm_compilation_setup_inputs(
     To inspect programs compiled with ``ppm_compilation`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: ppm-compilation (MLIR-1)
+    Level: ppm-compilation
     <BLANKLINE>
     Wire allocations: 8
     Total gates: 25
@@ -714,11 +714,11 @@ def decompose_arbitrary_ppr_setup_inputs():
             qml.PauliRot(0.1, pauli_word="XY", wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 3
     Shots: Shots(total=None)
-    Level: decompose-arbitrary-ppr (MLIR-2)
+    Level: decompose-arbitrary-ppr
     <BLANKLINE>
     Wire allocations: 3
     Total gates: 6
