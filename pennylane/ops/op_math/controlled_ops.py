@@ -41,7 +41,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
-from pennylane.operation import Gate
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -290,7 +289,7 @@ add_decomps(
 )
 
 
-class CH(Gate, ControlledOp):
+class CH(ControlledOp):
     r"""CH(wires)
     The controlled-Hadamard operator
 
@@ -312,13 +311,16 @@ class CH(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CH"
 
@@ -347,6 +349,10 @@ class CH(Gate, ControlledOp):
 
     def adjoint(self):
         return CH(self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache
@@ -424,7 +430,7 @@ add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(Gate, ControlledOp):
+class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -448,13 +454,16 @@ class CY(Gate, ControlledOp):
             can be useful for some applications where the instance has to be identified.
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CY"
 
@@ -477,6 +486,10 @@ class CY(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CY(self.wires)
@@ -569,7 +582,7 @@ add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
-class CZ(Gate, ControlledOp):
+class CZ(ControlledOp):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -591,13 +604,16 @@ class CZ(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CZ"
 
@@ -620,6 +636,10 @@ class CZ(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CZ(self.wires)
@@ -696,7 +716,7 @@ add_decomps("Adjoint(CZ)", self_adjoint)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
-class CSWAP(Gate, ControlledOp):
+class CSWAP(ControlledOp):
     r"""CSWAP(wires)
     The controlled-swap operator
 
@@ -722,13 +742,16 @@ class CSWAP(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    ndim_params = ()
-
     num_wires = 3
     """int : Number of wires that the operation acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CSWAP"
 
@@ -754,6 +777,10 @@ class CSWAP(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CSWAP(self.wires)
@@ -865,7 +892,7 @@ add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
-class CCZ(Gate, ControlledOp):
+class CCZ(ControlledOp):
     r"""CCZ(wires)
     CCZ (controlled-controlled-Z) gate.
 
@@ -892,8 +919,6 @@ class CCZ(Gate, ControlledOp):
         wires (Sequence[int]): the subsystem the gate acts on
     """
 
-    ndim_params = ()
-
     @classmethod
     def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=3)
@@ -911,6 +936,11 @@ class CCZ(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
     name = "CCZ"
 
     def __init__(self, wires, id=None):
@@ -924,6 +954,10 @@ class CCZ(Gate, ControlledOp):
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CCZ(self.wires)
@@ -1067,7 +1101,7 @@ add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-class CNOT(Gate, ControlledOp):
+class CNOT(ControlledOp):
     r"""CNOT(wires)
     The controlled-NOT operator
 
@@ -1095,9 +1129,12 @@ class CNOT(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    name = "CNOT"
-
     ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
+    name = "CNOT"
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -1144,6 +1181,10 @@ class CNOT(Gate, ControlledOp):
             qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -1209,7 +1250,7 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
-class Toffoli(Gate, ControlledOp):
+class Toffoli(ControlledOp):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -1242,9 +1283,12 @@ class Toffoli(Gate, ControlledOp):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    name = "Toffoli"
-
     ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
+    name = "Toffoli"
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -1267,6 +1311,10 @@ class Toffoli(Gate, ControlledOp):
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
@@ -1506,8 +1554,6 @@ class MultiControlledX(ControlledOp):
         unchanged.
 
     """
-
-    ndim_params = ()
 
     is_self_inverse = True
     """bool: Whether or not the operator is self-inverse."""
@@ -1778,7 +1824,7 @@ add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
-class CRX(Gate, ControlledOp):
+class CRX(ControlledOp):
     r"""The controlled-RX operator
 
     .. math::
@@ -1817,13 +1863,16 @@ class CRX(Gate, ControlledOp):
         id (str or None): String representing the operation (optional)
     """
 
-    ndim_params = (0,)
-
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
@@ -1847,6 +1896,10 @@ class CRX(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
@@ -1988,7 +2041,7 @@ add_decomps("Adjoint(CRX)", adjoint_rotation)
 add_decomps("Pow(CRX)", pow_rotation)
 
 
-class CRY(Gate, ControlledOp):
+class CRY(ControlledOp):
     r"""The controlled-RY operator
 
     .. math::
@@ -2034,6 +2087,9 @@ class CRY(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2057,6 +2113,10 @@ class CRY(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
@@ -2173,7 +2233,7 @@ add_decomps("Adjoint(CRY)", adjoint_rotation)
 add_decomps("Pow(CRY)", pow_rotation)
 
 
-class CRZ(Gate, ControlledOp):
+class CRZ(ControlledOp):
     r"""The controlled-RZ operator
 
     .. math::
@@ -2224,6 +2284,9 @@ class CRZ(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2247,6 +2310,10 @@ class CRZ(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
@@ -2401,7 +2468,7 @@ add_decomps("Adjoint(CRZ)", adjoint_rotation)
 add_decomps("Pow(CRZ)", pow_rotation)
 
 
-class CRot(Gate, ControlledOp):
+class CRot(ControlledOp):
     r"""The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -2448,6 +2515,9 @@ class CRot(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
 
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
@@ -2474,6 +2544,10 @@ class CRot(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         phi, theta, omega = self.parameters
@@ -2617,7 +2691,7 @@ def _adjoint_crot(phi, theta, omega, wires, **_):
 add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
-class ControlledPhaseShift(Gate, ControlledOp):
+class ControlledPhaseShift(ControlledOp):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -2650,10 +2724,13 @@ class ControlledPhaseShift(Gate, ControlledOp):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
-
-    ndim_params = (0,)
 
     def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
@@ -2674,6 +2751,10 @@ class ControlledPhaseShift(Gate, ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
