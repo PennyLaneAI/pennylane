@@ -348,14 +348,9 @@ def test_givens_matrix_jaxpr():
 )
 @pytest.mark.parametrize(
     "compiler",
-    [
-        None,
-        pytest.param("jit", marks=[pytest.mark.jax]),
-        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
-    ],
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
 )
 @pytest.mark.jax
-@pytest.mark.external
 def test_set_unitary_matrix_real(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
@@ -451,29 +446,26 @@ def test_set_unitary_matrix_real(
 )
 @pytest.mark.parametrize(
     "compiler",
-    [
-        None,
-        pytest.param("jit", marks=[pytest.mark.jax]),
-        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
-    ],
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
 )
+@pytest.mark.jax
 def test_set_unitary_matrix_complex(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
     """Test the _set_unitary function on different interfaces with complex-valued matrices."""
     if like == "numpy" and compiler is not None:
         pytest.skip(reason="Can't use numpy interface with jit compilation.")
-    if use_jax:
-        import jax.numpy as jnp
 
+    import jax
+    import jax.numpy as jnp
+
+    if use_jax:
         unitary_matrix = jnp.array(unitary_matrix)
         value = jnp.array(value)
     else:
         value = onp.array(value)
 
     if compiler == "jit":
-        import jax
-
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
         catalyst = pytest.importorskip("catalyst")
