@@ -146,7 +146,7 @@ The following classes have been ported over:
 <h3>Improvements 🛠</h3>
 
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
-  This fixed a bug where two qubit unitaries would decompose incorrectly to two single qubit unitaries rather
+  This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
   
