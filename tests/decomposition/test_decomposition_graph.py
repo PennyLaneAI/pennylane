@@ -805,13 +805,13 @@ class TestSymbolicDecompositions:
         op = qml.pow(qml.pow(qml.H(0), 3), 2)
         graph = DecompositionGraph(operations=[op], gate_set={"H"})
         # 3 operator nodes: Pow(Pow(H)), Pow(H), and H
-        # 1 decomposition nodes for Pow(Pow(H)) and 1 nodes for Pow(H)
+        # 2 decomposition nodes for Pow(Pow(H)) and 2 nodes for Pow(H)
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 5
-        # 2 edges from decompositions to ops and 1 edge from ops to decompositions
+        assert len(graph._graph.nodes()) == 7
+        # 4 edges from decompositions to ops and 2 edge from ops to decompositions
         # and 1 edge from the dummy starting node to the target gate set. Note that
         # H**6 decomposes to nothing, so H isn't counted.
-        assert len(graph._graph.edges()) == 4
+        assert len(graph._graph.edges()) == 7
 
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
@@ -826,6 +826,20 @@ class TestSymbolicDecompositions:
 
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
+
+    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qml.X(0)])])
+    def test_trivial_powers(self, _, z, expected):
+        """Tests trivial powers of 1 or 0."""
+
+        op = qml.pow(qml.X(0), z)
+
+        graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
+        solution = graph.solve()
+
+        with qml.queuing.AnnotatedQueue() as q:
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == expected
 
     def test_custom_symbolic_decompositions(self, _):
         """Tests that custom symbolic decompositions are used."""
