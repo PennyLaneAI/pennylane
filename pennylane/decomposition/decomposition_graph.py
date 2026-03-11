@@ -51,8 +51,6 @@ from .symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_involutory,
-    pow_rotation,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -270,16 +268,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
-            if isinstance(op, qml.templates.SubroutineOp):
-                self._construct_graph(op.decomposition())
-            else:
-                if isinstance(op, qml.ops.Conditional):
-                    op = op.base  # decompose the base of a classically controlled operator.
-                if isinstance(op, Operator):
-                    op = resource_rep(type(op), **op.resource_params)
-                idx = self._add_op_node(op, 0)
-                self._original_ops_indices.add(idx)
-                self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
+            if isinstance(op, qml.ops.Conditional):
+                op = op.base  # decompose the base of a classically controlled operator.
+            if isinstance(op, Operator):
+                op = resource_rep(type(op), **op.resource_params)
+            idx = self._add_op_node(op, 0)
+            self._original_ops_indices.add(idx)
+            self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
     def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -423,17 +418,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op))
 
-        elif (
-            issubclass(op.op_type, qml.ops.Pow)
-            and pow_rotation not in decomps
-            and pow_involutory not in decomps
-        ):
+        elif issubclass(op.op_type, qml.ops.Pow):
             # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-            # the general case.
+            # approach we take to decompose powers of operators.
             decomps.extend(self._get_pow_decompositions(op))
 
         elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
@@ -488,8 +475,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [flip_control_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
-        # generated decomposition rules apply.
-        if base_class is qml.GlobalPhase:
+        # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
+        # own decomposition, which applies the control on the middle op only. This should
+        # always be applied.
+        if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
             return []
 
         # General case: apply control to the base op's decomposition rules.

@@ -163,7 +163,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 
-    if rule.exact_resources:
+    if rule.exact_resources and not (
+        isinstance(op, qml.templates.SubroutineOp) and not op.subroutine.exact_resources
+    ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
@@ -172,7 +174,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts)
+        assert all(op in gate_counts for op in actual_gate_counts), (
+            "\nGate counts expected from resource function to contain actual gates:\n"
+            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            "Missing in gate counts from resource function:\n"
+            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+        )
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix and not skip_decomp_matrix_check:

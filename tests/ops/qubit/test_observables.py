@@ -350,17 +350,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
                 qml.matrix(observable), wires=list(range(num_wires))
             )
 
-    @pytest.mark.parametrize("test_num_wires", list(range(1, 11)))
-    def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
-        """Tests the performance of the compute_decomposition method of the Hermitian class.
-        Used to determine the minimum matrix dimension to raise an inefficiency warning"""
-        observable = qml.Identity(0)
-        for i in range(test_num_wires):
-            observable = observable @ qml.X(i)
-        benchmark(
-            qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
-        )
-
     @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
     def test_hermitian_decomposition(self, observable):
         """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
@@ -612,12 +601,11 @@ class TestProjector:
     def test_serialization(self):
         """Tests that Projector is pickle-able."""
         # Basis state projector
-        proj = qml.Projector([1], wires=[0], id="Timmy")
+        proj = qml.Projector([1], wires=[0])
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
         proj = qml.Projector([0, 1], wires=[0])
@@ -626,7 +614,6 @@ class TestProjector:
 
         assert type(new_proj) is type(proj)
         qml.assert_equal(new_proj, proj)
-        assert new_proj.id == proj.id  # Ensure they are identical
 
     def test_single_qubit_basis_state_0(self):
         """Tests the function with a single-qubit basis state |0>."""

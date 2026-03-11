@@ -183,8 +183,8 @@ class TestDrawableLayers:
 
     def test_mid_measure_custom_wires(self):
         """Test that custom wires do not break the drawing of mid-circuit measurements."""
-        mp0 = MidMeasure("A", id="foo")
-        mp1 = MidMeasure("a", id="bar")
+        mp0 = MidMeasure("A", meas_uid="foo")
+        mp1 = MidMeasure("a", meas_uid="bar")
         m0 = qml.ops.MeasurementValue([mp0], lambda v: v)
         m1 = qml.ops.MeasurementValue([mp1], lambda v: v)
 
@@ -202,7 +202,7 @@ class TestDrawableLayers:
         tape_custom = qml.tape.make_qscript(teleport)([0, 1])
         [tape_standard], _ = qml.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
         ops = tape_standard.operations
-        bit_map = {MidMeasure(0, id="foo"): None, MidMeasure(1, id="bar"): None}
+        bit_map = {MidMeasure(0, meas_uid="foo"): None, MidMeasure(1, meas_uid="bar"): None}
         layers = drawable_layers(ops, bit_map=bit_map)
         assert layers == [ops[:2]] + [[op] for op in ops[2:]]
 
