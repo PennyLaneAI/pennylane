@@ -32,6 +32,7 @@ from pennylane.capture.primitives import (
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    value_and_grad_prim,
     vjp_prim,
 )
 from pennylane.operation import Operator
@@ -193,6 +194,11 @@ def _(self, *wires, pauli_word="", postselect=None):
 @CollectOpsandMeas.register_primitive(jacobian_prim)
 def _jacobian_primitive(self, *invals, jaxpr, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(value_and_grad_prim)
+def _value_and_grad_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the value_and_grad primitive")
 
 
 @CollectOpsandMeas.register_primitive(vjp_prim)
