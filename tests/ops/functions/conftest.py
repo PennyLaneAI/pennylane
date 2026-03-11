@@ -173,6 +173,7 @@ These operators need to break PL conventions, and each one's reason is specified
 
 
 _ABSTRACT_OR_META_TYPES = {
+    qml.operation.Gate,
     LabelledOp,
     MarkedOp,
     Adjoint,
