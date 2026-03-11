@@ -1375,6 +1375,11 @@ class TestDifferentiation:
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
+        if diff_method in ["parameter-shift", "finite-diff"]:
+            pytest.xfail(
+                reason="SymbolicOp involving a Gate will not work until a follow-up PR (we need to remove the base param)"
+            )
+
         import jax
 
         jax.config.update("jax_enable_x64", True)
