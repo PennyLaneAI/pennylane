@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Gate
 
 from .utils import to_name
 
@@ -303,6 +303,10 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
+    if issubclass(op_type, Gate) and "signature_key" not in params:
+        params = params.update(
+            op_type.signature
+        )
     return CompressedResourceOp(op_type, params)
 
 
