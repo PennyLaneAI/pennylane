@@ -1390,7 +1390,7 @@ class TestDifferentiation:
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
-        b = 0.123
+        b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
         expected = pnp.sin(b / 2) / 2
 

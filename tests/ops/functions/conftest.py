@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
-from pennylane.operation import Channel, Operation, Operator, StatePrepBase, Gate
+from pennylane.operation import Channel, Gate, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation

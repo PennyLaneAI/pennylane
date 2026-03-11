@@ -184,10 +184,10 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from dataclasses import dataclass
-from inspect import BoundArguments, signature
 from collections.abc import Callable, Hashable, Iterable, Set
+from dataclasses import dataclass
 from functools import lru_cache, reduce
+from inspect import BoundArguments, signature
 from typing import Any, ClassVar, Literal, Optional, Union, final
 
 import numpy as np
@@ -213,7 +213,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .pytrees import register_pytree, flatten
+from .pytrees import flatten, register_pytree
 
 has_jax = True
 try:
@@ -2084,9 +2084,16 @@ class Gate(Operation):
         return bound_args
 
     @classproperty
-    def signature(cls):
+    def signature(cls):  # pylint: disable=no-self-argument
         """A signature can be inferred for an uninstantiated type if it takes simple 1-D params and wires."""
-        return {"signature_key": tuple([AbstractArray((1,)) for _ in range(cls.num_params)] + [AbstractArray((cls.num_wires,)),])}
+        return {
+            "signature_key": tuple(
+                [AbstractArray((1,)) for _ in range(cls.num_params)]
+                + [
+                    AbstractArray((cls.num_wires,)),
+                ]
+            )
+        }
 
     @property
     def bound_signature(self):
