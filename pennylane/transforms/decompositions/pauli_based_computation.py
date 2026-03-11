@@ -86,7 +86,7 @@ def to_ppr_setup_inputs():
     To inspect programs compiled with ``to_ppr`` via :func:`~.specs`, ensure that ``target="mlir"``
     is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -189,7 +189,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``commute_ppr`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -291,7 +291,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -405,7 +405,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -517,7 +517,7 @@ def ppm_compilation_setup_inputs(
     To inspect programs compiled with ``ppm_compilation`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -714,7 +714,7 @@ def decompose_arbitrary_ppr_setup_inputs():
             qml.PauliRot(0.1, pauli_word="XY", wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 3
     Shots: Shots(total=None)
