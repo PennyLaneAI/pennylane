@@ -96,6 +96,7 @@
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
 
   ```python
   from pennylane.templates import Subroutine
@@ -148,7 +149,7 @@ The following classes have been ported over:
 
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
-  
+
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
@@ -160,6 +161,7 @@ The following classes have been ported over:
   level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
   is the level after all tape transforms but before the first MLIR pass.
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
@@ -184,8 +186,8 @@ The following classes have been ported over:
   Shots: Shots(total=None)
   Levels:
   - 0: Before transforms
-  - 1: Before MLIR Passes (MLIR-0)
-  - 2: cancel-inverses (MLIR-1)
+  - 1: Before MLIR Passes
+  - 2: cancel-inverses
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
@@ -658,6 +660,12 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated the `diastatic-malt` dependency to version v2.15.3.
+  [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
+
+* Workflow created to sync the `main` branch to `master`.
+  [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
@@ -737,6 +745,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
+  decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
+  [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
+
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
@@ -809,6 +821,15 @@ The following classes have been ported over:
 
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+  [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
+
+* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+  [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
+
+* Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+  [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
 <h3>Contributors ✍️</h3>
 
