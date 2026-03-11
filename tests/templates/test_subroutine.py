@@ -138,7 +138,7 @@ class TestInitialization:
             pass
 
         with pytest.raises(
-            ValueError, match="wire argname wires not present in function signature."
+            ValueError, match="wire argname 'wires' not present in function signature."
         ):
             Subroutine(f)
 
