@@ -11,21 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the phox MMD loss function.
-
-The main statistical test validates that the phox stochastic MMD estimator is
-an unbiased estimator of the exact squared MMD.  The methodology follows the
-six-step protocol described in arXiv:2501.04776:
-
-1. Generate a small IQP circuit and compute exact probabilities via PennyLane.
-2. Generate a dataset *X* from a product Bernoulli distribution.
-3. Compute the exact squared MMD using Gaussian kernel matrices (Eq. 2).
-4. Estimate the squared MMD many times using the phox ``mmd_loss`` function
-   with different PRNG keys and data sub-samples (Eq. 23).
-5. Compute the sample mean and standard error of the estimates.
-6. Z-test: verify the exact value falls within a reasonable number of standard
-   errors from the sample mean (> 95% coverage).
-"""
+"""Tests for the phox MMD loss function."""
 
 import itertools
 
@@ -216,8 +202,6 @@ class TestComputeSingleMmd:
         tr_train = jnp.mean(1 - 2 * ((gt @ vis.T) % 2), axis=0)
 
         result = _compute_single_mmd(tr_train, jnp.zeros(n_ops), gt, vis, 10_000, sqrt_loss=False)
-        # Not exactly zero because the QQ U-stat correction introduces a
-        # small residual, but it should be bounded.
         assert abs(float(result)) < 0.05
 
     def test_sqrt_loss_flag(self):
@@ -249,7 +233,6 @@ class TestComputeSingleMmd:
         tr_iqp = jnp.array(rng.normal(0, 0.5, n_ops))
         zero_se = jnp.zeros(n_ops)
 
-        # With zero std_err, result should be independent of n_samples
         res_100 = _compute_single_mmd(tr_iqp, zero_se, gt, vis, 100, False)
         res_10000 = _compute_single_mmd(tr_iqp, zero_se, gt, vis, 10_000, False)
 
@@ -300,7 +283,7 @@ class TestExactMMDConsistency:
 
 
 class TestMMDLossAPI:
-    """API, edge-case, and determinism tests for :func:`mmd_loss`."""
+    """Tests for :func:`mmd_loss`."""
 
     def test_raises_n_samples_le_one(self):
         """``n_samples <= 1`` should raise ``ValueError``."""
@@ -452,10 +435,6 @@ class TestMMDLossStatistical:
        and random data sub-samples.
     3. Verify the sample mean is consistent with the exact value via a
        two-sided Z-test:  ``|exact - mean_est| / SE < z_threshold``.
-
-    A ``z_threshold`` of 4.0 gives a per-test false-positive rate < 6e-5.
-    With three parametrized tests the Bonferroni-corrected rate is < 2e-4,
-    which is conservative enough for CI.
     """
 
     Z_THRESHOLD = 4.0
@@ -490,7 +469,17 @@ class TestMMDLossStatistical:
         ],
     )
     def test_unbiased_z_test(self, generators, params, biases, n_data):
-        """Mean of phox estimates should be consistent with exact MMD^2."""
+        """Mean of phox estimates should be consistent with exact MMD^2.
+
+        1. Generate a small IQP circuit and compute exact probabilities via PennyLane.
+        2. Generate a dataset *X* from a product Bernoulli distribution.
+        3. Compute the exact squared MMD using Gaussian kernel matrices (Eq. 2).
+        4. Estimate the squared MMD many times using the phox ``mmd_loss`` function
+        with different PRNG keys and data sub-samples (Eq. 23).
+        5. Compute the sample mean and standard error of the estimates.
+        6. Z-test: verify the exact value falls within a reasonable number of standard
+        errors from the sample mean (> 95% coverage).
+        """
         n_qubits = len(biases)
 
         probs_p = _iqp_probs_pennylane(generators, params, n_qubits)
