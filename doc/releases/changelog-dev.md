@@ -159,6 +159,7 @@ The following classes have been ported over:
   level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
   is the level after all tape transforms but before the first MLIR pass.
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
@@ -183,8 +184,8 @@ The following classes have been ported over:
   Shots: Shots(total=None)
   Levels:
   - 0: Before transforms
-  - 1: Before MLIR Passes (MLIR-0)
-  - 2: cancel-inverses (MLIR-1)
+  - 1: Before MLIR Passes
+  - 2: cancel-inverses
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
