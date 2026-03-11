@@ -371,7 +371,7 @@ class TestDecomposeInterpreter:
                 if brnch.eqns[i].primitive.name != "broadcast_in_dim":
                     if brnch.eqns[i].primitive != expctd_prims[prim]:
                         raise AssertionError(
-                            f"Expected: {expctd_prims}, got: {[eqn.primitive for eqn in brnch.eqns if eqn.primitive.name != "broadcast_in_dim"]}")
+                            f"Expected: {expctd_prims}, got: {[eqn.primitive for eqn in brnch.eqns if eqn.primitive.name != 'broadcast_in_dim']}")
                     else:
                         prim += 1
                 i += 1
