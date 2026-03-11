@@ -95,6 +95,7 @@
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
 
   ```python
   from pennylane.templates import Subroutine
@@ -819,6 +820,9 @@ The following classes have been ported over:
 
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+  [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
 * Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
