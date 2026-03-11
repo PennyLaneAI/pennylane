@@ -34,7 +34,63 @@ _default_supported_obs = (qml.Z, qml.Identity)
 def diagonalize_final_measurements_setup_inputs(
     supported_base_obs: tuple[str] = ("PauliZ", "Identity"), to_eigvals: bool = False
 ):
-    "Docstring for my_transform."
+    r"""The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
+    would allow users to activate the xDSL pass with the ``qp.transforms.diagonalize_measurements``
+    decorator. Users can pass ``supported_base_obs`` and ``to_eigvals`` args to the xDSL pass.
+
+    Args:
+        supported_base_obs (tuple[str]): A list of supported base observable classes. A subset of
+            ("PauliX", "PauliY", "PauliZ", "Hadamard", "Identity") is supported. Defaults to ("PauliZ",
+            "Identity").
+        to_eigvals (bool): Whether the diagonalization should create measurements using
+            eigvals and wires rather than observables. Defaults to ``False``.
+
+    .. note::
+        An error will be raised if non-commuting terms are encountered.
+
+    **Example**
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x):
+            qp.Hadamard(0)
+            qp.RZ(x, 0)
+            qp.PhaseShift(x * 0.2, 0)
+            return qp.expval(qp.Y(0))
+
+        diagonalized_circuit = qml.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
+        qjitted_circuit = qml.qjit(diagonalized_circuit)
+
+    >>> circuit(1.1) # doctest: +SKIP
+    #TODOS: update the outputs
+    >>> qjitted_circuit(1.1) # doctest: +SKIP
+    #TODOS: update the outputs
+    >>> #TODOS: Add MLIR here
+
+        .. warning::
+            The signature of the xDSL pass inputs is different from the tape transform. As the
+            setup input should be JAX-hashable to support program capture, the data type of
+            ``setup_inputs`` is set to ``tuple[str]`` instead of ``Iterable(Operator)``.
+
+        .. warning::
+            Transform with ``to_eigvals=True`` is not supported for now in the xDSL pass. An ``RuntimeError`` would be
+            raised if ``to_eigvals`` is set as ``True``.
+
+    """
+    _obs_allowed = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+    if not isinstance(supported_base_obs, tuple) or not set(supported_base_obs).issubset(
+        _obs_allowed
+    ):
+        raise ValueError(
+            f"Supported base observables must be a subset of (PauliX, PauliY, PauliZ, Hadamard, "
+            "and Identity) passed as a tuple[str], but received "
+            f"{supported_base_obs}"
+        )
+
+    if not isinstance(to_eigvals, bool) and to_eigvals != False:
+        raise ValueError(f"to_eigvals must be False. Got {to_eigvals}.")
+
     return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
 
 
