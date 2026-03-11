@@ -59,14 +59,17 @@ def diagonalize_final_measurements_setup_inputs(
             qp.PhaseShift(x * 0.2, 0)
             return qp.expval(qp.Y(0))
 
-        diagonalized_circuit = qml.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
-        qjitted_circuit = qml.qjit(diagonalized_circuit)
+        diagonalized_circuit = qp.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
+        qjitted_circuit = qp.qjit(diagonalized_circuit, target='mlir')
+        expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+
 
     >>> circuit(1.1) # doctest: +SKIP
-    #TODOS: update the outputs
+    0.9687151001182651
     >>> qjitted_circuit(1.1) # doctest: +SKIP
-    #TODOS: update the outputs
-    >>> #TODOS: Add MLIR here
+    0.9687151001182651
+    >>> expected_substr in qjitted_circuit.mlir
+    True
 
         .. warning::
             The signature of the xDSL pass inputs is different from the tape transform. As the
@@ -85,11 +88,11 @@ def diagonalize_final_measurements_setup_inputs(
         raise ValueError(
             f"Supported base observables must be a subset of (PauliX, PauliY, PauliZ, Hadamard, "
             "and Identity) passed as a tuple[str], but received "
-            f"{supported_base_obs}"
+            f"{supported_base_obs}."
         )
 
-    if not isinstance(to_eigvals, bool) and to_eigvals != False:
-        raise ValueError(f"to_eigvals must be False. Got {to_eigvals}.")
+    if not isinstance(to_eigvals, bool) or to_eigvals != False:
+        raise ValueError(f"to_eigvals must be bool and False.")
 
     return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
 
