@@ -131,9 +131,12 @@ def _prepare_batched_params(  # pylint: disable=too-many-arguments
     """
     interface = math.get_interface(state, params)
     if interface == "torch":
-        params = math.array(params, like=interface)
-        state0 = math.array(state0, like=interface)
-        state1 = math.array(state1, like=interface)
+        if math.get_interface(params) != "torch":
+            params = math.array(params, like=interface)
+        if math.get_interface(state0) != "torch":
+            state0 = math.array(state0, like=interface)
+        if math.get_interface(state1) != "torch":
+            state1 = math.array(state1, like=interface)
     if is_state_batched:
         params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
     else:
@@ -606,6 +609,11 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     n_dim = math.ndim(state)
     state_interface = math.get_interface(state)
 
+    if state_interface == "autograd":
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
     if (
         n_dim >= 9 and state_interface == "tensorflow"
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -615,7 +623,10 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
         # H uses direct matrix application since its coefficients are constant;
         # no parameter-dependent logic needed unlike RX/RY/RZ.
         axis = op.wires[0] + is_state_batched
-        mat = _HADAMARD_MAT.astype(state.dtype)
+        state_dtype = np.dtype(state.dtype)
+        mat = _HADAMARD_CACHE.get(state_dtype)
+        if mat is None:
+            mat = _HADAMARD_MAT.astype(state_dtype, copy=False)
         return _apply_single_qubit_np(mat, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
@@ -640,6 +651,11 @@ def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     n_dim = math.ndim(state)
     state_interface = math.get_interface(state)
 
+    if state_interface == "autograd":
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
     if (
         n_dim >= 9 and state_interface == "tensorflow"
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -653,22 +669,23 @@ def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     params = op.parameters[0]
     state0 = state[sl_0]
     state1 = state[sl_1]
+    param_interface = math.get_interface(params)
 
     state_dtype = state.dtype
 
     if op.batch_size is not None:
-        params = math.cast(params, dtype=state_dtype)
+        params = params if param_interface == "torch" else math.cast(params, dtype=complex)
         params, state0, state1, axis = _prepare_batched_params(
             params, state, state0, state1, axis, n_dim, is_state_batched
         )
         a, b, c, d = compute_coeffs(params, math)
-        state0 = math.cast(state0, dtype=state_dtype)
-        state1 = math.cast(state1, dtype=state_dtype)
+        if state_interface != "torch":
+            state0 = math.cast(state0, dtype=complex)
+            state1 = math.cast(state1, dtype=complex)
         new0 = math.multiply(state0, a) + math.multiply(state1, b)
         new1 = math.multiply(state0, c) + math.multiply(state1, d)
         return math.stack([new0, new1], axis=axis)
 
-    param_interface = math.get_interface(params)
     if state_interface == "numpy" and param_interface == "numpy":
         p = np.asarray(params, dtype=state_dtype)
         a, b, c, d = compute_coeffs(p, np)
@@ -683,13 +700,14 @@ def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
         mat = np.array([[a, b], [c, d]], dtype=state_dtype)
         return _apply_single_qubit_np(mat, state, axis)
 
-    params = math.cast(params, dtype=state_dtype)
+    params = params if param_interface == "torch" else math.cast(params, dtype=complex)
     params, state0, state1 = _align_torch_interfaces(
         params, state0, state1, state_interface, param_interface
     )
     a, b, c, d = compute_coeffs(params, math)
-    state0 = math.cast(state0, dtype=state_dtype)
-    state1 = math.cast(state1, dtype=state_dtype)
+    if state_interface != "torch":
+        state0 = math.cast(state0, dtype=complex)
+        state1 = math.cast(state1, dtype=complex)
     new0 = math.multiply(state0, a) + math.multiply(state1, b)
     new1 = math.multiply(state0, c) + math.multiply(state1, d)
     return math.stack([new0, new1], axis=axis)
