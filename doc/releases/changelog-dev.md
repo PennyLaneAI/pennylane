@@ -96,6 +96,10 @@
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+* Users can now apply the `diagonalize-final-measurements` compilation pass, using the 
+  :func:`~pennylane.transforms.diagonalize_measurements`.
+  [(#9100)](https://github.com/PennyLaneAI/pennylane/pull/9100)
+
 <h3>Improvements 🛠</h3>
 
 * When using :func:`~.specs` with multiple levels, printing the returned
@@ -751,6 +755,7 @@ Sengthai Heng,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
+Shuli Shu,
 Jay Soni,
 Nate Stemen,
 David Wierichs,
