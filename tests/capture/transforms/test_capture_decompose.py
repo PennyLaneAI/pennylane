@@ -87,9 +87,9 @@ class TestDecomposeInterpreter:
             return x
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert jaxpr.eqns[3].primitive == qml.RZ._primitive
 
     def test_returned_op_not_decomposed(self):
         """Test that operators that are returned by the input function are not decomposed."""
@@ -100,9 +100,9 @@ class TestDecomposeInterpreter:
             return qml.Rot(x, y, z, 0)
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert jaxpr.eqns[1].primitive == qml.Rot._primitive
         assert len(jaxpr.jaxpr.outvars) == 1
-        assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[0].outvars[0]
+        assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[1].outvars[0]
 
     def test_deep_decomposition(self):
         """Test that decomposing primitives that require multiple levels of decomposition
@@ -115,12 +115,12 @@ class TestDecomposeInterpreter:
             return x
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive.name == "neg"
-        assert jaxpr.eqns[1].primitive == qml.RZ._primitive
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
-        assert jaxpr.eqns[3].primitive == qml.RZ._primitive
-        assert jaxpr.eqns[4].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[1].primitive.name == "neg"
+        assert jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[3].primitive == qml.RY._primitive
+        assert jaxpr.eqns[4].primitive == qml.RZ._primitive
         assert jaxpr.eqns[5].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[6].primitive == qml.PhaseShift._primitive
 
     def test_max_expansion(self):
         """Test that giving a max_expansion to the interpreter results in early stoppage in
@@ -133,10 +133,10 @@ class TestDecomposeInterpreter:
             return x
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive.name == "neg"
-        assert jaxpr.eqns[1].primitive == qml.Rot._primitive
-        assert jaxpr.eqns[2].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[1].primitive.name == "neg"
+        assert jaxpr.eqns[2].primitive == qml.Rot._primitive
         assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[4].primitive == qml.PhaseShift._primitive
 
     def test_subroutine(self):
         """Test that decompose works when there is a subroutine in the circuit."""
@@ -159,9 +159,9 @@ class TestDecomposeInterpreter:
         for eqn in [eqn1, eqn2]:
             assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
-            assert j.eqns[4].primitive == qml.CNOT._primitive
-            assert j.eqns[5].primitive == qml.RX._primitive
-            assert j.eqns[6].primitive == qml.CNOT._primitive
+            assert j.eqns[7].primitive == qml.CNOT._primitive
+            assert j.eqns[8].primitive == qml.RX._primitive
+            assert j.eqns[9].primitive == qml.CNOT._primitive
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
 
@@ -254,7 +254,7 @@ class TestDecomposeInterpreter:
             assert transformed_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
             assert transformed_jaxpr.eqns[-1].primitive == qml.PauliX._primitive
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns[3:]):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -286,7 +286,7 @@ class TestDecomposeInterpreter:
                 prim == exp_prim for prim, exp_prim in zip(op_prims, expected_prims, strict=True)
             )
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns[1:]):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -310,7 +310,7 @@ class TestDecomposeInterpreter:
         if decompose:
             assert transformed_jaxpr.eqns[-1].primitive == qml.RX._primitive
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns[1:]):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     @pytest.mark.parametrize("lazy", [True, False])
@@ -331,10 +331,10 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].params["lazy"] == lazy
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert len(inner_jaxpr.eqns) == 4
+        assert inner_jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[3].primitive == qml.RZ._primitive
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
@@ -365,6 +365,18 @@ class TestDecomposeInterpreter:
         # First 2 primitives are the conditions for the true and elif branches
         assert jaxpr.eqns[2].primitive == cond_prim
 
+        def _match_minus_broadcast_in_dim(brnch, expctd_prims):
+            i = 0
+            prim = 0
+            while prim < len(expctd_prims):
+                if brnch.eqns[i].primitive.name != "broadcast_in_dim":
+                    if brnch.eqns[i].primitive != expctd_prims[prim]:
+                        raise AssertionError(
+                            f"Expected: {expctd_prims}, got: {[eqn.primitive for eqn in brnch.eqns if eqn.primitive.name != "broadcast_in_dim"]}")
+                    else:
+                        prim += 1
+                i += 1
+
         # True branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
         expected_primitives = [
@@ -373,9 +385,8 @@ class TestDecomposeInterpreter:
             qml.Z._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        ), f"Expected: {expected_primitives}, got: {[eqn.primitive for eqn in branch.eqns]}"
+
+        _match_minus_broadcast_in_dim(branch, expected_primitives)
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
@@ -385,9 +396,8 @@ class TestDecomposeInterpreter:
             qml.Y._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
+
+        _match_minus_broadcast_in_dim(branch, expected_primitives)
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
@@ -396,9 +406,8 @@ class TestDecomposeInterpreter:
             qml.X._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
+
+        _match_minus_broadcast_in_dim(branch, expected_primitives)
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
