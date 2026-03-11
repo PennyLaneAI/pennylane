@@ -2079,11 +2079,7 @@ class Gate(Operation):
 
         for wire_argname in self._wire_argnames:
             register = bound_args.arguments[wire_argname]
-            if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
-                if register is not None and len(register) > 0:
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
-            elif register is not None:
+            if register is not None:
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
 
