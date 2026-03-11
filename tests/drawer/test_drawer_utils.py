@@ -95,6 +95,21 @@ class TestDefaultBitMap:
         bit_map = default_bit_map(queue)
         assert bit_map == {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
+    def test_subroutine(self):
+        """Test that default_bit_map can handle subroutines that return measurement values."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            return [qml.measure(w) for w in wires]
+
+        op = f.operator((0, 1, 2))
+        cond1 = qml.ops.Conditional(op.output[1], qml.S(0))
+        mp = qml.expval(op.output[2])
+        queue = [op, cond1, mp]
+
+        bit_map = default_bit_map(queue)
+        assert bit_map == {op.output[1].measurements[0]: 0, op.output[2].measurements[0]: 1}
+
 
 class TestConvertWireOrder:
     """Tests the ``convert_wire_order`` utility function."""
