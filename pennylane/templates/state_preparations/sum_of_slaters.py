@@ -962,7 +962,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     else:
         mcx_params = {
             "num_work_wires": m,
-            "work_wire_type": "clean",
+            "work_wire_type": "zeroed",
             "num_control_wires": m,
             "num_zero_control_values": 0,
         }
@@ -1084,6 +1084,7 @@ def _sos_state_prep(
         qml.MultiControlledX(
             wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
             work_wires=mcx_work_wires,
+            work_wire_type="zeroed",
         )
 
     def two_mcx(k):
@@ -1095,6 +1096,7 @@ def _sos_state_prep(
             qml.MultiControlledX(
                 wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
                 work_wires=mcx_work_wires,
+                work_wire_type="zeroed",
             )
 
     def multi_mcx_via_cache(k):
@@ -1103,6 +1105,7 @@ def _sos_state_prep(
         mcx_kwargs = {
             "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_work_wires[0]]),
             "work_wires": mcx_work_wires[1:],
+            "work_wire_type": "zeroed",
         }
 
         qml.MultiControlledX(**mcx_kwargs)
