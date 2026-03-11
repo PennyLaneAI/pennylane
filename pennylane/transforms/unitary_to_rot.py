@@ -251,7 +251,6 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list[Operator]:
             if shape == (2, 2):
                 # Single-qubit unitary operations
                 next_decomposition.extend(one_qubit_decomposition(op_.parameters[0], op_.wires[0]))
-                keep_decomposing = True
             elif shape == (4, 4):
                 # Two-qubit unitary operations
                 next_decomposition.extend(two_qubit_decomposition(op_.parameters[0], op_.wires))
