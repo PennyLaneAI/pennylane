@@ -164,7 +164,8 @@ def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     if compiler == "jit":
         func = jax.jit(givens_decomposition)
     elif compiler == "qjit":
-        func = qml.qjit(givens_decomposition)
+        catalyst = pytest.importorskip("catalyst")
+        func = catalyst.qjit(givens_decomposition)
     else:
         func = givens_decomposition
 
@@ -373,7 +374,8 @@ def test_set_unitary_matrix_real(
     if compiler == "jit":
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
-        fn = qml.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+        catalyst = pytest.importorskip("catalyst")
+        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     else:
         fn = _set_unitary_matrix
     copied_matrix = unitary_matrix.copy()
@@ -455,8 +457,6 @@ def test_set_unitary_matrix_real(
         pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
     ],
 )
-@pytest.mark.jax
-@pytest.mark.external
 def test_set_unitary_matrix_complex(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
@@ -475,7 +475,8 @@ def test_set_unitary_matrix_complex(
     if compiler == "jit":
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
-        fn = qml.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+        catalyst = pytest.importorskip("catalyst")
+        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     else:
         fn = _set_unitary_matrix
     copied_matrix = unitary_matrix.copy()
