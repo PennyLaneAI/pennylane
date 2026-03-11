@@ -162,7 +162,7 @@ def adjoint_subroutine_resource_rep(
 
     .. note::
 
-        See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
+        See :func:`~pennylane.templates.core.subroutine_resource_rep` for more information.
     """
     signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return adjoint_resource_rep(
@@ -749,6 +749,13 @@ class Subroutine:
         self._wire_argnames = tuple(wire_argnames)
 
         self._capture_subroutine = capture_subroutine(definition, static_argnames=static_argnames)
+
+        for argname in self._wire_argnames:
+            if argname not in self._signature.parameters:
+                raise ValueError(
+                    f"wire argname '{argname}' not present in function signature. "
+                    "Please update the function's signature or 'wire_argnames'."
+                )
 
     @property
     def name(self) -> str:

@@ -140,6 +140,17 @@ class TestInitialization:
 
         assert f.exact_resources == exact_resources
 
+    def test_error_if_wire_argnames_not_present(self):
+        """Test that an error is raised if a wire argname is not present in the signature."""
+
+        def f(register):
+            pass
+
+        with pytest.raises(
+            ValueError, match="wire argname 'wires' not present in function signature."
+        ):
+            Subroutine(f)
+
 
 def Example1(x, y, reg1, reg2, pauli_words):
     qml.PauliRot(x, pauli_words[0], reg1)

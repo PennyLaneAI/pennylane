@@ -1,6 +1,5 @@
- 
 # Release 0.43.2
- 
+
 <h3>Bug fixes 🐛</h3>
  
 * PennyLane’s code has been updated to be compatible with NumPy 2.4 resolving deprecation related errors and warning messages.
