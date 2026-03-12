@@ -38,9 +38,10 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator, classproperty
+from pennylane.operation import AbstractArray, Operation, Operator, classproperty
 from pennylane.wires import Wires, WiresLike
 
+from ...pytrees import flatten
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
@@ -544,6 +545,44 @@ class Controlled(SymbolicOp):
             work_wire_type=metadata[3],
         )
 
+    @classmethod
+    def signature(
+        cls,
+        base_class: type[Operator],
+        base_params: dict,
+        num_control_wires: int,
+        num_work_wires: int = 0,
+        work_wire_type="borrowed",
+    ):
+        base = base_class(**base_params)
+        id = None
+
+        num_control_values = num_control_wires
+
+        key = []
+
+        leaves, struct = flatten(base)
+        shapes = (
+            AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l))) for l in leaves
+        )
+        key.append((struct, tuple(shapes)))
+
+        for val in (num_control_values, num_control_wires, num_work_wires):
+            if val is not 0:
+                key.append(AbstractArray(shape=(val,), dtype=int))
+            else:
+                key.append(AbstractArray(shape=(), dtype=int))
+
+        leaves, struct = flatten(id)
+        shapes = (
+            AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l))) for l in leaves
+        )
+        key.append((struct, tuple(shapes)))
+
+        key.append(work_wire_type)
+
+        return {"signature_key": tuple(key)}
+
     # pylint: disable=no-self-argument
     @classproperty
     def __signature__(cls):  # pragma: no cover
@@ -600,6 +639,21 @@ class Controlled(SymbolicOp):
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+
+        self._wire_argnames = (
+            "control_wires",
+            "work_wires",
+        )
+        self._static_argnames = ("work_wire_type", "id")
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(
+                base,
+                control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+                id=id,
+            )
 
         if control_values is None:
             control_values = [True] * len(control_wires)
@@ -1059,6 +1113,9 @@ class ControlledOp(Controlled, Operation):
 
     .. seealso:: :class:`~.Controlled`
     """
+
+    _wire_argnames = ("wires",)
+    _static_argnames = ()
 
     def __new__(cls, *_, **__):
         # overrides dispatch behaviour of ``Controlled``
