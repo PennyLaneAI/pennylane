@@ -402,7 +402,7 @@ class Subroutine:
         from functools import partial
         from pennylane.templates import Subroutine
 
-        @pSubroutine
+        @Subroutine
         def MyTemplate(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[0])
