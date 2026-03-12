@@ -464,4 +464,4 @@ class TestCwireConnections:
 
         assert bit_map == new_bit_map
         assert clayers == {0: [[0, 1, 3]], 1: [[0, 2]]}
-        assert wires == {0: [[1, 0, 3]], 1: [[1, 0]]}
+        assert wires == {0: [[1, 0, 2]], 1: [[1, 0]]}
