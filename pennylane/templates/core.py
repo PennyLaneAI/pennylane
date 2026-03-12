@@ -664,6 +664,13 @@ class Subroutine:
 
         self._capture_subroutine = capture_subroutine(definition, static_argnames=static_argnames)
 
+        for argname in self._wire_argnames:
+            if argname not in self._signature.parameters:
+                raise ValueError(
+                    f"wire argname '{argname}' not present in function signature. "
+                    "Please update the function's signature or 'wire_argnames'."
+                )
+
     @property
     def name(self) -> str:
         """A string representation to label the Subroutine."""
