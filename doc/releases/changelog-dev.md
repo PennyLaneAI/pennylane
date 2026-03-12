@@ -146,6 +146,12 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The `default.qubit` device now supports parameter-broadcasted global phases.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
