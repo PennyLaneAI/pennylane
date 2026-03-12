@@ -32,6 +32,7 @@ from pennylane.capture.primitives import (
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    quantum_subroutine_prim,
     value_and_grad_prim,
     vjp_prim,
 )
@@ -44,9 +45,33 @@ from pennylane.ops.mid_measure import (
     measure,
     pauli_measure,
 )
-from pennylane.wires import DynamicWire
+from pennylane.wires import DynamicWire, Wires
 
 from .qscript import QuantumScript
+
+
+class CollectedSubroutine(Operator):
+    """Represents a single subroutine encountered by CollectOpsandMeas.
+    While it contains less information than the corresponding :class:`~.SubroutineOp`,
+    it can be useful for testing the captured plxpr.
+
+    The only properties held onto by this "Operator" are name (a string), wires, and
+    decomposition.
+
+    """
+
+    _primitive = None
+
+    def __repr__(self) -> str:
+        return f"<CollectedSubroutine: {self.name}>"
+
+    def __init__(self, name: str, decomp: list[Operator]):
+        self._decomp = decomp
+        super().__init__(wires=Wires.all_wires([op.wires for op in decomp]))
+        self._name = name
+
+    def decomposition(self):
+        return self._decomp
 
 
 class CollectOpsandMeas(FlattenedInterpreter):
@@ -241,6 +266,17 @@ def _allocate_primitive(self, *, num_wires, state, restored):
 def _deallocate_primitive(self, *wires):
     self.state["ops"].append(Deallocate(wires))
     return []
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
+    child = CollectOpsandMeas()
+    out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+    name = name.split("_")[0]
+    with pause():
+        self.state["ops"].append(CollectedSubroutine(name, child.state["ops"]))
+    return out
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

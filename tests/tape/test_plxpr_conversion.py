@@ -14,6 +14,8 @@
 """
 Tests for CollectOpsandMeas and plxpr_to_tape
 """
+from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -48,6 +50,30 @@ class TestCollectOpsandMeas:
         assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
+
+    def test_subroutine(self):
+        """Test that CollectOpsandMeas collects a subroutine into a placeholder op."""
+
+        @partial(qml.templates.Subroutine, static_argnames="pauli_word")
+        def MyFunc(x, wires, pauli_word):
+            qml.PauliRot(x, pauli_word, wires)
+
+        def workflow(x):
+            MyFunc(x, (0, 1), "XY")
+            MyFunc(x + 1, (2, 3), "YZ")
+            MyFunc(x + 2, (3, 4), "XY")
+
+        interpreter = CollectOpsandMeas()
+        x = 0.5
+        interpreter(workflow)(x)
+
+        ops = interpreter.state["ops"]
+        for op in ops:
+            assert op.name == "MyFunc"
+
+        qml.assert_equal(ops[0].decomposition()[0], qml.PauliRot(0.5, "XY", (0, 1)))
+        qml.assert_equal(ops[1].decomposition()[0], qml.PauliRot(1.5, (2, 3), "YZ"))
+        qml.assert_equal(ops[2].decomposition()[0], qml.PauliRot(2.5, "XY", (3, 4)))
 
     def test_for_loop(self):
         """Test collecting the operations in a for loop."""
