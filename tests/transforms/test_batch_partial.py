@@ -729,11 +729,19 @@ def test_different_batchdim_error():
     # not report problematic broadcasting dimensions (in place of problematic
     # batch dimensions) at tape creation. For this, we "delete" `ndim_params`.
 
-    class RX_no_ndim(qml.RX):
+    class RX_no_ndim(qml.operation.Operation):
         ndim_params = property(lambda self: self._ndim_params)
 
-    class RY_no_ndim(qml.RY):
+        @staticmethod
+        def compute_matrix(*args, **kwargs):
+            return qml.RX.compute_matrix(*args, **kwargs)
+
+    class RY_no_ndim(qml.operation.Operation):
         ndim_params = property(lambda self: self._ndim_params)
+
+        @staticmethod
+        def compute_matrix(*args, **kwargs):
+            return qml.RY.compute_matrix(*args, **kwargs)
 
     @qml.qnode(dev)
     def circuit(x, y, z):

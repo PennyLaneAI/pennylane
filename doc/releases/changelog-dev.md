@@ -146,6 +146,14 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* A new `qml.operation.Gate` abstract base class has been added for specialized `Operation`'s
+  that have a fixed number of wires and fixed number of scalar parameters. While it requires `num_wires`
+  and `num_params` to be set, it will automatically define other properties and improve default
+  integration with different parts of the PennyLane ecosystem like decompositions and Catalyst.
+  `Gate` should be preferred over `Operation` where possible for easier integration with the
+  PennyLane ecosystem.
+  [(#8767)](https://github.com/PennyLaneAI/pennylane/pull/8767)
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 

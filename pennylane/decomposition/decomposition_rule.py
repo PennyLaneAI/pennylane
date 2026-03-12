@@ -229,7 +229,7 @@ def register_resources(
         on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
 
         >>> qml.CNOT.resource_keys
-        set()
+        frozenset()
         >>> qml.MultiRZ.resource_keys
         {'num_wires'}
 
