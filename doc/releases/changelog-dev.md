@@ -145,6 +145,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Improved the angle processing in :class:`~.MottonenStatePreparation` to be more performant.
+  [(#9___)](https://github.com/PennyLaneAI/pennylane/pull/9___)
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
