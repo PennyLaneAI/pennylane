@@ -113,12 +113,12 @@ class TestPushHadamards:
 
         if Version(pyzx.__version__) >= Version("0.10"):
             pytest.skip("no errors for pyzx version 0.10 and above.")
-
-        with pytest.raises(
-            TypeError,
-            match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
-        ):
-            qml.transforms.zx.push_hadamards(qs)
+        else:
+            with pytest.raises(
+                TypeError,
+                match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
+            ):
+                qml.transforms.zx.push_hadamards(qs)
 
     @pytest.mark.parametrize(
         "measurements",
