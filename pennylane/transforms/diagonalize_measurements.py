@@ -29,6 +29,13 @@ from pennylane.transforms.core import transform
 # pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
+_obs_name_map = {
+    "PauliX": qml.PauliX,
+    "PauliY": qml.PauliY,
+    "PauliZ": qml.PauliZ,
+    "Hadamard": qml.Hadamard,
+    "Identity": qml.Identity,
+}
 
 
 def diagonalize_final_measurements_setup_inputs(
@@ -82,20 +89,7 @@ def diagonalize_final_measurements_setup_inputs(
             raised if ``to_eigvals`` is set as ``True``.
 
     """
-    _obs_allowed = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
-    if set(supported_base_obs).issubset(
-        _obs_allowed
-    ):
-        raise ValueError(
-            f"Supported base observables must be a subset of (PauliX, PauliY, PauliZ, Hadamard, "
-            "and Identity) passed as a tuple[str], but received "
-            f"{supported_base_obs}."
-        )
-
-    if not isinstance(to_eigvals, bool) or to_eigvals != False:
-        raise ValueError(f"to_eigvals must be bool and False.")
-
-    return (), {"supported_base_obs": tuple(supported_base_obs), "to_eigvals": to_eigvals}
+    return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
 
 
 def null_postprocessing(results):
@@ -241,6 +235,9 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 return qp.expval(qp.Y(0))
 
     """
+    _obs_name_allowed = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+    if set(supported_base_obs).issubset(_obs_name_allowed):
+        supported_base_obs = [_obs_name_map[obs_name] for obs_name in supported_base_obs]
 
     bad_obs_input = [
         o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
