@@ -15,11 +15,8 @@
 import pytest
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.labs.estimator_beta.ops.op_math.controlled_ops import CH
-from pennylane.ops.qubit.non_parametric_ops import Hadamard
-from tests.estimator.test_estimator_resOp import CNOT
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
 
