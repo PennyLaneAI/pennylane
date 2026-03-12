@@ -44,6 +44,7 @@ class TestInitialization:
         assert S.static_argnames == tuple()
         assert S.wire_argnames == ("wires",)
         assert S.dynamic_argnames == ("x",)
+        assert S.exact_resources
 
         with qml.queuing.AnnotatedQueue() as q:
             S.definition(0.5, 0)
@@ -119,6 +120,27 @@ class TestInitialization:
         # test wires setup properly
         out2 = HasResources.compute_resources(0.5, 0)
         assert out2 == {qml.RX: 1}
+
+    @pytest.mark.parametrize("exact_resources", (True, False))
+    def test_setting_exact_resources(self, exact_resources):
+        """Test that exact_resources can be set."""
+
+        @partial(Subroutine, exact_resources=exact_resources)
+        def f(wires):
+            qml.X(wires)
+
+        assert f.exact_resources == exact_resources
+
+    def test_error_if_wire_argnames_not_present(self):
+        """Test that an error is raised if a wire argname is not present in the signature."""
+
+        def f(register):
+            pass
+
+        with pytest.raises(
+            ValueError, match="wire argname 'wires' not present in function signature."
+        ):
+            Subroutine(f)
 
 
 def Example1(x, y, reg1, reg2, pauli_words):
@@ -554,15 +576,31 @@ class TestGraphDecomposition:
 
         a = qml.templates.AbstractArray((2, 2, 3), np.float64)
         assert a.shape == (2, 2, 3)
-        assert a.dtype == np.float64
+        assert a.dtype is np.dtype(np.float64)
 
         b = qml.templates.AbstractArray(())
         assert b.shape == ()
-        assert b.dtype == int
+        assert b.dtype is np.dtype(np.int64)
 
         assert a != b
         assert hash(a)
         assert b == qml.templates.AbstractArray(())
+
+    @pytest.mark.torch
+    def test_torch_dtype_converted_to_numpy(self):
+        """Test that torch data types are converted to numpy data types."""
+
+        import torch
+
+        x = torch.tensor(0.5, dtype=torch.float64)
+        a = qml.templates.AbstractArray((), x.dtype)
+        assert a.dtype is np.dtype(np.float64)
+
+    def test_inbuilt_type_promotion_to_numpy(self):
+        """Test that python types are converted to numpy types."""
+        assert AbstractArray((), int).dtype is np.dtype(np.int64)
+        assert AbstractArray((), float).dtype is np.dtype(np.float64)
+        assert AbstractArray((), complex).dtype is np.dtype(np.complex128)
 
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
@@ -786,3 +824,16 @@ class TestGraphDecomposition:
         qml.assert_equal(tape_ry[0], qml.RY(0.0, 0))
         qml.assert_equal(tape_ry[1], qml.RY(1.0, 1))
         qml.assert_equal(tape_ry[2], qml.RY(2.0, 2))
+
+    def test_inexact_resources_testing(self):
+        """Test that assert_valid will work on a Subroutine with inexact resources."""
+
+        def r(wires):
+            return {qml.X: 2}
+
+        @partial(Subroutine, compute_resources=r, exact_resources=False)
+        def f(wires):
+            qml.X(wires)
+
+        op = f.operator(0)
+        qml.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
