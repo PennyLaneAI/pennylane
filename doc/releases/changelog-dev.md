@@ -657,8 +657,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* The newly introduced Catalyst ``split-non-commuting`` MLIR pass is supported
-  in :func:`~.specs` with Catalyst and with multuple levels,
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
   [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
