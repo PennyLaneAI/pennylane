@@ -385,7 +385,7 @@ def to_zx(tape, expand_measurements=False):
             q_mapper.set_prev_vertex(i, vertex)
             if _pyzx_010:
                 q_mapper.add_label(i, 1)
-            else:
+            else:  # pragma: no cover
                 q_mapper.set_next_row(i, 1)
                 q_mapper.set_qubit(i, i)
 
