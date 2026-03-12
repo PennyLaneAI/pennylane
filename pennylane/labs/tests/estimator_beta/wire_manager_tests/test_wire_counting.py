@@ -327,7 +327,7 @@ class TestProcessCircuitLst:
             c = next(global_counter)
             return f"w{c}"
 
-        ## Money Patch uuid.uuid4():
+        ## Monkey Patch uuid.uuid4():
         uuid.uuid4 = generate_sequence_wire_labels
 
         ## Test circuit:
@@ -971,7 +971,7 @@ class TestEstimateAuxiliaryWires:
     def test_nested_allocation_and_deallocation(
         self, lst_actions, scalar, num_aux, num_active, expected_results
     ):
-        """Test that qubit tracking works as expected for circuits with operators whos'
+        """Test that qubit tracking works as expected for circuits with operators whose
         decompositions require auxiliary qubits."""
         results = _estimate_auxiliary_wires(
             list_actions=lst_actions,
@@ -1197,7 +1197,7 @@ class TestEstimateWiresFromCircuit:
         ),
     )
     def test_allocate_deallocate(self, circuit, expected_wire_counts):
-        """Test that the number of allocated qubits (zeored or any state) is correct."""
+        """Test that the number of allocated qubits (zeroed or any state) is correct."""
         wire_counts = estimate_wires_from_circuit(circuit, zeroed=0, any_state=0)
         assert wire_counts == expected_wire_counts
 
