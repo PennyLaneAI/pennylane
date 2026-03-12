@@ -83,7 +83,7 @@ def diagonalize_final_measurements_setup_inputs(
 
     """
     _obs_allowed = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
-    if not isinstance(supported_base_obs, tuple) or not set(supported_base_obs).issubset(
+    if set(supported_base_obs).issubset(
         _obs_allowed
     ):
         raise ValueError(
@@ -95,7 +95,7 @@ def diagonalize_final_measurements_setup_inputs(
     if not isinstance(to_eigvals, bool) or to_eigvals != False:
         raise ValueError(f"to_eigvals must be bool and False.")
 
-    return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
+    return (), {"supported_base_obs": tuple(supported_base_obs), "to_eigvals": to_eigvals}
 
 
 def null_postprocessing(results):
