@@ -122,11 +122,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         target_wire = wires
         qml.GlobalPhase(phi / 2)
 
-        if qml.compiler.active():
-            _kwargs = {key: qml.math.array(val, like="jax") for key, val in kwargs.items()}
-        else:
-            _kwargs = kwargs
-        pg_op = _rz_phase_gradient(phi, target_wire, **_kwargs)
+        pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
         qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
 
     return _decomp_fn

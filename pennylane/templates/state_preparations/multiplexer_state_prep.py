@@ -21,6 +21,8 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
+from .mottonen import _get_alpha_y, _get_alpha_z
+
 
 class MultiplexerStatePreparation(Operation):
     r"""Prepares a quantum state using multiplexed rotations.
@@ -110,13 +112,12 @@ class MultiplexerStatePreparation(Operation):
 
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
-    resources = dict.fromkeys(
-        [resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
-        1,
-    )
-
-    resources[resource_rep(qml.DiagonalQubitUnitary, num_wires=num_wires)] = 1
-
+    resources = {}
+    for i in range(num_wires):
+        for axis in "YZ":
+            rep = qml.resource_rep(qml.SelectPauliRot, rot_axis=axis, num_wires=i + 1)
+            resources[rep] = 1
+    resources[qml.GlobalPhase] = 1
     return resources
 
 
@@ -132,37 +133,30 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
     Returns:
         list: List of decomposition operations.
     """
+    a = math.abs(state_vector)
+    omega = math.angle(state_vector)
+    n = len(wires)
 
-    probs = math.abs(state_vector) ** 2
-    phases = math.angle(state_vector) % (2 * np.pi)
+    # @qml.for_loop(n, 0, -1)
+    def y_loop(k):
+        qml.SelectPauliRot(_get_alpha_y(a, n, k), wires[: n - k], wires[n - k], rot_axis="Y")
 
-    num_iterations = int(math.log2(math.shape(probs)[0]))
+    for k in range(n, 0, -1):
+        y_loop(k)
 
-    shapes = []
-    for i in range(num_iterations):
-        shapes.append([int(2 ** (i + 1)), -1])
-        probs_aux = math.reshape(probs, [1, -1])
+    # If necessary, apply RZ multiplexers to prepare correct phases of amplitudes
+    if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
 
-        # From Eq. 5 of arXiv:quant-ph/0208112.
-        for itx in range(i + 1):
-            probs_denominator = math.sum(probs_aux, axis=1)
-            probs_aux = math.reshape(probs_aux, shapes[itx])
-            probs_numerator = math.sum(probs_aux, axis=1)[::2]
+        # @qml.for_loop(n, 0, -1)
+        def z_loop(k):
+            alpha_z = _get_alpha_z(omega, n, k)
+            qml.SelectPauliRot(alpha_z, wires[: n - k], wires[n - k], rot_axis="Z")
 
-        # arcos(x) = arctan2(sqrt(1-x^2), x)
-        thetas = 2 * math.arctan2(
-            math.sqrt(probs_denominator - probs_numerator),
-            math.sqrt(probs_numerator),
-        )
+        for k in range(n, 0, -1):
+            z_loop(k)
 
-        qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
-
-    if not math.is_abstract(phases):
-        if not math.allclose(phases, 0.0):
-            qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
-
-    else:
-        qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
+        global_phase = -1 * math.sum(omega) / len(state_vector)
+        qml.GlobalPhase(global_phase, wires=wires)
 
 
 add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
