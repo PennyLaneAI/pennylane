@@ -15,6 +15,7 @@ jobs:
         with:
           ref: master
           token: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+          fetch-depth: 0 
 
       - name: Sync main to master
         run: |
@@ -24,7 +25,6 @@ jobs:
           if git merge --no-commit --ff-only origin/main; then
             echo "Synching from main to master."
             echo "merge_conflict=false" >> $GITHUB_ENV
-            git commit -m "Sync main to master"
             git push origin master 
           else
             echo "Merge conflict detected. Creating a PR ..."
@@ -50,3 +50,4 @@ jobs:
           else
             echo "No new changes to sync from main to master."
           fi 
+          exit 1
