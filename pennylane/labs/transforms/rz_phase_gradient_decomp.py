@@ -122,92 +122,9 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         target_wire = wires
         qml.GlobalPhase(phi / 2)
 
+        if qml.compiler.active():
+            kwargs = {key: qml.math.array(val, like="jax") for key, val in kwargs.items()}
         pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
         qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
-
-    return _decomp_fn
-
-
-def make_select_pauli_rot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
-    kwargs = {
-        "angle_wires": angle_wires,
-        "phase_grad_wires": phase_grad_wires,
-        "work_wires": work_wires,
-    }
-
-    def _resource_fn(num_wires, rot_axis):
-        # rz decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qml.resource_rep(qml.SemiAdder, num_y_wires=len(phase_grad_wires))
-        select_params = {
-            "op_reps": tuple(
-                qml.resource_rep(qml.BasisEmbedding, num_wires=len(angle_wires))
-                for _ in range(2 ** (num_wires - 1))
-            ),
-            "num_control_wires": num_wires - 1,
-            "partial": False,
-            "num_work_wires": len(work_wires),
-        }
-        prod_resources = {
-            qml.resource_rep(qml.X): len(phase_grad_wires),
-            qml.resource_rep(qml.CNOT): len(phase_grad_wires),
-            qml.resource_rep(qml.Select, **select_params): 1,
-            # controlled_resource_rep(qml.X, base_params={}, num_control_wires=1, num_zero_control_values=1): len(phase_grad_wires),
-        }
-        if rot_axis == "Y":
-            comp_resources = prod_resources | {
-                adjoint_resource_rep(qml.S): 1,
-                qml.resource_rep(qml.H): 1,
-            }
-            uncomp_resources = prod_resources | {
-                qml.resource_rep(qml.S): 1,
-                qml.resource_rep(qml.H): 1,
-            }
-        elif rot_axis == "X":
-            comp_resources = uncomp_resources = prod_resources | {
-                qml.resource_rep(qml.H): 1,
-            }
-        else:
-            comp_resources = uncomp_resources = prod_resources
-
-        compute_rep = qml.resource_rep(qml.ops.Prod, resources=comp_resources)
-        uncompute_rep = qml.resource_rep(qml.ops.Prod, resources=uncomp_resources)
-
-        change_basis_rep = change_op_basis_resource_rep(compute_rep, target_op, uncompute_rep)
-
-        return {change_basis_rep: 1}
-
-    @qml.register_resources(_resource_fn)
-    def _decomp_fn(phis, control_wires, target_wire, rot_axis, **_):
-        precision = len(angle_wires)
-        binary_ints = [
-            2 ** np.arange(precision - 1, -1, -1) @ qml.math.binary_decimals(phi, precision)
-            for phi in phis
-        ]
-
-        with qml.QueuingManager.stop_recording():
-            select_ops = [qml.BasisEmbedding(_int, angle_wires) for _int in binary_ints]
-            ops = [qml.Select(select_ops, control=control_wires, work_wires=work_wires)] + sum(
-                [[qml.CNOT([target_wire, wire]), qml.X(wire)] for wire in phase_grad_wires],
-                start=[],
-            )
-            adj_ops = ops.copy()[::-1]
-            if rot_axis == "Y":
-                ops.append(qml.adjoint(qml.S(target_wire)))
-                ops.append(qml.Hadamard(target_wire))
-                adj_ops.append(qml.Hadamard(target_wire))
-                adj_ops.append(qml.S(target_wire))
-            elif rot_axis == "X":
-                ops.append(qml.Hadamard(target_wire))
-                adj_ops.append(qml.Hadamard(target_wire))
-            else:
-                pass
-
-            pg_op = qml.change_op_basis(
-                qml.prod(*ops[::-1]),
-                qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
-                qml.prod(*adj_ops[::-1]),
-            )
-        if qml.queuing.QueuingManager.recording():
-            qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
 
     return _decomp_fn

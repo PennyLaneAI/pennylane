@@ -178,8 +178,16 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         return {change_basis_rep_basis_adapted: 1}
 
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
     @qml.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
+        if qml.compiler.active():
+            kwargs = {key: qml.math.array(val, like="jax") for key, val in kwargs.items()}
 
         if len(control_wires) == 0:
             assert len(angles) == 1
@@ -197,9 +205,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 angles,
                 control_wires=control_wires,
                 target_wire=target_wire,
-                angle_wires=angle_wires,
-                phase_grad_wires=phase_grad_wires,
-                work_wires=work_wires,
+                **kwargs,
             )
 
         match rot_axis:
