@@ -28,7 +28,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
         Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a complete list of supported
         backend devices, please consult
-        please see :doc:`catalyst:dev/devices`.
+        please see :doc:`catalyst:dev/devices`_.
 
     Args:
         fn (Callable): The quantum or classical function.
