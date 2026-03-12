@@ -183,6 +183,21 @@ def _pl_obs_to_linear_comb(meas_obs):
     return coeffs, paulis
 
 
+def _handle_state_prep(prep, circuit, stim_circuit):
+    """Handles state preparation by either decomposing BasisState or building a Tableau."""
+    if isinstance(prep, ops.BasisState):
+        for op in prep.decomposition():
+            gate, wires = _pl_op_to_stim(op)
+            stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
+    else:
+        stim_tableau = stim.Tableau.from_state_vector(
+            math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+            endian="big",
+        )
+        stim_circuit += stim_tableau.to_circuit()
+    return stim_circuit
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultClifford(Device):
@@ -569,13 +584,8 @@ class DefaultClifford(Device):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 
-        # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
-            stim_tableau = stim.Tableau.from_state_vector(
-                math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
-                endian="big",
-            )
-            stim_circuit += stim_tableau.to_circuit()
+            stim_circuit = _handle_state_prep(prep, circuit, stim_circuit)
 
         # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
