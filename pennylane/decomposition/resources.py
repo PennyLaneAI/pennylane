@@ -289,10 +289,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
-    if issubclass(op_type, qml.operation.Gate):
-        if "signature_key" not in params:
-            params.update(op_type.signature)
-        return CompressedResourceOp(op_type, params)
+    if "signature_key" not in params and hasattr(op_type, "signature"):
+        params.update(op_type.signature)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
@@ -334,6 +332,14 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     """
 
     _validate_resource_rep(base_class, base_params)
+
+    signature_key = qml.ops.Controlled.signature(
+        base_class,
+        base_params,
+        num_control_wires,
+        num_work_wires,
+        work_wire_type,
+    )
 
     # Flattens nested controlled structures.
     if base_class in (qml.ops.Controlled, qml.ops.ControlledOp):
@@ -391,6 +397,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
             "num_zero_control_values": num_zero_control_values,
             "num_work_wires": num_work_wires,
             "work_wire_type": work_wire_type,
+            **signature_key,
         },
     )
 

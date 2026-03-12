@@ -37,7 +37,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
-from pennylane.operation import Gate, Operator
+from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
@@ -270,10 +270,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         for op in operations:
             if isinstance(op, qml.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Gate):
-                op = resource_rep(type(op), **op.resource_params, **op.bound_signature)
-            elif isinstance(op, Operator):
-                op = resource_rep(type(op), **op.resource_params)
+            op = resource_rep(type(op), **op.resource_params, **op.bound_signature)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
             self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
@@ -602,10 +599,7 @@ class DecompGraphSolution:
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
-        if isinstance(op, Gate):
-            op_rep = resource_rep(type(op), **op.resource_params, **op.bound_signature)
-        else:
-            op_rep = resource_rep(type(op), **op.resource_params)
+        op_rep = resource_rep(type(op), **op.resource_params, **op.bound_signature)
         if op_rep not in self._op_to_op_nodes:
             return []
 

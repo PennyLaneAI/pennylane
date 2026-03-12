@@ -867,6 +867,26 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __hash__(self) -> int:
         return self.hash
 
+    def _bind_args(self, *args, **kwargs) -> BoundArguments:
+        bound_args = signature(self.__init__).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        for wire_argname in self._wire_argnames:
+            register = bound_args.arguments[wire_argname]
+            if register is not None:
+                bound_args.arguments[wire_argname] = Wires(register)
+        return bound_args
+
+    @property
+    def bound_signature(self):
+        """Useful for Gates with shapes that are determined by initialization parameters."""
+        key = _create_signature_key(
+            self._bound_args,
+            wire_argnames=self._wire_argnames,
+            static_argnames=self._static_argnames,
+        )
+        return {"signature_key": key}
+
     @staticmethod
     def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1198,6 +1218,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
+
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("wires",)
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = ()
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(*params, wires=wires)
 
         if id is not None:
             warnings.warn(
@@ -1896,6 +1923,9 @@ class Operation(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
+    _wire_argnames = ("wires",)
+    _static_argnames = ()
+
     @property
     def grad_method(self) -> Literal["A", "F", None]:
         """Gradient computation method.
@@ -2073,15 +2103,11 @@ class Gate(Operation):
 
     resource_keys = frozenset()
 
-    def _bind_args(self, *args, **kwargs) -> BoundArguments:
-        bound_args = signature(self.__init__).bind(*args, **kwargs)
-        bound_args.apply_defaults()
-
-        for wire_argname in self._wire_argnames:
-            register = bound_args.arguments[wire_argname]
-            if register is not None:
-                bound_args.arguments[wire_argname] = Wires(register)
-        return bound_args
+    @classmethod
+    def construct_instance(cls, *data, wires, signature_key):
+        assert len(signature_key) == len(data) + 1
+        assert len(wires) == len(signature_key[-1])
+        return cls(*data, wires=wires)
 
     @classproperty
     def signature(cls):  # pylint: disable=no-self-argument
@@ -2094,16 +2120,6 @@ class Gate(Operation):
                 ]
             )
         }
-
-    @property
-    def bound_signature(self):
-        """Useful for Gates with shapes that are determined by initialization parameters."""
-        key = _create_signature_key(
-            self._bound_args,
-            wire_argnames=self._wire_argnames,
-            static_argnames=self._static_argnames,
-        )
-        return {"signature_key": key}
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         if not hasattr(self, "_wire_argnames"):

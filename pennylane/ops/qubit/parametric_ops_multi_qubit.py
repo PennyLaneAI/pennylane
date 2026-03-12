@@ -308,6 +308,9 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
+    _wire_argnames = ("wires",)
+    _static_argnames = ("pauli_word",)
+
     @classmethod
     def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
         return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, id=id)
@@ -319,6 +322,8 @@ class PauliRot(Operation):
         wires: WiresLike,
         id: str | None = None,
     ):
+        self._bound_args = self._bind_args(theta, pauli_word, wires=wires)
+
         super().__init__(theta, wires=wires, id=id)
 
         if not self._wires:
@@ -697,6 +702,9 @@ class PCPhase(Operation):
 
     resource_keys = {"num_wires", "dim"}
 
+    _wire_argnames = ("wires",)
+    _static_argnames = ("dim",)
+
     def generator(self) -> "qml.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
         The operator reads
@@ -725,6 +733,8 @@ class PCPhase(Operation):
 
     def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        self._bound_args = self._bind_args(phi, dim, wires=wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
             raise ValueError(
