@@ -841,6 +841,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
