@@ -346,10 +346,10 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
         if isinstance(sig.arguments[arg], AbstractArray):
             sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
     with queuing.AnnotatedQueue() as q:
-        subroutine(**sig.arguments)
+        subroutine.definition(**sig.arguments)
 
     resources = defaultdict(int)
-    for op in q.queue[0].decomposition():
+    for op in q.queue:
         resources[resource_rep(type(op), **op.resource_params)] += 1
     return resources
 
