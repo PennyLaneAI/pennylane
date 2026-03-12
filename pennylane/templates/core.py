@@ -709,7 +709,13 @@ class Subroutine:
     def compute_resources(self, *args, **kwargs) -> dict:
         """Calculate a condensed representation for the resources required for the Subroutine."""
         if self._compute_resources is None:
-            return _default_resources(self, *args, **kwargs)
+            try:
+                return _default_resources(self, *args, **kwargs)
+            except Exception as e:
+                raise type(e)(
+                    f"Fallback for computing resources for {self} failed. "
+                    f"Please add a compute_resources definition to {self}."
+                ) from e
         bound_args = self._full_setup_inputs(*args, **kwargs)
         return self._compute_resources(*bound_args.args, **bound_args.kwargs)
 

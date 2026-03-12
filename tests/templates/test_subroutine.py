@@ -221,6 +221,19 @@ def test_fallback_creating_resources_AbstractArray():
     assert resources == expected
 
 
+def test_fallback_resources_error():
+    """Test that is an error occurs when using the resources fallback, we an more informative error."""
+
+    @qml.templates.Subroutine
+    def f(wires):
+        raise ValueError("AHHHH")
+
+    with pytest.raises(
+        ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
+    ):
+        f.compute_resources(qml.templates.AbstractArray((2,)))
+
+
 class TestSubroutineOp:
 
     op1 = generate_subroutine_op_example(
