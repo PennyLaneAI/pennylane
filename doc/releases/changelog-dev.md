@@ -473,6 +473,7 @@ The following classes have been ported over:
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
   [(#9017)](https://github.com/PennyLaneAI/pennylane/pull/9017)
+  [(#9167)](https://github.com/PennyLaneAI/pennylane/pull/9167)
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
