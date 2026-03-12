@@ -12,5 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .op_math import CH
-from .qubit import Hadamard
+from .non_parametric_ops import Hadamard
