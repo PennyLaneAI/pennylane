@@ -51,8 +51,6 @@ from .symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_involutory,
-    pow_rotation,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -420,17 +418,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op))
 
-        elif (
-            issubclass(op.op_type, qml.ops.Pow)
-            and pow_rotation not in decomps
-            and pow_involutory not in decomps
-        ):
+        elif issubclass(op.op_type, qml.ops.Pow):
             # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-            # the general case.
+            # approach we take to decompose powers of operators.
             decomps.extend(self._get_pow_decompositions(op))
 
         elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
@@ -485,8 +475,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [flip_control_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
-        # generated decomposition rules apply.
-        if base_class is qml.GlobalPhase:
+        # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
+        # own decomposition, which applies the control on the middle op only. This should
+        # always be applied.
+        if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
             return []
 
         # General case: apply control to the base op's decomposition rules.
