@@ -8,7 +8,7 @@
 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
@@ -36,7 +36,7 @@ class Allocate:
     Args:
         num_wires (int): the number of wires to be allocated
         state (str): The quantum state of the wires to be allocated, valid values include "zero" or "any".
-        restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
+        restored (bool): A guarantee that the allocated register will be restored (deallocated) to its
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
@@ -143,7 +143,7 @@ class Deallocate:
         else:  # allocated_register = None
             if num_wires is None:
                 raise ValueError(
-                    "Atleast one of `num_wires` and `allocated_register` must be provided"
+                    "At least one of `num_wires` and `allocated_register` must be provided"
                 )
 
             if state == AllocateState.ANY and restored:
@@ -240,15 +240,15 @@ class MarkClean(MarkQubits):
 
 
 def _estimate_auxiliary_wires(
-    list_actions: Iterable[GateCount, Allocate, Deallocate],
+    list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,
     gate_set: set = DefaultGateSet,
     config: ResourceConfig = ResourceConfig(),
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
 ):
-    """A recurrsive function that tracks auxiliary qubits via three quantities over the course of the workflow.
-    It tracks the maximum number of qubits allocated, the maximum number of qubits deallocateded and the total
+    """A recursive function that tracks auxiliary qubits via three quantities over the course of the workflow.
+    It tracks the maximum number of qubits allocated, the maximum number of qubits deallocated and the total
     number of allocated qubits that weren't deallocated by the end of the workflow.
 
     Args:
@@ -363,13 +363,13 @@ def _estimate_auxiliary_wires(
 
 
 def _process_circuit_lst(
-    circuit_as_lst: Iterable[ResourceOperator, Operator, MeasurementProcess, MarkQubits],
+    circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
 ):
     r"""A private function that preprocesses the quantum tape obtained from a qfunc as part of the wire
     tracking pipeline.
 
-    This function has three main responsibilities. Firstly, mapping and pruing all operators (``ResourceOperator``
-    or ``Operator``) to their associated ``CompressedResourceOp``, ignorning any measurements
+    This function has three main responsibilities. Firstly, mapping and pruning all operators (``ResourceOperator``
+    or ``Operator``) to their associated ``CompressedResourceOp``, ignoring any measurements
     (``MeasurementProcess``). Secondly, it extracts and stores the wires each operator acts upon, obtaining the
     set of all wires in the circuit. Finally, in case wire labels are not provided for certain operators, unique
     wires are generated for the operator and tracked as part of the circuit wires.
@@ -438,7 +438,7 @@ def _process_circuit_lst(
 
 
 def estimate_wires_from_circuit(
-    circuit_as_lst: Iterable[ResourceOperator, Operator, MeasurementProcess, MarkQubits],
+    circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
     gate_set: set = DefaultGateSet,
     config: ResourceConfig = ResourceConfig(),
     zeroed: int = 0,
