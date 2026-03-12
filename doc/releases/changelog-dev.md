@@ -767,6 +767,9 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed the incompatibility between `zx` submodule and the recently released `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
+
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
   [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
