@@ -95,6 +95,7 @@
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
 
   ```python
   from pennylane.templates import Subroutine
@@ -163,6 +164,7 @@ The following classes have been ported over:
   level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
   is the level after all tape transforms but before the first MLIR pass.
   [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
@@ -187,8 +189,8 @@ The following classes have been ported over:
   Shots: Shots(total=None)
   Levels:
   - 0: Before transforms
-  - 1: Before MLIR Passes (MLIR-0)
-  - 2: cancel-inverses (MLIR-1)
+  - 1: Before MLIR Passes
+  - 2: cancel-inverses
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
@@ -664,6 +666,9 @@ The following classes have been ported over:
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
+* Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+  [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
+  
 * Updated the `diastatic-malt` dependency to version v2.15.3.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
@@ -828,6 +833,9 @@ The following classes have been ported over:
 
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+  [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
 * Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
