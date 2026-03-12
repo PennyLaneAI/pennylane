@@ -1,4 +1,20 @@
-import pennylane.estimator as qre
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+r"""Resource operators for non parametric single qubit operations."""
+
+import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -6,12 +22,15 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires, WiresLike
 
+
+# pylint: disable=arguments-differ, unused-argument
 class Hadamard(ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
     Args:
-        wires (Sequence[int] | int | None): the wire the operation acts on
+        wires (WiresLike | None): the wire the operation acts on
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -23,7 +42,7 @@ class Hadamard(ResourceOperator):
 
     num_wires = 1
 
-    def __init__(self, wires=None):
+    def __init__(self, wires: WiresLike | None = None):
         """Initializes the ``Hadamard`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -124,7 +143,7 @@ class Hadamard(ResourceOperator):
             gate_lst = [GateCount(resource_rep(qre.CH))]
 
             if num_zero_ctrl:
-                gate_lst.append(GateCount(resource_rep(X), 2))
+                gate_lst.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_lst
 
@@ -139,11 +158,15 @@ class Hadamard(ResourceOperator):
             },
         )
 
-        gate_lst.append(GateCount(h, 6))
+        gate_lst.append(GateCount(h, 4))
         gate_lst.append(GateCount(resource_rep(qre.T), 1))
-        gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_op": qre.T}), 1))
+        gate_lst.append(
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1)
+        )
         gate_lst.append(GateCount(resource_rep(qre.S), 2))
-        gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_op": qre.S}), 2))
+        gate_lst.append(
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 2)
+        )
         gate_lst.append(GateCount(mcx))
         return gate_lst
 
@@ -193,7 +216,7 @@ class Hadamard(ResourceOperator):
             gate_lst = [GateCount(resource_rep(qre.CH))]
 
             if num_zero_ctrl:
-                gate_lst.append(GateCount(resource_rep(X), 2))
+                gate_lst.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_lst
 
@@ -215,3 +238,27 @@ class Hadamard(ResourceOperator):
 
         gate_lst.append(GateCount(mcx))
         return gate_lst
+
+    @classmethod
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
+
+        Args:
+            pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
+        Resources:
+            The Hadamard gate raised to even powers produces identity and raised
+            to odd powers it produces itself.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(qre.Identity))]
+        return [GateCount(cls.resource_rep())]

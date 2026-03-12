@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Resource operators for controlled operations"""
 
-import pennylane.estimator as qre
-from pennylane.estimator import GateCount, resource_rep, ResourceOperator, CompressedResourceOp
+import pennylane.labs.estimator_beta as qre
+from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ
+
 
 class CH(ResourceOperator):
     r"""Resource class for the CH gate.
@@ -103,9 +107,14 @@ class CH(ResourceOperator):
         t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
         h = resource_rep(qre.Hadamard)
         cnot = resource_rep(qre.CNOT)
-        return [GateCount(h, 6), GateCount(s, 2), GateCount(s_dag, 2), GateCount(t, 1), GateCount(t_dag, 1), GateCount(cnot, 1)]
-
-
+        return [
+            GateCount(h, 4),
+            GateCount(t, 1),
+            GateCount(t_dag, 1),
+            GateCount(s, 2),
+            GateCount(s_dag, 2),
+            GateCount(cnot, 1),
+        ]
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:

@@ -25,4 +25,4 @@ resource estimation.
 """
 
 from pennylane.estimator import *
-from .ops import CH
+from .ops import CH, Hadamard
