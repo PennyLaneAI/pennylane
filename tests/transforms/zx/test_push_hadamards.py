@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumScript
 
-pytest.importorskip("pyzx")
+pyzx = pytest.importorskip("pyzx")
 
 
 def test_import_pyzx_error(monkeypatch):
