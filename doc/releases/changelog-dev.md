@@ -733,8 +733,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
-* The definitition of the ``pipeline`` argument for :func:`~.transforms.compile` was clarified in
-  its docstring.
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+  was clarified in its documentation.
+  [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
