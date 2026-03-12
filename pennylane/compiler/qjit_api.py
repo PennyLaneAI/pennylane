@@ -19,26 +19,26 @@ from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
-
-    This decorator enables both just-in-time and ahead-of-time compilation, depending on whether
+    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane. This 
+    decorator enables both just-in-time and ahead-of-time compilation, depending on whether
     function argument type hints are provided.
 
     .. note::
 
-        Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a complete list of supported
-        backend devices, please consult
-        please see :doc:`catalyst:dev/devices`_.
+        Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a 
+        complete list of supported backend devices, please consult please see 
+        :doc:`catalyst:dev/devices`.
 
     Args:
         fn (Callable): The quantum or classical function.
         compiler (str): Name of the compiler to use for just-in-time compilation. Available
             options include :func:`"catalyst" <catalyst.qjit>` and
-:func:`"cuda_quantum" <catalyst.third_party.cuda.cudaqjit>` (for integration with CUDA Quantum).
+            :func:`"cuda_quantum" <catalyst.third_party.cuda.cudaqjit>` (for integration with CUDA 
+            Quantum).
         autograph (bool): Experimental support for automatically converting Python control flow
             statements (including ``if`` statements, ``for`` and ``while`` loops) to
             Catalyst-compatible control flow, and more. For more details, see the
-            :doc:`AutoGraph guide <catalyst:dev/autograph>`__.
+            :doc:`AutoGraph guide <catalyst:dev/autograph>`.
         autograph_include: A list of (sub)modules to be allow-listed for autograph conversion.
         async_qnodes (bool): Experimental support for automatically executing QNodes asynchronously,
             if supported by the device runtime.
@@ -83,8 +83,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         circuit_transform_pipeline (Optional[dict[str, dict[str, str]]]):
             A dictionary that specifies the quantum circuit transformation pass pipeline order,
             and optionally arguments for each pass in the pipeline. Keys of this dictionary
-            should correspond to names of passes found in the `catalyst.passes <https://docs.
-            pennylane.ai/projects/catalyst/en/stable/code/__init__.html#module-catalyst.passes>`_
+            should correspond to names of passes found in the :mod:`catalyst.passes`
             module, values should either be empty dictionaries (for default pass options) or
             dictionaries of valid keyword arguments and values for the specific pass. The order of
             keys in this dictionary will determine the pass pipeline. If not specified, the default
@@ -149,8 +148,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     {'X': array(-0.75271018), 'XY': array(1.)}
 
     For more details on using the :func:`~.qjit` decorator and Catalyst with PennyLane, please
-    refer to the Catalyst doc:`quickstart guide <catalyst:dev/quick_start>`, as well as the
-    :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>` page for an overview of the
+    refer to the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>` and the
+    :doc:`sharp bits and debugging tips page <catalyst:dev/sharp_bits>` for an overview of the
     differences between Catalyst and PennyLane, and how to best structure your workflows to improve
     performance when using Catalyst.
 
