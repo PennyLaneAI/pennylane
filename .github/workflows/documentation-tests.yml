@@ -67,7 +67,7 @@ jobs:
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
-      - name: Run documentation tests
+      - name: Test 'pennylane' folder
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/labs
@@ -108,3 +108,41 @@ jobs:
           "
 
           pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
+      - name: Test 'doc' folder
+        run: |
+          IGNORE_DIRS="
+          --ignore=doc/code
+          --ignore=doc/demos_getting-started
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
+          "
+
+          IGNORE_FILES="
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE_OPTS="
+          {$IGNORE_DIRS}
+          {$IGNORE_FILES}
+          "
+
+          pytest ../doc $IGNORE_OPTS
