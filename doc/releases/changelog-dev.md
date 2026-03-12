@@ -660,7 +660,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Pin `pyzx<0.10` for compatibility.
+* Upper bound `pyzx<0.10` dependency to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
 
 * Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
