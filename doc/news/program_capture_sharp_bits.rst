@@ -83,9 +83,14 @@ Gradients
 ---------
 
 Currently the devices ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` 
-are the only devices that support gradients with program capture enabled. ``lightning.qubit``, 
+support gradients with program capture enabled. ``lightning.qubit``, 
 ``lightning.kokkos``, and ``lightning.gpu`` currently only support ``adjoint``. 
-and ``parameter-shift`` differentation methods.
+and ``parameter-shift`` differentation methods. 
+For plugin devices supported with Catalyst, such as `oqc.cloud <https://docs.oqc.app/installation.html>`, 
+`qrack.simulator <https://pennylane-qrack.readthedocs.io/en/latest/>`, 
+`braket.local.qubit <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/devices/braket_local.html>`, 
+and `braket.aws.qubit <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/devices/braket_remote.html>`, 
+please consult their respective documentation pages for information on gradient support.
 
 .. code-block:: python
 
