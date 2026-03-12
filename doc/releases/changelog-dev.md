@@ -660,6 +660,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove `doc/requirements.txt`. All requirements can be installed with `pip install --group docs`.
+  [(#9174)](https://github.com/PennyLaneAI/pennylane/pull/9174)
+
 * Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
   [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
   
