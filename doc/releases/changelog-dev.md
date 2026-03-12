@@ -96,6 +96,7 @@
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
   from pennylane.templates import Subroutine
