@@ -15,9 +15,11 @@
 
 from copy import copy
 from functools import partial, singledispatch
+from typing import Iterable, Optional
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.operation import Operator
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -39,7 +41,8 @@ _obs_name_map = {
 
 
 def diagonalize_final_measurements_setup_inputs(
-    supported_base_obs: tuple[str] = ("PauliZ", "Identity"), to_eigvals: bool = False
+    supported_base_obs: Optional[Iterable[Operator]] = _default_supported_obs,
+    to_eigvals: bool = False,
 ):
     """The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
     would allow users to activate the xDSL pass with the ``qp.transforms.diagonalize_measurements``
@@ -89,6 +92,20 @@ def diagonalize_final_measurements_setup_inputs(
             raised if ``to_eigvals`` is set as ``True``.
 
     """
+    bad_obs_input = [
+        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
+    ]
+
+    if bad_obs_input:
+        raise ValueError(
+            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
+            f"but received {list(bad_obs_input)}"
+        )
+
+    inverted_obs_map = {v: k for k, v in _obs_name_map.items()}
+
+    supported_base_obs = (inverted_obs_map[obs] for obs in supported_base_obs)
+
     return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
 
 
@@ -235,20 +252,6 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 return qp.expval(qp.Y(0))
 
     """
-    _obs_name_allowed = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
-    if set(supported_base_obs).issubset(_obs_name_allowed):
-        supported_base_obs = [_obs_name_map[obs_name] for obs_name in supported_base_obs]
-
-    bad_obs_input = [
-        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-    ]
-
-    if bad_obs_input:
-        raise ValueError(
-            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {list(bad_obs_input)}"
-        )
-
     diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
 
     if to_eigvals and not diagonalize_all:
