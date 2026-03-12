@@ -117,6 +117,41 @@ class CH(ResourceOperator):
         ]
 
     @classmethod
+    def toffoli_based_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator.
+
+        .. note::
+
+        This operation assumes a catalytic T state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
+
+        Resources:
+            The resources are derived from Figure: 17 in `arXiv:2011.03494<https://arxiv.org/pdf/2011.03494>`_.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        gate_lst = []
+
+        gate_lst.append(qre.Allocate(1))
+        h = resource_rep(qre.Hadamard)
+
+        gate_lst.append(GateCount(h, 5))
+        gate_lst.append(GateCount(resource_rep(qre.S), 2))
+        gate_lst.append(
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1)
+        )
+        gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), 5))
+        gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
+        gate_lst.append(qre.Deallocate(1))
+
+        return gate_lst
+
+    @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 

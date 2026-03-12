@@ -179,6 +179,11 @@ class Hadamard(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
+        .. note::
+
+        This operation assumes a catalytic T state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
+
         Args:
             num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
@@ -188,40 +193,17 @@ class Hadamard(ResourceOperator):
                 of the target operator.
 
         Resources:
-            For a single control wire, the cost is a single instance of ``CH``.
-            Two additional ``X`` gates are used to flip the control qubit if it is zero-controlled.
-            In the case where multiple controlled wires are provided, the resources are derived from
-            the following identities:
-
-            .. math::
-
-                \begin{align}
-                    \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
-                    \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
-                \end{align}
-
-            Specifically, the resources are given by two ``RY`` gates, two
-            ``Hadamard`` gates and a ``X`` gate. By replacing the
-            ``X`` gate with ``MultiControlledX`` gate, we obtain a
-            controlled-version of this identity.
-
-            The ``RY(:math:`\frac{\pi}{4}`)`` and ``RY(:math:`\frac{-\pi}{4}`)`` gates are decomposed as :math:`e^{-i\frac{\pi}{8}}SHTHS^{\dagger}` and :math:`e^{i\frac{\pi}{8}}}SHT^{\dagger}HS^{\dagger}`, respectively.
+            The resources are derived from Figure: 17 in `arXiv:2011.03494<https://arxiv.org/pdf/2011.03494>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if num_ctrl_wires == 1:
-            gate_lst = [GateCount(resource_rep(qre.CH))]
-
-            if num_zero_ctrl:
-                gate_lst.append(GateCount(resource_rep(qre.X), 2))
-
-            return gate_lst
 
         gate_lst = []
 
+        gate_lst.append(qre.Allocate(1))
         h = cls.resource_rep()
         mcx = resource_rep(
             qre.MultiControlledX,
@@ -232,11 +214,15 @@ class Hadamard(ResourceOperator):
         )
 
         gate_lst.append(GateCount(h, 5))
-        gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
         gate_lst.append(GateCount(resource_rep(qre.S), 2))
-        gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_op": qre.S}), 1))
-
+        gate_lst.append(
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1)
+        )
+        gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), 4))
+        gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
         gate_lst.append(GateCount(mcx))
+        gate_lst.append(qre.Deallocate(1))
         return gate_lst
 
     @classmethod

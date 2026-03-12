@@ -14,13 +14,12 @@
 """Tests for controlled resource operators."""
 import pytest
 
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard
 import pennylane.labs.estimator_beta as qre
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.labs.estimator_beta.ops.op_math.controlled_ops import CH
-
 from pennylane.ops.qubit.non_parametric_ops import Hadamard
 from tests.estimator.test_estimator_resOp import CNOT
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
 
@@ -47,6 +46,21 @@ class TestCH:
             GateCount(qre.CNOT.resource_rep(), 1),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+
+    def test_toffoli_based_resources(self):
+        """Test that the resources method produces the expected resources when using a Toffoli-based decomposition."""
+
+        expected_resources = [
+            qre.Allocate(1),
+            GateCount(qre.Hadamard.resource_rep(), 5),
+            GateCount(qre.S.resource_rep(), 2),
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
+            GateCount(resource_rep(qre.Toffoli), 1),
+            GateCount(resource_rep(qre.CNOT), 5),
+            GateCount(resource_rep(qre.CZ), 1),
+            qre.Deallocate(1),
+        ]
+        assert self.op.toffoli_based_resource_decomp() == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
