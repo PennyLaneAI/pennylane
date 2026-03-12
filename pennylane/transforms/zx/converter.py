@@ -380,6 +380,12 @@ def to_zx(tape, expand_measurements=False):
             q_mapper.set_next_row(i, 1)
             q_mapper.set_qubit(i, i)
 
+        # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit _labels
+        # set instead of _qubits.keys(); register every qubit so that output
+        # boundary vertices are created later.
+        if hasattr(q_mapper, "_labels"):
+            q_mapper._labels.update(range(len(mapped_tape.wires)))
+
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         kwargs = {"gate_set": gate_sets.PYZX}
         if qml.decomposition.enabled_graph():
