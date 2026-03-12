@@ -216,14 +216,14 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    indices1 = [
-        [(2 * j - 1) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
-        for j in range(1, 2 ** (n - k) + 1)
-    ]
-    indices2 = [
-        [(2 * j - 2) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
-        for j in range(1, 2 ** (n - k) + 1)
-    ]
+    indices1 = (
+        qml.math.arange(1, 2 ** (n - k + 1) + 1, 2)[:, None] * 2 ** (k - 1)
+        + qml.math.arange(2 ** (k - 1))[None]
+    )
+    indices2 = (
+        qml.math.arange(0, 2 ** (n - k + 1), 2)[:, None] * 2 ** (k - 1)
+        + qml.math.arange(2 ** (k - 1))[None]
+    )
 
     term1 = qml.math.take(omega, indices=indices1, axis=-1)
     term2 = qml.math.take(omega, indices=indices2, axis=-1)
@@ -248,18 +248,17 @@ def _get_alpha_y(a, n, k):
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
-    indices_numerator = [
-        [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
-        for j in range(2 ** (n - k))
-    ]
+    indices_numerator = (qml.math.arange(1, 2 ** (n - k + 1) + 1, 2) * 2 ** (k - 1))[
+        :, None
+    ] + np.arange(2 ** (k - 1))[None]
     numerator = qml.math.take(a, indices=indices_numerator, axis=-1)
     numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=-1)
 
-    indices_denominator = [[j * 2**k + l for l in range(2**k)] for j in range(2 ** (n - k))]
+    indices_denominator = (qml.math.arange(2 ** (n - k)) * 2**k)[:, None] + np.arange(2**k)[None]
     denominator = qml.math.take(a, indices=indices_denominator, axis=-1)
     denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=-1)
 
-    # Divide only where denominator is zero, else leave initial value of zero.
+    # Divide only where denominator is nonzero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
 
     with np.errstate(divide="ignore", invalid="ignore"):
