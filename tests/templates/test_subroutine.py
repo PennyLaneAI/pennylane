@@ -14,7 +14,7 @@
 """Tests for Subroutine and SubroutineOp"""
 # pylint: disable=unused-argument
 import inspect
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import partial
 
 import numpy as np
@@ -52,10 +52,10 @@ class TestInitialization:
         assert len(q.queue) == 1
         qml.assert_equal(q.queue[0], qml.RX(0.5, 0))
 
-        with pytest.raises(
-            NotImplementedError, match="does not have a defined compute_resources function."
-        ):
-            S.compute_resources(0.5, wires=0)
+        resources = S.compute_resources(0.5, wires=0)
+        expected = defaultdict(int)
+        expected[qml.resource_rep(qml.RX)] = 1
+        assert resources == expected
 
     def test_wire_argnames(self):
         """Test that wire argnames can be specified."""
@@ -189,6 +189,36 @@ def test_operator_method():
     assert isinstance(op, SubroutineOp)
     assert op.output == 2
     qml.equal(op.decomposition()[0], qml.RX(0.5, 0))
+
+
+def test_fallback_creating_resources_AbstractArray():
+    """Test that the fallback for calculating resources works with AbstractArray's."""
+
+    @partial(Subroutine, static_argnames="rotation")
+    def f(params, wires, rotation):
+        for (
+            p,
+            w,
+        ) in zip(params["a"], wires):
+            qml.PauliRot(p, rotation, w)
+        qml.MultiControlledX(wires)
+
+    p = AbstractArray((3,), float)
+    w = AbstractArray((3,))
+
+    resources = f.compute_resources({"a": p}, w, "Z")
+    expected = defaultdict(int)
+    expected[qml.resource_rep(qml.PauliRot, pauli_word="Z")] = 3
+
+    r = qml.resource_rep(
+        qml.MultiControlledX,
+        num_control_wires=2,
+        num_zero_control_values=0,
+        num_work_wires=0,
+        work_wire_type="borrowed",
+    )
+    expected[r] = 1
+    assert resources == expected
 
 
 class TestSubroutineOp:
@@ -837,3 +867,25 @@ class TestGraphDecomposition:
 
         op = f.operator(0)
         qml.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+
+    def test_compute_resources_fallback(self):
+        """Test that the compute_resources fallback allows integration with decomps by default."""
+
+        @partial(Subroutine, static_argnames="rotation")
+        def f(params, wires, rotation):
+            for (
+                p,
+                w,
+            ) in zip(params, wires):
+                qml.PauliRot(p, rotation, w)
+            qml.MultiControlledX(wires)
+
+        params = np.array([0.5, 1.2, 3.4])
+        wires = [0, 1, 2]
+        tape = qml.tape.QuantumScript([f.operator(params, wires, "X")])
+        [decomposed], _ = qml.decompose(tape, gate_set=qml.gate_sets.ALL_OPS)
+        print(decomposed.circuit)
+        qml.assert_equal(decomposed[0], qml.PauliRot(0.5, "X", 0))
+        qml.assert_equal(decomposed[1], qml.PauliRot(1.2, "X", 1))
+        qml.assert_equal(decomposed[2], qml.PauliRot(3.4, "X", 2))
+        qml.assert_equal(decomposed[3], qml.MultiControlledX(wires))
