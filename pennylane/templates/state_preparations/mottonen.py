@@ -398,13 +398,6 @@ class MottonenStatePreparation(Operation):
         CNOT(wires=['a', 'b'])]
 
         """
-        # if len(qml.math.shape(state_vector)) > 1:
-        # raise ValueError(
-        # "Broadcasting with MottonenStatePreparation is not supported. Please use the "
-        # "qml.transforms.broadcast_expand transform to use broadcasting with "
-        # "MottonenStatePreparation."
-        # )
-
         a = qml.math.abs(state_vector)
         omega = qml.math.angle(state_vector)
         # change ordering of wires, since original code
