@@ -290,7 +290,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qml.operation.Gate):
-        params.update(op_type.signature)
+        if "signature_key" not in params:
+            params.update(op_type.signature)
         return CompressedResourceOp(op_type, params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -304,8 +305,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
-    if issubclass(op_type, Gate) and "signature_key" not in params:
-        params.update(op_type.signature)
     return CompressedResourceOp(op_type, params)
 
 
