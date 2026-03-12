@@ -36,6 +36,8 @@ from pennylane.labs.estimator_beta.wires_manager import (
 )
 from pennylane.wires import Wires
 
+# pylint: disable=unused-argument,too-many-arguments,arguments-differ
+
 any_state = AllocateState.ANY
 
 
@@ -61,7 +63,7 @@ class AllocateOp(qre.ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, allocate, num_wires=0):
-        return [qre.GateCount(qre.Identity.resource_rep(), 3), allocate]
+        return [allocate]
 
 
 class DeallocateOp(qre.ResourceOperator):
@@ -85,7 +87,7 @@ class DeallocateOp(qre.ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, deallocate, num_wires=0):
-        return [qre.GateCount(qre.Identity.resource_rep()), deallocate]
+        return [deallocate]
 
 
 class AlocOpFree(qre.ResourceOperator):
@@ -182,6 +184,7 @@ def any_state_allocation3():
 
 
 def nested_any_state_allocation1():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     return [
         GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
@@ -193,6 +196,7 @@ def nested_any_state_allocation1():
 
 
 def nested_any_state_allocation2():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     allocate = Allocate(2, any_state, True)
     return [
@@ -204,6 +208,7 @@ def nested_any_state_allocation2():
 
 
 def nested_any_state_allocation3():
+    """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     allocate = Allocate(2, any_state, True)
     return [
@@ -322,7 +327,7 @@ class TestProcessCircuitLst:
             c = next(global_counter)
             return f"w{c}"
 
-        ## Money Patch uuid.uuid4():
+        ## Monkey Patch uuid.uuid4():
         uuid.uuid4 = generate_sequence_wire_labels
 
         ## Test circuit:
@@ -392,6 +397,19 @@ class TestEstimateAuxiliaryWires:
                 num_active_qubits=5,
             )
 
+    def test_error_when_not_enough_any_state_aux_provided(self):
+        """Test that an error is raised if the number of local_num_available_any_state_aux is negative."""
+
+        with pytest.raises(
+            ValueError, match="`local_num_available_any_state_aux` shouldn't be negative,"
+        ):
+            _estimate_auxiliary_wires(
+                list_actions=[GateCount(qre.resource_rep(qre.X))],
+                scalar=1,
+                num_available_any_state_aux=0,  # should be atleast 1 (corresponding to the number of qubits X acts on)
+                num_active_qubits=1,  # X acts on one qubit
+            )
+
     @pytest.mark.parametrize(  # All expected results were computed by hand
         "list_actions, scalar, num_active, num_aux, expected_results",
         (
@@ -401,7 +419,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 1,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                1,  # number of any state auxiliaries,
                 (0, 0, 0),  # max alloc, max dealloc, total
             ),
             (
@@ -413,7 +431,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (5, 0, 5),  # max alloc, max dealloc, total
             ),
             (
@@ -425,7 +443,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 7,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (35, 0, 35),  # max alloc, max dealloc, total
             ),
             (
@@ -437,7 +455,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 5,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (7, 0, 5),  # max alloc, max dealloc, total
             ),
             (
@@ -449,7 +467,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (0, -6, -6),  # max alloc, max dealloc, total
             ),
             (
@@ -461,7 +479,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 4,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (0, -24, -24),  # max alloc, max dealloc, total
             ),
             (
@@ -473,7 +491,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (0, -4, -2),  # max alloc, max dealloc, total
             ),
             (
@@ -485,7 +503,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 6,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (0, -14, -12),  # max alloc, max dealloc, total
             ),
             (
@@ -500,7 +518,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (3, -4, 2),  # max alloc, max dealloc, total
             ),
             (
@@ -515,7 +533,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 3,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (7, -4, 6),  # max alloc, max dealloc, total
             ),
             (
@@ -530,7 +548,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 1,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (4, -3, -2),  # max alloc, max dealloc, total
             ),
             (
@@ -545,7 +563,7 @@ class TestEstimateAuxiliaryWires:
                 ],
                 3,  # Scalar
                 2,  # number of active qubits
-                0,  # number of any state auxiliaries,
+                2,  # number of any state auxiliaries,
                 (4, -7, -6),  # max alloc, max dealloc, total
             ),
         ),
@@ -826,7 +844,7 @@ class TestEstimateAuxiliaryWires:
                     Deallocate(1),
                 ],
                 1,
-                0,
+                4,
                 4,
                 (5, 0, 0),
             ),
@@ -862,7 +880,7 @@ class TestEstimateAuxiliaryWires:
                     Deallocate(1),
                 ],
                 10,
-                0,
+                4,
                 4,
                 (5, 0, 0),
             ),
@@ -878,7 +896,7 @@ class TestEstimateAuxiliaryWires:
                     GateCount(AllocateOp.resource_rep(allocate=Allocate(3))),
                 ],
                 1,
-                0,
+                6,
                 6,
                 (9, -5, -2),
             ),
@@ -894,7 +912,7 @@ class TestEstimateAuxiliaryWires:
                     GateCount(AllocateOp.resource_rep(allocate=Allocate(3))),
                 ],
                 10,
-                0,
+                6,
                 6,
                 (9, -23, -20),
             ),
@@ -919,7 +937,7 @@ class TestEstimateAuxiliaryWires:
                     GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),  # +16
                 ],
                 1,
-                0,
+                6,
                 6,
                 (21, -5, 8),
             ),
@@ -944,7 +962,7 @@ class TestEstimateAuxiliaryWires:
                     GateCount(DeallocateOp.resource_rep(deallocate=Deallocate(1)), 5),  # +8
                 ],
                 7,
-                0,
+                6,
                 6,
                 (69, -5, 56),
             ),
@@ -953,7 +971,7 @@ class TestEstimateAuxiliaryWires:
     def test_nested_allocation_and_deallocation(
         self, lst_actions, scalar, num_aux, num_active, expected_results
     ):
-        """Test that qubit tracking works as expected for circuits with operators whos'
+        """Test that qubit tracking works as expected for circuits with operators whose
         decompositions require auxiliary qubits."""
         results = _estimate_auxiliary_wires(
             list_actions=lst_actions,
@@ -1179,7 +1197,7 @@ class TestEstimateWiresFromCircuit:
         ),
     )
     def test_allocate_deallocate(self, circuit, expected_wire_counts):
-        """Test that the number of allocated qubits (zeored or any state) is correct."""
+        """Test that the number of allocated qubits (zeroed or any state) is correct."""
         wire_counts = estimate_wires_from_circuit(circuit, zeroed=0, any_state=0)
         assert wire_counts == expected_wire_counts
 

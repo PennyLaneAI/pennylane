@@ -19,6 +19,8 @@ from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate, Ma
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
+# pylint: disable=too-many-arguments
+
 
 class TestAllocate:
     """Test the methods and attributes of the Allocate class"""
@@ -155,7 +157,7 @@ class TestDeallocate:
             (None, Allocate(7, state="any"), None, None),
             (None, Allocate(7, state="any", restored=True), None, None),
             (None, Allocate(7, state="any", restored=False), None, None),
-            ## Both: We just ignore the values of num_wires, restored, and state infavor of allocated_register
+            ## Both: We just ignore the values of num_wires, restored, and state in favor of allocated_register
             (5, Allocate(3), "any", True),
             (7, Allocate(3, restored=True), "any", False),
             (2, Allocate(3, restored=False), "any", True),
@@ -313,7 +315,7 @@ class TestDeallocate:
                 None,
                 "Deallocate(7, state=any, restored=False)",
             ),
-            ## Both: We just ignore the values of num_wires, restored, and state infavor of allocated_register
+            ## Both: We just ignore the values of num_wires, restored, and state in favor of allocated_register
             (5, Allocate(3), "any", True, "Deallocate(3, state=zero, restored=False)"),
             (
                 7,
