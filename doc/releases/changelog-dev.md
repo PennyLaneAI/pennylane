@@ -174,9 +174,12 @@ The following classes have been ported over:
 
   ```python
   @qml.qjit
+  @qml.transforms.merge_rotations
   @qml.transforms.cancel_inverses
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit():
+      qml.RX(1.23,0)
+      qml.RX(1.23,0)
       qml.X(0)
       qml.H(0)
       qml.H(0)
@@ -189,17 +192,18 @@ The following classes have been ported over:
   Device wires: 2
   Shots: Shots(total=None)
   Levels:
-  - 0: Before transforms
-  - 1: Before MLIR Passes
-  - 2: cancel-inverses
+  - 0: Before MLIR Passes
+  - 1: cancel-inverses
+  - 2: merge-rotations
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
-  Wire allocations   |  1 |  2 |  2
-  Total gates        |  3 |  3 |  1
+  Wire allocations   |  2 |  2 |  2
+  Total gates        |  5 |  3 |  2
   Gate counts:       |
+  - RX               |  2 |  2 |  1
   - PauliX           |  1 |  1 |  1
-  - Hadamard         |  2 |  2 |  0
+  - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
   ```
@@ -664,6 +668,12 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
+  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
 * Upper bound `pyzx<0.10` dependency to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
