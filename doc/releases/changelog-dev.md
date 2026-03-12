@@ -195,7 +195,7 @@ The following classes have been ported over:
   - 0: Before MLIR Passes
   - 1: cancel-inverses
   - 2: merge-rotations
-
+  <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
   Wire allocations   |  2 |  2 |  2
