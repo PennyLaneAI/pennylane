@@ -16,7 +16,14 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.measurements import MeasurementProcess
-from pennylane.ops import Conditional, GlobalPhase, Identity, MidMeasure, PauliMeasure
+from pennylane.ops import (
+    Conditional,
+    GlobalPhase,
+    Identity,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 
@@ -86,7 +93,8 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
     if isinstance(op, SubroutineOp):
         mapped_wires = [wire_map[wire] for wire in op.wires]
 
-        if any(m in bit_map for mv in flatten(op.output)[0] for m in mv.measurements):
+        mvs = (v for v in flatten(op.output)[0] if isinstance(v, MeasurementValue))
+        if any(m in bit_map for mv in mvs for m in mv.measurements):
             min_wire = min(mapped_wires)
             max_wire = max(wire_map.values())
             return set(range(min_wire, max_wire + 1))

@@ -442,3 +442,26 @@ class TestCwireConnections:
         assert clayers == {0: [[2 * i, 2 * i + 1] for i in range(rep)]}
         assert wires == {0: [[0, 2]] * rep}
         assert new_bit_map == {_m.measurements[0]: 0 for _m in m}
+
+    def test_subroutine_with_output(self):
+        """Test that cwire_connections can handle a subroutine with MCM outputs."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            return [2] + [qml.measure(w) for w in wires]
+
+        f_op = f.operator((0, 1))
+        conds = [
+            qml.ops.Conditional(f_op.output[1], qml.S(0)),
+            qml.ops.Conditional(f_op.output[2], qml.T(0)),
+            qml.ops.Conditional(f_op.output[1], qml.SX(2)),
+        ]
+
+        layers = [[f_op], [conds[0]], [conds[1]], [conds[2]]]
+        bit_map = {f_op.output[1].measurements[0]: 0, f_op.output[2].measurements[0]: 1}
+
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+
+        assert bit_map == new_bit_map
+        assert clayers == {0: [[0, 1, 3]], 1: [[0, 2]]}
+        assert wires == {0: [[1, 0, 3]], 1: [[1, 0]]}

@@ -44,6 +44,7 @@ from pennylane.ops import (
     Controlled,
     GlobalPhase,
     Identity,
+    MeasurementValue,
     MidMeasure,
     PauliMeasure,
 )
@@ -132,12 +133,13 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
 
 def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object for mid-measure operators"""
-    if not any(m in config.bit_map for mv in flatten(op.output)[0] for m in mv.measurements):
-        return layer_str
-
     mcms = []
     for mv in flatten(op.output)[0]:
-        mcms += mv.measurements
+        if isinstance(mv, MeasurementValue):
+            mcms += mv.measurements
+
+    if not any(mcm in config.bit_map for mcm in mcms):
+        return layer_str
 
     n_wires = len(config.wire_map)
     mapped_wire = max(config.wire_map[w] for w in op.wires)
