@@ -383,6 +383,7 @@ def to_zx(tape, expand_measurements=False):
         # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit _labels
         # set instead of _qubits.keys(); register every qubit so that output
         # boundary vertices are created later.
+        # pylint: disable=protected-access
         if hasattr(q_mapper, "_labels"):
             q_mapper._labels.update(range(len(mapped_tape.wires)))
 
