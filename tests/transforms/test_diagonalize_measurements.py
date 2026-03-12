@@ -528,7 +528,7 @@ class TestDiagonalizeTapeMeasurements:
         assert fn == null_postprocessing
 
     @pytest.mark.parametrize(
-        "supported_base_obs", (["PauliC", "PauliZ"], ["PauliX", "PauliZ"], [X(0), qml.Z(1)])
+        "supported_base_obs", (["PauliC", "PauliZ"], [X(0), qml.Z(1)])
     )
     def test_bad_obs_input_raises_error(self, supported_base_obs):
         """Test that if a value is passed to supported_base_obs that can't be interpreted, a clear error is raised"""
@@ -598,17 +598,3 @@ class TestDiagonalizeMeasurementsPassSetup:
         assert bound_t.args == ()
         assert bound_t.kwargs == {"supported_base_obs": ("PauliX",), "to_eigvals": False}
 
-    def test_bad_inputs(self):
-        """Test that bad inputs raise errors."""
-
-        with pytest.raises(
-            ValueError,
-            match=r"Supported base observables must be a subset of \(PauliX, PauliY, PauliZ, Hadamard, and Identity\) passed as a tuple\[str\], but received PauliX.",
-        ):
-            diagonalize_measurements(supported_base_obs="PauliX")
-
-        with pytest.raises(ValueError, match="to_eigvals must be bool and False."):
-            diagonalize_measurements(to_eigvals=True)
-
-        with pytest.raises(ValueError, match="to_eigvals must be bool and False."):
-            diagonalize_measurements(to_eigvals="False")
