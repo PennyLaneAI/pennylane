@@ -373,19 +373,21 @@ def to_zx(tape, expand_measurements=False):
         inputs = []
 
         # Create the qubits in the graph and the qubit mapper
+        # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
+        # populated only via add_label(label, row).  Use it so output boundary
+        # vertices are created later.
+        from packaging.version import Version  # pylint: disable=import-outside-toplevel
+
+        _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
         for i in range(len(mapped_tape.wires)):
             vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
             inputs.append(vertex)
             q_mapper.set_prev_vertex(i, vertex)
-            q_mapper.set_next_row(i, 1)
-            q_mapper.set_qubit(i, i)
-
-        # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit _labels
-        # set instead of _qubits.keys(); register every qubit so that output
-        # boundary vertices are created later.
-        # pylint: disable=protected-access
-        if hasattr(q_mapper, "_labels"):
-            q_mapper._labels.update(range(len(mapped_tape.wires)))
+            if _pyzx_010:
+                q_mapper.add_label(i, 1)
+            else:
+                q_mapper.set_next_row(i, 1)
+                q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         kwargs = {"gate_set": gate_sets.PYZX}

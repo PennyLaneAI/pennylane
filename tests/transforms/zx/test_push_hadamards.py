@@ -107,12 +107,13 @@ class TestPushHadamards:
     )
     def test_rotation_gates_error(self, rot_gate):
         """Test that an error is raised when the input circuit contains RX or RY rotation gates."""
-        qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
-
         from packaging.version import Version  # pylint: disable=import-outside-toplevel
 
+        qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
+
         if Version(pyzx.__version__) >= Version("0.10"):
-            pytest.skip("no errors for pyzx version 0.10 and above.")
+            # pyzx 0.10+ no longer raises for rotation gates
+            qml.transforms.zx.push_hadamards(qs)
         else:
             with pytest.raises(
                 TypeError,
