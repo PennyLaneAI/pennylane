@@ -671,6 +671,7 @@ The following classes have been ported over:
 
 * `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
   program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
