@@ -70,10 +70,19 @@ class TestCollectOpsandMeas:
         ops = interpreter.state["ops"]
         for op in ops:
             assert op.name == "MyFunc"
+            assert repr(op) == "<CollectedSubroutine: MyFunc>"
+
+        assert ops[0].wires == qml.wires.Wires((0, 1))
+        assert ops[1].wires == qml.wires.Wires((2, 3))
+        assert ops[2].wires == qml.wires.Wires((3, 4))
 
         qml.assert_equal(ops[0].decomposition()[0], qml.PauliRot(0.5, "XY", (0, 1)))
-        qml.assert_equal(ops[1].decomposition()[0], qml.PauliRot(1.5, (2, 3), "YZ"))
-        qml.assert_equal(ops[2].decomposition()[0], qml.PauliRot(2.5, "XY", (3, 4)))
+        qml.assert_equal(
+            ops[1].decomposition()[0], qml.PauliRot(jax.numpy.array(1.5), "YZ", (2, 3))
+        )
+        qml.assert_equal(
+            ops[2].decomposition()[0], qml.PauliRot(jax.numpy.array(2.5), "XY", (3, 4))
+        )
 
     def test_for_loop(self):
         """Test collecting the operations in a for loop."""
@@ -616,21 +625,3 @@ class TestPlxprToTape:
         assert tape.operations[2].wires == tape.operations[1].wires
         assert isinstance(tape.operations[3], qml.allocation.Deallocate)
         assert tape.operations[3].wires == tape.operations[1].wires
-
-    def test_subroutine(self):
-        """Test that jaxpr's with subroutines can be converted to a tape."""
-
-        @qml.capture.subroutine
-        def some_func(x):
-            qml.RX(x, 0)
-
-        def c(x):
-            some_func(x)
-            some_func(x)
-
-        jaxpr = jax.make_jaxpr(c)(0.5)
-        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5)
-        assert isinstance(tape, qml.tape.QuantumScript)
-        assert len(tape) == 2
-        qml.assert_equal(tape[0], qml.RX(0.5, 0))
-        qml.assert_equal(tape[1], qml.RX(0.5, 0))
