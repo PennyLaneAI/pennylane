@@ -11,7 +11,7 @@ on:
       - ready_for_review
   push:
     branches:
-      - master
+      - main
 
 jobs:
   rtd_check:
