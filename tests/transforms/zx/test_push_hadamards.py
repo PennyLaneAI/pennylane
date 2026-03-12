@@ -109,6 +109,11 @@ class TestPushHadamards:
         """Test that an error is raised when the input circuit contains RX or RY rotation gates."""
         qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
 
+        from packaging.version import Version  # pylint: disable=import-outside-toplevel
+
+        if Version(pyzx.__version__) >= Version("0.10"):
+            pytest.skip("no errors for pyzx version 0.10 and above.")
+
         with pytest.raises(
             TypeError,
             match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
