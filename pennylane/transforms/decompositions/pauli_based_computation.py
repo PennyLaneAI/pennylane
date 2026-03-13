@@ -88,7 +88,7 @@ def to_ppr_setup_inputs():
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: to-ppr (MLIR-1)
+    Level: to-ppr
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 11
@@ -189,7 +189,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: commute-ppr (MLIR-2)
+    Level: commute-ppr
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 7
@@ -289,7 +289,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: merge-ppr-ppm (MLIR-2)
+    Level: merge-ppr-ppm
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 1
@@ -401,7 +401,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: ppr-to-ppm (MLIR-2)
+    Level: ppr-to-ppm
     <BLANKLINE>
     Wire allocations: 9
     Total gates: 24
@@ -511,7 +511,7 @@ def ppm_compilation_setup_inputs(
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: ppm-compilation (MLIR-1)
+    Level: ppm-compilation
     <BLANKLINE>
     Wire allocations: 8
     Total gates: 25
@@ -704,7 +704,7 @@ def decompose_arbitrary_ppr_setup_inputs():
     Device: null.qubit
     Device wires: 3
     Shots: Shots(total=None)
-    Level: decompose-arbitrary-ppr (MLIR-2)
+    Level: decompose-arbitrary-ppr
     <BLANKLINE>
     Wire allocations: 3
     Total gates: 6
