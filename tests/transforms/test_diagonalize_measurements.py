@@ -527,9 +527,7 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.parametrize(
-        "supported_base_obs", (["PauliC", "PauliZ"], ["PauliX", "PauliZ"], [X(0), qml.Z(1)])
-    )
+    @pytest.mark.parametrize("supported_base_obs", (["PauliC", "PauliZ"], [X(0), qml.Z(1)]))
     def test_bad_obs_input_raises_error(self, supported_base_obs):
         """Test that if a value is passed to supported_base_obs that can't be interpreted, a clear error is raised"""
 
@@ -582,3 +580,48 @@ class TestDiagonalizeTapeMeasurements:
                 assert np.allclose(r_diagonalized, r, rtol=0.1)
         else:
             assert np.allclose(expected_res, res, rtol=0.1)
+
+
+class TestDiagonalizeMeasurementsPassSetup:
+    """Tests the diagonalize_measurements pass setup"""
+
+    def test_pass_name(self):
+        """Test the pass name is set on the diagonalize_measurements transform."""
+        assert diagonalize_measurements.pass_name == "diagonalize-final-measurements"
+
+    @pytest.mark.parametrize("to_eigvals", (True, False))
+    @pytest.mark.parametrize(
+        "supported_base_obs",
+        (
+            [qml.X],
+            ["PauliX"],
+        ),
+    )
+    def test_setup_inputs_to_kwargs(self, supported_base_obs, to_eigvals):
+        """Test that positional inputs are promoted to kwargs."""
+
+        bound_t = diagonalize_measurements(
+            supported_base_obs=supported_base_obs, to_eigvals=to_eigvals
+        )
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"supported_base_obs": ("PauliX",), "to_eigvals": to_eigvals}
+
+    @pytest.mark.xfail(
+        reason="the test will fail until the Catalyst PR #2538 is merged and can be tested against"
+    )
+    def test_xdsl_pass(self):
+
+        @qml.qjit
+        @qml.transforms.diagonalize_measurements(supported_base_obs=[qml.PauliX])
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            qml.Hadamard(0)
+            qml.RZ(1.1, 0)
+            qml.PhaseShift(0.22, 0)
+            return qml.expval(qml.Y(0))
+
+        expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+        expected_result = 0.9687151001182651
+
+        assert expected_substr in circuit.mlir
+        assert np.allclose(circuit(), expected_result)
