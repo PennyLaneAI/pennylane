@@ -11,27 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This module contains experimental features for
-resource estimation.
 
-.. warning::
+r"""This module contains single qubit operations."""
 
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.estimator_beta
-
-Resource Operators
-------------------
-
-.. autosummary::
-    :toctree: api
-
-    ~CH
-    ~Hadamard
-
-"""
-
-from pennylane.estimator import *
-from .ops import CH, Hadamard
+from .non_parametric_ops import Hadamard
