@@ -65,7 +65,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-def _select_ops(control_wires, depth, target_wires, swap_wires, data):
+def _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
@@ -73,6 +73,7 @@ def _select_ops(control_wires, depth, target_wires, swap_wires, data):
         Select(
             _new_ops(depth, target_wires, control_wires, swap_wires, data),
             control=control_select_wires,
+            work_wires=select_work_wires,
         )
     else:
         _new_ops(depth, target_wires, control_wires, swap_wires, data)
@@ -156,12 +157,12 @@ class QROM(Operation):
 
 
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
-        Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
-        Following the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], auxiliary qubits can be used to
+        The first :math:`c-1` work wires are asigned to the :class:`~.Select` block where :math:`c` is the number of control wires in the operator.
+        On the other hand, let :math:`k` be the number of work wires left. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
+        Otherwise, we follow the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], and use auxiliary qubits to
         load more than one bitstring in parallel. Let :math:`\lambda` be
         the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
-        Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
-        where :math:`l` is the length of the bitstrings.
+        Then, :math:`k = l \cdot (\lambda-1)` work wires are needed, where :math:`l` is the length of the bitstrings.
 
         The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
         The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
@@ -394,10 +395,14 @@ class QROM(Operation):
 def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):  # pylint: disable=too-many-branches
+
+    num_work_wires_select = min(num_work_wires, num_control_wires - 1)
+    num_work_wires_swap = num_work_wires - num_work_wires_select
+
     if num_control_wires == 0:
         return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 
-    num_swap_wires = num_target_wires + num_work_wires
+    num_swap_wires = num_target_wires + num_work_wires_swap
 
     # number of operators we store per column (power of 2)
     depth = num_swap_wires // num_target_wires
@@ -436,7 +441,7 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 op_reps=tuple(new_ops_reps),
                 partial=False,
-                num_work_wires=0,
+                num_work_wires=num_work_wires_select,
             ): 1
         }
     else:
@@ -485,7 +490,9 @@ def _qrom_decomposition(
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
 
-    swap_wires = target_wires + work_wires
+    select_work_wires = work_wires[: len(control_wires) - 1]
+    swap_work_wires = work_wires[len(control_wires) - 1 :]
+    swap_wires = target_wires + swap_work_wires
 
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
@@ -493,7 +500,7 @@ def _qrom_decomposition(
     depth = min(depth, data.shape[0])
 
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires, swap_wires, data)
+        _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
@@ -501,7 +508,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
             qml_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
-            _select_ops(control_wires, depth, target_wires, swap_wires, data)
+            _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 

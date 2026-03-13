@@ -21,6 +21,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.select import _select_decomp_unary
+from pennylane.templates.subroutines.qrom import _qrom_decomposition
 
 has_jax = True
 try:
@@ -330,6 +332,37 @@ class TestQROM:
         )
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
+
+    def test_select_decomposition_unary(self, monkeypatch):
+        """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
+
+        bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
+        control_wires = [0, 1, 2]
+        target_wires = [3, 4]
+
+        qml.decomposition.enable_graph()
+
+        call_count = 0
+        original_impl = _select_decomp_unary._impl
+
+        def spy(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original_impl(*args, **kwargs)
+
+        monkeypatch.setattr(_select_decomp_unary, "_impl", spy)
+
+        @qml.transforms.decompose(
+            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", *qml.ops.__all__},
+            fixed_decomps={qml.QROM: _qrom_decomposition, qml.Select: _select_decomp_unary},
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.QROM(bitstrings, control_wires, target_wires, work_wires=[5, 6])
+            return qml.state()
+
+        circuit()
+        assert call_count > 0, "_select_decomp_unary was never called"
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
