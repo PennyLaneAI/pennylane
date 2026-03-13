@@ -27,6 +27,7 @@ This module contains the abstractions for defining subroutines.
 
 """
 import copy
+from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
@@ -362,6 +363,25 @@ class SubroutineOp(Operation):
         return super().label(decimals, base_label=self.name, cache=cache)
 
 
+def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict:
+    sig = subroutine.signature.bind(*args, **kwargs)
+    for arg in subroutine.dynamic_argnames:
+        avals, struct = flatten(sig.arguments[arg])
+        if avals and isinstance(avals[0], AbstractArray):
+            params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
+            sig.arguments[arg] = unflatten(params, struct)
+    for arg in subroutine.wire_argnames:
+        if isinstance(sig.arguments[arg], AbstractArray):
+            sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
+    with queuing.AnnotatedQueue() as q:
+        subroutine.definition(**sig.arguments)
+
+    resources = defaultdict(int)
+    for op in q.queue:
+        resources[resource_rep(type(op), **op.resource_params)] += 1
+    return resources
+
+
 def _calculate_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
@@ -410,10 +430,7 @@ class Subroutine:
         from functools import partial
         from pennylane.templates import Subroutine
 
-        def resources(x, y, wires):
-            return {qml.RX: 1, qml.RY: 1}
-
-        @partial(Subroutine, compute_resources=resources)
+        @Subroutine
         def MyTemplate(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[0])
@@ -534,8 +551,11 @@ class Subroutine:
         that decompose to ``Subroutine``, in Catalyst.
 
 
-    To use ``Subroutine`` with graph-based decompositions, a function to compute the resources must
-    be provided.
+    To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
+    A default fallback calculates the resources by calling the subroutine with
+    dummy parameters created with ``np.empty``. This will be inefficient
+    and will only work if the dynamic parameters have no additional constraints, such as normalization
+    or unitarity.
     The calculation of resources should only depend on the static arguments, the number of wires
     in each register, and the shape and ``dtype`` of the dynamic arguments. This will allow
     the calculation of the resources to performed in an abstract way.
@@ -717,7 +737,13 @@ class Subroutine:
     def compute_resources(self, *args, **kwargs) -> dict:
         """Calculate a condensed representation for the resources required for the Subroutine."""
         if self._compute_resources is None:
-            raise NotImplementedError(f"{self} does not have a defined compute_resources function.")
+            try:
+                return _default_resources(self, *args, **kwargs)
+            except Exception as e:
+                raise type(e)(
+                    f"Fallback for computing resources for {self} failed. "
+                    f"Please add a compute_resources definition to {self}."
+                ) from e
         bound_args = self._full_setup_inputs(*args, **kwargs)
         return self._compute_resources(*bound_args.args, **bound_args.kwargs)
 
