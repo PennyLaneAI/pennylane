@@ -617,10 +617,14 @@ def has_reconstructor(op_class, op_params):
 def reconstruct(data, wires: Wires, op_type: type[Operator], op_params: dict) -> Operator:
     """Reconstruct an instance of op_type with resource params."""
 
-    if op_type not in _reconstructors and not op_type.resource_keys:
+    if op_type not in _reconstructors and not op_type.resource_keys - {"num_wires"}:
         # Assume the default for simple gates. Since we don't actually have a Gate
         # class to use in an issubclass check, we use the resource_keys as a proxy.
-        # A simple Gate wouldn't have any resource_keys defined.
+        # A simple Gate wouldn't have any resource_keys defined. Another special case
+        # is when an operator only has a single resource param that is the number of
+        # wires. Such an operator also doesn't take anything beyond data and wires
+        # in its constructor. The number of wires is typically redundant since this
+        # information is apparant from the shape of the wires array already.
         return op_type(data, wires=wires)
 
     if op_type is qml.ops.Adjoint:
