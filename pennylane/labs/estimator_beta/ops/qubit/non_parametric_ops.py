@@ -131,8 +131,19 @@ class Hadamard(ResourceOperator):
             ``X`` gate with ``MultiControlledX`` gate, we obtain a
             controlled-version of this identity.
 
-            The ``RY(:math:`\frac{\pi}{4}`)`` and ``RY(:math:`\frac{-\pi}{4}`)`` gates are further decomposed as
-            :math:`e^{-i\frac{\pi}{8}}SHTHS^{\dagger}` and :math:`e^{i\frac{\pi}{8}}}SHT^{\dagger}HS^{\dagger}`, respectively.
+            Decomposing the :math:`\hat{R}_y(\pm\frac{\pi}{4})` rotations into the Clifford+T basis and substituting yields:
+
+            .. math::
+
+                \begin{align}
+                    \hat{H} &= (S H T H S^\dagger) \cdot \hat{Z} \cdot (S H T^\dagger H S^\dagger) \\
+                            &= S H T \cdot (\hat{H} \hat{Z} \hat{H}) \cdot T^\dagger H S^\dagger \\
+                            &= S H T \cdot \hat{X} \cdot T^\dagger H S^\dagger
+                \end{align}
+
+            The final resources are: 2 ``Hadamard``, 1 ``T``, 1 ``Adjoint(T)``,
+            1 ``S``, 1 ``Adjoint(S)``, and 1 ``MultiControlledX`` controlled on ``num_ctrl_wires``.
+
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

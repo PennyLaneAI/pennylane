@@ -22,6 +22,17 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.estimator_beta
 
+Resource Operators
+------------------
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~CH
+    ~Hadamard
+
 """
 
 from pennylane.estimator import *
