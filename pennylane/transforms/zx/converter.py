@@ -323,6 +323,14 @@ def to_zx(tape, expand_measurements=False):
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
 
+    ######################################################################
+    # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
+    # populated only via add_label(label, row).  Use it so output boundary
+    # vertices are created later.
+    from packaging.version import Version
+
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+
     # Dictionary of gates (PennyLane to PyZX circuit)
     # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
     # and to update both if the PyZX gate spec changes.
@@ -373,12 +381,6 @@ def to_zx(tape, expand_measurements=False):
         inputs = []
 
         # Create the qubits in the graph and the qubit mapper
-        # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
-        # populated only via add_label(label, row).  Use it so output boundary
-        # vertices are created later.
-        from packaging.version import Version  # pylint: disable=import-outside-toplevel
-
-        _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
         for i in range(len(mapped_tape.wires)):
             vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
             inputs.append(vertex)
