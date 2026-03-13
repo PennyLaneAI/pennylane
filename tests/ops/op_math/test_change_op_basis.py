@@ -29,6 +29,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.queuing import AnnotatedQueue
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
@@ -50,7 +51,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
 
-def test_change_op_basis_partials():
+def test_change_op_basis_callables():
     """Tests that partials can be provided to change_op_basis."""
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -59,40 +60,41 @@ def test_change_op_basis_partials():
         qml.QFT(reg1)
         qml.RX(a, reg1[0])
 
-    @partial(Subroutine, wire_argnames=("wires"))
     def g(wires):
         qml.PauliX(wires[0])
 
-    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
-    def h(a, reg1, reg2):
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    def h(a, reg1):
         qml.adjoint(qml.RX)(a, reg1[0])
         qml.adjoint(qml.QFT)(reg1)
-        qml.adjoint(qml.BasisState)(np.zeros(len(reg2)), reg2)
+        qml.adjoint(qml.BasisState)(np.zeros(len(reg1)), reg1)
 
-    @qml.decompose(gate_set=gate_sets.ALL_QUBIT_OPS, max_expansion=1)
     def circuit():
         qml.change_op_basis(
             partial(f, 0.1, Wires([0]), Wires([1])),
             partial(g, Wires([0])),
-            partial(h, 0.2, Wires([0]), Wires([1])),
+            partial(h, 0.2, Wires([0])),
         )
 
-    with AnnotatedQueue() as q:
-        circuit()
+    circuit()
 
     expected = [
         qml.BasisState(np.zeros(1), [1]),
-        qml.QFT([0]),
+    ] + qml.QFT([0]).decomposition() + [
         qml.RX(0.1, 0),
         qml.PauliX(0),
-        qml.adjoint(qml.RX)(0.2, 0),
-        qml.adjoint(qml.QFT)([0]),
+        qml.RX(-0.2, 0),
+    ] + list(map(qml.adjoint, qml.QFT([0]).decomposition())) + [
         qml.adjoint(qml.BasisState)(np.zeros(1), [1]),
     ]
 
-    for i, op in enumerate(q.queue):
-        assert op == expected[i]
+    interpreter = CollectOpsandMeas()
+    x = 0.5
+    interpreter(circuit)(x)
 
+    ops = interpreter.state["ops"]
+    for i, op in enumerate(ops):
+        assert op == expected[i]
 
 @pytest.mark.jax
 @pytest.mark.capture
