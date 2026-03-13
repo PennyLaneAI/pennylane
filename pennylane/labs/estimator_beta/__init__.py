@@ -20,7 +20,21 @@ resource estimation.
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-.. currentmodule:: pennylane.labs.estimator_beta
+
+Qubit Tracking Functionality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~Allocate
+    ~Deallocate
+    ~estimate_wires_from_circuit
+    ~estimate_wires_from_resources
+    ~MarkClean
+    ~MarkQubits
 
 """
 from .wires_manager import (

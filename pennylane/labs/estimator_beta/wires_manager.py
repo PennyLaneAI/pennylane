@@ -57,7 +57,7 @@ class Allocate:
         state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
         restored=False,
     ):
-        if not isinstance(num_wires, int) or num_wires <= 0:
+        if type(num_wires) is not int or num_wires <= 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if not isinstance(restored, bool):
@@ -190,7 +190,7 @@ class Deallocate:
                     "Must provide the `allocated_register` when deallocating an ANY state register with `restored=True`"
                 )
 
-        if not isinstance(num_wires, int) or num_wires <= 0:
+        if type(num_wires) is not int or num_wires <= 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if not isinstance(restored, bool):
@@ -329,19 +329,19 @@ def _estimate_auxiliary_wires(
     number of allocated qubits that weren't restored to the zero state by the end of the workflow.
 
     Args:
-        list_actions (Iterable[GateCount, Allocate, Deallocate]): A quantum circuit represented by a list
+        list_actions (Iterable[GateCount | Allocate | Deallocate]): A quantum circuit represented by a list
             of circuit elements. The circuit elements are made up of gates with counts (``GateCount``),
             qubit allocation instructions (``Allocate``) and qubit deallocation instructions (``Deallocate``).
-        scalar (int, optional): A positive integer or zero representing how many times this quantum circuit
+        scalar (int): A positive integer or zero representing how many times this quantum circuit
             (``list_actions``) is repeated.
-        gate_set (set[str], optional): A set of names (strings) of the fundamental operators to count
+        gate_set (set[str]): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig, optional): configurations for the resource estimation pipeline
-        num_available_any_state_aux (int, optional): The number of external qubits, in any quantum state, that
+        config (ResourceConfig): configurations for the resource estimation pipeline
+        num_available_any_state_aux (int): The number of external qubits, in any quantum state, that
             can be treated as auxiliary and borrowed for use within this workflow. These would potentially reduce
             the number of qubits allocated within the workflow.
-        num_active_qubits (int, optional): The total number of qubits (not auxiliary) that the operators
+        num_active_qubits (int): The total number of qubits (not auxiliary) that the operators
             in the workflow act upon.
 
     Returns:
@@ -454,7 +454,7 @@ def _process_circuit_lst(
     wires are generated for the operator and tracked as part of the circuit wires.
 
     Args:
-        circuit_as_lst (Iterable[ResourceOperator, Operator, MeasurementProcess, MarkQubits]): A quantum circuit
+        circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
             represented by a list of circuit elements (operators, measurements, etc,).
 
     Returns:
@@ -491,12 +491,12 @@ def _process_circuit_lst(
 
             if op_wires is None:
                 num_wires = op.num_wires
-                diff = num_generated_wires - num_wires
+                diff = num_wires - num_generated_wires
 
-                if diff < 0:  # generate additional wire labels
-                    for i in range(abs(diff)):
+                if diff > 0:  # generate additional wire labels
+                    for i in range(diff):
                         generated_wire_labels.append(f"__generated_wire{num_generated_wires + i}__")
-                    num_generated_wires += abs(diff)
+                    num_generated_wires += diff
 
                 op_wires = Wires(generated_wire_labels[:num_wires])
 
@@ -527,15 +527,15 @@ def estimate_wires_from_circuit(
     of a quantum circuit into a specific ``gate_set`` with a given ``config``.
 
     Args:
-        circuit_as_lst (Iterable[ResourceOperator, Operator, MeasurementProcess, MarkQubits]): A quantum circuit
+        circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
             represented by a list of circuit elements (operators, measurements, etc,).
-        gate_set (set[str], optional): A set of names (strings) of the fundamental operators to count
+        gate_set (set[str]): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig, optional): configurations for the resource estimation pipeline
-        zeroed (int, optional): The number of additional auxiliary wires, prepared in the
+        config (ResourceConfig): configurations for the resource estimation pipeline
+        zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
-        any_state (int, optional): The number of additional auxiliary wires, prepared in
+        any_state (int): The number of additional auxiliary wires, prepared in
             any state, that can be used as part of the decomposition.
 
     Returns:
@@ -607,13 +607,13 @@ def estimate_wires_from_resources(
 
     Args:
         workflow (Resources): the collection of gates and counts to be further decomposed
-        gate_set (set[str], optional): A set of names (strings) of the fundamental operators to count
+        gate_set (set[str]): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig, optional): configurations for the resource estimation pipeline
-        zeroed (int, optional): The number of additional auxiliary wires, prepared in the
+        config (ResourceConfig): configurations for the resource estimation pipeline
+        zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
-        any_state (int, optional): The number of additional auxiliary wires, prepared in
+        any_state (int): The number of additional auxiliary wires, prepared in
             any state, that can be used as part of the decomposition.
 
     Returns:
