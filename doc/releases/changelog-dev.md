@@ -670,7 +670,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* The ouptut of the `qml.while_loop` condition is now automatically converted
+* The output of the `qml.while_loop` condition is now automatically converted
   to a bool.
   [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
 
