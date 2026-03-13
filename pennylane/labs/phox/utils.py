@@ -111,9 +111,9 @@ def create_random_gates(
 
 def generate_pauli_observables(
     n_qubits: int, orders: list[int] = (1,), bases: list[str] = ("Z",)
-) -> list[list[str]]:
+) -> list[list[int]]:
     """
-    Generates a batch of Pauli observables.
+    Generates a batch of Pauli observables represented as integers (I=0, X=1, Y=2, Z=3).
 
     Args:
         n_qubits (int): Number of qubits.
@@ -121,19 +121,21 @@ def generate_pauli_observables(
         bases (list[str]): Pauli bases to use ('X', 'Y', 'Z').
 
     Returns:
-        list[list[str]]: A list of observables, where each observable is a list of strings.
-                         Example for 2 qubits, order 1, base Z: [['Z', 'I'], ['I', 'Z']]
+        list[list[int]]: A list of observables mapped to ints.
+                         Example for 2 qubits, order 1, base Z: [[3, 0], [0, 3]]
     """
     observables = []
+    base_map = {"I": 0, "X": 1, "Y": 2, "Z": 3}
 
     for order in orders:
         if order > n_qubits:
             continue
         for base in bases:
+            base_int = base_map[base.upper()]
             for positions in combinations(range(n_qubits), order):
-                obs_row = ["I"] * n_qubits
+                obs_row = [0] * n_qubits
                 for pos in positions:
-                    obs_row[pos] = base
+                    obs_row[pos] = base_int
                 observables.append(obs_row)
 
     return observables
