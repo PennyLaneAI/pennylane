@@ -527,9 +527,7 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.parametrize(
-        "supported_base_obs", (["PauliC", "PauliZ"], [X(0), qml.Z(1)])
-    )
+    @pytest.mark.parametrize("supported_base_obs", (["PauliC", "PauliZ"], [X(0), qml.Z(1)]))
     def test_bad_obs_input_raises_error(self, supported_base_obs):
         """Test that if a value is passed to supported_base_obs that can't be interpreted, a clear error is raised"""
 
@@ -591,10 +589,19 @@ class TestDiagonalizeMeasurementsPassSetup:
         """Test the pass name is set on the diagonalize_measurements transform."""
         assert diagonalize_measurements.pass_name == "diagonalize-final-measurements"
 
-    def test_setup_inputs_to_kwargs(self):
+    @pytest.mark.parametrize("to_eigvals", (True, False))
+    @pytest.mark.parametrize(
+        "supported_base_obs",
+        (
+            [qml.X],
+            ["PauliX"],
+        ),
+    )
+    def test_setup_inputs_to_kwargs(self, supported_base_obs, to_eigvals):
         """Test that positional inputs are promoted to kwargs."""
 
-        bound_t = diagonalize_measurements(("PauliX",), False)
+        bound_t = diagonalize_measurements(
+            supported_base_obs=supported_base_obs, to_eigvals=to_eigvals
+        )
         assert bound_t.args == ()
-        assert bound_t.kwargs == {"supported_base_obs": ("PauliX",), "to_eigvals": False}
-
+        assert bound_t.kwargs == {"supported_base_obs": ("PauliX",), "to_eigvals": to_eigvals}
