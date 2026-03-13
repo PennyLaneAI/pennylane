@@ -45,7 +45,7 @@ def diagonalize_final_measurements_setup_inputs(
     to_eigvals: bool = False,
 ):
     """The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
-    would allow users to activate the xDSL pass with the ``qp.transforms.diagonalize_measurements``
+    would allow users to activate the xDSL pass with the ``qml.transforms.diagonalize_measurements``
     decorator. Users can pass ``supported_base_obs`` and ``to_eigvals`` args to the xDSL pass.
 
     Args:
@@ -63,15 +63,15 @@ def diagonalize_final_measurements_setup_inputs(
 
     .. code-block:: python
 
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
         def circuit(x):
-            qp.Hadamard(0)
-            qp.RZ(x, 0)
-            qp.PhaseShift(x * 0.2, 0)
-            return qp.expval(qp.Y(0))
+            qml.Hadamard(0)
+            qml.RZ(x, 0)
+            qml.PhaseShift(x * 0.2, 0)
+            return qml.expval(qml.Y(0))
 
-        diagonalized_circuit = qp.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
-        qjitted_circuit = qp.qjit(diagonalized_circuit, target='mlir')
+        diagonalized_circuit = qml.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
+        qjitted_circuit = qml.qjit(diagonalized_circuit, target='mlir')
         expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
 
 
@@ -253,14 +253,14 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
         .. code-block:: python
 
-            @qp.qjit
-            @qp.transforms.diagonalize_measurements(supported_base_obs=("PauliX",))
-            @qp.qnode(qp.device("lightning.qubit", wires=1))
+            @qml.qjit
+            @qml.transforms.diagonalize_measurements(supported_base_obs=[qml.PauliX])
+            @qml.qnode(qml.device("lightning.qubit", wires=1))
             def circuit(x):
-                qp.Hadamard(0)
-                qp.RZ(x, 0)
-                qp.PhaseShift(x * 0.2, 0)
-                return qp.expval(qp.Y(0))
+                qml.Hadamard(0)
+                qml.RZ(x, 0)
+                qml.PhaseShift(x * 0.2, 0)
+                return qml.expval(qml.Y(0))
 
     """
     # To map the strings back to the Operators in the tape transform logic due
