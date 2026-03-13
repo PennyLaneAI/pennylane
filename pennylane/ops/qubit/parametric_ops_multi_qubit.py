@@ -28,7 +28,10 @@ from pennylane import math, queuing
 from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.resources import register_reconstructor, resource_rep
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane.decomposition.symbolic_decomposition import (
+    pow_rotation,
+    qjit_compatible_adjoint_rotation,
+)
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
 from pennylane.typing import TensorLike
@@ -243,7 +246,7 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
-add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
+add_decomps("Adjoint(MultiRZ)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(MultiRZ)", pow_rotation)
 
 
@@ -608,7 +611,7 @@ def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: st
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
-add_decomps("Adjoint(PauliRot)", adjoint_rotation)
+add_decomps("Adjoint(PauliRot)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(PauliRot)", pow_rotation)
 
 
@@ -1280,7 +1283,7 @@ def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
-add_decomps("Adjoint(IsingXX)", adjoint_rotation)
+add_decomps("Adjoint(IsingXX)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(IsingXX)", pow_rotation)
 
 
@@ -1456,7 +1459,7 @@ def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
-add_decomps("Adjoint(IsingYY)", adjoint_rotation)
+add_decomps("Adjoint(IsingYY)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(IsingYY)", pow_rotation)
 
 
@@ -1664,7 +1667,7 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
-add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
+add_decomps("Adjoint(IsingZZ)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(IsingZZ)", pow_rotation)
 
 
@@ -1894,7 +1897,7 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
-add_decomps("Adjoint(IsingXY)", adjoint_rotation)
+add_decomps("Adjoint(IsingXY)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(IsingXY)", pow_rotation)
 
 
@@ -2098,7 +2101,7 @@ def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
-add_decomps("Adjoint(PSWAP)", adjoint_rotation)
+add_decomps("Adjoint(PSWAP)", qjit_compatible_adjoint_rotation)
 
 
 class CPhaseShift00(Operation):
@@ -2321,7 +2324,7 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift00, _cphaseshift00)
-add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
+add_decomps("Adjoint(CPhaseShift00)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
@@ -2536,7 +2539,7 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift01, _cphaseshift01)
-add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
+add_decomps("Adjoint(CPhaseShift01)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
@@ -2745,5 +2748,5 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, _cphaseshift10)
-add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
+add_decomps("Adjoint(CPhaseShift10)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(CPhaseShift10)", pow_rotation)

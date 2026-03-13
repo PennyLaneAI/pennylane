@@ -23,7 +23,10 @@ from scipy import sparse
 import pennylane as qml
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane.decomposition.symbolic_decomposition import (
+    pow_rotation,
+    qjit_compatible_adjoint_rotation,
+)
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
@@ -475,7 +478,7 @@ class GlobalPhase(Operation):
         return qml.s_prod(-1, qml.I(self.wires))
 
 
-add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
+add_decomps("Adjoint(GlobalPhase)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(GlobalPhase)", pow_rotation)
 
 

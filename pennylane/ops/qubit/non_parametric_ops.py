@@ -38,7 +38,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
-    self_adjoint,
+    qjit_compatible_self_adjoint,
 )
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
@@ -262,7 +262,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-add_decomps("Adjoint(Hadamard)", self_adjoint)
+add_decomps("Adjoint(Hadamard)", qjit_compatible_self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -528,7 +528,7 @@ def _pow_x_to_rx(wires, z, **_):
 
 
 add_decomps(PauliX, _paulix_to_rx)
-add_decomps("Adjoint(PauliX)", self_adjoint)
+add_decomps("Adjoint(PauliX)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
@@ -802,7 +802,7 @@ def _pow_y(wires, z, **_):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
-add_decomps("Adjoint(PauliY)", self_adjoint)
+add_decomps("Adjoint(PauliY)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
@@ -1074,7 +1074,7 @@ def _pow_z(wires, z, **_):
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
-add_decomps("Adjoint(PauliZ)", self_adjoint)
+add_decomps("Adjoint(PauliZ)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
@@ -1771,7 +1771,7 @@ def _swap_to_ppr(wires, **_):
 
 
 add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
-add_decomps("Adjoint(SWAP)", self_adjoint)
+add_decomps("Adjoint(SWAP)", qjit_compatible_self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -1973,7 +1973,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
-add_decomps("Adjoint(ECR)", self_adjoint)
+add_decomps("Adjoint(ECR)", qjit_compatible_self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
