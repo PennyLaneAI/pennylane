@@ -94,11 +94,19 @@ def diagonalize_final_measurements_setup_inputs(
     """
     allowed_obs_inputs = set(_obs_name_map.values())
     bad_obs_input = [o for o in supported_base_obs if o not in allowed_obs_inputs]
+    # We need to add the following safety checks as this setup_input func is called several
+    # times and the first call would turn ``supported_base_obs`` into a tuple[str]. The logic
+    # below would allow the subsequent calls can go through, otherwise an ValueError would raise
+    # due to data type mismatch.
+    # NOTE: This logic would allow users to pass a tuple[str] to the ``supported_base_obs``
+    allowed_obs_name_inputs = set(_obs_name_map.keys())
+    bad_obs_name_input = [o for o in supported_base_obs if o not in allowed_obs_name_inputs]
 
-    if bad_obs_input:
+    if bad_obs_input and bad_obs_name_input:
+        bad_input = bad_obs_input + bad_obs_name_input
         raise ValueError(
             "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {(bad_obs_input)}"
+            f"but received {(bad_input)}"
         )
 
     # The following logic convert Operator classes into hashable strings to
