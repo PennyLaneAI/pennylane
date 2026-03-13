@@ -157,10 +157,9 @@ class QROM(Operation):
 
 
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
-        The first :math:`c-1` work wires are asigned to the :class:`~.Select` block where :math:`l` is the length of
-        the bitstrings and :math:`c` is the number of control wires in the operator.
+        The first :math:`c-1` work wires are asigned to the :class:`~.Select` block where :math:`c` is the number of control wires in the operator.
         On the other hand, let :math:`k` be the number of work wires left. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
-        Following the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], auxiliary qubits can be used to
+        Otherwise, we follow the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], and use auxiliary qubits to
         load more than one bitstring in parallel. Let :math:`\lambda` be
         the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed, where :math:`l` is the length of the bitstrings.
