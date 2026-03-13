@@ -192,7 +192,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             args = (*op.parameters, *op.wires)
 
-            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
+            decomp_fn = partial(
+                compute_qfunc_decomposition,
+                **op.resource_params,
+                **op.hyperparameters,
+            )
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
             self._current_depth += 1
@@ -854,7 +858,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
-            op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            # It'd be nice if resource_params and hyperparameters can be unified.
+            op_rule(*op.parameters, wires=op.wires, **op.resource_params, **op.hyperparameters)
         decomp = decomposed_ops.queue
         if num_work_wires is not None:
             num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
