@@ -498,7 +498,7 @@ def assert_valid(
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
-        skip_capture: It ``True``, the program capture tests will be skipped.
+        skip_capture: If ``True``, the program capture tests will be skipped.
 
     **Examples:**
 
