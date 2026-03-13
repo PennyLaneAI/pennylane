@@ -8,6 +8,8 @@ jobs:
   remind:
     name: Changelog Reminder
     runs-on: ubuntu-latest
+    if: |
+      !(startsWith(github.event.pull_request.base.ref, 'v') && contains(github.event.pull_request.base.ref, '-rc'))
     steps:
     - uses: actions/checkout@master
     - name: Changelog Reminder
