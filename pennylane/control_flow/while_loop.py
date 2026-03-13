@@ -34,7 +34,7 @@ def _to_bool_cond_fn(cond_fn):
     def _new_cond_fn(*args, **kwargs):
         from jax import numpy as jnp  # pylint: disable=import-outside-toplevel
 
-        out = cond_fn(*args, **kwargs)
+        [out] = cond_fn(*args, **kwargs)
         if getattr(out, "dtype", None) == jnp.bool:
             return out
         return jnp.bool(out)

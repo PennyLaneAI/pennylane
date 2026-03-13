@@ -97,7 +97,6 @@
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
-  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
   from pennylane.templates import Subroutine
@@ -672,6 +671,10 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* The output of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
