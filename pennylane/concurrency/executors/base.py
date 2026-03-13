@@ -33,6 +33,7 @@ To build a new executor backend, the following classes provide scaffolding to si
 import abc
 import os
 import sys
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
@@ -187,6 +188,41 @@ class RemoteExec(abc.ABC):
         if sys.version_info.minor >= 13:
             return os.process_cpu_count()  # pylint: disable=no-member
         return os.cpu_count()
+
+    def _print_worker_info(self, fn: Callable, args: Sequence):
+        """
+        Print debug information about the function and its arguments.
+        """
+        print(f"Worker: Function: {fn.__name__}")
+        print(f"Worker: Arguments len: {len(args)}")
+        print(f"Worker: Number of workers: {self.size}")
+
+    @abc.abstractmethod
+    def print_profile_info(self, elapsed: float):
+        """
+        Print profiling information about the execution time.
+        """
+
+    @abc.abstractmethod
+    def get_runner_id(self):
+        """
+        Get the runner id for the executor.
+        """
+
+    def profile_fn(self, *args, **kwargs):
+        """
+        A function to profile the execution of the executor.
+        This is a placeholder for any profiling logic that may be added in the future.
+        """
+
+        start = time.perf_counter()
+        results = self.call_fn(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+
+        self.print_profile_info(elapsed)
+        runner_id = self.get_runner_id()
+
+        return [runner_id, elapsed], results
 
 
 class IntExec(RemoteExec, abc.ABC):
