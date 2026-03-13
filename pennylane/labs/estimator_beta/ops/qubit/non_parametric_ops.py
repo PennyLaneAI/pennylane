@@ -157,7 +157,7 @@ class Hadamard(ResourceOperator):
                 "num_zero_ctrl": num_zero_ctrl,
             },
         )
-
+        gate_lst.append(qre.Allocate(1))
         gate_lst.append(GateCount(h, 2))
         gate_lst.append(GateCount(resource_rep(qre.T), 1))
         gate_lst.append(
@@ -168,6 +168,7 @@ class Hadamard(ResourceOperator):
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1)
         )
         gate_lst.append(GateCount(mcx))
+        gate_lst.append(qre.Deallocate(1))
         return gate_lst
 
     @classmethod
@@ -203,6 +204,9 @@ class Hadamard(ResourceOperator):
 
         gate_lst = []
 
+        if num_ctrl_wires > 1:
+            gate_lst.append(qre.Allocate(1))
+
         gate_lst.append(qre.Allocate(1))
         h = cls.resource_rep()
         mcx = resource_rep(
@@ -223,6 +227,9 @@ class Hadamard(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
         gate_lst.append(GateCount(mcx))
         gate_lst.append(qre.Deallocate(1))
+
+        if num_ctrl_wires > 1:
+            gate_lst.append(qre.Deallocate(1))
         return gate_lst
 
     @classmethod

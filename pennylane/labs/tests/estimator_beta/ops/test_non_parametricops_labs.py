@@ -73,24 +73,28 @@ class TestHadamard:
             ["c1", "c2"],
             [1, 1],
             [
+                qre.Allocate(1),
                 GateCount(qre.Hadamard.resource_rep(), 2),
                 GateCount(qre.T.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1),
                 GateCount(qre.S.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                qre.Deallocate(1),
             ],
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             [
+                qre.Allocate(1),
                 GateCount(qre.Hadamard.resource_rep(), 2),
                 GateCount(qre.T.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1),
                 GateCount(qre.S.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+                qre.Deallocate(1),
             ],
         ),
     )
@@ -150,6 +154,7 @@ class TestHadamard:
             [1, 1],
             [
                 qre.Allocate(1),
+                qre.Allocate(1),
                 GateCount(qre.Hadamard.resource_rep(), 5),
                 GateCount(qre.S.resource_rep(), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
@@ -160,12 +165,14 @@ class TestHadamard:
                     resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 2, "num_zero_ctrl": 0}), 1
                 ),
                 qre.Deallocate(1),
+                qre.Deallocate(1),
             ],
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             [
+                qre.Allocate(1),
                 qre.Allocate(1),
                 GateCount(qre.Hadamard.resource_rep(), 5),
                 GateCount(qre.S.resource_rep(), 2),
@@ -176,6 +183,7 @@ class TestHadamard:
                 GateCount(
                     resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 2}), 1
                 ),
+                qre.Deallocate(1),
                 qre.Deallocate(1),
             ],
         ),
