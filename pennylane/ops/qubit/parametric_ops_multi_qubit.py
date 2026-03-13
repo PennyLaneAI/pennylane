@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import math, queuing
 from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.decomposition.resources import resource_rep
+from pennylane.decomposition.resources import register_reconstructor, resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
@@ -296,9 +296,7 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = {
-        "pauli_word",
-    }
+    resource_keys = {"pauli_word"}
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -569,6 +567,11 @@ class PauliRot(Operation):
 
     def pow(self, z):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+
+
+@register_reconstructor(PauliRot)
+def _pauli_rot_reconstructor(params, wires, pauli_word):
+    return PauliRot(params[0], pauli_word, wires)
 
 
 def _pauli_rot_resources(pauli_word):
