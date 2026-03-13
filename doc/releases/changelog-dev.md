@@ -148,6 +148,11 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
+  This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
+  than their rotation decomposition.
+  [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
+  
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
@@ -171,9 +176,12 @@ The following classes have been ported over:
 
   ```python
   @qml.qjit
+  @qml.transforms.merge_rotations
   @qml.transforms.cancel_inverses
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit():
+      qml.RX(1.23,0)
+      qml.RX(1.23,0)
       qml.X(0)
       qml.H(0)
       qml.H(0)
@@ -186,17 +194,18 @@ The following classes have been ported over:
   Device wires: 2
   Shots: Shots(total=None)
   Levels:
-  - 0: Before transforms
-  - 1: Before MLIR Passes
-  - 2: cancel-inverses
+  - 0: Before MLIR Passes
+  - 1: cancel-inverses
+  - 2: merge-rotations
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
-  Wire allocations   |  1 |  2 |  2
-  Total gates        |  3 |  3 |  1
+  Wire allocations   |  2 |  2 |  2
+  Total gates        |  5 |  3 |  2
   Gate counts:       |
+  - RX               |  2 |  2 |  1
   - PauliX           |  1 |  1 |  1
-  - Hadamard         |  2 |  2 |  0
+  - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
   ```
@@ -475,6 +484,7 @@ The following classes have been ported over:
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
   [(#9017)](https://github.com/PennyLaneAI/pennylane/pull/9017)
+  [(#9167)](https://github.com/PennyLaneAI/pennylane/pull/9167)
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
@@ -661,6 +671,18 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
+  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
+
+* Upper bound `pyzx<0.10` dependency to ensure compatibility.
+  [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
+
+* Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+  [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
+  
 * Updated the `diastatic-malt` dependency to version v2.15.3.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
