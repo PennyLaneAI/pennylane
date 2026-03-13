@@ -32,7 +32,7 @@ from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_reso
 
 # pylint: disable=too-many-arguments
 
-## Keep this:
+
 def estimate(
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
