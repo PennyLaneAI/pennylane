@@ -57,6 +57,9 @@ def change_op_basis(
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
+    Raises:
+        TypeError: if any arguments are not Callables or Operators.
+
     **Example**
 
     Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
@@ -107,10 +110,10 @@ def change_op_basis(
         if isinstance(op_or_func, Callable):
             with AnnotatedQueue() as q:
                 op_or_func()
-            if not isinstance(q.queue[0], SubroutineOp):
-                return Prod(*q.queue)
-            else:
+            if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
                 return Prod(*q.queue[0].decomposition())
+            else:
+                return Prod(*q.queue)
         elif isinstance(op_or_func, Operator):
             return op_or_func
         else:

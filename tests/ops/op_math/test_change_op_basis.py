@@ -88,6 +88,53 @@ def test_change_op_basis_callables():
     )
 
 
+def test_change_op_basis_with_none():
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        partial(g, Wires([0]))
+    )
+
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
+    assert cob.operands[0] == qml.adjoint(qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    ))
+
+
+def test_change_op_basis_with_mixed_types():
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        qml.PauliX(0)
+    )
+
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1], qml.PauliX)
+    assert cob.operands[0] == qml.adjoint(qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    ))
+
+
 @pytest.mark.jax
 @pytest.mark.capture
 def test_change_op_basis_capture():
