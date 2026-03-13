@@ -604,7 +604,7 @@ def register_reconstructor(op_type: type[Operator]):
 def has_reconstructor(op_class, op_params):
     """Checks whether a reconstructor exists for the resource rep."""
 
-    if op_class in _reconstructors:
+    if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
         return True
 
     if op_class in (qml.ops.Adjoint, qml.ops.Controlled, qml.ops.Pow):
