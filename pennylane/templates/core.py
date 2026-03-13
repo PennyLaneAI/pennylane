@@ -22,11 +22,11 @@ This module contains the abstractions for defining subroutines.
     ~Subroutine
     ~SubroutineOp
     ~AbstractArray
+    ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
 
 """
 import copy
-from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
@@ -42,6 +42,7 @@ from pennylane.capture import subroutine as capture_subroutine
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
+    adjoint_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -78,6 +79,37 @@ class AbstractArray:
             dummy = math.array((), dtype=self.dtype, like="torch")
             object.__setattr__(self, "dtype", dummy.numpy().dtype)
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
+
+
+def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
+    bound = subroutine.signature.bind(*args, **kwargs)
+    bound.apply_defaults()
+    for arg in subroutine.dynamic_argnames:
+        leaves, struct = flatten(bound.arguments[arg])
+        bound.arguments[arg] = (struct, tuple(leaves))
+    return tuple(bound.arguments.values())
+
+
+def adjoint_subroutine_resource_rep(
+    subroutine: "Subroutine", *args, **kwargs
+) -> CompressedResourceOp:
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    Args:
+        subroutine (Subroutine): the subroutine whose adjoint we are going to use in a decomposition.
+    Returns:
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
+        the resources of another function.
+
+    .. note::
+
+        See :func:`~pennylane.templates.core.subroutine_resource_rep` for more information.
+    """
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
+    return adjoint_resource_rep(
+        SubroutineOp, {"subroutine": subroutine, "signature_key": signature_key}
+    )
 
 
 def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
@@ -149,12 +181,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
     [1. 2. 3. 4.]
 
     """
-    bound = subroutine.signature.bind(*args, **kwargs)
-    bound.apply_defaults()
-    for arg in subroutine.dynamic_argnames:
-        leaves, struct = flatten(bound.arguments[arg])
-        bound.arguments[arg] = (struct, tuple(leaves))
-    signature_key = tuple(bound.arguments.values())
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return resource_rep(SubroutineOp, subroutine=subroutine, signature_key=signature_key)
 
 
@@ -335,25 +362,6 @@ class SubroutineOp(Operation):
         return super().label(decimals, base_label=self.name, cache=cache)
 
 
-def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict:
-    sig = subroutine.signature.bind(*args, **kwargs)
-    for arg in subroutine.dynamic_argnames:
-        avals, struct = flatten(sig.arguments[arg])
-        if avals and isinstance(avals[0], AbstractArray):
-            params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
-            sig.arguments[arg] = unflatten(params, struct)
-    for arg in subroutine.wire_argnames:
-        if isinstance(sig.arguments[arg], AbstractArray):
-            sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
-    with queuing.AnnotatedQueue() as q:
-        subroutine.definition(**sig.arguments)
-
-    resources = defaultdict(int)
-    for op in q.queue:
-        resources[resource_rep(type(op), **op.resource_params)] += 1
-    return resources
-
-
 def _calculate_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
@@ -402,7 +410,10 @@ class Subroutine:
         from functools import partial
         from pennylane.templates import Subroutine
 
-        @Subroutine
+        def resources(x, y, wires):
+            return {qml.RX: 1, qml.RY: 1}
+
+        @partial(Subroutine, compute_resources=resources)
         def MyTemplate(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[0])
@@ -523,11 +534,8 @@ class Subroutine:
         that decompose to ``Subroutine``, in Catalyst.
 
 
-    To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
-    A default fallback calculates the resources by calling the subroutine with
-    dummy parameters created with ``np.empty``. This will be inefficient
-    and will only work if the dynamic parameters have no additional constraints, such as normalization
-    or unitarity.
+    To use ``Subroutine`` with graph-based decompositions, a function to compute the resources must
+    be provided.
     The calculation of resources should only depend on the static arguments, the number of wires
     in each register, and the shape and ``dtype`` of the dynamic arguments. This will allow
     the calculation of the resources to performed in an abstract way.
@@ -709,13 +717,7 @@ class Subroutine:
     def compute_resources(self, *args, **kwargs) -> dict:
         """Calculate a condensed representation for the resources required for the Subroutine."""
         if self._compute_resources is None:
-            try:
-                return _default_resources(self, *args, **kwargs)
-            except Exception as e:
-                raise type(e)(
-                    f"Fallback for computing resources for {self} failed. "
-                    f"Please add a compute_resources definition to {self}."
-                ) from e
+            raise NotImplementedError(f"{self} does not have a defined compute_resources function.")
         bound_args = self._full_setup_inputs(*args, **kwargs)
         return self._compute_resources(*bound_args.args, **bound_args.kwargs)
 
@@ -779,4 +781,10 @@ class Subroutine:
         return op.output
 
 
-__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep"]
+__all__ = [
+    "Subroutine",
+    "SubroutineOp",
+    "AbstractArray",
+    "subroutine_resource_rep",
+    "adjoint_subroutine_resource_rep",
+]
