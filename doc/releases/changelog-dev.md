@@ -756,6 +756,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* The docstring for :func:`pennylane.qjit` has been updated to match :func:`catalyst.qjit`.
+  [(#8485)](https://github.com/PennyLaneAI/pennylane/pull/8485)
+
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
@@ -763,7 +766,6 @@ The following classes have been ported over:
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
-
 
 <h3>Bug fixes 🐛</h3>
 
