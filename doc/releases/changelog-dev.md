@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
+  This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
+  `qml.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
+  same-degree polynomial with different coefficients.
+  [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
+
 * Added the function :func:`~.drawer.label` to attach custom labels to operator instances
   for circuit drawing.
   [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
@@ -67,7 +73,7 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-  logarithm of its input and casts the result to an ``int``. It is equivalent 
+  logarithm of its input and casts the result to an ``int``. It is equivalent
   to ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
@@ -88,7 +94,9 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
 
   ```python
   from pennylane.templates import Subroutine
@@ -133,21 +141,46 @@ The following classes have been ported over:
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+* A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
+  This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
+  [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
+
 <h3>Improvements 🛠</h3>
+
+* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
+  This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
+  than their rotation decomposition.
+  [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
+  
+* `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
+  [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qml.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
-* When using :func:`~.specs` with multiple levels, printing the returned
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  the returned :class:`~.resource.CircuitSpecs` will no longer display a
+  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
+  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
+  In scenarios with at least one tape transform,
+  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
+  is the level after all tape transforms but before the first MLIR pass.
+  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
+
+* When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
   :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
   for convenient comparison of circuit specifications between compilation passes.
   This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``):
 
   ```python
   @qml.qjit
+  @qml.transforms.merge_rotations
   @qml.transforms.cancel_inverses
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit():
+      qml.RX(1.23,0)
+      qml.RX(1.23,0)
       qml.X(0)
       qml.H(0)
       qml.H(0)
@@ -160,17 +193,18 @@ The following classes have been ported over:
   Device wires: 2
   Shots: Shots(total=None)
   Levels:
-  - 0: Before transforms
-  - 1: Before MLIR Passes (MLIR-0)
-  - 2: cancel-inverses (MLIR-1)
+  - 0: Before MLIR Passes
+  - 1: cancel-inverses
+  - 2: merge-rotations
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
-  Wire allocations   |  1 |  2 |  2
-  Total gates        |  3 |  3 |  1
+  Wire allocations   |  2 |  2 |  2
+  Total gates        |  5 |  3 |  2
   Gate counts:       |
+  - RX               |  2 |  2 |  1
   - PauliX           |  1 |  1 |  1
-  - Hadamard         |  2 |  2 |  0
+  - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
   ```
@@ -451,6 +485,7 @@ The following classes have been ported over:
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
   [(#9017)](https://github.com/PennyLaneAI/pennylane/pull/9017)
+  [(#9167)](https://github.com/PennyLaneAI/pennylane/pull/9167)
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
@@ -637,15 +672,33 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
+  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
+
+* Upper bound `pyzx<0.10` dependency to ensure compatibility.
+  [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
+
+* Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+  [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
+  
+* Updated the `diastatic-malt` dependency to version v2.15.3.
+  [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
+
+* Workflow created to sync the `main` branch to `master`.
+  [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
 * References to the `master` branch are changed to the new default branch `main`.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
-  
-* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane. 
+
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane.
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
-  
+
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
@@ -715,6 +768,10 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
+  decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
+  [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
 
 * Jacobian-level caching is now unconditionally enabled for `autograd` interface,
   preventing redundant derivative tape executions during the backward pass.
@@ -789,6 +846,15 @@ The following classes have been ported over:
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+  [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
+
+* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+  [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
+
+* Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+  [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -799,7 +865,9 @@ Yushao Chen,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Korbinian Kottmann,
 Christina Lee,
+Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
 Omkar Sarkar,
