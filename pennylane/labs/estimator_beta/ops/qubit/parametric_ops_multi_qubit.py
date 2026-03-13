@@ -14,7 +14,12 @@
 r"""Resource operators for parametric multi qubit operations."""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
+from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
+)
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
@@ -33,6 +38,7 @@ PAULI_ROT_SPECIAL_CASES = {
         GateCount(qre.resource_rep(qre.CY), count=2),
     ],
 }
+
 
 class PauliRot(ResourceOperator):
     r"""Resource class for an arbitrary Pauli word rotation operation.
@@ -272,7 +278,19 @@ class PauliRot(ResourceOperator):
             base_resources = PAULI_ROT_SPECIAL_CASES[pauli_string](eps=precision)
             for gate_count in base_resources:
                 if gate_count.gate.name in ["RX", "RY", "RZ"]:
-                    gate_list.append(GateCount(resource_rep(qre.Controlled, {"base_cmpr_op": gate_count.gate, "num_ctrl_wires": num_ctrl_wires, "num_zero_ctrl": num_zero_ctrl}), count=gate_count.count))
+                    gate_list.append(
+                        GateCount(
+                            resource_rep(
+                                qre.Controlled,
+                                {
+                                    "base_cmpr_op": gate_count.gate,
+                                    "num_ctrl_wires": num_ctrl_wires,
+                                    "num_zero_ctrl": num_zero_ctrl,
+                                },
+                            ),
+                            count=gate_count.count,
+                        )
+                    )
                 else:
                     gate_list.append(gate_count)
             return gate_list

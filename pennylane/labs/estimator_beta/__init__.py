@@ -25,3 +25,4 @@ resource estimation.
 """
 from pennylane.estimator import *
 from .ops import PauliRot
+from .templates import SelectPauliRot
