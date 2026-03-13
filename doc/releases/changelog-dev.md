@@ -147,6 +147,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
+
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
@@ -766,9 +769,6 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed the incompatibility between `zx` submodule and the recently released `pyzx` v0.10.0.
-  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
