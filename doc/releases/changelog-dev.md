@@ -677,6 +677,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+
 * The output of the `qml.while_loop` condition is now automatically converted
   to a bool.
   [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
