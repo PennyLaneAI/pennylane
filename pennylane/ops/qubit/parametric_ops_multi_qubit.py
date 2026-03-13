@@ -570,8 +570,8 @@ class PauliRot(Operation):
 
 
 @register_reconstructor(PauliRot)
-def _pauli_rot_reconstructor(params, wires, pauli_word):
-    return PauliRot(params[0], pauli_word, wires)
+def _pauli_rot_reconstructor(theta, wires, pauli_word):
+    return PauliRot(theta, pauli_word, wires)
 
 
 def _pauli_rot_resources(pauli_word):
