@@ -92,21 +92,24 @@ def diagonalize_final_measurements_setup_inputs(
             raised if ``to_eigvals`` is set as ``True``.
 
     """
-    bad_obs_input = [
-        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-    ]
+    allowed_obs_inputs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
+    allowed_obs_name_inputs = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+    bad_obs_input = [o for o in supported_base_obs if o not in allowed_obs_inputs]
 
-    if bad_obs_input:
+    bad_obs_name_input = [o for o in supported_base_obs if o not in allowed_obs_name_inputs]
+
+    if bad_obs_input and bad_obs_name_input:
+        bad_input = bad_obs_input if bad_obs_input else bad_obs_name_input
         raise ValueError(
             "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {list(bad_obs_input)}"
+            f"but received {(bad_input)}"
         )
 
     inverted_obs_map = {v: k for k, v in _obs_name_map.items()}
 
-    supported_base_obs = (inverted_obs_map[obs] for obs in supported_base_obs)
+    supported_base_obs_name = tuple(inverted_obs_map.get(obs, obs) for obs in supported_base_obs)
 
-    return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
+    return (), {"supported_base_obs": supported_base_obs_name, "to_eigvals": to_eigvals}
 
 
 def null_postprocessing(results):
@@ -252,6 +255,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 return qp.expval(qp.Y(0))
 
     """
+    supported_base_obs = list(_obs_name_map.get(obs, obs) for obs in supported_base_obs)
     diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
 
     if to_eigvals and not diagonalize_all:
