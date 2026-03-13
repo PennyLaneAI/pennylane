@@ -43,6 +43,12 @@ visibility = []
 ## UTILITY modules
 
 [[modules]]
+path = "pennylane.deprecations"
+utility = true
+depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.exceptions"
 utility = true
 depends_on = []
