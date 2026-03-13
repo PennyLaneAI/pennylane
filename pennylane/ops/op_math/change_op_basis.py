@@ -33,11 +33,11 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl, Prod
+from pennylane.ops.op_math import Prod, adjoint, ctrl
 
 from ...queuing import AnnotatedQueue, apply
-from .composite import CompositeOp, handle_recursion_error
 from ...templates import Subroutine, SubroutineOp
+from .composite import CompositeOp, handle_recursion_error
 
 
 def change_op_basis(
@@ -108,8 +108,6 @@ def change_op_basis(
             with AnnotatedQueue() as q:
                 op_or_func()
             if not isinstance(q.queue[0], SubroutineOp):
-                for op in q.queue:
-                    apply(op)
                 return Prod(*q.queue)
             else:
                 return Prod(*q.queue[0].decomposition())

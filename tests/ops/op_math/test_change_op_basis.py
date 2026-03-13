@@ -24,6 +24,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane import device, qnode
 from pennylane.decomposition import gate_sets, resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -31,6 +32,7 @@ from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.templates import Subroutine
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -69,32 +71,22 @@ def test_change_op_basis_callables():
         qml.adjoint(qml.QFT)(reg1)
         qml.adjoint(qml.BasisState)(np.zeros(len(reg1)), reg1)
 
-    def circuit():
-        qml.change_op_basis(
-            partial(f, 0.1, Wires([0]), Wires([1])),
-            partial(g, Wires([0])),
-            partial(h, 0.2, Wires([0])),
-        )
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        partial(g, Wires([0])),
+        partial(h, 0.2, Wires([0])),
+    )
 
-    circuit()
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
+    assert cob.operands[0] == qml.prod(
+        qml.adjoint(qml.RX)(0.2, 0),
+        qml.adjoint(qml.QFT)(Wires([0])),
+        qml.adjoint(qml.BasisState)(np.zeros(1), Wires([0])),
+    )
 
-    expected = [
-        qml.BasisState(np.zeros(1), [1]),
-    ] + qml.QFT([0]).decomposition() + [
-        qml.RX(0.1, 0),
-        qml.PauliX(0),
-        qml.RX(-0.2, 0),
-    ] + list(map(qml.adjoint, qml.QFT([0]).decomposition())) + [
-        qml.adjoint(qml.BasisState)(np.zeros(1), [1]),
-    ]
-
-    interpreter = CollectOpsandMeas()
-    x = 0.5
-    interpreter(circuit)(x)
-
-    ops = interpreter.state["ops"]
-    for i, op in enumerate(ops):
-        assert op == expected[i]
 
 @pytest.mark.jax
 @pytest.mark.capture
