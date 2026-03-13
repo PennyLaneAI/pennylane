@@ -807,10 +807,35 @@ class Subroutine:
         return op.output
 
 
+class CollectedSubroutine(Operation):
+    """Represents a single subroutine encountered by CollectOpsandMeas.
+    While it contains less information than the corresponding :class:`~.SubroutineOp`,
+    it can be useful for testing the captured plxpr.
+
+    The only properties held onto by this "Operator" are name (a string), wires, and
+    decomposition.
+
+    """
+
+    _primitive = None
+
+    def __repr__(self) -> str:
+        return f"<CollectedSubroutine: {self.name}>"
+
+    def __init__(self, name: str, decomp: list[Operation]):
+        self._decomp = decomp
+        super().__init__(wires=Wires.all_wires([op.wires for op in decomp]))
+        self._name = name
+
+    def decomposition(self):
+        return self._decomp
+
+
 __all__ = [
     "Subroutine",
     "SubroutineOp",
     "AbstractArray",
     "subroutine_resource_rep",
+    "CollectedSubroutine",
     "adjoint_subroutine_resource_rep",
 ]
