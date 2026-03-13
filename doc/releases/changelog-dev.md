@@ -670,6 +670,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* The ouptut of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
+
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
   the returned :class:`.resource.CircuitSpecs` object will include
