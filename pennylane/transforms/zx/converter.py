@@ -386,8 +386,11 @@ def to_zx(tape, expand_measurements=False):
             inputs.append(vertex)
             q_mapper.set_prev_vertex(i, vertex)
             if _pyzx_010:
+                # add_label(i, 1) does all three things: set qubit, set rows, update labels
                 q_mapper.add_label(i, 1)
             else:  # pragma: no cover
+                # pyzx 0.9: `add_label(l)` has a different signature (no `row` param) and destructive semantics (set_all_rows).
+                # We must call `set_next_row(i, 1)` + `set_qubit(i, i)` separately.
                 q_mapper.set_next_row(i, 1)
                 q_mapper.set_qubit(i, i)
 
