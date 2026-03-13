@@ -985,7 +985,7 @@ class TestSetupInputs:
         def c():
             return qml.expval(qml.Z(0))
 
-        c()
+        _ = c()
         assert spy.call_count == 1
 
     def test_setup_inputs_type_error(self):
