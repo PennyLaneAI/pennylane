@@ -24,7 +24,7 @@ class CH(ResourceOperator):
     r"""Resource class for the CH gate.
 
     Args:
-        wires (Sequence[int] | None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identities:
@@ -67,7 +67,7 @@ class CH(ResourceOperator):
 
     num_wires = 2
 
-    def __init__(self, wires: WiresLike = None) -> None:
+    def __init__(self, wires: WiresLike | None = None) -> None:
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
@@ -93,7 +93,7 @@ class CH(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
-        r"""Returns a list of ``GateCount`` objects representing the resources of the operator..
+        r"""Returns a list of ``GateCount`` objects representing the resources of the operator.
 
         Resources:
             The resources are derived from the following identities:
@@ -177,7 +177,7 @@ class CH(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            are same as the originial operation.
+            are same as the original operation.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,

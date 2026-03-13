@@ -413,7 +413,7 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
-* Added updated decompositions for `~.pennylane.labs.estimator_beta.ops.op_math.CH` and `~.pennylane.labs.estimator_beta.ops.qubit.Hadamard`
+* Added updated decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.Hadamard`
   operations.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 

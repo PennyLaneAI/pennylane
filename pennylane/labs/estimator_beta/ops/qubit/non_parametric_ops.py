@@ -42,7 +42,7 @@ class Hadamard(ResourceOperator):
 
     num_wires = 1
 
-    def __init__(self, wires: WiresLike | None = None):
+    def __init__(self, wires: WiresLike | None = None) -> None:
         """Initializes the ``Hadamard`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
