@@ -44,52 +44,27 @@ def diagonalize_final_measurements_setup_inputs(
     supported_base_obs: Optional[Iterable[Operator]] = _default_supported_obs,
     to_eigvals: bool = False,
 ):
-    """The ``setup_inputs`` function for the ``diagonalize-final-measurements`` xDSL pass. This
-    would allow users to activate the xDSL pass with the ``qml.transforms.diagonalize_measurements``
-    decorator. Users can pass ``supported_base_obs`` and ``to_eigvals`` args to the xDSL pass.
+    """The ``setup_inputs`` function for the ``diagonalize_measurements`` transform, which corresponds
+    to the ``diagonalize_measurements`` tape transform or the ``diagonalize-final-measurements`` xDSL
+    compilation pass.
 
     Args:
-        supported_base_obs (tuple[str]): A tuple of supported base observable name str. A subset of
-            ("PauliX", "PauliY", "PauliZ", "Hadamard", "Identity") is supported. Defaults to ("PauliZ",
-            "Identity").
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
+        Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
+        Z and Identity are always treated as supported, regardless of input. Defaults to (``qml.Z``,
+        ``qml.Identity``).
         to_eigvals (bool): Whether the diagonalization should create measurements using
             eigenvalues and wires rather than observables. Defaults to ``False``.
 
-    .. note::
+    .. warning::
 
-        An error will be raised if non-commuting terms are encountered.
-
-    **Example**
-
-    .. code-block:: python
-
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
-        def circuit(x):
-            qml.Hadamard(0)
-            qml.RZ(x, 0)
-            qml.PhaseShift(x * 0.2, 0)
-            return qml.expval(qml.Y(0))
-
-        diagonalized_circuit = qml.transforms.diagonalize_measurements(circuit, supported_base_obs=("PauliX",))
-        qjitted_circuit = qml.qjit(diagonalized_circuit, target='mlir')
-        expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+        An error will be raised if non-commuting terms are encountered in either tape transform or
+        xDSL compilation pass.
 
 
-    >>> circuit(1.1) # doctest: +SKIP
-    0.9687151001182651
-    >>> qjitted_circuit(1.1) # doctest: +SKIP
-    0.9687151001182651
-    >>> expected_substr in qjitted_circuit.mlir # doctest: +SKIP
-    True
-
-        .. warning::
-            The signature of the xDSL pass inputs is different from the tape transform. As the
-            setup input should be JAX-hashable to support program capture, the data type of
-            ``setup_inputs`` is set to ``tuple[str]`` instead of ``Iterable(Operator)``.
-
-        .. warning::
-            Transform with ``to_eigvals=True`` is not supported for now in the xDSL pass. An ``RuntimeError`` would be
-            raised if ``to_eigvals`` is set as ``True``.
+    .. warning::
+        Transform with ``to_eigvals=True`` is not supported for now in the xDSL pass. An ``ValueError`` would be
+        raised when applying the xDSL pass if ``to_eigvals`` is set as ``True``.
 
     """
     allowed_obs_inputs = set(_obs_name_map.values())
@@ -248,19 +223,26 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         This transform is compatible with ``qjit``, where it will be applied as an MLIR pass rather than a tape-level transform.
         That being said, there are a few differences to be aware of when using the MLIR pass:
 
-        - ``supported_base_obs`` only accepts a tuple of supported base observable names.
-        - ``to_eigvals`` can be specified as ``False``.
+        - ``to_eigvals`` can be specified as ``False``. An ``ValueError`` would be
+            raised if ``to_eigvals`` is set as ``True``.
 
         .. code-block:: python
 
             @qml.qjit
             @qml.transforms.diagonalize_measurements(supported_base_obs=[qml.PauliX])
             @qml.qnode(qml.device("lightning.qubit", wires=1))
-            def circuit(x):
+            def circuit():
                 qml.Hadamard(0)
-                qml.RZ(x, 0)
-                qml.PhaseShift(x * 0.2, 0)
+                qml.RZ(1.1, 0)
+                qml.PhaseShift(0.22, 0)
                 return qml.expval(qml.Y(0))
+
+            expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+
+        >>> expected_substr in circuit.mlir # doctest: +SKIP
+        True
+        >>> circuit() # doctest: +SKIP
+        0.9687151001182651
 
     """
     # To map the strings back to the Operators in the tape transform logic due
