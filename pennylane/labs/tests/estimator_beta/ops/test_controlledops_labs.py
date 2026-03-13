@@ -35,11 +35,11 @@ class TestCH:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = [
-            GateCount(qre.Hadamard.resource_rep(), 4),
+            GateCount(qre.Hadamard.resource_rep(), 2),
             GateCount(qre.T.resource_rep(), 1),
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1),
-            GateCount(qre.S.resource_rep(), 2),
-            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 2),
+            GateCount(qre.S.resource_rep(), 1),
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
             GateCount(qre.CNOT.resource_rep(), 1),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources

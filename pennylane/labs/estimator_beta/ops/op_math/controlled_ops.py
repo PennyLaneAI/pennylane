@@ -38,14 +38,17 @@ class CH(ResourceOperator):
 
         Specifically, the resources are defined as two ``RY``, two ``Hadamard`` and one ``CNOT`` gates.
 
+        The ``RY(:math:`\frac{\pi}{4}`)`` and ``RY(:math:`\frac{-\pi}{4}`)`` gates are further decomposed as
+        :math:`e^{-i\frac{\pi}{8}}SHTHS^{\dagger}` and :math:`e^{i\frac{\pi}{8}}}SHT^{\dagger}HS^{\dagger}`, respectively.
+
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CH`.
 
     **Example**
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CH.resource_decomp()
-    [(6 x Hadamard), (2 x S), (1 x CNOT)]
+    >>> qre.CH.resource_decomp()
+    [(2 x Hadamard), (1 x T), (1 x Adjoint(T)), (1 x S), (1 x Adjoint(S)), (1 x CNOT)]
 
     """
 
@@ -108,11 +111,11 @@ class CH(ResourceOperator):
         h = resource_rep(qre.Hadamard)
         cnot = resource_rep(qre.CNOT)
         return [
-            GateCount(h, 4),
+            GateCount(h, 2),
             GateCount(t, 1),
             GateCount(t_dag, 1),
-            GateCount(s, 2),
-            GateCount(s_dag, 2),
+            GateCount(s, 1),
+            GateCount(s_dag, 1),
             GateCount(cnot, 1),
         ]
 

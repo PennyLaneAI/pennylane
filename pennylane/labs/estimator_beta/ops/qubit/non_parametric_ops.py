@@ -158,14 +158,14 @@ class Hadamard(ResourceOperator):
             },
         )
 
-        gate_lst.append(GateCount(h, 4))
+        gate_lst.append(GateCount(h, 2))
         gate_lst.append(GateCount(resource_rep(qre.T), 1))
         gate_lst.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1)
         )
-        gate_lst.append(GateCount(resource_rep(qre.S), 2))
+        gate_lst.append(GateCount(resource_rep(qre.S), 1))
         gate_lst.append(
-            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 2)
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1)
         )
         gate_lst.append(GateCount(mcx))
         return gate_lst
