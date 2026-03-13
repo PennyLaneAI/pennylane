@@ -47,8 +47,21 @@ class CH(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qre.CH.resource_decomp()
-    [(2 x Hadamard), (1 x T), (1 x Adjoint(T)), (1 x S), (1 x Adjoint(S)), (1 x CNOT)]
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> ch = qre.CH()
+    >>> print(qre.estimate(ch))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 10
+      'T': 2,
+      'CNOT': 1,
+      'Z': 2,
+      'S': 3,
+      'Hadamard': 2    
 
     """
 
