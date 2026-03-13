@@ -53,7 +53,7 @@ def diagonalize_final_measurements_setup_inputs(
             ("PauliX", "PauliY", "PauliZ", "Hadamard", "Identity") is supported. Defaults to ("PauliZ",
             "Identity").
         to_eigvals (bool): Whether the diagonalization should create measurements using
-            eigvals and wires rather than observables. Defaults to ``False``.
+            eigenvalues and wires rather than observables. Defaults to ``False``.
 
     .. note::
 
