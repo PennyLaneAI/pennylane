@@ -14,7 +14,6 @@
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
 import itertools
-import uuid
 
 import pytest
 
@@ -90,7 +89,7 @@ class DeallocateOp(qre.ResourceOperator):
         return [deallocate]
 
 
-class AlocOpFree(qre.ResourceOperator):
+class AllocOpFree(qre.ResourceOperator):
     """A dummy class whose decomposition allocates qubits, applies an operation and deallocates qubits"""
 
     resource_keys = {"num_wires", "allocate", "cmpr_op", "deallocate"}
@@ -187,11 +186,11 @@ def nested_any_state_allocation1():
     """Test function for nested any state allocation"""
     z = qre.Z.resource_rep()
     return [
-        GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
+        GateCount(AllocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
         Allocate(5),
-        GateCount(AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
+        GateCount(AllocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
         Deallocate(3),
-        GateCount(AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
+        GateCount(AllocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
     ]
 
 
@@ -202,7 +201,7 @@ def nested_any_state_allocation2():
     return [
         allocate,
         GateCount(qre.X.resource_rep(), 10),
-        GateCount(AlocOpFree.resource_rep(2, Allocate(5, any_state, restored=True), z), 5),
+        GateCount(AllocOpFree.resource_rep(2, Allocate(5, any_state, restored=True), z), 5),
         Deallocate(allocated_register=allocate),
     ]
 
@@ -214,11 +213,11 @@ def nested_any_state_allocation3():
     return [
         allocate,
         GateCount(qre.X.resource_rep(), 10),
-        GateCount(AlocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
+        GateCount(AllocOpFree.resource_rep(2, Allocate(3, any_state, restored=True), z), 5),
         Allocate(5),
-        GateCount(AlocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
+        GateCount(AllocOpFree.resource_rep(4, Allocate(3, any_state, restored=True), z), 3),
         Deallocate(3),
-        GateCount(AlocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
+        GateCount(AllocOpFree.resource_rep(4, Allocate(4, any_state, restored=True), z), 7),
         Deallocate(allocated_register=allocate),
     ]
 
@@ -280,20 +279,69 @@ class TestProcessCircuitLst:
                     qre.Z(),
                 ],
                 [
-                    (qre.X.resource_rep(), Wires("w0")),
-                    (qre.CNOT.resource_rep(), Wires(["w0", "w1"])),
-                    (qre.Toffoli.resource_rep(), Wires(["w0", "w1", "w2"])),
-                    (qre.MultiControlledX.resource_rep(3, 0), Wires(["w0", "w1", "w2", "w3"])),
-                    (qre.QFT.resource_rep(5), Wires(["w0", "w1", "w2", "w3", "w4"])),
+                    (qre.X.resource_rep(), Wires("__generated_wire0__")),
+                    (
+                        qre.CNOT.resource_rep(),
+                        Wires(["__generated_wire0__", "__generated_wire1__"]),
+                    ),
+                    (
+                        qre.Toffoli.resource_rep(),
+                        Wires(
+                            ["__generated_wire0__", "__generated_wire1__", "__generated_wire2__"]
+                        ),
+                    ),
+                    (
+                        qre.MultiControlledX.resource_rep(3, 0),
+                        Wires(
+                            [
+                                "__generated_wire0__",
+                                "__generated_wire1__",
+                                "__generated_wire2__",
+                                "__generated_wire3__",
+                            ]
+                        ),
+                    ),
+                    (
+                        qre.QFT.resource_rep(5),
+                        Wires(
+                            [
+                                "__generated_wire0__",
+                                "__generated_wire1__",
+                                "__generated_wire2__",
+                                "__generated_wire3__",
+                                "__generated_wire4__",
+                            ]
+                        ),
+                    ),
                     (
                         qre.ControlledSequence.resource_rep(qre.Z.resource_rep(), 3),
-                        Wires(["w0", "w1", "w2", "w3"]),
+                        Wires(
+                            [
+                                "__generated_wire0__",
+                                "__generated_wire1__",
+                                "__generated_wire2__",
+                                "__generated_wire3__",
+                            ]
+                        ),
                     ),
-                    (qre.CCZ.resource_rep(), Wires(["w0", "w1", "w2"])),
-                    (qre.CZ.resource_rep(), Wires(["w0", "w1"])),
-                    (qre.Z.resource_rep(), Wires("w0")),
+                    (
+                        qre.CCZ.resource_rep(),
+                        Wires(
+                            ["__generated_wire0__", "__generated_wire1__", "__generated_wire2__"]
+                        ),
+                    ),
+                    (qre.CZ.resource_rep(), Wires(["__generated_wire0__", "__generated_wire1__"])),
+                    (qre.Z.resource_rep(), Wires("__generated_wire0__")),
                 ],
-                Wires(["w0", "w1", "w2", "w3", "w4"]),
+                Wires(
+                    [
+                        "__generated_wire0__",
+                        "__generated_wire1__",
+                        "__generated_wire2__",
+                        "__generated_wire3__",
+                        "__generated_wire4__",
+                    ]
+                ),
             ),
             (  # Mixed Explicit and Dynamically Generated
                 [
@@ -307,30 +355,33 @@ class TestProcessCircuitLst:
                 ],
                 [
                     (qre.CNOT.resource_rep(), Wires([0, 1])),
-                    (qre.QFT.resource_rep(5), Wires([f"w{i}" for i in range(5)])),
+                    (qre.QFT.resource_rep(5), Wires([f"__generated_wire{i}__" for i in range(5)])),
                     (qre.CZ.resource_rep(), Wires([1, 2])),
                     (MarkClean(wires=[0, 1, 2]), Wires([0, 1, 2])),
-                    (qre.MultiControlledX.resource_rep(3, 0), Wires([f"w{i}" for i in range(4)])),
-                    (qre.Z.resource_rep(), Wires("w0")),
+                    (
+                        qre.MultiControlledX.resource_rep(3, 0),
+                        Wires([f"__generated_wire{i}__" for i in range(4)]),
+                    ),
+                    (qre.Z.resource_rep(), Wires("__generated_wire0__")),
                     (qre.Z.resource_rep(), Wires(1)),
                 ],
-                Wires([0, 1, "w0", "w1", "w2", "w3", "w4", 2]),
+                Wires(
+                    [
+                        0,
+                        1,
+                        "__generated_wire0__",
+                        "__generated_wire1__",
+                        "__generated_wire2__",
+                        "__generated_wire3__",
+                        "__generated_wire4__",
+                        2,
+                    ]
+                ),
             ),
         ),
     )
     def test_process_circuit(self, circ, expected_processed_circ, expected_circ_wires):
         """Test that the processed circuit is correct."""
-        global_counter = itertools.count()
-
-        def generate_sequence_wire_labels():
-            """Generate wire labels when called"""
-            c = next(global_counter)
-            return f"w{c}"
-
-        ## Monkey Patch uuid.uuid4():
-        uuid.uuid4 = generate_sequence_wire_labels
-
-        ## Test circuit:
         actual_processed_circ, actual_circ_wires = _process_circuit_lst(circ)
 
         assert actual_circ_wires == expected_circ_wires
@@ -1207,7 +1258,9 @@ class TestEstimateWiresFromCircuit:
             (  # Borrow idle
                 [  # 4 available idle qubits of 6 qubits total
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AlocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=["busy_wire2"]),
+                    AllocOpFree(
+                        num_wires=1, allocate=Allocate(3), op=qre.X(), wires=["busy_wire2"]
+                    ),
                     qre.QFT(num_wires=4),
                 ],
                 (6, 0, 0),  # The idle qubits are used in place of the allocation!
@@ -1216,7 +1269,9 @@ class TestEstimateWiresFromCircuit:
                 [  # 4 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AlocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]),
+                    AllocOpFree(
+                        num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
+                    ),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],
@@ -1227,7 +1282,9 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(2)),
                     qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
                     MarkClean(wires=["busy_wire1"]),  # busy_wire1 is treated as clean and idle
-                    AlocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]),
+                    AllocOpFree(
+                        num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
+                    ),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],
@@ -1237,7 +1294,7 @@ class TestEstimateWiresFromCircuit:
                 [
                     qre.QFT(wires=[0, 1, 2, 3, 4]),
                     MarkClean(wires=[0, 1, 2, 3, 4]),  # Marked the qubits as clean
-                    AlocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=[0, 1]),
+                    AllocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=[0, 1]),
                     qre.QFT(wires=[0, 1, 2, 3, 4]),
                     MarkClean(wires=[0, 1, 2, 3, 4]),  # Same qubits can be marked and reused
                     qre.Prod(
@@ -1263,7 +1320,7 @@ class TestEstimateWiresFromCircuit:
             (  # Borrow "any" state
                 [
                     qre.CNOT(wires=[1, 2]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=2,
                         allocate=Allocate(5, state=AllocateState.ANY, restored=True),
                         op=qre.CZ(),
@@ -1275,7 +1332,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [
                     qre.QFT(num_wires=4),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=2,
                         allocate=Allocate(5, state=AllocateState.ANY, restored=True),
                         op=qre.CZ(),
@@ -1287,7 +1344,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=2,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1296,7 +1353,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This request 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=4,
                                 allocate=Allocate(5, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1376,7 +1433,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1385,7 +1442,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1403,7 +1460,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1412,7 +1469,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1430,7 +1487,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1439,7 +1496,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1457,7 +1514,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1466,7 +1523,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1484,7 +1541,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1493,7 +1550,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1511,7 +1568,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
                     qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
-                    AlocOpFree(
+                    AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
                         op=qre.Z(),
@@ -1520,7 +1577,7 @@ class TestEstimateWiresFromCircuit:
                     AllocateOp(Allocate(3)),  # This requests 3 new clean qubits
                     qre.Prod(
                         (
-                            AlocOpFree(
+                            AllocOpFree(
                                 num_wires=5,
                                 allocate=Allocate(6, state=AllocateState.ANY, restored=True),
                                 op=qre.QFT(num_wires=9),
@@ -1653,7 +1710,7 @@ class TestEstimateWiresFromResources:
                     gate_types={
                         AllocateOp.resource_rep(Allocate(2)): 2,
                         qre.CNOT.resource_rep(): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
                         ): 5,
                         qre.QFT.resource_rep(num_wires=4): 1,
@@ -1670,7 +1727,7 @@ class TestEstimateWiresFromResources:
                     gate_types={
                         AllocateOp.resource_rep(Allocate(2)): 2,
                         qre.CNOT.resource_rep(): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
                         ): 5,
                         qre.QFT.resource_rep(num_wires=4): 1,
@@ -1687,7 +1744,7 @@ class TestEstimateWiresFromResources:
                     gate_types={
                         AllocateOp.resource_rep(Allocate(2)): 2,
                         qre.CNOT.resource_rep(): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=1, allocate=Allocate(5), cmpr_op=qre.X.resource_rep()
                         ): 5,
                         qre.QFT.resource_rep(num_wires=4): 1,
@@ -1703,7 +1760,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(5, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1720,7 +1777,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1737,7 +1794,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1754,7 +1811,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1771,7 +1828,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1815,7 +1872,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(5, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1834,7 +1891,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1853,7 +1910,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1872,7 +1929,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),
@@ -1891,7 +1948,7 @@ class TestEstimateWiresFromResources:
                     algo_wires=6,
                     gate_types={
                         qre.QFT.resource_rep(num_wires=4): 1,
-                        AlocOpFree.resource_rep(
+                        AllocOpFree.resource_rep(
                             num_wires=2,
                             allocate=Allocate(10, state=AllocateState.ANY, restored=True),
                             cmpr_op=qre.CZ.resource_rep(),

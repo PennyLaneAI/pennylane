@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
-import uuid
 from collections.abc import Iterable
+from typing import Literal
 
 from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
@@ -35,12 +35,12 @@ class Allocate:
 
     Args:
         num_wires (int): the number of wires to be allocated
-        state (str): The quantum state of the wires to be allocated, valid values include "zero" or "any".
+        state (Literal["any", "zero"] | AllocateState): The quantum state of the wires to be allocated, valid values include "zero" or "any".
         restored (bool): A guarantee that the allocated register will be restored (deallocated) to its
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a 0 or a positive integer.
+        ValueError: `num_wires` must be a positive integer.
         ValueError: `state` must be one of 'zero' or 'any'.
         ValueError: Expected `restored` to be True or False.
 
@@ -55,18 +55,15 @@ class Allocate:
     """
 
     def __init__(self, num_wires, state=AllocateState.ZERO, restored=False):
-        if not isinstance(num_wires, int) or num_wires < 0:
-            raise ValueError(f"num_wires must be 0 or a positive integer, got {num_wires}")
-
-        if state not in ("zero", "any"):
-            raise ValueError(f"state must be one of 'zero', 'any'. Got {state}")
+        if not isinstance(num_wires, int) or num_wires <= 0:
+            raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if restored not in (True, False):
             raise ValueError(f"Expected restored to be True or False, got {restored}")
 
-        self.state = state
-        self.restored = restored
-        self.num_wires = num_wires
+        self._state = AllocateState(state)
+        self._restored = restored
+        self._num_wires = num_wires
 
     def equal(
         self, other: "Allocate"
@@ -86,6 +83,37 @@ class Allocate:
     def __repr__(self) -> str:
         return f"Allocate({self.num_wires}, state={self.state}, restored={self.restored})"
 
+    @property
+    def state(self):
+        """The quantum state of the wires to be allocated, valid values include "zero" or "any"."""
+        return self._state
+
+    @state.setter
+    def state(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Allocate instances are not mutable")
+
+    @property
+    def restored(self):
+        """A guarantee that the allocated register will be restored (deallocated) to its
+        initial state. If True, this requirement will be enforced programmatically."""
+        return self._restored
+
+    @restored.setter
+    def restored(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Allocate instances are not mutable")
+
+    @property
+    def num_wires(self):
+        """The number of wires to be allocated."""
+        return self._num_wires
+
+    @num_wires.setter
+    def num_wires(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Allocate instances are not mutable")
+
 
 class Deallocate:
     r"""A class used to represent the deallocation of auxiliary wires that were used in the resource
@@ -94,12 +122,12 @@ class Deallocate:
     Args:
         num_wires (int | None): the number of wires to be deallocated
         allocated_register (Allocate | None): the allocated wire register the we wish to deallocate
-        state (str): The quantum state of the wires to be deallocated, valid values include "zero" or "any".
+        state (Literal["any", "zero"] | AllocateState): The quantum state of the wires to be deallocated, valid values include "zero" or "any".
         restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a 0 or a positive integer.
+        ValueError: `num_wires` must be a positive integer.
         ValueError: `state` must be one of 'zero' or 'any'.
         ValueError: Expected `restored` to be True or False.
 
@@ -118,7 +146,13 @@ class Deallocate:
     >>> exp_qre.Deallocate(num_wires=4, state="zero", restored=False)
     Deallocate(4, state=zero, restored=False)
 
-    Note that if a register was allocated with ``state = "any"`` and ``restored = True``, this can
+    .. note::
+
+        If an ``allocated_register`` is provided along with the other parameters (``num_wires``,
+        ``state``, ``restored``) and the two differ, then the details provided in the
+        ``allocated_register`` will take precedence.
+
+    If a register was allocated with ``state = "any"`` and ``restored = True``, this can
     only be deallocated by passing that specific instance of ``Allocate`` to deallocate.
 
     >>> temp_register = exp_qre.Allocate(5, state="any", restored=True)
@@ -128,7 +162,11 @@ class Deallocate:
     """
 
     def __init__(
-        self, num_wires=None, allocated_register=None, state=AllocateState.ZERO, restored=False
+        self,
+        num_wires=None,
+        allocated_register=None,
+        state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
+        restored=False,
     ):
         if allocated_register is not None:
             if not isinstance(allocated_register, Allocate):
@@ -151,19 +189,16 @@ class Deallocate:
                     "Must provide the `allocated_register` when deallocating an ANY state register with `restored=True`"
                 )
 
-        if not isinstance(num_wires, int) or num_wires < 0:
-            raise ValueError(f"num_wires must be 0 or a positive integer, got {num_wires}")
-
-        if state not in ("zero", "any"):
-            raise ValueError(f"state must be one of 'zero', 'any'. Got {state}")
+        if not isinstance(num_wires, int) or num_wires <= 0:
+            raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if restored not in (True, False):
             raise ValueError(f"Expected restored to be True or False, got {restored}")
 
-        self.state = state
-        self.restored = restored
-        self.num_wires = num_wires
-        self.allocated_register = allocated_register
+        self._state = AllocateState(state)
+        self._restored = restored
+        self._num_wires = num_wires
+        self._allocated_register = allocated_register
 
     def equal(
         self, other: "Deallocate"
@@ -187,6 +222,47 @@ class Deallocate:
 
     def __repr__(self) -> str:
         return f"Deallocate({self.num_wires}, state={self.state}, restored={self.restored})"
+
+    @property
+    def state(self):
+        """The quantum state of the wires to be deallocated, valid values include "zero" or "any"."""
+        return self._state
+
+    @state.setter
+    def state(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Deallocate instances are not mutable")
+
+    @property
+    def restored(self):
+        """A gurantee that the allocated register will be restored (deallocated) to its
+        initial state. If True, this requirement will be enforced programmatically."""
+        return self._restored
+
+    @restored.setter
+    def restored(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Deallocate instances are not mutable")
+
+    @property
+    def num_wires(self):
+        """The number of wires to be deallocated."""
+        return self._num_wires
+
+    @num_wires.setter
+    def num_wires(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Deallocate instances are not mutable")
+
+    @property
+    def allocated_register(self):
+        """The allocated wire register the we wish to deallocate."""
+        return self._allocated_register
+
+    @allocated_register.setter
+    def allocated_register(self, _):
+        """Raise error if users attempt to change values"""
+        raise AttributeError("Deallocate instances are not mutable")
 
 
 class MarkQubits:
@@ -415,8 +491,8 @@ def _process_circuit_lst(
                 diff = num_generated_wires - num_wires
 
                 if diff < 0:  # generate additional wire labels
-                    for _ in range(abs(diff)):
-                        generated_wire_labels.append(str(uuid.uuid4()))
+                    for i in range(abs(diff)):
+                        generated_wire_labels.append(f"__generated_wire{num_generated_wires + i}__")
                     num_generated_wires += abs(diff)
 
                 op_wires = Wires(generated_wire_labels[:num_wires])
