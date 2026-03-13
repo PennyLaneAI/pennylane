@@ -870,6 +870,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
