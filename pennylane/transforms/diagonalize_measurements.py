@@ -92,19 +92,19 @@ def diagonalize_final_measurements_setup_inputs(
             raised if ``to_eigvals`` is set as ``True``.
 
     """
-    allowed_obs_inputs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-    allowed_obs_name_inputs = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+    allowed_obs_inputs = set(_obs_name_map.values())
     bad_obs_input = [o for o in supported_base_obs if o not in allowed_obs_inputs]
 
-    bad_obs_name_input = [o for o in supported_base_obs if o not in allowed_obs_name_inputs]
-
-    if bad_obs_input and bad_obs_name_input:
-        bad_input = bad_obs_input if bad_obs_input else bad_obs_name_input
+    if bad_obs_input:
         raise ValueError(
             "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {(bad_input)}"
+            f"but received {(bad_obs_input)}"
         )
 
+    # The following logic convert Operator classes into hashable strings to
+    # ensure the kwargs work with the corresponding xDSL pass. Hence, we have
+    # to map the strings back to the Operators in the tape transform logic due
+    # to the changes in the `supported_base_obs` data type
     inverted_obs_map = {v: k for k, v in _obs_name_map.items()}
 
     supported_base_obs_name = tuple(inverted_obs_map.get(obs, obs) for obs in supported_base_obs)
@@ -255,6 +255,8 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 return qp.expval(qp.Y(0))
 
     """
+    # To map the strings back to the Operators in the tape transform logic due
+    # to the changes in the `supported_base_obs` made in the `setup_inputs`.`
     supported_base_obs = list(_obs_name_map.get(obs, obs) for obs in supported_base_obs)
     diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
 
