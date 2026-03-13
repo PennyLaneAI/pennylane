@@ -320,14 +320,14 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
-    from pyzx.circuit.gates import TargetMapper
-    from pyzx.graph import Graph
 
     ######################################################################
     # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
     # populated only via add_label(label, row).  Use it so output boundary
     # vertices are created later.
     from packaging.version import Version
+    from pyzx.circuit.gates import TargetMapper
+    from pyzx.graph import Graph
 
     _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
 

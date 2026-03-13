@@ -23,6 +23,9 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
+from packaging.version import Version
+
+_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
 
 
 def test_import_pyzx_error(monkeypatch):
@@ -105,21 +108,16 @@ class TestPushHadamards:
         "rot_gate",
         (qml.RX, qml.RY),
     )
+    @pytest.mark.skipif(_pyzx_010, reason="pyzx 0.10+ no longer raises for rotation gates")
     def test_rotation_gates_error(self, rot_gate):
         """Test that an error is raised when the input circuit contains RX or RY rotation gates when using `pyzx<0.10`."""
-        from packaging.version import Version  # pylint: disable=import-outside-toplevel
-
         qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
 
-        if Version(pyzx.__version__) >= Version("0.10"):
-            # pyzx 0.10+ no longer raises for rotation gates
+        with pytest.raises(
+            TypeError,
+            match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
+        ):
             qml.transforms.zx.push_hadamards(qs)
-        else:
-            with pytest.raises(
-                TypeError,
-                match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
-            ):
-                qml.transforms.zx.push_hadamards(qs)
 
     @pytest.mark.parametrize(
         "measurements",
