@@ -19,8 +19,10 @@ This subpackage contains experimental PennyLane transforms and their building bl
 .. autosummary::
     :toctree: api
 
+    ~rot_to_phase_gradient
     ~select_pauli_rot_phase_gradient
 
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
+from .rot_to_phase_gradient import rot_to_phase_gradient
