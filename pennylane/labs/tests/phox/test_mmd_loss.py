@@ -28,6 +28,7 @@ jax.config.update("jax_enable_x64", True)
 try:
     from pennylane.labs.phox.expval_functions import CircuitConfig
     from pennylane.labs.phox.mmd_loss import (
+        MMDConfig,
         _binary_ops_to_pauli_int,
         _compute_single_mmd,
         median_heuristic,
@@ -294,13 +295,14 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=1,
         )
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=5)
+
         with pytest.raises(ValueError, match="n_samples must be greater than 1"):
             mmd_loss(
                 jnp.array([0.1]),
                 config,
+                mmd_cfg,
                 jnp.array([[0]]),
-                sigma=1.0,
-                n_ops=5,
             )
 
     def test_return_per_sigma_type_and_length(self):
@@ -312,14 +314,14 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=2,
         )
+        mmd_cfg = MMDConfig(sigma=[0.5, 1.0], n_ops=30, return_per_sigma=True)
         data = jnp.array([[0, 1], [1, 0], [0, 0]])
+
         res = mmd_loss(
             jnp.array([0.1, 0.2]),
             config,
+            mmd_cfg,
             data,
-            sigma=[0.5, 1.0],
-            n_ops=30,
-            return_per_sigma=True,
         )
         assert isinstance(res, list)
         assert len(res) == 2
@@ -340,22 +342,12 @@ class TestMMDLossAPI:
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
         sigmas = [0.5, 1.0, 2.0]
 
-        per = mmd_loss(
-            jnp.array([0.1, 0.2]),
-            config,
-            data,
-            sigma=sigmas,
-            n_ops=100,
-            return_per_sigma=True,
-        )
-        avg = mmd_loss(
-            jnp.array([0.1, 0.2]),
-            config,
-            data,
-            sigma=sigmas,
-            n_ops=100,
-            return_per_sigma=False,
-        )
+        cfg_per = MMDConfig(sigma=sigmas, n_ops=100, return_per_sigma=True)
+        cfg_avg = MMDConfig(sigma=sigmas, n_ops=100, return_per_sigma=False)
+
+        per = mmd_loss(jnp.array([0.1, 0.2]), config, cfg_per, data)
+        avg = mmd_loss(jnp.array([0.1, 0.2]), config, cfg_avg, data)
+
         expected = np.mean([float(v) for v in per])
         assert np.isclose(float(avg), expected, atol=1e-6)
 
@@ -368,8 +360,10 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=1,
         )
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=20)
         data = jnp.array([[0], [1]])
-        res = mmd_loss(jnp.array([0.5]), config, data, sigma=1.0, n_ops=20)
+
+        res = mmd_loss(jnp.array([0.5]), config, mmd_cfg, data)
         assert res.shape == ()
 
     def test_deterministic_same_key(self):
@@ -383,10 +377,9 @@ class TestMMDLossAPI:
         )
         kwargs = {
             "params": jnp.array([0.3, 0.5, 0.1]),
-            "config": config,
+            "circuit_config": config,
+            "mmd_config": MMDConfig(sigma=1.0, n_ops=100),
             "ground_truth": jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
-            "sigma": 1.0,
-            "n_ops": 100,
         }
         assert float(mmd_loss(**kwargs)) == float(mmd_loss(**kwargs))
 
@@ -395,6 +388,7 @@ class TestMMDLossAPI:
         gates = {0: [[0]], 1: [[1]]}
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
         params = jnp.array([0.3, 0.7])
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=100)
 
         r1 = mmd_loss(
             params,
@@ -405,9 +399,8 @@ class TestMMDLossAPI:
                 key=jax.random.PRNGKey(0),
                 n_qubits=2,
             ),
+            mmd_cfg,
             data,
-            sigma=1.0,
-            n_ops=100,
         )
         r2 = mmd_loss(
             params,
@@ -418,9 +411,8 @@ class TestMMDLossAPI:
                 key=jax.random.PRNGKey(999),
                 n_qubits=2,
             ),
+            mmd_cfg,
             data,
-            sigma=1.0,
-            n_ops=100,
         )
         assert float(r1) != float(r2)
 
@@ -469,17 +461,7 @@ class TestMMDLossStatistical:
         ],
     )
     def test_unbiased_z_test(self, generators, params, biases, n_data):
-        """Mean of phox estimates should be consistent with exact MMD^2.
-
-        1. Generate a small IQP circuit and compute exact probabilities via PennyLane.
-        2. Generate a dataset *X* from a product Bernoulli distribution.
-        3. Compute the exact squared MMD using Gaussian kernel matrices (Eq. 2).
-        4. Estimate the squared MMD many times using the phox ``mmd_loss`` function
-        with different PRNG keys and data sub-samples (Eq. 23).
-        5. Compute the sample mean and standard error of the estimates.
-        6. Z-test: verify the exact value falls within a reasonable number of standard
-        errors from the sample mean (> 95% coverage).
-        """
+        """Mean of phox estimates should be consistent with exact MMD^2."""
         n_qubits = len(biases)
 
         probs_p = _iqp_probs_pennylane(generators, params, n_qubits)
@@ -493,6 +475,8 @@ class TestMMDLossStatistical:
         gates = {i: [w] for i, w in enumerate(generators)}
         batch = min(80, n_data)
 
+        mmd_cfg = MMDConfig(sigma=sigma, n_ops=self.N_OPS)
+
         estimates = []
         for t in range(self.N_TRIALS):
             key = jax.random.PRNGKey(t * 17 + 7)
@@ -504,12 +488,12 @@ class TestMMDLossStatistical:
                 n_qubits=n_qubits,
             )
             idx = rng.choice(n_data, size=batch, replace=False)
+
             est = mmd_loss(
                 jnp.array(params),
                 config,
+                mmd_cfg,
                 jnp.array(X[idx]),
-                sigma=sigma,
-                n_ops=self.N_OPS,
                 key=key,
             )
             estimates.append(float(est))
@@ -534,13 +518,13 @@ class TestMMDLossStatistical:
         )
         rng = np.random.default_rng(0)
         data = jnp.array(rng.binomial(1, 0.5, (30, 2)))
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=50, wires=[0, 2])
+
         res = mmd_loss(
             jnp.array([0.1, 0.2, 0.3, 0.15]),
             config,
+            mmd_cfg,
             data,
-            sigma=1.0,
-            n_ops=50,
-            wires=[0, 2],
         )
         assert res.shape == () and np.isfinite(float(res))
 
@@ -555,13 +539,13 @@ class TestMMDLossStatistical:
         )
         rng = np.random.default_rng(0)
         data = jnp.array(rng.binomial(1, 0.3, (50, 2)))
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=200, sqrt_loss=True)
+
         res = mmd_loss(
             jnp.array([0.5, 0.3]),
             config,
+            mmd_cfg,
             data,
-            sigma=1.0,
-            n_ops=200,
-            sqrt_loss=True,
         )
         assert res.shape == ()
         assert float(res) >= 0.0
@@ -577,14 +561,14 @@ class TestMMDLossStatistical:
         )
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
         params = jnp.array([0.3, 0.7])
+        mmd_cfg = MMDConfig(sigma=1.0, n_ops=100)
 
-        r_default = mmd_loss(params, config, data, sigma=1.0, n_ops=100)
+        r_default = mmd_loss(params, config, mmd_cfg, data)
         r_override = mmd_loss(
             params,
             config,
+            mmd_cfg,
             data,
-            sigma=1.0,
-            n_ops=100,
             key=jax.random.PRNGKey(12345),
         )
         # With different effective keys, the results should differ

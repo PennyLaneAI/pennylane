@@ -13,9 +13,9 @@
 # limitations under the License.
 """MMD loss utilities for Phox."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import partial
-from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -23,6 +23,17 @@ import numpy as np
 from jax.typing import ArrayLike
 
 from .expval_functions import CircuitConfig, build_expval_func
+
+
+@dataclass(frozen=True)
+class MMDConfig:
+    """Hyperparameters for MMD loss calculation."""
+
+    sigma: float | Sequence[float]
+    n_ops: int
+    wires: Sequence[int] | None = None
+    sqrt_loss: bool = False
+    return_per_sigma: bool = False
 
 
 def median_heuristic(samples: ArrayLike) -> float:
@@ -58,6 +69,7 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
     return jnp.where(ops == 1, 3, 0).astype(jnp.int32)
 
 
+# pylint: disable=too-many-arguments
 @partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
 def _compute_single_mmd(
     tr_iqp: jnp.ndarray,
@@ -81,6 +93,7 @@ def _compute_single_mmd(
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
+# pylint: disable=too-many-arguments
 @partial(
     jax.jit,
     static_argnames=[
@@ -140,31 +153,19 @@ def _compute_loss_for_sigma(
 
 def mmd_loss(
     params: ArrayLike,
-    config: CircuitConfig,
+    circuit_config: CircuitConfig,
+    mmd_config: MMDConfig,
     ground_truth: ArrayLike,
-    sigma: float | Sequence[float],
-    n_ops: int,
     key: ArrayLike | None = None,
-    n_samples: int | None = None,
-    init_state: tuple[ArrayLike, ArrayLike] | None = None,
-    wires: Sequence[int] | None = None,
-    sqrt_loss: bool = False,
-    return_per_sigma: bool = False,
 ) -> jnp.ndarray | list[jnp.ndarray]:
-    """Estimate MMD loss using a ``CircuitConfig`` and expval backend.
+    """Estimate MMD loss using configuration dataclasses.
 
     Args:
         params (ArrayLike): Trainable circuit parameters.
-        config (CircuitConfig): Circuit configuration used to build the expectation value function.
+        circuit_config (CircuitConfig): Circuit configuration used to build the expval function.
+        mmd_config (MMDConfig): Hyperparameters for the MMD computation.
         ground_truth (ArrayLike): Binary training samples with shape ``(m, n_qubits)``.
-        sigma (float | Sequence[float]): Kernel bandwidth(s).
-        n_ops (int): Number of random operators used for estimation.
-        key (ArrayLike | None): Optional runtime PRNG key override (useful for training loops).
-        n_samples (int | None): Optional runtime sample-count override.
-        init_state (tuple[ArrayLike, ArrayLike] | None): Optional runtime initial state override.
-        wires (Sequence[int] | None): Measured wires. If ``None``, all wires are used.
-        sqrt_loss (bool): Whether to return ``sqrt(abs(MMD^2))``.
-        return_per_sigma (bool): If ``True``, return per-sigma estimates instead of the mean.
+        key (ArrayLike | None): Optional runtime PRNG key override for the training loop.
 
     Returns:
         jnp.ndarray | list[jnp.ndarray]: Scalar average across ``sigma`` values by default,
@@ -173,19 +174,20 @@ def mmd_loss(
     Raises:
         ValueError: If effective ``n_samples <= 1``.
     """
-    effective_samples = config.n_samples if n_samples is None else n_samples
-    effective_init_state = config.init_state if init_state is None else init_state
+    effective_samples = circuit_config.n_samples
     if effective_samples <= 1:
         raise ValueError("n_samples must be greater than 1")
 
-    active_key = config.key if key is None else key
-    n_qubits = config.n_qubits
+    active_key = circuit_config.key if key is None else key
+    n_qubits = circuit_config.n_qubits
 
-    wire_tuple = tuple(range(n_qubits)) if wires is None else tuple(wires)
-    sigma_list = [sigma] if isinstance(sigma, (int, float)) else list(sigma)
+    wire_tuple = tuple(range(n_qubits)) if mmd_config.wires is None else tuple(mmd_config.wires)
+    sigma_list = (
+        [mmd_config.sigma] if isinstance(mmd_config.sigma, (int, float)) else list(mmd_config.sigma)
+    )
     ground_truth = jnp.asarray(ground_truth)
 
-    expval_func = build_expval_func(config)
+    expval_func = build_expval_func(circuit_config)
     losses = []
 
     for sigma_val in sigma_list:
@@ -197,16 +199,16 @@ def mmd_loss(
             eval_key=eval_key,
             params=params,
             ground_truth=ground_truth,
-            effective_init_state=effective_init_state,
-            n_ops=n_ops,
+            effective_init_state=circuit_config.init_state,
+            n_ops=mmd_config.n_ops,
             n_qubits=n_qubits,
             wire_tuple=wire_tuple,
             effective_samples=effective_samples,
-            sqrt_loss=sqrt_loss,
+            sqrt_loss=mmd_config.sqrt_loss,
             expval_func=expval_func,
         )
         losses.append(loss_val)
 
-    if return_per_sigma:
+    if mmd_config.return_per_sigma:
         return losses
     return jnp.mean(jnp.stack(losses))
