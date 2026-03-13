@@ -97,6 +97,8 @@
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
   from pennylane.templates import Subroutine
@@ -150,6 +152,9 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
@@ -225,8 +230,10 @@ The following classes have been ported over:
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states.
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
+  [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -674,6 +681,13 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+
+* The output of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
+
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
   the returned :class:`.resource.CircuitSpecs` object will include
@@ -759,6 +773,10 @@ The following classes have been ported over:
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
 <h3>Documentation 📝</h3>
+
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+  was clarified in its documentation.
+  [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
@@ -864,6 +882,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
