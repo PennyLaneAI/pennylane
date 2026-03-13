@@ -605,3 +605,23 @@ class TestDiagonalizeMeasurementsPassSetup:
         )
         assert bound_t.args == ()
         assert bound_t.kwargs == {"supported_base_obs": ("PauliX",), "to_eigvals": to_eigvals}
+
+    @pytest.mark.xfail(
+        reason="the test will fail until the Catalyst PR #2538 is merged and can be tested against"
+    )
+    def test_xdsl_pass(self):
+
+        @qml.qjit
+        @qml.transforms.diagonalize_measurements(supported_base_obs=[qml.PauliX])
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            qml.Hadamard(0)
+            qml.RZ(1.1, 0)
+            qml.PhaseShift(0.22, 0)
+            return qml.expval(qml.Y(0))
+
+        expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+        expected_result = 0.9687151001182651
+
+        assert expected_substr in circuit.mlir
+        assert np.allclose(circuit(), expected_result)
