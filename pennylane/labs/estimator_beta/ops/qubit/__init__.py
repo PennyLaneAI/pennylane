@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,17 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This module contains experimental features for
-resource estimation.
 
-.. warning::
+r"""This module contains single qubit operations."""
 
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.estimator_beta
-
-"""
-from pennylane.estimator import *
-from .ops import PauliRot
+from .parametric_ops_multi_qubit import PauliRot
