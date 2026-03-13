@@ -483,9 +483,6 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
-      # TODO: Remove once Numba supports NumPy>2.3
-      additional_pip_packages_post: |
-        numpy>=2.0,<=2.3
 
   qcut-tests:
     needs:
