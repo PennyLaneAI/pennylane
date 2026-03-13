@@ -22,6 +22,7 @@ This module contains the abstractions for defining subroutines.
     ~Subroutine
     ~SubroutineOp
     ~AbstractArray
+    ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
 
 """
@@ -41,6 +42,7 @@ from pennylane.capture import subroutine as capture_subroutine
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
+    adjoint_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -77,6 +79,37 @@ class AbstractArray:
             dummy = math.array((), dtype=self.dtype, like="torch")
             object.__setattr__(self, "dtype", dummy.numpy().dtype)
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
+
+
+def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
+    bound = subroutine.signature.bind(*args, **kwargs)
+    bound.apply_defaults()
+    for arg in subroutine.dynamic_argnames:
+        leaves, struct = flatten(bound.arguments[arg])
+        bound.arguments[arg] = (struct, tuple(leaves))
+    return tuple(bound.arguments.values())
+
+
+def adjoint_subroutine_resource_rep(
+    subroutine: "Subroutine", *args, **kwargs
+) -> CompressedResourceOp:
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.adjoint_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    Args:
+        subroutine (Subroutine): the subroutine whose adjoint we are going to use in a decomposition.
+    Returns:
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the subroutine's adjoint that can be used in specifying
+        the resources of another function.
+
+    .. note::
+
+        See :func:`~pennylane.templates.core.subroutine_resource_rep` for more information.
+    """
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
+    return adjoint_resource_rep(
+        SubroutineOp, {"subroutine": subroutine, "signature_key": signature_key}
+    )
 
 
 def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
@@ -148,12 +181,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
     [1. 2. 3. 4.]
 
     """
-    bound = subroutine.signature.bind(*args, **kwargs)
-    bound.apply_defaults()
-    for arg in subroutine.dynamic_argnames:
-        leaves, struct = flatten(bound.arguments[arg])
-        bound.arguments[arg] = (struct, tuple(leaves))
-    signature_key = tuple(bound.arguments.values())
+    signature_key = _make_signature_key(subroutine, *args, **kwargs)
     return resource_rep(SubroutineOp, subroutine=subroutine, signature_key=signature_key)
 
 
@@ -664,6 +692,13 @@ class Subroutine:
 
         self._capture_subroutine = capture_subroutine(definition, static_argnames=static_argnames)
 
+        for argname in self._wire_argnames:
+            if argname not in self._signature.parameters:
+                raise ValueError(
+                    f"wire argname '{argname}' not present in function signature. "
+                    "Please update the function's signature or 'wire_argnames'."
+                )
+
     @property
     def name(self) -> str:
         """A string representation to label the Subroutine."""
@@ -746,4 +781,10 @@ class Subroutine:
         return op.output
 
 
-__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep"]
+__all__ = [
+    "Subroutine",
+    "SubroutineOp",
+    "AbstractArray",
+    "subroutine_resource_rep",
+    "adjoint_subroutine_resource_rep",
+]
