@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1409,11 +1409,11 @@ class TestToBloqEstimator:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 2865,
-                    (qml.CNOT([0, 1]), True): 5232,
-                    (qml.Hadamard(0), True): 2316,
-                    (qml.T(0), True): 268224,
-                    (qml.X(0), True): 42,
+                    (qml.Toffoli([0, 1, 2]), True): 126,
+                    (qml.CNOT([0, 1]), True): 1596,
+                    (qml.Hadamard(0), True): 288,
+                    (qml.T(0), True): 80256,
+                    (qml.X(0), True): 24,
                 },
             ),
             (
@@ -1425,10 +1425,10 @@ class TestToBloqEstimator:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 609,
-                    (qml.CNOT([0, 1]), True): 882,
-                    (qml.Hadamard(0), True): 84,
-                    (qml.T(0), True): 49896,
+                    (qml.Toffoli([0, 1, 2]), True): 9,
+                    (qml.CNOT([0, 1]), True): 450,
+                    (qml.Hadamard(0), True): 108,
+                    (qml.T(0), True): 21384,
                 },
             ),
             (
