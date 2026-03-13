@@ -45,33 +45,10 @@ from pennylane.ops.mid_measure import (
     measure,
     pauli_measure,
 )
-from pennylane.wires import DynamicWire, Wires
+from pennylane.templates.core import CollectedSubroutine
+from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
-
-
-class CollectedSubroutine(Operator):
-    """Represents a single subroutine encountered by CollectOpsandMeas.
-    While it contains less information than the corresponding :class:`~.SubroutineOp`,
-    it can be useful for testing the captured plxpr.
-
-    The only properties held onto by this "Operator" are name (a string), wires, and
-    decomposition.
-
-    """
-
-    _primitive = None
-
-    def __repr__(self) -> str:
-        return f"<CollectedSubroutine: {self.name}>"
-
-    def __init__(self, name: str, decomp: list[Operator]):
-        self._decomp = decomp
-        super().__init__(wires=Wires.all_wires([op.wires for op in decomp]))
-        self._name = name
-
-    def decomposition(self):
-        return self._decomp
 
 
 class CollectOpsandMeas(FlattenedInterpreter):
