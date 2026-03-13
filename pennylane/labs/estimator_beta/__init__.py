@@ -25,8 +25,6 @@ resource estimation.
 Resource Operators
 ------------------
 
-.. currentmodule:: pennylane.labs.estimator_beta
-
 .. autosummary::
     :toctree: api
 
