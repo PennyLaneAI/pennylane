@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
-from pennylane.templates.core import adjoint_subroutine_resource_rep
+from pennylane.templates.core import CollectedSubroutine, adjoint_subroutine_resource_rep
 
 
 class TestInitialization:
@@ -517,6 +517,40 @@ class TestSubroutineCapture:
 
         jaxpr = jax.make_jaxpr(w)()
         assert "id" not in jaxpr.eqns[-1].params
+
+
+@pytest.mark.capture
+class TestCollectedSubroutine:
+
+    def test_no_abstract_capturing(self):
+        """Test that CollectedSubroutine can't occur during an abstract evaluation."""
+
+        jax = pytest.importorskip("jax")
+
+        def f():
+            CollectedSubroutine("bla", [qml.X(0)])
+
+        with pytest.raises(NotImplementedError, match="should never be hit"):
+            jax.make_jaxpr(f)()
+
+    def test_adjoint_of_subroutine_impl(self):
+        """Test that if the adjoint of a subroutine is called without make_jaxpr and capture is enabled,
+        we get the adjoint of a CollectedSubroutine."""
+
+        @Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.adjoint(f)(0)
+
+        print(q.queue)
+        [adj_op] = q.queue
+        assert isinstance(adj_op, qml.ops.Adjoint)
+        base = adj_op.base
+        assert isinstance(base, CollectedSubroutine)
+        assert base.name == "f"
+        qml.assert_equal(base.decomposition()[0], qml.X(0))
 
 
 @pytest.mark.integration

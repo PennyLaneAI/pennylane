@@ -817,7 +817,17 @@ class CollectedSubroutine(Operation):
 
     """
 
-    _primitive = None
+    def _flatten(self):
+        return self._decomp, self.name
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return CollectedSubroutine(metadata, data)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, name, decomp):
+        return cls._primitive.bind(name=name, decomp=decomp)
 
     def __repr__(self) -> str:
         return f"<CollectedSubroutine: {self.name}>"
@@ -827,8 +837,18 @@ class CollectedSubroutine(Operation):
         super().__init__(wires=Wires.all_wires([op.wires for op in decomp]))
         self._name = name
 
+    def queue(self, context: queuing.QueuingManager = queuing.QueuingManager):
+        context.append(self)
+        for op in self._decomp:
+            context.remove(op)
+
     def decomposition(self):
         return self._decomp
+
+
+@CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
+def _(*args, **kwargs):
+    raise NotImplementedError("CollectedSubroutine should never be hit during abstract evaluation.")
 
 
 __all__ = [
