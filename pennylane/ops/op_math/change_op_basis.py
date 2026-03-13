@@ -15,9 +15,10 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter, defaultdict
-from functools import reduce, partial
+from functools import reduce
+from typing import Callable
 
-from pennylane import math, pytrees, queuing
+from pennylane import capture, math, pytrees, queuing
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -32,19 +33,25 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
+from pennylane.ops import Prod
 from pennylane.ops.op_math import adjoint, ctrl
 
+from ...queuing import AnnotatedQueue
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op: Operator | partial, target_op: Operator | partial, uncompute_op: Operator | partial = None):
+def change_op_basis(
+    compute_op: Operator | Callable,
+    target_op: Operator | Callable,
+    uncompute_op: Operator | Callable = None,
+):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | partial): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator` | partial): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator` | partial): An optional single operator or a product that applies quantum
+        compute_op (:class:`~.Operator` | Callable): A single operator, product or Callable that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator, product or Callable that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator, product or Callable that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
@@ -85,16 +92,43 @@ def change_op_basis(compute_op: Operator | partial, target_op: Operator | partia
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
-    if isinstance(compute_op, Operator) and isinstance(target_op, Operator) and (isinstance(uncompute_op, Operator) or uncompute_op is None):
-        return ChangeOpBasis(compute_op, target_op, uncompute_op)
-    elif isinstance(compute_op, partial) and isinstance(target_op, partial):
-        compute_op()
-        target_op()
-        if uncompute_op is None:
-            raise ValueError("When using partials, uncompute_op must be provided.")
-        uncompute_op()
+
+    def _apply_op_or_func(op_or_func):
+        if isinstance(op_or_func, Callable):
+            op_or_func()
+        elif isinstance(op_or_func, Operator):
+            type(op_or_func)._unflatten(*op_or_func._flatten())
+        else:
+            raise TypeError(
+                f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+            )
+
+    def _convert_to_prod(op_or_func):
+        if isinstance(op_or_func, Callable):
+            with AnnotatedQueue() as q:
+                op_or_func()
+            return Prod(*q.queue)
+        elif isinstance(op_or_func, Operator):
+            return op_or_func
+        else:
+            raise TypeError(
+                f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+            )
+
+    if capture.enabled():
+        _apply_op_or_func(compute_op)
+        _apply_op_or_func(target_op)
+        if uncompute_op is not None:
+            _apply_op_or_func(uncompute_op)
+        else:
+            _apply_op_or_func(adjoint(compute_op))
     else:
-        raise TypeError("When providing a partial to change_op_basis, all parameters must be partials.")
+        return ChangeOpBasis(
+            _convert_to_prod(compute_op),
+            _convert_to_prod(target_op),
+            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
+        )
+
 
 class ChangeOpBasis(CompositeOp):
     """

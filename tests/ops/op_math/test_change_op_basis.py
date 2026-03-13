@@ -18,12 +18,13 @@ import re
 from functools import partial
 
 import numpy as np
+
 # pylint:disable=protected-access, unused-argument
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.decomposition import resource_rep, gate_sets
+from pennylane.decomposition import gate_sets, resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -70,7 +71,11 @@ def test_change_op_basis_partials():
 
     @qml.decompose(gate_set=gate_sets.ALL_QUBIT_OPS, max_expansion=1)
     def circuit():
-        qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])), partial(h, 0.2, Wires([0]), Wires([1])))
+        qml.change_op_basis(
+            partial(f, 0.1, Wires([0]), Wires([1])),
+            partial(g, Wires([0])),
+            partial(h, 0.2, Wires([0]), Wires([1])),
+        )
 
     with AnnotatedQueue() as q:
         circuit()
@@ -82,11 +87,12 @@ def test_change_op_basis_partials():
         qml.PauliX(0),
         qml.adjoint(qml.RX)(0.2, 0),
         qml.adjoint(qml.QFT)([0]),
-        qml.adjoint(qml.BasisState)(np.zeros(1), [1])
+        qml.adjoint(qml.BasisState)(np.zeros(1), [1]),
     ]
 
     for i, op in enumerate(q.queue):
         assert op == expected[i]
+
 
 @pytest.mark.jax
 @pytest.mark.capture
