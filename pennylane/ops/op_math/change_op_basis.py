@@ -35,9 +35,36 @@ from pennylane.operation import (
 )
 from pennylane.ops.op_math import Prod, adjoint, ctrl
 
-from ...queuing import AnnotatedQueue, apply
-from ...templates import Subroutine, SubroutineOp
+from ...queuing import AnnotatedQueue
+from ...templates import SubroutineOp
 from .composite import CompositeOp, handle_recursion_error
+
+
+def _apply_op_or_func(op_or_func):
+    if isinstance(op_or_func, Callable):
+        op_or_func()
+    elif isinstance(op_or_func, Operator):
+        type(op_or_func)._unflatten(*op_or_func._flatten())
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
+
+
+def _convert_to_prod(op_or_func):
+    if isinstance(op_or_func, Callable):
+        with AnnotatedQueue() as q:
+            op_or_func()
+        if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
+            return Prod(*q.queue[0].decomposition())
+        else:
+            return Prod(*q.queue)
+    elif isinstance(op_or_func, Operator):
+        return op_or_func
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
 
 
 def change_op_basis(
@@ -95,31 +122,6 @@ def change_op_basis(
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
-
-    def _apply_op_or_func(op_or_func):
-        if isinstance(op_or_func, Callable):
-            op_or_func()
-        elif isinstance(op_or_func, Operator):
-            type(op_or_func)._unflatten(*op_or_func._flatten())
-        else:
-            raise TypeError(
-                f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
-            )
-
-    def _convert_to_prod(op_or_func):
-        if isinstance(op_or_func, Callable):
-            with AnnotatedQueue() as q:
-                op_or_func()
-            if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
-                return Prod(*q.queue[0].decomposition())
-            else:
-                return Prod(*q.queue)
-        elif isinstance(op_or_func, Operator):
-            return op_or_func
-        else:
-            raise TypeError(
-                f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
-            )
 
     if capture.enabled():
         _apply_op_or_func(compute_op)

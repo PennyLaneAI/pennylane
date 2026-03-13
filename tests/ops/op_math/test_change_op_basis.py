@@ -113,6 +113,68 @@ def test_change_op_basis_with_none():
     ))
 
 
+@pytest.mark.capture
+@pytest.mark.jax
+def test_change_op_basis_callables_capture_with_none():
+    import jax
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    def circuit():
+        qml.change_op_basis(
+            partial(f, 0.1, Wires([0]), Wires([1])),
+            partial(g, Wires([0]))
+        )
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
+    assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_change_op_basis_callables_capture():
+    import jax
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    def h(a, reg1):
+        qml.adjoint(qml.RX)(a, reg1[0])
+        qml.adjoint(qml.QFT)(reg1)
+        qml.adjoint(qml.BasisState)(np.zeros(len(reg1)), reg1)
+
+    def circuit():
+        qml.change_op_basis(
+            partial(f, 0.1, Wires([0]), Wires([1])),
+            partial(g, Wires([0])),
+            partial(h, 0.2, Wires([0])),
+        )
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
+
+
 def test_change_op_basis_with_mixed_types():
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
