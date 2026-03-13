@@ -13,8 +13,6 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
-import itertools
-
 import pytest
 
 import pennylane as qml
