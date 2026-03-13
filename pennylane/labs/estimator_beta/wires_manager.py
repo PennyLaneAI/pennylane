@@ -26,8 +26,6 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
-
 
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
@@ -40,9 +38,8 @@ class Allocate:
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a positive integer.
-        ValueError: `state` must be one of 'zero' or 'any'.
-        ValueError: Expected `restored` to be True or False.
+        ValueError: `num_wires` must be a positive integer
+        ValueError: if `restored` is not a boolean
 
     **Example**
 
@@ -54,11 +51,16 @@ class Allocate:
 
     """
 
-    def __init__(self, num_wires, state=AllocateState.ZERO, restored=False):
+    def __init__(
+        self,
+        num_wires,
+        state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
+        restored=False,
+    ):
         if not isinstance(num_wires, int) or num_wires <= 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
-        if restored not in (True, False):
+        if not isinstance(restored, bool):
             raise ValueError(f"Expected restored to be True or False, got {restored}")
 
         self._state = AllocateState(state)
@@ -127,9 +129,8 @@ class Deallocate:
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a positive integer.
-        ValueError: `state` must be one of 'zero' or 'any'.
-        ValueError: Expected `restored` to be True or False.
+        ValueError: `num_wires` must be a positive integer
+        ValueError: if `restored` is not a boolean
 
     **Example**
 
@@ -192,7 +193,7 @@ class Deallocate:
         if not isinstance(num_wires, int) or num_wires <= 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
-        if restored not in (True, False):
+        if not isinstance(restored, bool):
             raise ValueError(f"Expected restored to be True or False, got {restored}")
 
         self._state = AllocateState(state)
@@ -272,7 +273,7 @@ class MarkQubits:
     Its primary use is to mark the state of algorithmic qubits so that they can be used by other subroutines.
 
     Args:
-        wires (int | str | Iterable): the label(s) of the wires to be marked
+        wires (WiresLike): the label(s) of the wires to be marked
 
     """
 
@@ -297,11 +298,11 @@ class MarkClean(MarkQubits):
     r"""A class used to mark that certain wires are in the zero state.
 
     This class can be used in quantum circuit (qfunc) to mark certain algorithmic wires as being in the zero state.
-    Its primary use is to mark the state of algorithmic qubits so that they can be used as auxiliary qubits
+    Its primary use is to mark the state of algorithmic qubits as clean so that they can be used as auxiliary qubits
     by other subroutines.
 
     Args:
-        wires (int | str | Iterable): the label(s) of the wires to be marked
+        wires (WiresLike): the label(s) of the wires to be marked
 
     **Example**
 
@@ -325,7 +326,7 @@ def _estimate_auxiliary_wires(
 ):
     """A recursive function that tracks auxiliary qubits via three quantities over the course of the workflow.
     It tracks the maximum number of qubits allocated, the maximum number of qubits deallocated and the total
-    number of allocated qubits that weren't deallocated by the end of the workflow.
+    number of allocated qubits that weren't restored to the zero state by the end of the workflow.
 
     Args:
         list_actions (Iterable[GateCount, Allocate, Deallocate]): A quantum circuit represented by a list
@@ -344,16 +345,16 @@ def _estimate_auxiliary_wires(
             in the workflow act upon.
 
     Returns:
-        tuple(int, int, int): Returns three quantities: the maximum number of qubits allocated (``max_alloc``),
-        the maximum number of qubits deallocateded (``max_dealloc``) and the total number of allocated qubits
-        that weren't deallocated by the end of the workflow (``total``). ``max_alloc`` will always be a positive
-        (or zero) integer. ``max_dealloc`` will always be a negative (or zero) integer. ``total`` can be any
-        integer; a positive value indicates that there were more allocated qubits than deallocated, a negative
-        value indicates the opposite. A zero value indicates that all allocated qubits were deallocated.
+        (int): A positive integer (or zero) representing the maximum number of qubits allocated (``max_alloc``).
+        (int): A negative integer (or zero) representing the maximum number of qubits deallocateded (``max_dealloc``).
+        (int): An integer representing the total number of allocated qubits that weren't restored to the
+        zero state by the end of the workflow (``total``). A positive value indicates that there were more
+        allocated qubits than deallocated, a negative value indicates the opposite. A zero value indicates
+        that all allocated qubits were deallocated.
 
     Raises:
-        ValueError: Did NOT deallocate and restore all ANY state allocations as required.
-        ValueError: Trying to deallocate an ANY state register before it was allocated.
+        ValueError: failed to deallocate and restore all ANY state allocations as required
+        ValueError: tried to deallocate an ANY state register before it was allocated
     """
     if scalar == 0:
         return 0, 0, 0
@@ -426,7 +427,9 @@ def _estimate_auxiliary_wires(
 
     if len(any_state_aux_allocation) != 0:
         raise ValueError(
-            f"Did NOT deallocate and restore all ANY state allocations as promised:\n{any_state_aux_allocation}"
+            "Failed to uncompute and restore all `ANY state` allocations. "
+            "Dirty auxiliaries must be restored to their initial states to close the operational scope. "
+            f"Unresolved wires: {any_state_aux_allocation}"
         )
 
     if total > 0:
@@ -441,7 +444,7 @@ def _estimate_auxiliary_wires(
 def _process_circuit_lst(
     circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
 ):
-    r"""A private function that preprocesses the quantum tape obtained from a qfunc as part of the wire
+    r"""A private function that pre-processes the quantum tape obtained from a qfunc as part of the wire
     tracking pipeline.
 
     This function has three main responsibilities. Firstly, mapping and pruning all operators (``ResourceOperator``
@@ -462,7 +465,7 @@ def _process_circuit_lst(
     Raises:
         ValueError: If incompatible type of object is encountered in the tape. Circuit must contain only instances
             of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits'.
-        ValueError: Attempted to mark qubits that don't otherwise exist in the circuit wires.
+        ValueError: attempted to mark qubits that don't otherwise exist in the circuit wires
     """
     circuit_wires = Wires([])
     num_generated_wires = 0
@@ -540,7 +543,7 @@ def estimate_wires_from_circuit(
         separated according to their quantum state at the end of the workflow (``any_state``, ``zeroed``).
 
     Raises:
-        ValueError: If more qubits were deallocated than initially allocated.
+        ValueError: if more qubits were deallocated than initially allocated
     """
     processed_circ, circuit_wires = _process_circuit_lst(circuit_as_lst)
     total_algo_qubits = len(circuit_wires)
@@ -618,7 +621,7 @@ def estimate_wires_from_resources(
         separated according to their quantum state at the end of the workflow (``any_state``, ``zeroed``).
 
     Raises:
-        ValueError: If more qubits were deallocated than initially allocated.
+        ValueError: if more qubits were deallocated than initially allocated
     """
     algo = workflow.algo_wires
     zeroed += workflow.zeroed_wires

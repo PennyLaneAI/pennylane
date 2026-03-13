@@ -429,7 +429,7 @@ class TestEstimateAuxiliaryWires:
         Any state before they were allocated."""
         with pytest.raises(
             ValueError,
-            match="Did NOT deallocate and restore all ANY state allocations as promised:",
+            match="Failed to uncompute and restore all `ANY state` allocations.",
         ):
             lst_actions = [
                 Allocate(5),  # Allocated in the zero state
