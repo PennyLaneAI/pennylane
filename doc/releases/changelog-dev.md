@@ -97,6 +97,8 @@
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
   from pennylane.templates import Subroutine
@@ -146,6 +148,9 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
@@ -675,6 +680,10 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* The output of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
