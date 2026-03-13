@@ -2737,7 +2737,7 @@ def _cphaseshift10_resources():
 
 
 @register_resources(_cphaseshift10_resources)
-def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
+def _cphaseshift10(phi: TensorLike, wires: WiresLike, **_):
     PauliX(wires[1])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])

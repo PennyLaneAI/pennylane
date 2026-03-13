@@ -363,7 +363,7 @@ def _qubitsum_to_cnots_resources():
 
 
 @register_resources(_qubitsum_to_cnots_resources)
-def _qubitsum_to_cnots(wires: WiresLike, **__):
+def _qubitsum_to_cnots(wires: WiresLike, **_):
     qml.CNOT(wires=[wires[1], wires[2]])
     qml.CNOT(wires=[wires[0], wires[2]])
 
