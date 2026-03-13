@@ -410,6 +410,10 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
+* Added updated decompositions for `~.pennylane.labs.estimator_beta.ops.op_math.CH` and `~.pennylane.labs.estimator_beta.ops.qubit.Hadamard`
+  operations.
+  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
+
 <h3>Breaking changes 💔</h3>
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
@@ -859,6 +863,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
