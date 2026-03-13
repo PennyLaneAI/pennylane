@@ -635,6 +635,6 @@ def reconstruct(data, wires: Wires, op_type: type[Operator], op_params: dict) ->
         return qml.pow(reconstruct(data, wires, base_class, base_params), z=op_params["z"])
 
     if op_type in _reconstructors:
-        return _reconstructors[op_type](data, wires, op_params)
+        return _reconstructors[op_type](*data, wires, **op_params)
 
     raise NotImplementedError
