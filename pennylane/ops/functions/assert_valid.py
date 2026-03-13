@@ -164,7 +164,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[resource_rep] += 1
 
     if rule.exact_resources and not (
-        isinstance(op, qml.templates.SubroutineOp) and not op.subroutine.exact_resources
+        isinstance(op, qml.templates.core.SubroutineOp) and not op.subroutine.exact_resources
     ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
@@ -373,7 +373,7 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
-    if isinstance(op, qml.templates.SubroutineOp):
+    if isinstance(op, qml.templates.core.SubroutineOp):
         return
     try:
         import jax

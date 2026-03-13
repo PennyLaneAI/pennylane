@@ -83,7 +83,7 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
-* Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
+* Adds a new `qml.templates.core.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
   and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
@@ -120,6 +120,7 @@
 
 The following classes have been ported over:
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+- `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.

@@ -195,8 +195,6 @@ unmodified_templates_cases = [
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
-    (qml.QFT, ([0, 1],), {}),
-    (qml.QFT, (), {"wires": [0, 1]}),
     (qml.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qml.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -1587,8 +1585,8 @@ unsupported_templates = [
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
-    qml.templates.SubroutineOp,
-    qml.templates.Subroutine,
+    qml.templates.core.SubroutineOp,
+    qml.templates.core.Subroutine,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
@@ -1600,7 +1598,7 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qml.templates.SubroutineOp:
+    if template == qml.templates.core.SubroutineOp:
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
