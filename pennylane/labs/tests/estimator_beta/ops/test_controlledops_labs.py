@@ -18,8 +18,7 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.labs.estimator_beta.ops.op_math.controlled_ops import CH
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
-
+# pylint: disable= no-self-use
 
 class TestCH:
     """Test the Resource CH operation"""

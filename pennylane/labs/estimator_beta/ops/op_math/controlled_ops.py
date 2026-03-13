@@ -61,7 +61,7 @@ class CH(ResourceOperator):
       'CNOT': 1,
       'Z': 2,
       'S': 3,
-      'Hadamard': 2    
+      'Hadamard': 2
 
     """
 
