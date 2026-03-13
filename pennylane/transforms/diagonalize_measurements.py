@@ -248,7 +248,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         This transform is compatible with ``qjit``, where it will be applied as an MLIR pass rather than a tape-level transform.
         That being said, there are a few differences to be aware of when using the MLIR pass:
 
-        - ``supported_base_obs`` only accepts a tuple of supported base observable name string.
+        - ``supported_base_obs`` only accepts a tuple of supported base observable names.
         - ``to_eigvals`` can be specified as ``False``.
 
         .. code-block:: python
