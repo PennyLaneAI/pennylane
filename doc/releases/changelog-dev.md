@@ -96,6 +96,7 @@
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9151)](https://github.com/PennyLaneAI/pennylane/pull/9151)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
 
   ```python
