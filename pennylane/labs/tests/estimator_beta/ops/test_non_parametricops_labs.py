@@ -18,7 +18,7 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import CompressedResourceOp, GateCount, resource_rep
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, use-implicit-booleanness-not-comparison
 
 
 class TestHadamard:
