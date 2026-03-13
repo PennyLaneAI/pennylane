@@ -222,7 +222,7 @@ def test_fallback_creating_resources_AbstractArray():
 
 
 def test_fallback_resources_error():
-    """Test that is an error occurs when using the resources fallback, we an more informative error."""
+    """Test that if an error occurs when using the resources fallback, we get a more informative error."""
 
     @qml.templates.Subroutine
     def f(wires):
