@@ -19,7 +19,9 @@ quantum-classical programs.
 
 .. warning::
 
-    This module is experimental and will change significantly in the future.
+    This module is experimental and will change significantly in the future. In addition, 
+    features herein are intended to be used with Catalyst (specifically, with the
+    :func:`~.qjit` decorator).
 
 .. currentmodule:: pennylane.capture
 
@@ -87,6 +89,11 @@ By default, the mechanism is disabled:
     >>> qml.capture.disable()
     >>> qml.capture.enabled()
     False
+
+.. note::
+    To activate program capture when using :func:`~.qjit`, please set `capture=True`
+    instead of using `qml.capture.enable`. By default, `capture=False`.
+    
 
 **Custom Operator Behaviour**
 
