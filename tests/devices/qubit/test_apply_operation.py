@@ -25,6 +25,7 @@ from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
 import pennylane as qml
+import pennylane.devices.qubit.apply_operation as apply_operation_module
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,
@@ -638,7 +639,9 @@ class TestApplyParametrizedEvolution:
         import jax.numpy as jnp
 
         H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
-        spy = mocker.spy(qml.math, "einsum")
+        spy_evolve = mocker.spy(
+            apply_operation_module, "_evolve_state_vector_under_parametrized_evolution"
+        )
 
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi - phi[0]
@@ -647,7 +650,7 @@ class TestApplyParametrizedEvolution:
         state_ev = apply_operation(ev, state)
         state_rx = apply_operation(qml.RX(phi_for_RX, 0), state)
 
-        assert spy.call_count == 2
+        assert spy_evolve.call_count == 1
         assert qml.math.allclose(state_ev, state_rx, atol=1e-6)
 
     @pytest.mark.parametrize("num_state_wires", [2, 4])
