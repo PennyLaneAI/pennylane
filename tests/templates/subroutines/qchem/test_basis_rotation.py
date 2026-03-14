@@ -162,7 +162,9 @@ class TestDecomposition:
             jax = pytest.importorskip("jax")
             wires = jax.numpy.arange(num_wires)
             jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, unitary_matrix)
-            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
+            assert tape[0].name == "BasisRotation"
+            queue = tape[0].decomposition()
         else:
             op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=unitary_matrix)
             queue = op.decomposition()
@@ -239,7 +241,9 @@ class TestDecomposition:
             jax = pytest.importorskip("jax")
             wires = jax.numpy.arange(num_wires)
             jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, ortho_matrix)
-            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
+            assert tape[0].name == "BasisRotation"
+            queue = tape[0].decomposition()
         else:
             op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=ortho_matrix)
             queue = op.decomposition()
