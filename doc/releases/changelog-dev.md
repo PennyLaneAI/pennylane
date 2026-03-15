@@ -772,6 +772,11 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the `default.qubit` device.
+  These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
+  states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+
 <h3>Documentation 📝</h3>
 
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
@@ -786,7 +791,10 @@ The following classes have been ported over:
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
-
+* Fixed the ``apply_global_phase`` docstring to correctly state the phase convention as
+  :math:`e^{-i\phi}` instead of :math:`e^{i\phi}`.
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+  
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
@@ -889,6 +897,7 @@ Isaac De Vlugt,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 Oumarou Oumarou,
