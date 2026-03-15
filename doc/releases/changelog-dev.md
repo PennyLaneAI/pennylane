@@ -149,6 +149,12 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The `default.qubit` device now supports parameter-broadcasted global phases.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
 * `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
   `capture` is disabled.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
