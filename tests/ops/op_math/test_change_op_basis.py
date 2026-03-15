@@ -15,16 +15,24 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 import re
+from functools import partial
+
+import numpy as np
 
 # pylint:disable=protected-access, unused-argument
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.decomposition import resource_rep
+from pennylane import device, qnode
+from pennylane.decomposition import gate_sets, resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.templates import Subroutine
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -43,6 +51,150 @@ def test_basic_validity():
     op3 = qml.PauliZ(0)
     op = qml.change_op_basis(op1, op2, op3)
     qml.ops.functions.assert_valid(op)
+
+
+def test_change_op_basis_callables():
+    """Tests that partials can be provided to change_op_basis."""
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    def h(a, reg1):
+        qml.adjoint(qml.RX)(a, reg1[0])
+        qml.adjoint(qml.QFT)(reg1)
+        qml.adjoint(qml.BasisState)(np.zeros(len(reg1)), reg1)
+
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        partial(g, Wires([0])),
+        partial(h, 0.2, Wires([0])),
+    )
+
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
+    assert cob.operands[0] == qml.prod(
+        qml.adjoint(qml.RX)(0.2, 0),
+        qml.adjoint(qml.QFT)(Wires([0])),
+        qml.adjoint(qml.BasisState)(np.zeros(1), Wires([0])),
+    )
+
+
+def test_change_op_basis_with_none():
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        partial(g, Wires([0]))
+    )
+
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
+    assert cob.operands[0] == qml.adjoint(qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    ))
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_change_op_basis_callables_capture_with_none():
+    import jax
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    def circuit():
+        qml.change_op_basis(
+            partial(f, 0.1, Wires([0]), Wires([1])),
+            partial(g, Wires([0]))
+        )
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
+    assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_change_op_basis_callables_capture():
+    import jax
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    def g(wires):
+        qml.PauliX(wires[0])
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    def h(a, reg1):
+        qml.adjoint(qml.RX)(a, reg1[0])
+        qml.adjoint(qml.QFT)(reg1)
+        qml.adjoint(qml.BasisState)(np.zeros(len(reg1)), reg1)
+
+    def circuit():
+        qml.change_op_basis(
+            partial(f, 0.1, Wires([0]), Wires([1])),
+            partial(g, Wires([0])),
+            partial(h, 0.2, Wires([0])),
+        )
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
+
+
+def test_change_op_basis_with_mixed_types():
+
+    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+    def f(a, reg1, reg2):
+        qml.BasisState(np.zeros(len(reg2)), reg2)
+        qml.QFT(reg1)
+        qml.RX(a, reg1[0])
+
+    cob = qml.change_op_basis(
+        partial(f, 0.1, Wires([0]), Wires([1])),
+        qml.PauliX(0)
+    )
+
+    assert cob.operands[2] == qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    )
+    assert isinstance(cob.operands[1], qml.PauliX)
+    assert cob.operands[0] == qml.adjoint(qml.prod(
+        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
+    ))
 
 
 @pytest.mark.jax

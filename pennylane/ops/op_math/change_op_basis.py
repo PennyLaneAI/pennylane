@@ -16,8 +16,9 @@ This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter, defaultdict
 from functools import reduce
+from typing import Callable
 
-from pennylane import math, pytrees, queuing
+from pennylane import capture, math, pytrees, queuing
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -32,23 +33,59 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl
+from pennylane.ops.op_math import Prod, adjoint, ctrl
 
+from ...queuing import AnnotatedQueue
+from ...templates import SubroutineOp
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+def _apply_op_or_func(op_or_func):
+    if isinstance(op_or_func, Callable):
+        op_or_func()
+    elif isinstance(op_or_func, Operator):
+        type(op_or_func)._unflatten(*op_or_func._flatten())
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
+
+
+def _convert_to_prod(op_or_func):
+    if isinstance(op_or_func, Callable):
+        with AnnotatedQueue() as q:
+            op_or_func()
+        if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
+            return Prod(*q.queue[0].decomposition())
+        else:
+            return Prod(*q.queue)
+    elif isinstance(op_or_func, Operator):
+        return op_or_func
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
+
+
+def change_op_basis(
+    compute_op: Operator | Callable,
+    target_op: Operator | Callable,
+    uncompute_op: Operator | Callable = None,
+):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator`): An optional single operator or a product that applies quantum
+        compute_op (:class:`~.Operator` | Callable): A single operator, product or Callable that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator, product or Callable that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator, product or Callable that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
+
+    Raises:
+        TypeError: if any arguments are not Callables or Operators.
 
     **Example**
 
@@ -86,7 +123,19 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
 
-    return ChangeOpBasis(compute_op, target_op, uncompute_op)
+    if capture.enabled():
+        _apply_op_or_func(compute_op)
+        _apply_op_or_func(target_op)
+        if uncompute_op is not None:
+            _apply_op_or_func(uncompute_op)
+        else:
+            _apply_op_or_func(adjoint(compute_op))
+    else:
+        return ChangeOpBasis(
+            _convert_to_prod(compute_op),
+            _convert_to_prod(target_op),
+            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
+        )
 
 
 class ChangeOpBasis(CompositeOp):
