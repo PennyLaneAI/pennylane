@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for the  of PennyLane templates into plxpr.
+Integration tests for the capture of PennyLane templates into plxpr.
 """
 import inspect
 from itertools import combinations
