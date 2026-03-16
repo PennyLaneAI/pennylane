@@ -197,11 +197,11 @@ def test_change_op_basis_capture():
     """Tests that a change_op_basis can be captured."""
 
     def circuit():
-        qml.change_op_basis(qml.X(0), qml.Y(0))
+        qml.change_op_basis(qml.X(0), qml.Y(0), qml.X(0))
 
     jaxpr = qml.capture.make_plxpr(circuit)()
     tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    assert tape.operations == [qml.change_op_basis(qml.X(0), qml.Y(0))]
+    assert tape.operations == [qml.X(0), qml.Y(0), qml.X(0)]
 
 
 class MyOp(qml.RX):  # pylint:disable=too-few-public-methods

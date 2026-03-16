@@ -48,6 +48,8 @@ def _apply_op_or_func(op_or_func):
             raise TypeError("change_op_basis requires that Callable inputs have no inputs") from e
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())
+    elif math.is_abstract(op_or_func):
+        pass
     else:
         raise TypeError(
             f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"

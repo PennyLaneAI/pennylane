@@ -131,6 +131,8 @@ class TestQSVTBasics:
         for rule in qml.list_decomps(qml.QSVT):
             _test_decomposition_rule(op, rule)
 
+        # to call the rule and make sure it matches the expected decomp
+
     @pytest.mark.parametrize(
         ("UA", "projectors"),
         [
