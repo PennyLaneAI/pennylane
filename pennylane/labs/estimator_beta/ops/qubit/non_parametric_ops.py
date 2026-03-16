@@ -112,8 +112,8 @@ def hadamard_toffoli_based_controlled_decomp(
 
     .. note::
 
-    This operation assumes a catalytic T state is available.
-    Users should ensure the cost of constructing such a state has been accounted for.
+        This operation assumes a catalytic T state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
 
     Args:
         num_ctrl_wires (int): the number of qubits the
@@ -124,7 +124,7 @@ def hadamard_toffoli_based_controlled_decomp(
             of the target operator.
 
     Resources:
-        The resources are derived from Figure: 17 in `arXiv:2011.03494<https://arxiv.org/pdf/2011.03494>`_.
+        The resources are derived from Figure: 17 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
