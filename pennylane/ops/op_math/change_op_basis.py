@@ -65,12 +65,11 @@ def _convert_to_prod(op_or_func):
         if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
             return Prod(*q.queue[0].decomposition())
         return Prod(*q.queue)
-    elif isinstance(op_or_func, Operator):
+    if isinstance(op_or_func, Operator):
         return op_or_func
-    else:
-        raise TypeError(
-            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
-        )
+    raise TypeError(
+        f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+    )
 
 
 # pylint: disable=inconsistent-return-statements
