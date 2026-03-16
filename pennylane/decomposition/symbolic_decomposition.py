@@ -22,7 +22,13 @@ import pennylane as qml
 from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from .resources import (
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    pow_resource_rep,
+    reconstruct,
+    resource_rep,
+)
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -97,6 +103,19 @@ def repeat_pow_base(*params, wires, base, z, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
+# pylint: disable=protected-access,unused-argument
+@register_condition(lambda z, **__: is_integer(z) and z >= 0)
+@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
+def qjit_compatible_repeat_pow_base(*params, wires, base_class, base_params, z, **__):
+    """Decompose the power of an operator by repeating the base operator, in a qjit compatible way."""
+
+    @qml.for_loop(0, z)
+    def _loop(i):
+        reconstruct(params, wires, base_class, base_params)
+
+    _loop()  # pylint: disable=no-value-for-parameter
+
+
 def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     return {
         pow_resource_rep(
@@ -113,6 +132,13 @@ def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
     base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
     qml.pow(base_op, z * base.z)
+
+
+@register_resources(_merge_powers_resource)
+def qjit_compatible_merge_powers(*params, wires, base_class, base_params, z, **__):
+    """Decompose nested powers by combining them in a qjit compatible way."""
+    base = reconstruct(params, wires, base_class, base_params)
+    qml.pow(base, z * base.z)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -134,7 +160,15 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
     qml.adjoint(qml.pow(base_op, z))
 
 
-def make_pow_decomp_with_period(period) -> DecompositionRule:
+@register_resources(_flip_pow_adjoint_resource)
+def qjit_compatible_flip_pow_adjoint(*params, wires, base_class, base_params, z, **__):
+    """Decompose the power of an adjoint in a qjit compatible way."""
+    adj = reconstruct(params, wires, base_class, base_params)
+    base = adj.base
+    qml.adjoint(qml.pow(base, z))
+
+
+def make_pow_decomp_with_period(period, has_reconstructor=False) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -148,16 +182,29 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
+    if not has_reconstructor:
+
+        @register_condition(_condition_fn)
+        @register_resources(_resource_fn)
+        def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+            z_mod_period = z % period
+            if z_mod_period == 1:
+                qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+            elif z_mod_period > 0 and z_mod_period != period:
+                qml.pow(base, z_mod_period)
+
+        return _impl
+
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+    def _impl_using_reconstructor(
+        *params, wires, base_class, base_params, z, **__
+    ):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
-            qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+            reconstruct(params, wires, base_class, base_params)
         elif z_mod_period > 0 and z_mod_period != period:
-            qml.pow(base, z_mod_period)
-
-    return _impl
+            qml.pow(reconstruct(params, wires, base_class, base_params), z_mod_period)
 
 
 pow_involutory = make_pow_decomp_with_period(2)
@@ -175,6 +222,11 @@ def pow_rotation(phi, wires, base, z, **__):
     base._unflatten((phi * z,), struct)
 
 
+@register_resources(_pow_rotation_resource)
+def qjit_compatible_pow_rotation(phi, wires, base_class, base_params, z, **__):
+    reconstruct(phi * z, wires, base_class, base_params)
+
+
 def _decompose_to_base_resource(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
@@ -184,6 +236,12 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+
+
+@register_resources(_decompose_to_base_resource)
+def qjit_compatible_decompose_to_base(*params, wires, base_class, base_params, **__):
+    """Decompose a symbolic operator to its base in a qjit compatible way."""
+    reconstruct(params, wires, base_class, base_params)
 
 
 self_adjoint: DecompositionRule = decompose_to_base

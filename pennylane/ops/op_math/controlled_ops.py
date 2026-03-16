@@ -38,7 +38,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
     pow_involutory,
-    pow_rotation,
+    qjit_compatible_pow_rotation,
     self_adjoint,
 )
 from pennylane.typing import TensorLike
@@ -2038,7 +2038,7 @@ def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
 add_decomps("Adjoint(CRX)", adjoint_rotation)
-add_decomps("Pow(CRX)", pow_rotation)
+add_decomps("Pow(CRX)", qjit_compatible_pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -2230,7 +2230,7 @@ def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRY, _cry, _cry_to_ppr)
 add_decomps("Adjoint(CRY)", adjoint_rotation)
-add_decomps("Pow(CRY)", pow_rotation)
+add_decomps("Pow(CRY)", qjit_compatible_pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2465,7 +2465,7 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRZ, _crz, _crz_to_ppr)
 add_decomps("Adjoint(CRZ)", adjoint_rotation)
-add_decomps("Pow(CRZ)", pow_rotation)
+add_decomps("Pow(CRZ)", qjit_compatible_pow_rotation)
 
 
 class CRot(ControlledOp):
@@ -2912,6 +2912,6 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
+add_decomps("Pow(ControlledPhaseShift)", qjit_compatible_pow_rotation)
 
 CPhase = ControlledPhaseShift
