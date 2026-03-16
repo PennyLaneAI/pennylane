@@ -27,7 +27,7 @@ class TestAllocate:
 
     @pytest.mark.parametrize("restored", (None, True, False))
     @pytest.mark.parametrize("state", (None, "any", "zero"))
-    @pytest.mark.parametrize("num_wires", (0, 1, 2, 3, 5, 7))
+    @pytest.mark.parametrize("num_wires", (1, 2, 3, 5, 7))
     def test_init(self, num_wires, state, restored):
         """Test that the Allocate class is instantiated as expected when there is no active recording."""
         if state is None and restored is None:
@@ -49,10 +49,11 @@ class TestAllocate:
     @pytest.mark.parametrize(
         "num_wires, state, restored, error_msg",
         (
-            (2.3, "zero", False, "num_wires must be 0 or a positive integer,"),
-            (-4, "zero", False, "num_wires must be 0 or a positive integer,"),
-            (1, "NotZero", False, "state must be one of 'zero', 'any'."),
-            (1, 999, False, "state must be one of 'zero', 'any'."),
+            (0, "zero", False, "num_wires must be a positive integer,"),
+            (2.3, "zero", False, "num_wires must be a positive integer,"),
+            (-4, "zero", False, "num_wires must be a positive integer,"),
+            (1, "NotZero", False, "'NotZero' is not a valid AllocateState"),
+            (1, 999, False, "999 is not a valid AllocateState"),
             (1, "zero", "NotFalse", "Expected restored to be True or False,"),
             (1, "zero", 123, "Expected restored to be True or False,"),
         ),
@@ -130,6 +131,19 @@ class TestAllocate:
         alloc_1, alloc_2 = alloc_ops
         assert alloc_1.equal(alloc_2) == expected_equality
 
+    def test_immutable(self):
+        """Test that this class is immutable"""
+        allocate = Allocate(3, "any", True)
+
+        with pytest.raises(AttributeError, match="Allocate instances are not mutable"):
+            allocate.num_wires = 5
+
+        with pytest.raises(AttributeError, match="Allocate instances are not mutable"):
+            allocate.state = "zero"
+
+        with pytest.raises(AttributeError, match="Allocate instances are not mutable"):
+            allocate.restored = False
+
 
 class TestDeallocate:
     """Test the methods and attributes of the Deallocate class"""
@@ -137,7 +151,6 @@ class TestDeallocate:
     @pytest.mark.parametrize(
         "num_wires, allocated_register, state, restored",
         (  ## No allocated register:
-            (0, None, None, None),
             (3, None, None, None),
             (3, None, None, True),
             (3, None, None, False),
@@ -223,7 +236,7 @@ class TestDeallocate:
                 None,
                 "zero",
                 False,
-                "Atleast one of `num_wires` and `allocated_register` must be provided",
+                "At least one of `num_wires` and `allocated_register` must be provided",
             ),
             (
                 5,
@@ -232,10 +245,11 @@ class TestDeallocate:
                 True,
                 "Must provide the `allocated_register` when deallocating an ANY state register",
             ),
-            (2.3, None, "zero", False, "num_wires must be 0 or a positive integer,"),
-            (-4, None, "zero", False, "num_wires must be 0 or a positive integer,"),
-            (1, None, "NotZero", False, "state must be one of 'zero', 'any'."),
-            (1, None, 999, False, "state must be one of 'zero', 'any'."),
+            (0, None, "zero", False, "num_wires must be a positive integer,"),
+            (2.3, None, "zero", False, "num_wires must be a positive integer,"),
+            (-4, None, "zero", False, "num_wires must be a positive integer,"),
+            (1, None, "NotZero", False, "'NotZero' is not a valid AllocateState"),
+            (1, None, 999, False, "999 is not a valid AllocateState"),
             (1, None, "zero", "NotFalse", "Expected restored to be True or False,"),
             (1, None, "zero", 123, "Expected restored to be True or False,"),
         ),
@@ -248,7 +262,6 @@ class TestDeallocate:
     @pytest.mark.parametrize(
         "num_wires, allocated_register, state, restored, expected_str",
         (  ## No allocated register:
-            (0, None, None, None, "Deallocate(0, state=zero, restored=False)"),
             (3, None, None, None, "Deallocate(3, state=zero, restored=False)"),
             (3, None, None, True, "Deallocate(3, state=zero, restored=True)"),
             (3, None, None, False, "Deallocate(3, state=zero, restored=False)"),
@@ -466,6 +479,22 @@ class TestDeallocate:
         """Test that the equal function works as expected."""
         alloc_1, alloc_2 = alloc_ops
         assert alloc_1.equal(alloc_2) == expected_equality
+
+    def test_immutable(self):
+        """Test that this class is immutable"""
+        deallocate = Deallocate(allocated_register=Allocate(3, "any", True))
+
+        with pytest.raises(AttributeError, match="Deallocate instances are not mutable"):
+            deallocate.num_wires = 5
+
+        with pytest.raises(AttributeError, match="Deallocate instances are not mutable"):
+            deallocate.state = "zero"
+
+        with pytest.raises(AttributeError, match="Deallocate instances are not mutable"):
+            deallocate.restored = False
+
+        with pytest.raises(AttributeError, match="Deallocate instances are not mutable"):
+            deallocate.allocated_register = Allocate(5, "zero", False)
 
 
 class TestMarkQubits:

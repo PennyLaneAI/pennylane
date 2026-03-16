@@ -189,6 +189,7 @@ _ABSTRACT_OR_META_TYPES = {
     qml.ops.ControlledOp,
     qml.ops.qubit.BasisStateProjector,
     qml.ops.qubit.StateVectorProjector,
+    qml.templates.core.CollectedSubroutine,
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
