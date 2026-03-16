@@ -24,15 +24,12 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import device, qnode
-from pennylane.decomposition import gate_sets, resource_rep
+from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
-from pennylane.queuing import AnnotatedQueue
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.templates import Subroutine
-from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -115,6 +112,7 @@ def test_change_op_basis_with_none():
 
 @pytest.mark.capture
 @pytest.mark.jax
+@pytest.mark.external
 def test_change_op_basis_callables_capture_with_none():
     import jax
 
@@ -143,6 +141,7 @@ def test_change_op_basis_callables_capture_with_none():
 
 @pytest.mark.capture
 @pytest.mark.jax
+@pytest.mark.external
 def test_change_op_basis_callables_capture():
     import jax
 
@@ -199,6 +198,7 @@ def test_change_op_basis_with_mixed_types():
 
 @pytest.mark.jax
 @pytest.mark.capture
+@pytest.mark.external
 def test_change_op_basis_capture():
     """Tests that a change_op_basis can be captured."""
 
