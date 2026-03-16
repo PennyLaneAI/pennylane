@@ -607,6 +607,12 @@ def has_reconstructor(op_class, op_params):
     if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
         return True
 
+    if op_class is qml.ops.Controlled and (
+        op_params["num_work_wires"] > 0 or op_params["num_zero_control_values"] > 0
+    ):
+        # TODO: add support for explicit work wires and non-default control values
+        return False
+
     if op_class in (qml.ops.Adjoint, qml.ops.Controlled, qml.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         return has_reconstructor(base_class, base_params)
@@ -634,8 +640,6 @@ def reconstruct(data, wires: Wires, op_type: type[Operator], op_params: dict) ->
     if op_type is qml.ops.Controlled:
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         num_control_wires = op_params["num_control_wires"]
-        # TODO: The work_wires is lost in this process. We need to figure out how
-        # to carry around the work_wires as a traced wire argument.
         return qml.ctrl(
             reconstruct(data, wires[num_control_wires:], base_class, base_params),
             control=wires[:num_control_wires],
