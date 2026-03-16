@@ -22,14 +22,16 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.estimator_beta
 
-Resource Operators
-------------------
+Alternate Decompositions
+------------------------
 
 .. autosummary::
     :toctree: api
 
-    ~CH
-    ~Hadamard
+    ~hadamard_controlled_resource_decomp
+    ~hadamard_toffoli_based_controlled_decomp
+    ~ch_resource_decomp
+    ~ch_toffoli_based_resource_decomp
 
 """
 
@@ -38,11 +40,11 @@ from .ops import (
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
     ch_resource_decomp,
-    toffoli_based_resource_decomp,
+    ch_toffoli_based_resource_decomp,
 )
 
 # Monkey Patching the resource decomposition methods onto the relevant classes.
 Hadamard.controlled_resource_decomp = classmethod(hadamard_controlled_resource_decomp)
 Hadamard.toffoli_based_controlled_decomp = classmethod(hadamard_toffoli_based_controlled_decomp)
 CH.resource_decomp = classmethod(ch_resource_decomp)
-CH.toffoli_based_resource_decomp = classmethod(toffoli_based_resource_decomp)
+CH.toffoli_based_resource_decomp = classmethod(ch_toffoli_based_resource_decomp)

@@ -71,7 +71,7 @@ def ch_resource_decomp(cls) -> list[GateCount]:
     ]
 
 
-def toffoli_based_resource_decomp(cls) -> list[GateCount]:
+def ch_toffoli_based_resource_decomp(cls) -> list[GateCount]:
     r"""Returns a list representing the resources of the operator.
 
     .. note::
