@@ -24,7 +24,7 @@ resource estimation.
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.dla
+.. currentmodule:: pennylane.labs.estimator_beta
 
 .. autosummary::
     :toctree: api
