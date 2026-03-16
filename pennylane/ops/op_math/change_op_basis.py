@@ -42,7 +42,10 @@ from .composite import CompositeOp, handle_recursion_error
 
 def _apply_op_or_func(op_or_func):
     if isinstance(op_or_func, Callable):
-        op_or_func()
+        try:
+            op_or_func()
+        except TypeError as e:
+            raise TypeError("change_op_basis requires that Callable inputs have no inputs") from e
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())
     else:
