@@ -16,7 +16,6 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint: disable=arguments-differ
 import functools
 import math as builtin_math
 from itertools import combinations
@@ -32,6 +31,8 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+
+# pylint: disable=arguments-differ
 from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_rotation,
@@ -245,20 +246,20 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_typ
 
 
 @register_resources(_controlled_rx_resource)
-def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
-    if len(control_wires) == 1:
-        qml.CRX(*params, wires=wires)
+def _controlled_rx_decomp(theta, wires, work_wires, work_wire_type, **_):
+    if len(wires) == 2:
+        qml.CRX(theta, wires=wires)
         return
 
     qml.H(wires=wires[-1])
-    qml.RZ(params[0] / 2, wires=wires[-1])
+    qml.RZ(theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qml.RZ(-params[0] / 2, wires=wires[-1])
+    qml.RZ(-theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qml.H(wires=wires[-1])
 
 
-add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
+add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp, has_reconstructor=True))
 
 
 class RY(Operation):
@@ -463,18 +464,18 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_typ
 
 
 @register_resources(_controlled_ry_resource)
-def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
-    if len(control_wires) == 1:
-        qml.CRY(*params, wires=wires)
+def _controlled_ry_decomp(theta, wires, work_wires, work_wire_type, **_):
+    if len(wires) == 2:
+        qml.CRY(theta, wires=wires)
         return
 
-    qml.RY(params[0] / 2, wires=wires[-1])
+    qml.RY(theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qml.RY(-params[0] / 2, wires=wires[-1])
+    qml.RY(-theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
+add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp, has_reconstructor=True))
 
 
 class RZ(Operation):
@@ -730,18 +731,18 @@ def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_typ
 
 
 @register_resources(_controlled_rz_resource)
-def _controlled_rz_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
-    if len(control_wires) == 1:
-        qml.CRZ(*params, wires=wires)
+def _controlled_rz_decomp(theta, wires, work_wires, work_wire_type, **_):
+    if len(wires) == 2:
+        qml.CRZ(theta, wires=wires)
         return
 
-    qml.RZ(params[0] / 2, wires=wires[-1])
+    qml.RZ(theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qml.RZ(-params[0] / 2, wires=wires[-1])
+    qml.RZ(-theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
+add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp, has_reconstructor=True))
 
 
 class PhaseShift(Operation):
@@ -956,7 +957,7 @@ def _cphase_to_ppr(theta, wires, **_):
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", qjit_compatible_adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
-add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
+add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr, has_reconstructor=True))
 
 
 class Rot(Operation):
@@ -1191,11 +1192,9 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
 
 
 @register_resources(_controlled_rot_resource)
-def _controlled_rot_decomp(
-    phi, theta, omega, wires, control_wires, work_wires, work_wire_type, **_
-):
+def _controlled_rot_decomp(phi, theta, omega, wires, work_wires, work_wire_type, **_):
 
-    if len(control_wires) == 1:
+    if len(wires) == 2:
         qml.CRot(phi, theta, omega, wires=wires)
         return
 
@@ -1208,7 +1207,7 @@ def _controlled_rot_decomp(
     qml.RZ(omega, wires=wires[-1])
 
 
-add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
+add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp, has_reconstructor=True))
 
 
 class U1(Operation):

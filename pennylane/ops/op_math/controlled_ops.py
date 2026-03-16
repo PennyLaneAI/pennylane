@@ -16,8 +16,6 @@
 This submodule contains controlled operators based on the ControlledOp class.
 """
 
-# pylint: disable=arguments-differ,arguments-renamed
-
 from collections.abc import Iterable
 from functools import lru_cache, partial
 from typing import Literal
@@ -34,6 +32,9 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+
+# pylint: disable=arguments-differ,arguments-renamed
+from pennylane.decomposition.resources import register_reconstructor
 from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
@@ -252,6 +253,17 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
+@register_reconstructor(ControlledQubitUnitary)
+def _reconstruct_controlled_qu(unitary, wires, control_values, work_wires, work_wire_type, **_):
+    return ControlledQubitUnitary(
+        unitary,
+        wires,
+        control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
 def _to_general_c_qu_resource(num_target_wires, **kwargs):
     return {
         resource_rep(
@@ -266,14 +278,13 @@ def _to_general_c_qu_resource(num_target_wires, **kwargs):
 # pylint: disable=too-many-arguments
 @qml.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
 @qml.register_resources(_to_general_c_qu_resource)
-def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, num_control_wires, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
-    num_target_wires = len(wires) - len(control_wires)
     qml.ops.Controlled(
-        qml.QubitUnitary(U, wires=wires[-num_target_wires:]),
-        control_wires=control_wires,
+        qml.QubitUnitary(U, wires=wires[num_control_wires:]),
+        control_wires=wires[:num_control_wires],
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -282,9 +293,9 @@ def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_w
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control(ctrl_decomp_bisect_rule),
-    flip_zero_control(single_ctrl_decomp_zyz_rule),
-    flip_zero_control(multi_control_decomp_zyz_rule),
+    flip_zero_control(ctrl_decomp_bisect_rule, has_reconstructor=True),
+    flip_zero_control(single_ctrl_decomp_zyz_rule, has_reconstructor=True),
+    flip_zero_control(multi_control_decomp_zyz_rule, has_reconstructor=True),
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -1498,7 +1509,7 @@ def _toffoli_elbow_resources():
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
-def _toffoli_elbow(wires: WiresLike, **__):
+def _toffoli_elbow(wires: WiresLike, **_):
     with allocate(1, qml.allocation.AllocateState.ZERO, restored=True) as work_wires:
         qml.change_op_basis(
             qml.Elbow([wires[0], wires[1], work_wires[0]]), qml.CNOT([work_wires[0], wires[2]])
@@ -1784,6 +1795,11 @@ class MultiControlledX(ControlledOp):
         )
 
 
+@register_reconstructor(MultiControlledX)
+def _reconstruct_mcx(wires, control_values, work_wires, work_wire_type, **_):
+    return MultiControlledX(wires, control_values, work_wires, work_wire_type)
+
+
 def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
     if num_control_wires == 1:
         return {qml.CNOT: 1, qml.X: num_zero_control_values}
@@ -1792,19 +1808,21 @@ def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values,
 
 @register_condition(lambda num_control_wires, **_: num_control_wires < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
-def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
+def _mcx_to_cnot_or_toffoli(wires, control_values, **_):
     if len(wires) == 2 and not control_values[0]:
         qml.CNOT(wires=wires)
         qml.X(wires[1])
     elif len(wires) == 2:
         qml.CNOT(wires=wires)
     elif len(wires) == 3:
-        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
-        for w in zero_control_wires:
-            qml.PauliX(w)
+
+        @qml.for_loop(len(control_values))
+        def _flips(i):
+            qml.cond(qml.math.logical_not(control_values[i]), qml.X)(wires[i])
+
+        _flips()  # pylint: disable=no-value-for-parameter
         qml.Toffoli(wires=wires)
-        for w in zero_control_wires:
-            qml.PauliX(w)
+        _flips()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(

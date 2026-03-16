@@ -236,7 +236,7 @@ self_adjoint: DecompositionRule = decompose_to_base
 qjit_compatible_self_adjoint: DecompositionRule = qjit_compatible_decompose_to_base
 
 
-def make_controlled_decomp(base_decomposition: DecompositionRule):
+def make_controlled_decomp(base_decomposition: DecompositionRule, has_reconstructor=False):
     """Create a decomposition rule for the control of a decomposition rule."""
 
     def _condition_fn(base_params, **_):
@@ -262,6 +262,35 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
+    if not has_reconstructor:
+
+        # pylint: disable=protected-access,too-many-arguments
+        @register_condition(_condition_fn)
+        @register_resources(
+            _resource_fn,
+            work_wires=base_decomposition._work_wire_spec,
+            exact=base_decomposition.exact_resources,
+        )
+        def _impl(
+            *params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_
+        ):
+            zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+            for w in zero_control_wires:
+                qml.PauliX(w)
+            # We're extracting control wires and base wires from the wires argument instead
+            # of directly using control_wires and base.wires, `wires` is properly traced, but
+            # `control_wires` and `base.wires` are not.
+            qml.ctrl(
+                base_decomposition._impl,  # pylint: disable=protected-access
+                control=wires[: len(control_wires)],
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
+            for w in zero_control_wires:
+                qml.PauliX(w)
+
+        return _impl
+
     # pylint: disable=protected-access,too-many-arguments
     @register_condition(_condition_fn)
     @register_resources(
@@ -269,26 +298,36 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
     )
-    def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
-        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
-        for w in zero_control_wires:
-            qml.PauliX(w)
-        # We're extracting control wires and base wires from the wires argument instead
-        # of directly using control_wires and base.wires, `wires` is properly traced, but
-        # `control_wires` and `base.wires` are not.
+    def _new_impl(
+        *params,
+        wires,
+        control_values,
+        work_wires,
+        work_wire_type,
+        base_params,
+        num_control_wires,
+        **_,
+    ):
+
+        @qml.for_loop(num_control_wires)
+        def _flips(i):
+            qml.cond(qml.math.logical_not(control_values[i]), qml.X)(wires[i])
+
+        _flips()  # pylint: disable=no-value-for-parameter
         qml.ctrl(
             base_decomposition._impl,  # pylint: disable=protected-access
-            control=wires[: len(control_wires)],
+            control=wires[:num_control_wires],
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-        )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
-        for w in zero_control_wires:
-            qml.PauliX(w)
+        )(*params, wires=wires[num_control_wires:], **base_params)
+        _flips()  # pylint: disable=no-value-for-parameter
 
-    return _impl
+    return _new_impl
 
 
-def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
+def flip_zero_control(
+    inner_decomp: DecompositionRule, has_reconstructor=False
+) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
@@ -306,6 +345,31 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
         return gate_counts
 
+    if not has_reconstructor:
+
+        # pylint: disable=protected-access
+        @register_condition(_condition_fn)
+        @register_resources(
+            _resource_fn,
+            work_wires=inner_decomp._work_wire_spec,
+            exact=inner_decomp.exact_resources,
+        )
+        def _impl(*params, wires, control_wires, control_values, **kwargs):
+            zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+            for w in zero_control_wires:
+                qml.PauliX(w)
+            inner_decomp(
+                *params,
+                wires=wires,
+                control_wires=control_wires,
+                control_values=[1] * len(control_wires),  # all control values are 1 now
+                **kwargs,
+            )
+            for w in zero_control_wires:
+                qml.PauliX(w)
+
+        return _impl
+
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
@@ -313,21 +377,36 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         work_wires=inner_decomp._work_wire_spec,
         exact=inner_decomp.exact_resources,
     )
-    def _impl(*params, wires, control_wires, control_values, **kwargs):
-        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
-        for w in zero_control_wires:
-            qml.PauliX(w)
+    def _new_impl(  # pylint: disable=too-many-arguments
+        *params,
+        wires,
+        control_values,
+        num_control_wires,
+        base_class,
+        base_params,
+        work_wires,
+        work_wire_type,
+        **_,
+    ):
+
+        @qml.for_loop(num_control_wires)
+        def _flips(i):
+            qml.cond(qml.math.logical_not(control_values[i]), qml.X)(wires[i])
+
+        _flips()  # pylint: disable=no-value-for-parameter
         inner_decomp(
             *params,
             wires=wires,
-            control_wires=control_wires,
-            control_values=[1] * len(control_wires),  # all control values are 1 now
-            **kwargs,
+            control_values=[1] * num_control_wires,
+            num_control_wires=num_control_wires,
+            base_class=base_class,
+            base_params=base_params,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
-        for w in zero_control_wires:
-            qml.PauliX(w)
+        _flips()  # pylint: disable=no-value-for-parameter
 
-    return _impl
+    return _new_impl
 
 
 def _flip_control_adjoint_resource(
@@ -370,7 +449,35 @@ def flip_control_adjoint(
     )
 
 
-def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+# pylint: disable=too-many-arguments
+@register_resources(_flip_control_adjoint_resource)
+def qjit_compatible_flip_control_adjoint(
+    *params,
+    wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    num_control_wires,
+    **_,
+):
+    """Decompose the control of an adjoint by applying control to the base of the adjoint
+    and taking the adjoint of the controlled operator."""
+    base_class, base_params = base_params["base_class"], base_params["base_params"]
+    base_op = reconstruct(params, wires[num_control_wires:], base_class, base_params)
+    qml.adjoint(
+        qml.ctrl(
+            base_op,
+            control=wires[:num_control_wires],
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+    )
+
+
+def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **_):
     return {
         controlled_resource_rep(qml.X, {}, num_control_wires): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
@@ -380,7 +487,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 # pylint: disable=protected-access,unused-argument
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
+def _ctrl_single_work_wire(*params, wires, control_wires, base, **_):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base))
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
@@ -389,15 +496,28 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)
 
 
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
+def _qjit_compatible_ctrl_single_work_wire(
+    *params, wires, num_control_wires, base_class, base_params, **_
+):
+    base_op = reconstruct(params, wires[num_control_wires:], base_class, base_params)
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
+        qml.ctrl(qml.X(work_wires[0]), control=wires[:num_control_wires])
+        qml.ctrl(base_op, control=work_wires[0])
+        qml.ctrl(qml.X(work_wires[0]), control=wires[:num_control_wires])
+
+
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
+qjit_compatible_ctrl_single_work_wire = flip_zero_control(_qjit_compatible_ctrl_single_work_wire)
 
 
-def _to_controlled_qu_condition(base_class, **__):
+def _to_controlled_qu_condition(base_class, **_):
     return base_class.has_matrix and base_class.num_wires == 1
 
 
 def _to_controlled_qu_resource(
-    num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **__
+    num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
 ):
     return {
         resource_rep(

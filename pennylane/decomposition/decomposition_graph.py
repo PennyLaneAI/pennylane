@@ -53,6 +53,8 @@ from .symbolic_decomposition import (
     merge_powers,
     qjit_compatible_adjoint_rotation,
     qjit_compatible_cancel_adjoint,
+    qjit_compatible_ctrl_single_work_wire,
+    qjit_compatible_flip_control_adjoint,
     qjit_compatible_self_adjoint,
     repeat_pow_base,
     self_adjoint,
@@ -478,10 +480,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Adds a controlled decomposition node to the graph."""
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
+        base_has_reconstructor = has_reconstructor(base_class, base_params)
 
         # Special case: control of an adjoint
         if issubclass(base_class, qml.ops.Adjoint):
-            return [flip_control_adjoint]
+            return [
+                (
+                    qjit_compatible_flip_control_adjoint
+                    if base_has_reconstructor
+                    else flip_control_adjoint
+                )
+            ]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
@@ -492,14 +501,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
-        rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+        rules = [
+            make_controlled_decomp(decomp, has_reconstructor=base_has_reconstructor)
+            for decomp in self._get_decompositions(base)
+        ]
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
         rules.append(to_controlled_qubit_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
-        rules.append(ctrl_single_work_wire)
+        rules.append(
+            qjit_compatible_ctrl_single_work_wire
+            if base_has_reconstructor
+            else ctrl_single_work_wire
+        )
 
         return rules
 
