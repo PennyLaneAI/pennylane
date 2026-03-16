@@ -334,7 +334,7 @@ tested_modified_templates = [
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
 
-    def test_basis_embeeding_is_basis_state(self):
+    def test_basis_embedding_is_basis_state(self):
         """Test that basis embedding is just BasisState."""
 
         jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
