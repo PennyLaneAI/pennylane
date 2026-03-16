@@ -125,11 +125,11 @@ class Deallocate:
         num_wires (int | None): the number of wires to be deallocated
         allocated_register (Allocate | None): the allocated wire register the we wish to deallocate
         state (Literal["any", "zero"] | AllocateState): The quantum state of the wires to be deallocated, valid values include "zero" or "any".
-        restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
+        restored (bool): A guarantee that the allocated register will be restored (deallocated) to its
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a positive integer
+        ValueError: if `num_wires` is not a positive integer
         ValueError: if `restored` is not a boolean
 
     **Example**
@@ -236,7 +236,7 @@ class Deallocate:
 
     @property
     def restored(self):
-        """A gurantee that the allocated register will be restored (deallocated) to its
+        """A guarantee that the allocated register will be restored (deallocated) to its
         initial state. If True, this requirement will be enforced programmatically."""
         return self._restored
 
@@ -346,15 +346,15 @@ def _estimate_auxiliary_wires(
 
     Returns:
         (int): A positive integer (or zero) representing the maximum number of qubits allocated (``max_alloc``).
-        (int): A negative integer (or zero) representing the maximum number of qubits deallocateded (``max_dealloc``).
+        (int): A negative integer (or zero) representing the maximum number of qubits deallocated (``max_dealloc``).
         (int): An integer representing the total number of allocated qubits that weren't restored to the
         zero state by the end of the workflow (``total``). A positive value indicates that there were more
         allocated qubits than deallocated, a negative value indicates the opposite. A zero value indicates
         that all allocated qubits were deallocated.
 
     Raises:
-        ValueError: failed to deallocate and restore all ANY state allocations as required
-        ValueError: tried to deallocate an ANY state register before it was allocated
+        ValueError: if fails to deallocate and restore all ANY state allocations as required
+        ValueError: if tries to deallocate an ANY state register before it was allocated
     """
     if scalar == 0:
         return 0, 0, 0
@@ -463,9 +463,9 @@ def _process_circuit_lst(
         ``CompressedResourceOp`` or ``MarkQubits`` instances) and the wires it acts upon (``Wires``).
 
     Raises:
-        ValueError: If incompatible type of object is encountered in the tape. Circuit must contain only instances
+        ValueError: If incompatible type of object is encountered. Circuit must contain only instances
             of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits'.
-        ValueError: attempted to mark qubits that don't otherwise exist in the circuit wires
+        ValueError: if attempts to mark qubits that don't otherwise exist in the circuit wires
     """
     circuit_wires = Wires([])
     num_generated_wires = 0
@@ -528,7 +528,7 @@ def estimate_wires_from_circuit(
 
     Args:
         circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
-            represented by a list of circuit elements (operators, measurements, etc,).
+            represented by a list of circuit elements (operators, measurements, etc.).
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
