@@ -14,4 +14,4 @@
 
 r"""This module contains single qubit operations."""
 
-from .parametric_ops_multi_qubit import PauliRot
+from .parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp

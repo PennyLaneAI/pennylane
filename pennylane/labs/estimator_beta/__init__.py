@@ -22,7 +22,27 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.estimator_beta
 
+Alternate Decompositions
+------------------------
+
+.. currentmodule:: pennylane.labs.estimator_beta.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~pauliRot_controlled_resource_decomp
+    ~selectPauliRot_toffoli_based_controlled_decom
+
+
 """
+
+
 from pennylane.estimator import *
-from .ops import PauliRot
-from .templates import SelectPauliRot
+from .ops import pauliRot_controlled_resource_decomp
+from .templates import selectPauliRot_controlled_resource_decomp
+
+
+# Monkey Patching the resource decomposition methods onto the relevant classes.
+
+PauliRot.controlled_resource_decomp = classmethod(pauliRot_controlled_resource_decomp)
+SelectPauliRot.controlled_resource_decomp = classmethod(selectPauliRot_controlled_resource_decomp)

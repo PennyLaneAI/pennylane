@@ -13,4 +13,4 @@
 # limitations under the License.
 r"""This module contains resource operators for basic PennyLane Operators"""
 
-from .qubit import PauliRot
+from .qubit import pauliRot_controlled_resource_decomp

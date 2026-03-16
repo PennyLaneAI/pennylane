@@ -13,4 +13,4 @@
 # limitations under the License.
 r"""This module contains resource operators for basic PennyLane Operators"""
 
-from .subroutines import SelectPauliRot
+from .subroutines import selectPauliRot_controlled_resource_decomp
