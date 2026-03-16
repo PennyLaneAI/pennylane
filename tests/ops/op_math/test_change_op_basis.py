@@ -28,7 +28,6 @@ from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
