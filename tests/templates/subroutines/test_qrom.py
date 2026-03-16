@@ -333,7 +333,7 @@ class TestQROM:
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
 
-    def test_select_decomposition_unary(self, monkeypatch):
+    def test_select_decomposition_unary(self, monkeypatch):  # pylint: disable=protected-access
         """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
 
         bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
