@@ -149,6 +149,13 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
+  `capture` is disabled.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
+
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
@@ -678,6 +685,9 @@ The following classes have been ported over:
   program capture.
   [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
 
+* Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
 * The output of the `qml.while_loop` condition is now automatically converted
   to a bool.
   [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
@@ -782,6 +792,9 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
