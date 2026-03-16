@@ -15,43 +15,13 @@
 import pytest
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.labs.estimator_beta import CompressedResourceOp, GateCount, resource_rep
+from pennylane.labs.estimator_beta import GateCount, resource_rep
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
 
 
 class TestHadamard:
     """Tests for Hadamard resource operator"""
-
-    def test_wire_error(self):
-        """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
-            qre.Hadamard(wires=[0, 1])
-
-    def test_resources(self):
-        """Test that Hadamard resource operator does not implement a decomposition"""
-        op = qre.Hadamard()
-        with pytest.raises(ResourcesUndefinedError):
-            op.resource_decomp()
-
-    def test_resource_params(self):
-        """Test that the resource params are correct"""
-        op = qre.Hadamard()
-        assert op.resource_params == {}
-
-    def test_resource_rep(self):
-        """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(qre.Hadamard, 1, {})
-        assert qre.Hadamard.resource_rep() == expected
-
-    def test_adjoint_decomp(self):
-        """Test that the adjoint decomposition is correct."""
-        h = qre.Hadamard()
-        h_dag = h.adjoint_resource_decomp()
-
-        expected = [GateCount(qre.Hadamard.resource_rep(), 1)]
-        assert h_dag == expected
 
     ctrl_data = (
         (
@@ -106,12 +76,17 @@ class TestHadamard:
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
-        op = qre.Hadamard(0)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+        op = qre.Hadamard()
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.controlled_resource_decomp(
+                num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
+            )
+            == expected_res
+        )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     ctrl_data = (
@@ -201,16 +176,3 @@ class TestHadamard:
         op = qre.Hadamard(0)
         print(op.toffoli_based_controlled_decomp(num_ctrl_wires, num_ctrl_values))
         assert op.toffoli_based_controlled_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-
-    pow_data = (
-        (1, [GateCount(qre.Hadamard.resource_rep(), 1)]),
-        (2, [GateCount(qre.Identity.resource_rep(), 1)]),
-        (3, [GateCount(qre.Hadamard.resource_rep(), 1)]),
-        (4, [GateCount(qre.Identity.resource_rep(), 1)]),
-    )
-
-    @pytest.mark.parametrize("z, expected_res", pow_data)
-    def test_pow_decomp(self, z, expected_res):
-        """Test that the pow decomposition is correct."""
-        op = qre.Hadamard(0)
-        assert op.pow_resource_decomp(z) == expected_res

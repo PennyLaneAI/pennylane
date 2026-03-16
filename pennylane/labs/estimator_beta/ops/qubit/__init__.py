@@ -14,4 +14,7 @@
 
 r"""This module contains single qubit operations."""
 
-from .non_parametric_ops import Hadamard
+from .non_parametric_ops import (
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)

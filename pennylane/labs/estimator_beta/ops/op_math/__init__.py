@@ -14,4 +14,4 @@
 r"""This module contains classes which integrate arithmetic operators with
 resource estimation."""
 
-from .controlled_ops import CH
+from .controlled_ops import ch_resource_decomp, toffoli_based_resource_decomp
