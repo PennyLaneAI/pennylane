@@ -41,7 +41,7 @@ def test_standard_validity(include_pi):
 
 @pytest.mark.parametrize("include_pi", (True, False))
 def test_resources(include_pi):
-    """Test thee expected resources for the decomposition rule."""
+    """Test the expected resources for the decomposition rule."""
 
     rule = qml.list_decomps(qml.GateFabric)[0]
 
