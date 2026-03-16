@@ -26,7 +26,7 @@ def hadamard_controlled_resource_decomp(
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,
 ) -> list[GateCount]:
-    r"""Returns a list representing the resources for a controlled version of the operator.
+    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.estimator.ops.qubit.Hadamard` operator.
 
     Args:
         num_ctrl_wires (int): the number of qubits the
@@ -108,7 +108,7 @@ def hadamard_toffoli_based_controlled_decomp(
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,
 ) -> list[GateCount]:
-    r"""Returns a list representing the resources for a controlled version of the operator.
+    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.estimator.ops.qubit.Hadamard` operator.
 
     .. note::
 

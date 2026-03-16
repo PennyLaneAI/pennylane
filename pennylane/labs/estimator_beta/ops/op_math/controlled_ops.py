@@ -20,7 +20,7 @@ from pennylane.estimator import GateCount, resource_rep
 
 
 def ch_resource_decomp(cls) -> list[GateCount]:
-    r"""Returns a list of ``GateCount`` objects representing the resources of the operator.
+    r"""Returns a list of ``GateCount`` objects representing the resources of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
 
     Resources:
         The resources are derived from the following identities:
@@ -72,7 +72,7 @@ def ch_resource_decomp(cls) -> list[GateCount]:
 
 
 def ch_toffoli_based_resource_decomp(cls) -> list[GateCount]:
-    r"""Returns a list representing the resources of the operator.
+    r"""Returns a list representing the resources of controlled version of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
 
     .. note::
 
