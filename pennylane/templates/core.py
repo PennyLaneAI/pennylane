@@ -846,9 +846,13 @@ class CollectedSubroutine(Operation):
         return self._decomp
 
 
-@CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
-def _(*args, **kwargs):
-    raise NotImplementedError("CollectedSubroutine should never be hit during abstract evaluation.")
+if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-access
+
+    @CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        raise NotImplementedError(
+            "CollectedSubroutine should never be hit during abstract evaluation."
+        )
 
 
 __all__ = [
