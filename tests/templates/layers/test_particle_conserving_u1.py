@@ -35,7 +35,7 @@ def test_standard_validity(init_state):
 
 
 def test_resources():
-    """Test thee expected resources for the decomposition rule."""
+    """Test the expected resources for the decomposition rule."""
 
     rule = qml.list_decomps(qml.ParticleConservingU1)[0]
 
