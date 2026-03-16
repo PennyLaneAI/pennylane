@@ -25,6 +25,8 @@ resource estimation.
 Alternate Decompositions
 ------------------------
 
+.. currentmodule:: pennylane.labs.estimator_beta.ops
+
 .. autosummary::
     :toctree: api
 
