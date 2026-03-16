@@ -632,7 +632,14 @@ def reconstruct(data, wires: Wires, op_type: type[Operator], op_params: dict) ->
         return qml.adjoint(reconstruct)(data, wires, base_class, base_params)
 
     if op_type is qml.ops.Controlled:
-        raise NotImplementedError  # TODO: to be implemented in a follow-up PR
+        base_class, base_params = op_params["base_class"], op_params["base_params"]
+        num_control_wires = op_params["num_control_wires"]
+        # TODO: The work_wires is lost in this process. We need to figure out how
+        # to carry around the work_wires as a traced wire argument.
+        return qml.ctrl(
+            reconstruct(data, wires[num_control_wires:], base_class, base_params),
+            control=wires[:num_control_wires],
+        )
 
     if op_type is qml.ops.Pow:
         base_class, base_params = op_params["base_class"], op_params["base_params"]
