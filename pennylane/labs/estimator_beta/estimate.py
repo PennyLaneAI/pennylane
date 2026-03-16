@@ -253,9 +253,13 @@ def estimate(
            'Hadamard': 5
 
     """
-    return _estimate_resources_dispatch(
-        workflow, gate_set, zeroed_wires, any_state_wires, tight_wires_budget, config
-    )
+    if tight_wires_budget:
+        raise ValueError(
+            "The `tight_wires_budget = True` argument is not currently supported by this "
+            "experimental implementation of `estimate`"
+        )
+
+    return _estimate_resources_dispatch(workflow, gate_set, zeroed_wires, any_state_wires, config)
 
 
 @singledispatch
@@ -264,7 +268,6 @@ def _estimate_resources_dispatch(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
     """Internal singledispatch function for resource estimation."""
@@ -279,7 +282,6 @@ def _resources_from_resource(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget: bool = None,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a Resources object (i.e. a Resources object that
@@ -317,7 +319,6 @@ def _resources_from_resource_operator(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget: bool = None,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
@@ -327,7 +328,6 @@ def _resources_from_resource_operator(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_budget=tight_budget,
         config=config,
     )
 
@@ -338,7 +338,6 @@ def _resources_from_pl_ops(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget: bool = None,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
@@ -349,7 +348,6 @@ def _resources_from_pl_ops(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_budget=tight_budget,
         config=config,
     )
 
@@ -360,7 +358,6 @@ def _resources_from_qfunc(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
     """Estimate resources for a quantum function which queues operators"""
@@ -381,10 +378,16 @@ def _resources_from_qfunc(
                 cmp_rep_op, gate_counts, gate_set=gate_set, config=config
             )
 
-        algo_qubits, any_state, zeroed = estimate_wires_from_circuit(q.queue, gate_set, config)
+        algo_qubits, final_any_state, final_zeroed = estimate_wires_from_circuit(
+            circuit_as_lst=q.queue,
+            gate_set=gate_set,
+            config=config,
+            zeroed=zeroed,
+            any_state=any_state,
+        )
         return Resources(
-            zeroed_wires=zeroed,
-            any_state_wires=any_state,
+            zeroed_wires=final_zeroed,
+            any_state_wires=final_any_state,
             algo_wires=algo_qubits,
             gate_types=gate_counts,
         )
