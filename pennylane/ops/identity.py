@@ -507,28 +507,32 @@ def _controlled_g_phase_resource(
 
 
 @register_resources(_controlled_g_phase_resource)
-def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, work_wires, **__):
+def _controlled_g_phase_decomp(  # pylint: disable=too-many-arguments
+    phase, wires, control_values, work_wires, work_wire_type, num_control_wires, **_
+):
     """The decomposition rule for a controlled global phase."""
 
-    if len(control_wires) == 1 and control_values[0]:
-        qml.PhaseShift(-params[0], wires=control_wires[-1])
+    if num_control_wires == 1 and control_values[0]:
+        qml.PhaseShift(-phase, wires=wires[num_control_wires - 1])
         return
 
-    if len(control_wires) == 1 and not control_values[0]:
-        qml.PhaseShift(params[0], wires=control_wires[-1])
-        qml.GlobalPhase(params[0])
+    if num_control_wires == 1 and not control_values[0]:
+        qml.PhaseShift(phase, wires=wires[num_control_wires - 1])
+        qml.GlobalPhase(phase)
         return
 
-    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
-    for w in zero_control_wires:
-        qml.PauliX(w)
+    @qml.for_loop(num_control_wires)
+    def _flips(i):
+        qml.cond(qml.math.logical_not(control_values[i]), qml.X)(wires[i])
+
+    _flips()  # pylint: disable=no-value-for-parameter
     qml.ctrl(
-        qml.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
-        control=wires[: len(control_wires) - 1],
+        qml.PhaseShift(-phase, wires=wires[num_control_wires - 1]),
+        control=wires[: num_control_wires - 1],
         work_wires=work_wires,
+        work_wire_type=work_wire_type,
     )
-    for w in zero_control_wires:
-        qml.PauliX(w)
+    _flips()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
