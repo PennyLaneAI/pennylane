@@ -66,14 +66,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, has_reconstructor
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
     )
-    def _impl_using_reconstructor(*params, wires, base_class, base_params, **_):
+    def _impl_using_reconstructor(*params, wires, base_params, **_):
         # pylint: disable=protected-access
-        qml.adjoint(base_decomposition._impl)(
-            *params,
-            wires=wires,
-            base_class=base_class,
-            base_params=base_params,
-        )
+        qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
 
     return _impl_using_reconstructor
 
