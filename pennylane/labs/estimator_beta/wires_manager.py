@@ -518,8 +518,8 @@ def _process_circuit_lst(
 
 def estimate_wires_from_circuit(
     circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
-    gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -529,10 +529,10 @@ def estimate_wires_from_circuit(
     Args:
         circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
             represented by a list of circuit elements (operators, measurements, etc,).
-        gate_set (set[str]): A set of names (strings) of the fundamental operators to count
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig): configurations for the resource estimation pipeline
+        config (ResourceConfig | None): configurations for the resource estimation pipeline
         zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
         any_state (int): The number of additional auxiliary wires, prepared in
@@ -545,6 +545,12 @@ def estimate_wires_from_circuit(
     Raises:
         ValueError: if more qubits were deallocated than initially allocated
     """
+    if config is None:
+        config = ResourceConfig()
+
+    if gate_set is None:
+        gate_set = DefaultGateSet
+
     processed_circ, circuit_wires = _process_circuit_lst(circuit_as_lst)
     total_algo_qubits = len(circuit_wires)
 
@@ -597,8 +603,8 @@ def estimate_wires_from_circuit(
 
 def estimate_wires_from_resources(
     workflow: Resources,
-    gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -607,10 +613,10 @@ def estimate_wires_from_resources(
 
     Args:
         workflow (~.pennylane.estimator.Resources): the collection of gates and counts to be further decomposed
-        gate_set (set[str]): A set of names (strings) of the fundamental operators to count
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig): configurations for the resource estimation pipeline
+        config (ResourceConfig | None): configurations for the resource estimation pipeline
         zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
         any_state (int): The number of additional auxiliary wires, prepared in
@@ -623,6 +629,12 @@ def estimate_wires_from_resources(
     Raises:
         ValueError: if more qubits were deallocated than initially allocated
     """
+    if config is None:
+        config = ResourceConfig()
+
+    if gate_set is None:
+        gate_set = DefaultGateSet
+
     algo = workflow.algo_wires
     zeroed += workflow.zeroed_wires
     any_state += workflow.any_state_wires
