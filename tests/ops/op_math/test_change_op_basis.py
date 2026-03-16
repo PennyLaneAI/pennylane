@@ -62,7 +62,7 @@ def test_change_op_basis_callables():
     def g(wires):
         qml.PauliX(wires[0])
 
-    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
     def h(a, reg1):
         qml.adjoint(qml.RX)(a, reg1[0])
         qml.adjoint(qml.QFT)(reg1)
@@ -144,7 +144,7 @@ def test_change_op_basis_callables_capture():
     def g(wires):
         qml.PauliX(wires[0])
 
-    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1"))
+    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
     def h(a, reg1):
         qml.adjoint(qml.RX)(a, reg1[0])
         qml.adjoint(qml.QFT)(reg1)

@@ -47,7 +47,7 @@ def _apply_op_or_func(op_or_func):
         except TypeError as e:
             raise TypeError("change_op_basis requires that Callable inputs have no inputs") from e
     elif isinstance(op_or_func, Operator):
-        type(op_or_func)._unflatten(*op_or_func._flatten())
+        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
     elif math.is_abstract(op_or_func):
         pass
     else:
@@ -62,8 +62,7 @@ def _convert_to_prod(op_or_func):
             op_or_func()
         if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
             return Prod(*q.queue[0].decomposition())
-        else:
-            return Prod(*q.queue)
+        return Prod(*q.queue)
     elif isinstance(op_or_func, Operator):
         return op_or_func
     else:
@@ -72,6 +71,7 @@ def _convert_to_prod(op_or_func):
         )
 
 
+# pylint: disable=inconsistent-return-statements
 def change_op_basis(
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
