@@ -544,7 +544,6 @@ class TestCollectedSubroutine:
         with qml.queuing.AnnotatedQueue() as q:
             qml.adjoint(f)(0)
 
-        print(q.queue)
         [adj_op] = q.queue
         assert isinstance(adj_op, qml.ops.Adjoint)
         base = adj_op.base
