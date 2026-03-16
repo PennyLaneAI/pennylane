@@ -34,9 +34,9 @@ from pennylane.operation import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import Prod, adjoint, ctrl
-
 from pennylane.queuing import AnnotatedQueue
 from pennylane.templates.core import SubroutineOp
+
 from .composite import CompositeOp, handle_recursion_error
 
 

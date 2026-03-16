@@ -96,18 +96,15 @@ def test_change_op_basis_with_none():
     def g(wires):
         qml.PauliX(wires[0])
 
-    cob = qml.change_op_basis(
-        partial(f, 0.1, Wires([0]), Wires([1])),
-        partial(g, Wires([0]))
-    )
+    cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
 
     assert cob.operands[2] == qml.prod(
         qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
     )
     assert isinstance(cob.operands[1].operands[0], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(qml.prod(
-        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
-    ))
+    assert cob.operands[0] == qml.adjoint(
+        qml.prod(qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0))
+    )
 
 
 @pytest.mark.capture
@@ -124,10 +121,7 @@ def test_change_op_basis_callables_capture_with_none():
         qml.PauliX(wires[0])
 
     def circuit():
-        qml.change_op_basis(
-            partial(f, 0.1, Wires([0]), Wires([1])),
-            partial(g, Wires([0]))
-        )
+        qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
@@ -178,18 +172,15 @@ def test_change_op_basis_with_mixed_types():
         qml.QFT(reg1)
         qml.RX(a, reg1[0])
 
-    cob = qml.change_op_basis(
-        partial(f, 0.1, Wires([0]), Wires([1])),
-        qml.PauliX(0)
-    )
+    cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), qml.PauliX(0))
 
     assert cob.operands[2] == qml.prod(
         qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
     )
     assert isinstance(cob.operands[1], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(qml.prod(
-        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
-    ))
+    assert cob.operands[0] == qml.adjoint(
+        qml.prod(qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0))
+    )
 
 
 @pytest.mark.capture
