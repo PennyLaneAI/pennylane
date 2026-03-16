@@ -14,8 +14,8 @@
 """
 Pure function implementations for the expectation value functions.
 """
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -31,11 +31,13 @@ class CircuitConfig:
     Args:
         gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
         observables (ArrayLike): List of Pauli observables mapped to integers (I=0, X=1, Y=2, Z=3).
-        n_samples (int): Number of stochastic samples.
+        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
         key (ArrayLike): Random key for JAX.
         n_qubits (int): Number of qubits.
         init_state (tuple[ArrayLike, ArrayLike] | None): Initial state configuration (X, P).
-        phase_layer (Callable | None): Optional phase layer function.
+        init_state_elems? (X) - Elements of the initial state (X) - some ideas
+        init_state_amps? (P) - Amplitudes of the initial state - some ideas
+        phase_fn (Callable | None): Optional phase layer function.
     """
 
     gates: dict[int, list[list[int]]]
@@ -44,7 +46,7 @@ class CircuitConfig:
     key: ArrayLike
     n_qubits: int
     init_state: tuple[ArrayLike, ArrayLike] | None = None
-    phase_layer: Callable | None = None
+    phase_fn: Callable | None = None
 
 
 def bitflip_expval(
@@ -132,9 +134,10 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     return bitflips, mask_XY, y_phase
 
 
+# pylint: disable=too-many-arguments
 def _core_expval_execution(
-    params: ArrayLike,
-    phase_params: ArrayLike | None,
+    gates_params: ArrayLike,
+    phase_fn_params: ArrayLike | None,
     samples: jnp.ndarray,
     obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
     init_state: tuple[ArrayLike, ArrayLike] | None,
@@ -155,11 +158,11 @@ def _core_expval_execution(
 
     B = 1 - 2 * ((s_f @ g_f.T) % 2)
     C = 2 * ((b_f @ g_f.T) % 2)
-    expanded_params = jnp.asarray(params)[param_map]
+    expanded_params = jnp.asarray(gates_params)[param_map]
     E = (C * expanded_params) @ B.T
 
     if vmapped_phase_func is not None:
-        E += vmapped_phase_func(phase_params, samples, bitflips)
+        E += vmapped_phase_func(phase_fn_params, samples, bitflips)
 
     if init_state is None:
         expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
@@ -188,10 +191,10 @@ def build_expval_func(
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
-    if config.phase_layer is not None:
+    if config.phase_fn is not None:
 
         def compute_phase(p_params, sample, b_flips):
-            return config.phase_layer(p_params, sample) - config.phase_layer(
+            return config.phase_fn(p_params, sample) - config.phase_fn(
                 p_params, (sample + b_flips) % 2
             )
 
@@ -202,13 +205,16 @@ def build_expval_func(
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
     default_obs_data = _prep_observables(config.observables)
 
+    # pylint: disable=too-many-arguments
     def expval_execution(
-        params: ArrayLike,
-        phase_params: ArrayLike | None = None,
+        gates_params: ArrayLike,
+        phase_fn_params: ArrayLike | None = None,
         observables: ArrayLike | None = None,
         key: ArrayLike | None = None,
         n_samples: int | None = None,
-        init_state: tuple[ArrayLike, ArrayLike] | None = None,
+        init_state: (
+            tuple[ArrayLike, ArrayLike] | None
+        ) = None,  # init_state_amplitudes (P) ? Can I differentiate wrt just one of the elements of the tuple?
     ):
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
@@ -221,8 +227,8 @@ def build_expval_func(
         state = config.init_state if init_state is None else init_state
 
         return _core_expval_execution(
-            params,
-            phase_params,
+            gates_params,
+            phase_fn_params,
             samples,
             obs_data,
             state,

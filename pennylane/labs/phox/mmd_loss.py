@@ -27,13 +27,17 @@ from .expval_functions import CircuitConfig, build_expval_func
 
 @dataclass(frozen=True)
 class MMDConfig:
-    """Hyperparameters for MMD loss calculation."""
+    """Hyperparameters for MMD loss calculation.
 
-    sigma: float | Sequence[float]
+    Args:
+        bandwidth (float | Sequence[float]): RBF kernel bandwidth(s) for the MMD calculation.
+    """
+
+    bandwidth: float | Sequence[float]
     n_ops: int
     wires: Sequence[int] | None = None
     sqrt_loss: bool = False
-    return_per_sigma: bool = False
+    return_per_bandwidth: bool = False
 
 
 def median_heuristic(samples: ArrayLike) -> float:
@@ -72,22 +76,22 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
 # pylint: disable=too-many-arguments
 @partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
 def _compute_single_mmd(
-    tr_iqp: jnp.ndarray,
-    tr_iqp_std_err: jnp.ndarray,
-    ground_truth: jnp.ndarray,
+    model_expvals: jnp.ndarray,
+    model_expvals_std_err: jnp.ndarray,
+    target_data: jnp.ndarray,
     visible_ops: jnp.ndarray,
     n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
     """Core, heavily JIT-compiled math for MMD calculation."""
-    tr_iqp_std_err = jax.lax.stop_gradient(tr_iqp_std_err)
-    correction = (tr_iqp**2 + (n_samples - 1) * tr_iqp_std_err**2) / n_samples
+    model_expvals_std_err = jax.lax.stop_gradient(model_expvals_std_err)
+    correction = (model_expvals**2 + (n_samples - 1) * model_expvals_std_err**2) / n_samples
 
-    tr_train = jnp.mean(1 - 2 * ((ground_truth @ visible_ops.T) % 2), axis=0)
-    m = ground_truth.shape[0]
+    tr_train = jnp.mean(1 - 2 * ((target_data @ visible_ops.T) % 2), axis=0)
+    m = target_data.shape[0]
 
-    result = (tr_iqp * tr_iqp - correction) * n_samples / (n_samples - 1)
-    result = result - 2 * tr_iqp * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
+    result = (model_expvals * model_expvals - correction) * n_samples / (n_samples - 1)
+    result = result - 2 * model_expvals * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
 
     reduced = jnp.mean(result)
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
@@ -105,12 +109,12 @@ def _compute_single_mmd(
         "expval_func",
     ],
 )
-def _compute_loss_for_sigma(
-    sigma_val: float,
+def _compute_loss_for_bandwidth(
+    bandwidth: float,
     subkey: jnp.ndarray,
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
-    ground_truth: jnp.ndarray,
+    target_data: jnp.ndarray,
     effective_init_state: tuple | None,
     n_ops: int,
     n_qubits: int,
@@ -122,7 +126,7 @@ def _compute_loss_for_sigma(
     """JIT-compiled step that fuses observable generation and expectation value math."""
     wire_list = list(wire_tuple)
 
-    p_mmd = (1 - jnp.exp(-1 / (2 * sigma_val**2))) / 2
+    p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
     visible_ops = jnp.array(
         jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
         dtype=jnp.float64,
@@ -133,8 +137,8 @@ def _compute_loss_for_sigma(
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    tr_iqp, tr_iqp_std_err = expval_func(
-        params=params,
+    model_expvals, model_expvals_std_err = expval_func(
+        gates_params=params,
         observables=pauli_obs,
         key=eval_key,
         n_samples=effective_samples,
@@ -142,9 +146,9 @@ def _compute_loss_for_sigma(
     )
 
     return _compute_single_mmd(
-        tr_iqp,
-        tr_iqp_std_err,
-        ground_truth,
+        model_expvals,
+        model_expvals_std_err,
+        target_data,
         visible_ops,
         effective_samples,
         sqrt_loss,
@@ -155,7 +159,7 @@ def mmd_loss(
     params: ArrayLike,
     circuit_config: CircuitConfig,
     mmd_config: MMDConfig,
-    ground_truth: ArrayLike,
+    target_data: ArrayLike,
     key: ArrayLike | None = None,
 ) -> jnp.ndarray | list[jnp.ndarray]:
     """Estimate MMD loss using configuration dataclasses.
@@ -164,7 +168,7 @@ def mmd_loss(
         params (ArrayLike): Trainable circuit parameters.
         circuit_config (CircuitConfig): Circuit configuration used to build the expval function.
         mmd_config (MMDConfig): Hyperparameters for the MMD computation.
-        ground_truth (ArrayLike): Binary training samples with shape ``(m, n_qubits)``.
+        target_data (ArrayLike): Binary target samples with shape ``(m, n_qubits)``.
         key (ArrayLike | None): Optional runtime PRNG key override for the training loop.
 
     Returns:
@@ -182,23 +186,26 @@ def mmd_loss(
     n_qubits = circuit_config.n_qubits
 
     wire_tuple = tuple(range(n_qubits)) if mmd_config.wires is None else tuple(mmd_config.wires)
-    sigma_list = (
-        [mmd_config.sigma] if isinstance(mmd_config.sigma, (int, float)) else list(mmd_config.sigma)
+
+    bandwidth_list = (
+        [mmd_config.bandwidth]
+        if isinstance(mmd_config.bandwidth, (int, float))
+        else list(mmd_config.bandwidth)
     )
-    ground_truth = jnp.asarray(ground_truth)
+    target_data = jnp.asarray(target_data)
 
     expval_func = build_expval_func(circuit_config)
     losses = []
 
-    for sigma_val in sigma_list:
+    for bandwidth in bandwidth_list:
         active_key, subkey, eval_key = jax.random.split(active_key, 3)
 
-        loss_val = _compute_loss_for_sigma(
-            sigma_val=sigma_val,
+        loss_val = _compute_loss_for_bandwidth(
+            bandwidth=bandwidth,
             subkey=subkey,
             eval_key=eval_key,
             params=params,
-            ground_truth=ground_truth,
+            target_data=target_data,
             effective_init_state=circuit_config.init_state,
             n_ops=mmd_config.n_ops,
             n_qubits=n_qubits,
@@ -209,6 +216,6 @@ def mmd_loss(
         )
         losses.append(loss_val)
 
-    if mmd_config.return_per_sigma:
+    if mmd_config.return_per_bandwidth:
         return losses
     return jnp.mean(jnp.stack(losses))

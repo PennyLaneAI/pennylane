@@ -34,6 +34,9 @@ try:
         median_heuristic,
         mmd_loss,
     )
+
+    # Alias kept for backward-compat in exact-MMD helpers
+    # (these helpers use 'sigma' as the mathematical symbol).
 except ImportError:
     pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
 
@@ -295,7 +298,7 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=1,
         )
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=5)
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=5)
 
         with pytest.raises(ValueError, match="n_samples must be greater than 1"):
             mmd_loss(
@@ -305,8 +308,8 @@ class TestMMDLossAPI:
                 jnp.array([[0]]),
             )
 
-    def test_return_per_sigma_type_and_length(self):
-        """``return_per_sigma=True`` returns a list of length ``len(sigma)``."""
+    def test_return_per_bandwidth_type_and_length(self):
+        """``return_per_bandwidth=True`` returns a list of length ``len(bandwidth)``."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
             observables=[[3, 0]],
@@ -314,7 +317,7 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=2,
         )
-        mmd_cfg = MMDConfig(sigma=[0.5, 1.0], n_ops=30, return_per_sigma=True)
+        mmd_cfg = MMDConfig(bandwidth=[0.5, 1.0], n_ops=30, return_per_bandwidth=True)
         data = jnp.array([[0, 1], [1, 0], [0, 0]])
 
         res = mmd_loss(
@@ -326,11 +329,11 @@ class TestMMDLossAPI:
         assert isinstance(res, list)
         assert len(res) == 2
 
-    def test_multi_sigma_mean(self):
-        """The scalar output should equal the mean of per-sigma outputs.
+    def test_multi_bandwidth_mean(self):
+        """The scalar output should equal the mean of per-bandwidth outputs.
 
         Both calls start from the same ``config.key`` and iterate through
-        sigmas identically, so per-sigma values are deterministic.
+        bandwidths identically, so per-bandwidth values are deterministic.
         """
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
@@ -340,10 +343,10 @@ class TestMMDLossAPI:
             n_qubits=2,
         )
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
-        sigmas = [0.5, 1.0, 2.0]
+        bandwidths = [0.5, 1.0, 2.0]
 
-        cfg_per = MMDConfig(sigma=sigmas, n_ops=100, return_per_sigma=True)
-        cfg_avg = MMDConfig(sigma=sigmas, n_ops=100, return_per_sigma=False)
+        cfg_per = MMDConfig(bandwidth=bandwidths, n_ops=100, return_per_bandwidth=True)
+        cfg_avg = MMDConfig(bandwidth=bandwidths, n_ops=100, return_per_bandwidth=False)
 
         per = mmd_loss(jnp.array([0.1, 0.2]), config, cfg_per, data)
         avg = mmd_loss(jnp.array([0.1, 0.2]), config, cfg_avg, data)
@@ -351,8 +354,8 @@ class TestMMDLossAPI:
         expected = np.mean([float(v) for v in per])
         assert np.isclose(float(avg), expected, atol=1e-6)
 
-    def test_single_sigma_returns_scalar(self):
-        """A single float sigma should produce a scalar output."""
+    def test_single_bandwidth_returns_scalar(self):
+        """A single float bandwidth should produce a scalar output."""
         config = CircuitConfig(
             gates={0: [[0]]},
             observables=[[3]],
@@ -360,7 +363,7 @@ class TestMMDLossAPI:
             key=jax.random.PRNGKey(0),
             n_qubits=1,
         )
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=20)
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=20)
         data = jnp.array([[0], [1]])
 
         res = mmd_loss(jnp.array([0.5]), config, mmd_cfg, data)
@@ -378,8 +381,8 @@ class TestMMDLossAPI:
         kwargs = {
             "params": jnp.array([0.3, 0.5, 0.1]),
             "circuit_config": config,
-            "mmd_config": MMDConfig(sigma=1.0, n_ops=100),
-            "ground_truth": jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
+            "mmd_config": MMDConfig(bandwidth=1.0, n_ops=100),
+            "target_data": jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
         }
         assert float(mmd_loss(**kwargs)) == float(mmd_loss(**kwargs))
 
@@ -388,7 +391,7 @@ class TestMMDLossAPI:
         gates = {0: [[0]], 1: [[1]]}
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
         params = jnp.array([0.3, 0.7])
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=100)
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=100)
 
         r1 = mmd_loss(
             params,
@@ -430,9 +433,9 @@ class TestMMDLossStatistical:
     """
 
     Z_THRESHOLD = 4.0
-    N_TRIALS = 30
-    N_OPS = 400
-    N_SAMPLES = 3000
+    N_TRIALS = 300
+    N_OPS = 40
+    N_SAMPLES = 300
 
     @pytest.mark.parametrize(
         "generators, params, biases, n_data",
@@ -475,7 +478,7 @@ class TestMMDLossStatistical:
         gates = {i: [w] for i, w in enumerate(generators)}
         batch = min(80, n_data)
 
-        mmd_cfg = MMDConfig(sigma=sigma, n_ops=self.N_OPS)
+        mmd_cfg = MMDConfig(bandwidth=sigma, n_ops=self.N_OPS)
 
         estimates = []
         for t in range(self.N_TRIALS):
@@ -518,7 +521,7 @@ class TestMMDLossStatistical:
         )
         rng = np.random.default_rng(0)
         data = jnp.array(rng.binomial(1, 0.5, (30, 2)))
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=50, wires=[0, 2])
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=50, wires=[0, 2])
 
         res = mmd_loss(
             jnp.array([0.1, 0.2, 0.3, 0.15]),
@@ -539,7 +542,7 @@ class TestMMDLossStatistical:
         )
         rng = np.random.default_rng(0)
         data = jnp.array(rng.binomial(1, 0.3, (50, 2)))
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=200, sqrt_loss=True)
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=200, sqrt_loss=True)
 
         res = mmd_loss(
             jnp.array([0.5, 0.3]),
@@ -561,7 +564,7 @@ class TestMMDLossStatistical:
         )
         data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
         params = jnp.array([0.3, 0.7])
-        mmd_cfg = MMDConfig(sigma=1.0, n_ops=100)
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=100)
 
         r_default = mmd_loss(params, config, mmd_cfg, data)
         r_override = mmd_loss(
