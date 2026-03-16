@@ -70,7 +70,7 @@ def _convert_to_prod(op_or_func):
 def change_op_basis(
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
-    uncompute_op: Operator | Callable = None,
+    uncompute_op: Operator | Callable | None = None,
 ):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
