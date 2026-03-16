@@ -131,6 +131,30 @@ def test_change_op_basis_callables_capture_with_none():
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
 
 
+def test_change_op_basis_raises():
+    with pytest.raises(
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
+    ):
+        qml.change_op_basis("X", "Y")
+
+
+@pytest.mark.capture
+def test_change_op_basis_raises_capture():
+    with pytest.raises(
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
+    ):
+        qml.change_op_basis("X", "Y")
+
+    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
+    def f(a, reg1):
+        qml.adjoint(qml.RX)(a, reg1[0])
+
+    with pytest.raises(
+        TypeError, match="change_op_basis requires that Callable inputs to have no parameters"
+    ):
+        qml.change_op_basis(f, qml.X(0), qml.RX(0.1, 0))
+
+
 @pytest.mark.capture
 def test_change_op_basis_callables_capture():
     import jax

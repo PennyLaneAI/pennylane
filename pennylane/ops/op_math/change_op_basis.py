@@ -45,7 +45,9 @@ def _apply_op_or_func(op_or_func):
         try:
             op_or_func()
         except TypeError as e:
-            raise TypeError("change_op_basis requires that Callable inputs have no inputs") from e
+            raise TypeError(
+                "change_op_basis requires that Callable inputs to have no parameters"
+            ) from e
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
     elif math.is_abstract(op_or_func):
@@ -90,7 +92,7 @@ def change_op_basis(
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     Raises:
-        TypeError: if any arguments are not Callables or Operators.
+        TypeError: if any arguments are not Callables or Operators, or a Callable argument has params.
 
     **Example**
 
