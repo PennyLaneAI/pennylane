@@ -21,8 +21,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.select import _select_decomp_unary
 from pennylane.templates.subroutines.qrom import _qrom_decomposition
+from pennylane.templates.subroutines.select import _select_decomp_unary
 
 has_jax = True
 try:
