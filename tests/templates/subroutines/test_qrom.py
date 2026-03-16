@@ -333,7 +333,7 @@ class TestQROM:
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
 
-    def test_select_decomposition_unary(self, monkeypatch):  # pylint: disable=protected-access
+    def test_select_decomposition_unary(self):
         """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
 
         bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
@@ -343,18 +343,26 @@ class TestQROM:
         qml.decomposition.enable_graph()
 
         call_count = 0
-        original_impl = _select_decomp_unary._impl
 
-        def spy(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            return original_impl(*args, **kwargs)
+        class SpyRule:
+            """Wraps a DecompositionRule, tracking __call__ invocations."""
 
-        monkeypatch.setattr(_select_decomp_unary, "_impl", spy)
+            def __init__(self, original):
+                object.__setattr__(self, "_original", original)
+
+            def __call__(self, *args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                return self._original(*args, **kwargs)
+
+            def __getattr__(self, name):
+                return getattr(self._original, name)
+
+        spy = SpyRule(_select_decomp_unary)
 
         @qml.transforms.decompose(
             gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", *qml.ops.__all__},
-            fixed_decomps={qml.QROM: _qrom_decomposition, qml.Select: _select_decomp_unary},
+            fixed_decomps={qml.QROM: _qrom_decomposition, qml.Select: spy},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
