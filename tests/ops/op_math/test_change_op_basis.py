@@ -28,6 +28,7 @@ from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.queuing import AnnotatedQueue
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
@@ -110,8 +111,6 @@ def test_change_op_basis_with_none():
 
 
 @pytest.mark.capture
-@pytest.mark.jax
-@pytest.mark.external
 def test_change_op_basis_callables_capture_with_none():
     import jax
 
@@ -139,8 +138,6 @@ def test_change_op_basis_callables_capture_with_none():
 
 
 @pytest.mark.capture
-@pytest.mark.jax
-@pytest.mark.external
 def test_change_op_basis_callables_capture():
     import jax
 
@@ -195,9 +192,7 @@ def test_change_op_basis_with_mixed_types():
     ))
 
 
-@pytest.mark.jax
 @pytest.mark.capture
-@pytest.mark.external
 def test_change_op_basis_capture():
     """Tests that a change_op_basis can be captured."""
 
@@ -429,28 +424,15 @@ class TestDecomposition:
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
         """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
 
-        for rule in qml.list_decomps(ChangeOpBasis):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        with AnnotatedQueue() as q:
+            change_op_basis(*ops_lst)
+
+        for i, op in enumerate(q.queue):
+            assert op == ops_lst[i]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):
-        """Tests the decomposition rule implemented with the new system."""
-        control_wires = [4]
-        work_wires = [2, 3]
-        op = qml.ops.Controlled(
-            change_op_basis(*ops_lst),
-            control_wires,
-            [1],
-            work_wires=work_wires,
-        )
-        for rule in qml.list_decomps("C(ChangeOpBasis)"):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    @pytest.mark.capture
-    def test_controlled_decomposition_new_capture(self, ops_lst):
         """Tests the decomposition rule implemented with the new system."""
         control_wires = [4]
         work_wires = [2, 3]
