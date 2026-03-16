@@ -84,11 +84,6 @@ def diagonalize_final_measurements_setup_inputs(
             f"but received {(bad_input)}"
         )
 
-    if bad_obs_input:
-        raise ValueError(
-            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {(bad_obs_input)}"
-        )
     # The following logic convert Operator classes into hashable strings to
     # ensure the kwargs work with the corresponding xDSL pass. Hence, we have
     # to map the strings back to the Operators in the tape transform logic due
