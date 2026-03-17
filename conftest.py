@@ -54,7 +54,7 @@ def reset_pennylane_state(namespace):
     qml.decomposition.disable_graph()
     jax.config.update("jax_dynamic_shapes", False)
     # jax.config.update("jax_enable_x64", False)
-    base_numpy.set_printoptions(precision=8, linewidth=75)
+    base_numpy.set_printoptions(precision=8)
 
 
 pytest_collect_file = Sybil(
