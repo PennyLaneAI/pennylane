@@ -74,9 +74,9 @@ def test_change_op_basis_callables():
         partial(h, 0.2, Wires([0])),
     )
 
-    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
+    qml.assert_equal(cob.operands[2], f.operator(0.1, Wires([0]), Wires([1])))
     assert isinstance(cob.operands[1], qml.PauliX)
-    assert cob.operands[0] == h.operator(0.2, Wires([0]))
+    qml.assert_equal(cob.operands[0], h.operator(0.2, Wires([0])))
 
 
 def test_change_op_basis_with_none():
@@ -93,9 +93,9 @@ def test_change_op_basis_with_none():
 
     cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
 
-    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
+    qml.assert_equal(cob.operands[2], f.operator(0.1, Wires([0]), Wires([1])))
     assert isinstance(cob.operands[1], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(f)(0.1, Wires([0]), Wires([1]))
+    qml.assert_equal(cob.operands[0], qml.adjoint(f)(0.1, Wires([0]), Wires([1])))
 
 
 @pytest.mark.capture
@@ -205,9 +205,9 @@ def test_change_op_basis_with_mixed_types():
 
     cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), qml.PauliX(0))
 
-    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
+    qml.assert_equal(cob.operands[2], f.operator(0.1, Wires([0]), Wires([1])))
     assert isinstance(cob.operands[1], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(f)(0.1, Wires([0]), Wires([1]))
+    qml.assert_equal(cob.operands[0], qml.adjoint(f)(0.1, Wires([0]), Wires([1])))
 
 
 @pytest.mark.capture
