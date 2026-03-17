@@ -125,7 +125,7 @@ def change_op_basis(
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
 
-    A ``Subroutine`` or another ``Callable`` can also be provided as arguments to ``ChangeOpBasis``.
+    A ``Callable`` can also be provided an argument to ``ChangeOpBasis``.
 
     .. code-block:: python
 
