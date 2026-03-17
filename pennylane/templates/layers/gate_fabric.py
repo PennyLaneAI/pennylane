@@ -339,7 +339,7 @@ def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
 
 
 @register_resources(_gate_fabric_resources)
-def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+def _gate_fabric_decomposition(weights, wires, init_state, include_pi, **_):
     if isinstance(wires, Wires):
         wires = wires.labels
 

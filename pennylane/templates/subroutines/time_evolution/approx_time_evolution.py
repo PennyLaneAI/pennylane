@@ -251,7 +251,7 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
 
 @register_resources(_approx_time_evolution_resources)
 def _approx_time_evolution_decomposition(
-    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
+    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int, **_
 ):  # pylint: disable=unused-argument
     time = coeffs_and_time[-1]
 

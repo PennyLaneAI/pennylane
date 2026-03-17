@@ -348,7 +348,7 @@ def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
 
 
 @register_resources(_UCCSD_resources)
-def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
+def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats, **_):
     BasisState(init_state, wires=wires)
 
     if n_repeats == 1 and len(math.shape(weights)) == 1:

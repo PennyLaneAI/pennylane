@@ -159,7 +159,7 @@ def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:
 
 
 @register_resources(_angle_embedding_resources)
-def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: Operation):
+def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: Operation, **_):
     batched = math.ndim(features) > 1
     # We will iterate over the first axis of `features` together with iterating over the wires.
     # If the leading dimension is a batch dimension, exchange the wire and batching axes.
