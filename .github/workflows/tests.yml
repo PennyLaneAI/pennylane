@@ -57,6 +57,7 @@ jobs:
         with:
           version: 0.9.17
           enable-cache: true   
+          cache-suffix: ${{ github.job }}-${{ matrix.python-version }}          
           
       - name: Update lock files
         run: |
