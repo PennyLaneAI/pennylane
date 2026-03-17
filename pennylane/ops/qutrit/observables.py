@@ -141,11 +141,11 @@ class THermitian(Hermitian):
 
         >>> A = np.array([[-6, 2 + 1j, 0], [2 - 1j, 0, 0], [0, 0, 1]])
         >>> _, evecs = np.linalg.eigh(A)
+        >>> evecs = evecs + 0 # add 0 to normalize signed zeros before printing
         >>> from pprint import pprint
         >>> with np.printoptions(precision=4): # easier to read the matrix
-        ...     # add 0 to normalize signed zeros before printing
-        ...     pprint(qml.THermitian.compute_diagonalizing_gates(evecs+0, wires=[0]))
-        [QutritUnitary(array([[-0.9492+0.j    ,  0.2816+0.1408j, -0.    +0.j    ],
+        ...     pprint(qml.THermitian.compute_diagonalizing_gates(evecs, wires=[0]))
+        [QutritUnitary(array([[-0.9492-0.j    ,  0.2816+0.1408j,  0.    -0.j    ],
                [ 0.3148-0.j    ,  0.8489+0.4245j,  0.    -0.j    ],
                [ 0.    -0.j    ,  0.    -0.j    ,  1.    -0.j    ]]), wires=[0])]
         """
