@@ -37,6 +37,7 @@ Qubit Tracking Functionality
     ~MarkQubits
 
 """
+import pennylane.estimator as qre
 from pennylane.estimator import *
 
 from .estimate import estimate
