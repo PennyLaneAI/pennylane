@@ -98,6 +98,7 @@
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
@@ -421,6 +422,19 @@ The following classes have been ported over:
   Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
+* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+  for resource estimation.
+  [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+
+  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
+  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+    from a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
+    from a :class:`~.estimator.Resources` object.
 
 <h3>Breaking changes 💔</h3>
 
