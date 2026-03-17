@@ -28,13 +28,13 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out the PennyLane repository
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: main
 
       # Sets up Python environment
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
