@@ -80,6 +80,7 @@ def test_change_op_basis_callables():
 
 
 def test_change_op_basis_with_none():
+    """Tests that, with capture disabled, the uncompute_op can be omitted."""
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
     def f(a, reg1, reg2):
