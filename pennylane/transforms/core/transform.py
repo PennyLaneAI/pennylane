@@ -117,7 +117,8 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
     this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
 
-    decompose(gate_set=gate_set) + merge_rotations(1e-6)
+    >>> from pennylane.transforms import decompose, merge_rotations
+    >>> decompose(gate_set=gate_set) + merge_rotations(1e-6)
 
     where transforms are called with just configuration parameters and combined into a CompilePipeline.
     """
