@@ -129,6 +129,8 @@ def change_op_basis(
 
     .. code-block:: python
 
+        from pennylane.templates.core import Subroutine
+
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2):
             qml.BasisState(np.zeros(len(reg2)), reg2)
@@ -141,7 +143,7 @@ def change_op_basis(
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
-            qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
+            qml.change_op_basis(partial(f, 0.1, [0], [1]), partial(g, [0]))
             return qml.state()
 
         circuit3 = qml.decompose(circuit, max_expansion=1)
