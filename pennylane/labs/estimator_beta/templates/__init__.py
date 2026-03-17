@@ -13,4 +13,4 @@
 # limitations under the License.
 r"""This module contains resource operators for basic PennyLane Operators"""
 
-from .state_prep import MottonenStatePreparation, CosineWindow
+from .state_prep import MottonenStatePreparation, CosineWindow, SumOfSlatersPrep

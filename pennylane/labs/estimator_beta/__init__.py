@@ -24,4 +24,4 @@ resource estimation.
 
 """
 from pennylane.estimator import *
-from .templates import MottonenStatePreparation, CosineWindow
+from .templates import MottonenStatePreparation, CosineWindow, SumOfSlatersPrep

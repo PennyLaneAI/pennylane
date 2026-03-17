@@ -13,9 +13,19 @@
 # limitations under the License.
 r"""This module contains resource operators for state preparation templates."""
 
+import numpy as np
+
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import ResourceOperator, CompressedResourceOp, GateCount, resource_rep
+from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
+)
 from pennylane.wires import WiresLike
+
+# pylint: disable=arguments-differ, too-many-arguments
+
 
 class MottonenStatePreparation(ResourceOperator):
     r"""Resource class for Mottonen state preparation.
@@ -222,12 +232,14 @@ class SumOfSlatersPrep(ResourceOperator):
     Args:
         num_coeffs (int): number of coefficients of the sparse state to prepare.
         num_wires (int): number of wires on which the state is being prepared.
+        stateprep_op (ResourceOperator | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+            is provided, the resources will be computed assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources were obtained from Sec. III A of
-        `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__
-        and is tailored to sparse states.
+        `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
 
     .. seealso:: :class:`~.SumOfSlatersPrep`
 
@@ -236,16 +248,40 @@ class SumOfSlatersPrep(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> sos_state = qre.SumOfSlatersPrep(num_coeffs=100, num_wires=8)
+    >>> import numpy as np
+    >>> num_coeffs = 100
+    >>> condensed_state = qre.QROMStatePreparation(num_state_qubits = int(np.ceil(np.log2(num_coeffs))))
+    >>> sos_state = qre.SumOfSlatersPrep(num_coeffs=num_coeffs, num_wires=8, stateprep_op = condensed_state)
     >>> print(qre.estimate(sos_state))
-
+    --- Resources: ---
+     Total wires: 71
+       algorithmic wires: 8
+       allocated wires: 63
+         zero state: 63
+         any state: 0
+     Total gates : 2.558E+4
+       'Toffoli': 3.315E+3,
+       'CNOT': 1.016E+4,
+       'X': 2.377E+3,
+       'Z': 32,
+       'S': 64,
+       'Hadamard': 9.636E+3
     """
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_coeffs:int, num_wires: int, wires: WiresLike | None = None):
+    def __init__(
+        self,
+        num_coeffs: int,
+        num_wires: int,
+        stateprep_op: ResourceOperator | None = None,
+        select_swap_depth: int | None = None,
+        wires: WiresLike | None = None,
+    ):
         self.num_coeffs = num_coeffs
         self.num_wires = num_wires
+        self.stateprep_cmpr_op = stateprep_op.resource_rep_from_op() if stateprep_op else None
+        self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
 
     @property
@@ -256,32 +292,65 @@ class SumOfSlatersPrep(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_coeffs(int): number of coefficients of the sparse state to prepare
                 * num_wires (int): the number of wires that the state is being prepared on
+                * stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to
+                set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
+                assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
         """
-        return {"num_coeffs":self.num_coeffs, "num_wires": self.num_wires}
+        return {
+            "num_coeffs": self.num_coeffs,
+            "num_wires": self.num_wires,
+            "stateprep_cmpr_op": self.stateprep_cmpr_op,
+            "select_swap_depth": self.select_swap_depth,
+        }
 
     @classmethod
-    def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
+    def resource_rep(
+        cls,
+        num_coeffs: int,
+        num_wires: int,
+        stateprep_cmpr_op: CompressedResourceOp | None = None,
+        select_swap_depth: int | None = None,
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, num_wires, {"num_coeffs": num_coeffs, "num_wires": num_wires})
+        return CompressedResourceOp(
+            cls,
+            num_wires,
+            {
+                "num_coeffs": num_coeffs,
+                "num_wires": num_wires,
+                "stateprep_cmpr_op": stateprep_cmpr_op,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
 
     @classmethod
-    def resource_decomp(cls, num_coeffs: int, num_wires: int):
+    def resource_decomp(
+        cls,
+        num_coeffs: int,
+        num_wires: int,
+        stateprep_cmpr_op: CompressedResourceOp | None = None,
+        select_swap_depth: int | None = None,
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
             num_coeffs(int): number of coefficients of the sparse state to prepare
             num_wires (int): the number of wires the state is being prepared on
+            stateprep_cmpr_op (CompressedResourceOp | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+                is provided, the resources will be computed assuming the condensed state preparation is performed
+                using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
             The resources were obtained from Sec. III A of
-            `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__
-            and is tailored to sparse states.
+            `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
 
 
         Returns:
@@ -290,17 +359,51 @@ class SumOfSlatersPrep(ResourceOperator):
             in the decomposition.
         """
 
-        hadamard = resource_rep(qre.Hadamard)
-        rz = resource_rep(qre.RZ)
-        iqft = resource_rep(
-            qre.Adjoint,
-            {"base_cmpr_op": resource_rep(qre.QFT, {"num_wires": num_wires})},
-        )
-        phase_shift = resource_rep(qre.PhaseShift)
+        gate_list = []
 
-        return [
-            GateCount(hadamard, 1),
-            GateCount(rz, 1),
-            GateCount(iqft, 1),
-            GateCount(phase_shift, num_wires),
-        ]
+        # Step 1: Prepare the condensed state
+        condensed_state_qubits = int(np.ceil(np.log2(num_coeffs)))
+        if stateprep_cmpr_op is None:
+            stateprep_cmpr_op = resource_rep(
+                MottonenStatePreparation, {"num_wires": condensed_state_qubits}
+            )
+
+        gate_list.append(GateCount(stateprep_cmpr_op, 1))
+
+        # Step 2: Use QROM to load v_bits into system register
+
+        qrom = resource_rep(
+            qre.QROM,
+            {
+                "num_bitstrings": num_coeffs,
+                "size_bitstring": num_wires,
+                "restored": False,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+
+        gate_list.append(GateCount(qrom, 1))
+
+        # Steps 3-4 and 6: Use controlled rotations to prepare the state and uncompute
+        # Taking the upper-bound
+        cnot = resource_rep(qre.CNOT)
+        gate_list.append(GateCount(cnot, 2 * num_wires * (2 * condensed_state_qubits - 1)))
+
+        # Step 5: Use identification register to uncompute the enumeration register
+        # Taking the upper-bound
+
+        x = resource_rep(qre.X)
+        gate_list.append(GateCount(x, num_coeffs * (2 * condensed_state_qubits - 1)))
+
+        num_ctrl_wires = 2 * condensed_state_qubits - 1
+        mcx = resource_rep(
+            qre.MultiControlledX, {"num_ctrl_wires": num_ctrl_wires, "num_zero_ctrl": 0}
+        )
+        num_mcx = 2 * (num_coeffs - 1) - condensed_state_qubits
+        gate_list.append(GateCount(mcx, num_mcx))
+
+        cache_cnots = condensed_state_qubits * (
+            2 ** (condensed_state_qubits - 1) - condensed_state_qubits
+        )
+        gate_list.append(GateCount(cnot, cache_cnots))
+        return gate_list

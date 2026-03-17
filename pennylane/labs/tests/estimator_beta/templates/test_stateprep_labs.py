@@ -21,6 +21,7 @@ from pennylane.estimator import GateCount, resource_rep
 
 # pylint: disable=no-self-use,too-many-arguments
 
+
 class TestMottonenStatePreparation:
     """Test the MottonenStatePreparation class"""
 
@@ -114,3 +115,145 @@ class TestCosineWindow:
             {"num_wires": num_wires},
         )
         assert expected == qre.CosineWindow.resource_rep(num_wires)
+
+
+class TestSumOfSlatersPrep:
+    """Test the SumOfSlatersPrep class"""
+
+    @pytest.mark.parametrize(
+        "num_coeffs, num_wires, stateprep_op, select_swap_depth, expected_resources",
+        [
+            (
+                40,
+                16,
+                None,
+                1,
+                [
+                    GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
+                    GateCount(
+                        resource_rep(
+                            qre.QROM,
+                            {
+                                "num_bitstrings": 40,
+                                "size_bitstring": 16,
+                                "restored": False,
+                                "select_swap_depth": 1,
+                            },
+                        ),
+                        1,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 352),
+                    GateCount(resource_rep(qre.X), 440),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 11, "num_zero_ctrl": 0}
+                        ),
+                        72,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 156),
+                ],
+            ),
+            (
+                56,
+                20,
+                None,
+                1,
+                [
+                    GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
+                    GateCount(
+                        resource_rep(
+                            qre.QROM,
+                            {
+                                "num_bitstrings": 56,
+                                "size_bitstring": 20,
+                                "restored": False,
+                                "select_swap_depth": 1,
+                            },
+                        ),
+                        1,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 440),
+                    GateCount(resource_rep(qre.X), 616),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 11, "num_zero_ctrl": 0}
+                        ),
+                        104,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 156),
+                ],
+            ),
+            (
+                100,
+                10,
+                resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}),
+                2,
+                [
+                    GateCount(resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}), 1),
+                    GateCount(
+                        resource_rep(
+                            qre.QROM,
+                            {
+                                "num_bitstrings": 100,
+                                "size_bitstring": 10,
+                                "restored": False,
+                                "select_swap_depth": 2,
+                            },
+                        ),
+                        1,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 260),
+                    GateCount(resource_rep(qre.X), 1300),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 13, "num_zero_ctrl": 0}
+                        ),
+                        191,
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 399),
+                ],
+            ),
+        ],
+    )
+    def test_resources(
+        self, num_coeffs, num_wires, stateprep_op, select_swap_depth, expected_resources
+    ):
+        """Test that the resources are correct"""
+
+        print(
+            qre.SumOfSlatersPrep.resource_decomp(
+                num_coeffs, num_wires, stateprep_op, select_swap_depth
+            )
+        )
+        assert (
+            qre.SumOfSlatersPrep.resource_decomp(
+                num_coeffs, num_wires, stateprep_op, select_swap_depth
+            )
+            == expected_resources
+        )
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = qre.SumOfSlatersPrep(num_coeffs=100, num_wires=10)
+
+        assert op.resource_params == {
+            "num_wires": 10,
+            "num_coeffs": 100,
+            "stateprep_cmpr_op": None,
+            "select_swap_depth": None,
+        }
+
+    def test_resource_rep(self):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = qre.CompressedResourceOp(
+            qre.SumOfSlatersPrep,
+            10,
+            {
+                "num_wires": 10,
+                "num_coeffs": 100,
+                "stateprep_cmpr_op": None,
+                "select_swap_depth": None,
+            },
+        )
+        assert expected == qre.SumOfSlatersPrep.resource_rep(num_coeffs=100, num_wires=10)
