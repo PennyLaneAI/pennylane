@@ -773,6 +773,11 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the orignal
+  operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
+  symbolic decomposition rules that do not need to take an instance of the base operator as input.
+  [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
+
 <h3>Documentation 📝</h3>
 
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
