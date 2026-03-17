@@ -410,6 +410,9 @@ The following classes have been ported over:
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
+* Ensure subroutines and custom_gates are always initialized in the QASM interpreter. 
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
