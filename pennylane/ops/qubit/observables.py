@@ -249,8 +249,9 @@ class Hermitian(Operator):
 
         >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
         >>> _, evecs = np.linalg.eigh(A)
-        >>> with np.printoptions(precision=4):
-        ...     print(qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0]))
+        >>> with np.printoptions(precision=4): # easier to read the matrix
+        ...     # add 0 to normalize signed zeros before printing
+        ...     print(qml.Hermitian.compute_diagonalizing_gates(evecs+0, wires=[0]))
         [QubitUnitary(array([[-0.9492+0.j    ,  0.2816+0.1408j],
                [ 0.3148-0.j    ,  0.8489+0.4245j]]), wires=[0])]
 
