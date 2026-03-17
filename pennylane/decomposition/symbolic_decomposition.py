@@ -226,7 +226,7 @@ def pow_rotation(phi, wires, base, z, **__):
 
 @register_resources(_pow_rotation_resource)
 def qjit_compatible_pow_rotation(phi, wires, base_class, base_params, z, **__):
-    reconstruct(phi * z, wires, base_class, base_params)
+    reconstruct([phi * z], wires, base_class, base_params)
 
 
 def _decompose_to_base_resource(base_class, base_params, **__):
