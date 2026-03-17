@@ -100,6 +100,7 @@ def test_change_op_basis_with_none():
 
 @pytest.mark.capture
 def test_change_op_basis_callables_capture_with_none():
+    """Tests that we can pass callables to change_op_basis with capture enabled and uncompute_op omitted."""
     import jax
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -123,6 +124,8 @@ def test_change_op_basis_callables_capture_with_none():
 
 
 def test_change_op_basis_raises():
+    """Tests that we appropriately raise from change_op_basis."""
+
     with pytest.raises(
         TypeError, match="The parameters to change_op_basis must be Operator or Callable"
     ):
@@ -140,6 +143,8 @@ def test_change_op_basis_raises():
 
 @pytest.mark.capture
 def test_change_op_basis_raises_capture():
+    """Tests that we appropriately raise from change_op_basis with capture enabled."""
+
     with pytest.raises(
         TypeError, match="The parameters to change_op_basis must be Operator or Callable"
     ):
@@ -157,6 +162,7 @@ def test_change_op_basis_raises_capture():
 
 @pytest.mark.capture
 def test_change_op_basis_callables_capture():
+    """Tests that we can pass callables to change_op_basis with capture enabled."""
     import jax
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -189,6 +195,7 @@ def test_change_op_basis_callables_capture():
 
 
 def test_change_op_basis_with_mixed_types():
+    """Tests we can pass mixed types to change_op_basis."""
 
     @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
     def f(a, reg1, reg2):
