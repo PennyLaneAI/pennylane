@@ -129,9 +129,6 @@ def change_op_basis(
 
     .. code-block:: python
 
-        from pennylane.templates.core import Subroutine
-
-        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2):
             qml.BasisState(np.zeros(len(reg2)), reg2)
             qml.QFT(reg1)
@@ -149,8 +146,8 @@ def change_op_basis(
         circuit3 = qml.decompose(circuit, max_expansion=1)
 
     >>> print(qml.draw(circuit3)())
-    0: ─╭f──X─╭f†─┤  State
-    1: ─╰f────╰f†─┤  State
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
