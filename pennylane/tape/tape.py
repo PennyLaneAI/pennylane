@@ -14,16 +14,19 @@
 """
 This module contains the base quantum tape.
 """
+
 # pylint: disable=protected-access
 import copy
 from collections.abc import Sequence
 from threading import RLock
 
-import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
+from pennylane.ops import MidMeasure, Prod, Z
+from pennylane.pauli.utils import are_pauli_words_qwc, diagonalize_qwc_pauli_words
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.wires import Wires
 
 from .qscript import QuantumScript
 
@@ -43,7 +46,9 @@ def _validate_computational_basis_sampling(tape):
 
     measurements = tape.measurements
     n_meas = len(measurements)
-    n_mcms = sum(qml.transforms.is_mcm(op) for op in tape.operations)
+    n_mcms = sum(
+        isinstance(op, MidMeasure) or "MidCircuitMeasure" in str(type(op)) for op in tape.operations
+    )
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
     comp_basis_indices = []
@@ -56,17 +61,17 @@ def _validate_computational_basis_sampling(tape):
 
     if non_comp_basis_sampling_obs:
         all_wires = []
-        empty_wires = qml.wires.Wires([])
+        empty_wires = Wires([])
         for idx, (cb_obs, global_idx) in enumerate(
             zip(comp_basis_sampling_obs, comp_basis_indices)
         ):
             if global_idx < n_meas - n_mcms:
                 if cb_obs.wires == empty_wires:
-                    all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+                    all_wires = Wires.all_wires([m.wires for m in measurements])
                     break
                 all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
-                all_wires = qml.wires.Wires.all_wires(all_wires)
+                all_wires = Wires.all_wires(all_wires)
 
         # This happens when a MeasurementRegisterMP is the only computational basis state measurement
         if all_wires == empty_wires:
@@ -76,16 +81,12 @@ def _validate_computational_basis_sampling(tape):
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
-                qml.Z(all_wires)
-                if len(all_wires) == 1
-                else qml.ops.Prod(*[qml.Z(w) for w in all_wires])
+                Z(all_wires) if len(all_wires) == 1 else Prod(*[Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
             # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-            if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
-                [obs.obs, pauliz_for_cb_obs]
-            ):
+            if obs.obs is not None and not are_pauli_words_qwc([obs.obs, pauliz_for_cb_obs]):
                 raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
@@ -98,7 +99,7 @@ def rotations_and_diagonal_measurements(tape):
         QueuingManager.stop_recording()
     ):  # stop recording operations to active context when computing qwc groupings
         try:
-            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
+            rotations, diag_obs = diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
             if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
                 raise QuantumFunctionError(

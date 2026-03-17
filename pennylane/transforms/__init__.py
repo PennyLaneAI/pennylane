@@ -397,7 +397,6 @@ for a comprehensive overview of transforms and core functionalities, consult the
 """
 
 # Leave as alias for backwards-compatibility
-from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
