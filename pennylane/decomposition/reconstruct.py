@@ -45,6 +45,11 @@ def has_reconstructor(op_class: type[Operator], op_params: dict):
         # that this operator is never compatible with the graph system.
         return False
 
+    if op_class is qml.templates.TemporaryAND:
+        # TODO: Special case of an controlled-like operator which takes control_values,
+        # to be handled in a follow-up PR. [sc-110068]
+        return False
+
     if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
         return True
 
