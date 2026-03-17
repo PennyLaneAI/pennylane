@@ -198,4 +198,4 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnums)
 
-    raise CompileError("Pennylane does not support the VJP function without QJIT.")
+    raise CompileError("PennyLane does not support the VJP function without QJIT.")

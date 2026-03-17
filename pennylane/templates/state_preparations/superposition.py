@@ -342,7 +342,7 @@ class Superposition(Operation):
         op_list.append(
             qml.StatePrep(
                 qml.math.stack(sorted_coefficients),
-                wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+                wires=wires[-qml.math.ceil_log2(len(coeffs)) :],
                 pad_with=0,
             )
         )
@@ -387,9 +387,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
     resources = Counter()
 
-    resources[
-        resource_rep(qml.StatePrep, num_wires=int(qml.math.ceil(qml.math.log2(num_coeffs))))
-    ] += 1
+    resources[resource_rep(qml.StatePrep, num_wires=qml.math.ceil_log2(num_coeffs))] += 1
 
     for basis2, basis1 in perms.items():
         if not qml.math.allclose(basis1, basis2):
@@ -438,7 +436,7 @@ def _superposition_decomposition(
 
     qml.StatePrep(
         qml.math.stack(sorted_coefficients),
-        wires=target_wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+        wires=target_wires[-qml.math.ceil_log2(len(coeffs)) :],
         pad_with=0,
     )
 

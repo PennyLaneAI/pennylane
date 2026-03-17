@@ -159,7 +159,7 @@ def _(op: qtemps.state_preparations.Superposition):
     ]
     msp = qops.StatePrep(
         math.stack(sorted_coefficients),
-        wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
+        wires=wires[-math.ceil_log2(len(coeffs)) :],
         pad_with=0,
     )
     gate_types[_map_to_bloq(msp, call_graph="decomposition")] = 1
@@ -191,7 +191,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            bitstrings=bitstrings,
+            data=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,
@@ -261,10 +261,10 @@ def _(op: qtemps.subroutines.QROM):
 
     # From ResourceQROM
     gate_types = defaultdict(int, {})
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
 
-    num_bit_flips = sum(bits.count("1") for bits in bitstrings)
+    num_bit_flips = math.sum(bitstrings)
 
     num_work_wires = len(op.hyperparameters["work_wires"])
     size_bitstring = len(op.hyperparameters["target_wires"])
@@ -283,7 +283,7 @@ def _(op: qtemps.subroutines.QROM):
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
     num_swap_wires = math.floor(math.log2(num_parallel_computations))
-    num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+    num_select_wires = math.ceil_log2(math.ceil(num_bitstrings / (2**num_swap_wires)))
 
     swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
     free_work_wires = num_work_wires - swap_work_wires
@@ -371,7 +371,7 @@ def _(op: qtemps.subroutines.Select):
     x = qt_gates.XGate()
 
     num_ops = len(cmpr_ops)
-    num_ctrl_wires = int(np.ceil(np.log2(num_ops)))
+    num_ctrl_wires = math.ceil_log2(num_ops)
     num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
     num_zero_controls = num_total_ctrl_possibilities // 2
@@ -566,7 +566,9 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     if mapped_op is not None:
         return mapped_op
 
-    data = np.array([int(b, 2) for b in op.bitstrings])
+    data = op.data[0]
+    powers_of_two = 2 ** np.arange(data.shape[1])[::-1]
+    data = math.sum(powers_of_two * data, axis=1)
     if op.clean:
         return QROAMClean.build_from_data(data)
 

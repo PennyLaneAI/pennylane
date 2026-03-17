@@ -33,13 +33,14 @@ if TYPE_CHECKING:
 def _setup_transform_program(
     device: Device,
     resolved_execution_config: ExecutionConfig,
-    cache: Cache | dict | Literal["auto"] | bool = None,
+    cache: Cache | dict | Literal["auto"] | bool | None = None,
     cachesize: int = 10000,
 ) -> tuple[CompilePipeline, CompilePipeline]:
     """Sets-up the outer and inner transform programs for execution.
 
+    Outer and inner transforms are those outside and inside the ML boundary layer respectively.
+
     Args:
-        user_transform_program (CompilePipeline): the user's transform program
         device (Device): a Pennylane device
         resolved_execution_config (ExecutionConfig): the resolved execution config
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
@@ -50,17 +51,19 @@ def _setup_transform_program(
         tuple[CompilePipeline, CompilePipeline]: tuple containing the outer and inner transform programs.
     """
 
-    device_transform_program = device.preprocess_transforms(resolved_execution_config)
-
     outer_transform_program = CompilePipeline()
     inner_transform_program = CompilePipeline()
 
     # Add the gradient expand to the program if necessary
-    if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
+    if expand_transform := getattr(
+        resolved_execution_config.gradient_method, "expand_transform", False
+    ):
         outer_transform_program.add_transform(
-            transform(resolved_execution_config.gradient_method.expand_transform),
+            transform(expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
+
+    device_transform_program = device.preprocess_transforms(resolved_execution_config)
     if resolved_execution_config.use_device_gradient:
         outer_transform_program += device_transform_program
     else:

@@ -15,6 +15,7 @@
 """Defines an interpreter that extracts a set of resource reps from a plxpr"""
 
 from copy import copy
+from functools import partial
 
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
@@ -23,6 +24,7 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     measure_prim,
     pauli_measure_prim,
+    qnode_prim,
 )
 
 from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
@@ -55,6 +57,24 @@ def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disabl
     # The purpose of the CollectResourceOps is to collect all operators that
     # potentially needs to be decomposed, which doesn't apply to PPMs
     return 0
+
+
+# pylint: disable=too-many-arguments,unused-argument
+@CollectResourceOps.register_primitive(qnode_prim)
+def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
+    """Handle a qnode primitive."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    invals = invals[shots_len:]
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    f = partial(copy(self).eval, qfunc_jaxpr, consts)
+    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
+    self.eval(new_qfunc_jaxpr.jaxpr, new_qfunc_jaxpr.consts, *args)
+
+    return [0] * len(qfunc_jaxpr.outvars)
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)

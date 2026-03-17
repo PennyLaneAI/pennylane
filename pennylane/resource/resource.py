@@ -20,6 +20,8 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
+from decimal import Decimal
+from string import ascii_lowercase
 from typing import Any
 
 from pennylane.measurements import MeasurementProcess, Shots, add_shots
@@ -28,6 +30,29 @@ from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
+
+
+def _count_to_str(count: int) -> str:
+    """Helper for printing counts, converts large counts to scientific notation."""
+    return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
+
+
+def _batch_num_to_letters(num: int) -> str:
+    """Helper for printing batch numbers, converts 0 to 'a', 1 to 'b', etc.
+
+    Example:
+    >>> _batch_num_to_letters(0)
+    'a'
+
+    >>> _batch_num_to_letters(25)
+    'z'
+
+    >>> _batch_num_to_letters(27)
+    'ab'
+    """
+    if num < 26:
+        return ascii_lowercase[num]
+    return _batch_num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
 @dataclass(frozen=True)
@@ -262,16 +287,14 @@ class SpecsResources:
         2
 
         >>> print(res)
-        Total wire allocations: 2
+        Wire allocations: 2
         Total gates: 2
-        Circuit depth: 2
-        <BLANKLINE>
-        Gate types:
-          Hadamard: 1
-          CNOT: 1
-        <BLANKLINE>
+        Gate counts:
+        - Hadamard: 1
+        - CNOT: 1
         Measurements:
-          expval(PauliZ): 1
+        - expval(PauliZ): 1
+        Depth: 2
     """
 
     gate_types: dict[str, int]
@@ -312,6 +335,8 @@ class SpecsResources:
             case "num_gates":
                 # As a property, this needs to be handled differently to the true fields
                 return self.num_gates
+            case "gate_counts":
+                return self.gate_counts
 
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
@@ -321,6 +346,11 @@ class SpecsResources:
     def num_gates(self) -> int:
         """Total number of gates in the circuit."""
         return sum(self.gate_types.values())
+
+    @property
+    def gate_counts(self) -> dict[str, int]:
+        """Alias for ``gate_types``"""
+        return self.gate_types
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
@@ -335,29 +365,24 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Total wire allocations: {self.num_allocs}")
+        lines.append(f"{prefix}Wire allocations: {self.num_allocs}")
         lines.append(f"{prefix}Total gates: {self.num_gates}")
-        lines.append(
-            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}"
-        )
 
-        lines.append("")  # Blank line
-
-        lines.append(f"{prefix}Gate types:")
+        lines.append(f"{prefix}Gate counts:")
         if not self.gate_types:
-            lines.append(prefix + "  No gates.")
+            lines.append(prefix + "- No gates.")
         else:
             for gate, count in self.gate_types.items():
-                lines.append(f"{prefix}  {gate}: {count}")
-
-        lines.append("")  # Blank line
+                lines.append(f"{prefix}- {gate}: {count}")
 
         lines.append(f"{prefix}Measurements:")
         if not self.measurements:
-            lines.append(prefix + "  No measurements.")
+            lines.append(prefix + "- No measurements.")
         else:
             for meas, count in self.measurements.items():
-                lines.append(f"{prefix}  {meas}: {count}")
+                lines.append(f"{prefix}- {meas}: {count}")
+
+        lines.append(f"{prefix}Depth: {self.depth if self.depth is not None else 'Not computed'}")
 
         return "\n".join(lines)
 
@@ -382,7 +407,7 @@ class CircuitSpecs:
         num_device_wires (int): The number of wires on the device.
         shots (Shots): The shots configuration used.
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
-        resources (SpecsResources | list[SpecsResources] |
+        resources (SpecsResources | list[SpecsResources] | \
             dict[int | str, SpecsResources | list[SpecsResources]]): The resource specifications.
             Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object,
             a list of :class:`.SpecsResources` objects, or a dictionary mapping levels to their
@@ -422,17 +447,14 @@ class CircuitSpecs:
         Shots: Shots(total=1000)
         Level: device
         <BLANKLINE>
-        Resource specifications:
-          Total wire allocations: 2
-          Total gates: 3
-          Circuit depth: 3
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            expval(PauliZ): 1
+        Wire allocations: 2
+        Total gates: 3
+        Gate counts:
+        - RX: 2
+        - CNOT: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: 3
     """
 
     device_name: str | None = None
@@ -488,15 +510,34 @@ class CircuitSpecs:
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
         )
 
-    def _resources_to_str(self, res) -> str:
+    def _get_specs_header(self) -> list[str]:
+        """Helper for main ``to_pretty_str`` method, gathers the header information about the specs such as device and level."""
+        lines = []
+
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        if isinstance(self.level, dict):
+            lines.append("Levels:")
+            for level, level_name in self.level.items():
+                lines.append(f"- {level}: {level_name}")
+        else:
+            lines.append(f"Level: {self.level}")
+
+        lines.append("")  # Blank line
+
+        return lines
+
+    def _resources_to_str(self, res, preindent=0) -> str:
         """Helper for printing resources, prints list or single SpecsResources."""
         lines = []
         if isinstance(res, SpecsResources):
-            lines.append(res.to_pretty_str(preindent=2))
+            lines.append(res.to_pretty_str(preindent))
         elif isinstance(res, list):
+            prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"  Batched tape {i}:")
-                lines.append(r.to_pretty_str(preindent=4))
+                lines.append(f"{prefix}Batched tape {_batch_num_to_letters(i)}:")
+                lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
             raise ValueError(
@@ -505,27 +546,140 @@ class CircuitSpecs:
 
         return "\n".join(lines)
 
-    # Separate str and repr methods for simple and pretty printing
-    def __str__(self):
-        lines = []
+    def _flattened_resources(self) -> dict[str, SpecsResources]:
+        """Helper for printing tabular format, flattens all resources across levels into a single
+        dictionary with string keys."""
+        flat_resources = {}
+        for level, res in zip(self.level.keys(), self.resources.values()):
+            if isinstance(res, SpecsResources):
+                flat_resources[str(level)] = res
+            elif isinstance(res, list):
+                for i, r in enumerate(res):
+                    flat_resources[f"{level}-{_batch_num_to_letters(i)}"] = r
+            else:
+                raise ValueError(
+                    "Resources must be either a SpecsResources object or a list of SpecsResources objects."
+                )  # pragma: no cover
+        return flat_resources
 
-        lines.append(f"Device: {self.device_name}")
-        lines.append(f"Device wires: {self.num_device_wires}")
-        lines.append(f"Shots: {self.shots}")
-        lines.append(f"Level: {self.level}")
+    def _get_table_format(
+        self, flat_resources: dict[str, SpecsResources]
+    ) -> tuple[int, int, dict[str, None], dict[str, None]]:
+        """Helper for printing tabular format, determines column widths and all gate and measurement
+        types across levels."""
+        # This is the length of the longest metric name (currently "Wire allocations") plus padding
+        max_metric_length = 16
+        max_column_size = max(len(level) for level in flat_resources) + 2
 
-        lines.append("")  # Blank line
+        # Use dict for these since they are sorted by default unlike a set
+        all_gate_types = {}
+        all_meas_types = {}
 
-        lines.append("Resource specifications:")
+        # This iteration order will present the gates in the order in which they appear
+        for res in flat_resources.values():
+            for gate, count in res.gate_types.items():
+                all_gate_types[gate] = True
+                max_metric_length = max(max_metric_length, len(gate) + 2)
+                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+            for meas, count in res.measurements.items():
+                all_meas_types[meas] = True
+                max_metric_length = max(max_metric_length, len(meas) + 2)
+                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+            max_column_size = max(
+                max_column_size,
+                len(_count_to_str(res.num_allocs)) + 1,
+                len(_count_to_str(res.num_gates)) + 1,
+            )
+
+        return max_metric_length, max_column_size, all_gate_types, all_meas_types
+
+    def _to_pretty_str_tabular(self) -> str:
+        """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
+        are many levels to display."""
+        lines = self._get_specs_header()
+
+        flat_resources = self._flattened_resources()
+        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
+            flat_resources
+        )
+
+        num_cols = len(flat_resources)
+        lines.append(
+            "↓Metric".ljust(max_metric_length - 6)
+            + "Level→"
+            + " |"
+            + " |".join(level.rjust(max_column_size) for level in flat_resources)
+        )
+        lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
+        lines.append(
+            "Wire allocations".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_allocs).rjust(max_column_size)
+                for res in flat_resources.values()
+            )
+        )
+        lines.append(
+            "Total gates".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_gates).rjust(max_column_size)
+                for res in flat_resources.values()
+            )
+        )
+
+        lines.append("Gate counts:".ljust(max_metric_length) + " |")
+        for gate in all_gate_types:
+            lines.append(
+                f"- {gate}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.gate_types.get(gate, 0)).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+            )
+        lines.append("Measurements:".ljust(max_metric_length) + " |")
+        for meas in all_meas_types:
+            lines.append(
+                f"- {meas}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.measurements.get(meas, 0)).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+            )
+
+        return "\n".join(lines).rstrip("\n")
+
+    def to_pretty_str(self, tabular: bool = True) -> str:
+        """
+        Pretty string representation of the :class:`CircuitSpecs` object.
+
+        Args:
+            tabular (bool): Whether to display the resources in a tabular format.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
+        if tabular and isinstance(self.resources, dict):
+            return self._to_pretty_str_tabular()
+
+        lines = self._get_specs_header()
+
         if isinstance(self.resources, dict):
+            lines.append("")  # Blank line before levels
             for level, res in self.resources.items():
                 lines.append(f"Level = {level}:")
-                lines.append(self._resources_to_str(res))
+                lines.append(self._resources_to_str(res, preindent=4))
                 lines.append("\n" + "-" * 60 + "\n")  # Separator between levels
         else:
             lines.append(self._resources_to_str(self.resources))
 
         return "\n".join(lines).rstrip("\n-")
+
+    # Separate str and repr methods for simple and pretty printing
+    def __str__(self) -> str:
+        return self.to_pretty_str()
 
     def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""

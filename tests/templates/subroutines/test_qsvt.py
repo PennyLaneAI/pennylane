@@ -14,6 +14,7 @@
 """
 Tests for the QSVT template and qsvt wrapper function.
 """
+
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
@@ -27,13 +28,14 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
-    _poly_func,
+    _poly_func_scipy,
     _qsp_iterate,
     _qsp_iterate_broadcast,
-    _qsp_optimization,
+    _qsp_optimization_scipy,
     _W_of_x,
     _z_rotation,
 )
+from pennylane.transforms import decompose
 
 
 def qfunc(A):
@@ -77,8 +79,9 @@ def generate_polynomial_coeffs(degree, parity=None):
     raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
 
 
-class TestQSVT:
-    """Test the qml.QSVT template."""
+@pytest.mark.unit
+class TestQSVTBasics:
+    """Basic validity checks for QSVT."""
 
     @pytest.mark.jax
     def test_standard_validity(self):
@@ -92,132 +95,6 @@ class TestQSVT:
         for the block-encoding."""
         with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
             qml.QSVT(1.23, [qml.Identity(wires=0)])
-
-    @pytest.mark.parametrize(
-        ("U_A", "lst_projectors", "wires", "operations"),
-        [
-            (
-                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
-                [0, 1],
-                [
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
-                ],
-            ),
-            (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
-                [0, 1],
-                [
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
-                ],
-            ),
-            (
-                qml.Hadamard(wires=0),
-                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
-                [0],
-                [
-                    qml.RZ(-2.46, wires=0),
-                    qml.Hadamard(0),
-                    qml.RZ(1, wires=0),
-                    qml.Hadamard(0),
-                    qml.RZ(-8, wires=0),
-                ],
-            ),
-        ],
-    )
-    def test_output(self, U_A, lst_projectors, wires, operations):
-        """Test that qml.QSVT produces the intended measurements."""
-        dev = qml.device("default.qubit", wires=len(wires))
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.QSVT(U_A, lst_projectors)
-            return qml.expval(qml.PauliZ(wires=0))
-
-        @qml.qnode(dev)
-        def circuit_correct():
-            for op in operations:
-                qml.apply(op)
-            return qml.expval(qml.PauliZ(wires=0))
-
-        assert np.isclose(circuit(), circuit_correct())
-
-    @pytest.mark.parametrize(
-        ("U_A", "lst_projectors", "results"),
-        [
-            (
-                qml.BlockEncode(0.1, wires=0),
-                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
-                [
-                    qml.PCPhase(0.2, dim=2, wires=[0]),
-                    qml.BlockEncode(np.array([[0.1]]), wires=[0]),
-                    qml.PCPhase(0.3, dim=2, wires=[0]),
-                ],
-            ),
-            (
-                qml.PauliZ(wires=0),
-                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
-                [
-                    qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
-                    qml.RZ(0.3, wires=[1]),
-                ],
-            ),
-        ],
-    )
-    def test_queuing_ops(self, U_A, lst_projectors, results):
-        """Test that qml.QSVT queues operations in the correct order."""
-        with qml.tape.QuantumTape() as tape:
-            qml.QSVT(U_A, lst_projectors)
-
-        for idx, val in enumerate(tape.expand().operations):
-            assert val.name == results[idx].name
-            assert val.parameters == results[idx].parameters
-
-    @pytest.mark.parametrize(
-        ("U_A", "lst_projectors", "results"),
-        [
-            (
-                qml.PauliX(wires=0),
-                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
-                [
-                    qml.PCPhase(0.2, dim=1, wires=[0]),
-                    qml.PauliX(wires=0),
-                    qml.PCPhase(0.3, dim=1, wires=[0]),
-                ],
-            ),
-            (
-                qml.PauliZ(wires=0),
-                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
-                [
-                    qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
-                    qml.RZ(0.3, wires=[1]),
-                ],
-            ),
-        ],
-    )
-    def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
-        """Test that qml.QSVT queues operations correctly."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT(U_A, lst_projectors)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
-
-        tape2 = qml.tape.QuantumScript.from_queue(q)
-
-        for expected, val1, val2 in zip(results, tape.expand().operations, tape2.operations):
-            qml.assert_equal(expected, val1)
-            qml.assert_equal(expected, val2)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
@@ -291,6 +168,170 @@ class TestQSVT:
         qsvt_wires = qml.QSVT(op2, [op1]).wires
         assert qsvt_wires == op1.wires + op2.wires
 
+    def test_label(self):
+        """Test that the label method returns the correct string label"""
+        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
+        assert op.label() == "QSVT"
+        assert op.label(base_label="custom_label") == "custom_label"
+
+    def test_data(self):
+        """Test that the data property gets and sets the correct values"""
+        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        assert op.data == (1, 2, 3)
+        op.data = [4, 5, 6]
+        assert op.data == (4, 5, 6)
+
+    def test_copy(self):
+        """Test that a QSVT operator can be copied."""
+        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        copy_op = copy(orig_op)
+        qml.assert_equal(orig_op, copy_op)
+
+        # Ensure the (nested) operations are copied instead of aliased.
+        assert orig_op is not copy_op
+        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
+
+        orig_projectors = orig_op.hyperparameters["projectors"]
+        copy_projectors = copy_op.hyperparameters["projectors"]
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
+
+
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+@pytest.mark.integration
+class TestQSVTIntegration:
+    """Test the qml.QSVT template."""
+
+    @pytest.mark.parametrize(
+        ("U_A", "lst_projectors", "wires", "operations"),
+        [
+            (
+                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                [0, 1],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                ],
+            ),
+            (
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                [0, 1],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                ],
+            ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                [0],
+                [
+                    qml.RZ(-2.46, wires=0),
+                    qml.Hadamard(0),
+                    qml.RZ(1, wires=0),
+                    qml.Hadamard(0),
+                    qml.RZ(-8, wires=0),
+                ],
+            ),
+        ],
+    )
+    def test_output(self, U_A, lst_projectors, wires, operations):
+        """Test that qml.QSVT produces the intended measurements."""
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QSVT(U_A, lst_projectors)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        @qml.qnode(dev)
+        def circuit_correct():
+            for op in operations:
+                qml.apply(op)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.isclose(circuit(), circuit_correct())
+
+    @pytest.mark.parametrize(
+        ("U_A", "lst_projectors", "results"),
+        [
+            (
+                qml.BlockEncode(0.1, wires=0),
+                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                [
+                    qml.PCPhase(0.2, dim=2, wires=[0]),
+                    qml.BlockEncode(np.array([[0.1]]), wires=[0]),
+                    qml.PCPhase(0.3, dim=2, wires=[0]),
+                ],
+            ),
+            (
+                qml.PauliZ(wires=0),
+                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                [
+                    qml.RZ(0.1, wires=[0]),
+                    qml.Z(0),
+                    qml.RY(0.2, wires=[0]),
+                    qml.Z(0),
+                    qml.RZ(0.3, wires=[1]),
+                ],
+            ),
+        ],
+    )
+    def test_queuing_ops(self, U_A, lst_projectors, results):
+        """Test that qml.QSVT queues operations in the correct order."""
+        with qml.tape.QuantumTape() as tape:
+            qml.QSVT(U_A, lst_projectors)
+
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
+        for idx, val in enumerate(tape.operations):
+            assert val.name == results[idx].name
+            assert val.parameters == results[idx].parameters
+
+    @pytest.mark.parametrize(
+        ("U_A", "lst_projectors", "results"),
+        [
+            (
+                qml.PauliX(wires=0),
+                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                [
+                    qml.PCPhase(0.2, dim=1, wires=[0]),
+                    qml.PauliX(wires=0),
+                    qml.PCPhase(0.3, dim=1, wires=[0]),
+                ],
+            ),
+            (
+                qml.PauliZ(wires=0),
+                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                [
+                    qml.RZ(0.1, wires=[0]),
+                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
+                    qml.RZ(0.3, wires=[1]),
+                ],
+            ),
+        ],
+    )
+    def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
+        """Test that qml.QSVT queues operations correctly."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QSVT(U_A, lst_projectors)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
+
+        tape2 = qml.tape.QuantumScript.from_queue(q)
+
+        [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"}, max_expansion=1)
+
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
+            qml.assert_equal(expected, val1)
+            qml.assert_equal(expected, val2)
+
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
         [
@@ -312,7 +353,8 @@ class TestQSVT:
                 np.array([0.1, 0.2]),
                 [
                     qml.PCPhase(0.1, dim=2, wires=[0]),
-                    qml.prod(qml.PauliX(wires=0), qml.RZ(0.1, wires=0)),
+                    qml.RZ(0.1, wires=0),
+                    qml.PauliX(wires=0),
                     qml.PCPhase(0.2, dim=2, wires=[0]),
                 ],
             ),
@@ -324,9 +366,14 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "X", "RX", "RZ"})
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
+
+
+class TestQSVTMatrix:
+    """Tests the matrix of qsvt is correct."""
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -482,33 +529,6 @@ class TestQSVT:
 
         for idx, result in enumerate(manual_phi_results):
             assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
-
-    def test_label(self):
-        """Test that the label method returns the correct string label"""
-        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
-        assert op.label() == "QSVT"
-        assert op.label(base_label="custom_label") == "custom_label"
-
-    def test_data(self):
-        """Test that the data property gets and sets the correct values"""
-        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
-        assert op.data == (1, 2, 3)
-        op.data = [4, 5, 6]
-        assert op.data == (4, 5, 6)
-
-    def test_copy(self):
-        """Test that a QSVT operator can be copied."""
-        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
-        copy_op = copy(orig_op)
-        qml.assert_equal(orig_op, copy_op)
-
-        # Ensure the (nested) operations are copied instead of aliased.
-        assert orig_op is not copy_op
-        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
-
-        orig_projectors = orig_op.hyperparameters["projectors"]
-        copy_projectors = copy_op.hyperparameters["projectors"]
-        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
 phase_angle_data = (
@@ -958,7 +978,7 @@ class TestRootFindingSolver:
     def test_raise_error(self, poly, routine, angle_solver, msg_match):
         """Test that proper errors are raised"""
 
-        with pytest.raises(AssertionError, match=msg_match):
+        with pytest.raises((AssertionError, ValueError), match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
 
 
@@ -979,7 +999,7 @@ class TestIterativeSolver:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
+        phis, cost_func = _qsp_optimization_scipy(degree, target_polynomial_coeffs)
 
         rng = np.random.default_rng(123)
         x_point = rng.uniform(size=1, low=-1.0, high=1.0)
@@ -1009,7 +1029,7 @@ class TestIterativeSolver:
 
         assert qml.math.isclose(
             _qsp_iterate_broadcast(phis, x_point, None),
-            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            _poly_func_scipy(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
 
@@ -1035,43 +1055,67 @@ class TestIterativeSolver:
             (generate_polynomial_coeffs(12, 0), 0, 0.3),
         ],
     )
-    def test_poly_func(self, coeffs, parity, x):
-        """Test internal function _poly_func"""
-        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
+    def test_poly_func_scipy(self, coeffs, parity, x):
+        """Test internal function _poly_func_scipy"""
+        val = _poly_func_scipy(coeffs=coeffs[parity::2], parity=parity, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    def test_z_rotation(self, angle):
-        """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+    def test_z_rotation_scipy(self, angle):
+        """Test internal function _z_rotation_scipy"""
+        try:
+            import jax  # pylint: disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    def test_qsp_iterate(self, phi):
-        """Test internal function _qsp_iterate"""
-        mtx = _qsp_iterate(0.0, phi, None)
+    def test_qsp_iterate_scipy(self, phi):
+        """Test internal function _qsp_iterate_scipy"""
+        try:
+            import jax  # pylint: disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+
+        mtx = _qsp_iterate(0.0, phi, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "x",
         list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
-    def test_qsp_iterate_broadcast(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast"""
-        from jax import numpy as jnp
+    def test_qsp_iterate_broadcast_scipy(self, x, degree):
+        """Test internal function _qsp_iterate_broadcast_scipy"""
+        try:
+            from jax import numpy as np  # pylint: disable=redefined-outer-name
 
-        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
+            interface = "jax"
+        except ModuleNotFoundError:
+            import numpy as np
+
+            interface = "numpy"
+        phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        qsp_be = _qsp_iterate_broadcast(phis, x, interface)
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert jnp.isclose(qsp_be, ref)
+        assert np.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    def test_W_of_x(self, x):
-        """Test internal function _W_of_x"""
-        mtx = _W_of_x(x, None)
+    def test_W_of_x_scipy(self, x):
+        """Test internal function _W_of_x_scipy"""
+        try:
+            import jax  # pylint:disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+        mtx = _W_of_x(x, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 

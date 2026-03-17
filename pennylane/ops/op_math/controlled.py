@@ -234,6 +234,13 @@ def create_controlled_op(
             work_wire_type=work_wire_type,
         )
 
+    if op is None:
+        raise ValueError(
+            "None is not callable. "
+            "This error might occur if you apply ctrl to the output of a "
+            "Subroutine (template). Subroutines should now be treated "
+            "as Quantum Functions, rather than operators."
+        )
     if not callable(op):
         raise ValueError(
             f"The object {op} of type {type(op)} is not an Operator or callable. "
@@ -362,7 +369,7 @@ def _try_wrap_in_custom_ctrl_op(
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
-    if isinstance(op, qml.Barrier):
+    if isinstance(op, (qml.Barrier, qml.Snapshot)):
         if qml.QueuingManager.recording():
             # for example
             # op = Barrier(), qml.X(), qml.ctrl(op, 1)
@@ -387,13 +394,17 @@ def _try_wrap_in_custom_ctrl_op(
 def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires, work_wire_type):
     """Handles PauliX-based controlled operations."""
 
-    op_map = {
-        (qml.PauliX, 1): qml.CNOT,
-        (qml.PauliX, 2): qml.Toffoli,
-        (qml.CNOT, 1): qml.Toffoli,
+    # We map some small combinations of base operators and control wires to custom operators.
+    # However, we only should map to custom operators if there is no benefit from having work wires
+    # or if no work wires are provided
+    op_map = {  # Key: (base cls, num_control_wires, has work wires)
+        (qml.PauliX, 1, False): qml.CNOT,
+        (qml.PauliX, 1, True): qml.CNOT,
+        (qml.PauliX, 2, False): qml.Toffoli,
+        (qml.CNOT, 1, False): qml.Toffoli,
     }
 
-    custom_key = (type(op), len(control))
+    custom_key = (type(op), len(control), bool(work_wires))
     if custom_key in op_map and all(control_values):
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
@@ -713,6 +724,7 @@ class Controlled(SymbolicOp):
             control=new_control_wires,
             control_values=self.control_values,
             work_wires=new_work_wires,
+            work_wire_type=self.work_wire_type,
         )
 
     # Properties for resource estimation ###############
