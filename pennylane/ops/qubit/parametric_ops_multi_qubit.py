@@ -1060,7 +1060,7 @@ def _decompose_pcphase_resource(num_wires, dim):
 
 
 @register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi, wires, dimension):
+def _decompose_pcphase(phi, wires, dimension, **_):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
     dim, _ = dimension

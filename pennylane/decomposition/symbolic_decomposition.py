@@ -206,8 +206,10 @@ def make_pow_decomp_with_period(period, has_reconstructor=False) -> Decompositio
         elif z_mod_period > 0 and z_mod_period != period:
             qml.pow(reconstruct(params, wires, base_class, base_params), z_mod_period)
 
+    return _impl_using_reconstructor
 
-pow_involutory = make_pow_decomp_with_period(2)
+
+pow_involutory = make_pow_decomp_with_period(2, True)
 
 
 def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
