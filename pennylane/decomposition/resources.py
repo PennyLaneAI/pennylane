@@ -17,13 +17,12 @@
 from __future__ import annotations
 
 import functools
-from collections.abc import Callable, Set
+from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
 
 from .utils import to_name
 
@@ -587,64 +586,3 @@ def auto_wrap(op_type):
 @to_name.register
 def _compressed_op_to_name(op: CompressedResourceOp):
     return to_name(op.name)
-
-
-_reconstructors = {}
-
-
-def register_reconstructor(op_type: type[Operator]):
-    """A decorator that registers a function as the reconstructor of op_type.
-
-    A reconstructor is expected to take ``(*op.data, wires=op.wires, **op.resource_params)``
-    as input and return an instance of the original op.
-
-    """
-
-    def _decorator(func: Callable):
-        _reconstructors[op_type] = func
-
-    return _decorator
-
-
-def has_reconstructor(op_class: type[Operator], op_params: dict):
-    """Checks whether a reconstructor exists for the resource rep."""
-
-    if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
-        return True
-
-    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    if op_class in (qml.ops.Adjoint, qml.ops.Pow):
-        base_class, base_params = op_params["base_class"], op_params["base_params"]
-        return has_reconstructor(base_class, base_params)
-
-    return op_class in _reconstructors
-
-
-def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: dict) -> Operator:
-    """Reconstruct an instance of op_type with resource params."""
-
-    if op_type not in _reconstructors and not op_type.resource_keys - {"num_wires"}:
-        # Assume the default for simple gates. Since we don't actually have a Gate
-        # class to use in an issubclass check, we use the resource_keys as a proxy.
-        # A simple Gate wouldn't have any resource_keys defined. Another special case
-        # is when an operator only has a single resource param that is the number of
-        # wires. Such an operator also doesn't take anything beyond data and wires
-        # in its constructor. The number of wires is typically redundant since this
-        # information is apparant from the shape of the wires array already.
-        return op_type(*data, wires=wires)
-
-    if op_type is qml.ops.Adjoint:
-        base_class, base_params = op_params["base_class"], op_params["base_params"]
-        return qml.adjoint(reconstruct)(data, wires, base_class, base_params)
-
-    if op_type is qml.ops.Controlled:
-        raise NotImplementedError  # TODO: to be implemented in a follow-up PR [sc-110068]
-
-    if op_type is qml.ops.Pow:
-        base_class, base_params = op_params["base_class"], op_params["base_params"]
-        return qml.pow(reconstruct(data, wires, base_class, base_params), z=op_params["z"])
-
-    if op_type in _reconstructors:
-        return _reconstructors[op_type](*data, wires=wires, **op_params)
-
-    raise NotImplementedError
