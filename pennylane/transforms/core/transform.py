@@ -119,6 +119,10 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
 
     >>> from pennylane.transforms import decompose, merge_rotations
     >>> decompose(gate_set=qml.gate_sets.ALL_OPS) + merge_rotations(1e-6)
+    CompilePipeline(
+      [1] <decompose(gate_set=All PennyLane Gates)>,
+      [2] <merge_rotations(1e-06)>
+    )
 
     where transforms are called with just configuration parameters and combined into a CompilePipeline.
     """
