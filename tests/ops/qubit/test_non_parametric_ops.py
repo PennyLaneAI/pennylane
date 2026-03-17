@@ -1141,8 +1141,11 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
             if rule.is_applicable(**pow_op.resource_params):
 
+                rule_params = copy.copy(pow_op.hyperparameters)
+                rule_params.update(pow_op.resource_params)
+
                 with qml.queuing.AnnotatedQueue() as q:
-                    rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
+                    rule(*pow_op.parameters, wires=pow_op.wires, **rule_params)
 
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
