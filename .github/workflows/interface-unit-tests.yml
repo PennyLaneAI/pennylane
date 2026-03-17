@@ -734,10 +734,10 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v6
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.codecov_token }}
           fail_ci_if_error: true  # upload errors should be caught early
@@ -779,7 +779,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v6
         with:
           pattern: test-report-*
           path: .github/test-reports
