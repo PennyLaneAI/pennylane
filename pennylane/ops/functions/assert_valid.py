@@ -15,7 +15,6 @@
 This module contains the qml.ops.functions.check_validity function for determining whether or not an
 Operator class is correctly defined.
 """
-
 import copy
 import itertools
 import pickle
@@ -27,6 +26,8 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
+from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
 from .equal import assert_equal
@@ -136,6 +137,31 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
+def _check_reconstructor(op):
+    """Checks that the op can be reconstructed."""
+
+    op_rep = resource_rep(op.__class__, **op.resource_params)
+    if not has_reconstructor(op_rep.op_type, op_rep.params):
+        return  # skip ops that are not meant to be compatible
+
+    reconstructed_op = reconstruct(op.data, op.wires, op_rep.op_type, op.params)
+    qml.assert_equal(reconstructed_op, op)
+
+    adjoint_op = qml.adjoint(op)
+    op_rep = adjoint_resource_rep(op.__class__, op.resource_params)
+    assert has_reconstructor(op_rep.op_type, op_rep.params)
+
+    reconstructed_op = reconstruct(adjoint_op.data, adjoint_op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, adjoint_op)
+
+    pow_op = qml.pow(op, z=2)
+    op_rep = pow_resource_rep(pow_op.__class__, pow_op.resource_params, z=2)
+    assert has_reconstructor(op_rep.op_type, op_rep.params)
+
+    reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, pow_op)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -160,8 +186,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qml.ops.Conditional):
             _op = _op.base
-        resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-        actual_gate_counts[resource_rep] += 1
+        op_rep = qml.resource_rep(type(_op), **_op.resource_params)
+        actual_gate_counts[op_rep] += 1
 
     if rule.exact_resources and not (
         isinstance(op, qml.templates.SubroutineOp) and not op.subroutine.exact_resources
@@ -550,6 +576,7 @@ def assert_valid(
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+        _check_reconstructor(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
