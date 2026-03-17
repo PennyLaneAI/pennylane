@@ -81,10 +81,10 @@ def test_fixed_alt_decomps_not_available():
     tape = qml.tape.QuantumScript([])
 
     with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qml.transforms.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
+        qml.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
 
     with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
+        qml.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
 
 
 class TestDecompose:
@@ -267,9 +267,7 @@ class TestDecompose:
                 qml.ops.Conditional(m0, qml.RX(0.5, wires=0)),
             ]
         )
-        [decomposed_tape], _ = qml.transforms.decompose(
-            [tape], gate_set={qml.RX, qml.RZ, MidMeasure}
-        )
+        [decomposed_tape], _ = qml.decompose([tape], gate_set={qml.RX, qml.RZ, MidMeasure})
         assert len(decomposed_tape.operations) == 10
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -304,7 +302,7 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
-    (_,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
+    (_,), fn = qml.decompose(tape, gate_set={qml.RX, qml.RZ})
     assert fn((1,)) == 1
 
 
@@ -373,4 +371,4 @@ class TestPrivateHelpers:
 
         tape = qml.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Invalid gate_set type."):
-            qml.transforms.decompose(tape, gate_set=123)
+            qml.decompose(tape, gate_set=123)

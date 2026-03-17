@@ -45,6 +45,24 @@ class TestMapToResourceOp:
         ):
             _map_to_resource_op(operation)
 
+    def test_unknown_subroutine_decomposition(self):
+        """Test that if an unknown subroutine is provided, it just uses the decomposition."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        r_op = _map_to_resource_op(f.operator(0))
+        assert r_op == re_ops.X()
+
+        @qml.templates.Subroutine
+        def g(wires):
+            qml.X(wires)
+            qml.Y(wires)
+
+        r_op_g = _map_to_resource_op(g.operator(0))
+        assert r_op_g == re_ops.Prod([re_ops.X(), re_ops.Y()])
+
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
@@ -116,7 +134,7 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
@@ -124,8 +142,79 @@ class TestMapToResourceOp:
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
+                qtemps.HybridQRAM(
+                    data=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9],
+                    k=1,
+                ),
+                re_temps.HybridQRAM(
+                    data=["010", "111", "110", "000"],
+                    num_wires=10,
+                    num_select_wires=1,
+                    num_control_wires=2,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+            ),
+            (
+                qtemps.SelectOnlyQRAM(
+                    data=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0,
+                ),
+                re_temps.SelectOnlyQRAM(
+                    data=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
+                    num_wires=7,
+                    num_control_wires=2,
+                    num_select_wires=2,
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0,
+                ),
+            ),
+            (
                 qtemps.BBQRAM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=["010", "111", "110", "000"],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
@@ -142,7 +231,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.QROM(
-                    bitstrings=["01", "11", "10"],
+                    data=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],

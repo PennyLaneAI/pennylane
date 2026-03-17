@@ -24,9 +24,66 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ, too-many-arguments
+
+
+class BasisState(ResourceOperator):
+    r"""Resource class for preparing a single basis state.
+
+    Args:
+        num_wires (int): the number of wires the operator acts on
+        wires (WiresLike, Optional): the wire(s) the operation acts on
+    """
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None):
+        if wires and len(wires) != num_wires:
+            raise ValueError(f"Expected {num_wires} wires, got {len(wires)}.")
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): number of wires the operator acts on
+        """
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+
+    @classmethod
+    def resource_decomp(cls, num_wires: int) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of wires the operator acts on
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
+        """
+        return [
+            GateCount(resource_rep(qre.X), num_wires - 1 or num_wires),
+            GateCount(resource_rep(qre.RX), 1),
+            GateCount(resource_rep(qre.GlobalPhase), 1),
+        ]
 
 
 class UniformStatePrep(ResourceOperator):
@@ -85,7 +142,7 @@ class UniformStatePrep(ResourceOperator):
 
         self.num_wires = k
         if L != 1:
-            self.num_wires += int(math.ceil(math.log2(L)))
+            self.num_wires += ceil_log2(L)
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -114,7 +171,7 @@ class UniformStatePrep(ResourceOperator):
 
         num_wires = k
         if L != 1:
-            num_wires += int(math.ceil(math.log2(L)))
+            num_wires += ceil_log2(L)
         return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
@@ -142,7 +199,7 @@ class UniformStatePrep(ResourceOperator):
             gate_lst.append(GateCount(resource_rep(qre.Hadamard), k))
             return gate_lst
 
-        logl = int(math.ceil(math.log2(L)))
+        logl = ceil_log2(L)
         gate_lst.append(GateCount(resource_rep(qre.Hadamard), k + 3 * logl))
         gate_lst.append(
             GateCount(resource_rep(qre.IntegerComparator, {"value": L, "register_size": logl}), 1)
@@ -203,7 +260,7 @@ class AliasSampling(ResourceOperator):
     def __init__(self, num_coeffs: int, precision: float | None = None, wires: WiresLike = None):
         self.num_coeffs = num_coeffs
         self.precision = precision
-        self.num_wires = int(math.ceil(math.log2(num_coeffs)))
+        self.num_wires = ceil_log2(num_coeffs)
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
@@ -228,7 +285,7 @@ class AliasSampling(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_wires = int(math.ceil(math.log2(num_coeffs)))
+        num_wires = ceil_log2(num_coeffs)
         return CompressedResourceOp(
             cls, num_wires, {"num_coeffs": num_coeffs, "precision": precision}
         )
@@ -254,7 +311,7 @@ class AliasSampling(ResourceOperator):
 
         gate_lst = []
 
-        logl = int(math.ceil(math.log2(num_coeffs)))
+        logl = ceil_log2(num_coeffs)
 
         num_prec_wires = abs(math.floor(math.log2(precision)))
 
@@ -408,9 +465,8 @@ class MPSPrep(ResourceOperator):
             ``GateCount`` objects, where each object represents a specific quantum gate and the
             number of times it appears in the decomposition.
         """
-        num_work_wires = min(
-            math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
-        )
+        # truncate bond dim
+        num_work_wires = min(ceil_log2(max_bond_dim), math.ceil(num_mps_matrices / 2))
 
         gate_lst = [Allocate(num_work_wires)]
 
@@ -710,7 +766,7 @@ class QROMStatePreparation(ResourceOperator):
         if isinstance(selswap_depths, int) or selswap_depths is None:
             selswap_depths = [selswap_depths] * expected_size
 
-        num_precision_wires = math.ceil(math.log2(math.pi / precision))
+        num_precision_wires = ceil_log2(math.pi / precision)
         gate_counts.append(Allocate(num_precision_wires))
 
         for j in range(num_state_qubits):
@@ -967,19 +1023,14 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        coeff_register = ceil_log2(num_coeff)
 
         # Based on section III D in arXiv:2011.03494
         # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the QROM operator
         # The total algorithmic qubits are thus given by : 2*n_M + ceil(log(d)) + 2*\aleph + 6 + m
         # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
         # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1)
-        self.num_wires = (
-            4 * int(math.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + coeff_precision * 2
-            + 8
-        )
+        self.num_wires = 4 * ceil_log2(tensor_rank + 1) + coeff_register + coeff_precision * 2 + 8
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
@@ -1037,14 +1088,9 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        coeff_register = ceil_log2(num_coeff)
 
-        num_wires = (
-            4 * int(math.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + coeff_precision * 2
-            + 8
-        )
+        num_wires = 4 * ceil_log2(tensor_rank + 1) + coeff_register + coeff_precision * 2 + 8
 
         params = {
             "thc_ham": thc_ham,
@@ -1084,7 +1130,7 @@ class PrepTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+        m_register = ceil_log2(tensor_rank + 1)
 
         gate_list = []
 
@@ -1203,7 +1249,7 @@ class PrepTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
-        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+        m_register = ceil_log2(tensor_rank + 1)
         gate_list = []
 
         hadamard = resource_rep(qre.Hadamard)

@@ -16,6 +16,8 @@ r"""This module contains resource templates."""
 from .subroutines import (
     OutOfPlaceSquare,
     IQP,
+    HybridQRAM,
+    SelectOnlyQRAM,
     BBQRAM,
     PhaseGradient,
     OutMultiplier,
@@ -43,7 +45,16 @@ from .trotter import (
     TrotterPauli,
 )
 
-from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
+from .stateprep import (
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    PrepTHC,
+    BasisState,
+)
+
+from .embeddings import BasisEmbedding
 
 from .comparators import (
     IntegerComparator,

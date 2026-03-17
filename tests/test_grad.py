@@ -74,6 +74,25 @@ def test_jacobian_name():
     assert qml.jacobian(A()).__name__ == "<jacobian: A>"
 
 
+def test_value_and_grad_name():
+    """Test that value_and_grad has name associated with it for the later mlir op."""
+
+    def f(x):
+        return x**2
+
+    assert qml.value_and_grad(f).__name__ == "<value_and_grad: f>"
+
+    class A:
+
+        def __repr__(self):
+            return "A"
+
+        def __call__(self, x):
+            return x**2
+
+    assert qml.value_and_grad(A()).__name__ == "<value_and_grad: A>"
+
+
 def test_vjp_without_qjit():
     """Test that an error is raised when using VJP without QJIT."""
 
@@ -89,6 +108,45 @@ def test_vjp_without_qjit():
 
     with pytest.raises(
         qml.exceptions.CompileError,
-        match="Pennylane does not support the VJP function without QJIT.",
+        match="PennyLane does not support the VJP function without QJIT.",
     ):
         vjp(x, dy)
+
+
+def test_jvp_without_qjit():
+    """Test that an error is raised when using JVP without QJIT."""
+
+    def jvp(params, dparams):
+        def f(x):
+            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qml.math.stack(y)
+
+        return qml.jvp(f, [params], [dparams])
+
+    x = qml.numpy.array([0.1, 0.2])
+    dy = qml.numpy.array([-0.5, 0.1])
+
+    with pytest.raises(
+        qml.exceptions.CompileError,
+        match="PennyLane does not support the JVP function without QJIT.",
+    ):
+        jvp(x, dy)
+
+
+def test_value_and_grad_without_qjit():
+    """Test that an error is raised when using value_and_grad without QJIT."""
+
+    def value_and_grad(params):
+        def f(x):
+            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qml.math.stack(y)
+
+        return qml.value_and_grad(f)(params)
+
+    x = qml.numpy.array([0.1, 0.2])
+
+    with pytest.raises(
+        qml.exceptions.CompileError,
+        match="PennyLane does not support the value_and_grad function without QJIT.",
+    ):
+        value_and_grad(x)

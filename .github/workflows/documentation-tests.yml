@@ -12,7 +12,8 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-
+  workflow_call:
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -57,11 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e .
-
-      - name: Install external packages
-        run: |
-          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+          pip install --group docs --group dev -e . 
 
       - name: Print Dependencies
         run: |
@@ -84,7 +81,6 @@ jobs:
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
-          --ignore=pennylane/decomposition
           --ignore=pennylane/devices
           "
           IGNORE_OPTS_AUXILIARY="

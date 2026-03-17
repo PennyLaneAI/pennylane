@@ -354,6 +354,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         for i in range(self.start, self.stop, self.step):
             fn_res = self.body_fn(i, *args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+            if len(args) == 0 and fn_res:
+                raise ValueError(
+                    "The for_loop function should not return anything if it only accepts the loop index."
+                    f" Got output {fn_res} even though the function accepted no additional inputs."
+                )
 
         return fn_res
 
@@ -418,6 +423,15 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                 CaptureWarning,
             )
             return self._call_capture_disabled(*init_state)
+
+        # don't fallback with this error, as will get similar error
+        if (ni := len(jaxpr_body_fn.in_avals)) != ((no := len(jaxpr_body_fn.out_avals)) + 1):
+            raise ValueError(
+                "The number of inputs must be one greater than the number of"
+                " outputs for the for_loop function. The additional input "
+                f"is the loop index. Got num_inputs {ni} and num_outputs {no}."
+            )
+
         for_loop_prim = _get_for_loop_qfunc_prim()
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))

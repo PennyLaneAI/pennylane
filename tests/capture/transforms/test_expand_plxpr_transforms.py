@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
 from pennylane.capture.primitives import transform_prim
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -197,20 +198,19 @@ class TestExpandPlxprTransforms:
 
         transformed_f = expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
-        assert len(transformed_jaxpr.eqns) == 8
-        assert transformed_jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
-        assert transformed_jaxpr.eqns[3].primitive == qml.RX._primitive
-        assert transformed_jaxpr.eqns[4].primitive == qml.RZ._primitive
-        assert transformed_jaxpr.eqns[5].primitive == qml.RY._primitive
-        assert transformed_jaxpr.eqns[6].primitive == qml.RZ._primitive
-        assert (
-            transformed_jaxpr.eqns[7].primitive == qml.measurements.ProbabilityMP._wires_primitive
-        )
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
+        assert len(ops_and_meas) == 8
+        assert ops_and_meas[0].primitive == qml.RX._primitive
+        assert ops_and_meas[1].primitive == qml.PauliZ._primitive
+        assert ops_and_meas[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert ops_and_meas[3].primitive == qml.RX._primitive
+        assert ops_and_meas[4].primitive == qml.RZ._primitive
+        assert ops_and_meas[5].primitive == qml.RY._primitive
+        assert ops_and_meas[6].primitive == qml.RZ._primitive
+        assert ops_and_meas[7].primitive == qml.measurements.ProbabilityMP._wires_primitive
         assert transformed_jaxpr.jaxpr.outvars == [
-            transformed_jaxpr.eqns[2].outvars[0],
-            transformed_jaxpr.eqns[7].outvars[0],
+            ops_and_meas[2].outvars[0],
+            ops_and_meas[7].outvars[0],
         ]
 
     def test_expand_multiple_transforms_nested(self):
@@ -254,19 +254,18 @@ class TestExpandPlxprTransforms:
 
         transformed_f = expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
-        assert len(transformed_jaxpr.eqns) == 7
-        assert transformed_jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
-        assert transformed_jaxpr.eqns[3].primitive == qml.RZ._primitive
-        assert transformed_jaxpr.eqns[4].primitive == qml.RY._primitive
-        assert transformed_jaxpr.eqns[5].primitive == qml.RZ._primitive
-        assert (
-            transformed_jaxpr.eqns[6].primitive == qml.measurements.ProbabilityMP._wires_primitive
-        )
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
+        assert len(ops_and_meas) == 7
+        assert ops_and_meas[0].primitive == qml.RX._primitive
+        assert ops_and_meas[1].primitive == qml.PauliZ._primitive
+        assert ops_and_meas[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert ops_and_meas[3].primitive == qml.RZ._primitive
+        assert ops_and_meas[4].primitive == qml.RY._primitive
+        assert ops_and_meas[5].primitive == qml.RZ._primitive
+        assert ops_and_meas[6].primitive == qml.measurements.ProbabilityMP._wires_primitive
         assert transformed_jaxpr.jaxpr.outvars == [
-            transformed_jaxpr.eqns[2].outvars[0],
-            transformed_jaxpr.eqns[6].outvars[0],
+            ops_and_meas[2].outvars[0],
+            ops_and_meas[6].outvars[0],
         ]
 
     def test_expand_function_with_no_transforms(self):

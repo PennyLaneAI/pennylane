@@ -73,7 +73,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
             )
             return qml.state()
 
-        circuit2 = qml.transforms.decompose(circuit, max_expansion=1)
+        circuit2 = qml.decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:

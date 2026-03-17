@@ -99,7 +99,7 @@ def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -186,6 +186,17 @@ def _resolve_mcm_config(
 
 def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
     diff_method = initial_config.gradient_method
+    if initial_config.derivative_order > 1 and (
+        "aux_wire" in initial_config.gradient_keyword_arguments
+        or (
+            "mode" in initial_config.gradient_keyword_arguments
+            and initial_config.gradient_keyword_arguments["mode"] in ("standard", "reversed")
+        )
+    ):
+        raise ValueError(
+            "Higher order derivatives with hadamard gradients in standard and reversed modes are not possible. "
+            "Instead please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
+        )
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
         raise ValueError(
@@ -294,7 +305,10 @@ def _resolve_execution_config(
         execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
-    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    execution_config = _resolve_diff_method(
+        execution_config, device, tape=tapes[0] if tapes else None
+    )
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
         execution_config, tapes[0]
@@ -320,5 +334,5 @@ def _resolve_execution_config(
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
     execution_config = replace(execution_config, **updated_values)
-    execution_config = device.setup_execution_config(execution_config, tapes[0])
+    execution_config = device.setup_execution_config(execution_config, tapes[0] if tapes else None)
     return execution_config

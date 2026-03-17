@@ -121,18 +121,16 @@ We can examine the resources by accessing the :code:`resources` key:
 
     >>> resources_lst = tracker.history['resources']
     >>> print(resources_lst[0])
-    Total wire allocations: 3
+    Wire allocations: 3
     Total gates: 7
-    Circuit depth: 5
-    <BLANKLINE>
-    Gate types:
-      RZ: 1
-      CNOT: 2
-      Hadamard: 2
-      PauliZ: 2
-    <BLANKLINE>
+    Gate counts:
+    - RZ: 1
+    - CNOT: 2
+    - Hadamard: 2
+    - PauliZ: 2
     Measurements:
-      expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: 5
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (

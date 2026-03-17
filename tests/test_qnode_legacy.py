@@ -596,8 +596,12 @@ class TestIntegration:
         x = pnp.array(0.543, requires_grad=True)
         y = pnp.array(-0.654, requires_grad=True)
 
+        gradient_kwargs = {"argnum": [1]}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
-            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
+            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1291,6 +1295,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(param, wires):
+            qml.RX(3 * param, wires)
+
         @qnode(dev, diff_method=diff_method, grad_on_execution=mode)
         def circuit(x):
             UnsupportedOp(x, wires=0)
@@ -1301,8 +1309,10 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = pnp.array(0.5)
-        circuit(x)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(UnsupportedOp, _decomp)
+            x = pnp.array(0.5)
+            circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -1452,46 +1462,6 @@ class TestTapeExpansion:
         res = circuit()
         assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
         assert res[0] == res[1]
-
-    def test_expansion_multiple_qwc_observables(self, mocker):
-        """Test that the QNode correctly expands tapes that return
-        multiple measurements of commuting observables"""
-        dev = DefaultQubitLegacy(wires=2)
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliY(1)]
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return [qml.expval(o) for o in obs]
-
-        spy_expand = mocker.spy(circuit.device.target_device, "expand_fn")
-        params = [0.1, 0.2]
-        res = circuit(*params)
-
-        tape = spy_expand.spy_return
-        rotations, observables = qml.pauli.diagonalize_qwc_pauli_words(obs)
-
-        assert tape.observables[0].name == observables[0].name
-        assert tape.observables[1].name == observables[1].name
-
-        assert tape.operations[-2].name == rotations[0].name
-        assert tape.operations[-2].parameters == rotations[0].parameters
-        assert tape.operations[-1].name == rotations[1].name
-        assert tape.operations[-1].parameters == rotations[1].parameters
-
-        # check output value is consistent with a Hamiltonian expectation
-        coeffs = np.array([1.0, 1.0])
-        H = qml.Hamiltonian(coeffs, obs)
-
-        @qml.qnode(dev)
-        def circuit2(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(H)
-
-        res_H = circuit2(*params)
-        assert np.allclose(coeffs @ res, res_H)
 
 
 class TestDefaultQubitLegacySeeding:

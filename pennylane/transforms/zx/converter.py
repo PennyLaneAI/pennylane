@@ -21,6 +21,8 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
+from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
@@ -318,23 +320,41 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
+
+    ######################################################################
+    # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
+    # populated only via add_label(label, row).  Use it so output boundary
+    # vertices are created later.
+    from packaging.version import Version
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
 
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+
     # Dictionary of gates (PennyLane to PyZX circuit)
+    # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
+    # and to update both if the PyZX gate spec changes.
     gate_types = {
+        "PauliX": pyzx.circuit.gates.NOT,
+        "PauliY": pyzx.circuit.gates.Y,
+        "PauliZ": pyzx.circuit.gates.Z,
         "X": pyzx.circuit.gates.NOT,
         "Y": pyzx.circuit.gates.Y,
         "Z": pyzx.circuit.gates.Z,
         "S": pyzx.circuit.gates.S,
         "T": pyzx.circuit.gates.T,
+        "SX": pyzx.circuit.gates.SX,
         "Hadamard": pyzx.circuit.gates.HAD,
         "RX": pyzx.circuit.gates.XPhase,
         "RY": pyzx.circuit.gates.YPhase,
         "RZ": pyzx.circuit.gates.ZPhase,
+        "U2": pyzx.circuit.gates.U2,
+        "U3": pyzx.circuit.gates.U3,
         "PhaseShift": pyzx.circuit.gates.ZPhase,
+        "CPhase": pyzx.circuit.gates.CPhase,
         "SWAP": pyzx.circuit.gates.SWAP,
         "CNOT": pyzx.circuit.gates.CNOT,
+        "CSWAP": pyzx.circuit.gates.CSWAP,
         "CY": pyzx.circuit.gates.CY,
         "CZ": pyzx.circuit.gates.CZ,
         "CRX": pyzx.circuit.gates.CRX,
@@ -365,14 +385,23 @@ def to_zx(tape, expand_measurements=False):
             vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
             inputs.append(vertex)
             q_mapper.set_prev_vertex(i, vertex)
-            q_mapper.set_next_row(i, 1)
-            q_mapper.set_qubit(i, i)
+            if _pyzx_010:
+                # add_label(i, 1) does all three things: set qubit, set rows, update labels
+                q_mapper.add_label(i, 1)
+            else:  # pragma: no cover
+                # pyzx 0.9: `add_label(l)` has a different signature (no `row` param) and destructive semantics (set_all_rows).
+                # We must call `set_next_row(i, 1)` + `set_qubit(i, i)` separately.
+                q_mapper.set_next_row(i, 1)
+                q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
-        mapped_tape = qml.tape.expand_tape(
-            mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
-        )
+        kwargs = {"gate_set": gate_sets.PYZX}
+        if qml.decomposition.enabled_graph():
+            kwargs["fixed_decomps"] = {qml.GlobalPhase: null_decomp}
+        [mapped_tape], _ = qml.transforms.decompose(mapped_tape, **kwargs)
+
+        if expand_measurements:
+            [mapped_tape], _ = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
 
         expanded_operations = []
         for op in mapped_tape.operations:

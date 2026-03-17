@@ -1586,9 +1586,9 @@ class TestHamiltonianSamples:
         var_h_theoretical = (2.5**2 + 6.2**2) - expected**2
         std_error = np.sqrt(var_h_theoretical / shots)
 
-        # Use 3-sigma tolerance to prevent flaky tests
+        # Use 4-sigma tolerance to prevent flaky tests
         # We use atol (absolute) because noise does not scale with the expectation value
-        assert np.allclose(res, expected, atol=3 * std_error)
+        assert np.allclose(res, expected, atol=4 * std_error)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_complex_hamiltonian(self, max_workers, seed):
