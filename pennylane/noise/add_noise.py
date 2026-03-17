@@ -23,8 +23,9 @@ from pennylane.ops.functions import equal
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import make_qscript
 from pennylane.transforms.core import BoundTransform, transform
-from pennylane.workflow import construct_execution_config, resolution
-from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow import construct_execution_config
+from pennylane.workflow.qnode import _make_execution_config  # tach-ignore
+from pennylane.workflow.resolution import _resolve_diff_method  # tach-ignore
 
 
 # pylint: disable=too-many-branches
@@ -525,7 +526,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
     if gradient_fn == "unset":
         config = construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
-        config = resolution._resolve_diff_method(config, qnode.device)
+        config = _resolve_diff_method(config, qnode.device)
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
