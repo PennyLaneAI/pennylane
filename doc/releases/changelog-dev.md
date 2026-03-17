@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* `qml.change_op_basis` now supports :class:`qml.templates.core.Subroutine` and other `Callable` arguments.
+* Added support for :class:`qml.templates.core.Subroutine` and other `Callable` arguments to `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
