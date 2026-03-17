@@ -21,6 +21,16 @@ resource estimation.
     with no guarantees of stability or backwards compatibility.
 
 
+Estimate
+~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate
+
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
