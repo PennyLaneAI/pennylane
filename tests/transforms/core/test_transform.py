@@ -980,12 +980,8 @@ class TestSetupInputs:
 
         spy = mocker.spy(dummy_transform, "setup_inputs")
 
-        @dummy_transform
-        @qml.qnode(qml.device("default.qubit"))
-        def c():
-            return qml.expval(qml.Z(0))
+        _ = dummy_transform(dummy_qnode)()
 
-        _ = c()
         assert spy.call_count == 1
 
     def test_setup_inputs_type_error(self):
