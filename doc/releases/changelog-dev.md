@@ -98,6 +98,7 @@
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
@@ -771,6 +772,11 @@ The following classes have been ported over:
   decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
+
+* Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the orignal
+  operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
+  symbolic decomposition rules that do not need to take an instance of the base operator as input.
+  [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
 
 <h3>Documentation 📝</h3>
 
