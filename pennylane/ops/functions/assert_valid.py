@@ -155,7 +155,7 @@ def _check_reconstructor(op):
     qml.assert_equal(reconstructed_op, adjoint_op)
 
     pow_op = qml.pow(op, z=2)
-    op_rep = pow_resource_rep(pow_op.__class__, pow_op.resource_params, z=2)
+    op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
     assert has_reconstructor(op_rep.op_type, op_rep.params)
 
     reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
