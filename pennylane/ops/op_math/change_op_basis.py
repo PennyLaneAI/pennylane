@@ -125,6 +125,31 @@ def change_op_basis(
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
 
+    A ``Subroutine`` or another ``Callable`` can also be provided as arguments to ``ChangeOpBasis``.
+
+    .. code-block:: python
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2):
+            qml.BasisState(np.zeros(len(reg2)), reg2)
+            qml.QFT(reg1)
+            qml.RX(a, reg1[0])
+
+        def g(wires):
+            qml.PauliX(wires[0])
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def circuit():
+            qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
+            return qml.state()
+
+        circuit3 = qml.decompose(circuit, max_expansion=1)
+
+    >>> print(qml.draw(circuit3)())
+    0: ─╭f──X─╭f†─┤  State
+    1: ─╰f────╰f†─┤  State
+
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
 
