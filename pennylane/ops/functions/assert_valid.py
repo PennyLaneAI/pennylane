@@ -144,7 +144,7 @@ def _check_reconstructor(op):
     if not has_reconstructor(op_rep.op_type, op_rep.params):
         return  # skip ops that are not meant to be compatible
 
-    if isinstance(op, (qml.MidMeasure, qml.PauliMeasure)):
+    if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
         return
 
     reconstructed_op = reconstruct(op.data, op.wires, op_rep.op_type, op_rep.params)
