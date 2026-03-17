@@ -22,11 +22,11 @@ import pennylane as qml
 from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
+from .reconstruct import reconstruct
 from .resources import (
     adjoint_resource_rep,
     controlled_resource_rep,
     pow_resource_rep,
-    reconstruct,
     resource_rep,
 )
 
