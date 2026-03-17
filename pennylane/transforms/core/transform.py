@@ -109,7 +109,7 @@ def specific_apply_transform(transform, obj, *targs, **tkwargs):
 
 @singledispatch
 def generic_apply_transform(obj, transform, *targs, **tkwargs):
-    """Apply an generic transform to a specific type of object.
+    """Apply a generic transform to a specific type of object.
 
     A singledispatch function used by ``Transform.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
