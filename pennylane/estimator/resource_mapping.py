@@ -546,3 +546,14 @@ def _(op: Controlled | ControlledOp):
         num_zero_ctrl=num_zero_ctrl,
         wires=ctrl_wires,
     )
+
+
+# Identity Ops: Operations that don't actually change the quantum state!
+@_map_to_resource_op.register
+def _(op: qops.Barrier):
+    return re_ops.Identity()
+
+
+@_map_to_resource_op.register
+def _(op: qops.Snapshot):
+    return re_ops.Identity()

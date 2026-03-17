@@ -513,6 +513,17 @@ class TestMapToResourceOp:
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
 
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        (
+            (qops.Barrier(wires=[1, 2, 3]), re_ops.Identity()),
+            (qops.Snapshot(measurement=qml.state()), re_ops.Identity()),
+        ),
+    )
+    def test_map_to_identity(self, operator, expected_res_op):
+        """Test that these special operators map to the identity"""
+        assert _map_to_resource_op(operator) == expected_res_op
+
 
 @pytest.mark.parametrize(
     "op, mapped_op",
