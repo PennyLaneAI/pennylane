@@ -734,7 +734,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
@@ -779,7 +779,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           pattern: test-report-*
           path: .github/test-reports
