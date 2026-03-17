@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
-    decomposition of a ``ResourceOperator``.
+    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
 
     Args:
         num_wires (int): the number of wires to be allocated
@@ -119,17 +119,17 @@ class Allocate:
 
 class Deallocate:
     r"""A class used to represent the deallocation of auxiliary wires that were used in the resource
-    decomposition of a ``ResourceOperator``.
+    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
 
     Args:
         num_wires (int | None): the number of wires to be deallocated
         allocated_register (Allocate | None): the allocated wire register the we wish to deallocate
         state (Literal["any", "zero"] | AllocateState): The quantum state of the wires to be deallocated, valid values include "zero" or "any".
-        restored (bool): A gurantee that the allocated register will be restored (deallocated) to its
+        restored (bool): A guarantee that the allocated register will be restored (deallocated) to its
             initial state. If True, this requirement will be enforced programmatically.
 
     Raises:
-        ValueError: `num_wires` must be a positive integer
+        ValueError: if `num_wires` is not a positive integer
         ValueError: if `restored` is not a boolean
 
     **Example**
@@ -236,7 +236,7 @@ class Deallocate:
 
     @property
     def restored(self):
-        """A gurantee that the allocated register will be restored (deallocated) to its
+        """A guarantee that the allocated register will be restored (deallocated) to its
         initial state. If True, this requirement will be enforced programmatically."""
         return self._restored
 
@@ -346,15 +346,15 @@ def _estimate_auxiliary_wires(
 
     Returns:
         (int): A positive integer (or zero) representing the maximum number of qubits allocated (``max_alloc``).
-        (int): A negative integer (or zero) representing the maximum number of qubits deallocateded (``max_dealloc``).
+        (int): A negative integer (or zero) representing the maximum number of qubits deallocated (``max_dealloc``).
         (int): An integer representing the total number of allocated qubits that weren't restored to the
         zero state by the end of the workflow (``total``). A positive value indicates that there were more
         allocated qubits than deallocated, a negative value indicates the opposite. A zero value indicates
         that all allocated qubits were deallocated.
 
     Raises:
-        ValueError: failed to deallocate and restore all ANY state allocations as required
-        ValueError: tried to deallocate an ANY state register before it was allocated
+        ValueError: if fails to deallocate and restore all ANY state allocations as required
+        ValueError: if tries to deallocate an ANY state register before it was allocated
     """
     if scalar == 0:
         return 0, 0, 0
@@ -463,9 +463,9 @@ def _process_circuit_lst(
         ``CompressedResourceOp`` or ``MarkQubits`` instances) and the wires it acts upon (``Wires``).
 
     Raises:
-        ValueError: If incompatible type of object is encountered in the tape. Circuit must contain only instances
+        ValueError: If incompatible type of object is encountered. Circuit must contain only instances
             of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits'.
-        ValueError: attempted to mark qubits that don't otherwise exist in the circuit wires
+        ValueError: if attempts to mark qubits that don't otherwise exist in the circuit wires
     """
     circuit_wires = Wires([])
     num_generated_wires = 0
@@ -528,7 +528,7 @@ def estimate_wires_from_circuit(
 
     Args:
         circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
-            represented by a list of circuit elements (operators, measurements, etc,).
+            represented by a list of circuit elements (operators, measurements, etc.).
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
@@ -539,7 +539,9 @@ def estimate_wires_from_circuit(
             any state, that can be used as part of the decomposition.
 
     Returns:
-        tuple(int, int): The number of auxiliary qubits used as part of the decomposition. They are
+        tuple(int, int, int): The number of qubits used as part of the decomposition. The first integer
+        represents the number of qubits required to define the circuit (before decomposition). The remaining
+        two integers represent the number of auxiliary qubits required as we decompose the circuit. They are
         separated according to their quantum state at the end of the workflow (``any_state``, ``zeroed``).
 
     Raises:
@@ -609,10 +611,10 @@ def estimate_wires_from_resources(
     any_state: int = 0,
 ):
     r"""Determine the number of auxiliary qubits needed to decompose the operators
-    in a :class:`~.pennylane.estimator.Resources` object into a specific ``gate_set`` with a given ``config``.
+    in a :class:`~.pennylane.estimator.resources_base.Resources` object into a specific ``gate_set`` with a given ``config``.
 
     Args:
-        workflow (~.pennylane.estimator.Resources): the collection of gates and counts to be further decomposed
+        workflow (:class:`~.pennylane.estimator.resources_base.Resources`): the collection of gates and counts to be further decomposed
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
