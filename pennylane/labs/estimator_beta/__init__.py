@@ -29,8 +29,8 @@ Qubit Tracking Functionality
 .. autosummary::
     :toctree: api
 
-    ~.wire_manager.Allocate
-    ~.wire_manager.Deallocate
+    ~Allocate
+    ~Deallocate
     ~estimate_wires_from_circuit
     ~estimate_wires_from_resources
     ~MarkClean
