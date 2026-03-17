@@ -561,10 +561,10 @@ class OutMultiplier(ResourceOperator):
         allocated wires: 0
         zero state: 0
         any state: 0
-    Total gates : 70
-    'Toffoli': 14,
-    'CNOT': 14,
-    'Hadamard': 42
+    Total gates : 140
+    'Toffoli': 28,
+    'CNOT': 28,
+    'Hadamard': 84
     """
 
     resource_keys = {"a_num_wires", "b_num_wires"}
