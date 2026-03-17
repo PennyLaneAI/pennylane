@@ -124,7 +124,7 @@ def change_op_basis_subroutine_resource_rep(
     Args:
         compute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the compute op. May be a subroutine.
         target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target op. May be a subroutine.
-        uncompute Optional(Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the optional uncompute op. May be a subroutine.
+        uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute op. May be a subroutine.
     Returns:
         pennylane.decomposition.CompressedResourceOp: a condensed representation of the change_op_basis involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
