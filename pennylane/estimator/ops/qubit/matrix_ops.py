@@ -66,9 +66,9 @@ class QubitUnitary(ResourceOperator):
         allocated wires: 0
              zero state: 0
              any state: 0
-     Total gates : 52
-      'RZ': 24,
-      'RY': 4,
+     Total gates : 96
+      'RZ': 44,
+      'RY': 28,
       'CNOT': 24
     """
 
