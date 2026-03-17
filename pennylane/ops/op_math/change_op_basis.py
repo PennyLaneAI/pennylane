@@ -90,7 +90,7 @@ def change_op_basis(
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     Raises:
-        TypeError: if any arguments are not Callables or Operators, or a Callable argument has params.
+        TypeError: if any arguments are not ``Callables`` or :class:`~.Operator`s, or a ``Callable`` argument has input parameters.
 
     **Example**
 
