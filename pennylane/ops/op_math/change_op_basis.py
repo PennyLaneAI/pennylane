@@ -140,6 +140,7 @@ def change_op_basis(
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
+            # Use partial to absorb any input parameters
             qml.change_op_basis(partial(f, 0.1, [0], [1]), partial(g, [0]))
             return qml.state()
 
