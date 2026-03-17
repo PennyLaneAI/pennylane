@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
-    decomposition of a ``ResourceOperator``.
+    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
 
     Args:
         num_wires (int): the number of wires to be allocated
@@ -119,7 +119,7 @@ class Allocate:
 
 class Deallocate:
     r"""A class used to represent the deallocation of auxiliary wires that were used in the resource
-    decomposition of a ``ResourceOperator``.
+    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
 
     Args:
         num_wires (int | None): the number of wires to be deallocated
@@ -609,10 +609,10 @@ def estimate_wires_from_resources(
     any_state: int = 0,
 ):
     r"""Determine the number of auxiliary qubits needed to decompose the operators
-    in a :class:`~.pennylane.estimator.Resources` object into a specific ``gate_set`` with a given ``config``.
+    in a :class:`~.pennylane.estimator.resources_base.Resources` object into a specific ``gate_set`` with a given ``config``.
 
     Args:
-        workflow (~.pennylane.estimator.Resources): the collection of gates and counts to be further decomposed
+        workflow (:class:`~.pennylane.estimator.resources_base.Resources`): the collection of gates and counts to be further decomposed
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
