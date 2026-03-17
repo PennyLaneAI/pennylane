@@ -40,6 +40,16 @@ def register_reconstructor(op_type: type[Operator]):
 def has_reconstructor(op_class: type[Operator], op_params: dict):
     """Checks whether a reconstructor exists for the resource rep."""
 
+    if op_class.resource_params is Operator.resource_params:
+        # If the operator inherited its resource_params from Operator, it means
+        # that this operator is never compatible with the graph system.
+        return False
+
+    if op_class is qml.templates.TemporaryAND:
+        # TODO: Special case of an controlled-like operator which takes control_values,
+        # to be handled in a follow-up PR. [sc-110068]
+        return False
+
     if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
         return True
 
