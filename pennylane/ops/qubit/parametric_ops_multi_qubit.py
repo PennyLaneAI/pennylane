@@ -26,12 +26,17 @@ import numpy as np
 import pennylane as qml
 from pennylane import math, queuing
 from pennylane.capture.autograph import disable_autograph
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.decomposition.resources import register_reconstructor, resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
     qjit_compatible_pow_rotation,
 )
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
+from pennylane.decomposition.reconstruct import register_reconstructor
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
 from pennylane.typing import TensorLike
