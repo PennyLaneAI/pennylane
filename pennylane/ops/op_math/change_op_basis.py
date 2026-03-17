@@ -33,7 +33,7 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import Prod, adjoint, ctrl
+from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.queuing import AnnotatedQueue
 from pennylane.templates.core import SubroutineOp
 
@@ -46,7 +46,7 @@ def _apply_op_or_func(op_or_func):
             op_or_func()
         except TypeError as e:
             raise TypeError(
-                "change_op_basis requires that Callable inputs to have no parameters"
+                "change_op_basis requires that Callable inputs have no parameters"
             ) from e
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
@@ -60,11 +60,12 @@ def _apply_op_or_func(op_or_func):
 
 def _convert_to_prod(op_or_func):
     if isinstance(op_or_func, Callable):
-        with AnnotatedQueue() as q:
-            op_or_func()
-        if isinstance(q.queue[0], SubroutineOp) and len(q.queue) == 1:
-            return Prod(*q.queue[0].decomposition())
-        return Prod(*q.queue)
+        try:
+            return prod(op_or_func)()
+        except TypeError as e:
+            raise TypeError(
+                "change_op_basis requires that Callable inputs have no parameters"
+            ) from e
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(

@@ -74,15 +74,9 @@ def test_change_op_basis_callables():
         partial(h, 0.2, Wires([0])),
     )
 
-    assert cob.operands[2] == qml.prod(
-        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
-    )
-    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
-    assert cob.operands[0] == qml.prod(
-        qml.adjoint(qml.RX)(0.2, 0),
-        qml.adjoint(qml.QFT)(Wires([0])),
-        qml.adjoint(qml.BasisState)(np.zeros(1), Wires([0])),
-    )
+    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
+    assert isinstance(cob.operands[1], qml.PauliX)
+    assert cob.operands[0] == h.operator(0.2, Wires([0]))
 
 
 def test_change_op_basis_with_none():
@@ -98,13 +92,9 @@ def test_change_op_basis_with_none():
 
     cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
 
-    assert cob.operands[2] == qml.prod(
-        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
-    )
-    assert isinstance(cob.operands[1].operands[0], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(
-        qml.prod(qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0))
-    )
+    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
+    assert isinstance(cob.operands[1], qml.PauliX)
+    assert cob.operands[0] == qml.adjoint(f)(0.1, Wires([0]), Wires([1]))
 
 
 @pytest.mark.capture
@@ -137,6 +127,15 @@ def test_change_op_basis_raises():
     ):
         qml.change_op_basis("X", "Y")
 
+    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
+    def f(a, reg1):
+        qml.adjoint(qml.RX)(a, reg1[0])
+
+    with pytest.raises(
+        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+    ):
+        qml.change_op_basis(f, qml.X(0), qml.RX(0.1, 0))
+
 
 @pytest.mark.capture
 def test_change_op_basis_raises_capture():
@@ -150,7 +149,7 @@ def test_change_op_basis_raises_capture():
         qml.adjoint(qml.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs to have no parameters"
+        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
     ):
         qml.change_op_basis(f, qml.X(0), qml.RX(0.1, 0))
 
@@ -198,13 +197,9 @@ def test_change_op_basis_with_mixed_types():
 
     cob = qml.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), qml.PauliX(0))
 
-    assert cob.operands[2] == qml.prod(
-        qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0)
-    )
+    assert cob.operands[2] == f.operator(0.1, Wires([0]), Wires([1]))
     assert isinstance(cob.operands[1], qml.PauliX)
-    assert cob.operands[0] == qml.adjoint(
-        qml.prod(qml.BasisState(np.zeros(1), Wires([1])), qml.QFT(Wires([0])), qml.RX(0.1, 0))
-    )
+    assert cob.operands[0] == qml.adjoint(f)(0.1, Wires([0]), Wires([1]))
 
 
 @pytest.mark.capture
