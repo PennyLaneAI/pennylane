@@ -81,16 +81,16 @@ def change_op_basis(
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): A single operator or Callable with no inputs that applies quantum operations.
-        target_op (:class:`~.Operator` | Callable): A single operator or Callable with no inputs that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or Callable  with no inputs that applies quantum
+        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     Raises:
-        TypeError: if any arguments are not Callables or Operators, or a Callable argument has params.
+        TypeError: if any arguments are not ``Callables`` or :class:`~.Operator`s, or a ``Callable`` argument has input parameters.
 
     **Example**
 
@@ -140,6 +140,7 @@ def change_op_basis(
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
+            # Use partial to absorb any input parameters
             qml.change_op_basis(partial(f, 0.1, [0], [1]), partial(g, [0]))
             return qml.state()
 
