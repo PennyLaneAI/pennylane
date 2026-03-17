@@ -695,6 +695,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforced public interfaces for internal modules (e.g., `transforms.core`) using `tach`. 
+  This decouples internal file structures from inter-module imports, making refactoring safer and easier.
+  [(#8940)](https://github.com/PennyLaneAI/pennylane/pull/8940)
+  
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
