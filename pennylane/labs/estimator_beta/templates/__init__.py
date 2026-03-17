@@ -11,17 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This module contains experimental features for
-resource estimation.
+r"""This module contains resource operators for basic PennyLane Operators"""
 
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.estimator_beta
-
-"""
-from pennylane.estimator import *
-from .templates import MottonenStatePreparation, CosineWindow
+from .state_prep import MottonenStatePreparation, CosineWindow
