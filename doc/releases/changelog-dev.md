@@ -853,6 +853,9 @@ The following classes have been ported over:
 * Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
+* Fixed the resource decomposition of `~.estimator.QubitUnitary` and `~.estimator.OutMultiplier` to match the expected results from the literature. Added mapping support for `~.Barrier` and `~.SnapShot` that would previously cause `~.estimator.estimate()` to fail.
+  [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
