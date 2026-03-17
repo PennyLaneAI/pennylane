@@ -118,7 +118,7 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
 
     >>> from pennylane.transforms import decompose, merge_rotations
-    >>> decompose(gate_set=gate_set) + merge_rotations(1e-6)
+    >>> decompose(gate_set=qml.gate_sets.ALL_OPS) + merge_rotations(1e-6)
 
     where transforms are called with just configuration parameters and combined into a CompilePipeline.
     """
