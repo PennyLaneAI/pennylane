@@ -150,7 +150,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     rule_params.update(op.resource_params)
 
     with qml.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **rule_params)
+        (
+            rule(*op.data, wires=op.wires, **rule_params)
+            if "wires" not in rule_params
+            else rule(*op.data, **rule_params)
+        )
     tape = qml.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
