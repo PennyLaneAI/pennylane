@@ -109,10 +109,7 @@ def specific_apply_transform(transform, obj, *targs, **tkwargs):
 
 @singledispatch
 def generic_apply_transform(obj, transform, *targs, **tkwargs):
-    """Apply a generic transform to a specific type of object.
-
-    A singledispatch function used by ``Transform.generic_apply_transform``, but with a different order of arguments
-    to allow is to be used by singledispatch.
+    """Apply a generic transform to a generic type of object.
 
     When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
     this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
