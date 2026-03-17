@@ -29,14 +29,16 @@ Qubit Tracking Functionality
 .. autosummary::
     :toctree: api
 
-    ~Allocate
-    ~Deallocate
+    ~.wire_manager.Allocate
+    ~.wire_manager.Deallocate
     ~estimate_wires_from_circuit
     ~estimate_wires_from_resources
     ~MarkClean
     ~MarkQubits
 
 """
+from pennylane.estimator import *
+
 from .estimate import estimate
 from .wires_manager import (
     Allocate,
