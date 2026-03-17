@@ -281,7 +281,9 @@ class Context:
         if "registers" not in context:
             context["registers"] = {}
         if "scopes" not in context:
-            context["scopes"] = {"subroutines": {}, "custom_gates": {}}
+            context["scopes"] = {}
+        context["scopes"].setdefault("subroutines", {})
+        context["scopes"].setdefault("custom_gates", {})
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
         if "return" not in context:
