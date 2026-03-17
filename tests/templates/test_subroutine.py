@@ -641,8 +641,8 @@ class TestGraphDecomposition:
         assert rp["signature_key"] == key
 
     # pylint: disable=too-many-statements
-    def test_change_op_basis_subroutine_resource_rep(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis."""
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -684,6 +684,9 @@ class TestGraphDecomposition:
             },
         }
 
+    def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+
         rr = change_op_basis_subroutine_resource_rep(
             qml.PauliZ(0),
             resource_rep(qml.PauliX),
@@ -703,6 +706,14 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
         assert rr.params["uncompute_op"].op_type == Adjoint
 
+    def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             resource_rep(qml.PauliX),
             partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
@@ -728,6 +739,14 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
         assert rr.params["uncompute_op"].op_type == Adjoint
 
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             qml.CNOT([0, 1]),
             qml.PauliX(0),
