@@ -539,7 +539,9 @@ def estimate_wires_from_circuit(
             any state, that can be used as part of the decomposition.
 
     Returns:
-        tuple(int, int): The number of auxiliary qubits used as part of the decomposition. They are
+        tuple(int, int, int): The number of qubits used as part of the decomposition. The first integer
+        represents the number of qubits required to define the circuit (before decomposition). The remaining
+        two integers represent the number of auxiliary qubits required as we decompose the circuit. They are
         separated according to their quantum state at the end of the workflow (``any_state``, ``zeroed``).
 
     Raises:
