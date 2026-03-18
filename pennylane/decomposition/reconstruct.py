@@ -40,6 +40,16 @@ def register_reconstructor(op_type: type[Operator]):
 def has_reconstructor(op_class: type[Operator], op_params: dict):
     """Checks whether a reconstructor exists for the resource rep."""
 
+    if op_class.resource_params is Operator.resource_params:
+        # If the operator inherited its resource_params from Operator, it means
+        # that this operator is never compatible with the graph system.
+        return False
+
+    if op_class is qml.templates.TemporaryAND:
+        # TODO: Special case of an controlled-like operator which takes control_values,
+        # to be handled in a follow-up PR. [sc-110068]
+        return False
+
     if op_class not in _reconstructors and not op_class.resource_keys - {"num_wires"}:
         return True
 
@@ -69,7 +79,8 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
         return qml.adjoint(reconstruct)(data, wires, base_class, base_params)
 
     if op_type is qml.ops.Controlled:
-        raise NotImplementedError  # TODO: to be implemented in a follow-up PR [sc-110068]
+        # TODO: to be implemented in a follow-up PR [sc-110068]
+        raise NotImplementedError  # pragma: no cover
 
     if op_type is qml.ops.Pow or op_type is qml.ops.PowOperation:
         base_class, base_params = op_params["base_class"], op_params["base_params"]
@@ -78,4 +89,4 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
     if op_type in _reconstructors:
         return _reconstructors[op_type](*data, wires=wires, **op_params)
 
-    raise NotImplementedError
+    raise NotImplementedError  # pragma: no cover
