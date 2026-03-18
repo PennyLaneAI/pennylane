@@ -415,7 +415,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             issubclass(op.op_type, qml.ops.Adjoint)
             and self_adjoint not in decomps
             and adjoint_rotation not in decomps
-            and qjit_compatible_pow_rotation not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
