@@ -34,7 +34,6 @@ from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
 
-
 # pylint: disable=protected-access,no-name-in-module
 
 
