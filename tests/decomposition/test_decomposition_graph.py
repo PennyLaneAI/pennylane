@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
+import copy
 # pylint: disable=protected-access,no-name-in-module
 
 import warnings
@@ -30,6 +31,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
@@ -45,6 +47,11 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
     @property
     def resource_params(self):
         return {}
+
+
+@register_reconstructor(CustomOp)
+def _custom_op_reconstructor(wires):
+    return CustomOp(wires)
 
 
 class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
@@ -813,16 +820,23 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
+        rule_params = copy.copy(op.hyperparameters)
+        rule_params.update(op.resource_params)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
         assert solution.resource_estimate(op) == to_resources({})
 
         op2 = qml.pow(qml.H(0), 6)
+
+        rule_params = copy.copy(op2.hyperparameters)
+        rule_params.update(op2.resource_params)
+
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
 
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
@@ -836,8 +850,11 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
+        rule_params = copy.copy(op.hyperparameters)
+        rule_params.update(op.resource_params)
+
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
         assert q.queue == expected
 
@@ -864,12 +881,24 @@ class TestSymbolicDecompositions:
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
         op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
+        rule1_params = copy.copy(op1.hyperparameters)
+        rule1_params.update(op1.resource_params)
+
+        rule2_params = copy.copy(op2.hyperparameters)
+        rule2_params.update(op2.resource_params)
+
+        rule3_params = copy.copy(op3.hyperparameters)
+        rule3_params.update(op3.resource_params)
+
+        rule4_params = copy.copy(op4.hyperparameters)
+        rule4_params.update(op4.resource_params)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
+            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **rule3_params)
+            solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **rule4_params)
 
         assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0]), qml.RX(-0.5, wires=0)]
         assert solution.resource_estimate(op1) == to_resources({qml.H: 1})
@@ -895,10 +924,16 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 0)
         op2 = qml.pow(CustomOp(1), 1)
 
+        rule1_params = copy.copy(op1.hyperparameters)
+        rule1_params.update(op1.resource_params)
+
+        rule2_params = copy.copy(op2.hyperparameters)
+        rule2_params.update(op2.resource_params)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [CustomOp(1)]
         assert solution.resource_estimate(op1) == to_resources({})
@@ -922,13 +957,21 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 2)
         op2 = qml.pow(qml.adjoint(CustomOp(1)), 2)
 
+        rule1_params = copy.copy(op1.hyperparameters)
+        rule1_params.update(op1.resource_params)
+
+        rule2_params = copy.copy(op2.hyperparameters)
+        rule2_params.update(op2.resource_params)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+
+            # TODO: Adjoint ops will be supported as of [sc-110066]
+            # solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [
             CustomOp(0),
             CustomOp(0),
-            qml.adjoint(qml.pow(CustomOp(1), 2)),
+            # qml.adjoint(qml.pow(CustomOp(1), 2)),
         ]

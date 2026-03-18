@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -137,8 +139,9 @@ def merge_powers(*params, wires, base, z, **__):
 @register_resources(_merge_powers_resource)
 def qjit_compatible_merge_powers(*params, wires, base_class, base_params, z, **__):
     """Decompose nested powers by combining them in a qjit compatible way."""
-    base = reconstruct(params, wires, base_class, base_params)
-    qml.pow(base, z * base.z)
+    new_params = copy.copy(base_params)
+    new_params["z"] = z * base_params["z"]
+    return reconstruct(params, wires, base_class, new_params)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
