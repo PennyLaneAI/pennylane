@@ -197,7 +197,7 @@ class TestDecomposition:
 
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
-            qml.MottonenStatePreparation.compute_decomposition(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
             return qml.state()
 
         state = circuit()
@@ -212,7 +212,7 @@ class TestDecomposition:
 
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
-            qml.MottonenStatePreparation.compute_decomposition(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
             return qml.probs()
 
         probabilities = circuit()
