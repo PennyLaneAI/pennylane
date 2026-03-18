@@ -82,7 +82,7 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
         # TODO: to be implemented in a follow-up PR [sc-110068]
         raise NotImplementedError  # pragma: no cover
 
-    if op_type is qml.ops.Pow or op_type is qml.ops.PowOperation:
+    if issubclass(op_type, qml.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         return qml.pow(reconstruct(data, wires, base_class, base_params), z=op_params["z"])
 
