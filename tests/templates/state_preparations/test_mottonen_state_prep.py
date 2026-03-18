@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
+    _get_alpha_z,
     compute_theta,
     gray_code,
     mottonen_decomp,
@@ -114,6 +115,29 @@ class TestHelpers:
         state /= np.linalg.norm(state, axis=-1)[:, None]
         res_batched = _get_alpha_y(state, 5, current_qubit)
         res_single = [_get_alpha_y(s, 5, current_qubit) for s in state]
+        assert np.allclose(res_batched, res_single)
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_get_alpha_z(self, n, seed, tol):
+        """Test the _get_alpha_z helper function."""
+        np.random.seed(seed)
+        omega = np.random.random(2**n)
+        running_omega = omega.copy()
+        for k in range(1, n + 1):
+            res = _get_alpha_z(omega, n, k)
+            expected = running_omega[1::2] - running_omega[::2]
+            assert np.allclose(res, expected, atol=tol)
+            running_omega = (running_omega[1::2] + running_omega[::2]) / 2
+
+    @pytest.mark.parametrize("current_qubit", [1, 2, 3, 4])
+    def test_get_alpha_z_batch(self, current_qubit, seed):
+        """Test that _get_alpha_z returns the same results with and without batching."""
+
+        rng = np.random.default_rng(seed)
+        state = rng.random((7, 2**5))
+        state /= np.linalg.norm(state, axis=-1)[:, None]
+        res_batched = _get_alpha_z(state, 5, current_qubit)
+        res_single = [_get_alpha_z(s, 5, current_qubit) for s in state]
         assert np.allclose(res_batched, res_single)
 
     @pytest.mark.parametrize("batch_dim", [None, 1, 5, 10])
