@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from conftest import decompositions, to_resources
+from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -33,8 +33,6 @@ from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
-
-# pylint: disable=protected-access,no-name-in-module
 
 
 # pylint: disable=protected-access,no-name-in-module
