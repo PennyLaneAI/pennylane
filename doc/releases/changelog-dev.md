@@ -695,7 +695,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Added support for :class:`qml.templates.core.Subroutine` and other `Callable` s to the 
+* Functions defining quantum operations can now be passed to the 
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
