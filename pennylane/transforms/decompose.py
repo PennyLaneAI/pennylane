@@ -40,6 +40,14 @@ from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
 
+def _use_reconstructor(op_type, op_params):
+    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
+    # TODO: Pow also implemented in a different PR [sc-110069]
+    if op_type in (ops.Controlled, ops.Pow):
+        return False
+    return has_reconstructor(op_type, op_params)
+
+
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
@@ -202,7 +210,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             op_rep = resource_rep(op.__class__, **op.resource_params)
             kwargs = (
                 op.resource_params
-                if has_reconstructor(op_rep.op_type, op_rep.params)
+                if _use_reconstructor(op_rep.op_type, op_rep.params)
                 else op.hyperparameters
             )
             decomp_fn = partial(compute_qfunc_decomposition, **kwargs)
@@ -870,7 +878,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         op_rep = resource_rep(op.__class__, **op.resource_params)
         kwargs = (
             op.resource_params
-            if has_reconstructor(op_rep.op_type, op_rep.params)
+            if _use_reconstructor(op_rep.op_type, op_rep.params)
             else op.hyperparameters
         )
         with queuing.AnnotatedQueue() as decomposed_ops:

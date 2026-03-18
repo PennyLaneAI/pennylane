@@ -27,7 +27,7 @@ import scipy.sparse
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
-from pennylane.decomposition.resources import adjoint_resource_rep, resource_rep
+from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
 from .equal import assert_equal
@@ -137,6 +137,14 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
+def _decomps_use_reconstructor(op_type, op_params):
+    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
+    # TODO: Pow also implemented in a different PR [sc-110069]
+    if op_type in (qml.ops.Pow, qml.ops.Controlled):
+        return False
+    return has_reconstructor(op_type, op_params)
+
+
 def _check_reconstructor(op):
     """Checks that the op can be reconstructed."""
 
@@ -157,14 +165,12 @@ def _check_reconstructor(op):
     reconstructed_op = reconstruct(adjoint_op.data, adjoint_op.wires, op_rep.op_type, op_rep.params)
     qml.assert_equal(reconstructed_op, adjoint_op)
 
-    # TODO: to be added in a follow-up PR [sc-110069]
+    pow_op = qml.pow(op, z=2)
+    op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
+    assert has_reconstructor(op_rep.op_type, op_rep.params)
 
-    # pow_op = qml.pow(op, z=2)
-    # op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
-    # assert has_reconstructor(op_rep.op_type, op_rep.params)
-    #
-    # reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
-    # qml.assert_equal(reconstructed_op, pow_op)
+    reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, pow_op)
 
 
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
@@ -179,7 +185,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     rep = resource_rep(op.__class__, **op.resource_params)
     kwargs = (
-        op.resource_params if has_reconstructor(rep.op_type, rep.params) else op.hyperparameters
+        op.resource_params
+        if _decomps_use_reconstructor(rep.op_type, rep.params)
+        else op.hyperparameters
     )
     with qml.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **kwargs)

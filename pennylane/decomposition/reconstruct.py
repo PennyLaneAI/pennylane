@@ -54,8 +54,7 @@ def has_reconstructor(op_class: type[Operator], op_params: dict):
         return True
 
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Pow also implemented in a different PR [sc-110069]
-    if op_class is qml.ops.Adjoint:
+    if op_class in (qml.ops.Adjoint, qml.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         return has_reconstructor(base_class, base_params)
 
