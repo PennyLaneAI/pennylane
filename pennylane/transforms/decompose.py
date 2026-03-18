@@ -866,14 +866,14 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
+        # It'd be nice if resource_params and hyperparameters can be unified.
+        op_rep = resource_rep(op.__class__, **op.resource_params)
+        kwargs = (
+            op.resource_params
+            if has_reconstructor(op_rep.op_type, op_rep.params)
+            else op.hyperparameters
+        )
         with queuing.AnnotatedQueue() as decomposed_ops:
-            # It'd be nice if resource_params and hyperparameters can be unified.
-            op_rep = resource_rep(op.__class__, **op.resource_params)
-            kwargs = (
-                op.resource_params
-                if has_reconstructor(op_rep.op_type, op_rep.params)
-                else op.hyperparameters
-            )
             op_rule(*op.parameters, wires=op.wires, **kwargs)
         decomp = decomposed_ops.queue
         if num_work_wires is not None:
