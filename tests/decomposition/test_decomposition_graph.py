@@ -14,8 +14,6 @@
 
 """Unit tests for the decomposition graph."""
 import copy
-# pylint: disable=protected-access,no-name-in-module
-
 import warnings
 from unittest.mock import patch
 
@@ -35,6 +33,9 @@ from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
+
+# pylint: disable=protected-access,no-name-in-module
+
 
 # pylint: disable=protected-access,no-name-in-module
 

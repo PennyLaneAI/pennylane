@@ -150,6 +150,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     rule_params.update(op.resource_params)
 
     with qml.queuing.AnnotatedQueue() as q:
+        # pylint: disable=expression-not-assigned
         (
             rule(*op.data, wires=op.wires, **rule_params)
             if "wires" not in rule_params

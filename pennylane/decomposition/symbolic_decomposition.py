@@ -230,6 +230,7 @@ def pow_rotation(phi, wires, base, z, **__):
 
 @register_resources(_pow_rotation_resource)
 def qjit_compatible_pow_rotation(phi, wires, base_class, base_params, z, **__):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle in a qjit compatible way."""
     reconstruct([phi * z], wires, base_class, base_params)
 
 

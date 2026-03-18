@@ -34,11 +34,11 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_involutory,
+    pow_involutory_no_reconstructor,
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
-    to_controlled_qubit_unitary, pow_involutory_no_reconstructor,
+    to_controlled_qubit_unitary,
 )
 
 # pylint: disable=no-name-in-module
@@ -262,17 +262,21 @@ class TestPowDecomposition:
             CustomOp(wires=[0, 1, 2]),
             qml.pow(CustomOp(wires=[0, 1, 2]), 0.5),
         ]
-        assert pow_involutory_no_reconstructor.compute_resources(**op1.resource_params) == Resources(
-            {resource_rep(CustomOp): 1}
+        assert pow_involutory_no_reconstructor.compute_resources(
+            **op1.resource_params
+        ) == Resources({resource_rep(CustomOp): 1})
+        assert pow_involutory_no_reconstructor.compute_resources(
+            **op3.resource_params
+        ) == Resources({resource_rep(CustomOp): 1})
+        assert (
+            pow_involutory_no_reconstructor.compute_resources(**op2.resource_params) == Resources()
         )
-        assert pow_involutory_no_reconstructor.compute_resources(**op3.resource_params) == Resources(
-            {resource_rep(CustomOp): 1}
+        assert (
+            pow_involutory_no_reconstructor.compute_resources(**op4.resource_params) == Resources()
         )
-        assert pow_involutory_no_reconstructor.compute_resources(**op2.resource_params) == Resources()
-        assert pow_involutory_no_reconstructor.compute_resources(**op4.resource_params) == Resources()
-        assert pow_involutory_no_reconstructor.compute_resources(**op5.resource_params) == Resources(
-            {pow_resource_rep(CustomOp, {}, 0.5): 1}
-        )
+        assert pow_involutory_no_reconstructor.compute_resources(
+            **op5.resource_params
+        ) == Resources({pow_resource_rep(CustomOp, {}, 0.5): 1})
 
         assert not pow_involutory_no_reconstructor.is_applicable(CustomOp, {}, z=0.5)
 
