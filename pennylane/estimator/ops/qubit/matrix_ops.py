@@ -48,7 +48,8 @@ class QubitUnitary(ResourceOperator):
           <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
           two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
 
-        * 3-qubit unitary or more, the cost is given according to Figure 14 in the reference above, recursively.
+        * 3-qubit unitary or more, the cost is given according to Figure 14 in `Möttönen and Vartiainen
+          (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , recursively.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QubitUnitary`.
 
@@ -137,7 +138,8 @@ class QubitUnitary(ResourceOperator):
               <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
               two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
 
-            * 3-qubit unitary or more, the cost is given according to Figure 14 in the reference above, recursively.
+            * 3-qubit unitary or more, the cost is given according to Figure 14 in `Möttönen and Vartiainen
+              (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , recursively.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
