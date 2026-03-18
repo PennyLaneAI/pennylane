@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for the internal reconstruct module."""
 
+
+import pytest
+
 import pennylane as qml
 from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
@@ -51,14 +54,25 @@ def test_pow_op():
     qml.assert_equal(reconstructed_op, op)
 
 
-def test_nested_symbolic_op():
+@pytest.mark.parametrize(
+    "op, op_rep",
+    [
+        (
+            qml.adjoint(qml.pow(qml.CRX(0.5, wires=[0, 1]), z=2)),
+            adjoint_resource_rep(qml.ops.Pow, {"base_class": qml.CRX, "base_params": {}, "z": 2}),
+        ),
+        (
+            qml.adjoint(qml.adjoint(qml.CRX(0.5, wires=[0, 1]))),
+            adjoint_resource_rep(qml.ops.Adjoint, {"base_class": qml.CRX, "base_params": {}}),
+        ),
+        (
+            qml.pow(qml.adjoint(qml.CRX(0.5, wires=[0, 1])), z=2),
+            pow_resource_rep(qml.ops.Adjoint, {"base_class": qml.CRX, "base_params": {}}, z=2),
+        ),
+    ],
+)
+def test_nested_symbolic_op(op, op_rep):
     """Tests that a nested symbolic op can be recursively reconstructed."""
-
-    base = qml.pow(qml.CRX(0.5, wires=[0, 1]), z=2)
-    base_rep = pow_resource_rep(base.base.__class__, base.base.resource_params, z=2)
-
-    op = qml.adjoint(base)
-    op_rep = adjoint_resource_rep(base_rep.op_type, base_rep.params)
 
     assert has_reconstructor(op_rep.op_type, op_rep.params)
     reconstructed_op = reconstruct(op.data, op.wires, op_rep.op_type, op_rep.params)
