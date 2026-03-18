@@ -333,6 +333,7 @@ class TestQROM:
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_select_decomposition_unary(self):
         """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
 
@@ -340,19 +341,15 @@ class TestQROM:
         control_wires = [0, 1, 2]
         target_wires = [3, 4]
 
-        qml.decomposition.enable_graph()
-
-        call_count = 0
-
         class SpyRule:
             """Wraps a DecompositionRule, tracking __call__ invocations."""
 
             def __init__(self, original):
-                object.__setattr__(self, "_original", original)
+                self._original = original
+                self.call_count = 0
 
             def __call__(self, *args, **kwargs):
-                nonlocal call_count
-                call_count += 1
+                self.call_count += 1
                 return self._original(*args, **kwargs)
 
             def __getattr__(self, name):
@@ -370,7 +367,7 @@ class TestQROM:
             return qml.state()
 
         circuit()
-        assert call_count > 0, "_select_decomp_unary was never called"
+        assert spy.call_count > 0, "_select_decomp_unary was never called"
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
