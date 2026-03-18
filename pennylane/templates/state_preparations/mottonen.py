@@ -194,7 +194,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
-        # If we do not _never_ skip, we might skip _some_ rotation
+        # Gate should be applied if we (1) never skip or (2) the angle is above desired tolerance
         if skip_none or qml.math.any(qml.math.abs(theta[..., i]) > _ATOL):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
