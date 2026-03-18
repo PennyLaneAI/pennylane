@@ -79,7 +79,8 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
         return qml.adjoint(reconstruct)(data, wires, base_class, base_params)
 
     if op_type is qml.ops.Controlled:
-        raise NotImplementedError  # TODO: to be implemented in a follow-up PR [sc-110068]
+        # TODO: to be implemented in a follow-up PR [sc-110068]
+        raise NotImplementedError  # pragma: no cover
 
     if op_type is qml.ops.Pow:
         base_class, base_params = op_params["base_class"], op_params["base_params"]
@@ -88,4 +89,4 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
     if op_type in _reconstructors:
         return _reconstructors[op_type](*data, wires=wires, **op_params)
 
-    raise NotImplementedError
+    raise NotImplementedError  # pragma: no cover
