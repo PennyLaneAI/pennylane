@@ -42,11 +42,11 @@ class QubitUnitary(ResourceOperator):
         is given by:
 
         * 1-qubit unitary, can be implemented up to a global phase by composing RX, RY, and RZ gates.
-            The cost is given by two :code:`RZ` rotations and one :code:`RY` rotation (``"RZ RY RZ"``).
+          The cost is given by two :code:`RZ` rotations and one :code:`RY` rotation (``"RZ RY RZ"``).
 
         * 2-qubit unitary, the cost is described by Figure 2 in `Shende, Markov and Bullock (2004)
-            <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
-            two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
+          <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
+          two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
 
         * 3-qubit unitary or more, the cost is given according to Figure 14 in the reference above, recursively.
 
