@@ -35,6 +35,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+    pow_rotation,
     qjit_compatible_pow_rotation,
 )
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
@@ -2330,7 +2331,7 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift00, _cphaseshift00)
 add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift00)", qjit_compatible_pow_rotation)
+add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
 class CPhaseShift01(Operation):
@@ -2545,7 +2546,7 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift01, _cphaseshift01)
 add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift01)", qjit_compatible_pow_rotation)
+add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
 class CPhaseShift10(Operation):
@@ -2754,4 +2755,4 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift10, _cphaseshift10)
 add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift10)", qjit_compatible_pow_rotation)
+add_decomps("Pow(CPhaseShift10)", pow_rotation)
