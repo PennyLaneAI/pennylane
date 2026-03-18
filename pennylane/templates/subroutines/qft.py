@@ -147,8 +147,8 @@ class QFT(Operation):
 
     @staticmethod
     @functools.lru_cache
-    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
-        return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
+    def compute_matrix(num_wires):  # pylint: disable=arguments-differ
+        return np.fft.ifft(np.eye(2**num_wires), norm="ortho")
 
     @staticmethod
     def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
