@@ -159,7 +159,7 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 
 
 @register_resources(_arbitrary_unitary_resources)
-def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike, **_):
+def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
     words = list(_all_pauli_words_but_identity(len(wires)))
 
     for i, word in enumerate(words):

@@ -224,7 +224,7 @@ def _fermionic_single_excitation_resources(num_wires):
 
 
 @register_resources(_fermionic_single_excitation_resources)
-def _fermionic_single_excitation_decomposition(weight, wires, **_):
+def _fermionic_single_excitation_decomposition(weight, wires):
     # Interpret first and last wire as r and p
     r = wires[0]
     p = wires[-1]

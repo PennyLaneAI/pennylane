@@ -380,7 +380,7 @@ class MottonenStatePreparation(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(state_vector, wires, **_):  # pylint: disable=arguments-differ
+    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
