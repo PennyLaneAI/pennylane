@@ -94,9 +94,13 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
   [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
+  [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
+  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
   from pennylane.templates import Subroutine
@@ -147,6 +151,13 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
+  `capture` is disabled.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
+
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
@@ -175,9 +186,12 @@ The following classes have been ported over:
 
   ```python
   @qml.qjit
+  @qml.transforms.merge_rotations
   @qml.transforms.cancel_inverses
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit():
+      qml.RX(1.23,0)
+      qml.RX(1.23,0)
       qml.X(0)
       qml.H(0)
       qml.H(0)
@@ -190,17 +204,18 @@ The following classes have been ported over:
   Device wires: 2
   Shots: Shots(total=None)
   Levels:
-  - 0: Before transforms
-  - 1: Before MLIR Passes
-  - 2: cancel-inverses
+  - 0: Before MLIR Passes
+  - 1: cancel-inverses
+  - 2: merge-rotations
   <BLANKLINE>
   ↓Metric     Level→ |  0 |  1 |  2
   ---------------------------------
-  Wire allocations   |  1 |  2 |  2
-  Total gates        |  3 |  3 |  1
+  Wire allocations   |  2 |  2 |  2
+  Total gates        |  5 |  3 |  2
   Gate counts:       |
+  - RX               |  2 |  2 |  1
   - PauliX           |  1 |  1 |  1
-  - Hadamard         |  2 |  2 |  0
+  - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
   ```
@@ -217,8 +232,10 @@ The following classes have been ported over:
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states.
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
+  [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -406,6 +423,19 @@ The following classes have been ported over:
   Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
+* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+  for resource estimation.
+  [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+
+  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
+  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+    from a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
+    from a :class:`~.estimator.Resources` object.
 
 <h3>Breaking changes 💔</h3>
 
@@ -666,6 +696,22 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+  
+* Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
+* The output of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
+
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
+  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
+
 * Upper bound `pyzx<0.10` dependency to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
 
@@ -710,8 +756,9 @@ The following classes have been ported over:
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
-* Add documentation tests for the `decomposition` module.
+* Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -746,6 +793,10 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+  was clarified in its documentation.
+  [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
+
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
@@ -756,6 +807,9 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
@@ -850,6 +904,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,

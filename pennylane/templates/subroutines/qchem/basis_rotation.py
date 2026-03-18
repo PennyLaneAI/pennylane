@@ -26,8 +26,12 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
 
+def _qjit_or_capture():
+    return compiler.active() or capture.enabled()
+
+
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not compiler.active() and not capture.enabled()
+    return math.is_abstract(U) and not _qjit_or_capture()
 
 
 def _adjust_determinant(matrix):
@@ -80,9 +84,10 @@ def _real_unitary(unitary, wires):
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(givens_list))
     def givens_loop(idx):
@@ -98,10 +103,11 @@ def _complex_unitary(unitary, wires):
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         phase_list = math.array(phase_list, like="jax")
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(phase_list))
     def phase_loop(idx):
