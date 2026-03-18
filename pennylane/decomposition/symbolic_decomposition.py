@@ -210,6 +210,7 @@ def make_pow_decomp_with_period(period, has_reconstructor=False) -> Decompositio
 
 
 pow_involutory = make_pow_decomp_with_period(2, True)
+pow_involutory_no_reconstructor = make_pow_decomp_with_period(2, False)
 
 
 def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument

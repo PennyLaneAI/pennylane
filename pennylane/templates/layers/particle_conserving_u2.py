@@ -270,7 +270,9 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
 
 
 @register_resources(_particle_conserving_u2_resources)
-def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int], **_):
+def _particle_conserving_u2_decomposition(
+    weights: list, wires: WiresLike, init_state: tuple[int], **_
+):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]

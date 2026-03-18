@@ -391,7 +391,7 @@ def _kupccgsd_decomposition(
     k: int,
     init_state: tuple[int],
     delta_sz: int = None,
-    **_
+    **_,
 ):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
     BasisEmbedding(init_state, wires=wires)
 

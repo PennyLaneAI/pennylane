@@ -38,6 +38,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
     pow_involutory,
+    pow_involutory_no_reconstructor,
     qjit_compatible_pow_rotation,
     self_adjoint,
 )
@@ -1821,7 +1822,7 @@ add_decomps(
     decompose_mcx_with_no_worker,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-add_decomps("Pow(MultiControlledX)", pow_involutory)
+add_decomps("Pow(MultiControlledX)", pow_involutory_no_reconstructor)
 
 
 class CRX(ControlledOp):
