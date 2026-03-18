@@ -171,7 +171,7 @@ def qjit_compatible_flip_pow_adjoint(*params, wires, base_class, base_params, z,
     qml.adjoint(qml.pow(base, z))
 
 
-def make_pow_decomp_with_period(period, has_reconstructor=False) -> DecompositionRule:
+def make_pow_decomp_with_period(period, use_reconstructor=False) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -185,7 +185,7 @@ def make_pow_decomp_with_period(period, has_reconstructor=False) -> Decompositio
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
-    if not has_reconstructor:
+    if not use_reconstructor:
 
         @register_condition(_condition_fn)
         @register_resources(_resource_fn)
