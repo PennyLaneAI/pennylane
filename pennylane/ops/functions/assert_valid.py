@@ -137,6 +137,13 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
+def _decomps_use_reconstructor(op_type, op_params):
+    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
+    if op_type is qml.ops.Controlled:
+        return False
+    return has_reconstructor(op_type, op_params)
+
+
 def _check_reconstructor(op):
     """Checks that the op can be reconstructed."""
 
@@ -175,16 +182,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
-    rule_params = copy.copy(op.hyperparameters)
-    rule_params.update(op.resource_params)
-
+    rep = resource_rep(op.__class__, **op.resource_params)
+    kwargs = (
+        op.resource_params
+        if _decomps_use_reconstructor(rep.op_type, rep.params)
+        else op.hyperparameters
+    )
     with qml.queuing.AnnotatedQueue() as q:
-        # pylint: disable=expression-not-assigned
-        (
-            rule(*op.data, wires=op.wires, **rule_params)
-            if "wires" not in rule_params
-            else rule(*op.data, **rule_params)
-        )
+        rule(*op.data, wires=op.wires, **kwargs)
     tape = qml.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
