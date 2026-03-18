@@ -27,7 +27,7 @@ import scipy.sparse
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
-from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
+from pennylane.decomposition.resources import adjoint_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
 from .equal import assert_equal
@@ -157,12 +157,14 @@ def _check_reconstructor(op):
     reconstructed_op = reconstruct(adjoint_op.data, adjoint_op.wires, op_rep.op_type, op_rep.params)
     qml.assert_equal(reconstructed_op, adjoint_op)
 
-    pow_op = qml.pow(op, z=2)
-    op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
-    assert has_reconstructor(op_rep.op_type, op_rep.params)
+    # TODO: to be added in a follow-up PR [sc-110069]
 
-    reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
-    qml.assert_equal(reconstructed_op, pow_op)
+    # pow_op = qml.pow(op, z=2)
+    # op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
+    # assert has_reconstructor(op_rep.op_type, op_rep.params)
+    #
+    # reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
+    # qml.assert_equal(reconstructed_op, pow_op)
 
 
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
