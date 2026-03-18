@@ -26,7 +26,7 @@ from .reconstruct import reconstruct
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
-def make_adjoint_decomp(base_decomposition: DecompositionRule, has_reconstructor=False):
+def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor=False):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
     def _condition_fn(base_class, base_params):  # pylint: disable=unused-argument
@@ -39,7 +39,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, has_reconstructor
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
-    if not has_reconstructor:
+    if not use_reconstructor:
 
         # pylint: disable=protected-access
         @register_condition(_condition_fn)
