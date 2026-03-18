@@ -150,9 +150,6 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* Added support for :class:`qml.templates.core.Subroutine` and other `Callable` arguments to `qml.change_op_basis`.
-  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
-
 * `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
   `capture` is disabled.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
@@ -684,6 +681,10 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Added support for :class:`qml.templates.core.Subroutine` and other `Callable` s to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
