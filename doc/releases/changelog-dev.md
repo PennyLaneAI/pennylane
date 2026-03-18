@@ -97,7 +97,9 @@
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
@@ -148,6 +150,16 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* The `default.qubit` device now supports parameter-broadcasted global phases.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
+  `capture` is disabled.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * ZX-related transforms are now compatible with `pyzx` v0.10.0.
   [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
@@ -418,6 +430,19 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
+* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+  for resource estimation.
+  [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+
+  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
+  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+    from a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
+    from a :class:`~.estimator.Resources` object.
+
 <h3>Breaking changes 💔</h3>
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
@@ -677,6 +702,12 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+  
+* Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
 * The output of the `qml.while_loop` condition is now automatically converted
   to a bool.
   [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
@@ -731,8 +762,9 @@ The following classes have been ported over:
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
-* Add documentation tests for the `decomposition` module.
+* Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -789,6 +821,9 @@ The following classes have been ported over:
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
   
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
