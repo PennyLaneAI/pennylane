@@ -216,16 +216,7 @@ def sample(
         ... def circuit(wires):
         ...     return qml.sample(wires=wires)
 
-        We previously squeezed out singleton dimensions like:
-
-        >>> qml.set_shots(circuit, 1)(wires=1) # doctest: +SKIP
-        array(0)
-        >>> qml.set_shots(circuit, 2)(0) # doctest: +SKIP
-        array([0, 0])
-        >>> qml.set_shots(circuit, 1)((0,1)) # doctest: +SKIP
-        array([0, 0])
-
-        With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
+        The above circuit returns an array of shape ``(shots, num_wires)``.
 
         >>> qml.set_shots(circuit, 1)(wires=1)
         array([[0]])
@@ -234,8 +225,6 @@ def sample(
         [0]])
         >>> qml.set_shots(circuit, 1)((0,1))
         array([[0, 0]])
-
-        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
