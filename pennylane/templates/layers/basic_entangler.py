@@ -234,7 +234,7 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
 
 
 @register_resources(_basic_entangler_resources)
-def _basic_entangler_decomposition(weights, wires, rotation, **_):
+def _basic_entangler_decomposition(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 
     if capture.enabled():
