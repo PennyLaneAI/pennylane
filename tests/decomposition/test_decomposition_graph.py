@@ -872,17 +872,10 @@ class TestSymbolicDecompositions:
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
         op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
-        rule1_params = copy.copy(op1.hyperparameters)
-        rule1_params.update(op1.resource_params)
-
-        rule2_params = copy.copy(op2.hyperparameters)
-        rule2_params.update(op2.resource_params)
-
-        rule3_params = copy.copy(op3.hyperparameters)
-        rule3_params.update(op3.resource_params)
-
-        rule4_params = copy.copy(op4.hyperparameters)
-        rule4_params.update(op4.resource_params)
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+        rule3_params = get_decomp_kwargs(op3)
+        rule4_params = get_decomp_kwargs(op4)
 
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
