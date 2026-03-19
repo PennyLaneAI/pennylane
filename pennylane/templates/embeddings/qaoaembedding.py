@@ -368,7 +368,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
 
 
 @register_resources(_qaoa_embedding_resources)
-def _qaoa_embedding_decomposition(features, weights, wires, local_field, **_):
+def _qaoa_embedding_decomposition(features, weights, wires, local_field):
     if has_jax and capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
 
