@@ -104,8 +104,8 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
 
     Executing this QNode:
 
-    >>> circuit_entropy(np.pi/2)
-    np.float64(0.693...)
+    >>> print(circuit_entropy(np.pi/2))
+    0.693...
 
     It is also possible to get the gradient of the previous QNode:
 
