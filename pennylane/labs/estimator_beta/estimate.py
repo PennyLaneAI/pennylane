@@ -20,7 +20,6 @@ from pennylane.estimator.estimate import (
     _get_resource_decomposition,
     _ops_to_compressed_reps,
 )
-from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
@@ -28,6 +27,7 @@ from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
+from .resource_config import LabsResourceConfig
 from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_resources
 
 # pylint: disable=too-many-arguments
@@ -38,7 +38,7 @@ def _update_counts_from_compressed_res_op(
     gate_counts_dict: dict,
     gate_set: set[str] | None = None,
     scalar: int = 1,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
@@ -47,13 +47,13 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
+        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
 
     if config is None:
-        config = ResourceConfig()
+        config = LabsResourceConfig()
 
     ## Early return if compressed resource operator is already in our defined gate set
     if comp_res_op.name in gate_set:
@@ -79,7 +79,7 @@ def estimate(
     zeroed_wires: int = 0,
     any_state_wires: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
@@ -92,7 +92,7 @@ def estimate(
         zeroed_wires (int): Number of work wires pre-allocated in the zeroed state. Default is ``0``.
         any_state_wires (int): Number of work wires pre-allocated in an unknown state. Default is ``0``.
         tight_wires_budget (bool): If True, extra work wires may not be allocated in addition to the pre-allocated ones. The default is ``False``.
-        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): Configurations for the resource estimation pipeline.
+        config (:class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig` | None): Configurations for the resource estimation pipeline.
 
     Returns:
         :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., :class:`~.pennylane.estimator.resources_base.Resources`]:
@@ -246,7 +246,7 @@ def _estimate_resources_dispatch(
     zeroed: int = 0,
     any_state: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
     """Internal singledispatch function for resource estimation."""
     raise TypeError(
@@ -261,7 +261,7 @@ def _resources_from_resource(
     zeroed: int = 0,
     any_state: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a Resources object (i.e. a Resources object that
     contains high-level operators can be analyzed with respect to a lower-level gate set)."""
@@ -305,7 +305,7 @@ def _resources_from_resource_operator(
     zeroed: int = 0,
     any_state: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
     resources = 1 * workflow
@@ -326,7 +326,7 @@ def _resources_from_pl_ops(
     zeroed: int = 0,
     any_state: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
     workflow = _map_to_resource_op(workflow)
@@ -348,7 +348,7 @@ def _resources_from_qfunc(
     zeroed: int = 0,
     any_state: int = 0,
     tight_wires_budget: bool = False,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
 ) -> Callable[..., Resources]:
     """Estimate resources for a quantum function which queues operators"""
 
