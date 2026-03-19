@@ -215,20 +215,20 @@ def _qft_decomposition_resources(num_wires):
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike, n_wires, **__):
+def _qft_decomposition(wires: WiresLike, num_wires, **__):
 
-    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
     shift_len = len(shifts)
 
-    @for_loop(n_wires)
+    @for_loop(num_wires)
     def outer_loop(i):
         Hadamard(wires[i])
 
-        if n_wires > 1:
+        if num_wires > 1:
 
             @for_loop(shift_len - i)
             def cphaseshift_loop(j):
@@ -238,9 +238,9 @@ def _qft_decomposition(wires: WiresLike, n_wires, **__):
 
     outer_loop()
 
-    @for_loop(n_wires // 2)
+    @for_loop(num_wires // 2)
     def swaps(i):
-        SWAP(wires=[wires[i], wires[n_wires - i - 1]])
+        SWAP(wires=[wires[i], wires[num_wires - i - 1]])
 
     swaps()
 
