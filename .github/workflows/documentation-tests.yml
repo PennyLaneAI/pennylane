@@ -69,12 +69,12 @@ jobs:
       # to be working correctly.
       - name: Run documentation tests
         run: |
-          IGNORE_WONT_FIX="
+          WONT_FIX="
           --ignore=pennylane/labs
           --ignore=pennylane/workflow/interfaces/tensorflow.py
           "
 
-          IGNORE_TO_DO="
+          TO_DO="
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
@@ -95,8 +95,8 @@ jobs:
           "
 
           IGNORE="
-          ${IGNORE_WONT_FIX}
-          ${IGNORE_TO_DO}
+          ${WONT_FIX}
+          ${TO_DO}
           "
 
           pytest pennylane $IGNORE --ignore-glob='*tests*'
