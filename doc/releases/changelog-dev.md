@@ -156,6 +156,10 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* `Callables` defining quantum operations can now be passed to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
+
 * The `default.qubit` device now supports parameter-broadcasted global phases.
   [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
 
