@@ -166,8 +166,7 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
 @register_resources(_flip_pow_adjoint_resource)
 def qjit_compatible_flip_pow_adjoint(*params, wires, base_class, base_params, z, **__):
     """Decompose the power of an adjoint in a qjit compatible way."""
-    adj = reconstruct(params, wires, base_class, base_params)
-    base = adj.base
+    base = reconstruct(params, wires, base_params["base_class"], base_params["base_params"])
     qml.adjoint(qml.pow(base, z))
 
 
