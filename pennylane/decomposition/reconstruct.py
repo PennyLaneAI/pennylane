@@ -25,6 +25,7 @@ _reconstructors = {}
 
 
 def decomps_use_reconstructor(op_type, op_params):
+    """Checks for special cases that has_reconstructor is not yet prepared to handle."""
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
     # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
     if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
@@ -33,6 +34,7 @@ def decomps_use_reconstructor(op_type, op_params):
 
 
 def get_decomp_kwargs(op):
+    """Returns the kwargs needed for a decomposition rule."""
     rep = resource_rep(op.__class__, **op.resource_params)
     return (
         op.resource_params

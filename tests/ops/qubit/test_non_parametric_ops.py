@@ -46,8 +46,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.decomposition import resource_rep
-from pennylane.decomposition.reconstruct import decomps_use_reconstructor, get_decomp_kwargs
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
 )

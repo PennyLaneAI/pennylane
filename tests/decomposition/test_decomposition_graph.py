@@ -30,7 +30,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.reconstruct import (
-    decomps_use_reconstructor,
     get_decomp_kwargs,
     register_reconstructor,
 )

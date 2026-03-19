@@ -47,7 +47,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from tests.decomposition.conftest import to_resources
 
 
-class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+class CustomOpWithoutReconstructor(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
     resource_keys = {"key"}
 
@@ -65,8 +65,9 @@ class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-
         return {"key": 0}
 
 
+# pytest: disable=unused-argument
 @register_reconstructor(CustomOpWithReconstructor)
-def _reconsutruct_custom_op(wires, key):  # pytest: disable=unused-argument
+def _reconsutruct_custom_op(wires, key):
     return CustomOpWithReconstructor(wires)
 
 
@@ -104,14 +105,6 @@ class TestAdjointDecompositionRules:
     def test_adjoint_general(self):
         """Tests the adjoint of a general operator can be correctly decomposed."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
         @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
         def _custom_decomp(phi, wires):
             qml.H(wires[0])
@@ -120,7 +113,7 @@ class TestAdjointDecompositionRules:
             qml.CNOT(wires=wires[1:3])
             qml.T(wires[2])
 
-        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
         rule = make_adjoint_decomp(_custom_decomp)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -146,41 +139,25 @@ class TestAdjointDecompositionRules:
     def test_adjoint_rotation(self):
         """Tests the adjoint_rotation decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
         with queuing.AnnotatedQueue() as q:
             adjoint_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [CustomOp(-0.5, wires=[0, 1, 2])]
+        assert q.queue == [CustomOpWithoutReconstructor(-0.5, wires=[0, 1, 2])]
         assert adjoint_rotation.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOp): 1}
+            {resource_rep(CustomOpWithoutReconstructor): 1}
         )
 
     def test_self_adjoint(self):
         """Tests the self_adjoint decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
         with queuing.AnnotatedQueue() as q:
             self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
+        assert q.queue == [CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2])]
         assert self_adjoint.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOp): 1}
+            {resource_rep(CustomOpWithoutReconstructor): 1}
         )
 
 
@@ -237,23 +214,15 @@ class TestPowDecomposition:
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        op = qml.pow(qml.adjoint(CustomOp(0.5, wires=[0, 1, 2])), 2)
+        op = qml.pow(qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2])), 2)
         with queuing.AnnotatedQueue() as q:
             flip_pow_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.adjoint(qml.pow(CustomOp(0.5, wires=[0, 1, 2]), 2))]
+        assert q.queue == [qml.adjoint(qml.pow(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]), 2))]
         assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
-                    qml.ops.Pow, {"base_class": CustomOp, "base_params": {}, "z": 2}
+                    qml.ops.Pow, {"base_class": CustomOpWithoutReconstructor, "base_params": {}, "z": 2}
                 ): 1
             }
         )
@@ -261,7 +230,7 @@ class TestPowDecomposition:
     @pytest.mark.parametrize(
         ("op_type", "rule"),
         [
-            (CustomOp, pow_involutory_no_reconstructor),
+            (CustomOpWithoutReconstructor, pow_involutory_no_reconstructor),
             (CustomOpWithReconstructor, pow_involutory),
         ],
     )
@@ -309,21 +278,13 @@ class TestPowDecomposition:
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        op = qml.pow(CustomOp(0.3, wires=[0, 1, 2]), 2.5)
+        op = qml.pow(CustomOpWithoutReconstructor(0.3, wires=[0, 1, 2]), 2.5)
         with queuing.AnnotatedQueue() as q:
             pow_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
+        assert q.queue == [CustomOpWithoutReconstructor(0.3 * 2.5, wires=[0, 1, 2])]
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOp): 1}
+            {resource_rep(CustomOpWithoutReconstructor): 1}
         )
 
 
