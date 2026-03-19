@@ -40,7 +40,7 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .reconstruct import decomps_use_reconstructor, has_reconstructor
+from .reconstruct import decomps_use_reconstructor
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
