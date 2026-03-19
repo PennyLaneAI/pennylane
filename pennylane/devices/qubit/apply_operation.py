@@ -930,18 +930,21 @@ def apply_parametrized_evolution(
     # shape(state) is static (not a tracer), we can use an if statement
     num_wires = len(math.shape(state)) - is_state_batched
     state = math.cast(state, complex)
-    if (
-        2 * len(op.wires) <= num_wires
-        or op.hyperparameters["complementary"]
-        or (is_state_batched and op.hyperparameters["return_intermediate"])
-    ):
+    if is_state_batched:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    if op.hyperparameters["return_intermediate"] and not op.hyperparameters["complementary"]:
+        return apply_operation._evolve_state_vector_under_parametrized_evolution(
+            op, state, num_wires, is_state_batched
+        )
+    if 2 * len(op.wires) <= num_wires or op.hyperparameters["complementary"]:
         # the subsystem operated on is half as big as the total system, or less
         # or we want complementary time evolution
-        # or both the state and the operation have a batch dimension
         # --> evolve matrix
         return _apply_operation_default(op, state, is_state_batched, debugger)
     # otherwise --> evolve state
-    return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires, is_state_batched)
+    return apply_operation._evolve_state_vector_under_parametrized_evolution(
+        op, state, num_wires, is_state_batched
+    )
 
 
 def _evolve_state_vector_under_parametrized_evolution(
@@ -1006,3 +1009,8 @@ def _evolve_state_vector_under_parametrized_evolution(
     if is_state_batched:
         return math.moveaxis(result, -1, 0)
     return result
+
+
+apply_operation._evolve_state_vector_under_parametrized_evolution = (  # type: ignore[attr-defined]
+    _evolve_state_vector_under_parametrized_evolution
+)
