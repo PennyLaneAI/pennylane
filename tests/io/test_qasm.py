@@ -184,6 +184,7 @@ class TestToQasmUnitTests:
             cx q[0],q[1];
             rz(3.1415926536) q[1];
             cx q[0],q[1];
+            gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             """
@@ -292,7 +293,7 @@ class TestToQasmUnitTests:
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
-            creg c[3];
+            creg c[2];
             rx(0.43) q[0];
             ry(0.35) q[1];
             rz(0.35) q[2];
@@ -301,7 +302,7 @@ class TestToQasmUnitTests:
             cx q[2],q[0];
             x q[1];
             measure q[0] -> c[0];
-            measure q[2] -> c[2];
+            measure q[2] -> c[1];
             """
         )
 
@@ -529,6 +530,7 @@ class TestQNodeQasmIntegrationTests:
             cx q[0],q[1];
             rz(3.1415926536) q[1];
             cx q[0],q[1];
+            gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             """
@@ -716,7 +718,7 @@ class TestQNodeQasmIntegrationTests:
                             include "qelib1.inc";
                             qreg q[3];
                             creg c[3];
-                            creg mcms[3]
+                            creg mcms[3];
                             x q[0];
                             measure q[0] -> mcms[0];
                             measure q[1] -> mcms[1];
@@ -745,7 +747,7 @@ class TestQNodeQasmIntegrationTests:
                     include "qelib1.inc";
                     qreg q[1];
                     creg c[1];
-                    creg mcms[1]
+                    creg mcms[1];
                     measure q[0] -> mcms[0];
                     if(mcms[0]==1) rx({p}) q[0];
                     measure q[0] -> c[0];

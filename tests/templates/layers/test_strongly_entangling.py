@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import ops as qml_ops
-from pennylane.capture.autograph import run_autograph
+from pennylane.capture import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -134,6 +134,7 @@ class TestDecomposition:
         gate_names = [gate.name for gate in ops]
         assert gate_names.count("CZ") == n_wires * n_layers
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol, batch_dim):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         shape = (1, 3, 3) if batch_dim is None else (batch_dim, 1, 3, 3)
@@ -191,12 +192,13 @@ class TestDecomposition:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax
         from jax import numpy as jnp
 
-        from pennylane.capture.primitives import cond_prim, for_loop_prim
+        from pennylane.capture.primitives import for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -216,8 +218,6 @@ class TestDynamicDecomposition:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-
-        # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
         layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert layer_loop_eqn[0].primitive == for_loop_prim
@@ -228,17 +228,8 @@ class TestDynamicDecomposition:
         rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
         assert rot_inner_eqn[-1].primitive == qml.Rot._primitive
 
-        cond_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == cond_prim]
-        assert cond_eqn[0].primitive == cond_prim
-        true_branch_eqns = cond_eqn[0].params["jaxpr_branches"][0].eqns
-        false_branch_eqns = cond_eqn[0].params["jaxpr_branches"][1].eqns
-        assert false_branch_eqns == []
-
-        imprimitive_loop_eqn = [eqn for eqn in true_branch_eqns if eqn.primitive == for_loop_prim]
-        assert imprimitive_loop_eqn[0].primitive == for_loop_prim
-        imprimitive_inner_eqn = imprimitive_loop_eqn[0].params["jaxpr_body_fn"].eqns
-        assert imprimitive_inner_eqn[-1].primitive == imprimitive._primitive
-
+        cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
+        assert cnot_inner_eqn[-1].primitive == qml.CNOT._primitive
         # Validate Ops
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
@@ -261,12 +252,11 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
     )
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
     ):  # pylint:disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
-
-        from functools import partial
 
         import jax
 
@@ -291,7 +281,7 @@ class TestDynamicDecomposition:
 
         with qml.capture.pause():
 
-            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.StronglyEntanglingLayers(
@@ -345,6 +335,7 @@ class TestInputs:
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")

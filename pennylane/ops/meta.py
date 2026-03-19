@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+
 from collections.abc import Hashable, Sequence
 
 # pylint: disable=arguments-differ
@@ -238,8 +239,6 @@ class Snapshot(Operation):
             measurement = qml.state()
         if isinstance(measurement, qml.measurements.StateMP) and shots == "workflow":
             shots = None  # always use analytic with state
-        if isinstance(measurement, qml.ops.MidMeasure):
-            raise ValueError("Mid-circuit measurements can not be used in snapshots.")
         if isinstance(measurement, qml.measurements.MeasurementProcess):
             qml.queuing.QueuingManager.remove(measurement)
         else:

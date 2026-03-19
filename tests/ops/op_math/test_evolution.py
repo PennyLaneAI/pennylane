@@ -101,21 +101,24 @@ class TestEvolution:
     def test_repr_paulix(self):
         """Test the __repr__ method when the base is a simple observable."""
         op = Evolution(qml.PauliX(0), 3)
-        assert repr(op) == "Evolution(-3j PauliX)"
+        # Python 3.13: "Evolution(-3j PauliX)"
+        # Python 3.14+: "Evolution((-0-3j) PauliX)"
+        assert repr(op) in ["Evolution(-3j PauliX)", "Evolution((-0-3j) PauliX)"]
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Evolution(t, 0.25)
-
-        assert repr(isingxx) == "Evolution(-0.25j X(0) @ X(1))"
+        assert repr(isingxx) in [
+            "Evolution(-0.25j X(0) @ X(1))",
+            "Evolution((-0-0.25j) X(0) @ X(1))",
+        ]
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
-
-        assert repr(op) == "Evolution(-3j S(0) @ X(0))"
+        assert repr(op) in ["Evolution(-3j S(0) @ X(0))", "Evolution((-0-3j) S(0) @ X(0))"]
 
     @pytest.mark.parametrize(
         "op,decimals,expected",
@@ -227,3 +230,27 @@ class TestEvolution:
         pow_op = op.pow(2.5)
         qml.assert_equal(pow_op, Evolution(qml.Z(0), -0.5 * 2.5))
         assert type(pow_op) == Evolution  # pylint: disable=unidiomatic-typecheck
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize(
+    "coeff, hamiltonian",
+    [
+        (0.3, qml.Z(0) @ qml.Y(1)),
+        (0.5, 0.1 * qml.Y(0) @ qml.I(1) @ qml.Z(2)),
+        (0.3, qml.Z(0)),
+    ],
+)
+def test_pauli_decomposition_integration_graph(coeff, hamiltonian):
+    """Tests that the pauli decomposition works in the new graph-based system."""
+
+    op = qml.evolve(hamiltonian, coeff)
+    tape = qml.tape.QuantumScript([op])
+
+    [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+    assert len(decomp_tape) == 1
+    assert not qml.math.iscomplex(decomp_tape[0].data[0])
+    actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+    expected_matrix = qml.matrix(op, wire_order=op.wires)
+    assert qml.math.allclose(actual_matrix, expected_matrix)

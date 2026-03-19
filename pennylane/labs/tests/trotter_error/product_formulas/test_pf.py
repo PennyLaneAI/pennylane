@@ -13,14 +13,10 @@
 # limitations under the License.
 """Tests for the product formula representations"""
 
-from itertools import product
-
 import numpy as np
 import pytest
-from scipy.sparse.linalg import expm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
-from pennylane.labs.trotter_error.abstract import nested_commutator
 
 
 def _hermitian(mat):
@@ -184,49 +180,3 @@ def test_matrix(fragment_dict):
     mat2 = fourth_order_2.to_matrix(fragment_dict)
 
     assert np.allclose(mat1, mat2)
-
-
-@pytest.mark.parametrize("fragments, t", product(fragment_dicts[:-1], [1, 0.1, 0.01]))
-def test_fourth_order_norm_two_fragments(fragments, t):
-    """Tests against an upper bound on the norm of the fourth order Trotter formula. This test comes from
-    Proposition J.1 of https://arxiv.org/pdf/1912.08854"""
-
-    u = 1 / (4 - 4 ** (1 / 3))
-    frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-    frag_coeffs = [
-        u / 2,
-        u,
-        u,
-        u,
-        (1 - (3 * u)) / 2,
-        (1 - (4 * u)),
-        (1 - (3 * u)) / 2,
-        u,
-        u,
-        u,
-        u / 2,
-    ]
-
-    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(1j * t)
-    fourth_order_approx = fourth_order.to_matrix(fragments)
-    actual = expm(1j * t * sum(fragments.values(), np.zeros_like(fragments[0])))
-
-    commutator_coeffs = {
-        (0, 0, 0, 1, 0): 0.0047,
-        (0, 0, 1, 1, 0): 0.0057,
-        (0, 1, 0, 1, 0): 0.0046,
-        (0, 1, 1, 1, 0): 0.0074,
-        (1, 0, 0, 1, 0): 0.0097,
-        (1, 0, 1, 1, 0): 0.0097,
-        (1, 1, 0, 1, 0): 0.0173,
-        (1, 1, 1, 1, 0): 0.0284,
-    }
-
-    upper_bound = 0
-    for comm, coeff in commutator_coeffs.items():
-        mat = nested_commutator([fragments[frag] for frag in comm])
-        upper_bound += coeff * np.linalg.norm(mat)
-
-    difference = np.linalg.norm(fourth_order_approx - actual)
-
-    assert difference <= (t**5) * upper_bound or np.isclose(difference, (t**5) * upper_bound)

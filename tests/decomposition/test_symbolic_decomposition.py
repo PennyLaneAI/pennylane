@@ -368,7 +368,7 @@ class TestControlledDecomposition:
 
         expected_ops = [
             qml.CNOT(wires=[6, 0]),
-            qml.Toffoli(wires=[6, 0, 1]),
+            qml.MultiControlledX(wires=[6, 0, 1], work_wires=[7]),
             qml.MultiControlledX(wires=[6, 0, 1, 2], work_wires=[7]),
             qml.MultiControlledX(
                 wires=[6, 0, 1, 2, 3], control_values=[1, 1, 0, 1], work_wires=[7, 4]
@@ -401,7 +401,13 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 qml.resource_rep(qml.CNOT): 1,
-                qml.resource_rep(qml.Toffoli): 1,
+                qml.resource_rep(
+                    qml.MultiControlledX,
+                    num_control_wires=2,
+                    num_zero_control_values=0,
+                    num_work_wires=1,
+                    work_wire_type="borrowed",
+                ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=3,
@@ -461,7 +467,7 @@ class TestControlledDecomposition:
 
         expected_ops = [
             qml.X(6),
-            qml.Toffoli(wires=[6, 7, 0]),
+            qml.MultiControlledX(wires=[6, 7, 0], work_wires=[8]),
             qml.MultiControlledX(wires=[6, 7, 0, 1], work_wires=[8]),
             qml.MultiControlledX(wires=[6, 7, 0, 1, 2], work_wires=[8]),
             qml.MultiControlledX(
@@ -503,7 +509,13 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 qml.resource_rep(qml.X): 2,
-                qml.resource_rep(qml.Toffoli): 1,
+                qml.resource_rep(
+                    qml.MultiControlledX,
+                    num_control_wires=2,
+                    num_zero_control_values=0,
+                    num_work_wires=1,
+                    work_wire_type="borrowed",
+                ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=3,

@@ -16,9 +16,6 @@
 
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
-from functools import partial
-from typing import Optional
-
 import numpy as np
 import pytest
 
@@ -51,7 +48,7 @@ complex_obs_list = [
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
-    def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+    def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
         for t in circuits:
             for mp in t.measurements:
                 if mp.obs and isinstance(mp.obs, qml.ops.Sum):
@@ -63,6 +60,11 @@ class NoTermsDevice(qml.devices.DefaultQubit):
 
 class TestUnits:
     """Unit tests for components of the ``split_to_single_terms`` transform"""
+
+    def test_pass_name(self):
+        """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""
+
+        assert split_to_single_terms.pass_name == "split-to-single-terms"
 
     def test_single_term_observable(self):
         """Test that the transform does not affect a circuit that
@@ -576,7 +578,7 @@ class TestDifferentiability:
 
         dev = NoTermsDevice(wires=2, seed=seed)
 
-        @partial(split_to_single_terms)
+        @split_to_single_terms
         @qml.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
             qml.RX(np.pi / 4, wires=0)

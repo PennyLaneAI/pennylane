@@ -372,7 +372,11 @@ def _get_plxpr_defer_measurements():
         # the primitive corresponding to the class to get binded. We do not want the
         # MidMeasure's primitive to get recorded.
         meas = type.__call__(
-            MidMeasure, Wires(cur_target), reset=reset, postselect=postselect, id=str(cur_target)
+            MidMeasure,
+            Wires(cur_target),
+            reset=reset,
+            postselect=postselect,
+            meas_uid=str(cur_target),
         )
 
         cnot_wires = (wires, cur_target)
@@ -403,31 +407,35 @@ def _get_plxpr_defer_measurements():
             )
 
         conditions = get_mcm_predicates(conditions[:-1])
-        args = invals[args_slice]
+        args = invals[slice(*args_slice)]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
-
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
-                    cur_consts = invals[consts_slices[i]]
-                    qml.cond(value, ctrl_transform_prim.bind)(
-                        *cur_consts,
-                        *args,
-                        *control_wires,
+                    cur_consts = invals[slice(*consts_slices[i])]
+                    _f = partial(
+                        ctrl_transform_prim.bind,
                         jaxpr=jaxpr,
                         n_control=len(control_wires),
                         control_values=branch,
                         work_wires=None,
                         n_consts=len(cur_consts),
                     )
+                    qml.cond(value, _f)(
+                        *cur_consts,
+                        *args,
+                        *control_wires,
+                    )
 
         return [None] * len(jaxpr_branches[0].outvars)
 
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         if not tkwargs.get("num_wires", None):
             raise ValueError(
@@ -648,13 +656,12 @@ def defer_measurements(
 
             .. code-block:: python
 
-                from functools import partial
                 import jax
 
                 qml.capture.enable()
 
                 @qml.capture.expand_plxpr_transforms
-                @partial(qml.defer_measurements, num_wires=1)
+                @qml.defer_measurements(num_wires=1)
                 def f(n):
                     qml.measure(n)
 
@@ -686,14 +693,13 @@ def defer_measurements(
 
           .. code-block:: python
 
-              from functools import partial
               import jax
               import jax.numpy as jnp
 
               qml.capture.enable()
 
               @qml.capture.expand_plxpr_transforms
-              @partial(qml.defer_measurements, num_wires=10)
+              @qml.defer_measurements(num_wires=10)
               def f():
                   m0 = qml.measure(0)
 
@@ -787,7 +793,7 @@ def defer_measurements(
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
-                control_wires[op.id] = cur_wire
+                control_wires[op.meas_uid] = cur_wire
 
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
@@ -805,7 +811,7 @@ def defer_measurements(
 
                 cur_wire += 1
             else:
-                control_wires[op.id] = op.wires[0]
+                control_wires[op.meas_uid] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
@@ -823,7 +829,8 @@ def defer_measurements(
             # MidMeasures. Thus, we need to manually map wires for each MidMeasure.
             if isinstance(mp.mv, MeasurementValue):
                 new_ms = [
-                    qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
+                    qml.map_wires(m, {m.wires[0]: control_wires[m.meas_uid]})
+                    for m in mp.mv.measurements
                 ]
                 new_m = MeasurementValue(
                     new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
@@ -832,7 +839,7 @@ def defer_measurements(
                 new_m = []
                 for val in mp.mv:
                     new_ms = [
-                        qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
+                        qml.map_wires(m, {m.wires[0]: control_wires[m.meas_uid]})
                         for m in val.measurements
                     ]
                     new_m.append(
@@ -861,10 +868,12 @@ def defer_measurements(
 def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
     if reduce_postselected:
-        control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
+        control = [
+            control_wires[m.meas_uid] for m in op.meas_val.measurements if m.postselect is None
+        ]
         items = op.meas_val.postselected_items()
     else:
-        control = [control_wires[m.id] for m in op.meas_val.measurements]
+        control = [control_wires[m.meas_uid] for m in op.meas_val.measurements]
         items = op.meas_val.items()
 
     new_ops = []

@@ -14,14 +14,15 @@
 """
 Tests for the add_noise transform.
 """
-from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.noise.add_noise import add_noise
+from pennylane.noise.add_noise import _get_transform_program, add_noise
 from pennylane.tape import QuantumScript
+from pennylane.transforms.core import BoundTransform, CompilePipeline
 
 # pylint:disable = no-member
 
@@ -153,7 +154,7 @@ class TestAddNoiseInterface:
 
         c, n = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @add_noise(noise_model=qml.NoiseModel({c: n}))
         @qml.qnode(dev)
         def f_noisy(w, x, y, z):
             qml.RX(w, wires=0)
@@ -254,7 +255,7 @@ class TestAddNoiseInterface:
 
         c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.3)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @add_noise(noise_model=qml.NoiseModel({c: n}))
         @qml.qnode(dev)
         def f1(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
@@ -291,7 +292,7 @@ class TestAddNoiseInterface:
             qml.CRX(kwargs["noise_param"], wires=[0, 1])
 
         @qml.qnode(dev)
-        @partial(add_noise, noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
+        @add_noise(noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
         def noisy_circuit(circuit_param):
             qml.RY(circuit_param, wires=0)
             qml.Hadamard(wires=0)
@@ -330,7 +331,7 @@ class TestAddNoiseInterface:
             [0, 1]
         ), qml.noise.partial_wires(qml.PhaseFlip, 0.2)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
+        @add_noise(noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
         @qml.qnode(dev)
         def f_noisy(w, x, y, z):
             qml.RX(w, wires=0)
@@ -393,6 +394,7 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
+    @pytest.mark.xfail(strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/8779")
     @pytest.mark.parametrize(
         "level1, level2",
         [
@@ -405,7 +407,7 @@ class TestAddNoiseLevels:
         ],
     )
     def test_add_noise_level(self, level1, level2):
-        """Test that add_noise can be inserted to correct level in the TransformProgram"""
+        """Test that add_noise can be inserted to correct level in the CompilePipeline"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor
@@ -427,18 +429,18 @@ class TestAddNoiseLevels:
 
         noisy_qnode = add_noise(f, noise_model=noise_model, level=level1)
 
-        transform_level1 = noisy_qnode.transform_program
-        transform_level2 = qml.workflow.get_transform_program(f, level=level2)
+        transform_level1 = noisy_qnode.compile_pipeline
+        transform_level2 = _get_transform_program(f, level=level2)
         transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 
         assert len(transform_level1) == len(transform_level2) + bool(level1 == "user")
         for t1, t2 in zip(transform_level1, transform_level2):
-            if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
+            if t1.tape_transform.__name__ == t2.tape_transform.__name__ == "expand_fn":
                 continue
             assert t1 == t2
 
     def test_add_noise_level_with_final(self):
-        """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+        """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor
@@ -460,9 +462,201 @@ class TestAddNoiseLevels:
 
         noisy_qnode = add_noise(f, noise_model=noise_model)
 
-        transform_level1 = qml.workflow.get_transform_program(f)
-        transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
+        transform_level1 = _get_transform_program(f)
+        transform_level2 = _get_transform_program(noisy_qnode)
 
         assert len(transform_level1) == len(transform_level2) - 1
-        assert transform_level2[4].transform == add_noise.transform
-        assert transform_level2[-1].transform == qml.metric_tensor.transform
+        assert transform_level2[4].tape_transform == qml.metric_tensor.tape_transform
+        assert transform_level2[5].tape_transform == add_noise.tape_transform
+
+
+class TestGetTransformProgramHelper:
+    """Tests the private _get_transform_program helper."""
+
+    def test_bad_string_key(self):
+        """Test a value error is raised if a bad string key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"Level bla not found in transform program."):
+            _get_transform_program(circuit, level="bla")
+
+    def test_bad_other_key(self):
+        """Test a value error is raised if a bad, unrecognized key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"not recognized."):
+            _get_transform_program(circuit, level=["bah"])
+
+    def test_get_transform_program_diff_method_transform(self):
+        """Tests for the transform program when the diff_method is a transform."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.transforms.compile(num_passes=2)
+        @qml.transforms.merge_rotations(atol=1e-5)
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        expected_p0 = BoundTransform(qml.transforms.cancel_inverses)
+        expected_p1 = BoundTransform(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
+
+        ps_expand_fn = BoundTransform(
+            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
+        )
+
+        p0 = _get_transform_program(circuit, level=0)
+        assert isinstance(p0, CompilePipeline)
+        assert len(p0) == 0
+
+        p0 = _get_transform_program(circuit, level="top")
+        assert isinstance(p0, CompilePipeline)
+        assert len(p0) == 0
+
+        p_grad = _get_transform_program(circuit, level="gradient")
+        assert isinstance(p_grad, CompilePipeline)
+        assert len(p_grad) == 4
+        assert p_grad == CompilePipeline(expected_p0, expected_p1, expected_p2, ps_expand_fn)
+
+        p_dev = _get_transform_program(circuit, level="device")
+        assert isinstance(p_grad, CompilePipeline)
+        p_default = _get_transform_program(circuit)
+        assert p_dev == p_default
+
+        assert len(p_dev) == 10
+        config = qml.devices.ExecutionConfig(
+            interface=getattr(circuit, "interface", None),
+            mcm_config=qml.devices.MCMConfig(mcm_method="deferred"),
+        )
+        assert p_dev == p_grad + dev.preprocess_transforms(config)
+
+        # slicing
+        p_sliced = _get_transform_program(circuit, slice(2, 7, 2))
+        assert len(p_sliced) == 3
+        assert p_sliced[0].tape_transform == qml.compile.tape_transform
+        assert (
+            p_sliced[2].tape_transform
+            == qml.devices.preprocess.device_resolve_dynamic_wires.tape_transform
+        )
+        assert p_sliced[1].tape_transform == qml.defer_measurements.tape_transform
+
+    def test_diff_method_device_gradient(self):
+        """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit():
+            return qml.state()
+
+        prog = _get_transform_program(circuit, level="gradient")
+        assert len(prog) == 1
+        assert qml.transforms.cancel_inverses in prog
+
+    def test_get_transform_program_device_gradient(self):
+        """Test the trnsform program contents when using a device derivative."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        full_prog = _get_transform_program(circuit)
+        assert len(full_prog) == 14
+
+        config = qml.devices.ExecutionConfig(
+            interface=getattr(circuit, "interface", None),
+            gradient_method="adjoint",
+            use_device_jacobian_product=False,
+        )
+        config = dev.setup_execution_config(config)
+        dev_program = dev.preprocess_transforms(config)
+
+        expected = CompilePipeline()
+        expected.add_transform(qml.transforms.split_non_commuting)
+        expected += dev_program
+        assert full_prog == expected
+
+    def test_get_transform_program_legacy_device_interface(self):
+        """Test the contents of the transform program with the legacy device interface."""
+
+        dev = DefaultQubitLegacy(wires=5)
+
+        @qml.transforms.merge_rotations
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        program = _get_transform_program(circuit)
+
+        m1 = BoundTransform(qml.transforms.merge_rotations)
+        assert program[:1] == CompilePipeline([m1])
+
+        m2 = BoundTransform(qml.devices.legacy_facade.legacy_device_batch_transform)
+        assert program[1].tape_transform == m2.tape_transform
+        assert program[1].kwargs["device"] == dev
+
+        # a little hard to check the contents of a expand_fn transform
+        # this is the best proxy I can find
+        assert (
+            program[2].tape_transform
+            == qml.devices.legacy_facade.legacy_device_expand_fn.tape_transform
+        )
+
+    def test_get_transform_program_final_transform(self):
+        """Test that gradient preprocessing and device transform occur before a final transform."""
+
+        @qml.metric_tensor
+        @qml.compile
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit():
+            qml.IsingXX(1.234, wires=(0, 1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+        user_program = _get_transform_program(circuit, level="user")
+        assert len(user_program) == 3
+        assert user_program[0].tape_transform == qml.compile.tape_transform
+        assert user_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert user_program[2].tape_transform == qml.metric_tensor.tape_transform
+
+        grad_program = _get_transform_program(circuit, level="gradient")
+        assert len(grad_program) == 4
+        assert grad_program[0].tape_transform == qml.compile.tape_transform
+        assert grad_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert grad_program[2].tape_transform == qml.metric_tensor.tape_transform
+        assert grad_program[3].tape_transform == qml.gradients.param_shift.expand_transform
+
+        dev_program = _get_transform_program(circuit, level="device")
+        config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        config = qml.device("default.qubit").setup_execution_config(config)
+        assert len(dev_program) == 4 + len(
+            circuit.device.preprocess_transforms(config)
+        )  # currently 8
+
+        full_program = _get_transform_program(circuit)
+        assert dev_program == full_program
+
+    def test_marker_integration(self):
+        """Tests marker integration."""
+
+        @qml.marker("after-merge-rotations")
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        program = _get_transform_program(c, level="after-merge-rotations")
+        expected_program = 1 * qml.transforms.merge_rotations
+        assert len(program) == 1
+        assert program == expected_program

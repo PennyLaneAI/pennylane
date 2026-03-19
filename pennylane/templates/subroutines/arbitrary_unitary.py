@@ -14,9 +14,12 @@
 r"""
 Contains the ArbitraryUnitary template.
 """
+
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
+from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -96,6 +99,8 @@ class ArbitraryUnitary(Operation):
     num_params = 1
     ndim_params = (1,)
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, weights, wires, id=None):
         shape = math.shape(weights)
         dim = 4 ** len(wires) - 1
@@ -105,6 +110,10 @@ class ArbitraryUnitary(Operation):
             )
 
         super().__init__(weights, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
@@ -140,3 +149,21 @@ class ArbitraryUnitary(Operation):
             n_wires (int): number of wires that template acts on
         """
         return (4**n_wires - 1,)
+
+
+def _arbitrary_unitary_resources(num_wires: int) -> dict:
+    resources = {}
+    for pauli_word in _all_pauli_words_but_identity(num_wires):
+        resources[resource_rep(PauliRot, pauli_word=pauli_word)] = 1
+    return resources
+
+
+@register_resources(_arbitrary_unitary_resources)
+def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
+    words = list(_all_pauli_words_but_identity(len(wires)))
+
+    for i, word in enumerate(words):
+        PauliRot(weights[..., i], word, wires=wires)
+
+
+add_decomps(ArbitraryUnitary, _arbitrary_unitary_decomposition)

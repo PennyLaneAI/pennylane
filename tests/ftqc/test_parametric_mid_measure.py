@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
@@ -35,18 +35,32 @@ from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 
+@pytest.mark.parametrize("test_class", [ParametricMidMeasure, XMidMeasure, YMidMeasure])
+def test_id_deprecations(test_class):
+    """Tests that 'id' is deprecated properly."""
+
+    additional_kwargs = {}
+    if test_class is ParametricMidMeasure:
+        additional_kwargs = {"angle": 0, "plane": "XY"}
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
+    ):
+        _ = test_class(Wires(0), **additional_kwargs, id="something")
+
+
 class TestParametricMidMeasure:
     """Tests for the parametric mid-circuit measurement class in an arbitrary basis"""
 
     def test_hash(self):
         """Test that the hash for `ParametricMidMeasure` is defined correctly."""
-        m1 = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="XY")
-        m2 = ParametricMidMeasure(Wires(1), angle=1.23, id="m1", plane="XY")
-        m3 = ParametricMidMeasure(Wires(0), angle=2.45, id="m1", plane="XY")
-        m4 = ParametricMidMeasure(Wires(0), angle=1.23, id="m2", plane="XY")
-        m5 = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="YZ")
-        m6 = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="ZX")
-        m7 = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="XY")
+        m1 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
+        m2 = ParametricMidMeasure(Wires(1), angle=1.23, meas_uid="m1", plane="XY")
+        m3 = ParametricMidMeasure(Wires(0), angle=2.45, meas_uid="m1", plane="XY")
+        m4 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m2", plane="XY")
+        m5 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="YZ")
+        m6 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="ZX")
+        m7 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
@@ -58,7 +72,7 @@ class TestParametricMidMeasure:
     def test_flatten_unflatten(self):
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
-        op = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="XY")
+        op = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
         data, metadata = op._flatten()  # pylint: disable = protected-access
 
         assert hash(metadata)  # metadata must be hashable
@@ -74,7 +88,7 @@ class TestParametricMidMeasure:
 
         import jax
 
-        op = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="XY")
+        op = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
 
         leaves, struct = jax.tree_util.tree_flatten(op)
         unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
@@ -225,11 +239,11 @@ class TestMidMeasureXAndY:
     @pytest.mark.parametrize("mp_class, angle", [(XMidMeasure, 0), (YMidMeasure, np.pi / 2)])
     def test_hash(self, mp_class, angle):
         """Test that the hash for XMidMeasure and YMidMeasure are defined correctly."""
-        m1 = mp_class(Wires(0), id="m1")
-        m2 = mp_class(Wires(2), id="m1")
-        m3 = mp_class(Wires(0), id="m2")
-        m4 = ParametricMidMeasure(Wires(0), angle=angle, id="m1", plane="XY")
-        m5 = mp_class(Wires(0), id="m1")
+        m1 = mp_class(Wires(0), meas_uid="m1")
+        m2 = mp_class(Wires(2), meas_uid="m1")
+        m3 = mp_class(Wires(0), meas_uid="m2")
+        m4 = ParametricMidMeasure(Wires(0), angle=angle, meas_uid="m1", plane="XY")
+        m5 = mp_class(Wires(0), meas_uid="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
@@ -240,7 +254,7 @@ class TestMidMeasureXAndY:
     def test_flatten_unflatten(self, mp_class):
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
-        op = mp_class(Wires(0), id="m1")
+        op = mp_class(Wires(0), meas_uid="m1")
         data, metadata = op._flatten()  # pylint: disable = protected-access
 
         assert hash(metadata)  # metadata must be hashable
@@ -255,7 +269,7 @@ class TestMidMeasureXAndY:
 
         import jax
 
-        op = mp_class(Wires(0), id="m1")
+        op = mp_class(Wires(0), meas_uid="m1")
 
         leaves, struct = jax.tree_util.tree_flatten(op)
         unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
@@ -512,23 +526,23 @@ class TestMeasureFunctions:
             return qml.expval(qml.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
-        captured_measurement = str(plxpr.eqns[0])
 
         # measurement is captured as epxected
-        assert "measure_in_basis" in captured_measurement
-        assert f"plane={plane}" in captured_measurement
-        assert f"postselect={postselect}" in captured_measurement
-        assert f"reset={reset}" in captured_measurement
+        assert plxpr.eqns[0].primitive.name == "measure_in_basis"
+        assert plxpr.eqns[0].params["plane"] == plane
+        assert plxpr.eqns[0].params["postselect"] == postselect
+        assert plxpr.eqns[0].params["reset"] == reset
 
         # parameters held in invars
         assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
         assert jax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
-        conditional = str(plxpr.eqns[1])
-        assert "cond" in conditional
-        assert captured_measurement[:8] == "a:bool[]"
-        assert "lambda ; a:i64[]" in conditional
+        assert plxpr.eqns[1].primitive.name == "cond"
+        assert plxpr.eqns[1].invars[0] == plxpr.eqns[0].outvars[0]
+        invar_aval = plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval
+        assert invar_aval.dtype == jax.numpy.int64
+        assert invar_aval.shape == ()
 
     @pytest.mark.capture
     @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
@@ -557,13 +571,13 @@ class TestMeasureFunctions:
             return qml.expval(qml.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
-        captured_measurement = str(plxpr.eqns[0])
-
-        # measurement is captured as expected
-        assert "measure_in_basis" in captured_measurement
-        assert f"plane={plane}" in captured_measurement
-        assert f"postselect={postselect}" in captured_measurement
-        assert f"reset={reset}" in captured_measurement
+        assert plxpr.eqns[0].primitive.name == "measure_in_basis"
+        assert plxpr.eqns[0].params["plane"] == plane
+        assert plxpr.eqns[0].params["postselect"] == postselect
+        assert plxpr.eqns[0].params["reset"] == reset
+        outvar_aval = plxpr.eqns[0].outvars[0].aval
+        assert outvar_aval.shape == ()
+        assert outvar_aval.dtype == jax.numpy.bool
 
         # dynamic parameters held in invars for numpy, and consts for jax
         if "jax" in angle_type:
@@ -574,11 +588,10 @@ class TestMeasureFunctions:
         # Wires captured as invars
         assert jax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
 
-        # measurement value is assigned and passed forward
-        conditional = str(plxpr.eqns[1])
-        assert "cond" in conditional
-        assert captured_measurement[:8] == "a:bool[]"
-        assert "lambda ; a:i64[]" in conditional
+        assert plxpr.eqns[1].primitive.name == "cond"
+        invar_aval = plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval
+        assert invar_aval.shape == ()
+        assert invar_aval.dtype == jax.numpy.int64
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -598,7 +611,6 @@ class TestMeasureFunctions:
 
 
 class TestDrawParametricMidMeasure:
-    @pytest.mark.matplotlib
     @pytest.mark.parametrize(
         "mp_class, expected_label",
         [(ParametricMidMeasure, "XY"), (XMidMeasure, "X"), (YMidMeasure, "Y")],
@@ -631,7 +643,6 @@ class TestDrawParametricMidMeasure:
         "mp_class, expected_label",
         [(ParametricMidMeasure, "XY"), (XMidMeasure, "X"), (YMidMeasure, "Y")],
     )
-    @pytest.mark.matplotlib
     def test_draw_mpl_reset(self, mp_class, expected_label):
         """Test that the reset is added after the MCM as expected in a mpl drawing"""
 

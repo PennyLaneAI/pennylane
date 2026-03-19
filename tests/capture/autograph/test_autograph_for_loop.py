@@ -574,9 +574,8 @@ class TestErrors:
                 qml.RY(params[i], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            AutoGraphError,
-            match="Make sure that loop variables are not used in tracing-incompatible ways",
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
             run_autograph(f)()
 

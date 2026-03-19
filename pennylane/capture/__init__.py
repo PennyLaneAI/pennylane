@@ -39,6 +39,7 @@ quantum-classical programs.
     ~FlatFn
     ~make_plxpr
     ~register_custom_staging_rule
+    ~subroutine
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -169,6 +170,11 @@ from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
+# Import Patcher for contextual patching (preferred over global patches)
+from .patching import Patcher
+from .jax_patches import get_jax_patches
+from .subroutine import subroutine
+
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
 # on use of from capture import AbstractOperator
@@ -238,4 +244,6 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "get_jax_patches",
 )

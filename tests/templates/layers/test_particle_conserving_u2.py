@@ -14,6 +14,8 @@
 """
 Unit tests for the ParticleConservingU2 template.
 """
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -34,66 +36,27 @@ def test_standard_validity(init_state):
     qml.ops.functions.assert_valid(op)
 
 
-class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
+def test_resources():
+    """Test the expected resources for the decomposition rule."""
 
-    @pytest.mark.parametrize(
-        "layers, qubits, init_state",
-        [
-            (2, 4, np.array([1, 1, 0, 0])),
-            (1, 6, np.array([1, 1, 0, 0, 0, 0])),
-            (1, 5, np.array([1, 1, 0, 0, 0])),
-        ],
-    )
-    def test_operations(self, layers, qubits, init_state):
-        """Test the correctness of the ParticleConservingU2 template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters
-        in the circuit."""
-        weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
+    rule = qml.list_decomps(qml.ParticleConservingU2)[0]
 
-        n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
+    n_layers = 3
+    num_wires = 4
 
-        exp_gates = (
-            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
-        ) * layers
+    expected = {
+        qml.resource_rep(qml.BasisEmbedding, num_wires=num_wires): 1,
+        qml.resource_rep(qml.RZ): n_layers * num_wires,
+        qml.resource_rep(qml.CNOT): 2 * (num_wires - 1) * n_layers,
+        qml.resource_rep(qml.CRX): (num_wires - 1) * n_layers,
+    }
+    assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
 
-        op = qml.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
-        queue = op.decomposition()
 
-        # number of gates
-        assert len(queue) == n_gates
-
-        # initialization
-        assert isinstance(queue[0], qml.BasisEmbedding)
-
-        # order of gates
-        for op1, op2 in zip(queue[1:], exp_gates):
-            assert isinstance(op1, op2)
-
-        # gate parameter
-        params = np.array(
-            [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
-        )
-        weights[:, qubits:] = weights[:, qubits:] * 2
-        assert np.allclose(params.flatten(), weights.flatten())
-
-        # gate wires
-        wires = range(qubits)
-        nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
-        nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
-
-        exp_wires = []
-        for _ in range(layers):
-            for i in range(qubits):
-                exp_wires.append([wires[i]])
-            for j in nm_wires:
-                exp_wires.append(list(j))
-                exp_wires.append(list(j[::-1]))
-                exp_wires.append(list(j))
-
-        res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
-
-        assert res_wires == exp_wires
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:  # pylint: disable=too-few-public-methods
+    """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
@@ -154,6 +117,91 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
+def _get_queue(op, system):
+    if system == "decomp_method":
+        return op.decomposition()
+    if system == "graph_decomp":
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.list_decomps(qml.ParticleConservingU2)[0](*op.data, op.wires, **op.hyperparameters)
+        return q.queue
+    jax = pytest.importorskip("jax")
+    qml.capture.enable()
+    try:
+        f = partial(qml.list_decomps(qml.ParticleConservingU2)[0], **op.hyperparameters)
+        jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        return tape.circuit
+    finally:
+        qml.capture.disable()
+
+
+class TestDecomposition:  # pylint: disable=too-few-public-methods
+    """Tests that the template defines the correct decomposition."""
+
+    @pytest.mark.parametrize(
+        "system",
+        ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),
+    )
+    @pytest.mark.parametrize(
+        "layers, qubits, init_state",
+        [
+            (2, 4, np.array([1, 1, 0, 0])),
+            (1, 6, np.array([1, 1, 0, 0, 0, 0])),
+            (1, 5, np.array([1, 1, 0, 0, 0])),
+        ],
+    )
+    def test_operations(self, system, layers, qubits, init_state):
+        """Test the correctness of the ParticleConservingU2 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+        weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
+
+        n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
+
+        exp_gates = (
+            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
+        ) * layers
+
+        op = qml.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
+        queue = _get_queue(op, system)
+
+        # number of gates
+        assert len(queue) == n_gates
+
+        # initialization
+        expected = qml.BasisState if system == "capture" else qml.BasisEmbedding
+        assert isinstance(queue[0], expected)
+
+        # order of gates
+        for op1, op2 in zip(queue[1:], exp_gates):
+            assert isinstance(op1, op2)
+
+        # gate parameter
+        params = np.array(
+            [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
+        )
+        weights[:, qubits:] = weights[:, qubits:] * 2
+        assert np.allclose(params.flatten(), weights.flatten())
+
+        # gate wires
+        wires = range(qubits)
+        nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
+
+        exp_wires = []
+        for _ in range(layers):
+            for i in range(qubits):
+                exp_wires.append([wires[i]])
+            for j in nm_wires:
+                exp_wires.append(list(j))
+                exp_wires.append(list(j[::-1]))
+                exp_wires.append(list(j))
+
+        res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
+
+        assert res_wires == exp_wires
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
@@ -207,6 +255,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         init_state = np.array([1, 1, 0])

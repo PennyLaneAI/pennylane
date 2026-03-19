@@ -32,7 +32,7 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (str, int, slice): An indication of what transforms to apply before
-            drawing. Check :func:`~.workflow.get_transform_program` for more
+            drawing. Check :func:`~.workflow.get_compile_pipeline` for more
             information on the allowed values and usage details of this argument.
 
     Returns:
@@ -41,16 +41,16 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
     Raises:
         ValueError: if the ``level`` argument corresponds to more than one tape.
 
-    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
+    .. seealso:: :func:`pennylane.workflow.get_compile_pipeline` to inspect the contents of the transform program for a specified level.
 
     **Example**
 
     .. code-block:: python
 
-        @partial(qml.set_shots, shots=10)
+        @qml.set_shots(10)
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
+            qml.RandomLayers([[1.0, 2.0]], wires=(0,1))
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)
             qml.SWAP((0,1))
@@ -59,14 +59,9 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
             return qml.expval(qml.X(0) + qml.Y(0))
 
     >>> tape = qml.workflow.construct_tape(circuit)(0.5)
-    >>> tape.circuit
-    [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
-    RX(0.5, wires=[0]),
-    RX(-0.5, wires=[0]),
-    SWAP(wires=[0, 1]),
-    X(0),
-    X(0),
-    expval(X(0) + Y(0))]
+    >>> from pprint import pprint
+    >>> pprint(tape.circuit)
+    [RandomLayers(array([[1., 2.]]), wires=[0, 1]), RX(0.5, wires=[0]), RX(-0.5, wires=[0]), SWAP(wires=[0, 1]), X(0), X(0), expval(X(0) + Y(0))]
 
     """
 

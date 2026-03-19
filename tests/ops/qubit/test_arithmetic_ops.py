@@ -22,7 +22,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 label_data = [
@@ -81,10 +83,9 @@ class TestQubitCarry:
             ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_output(self, wires, input_string, output_string, expand, mocker):
+    def test_output(self, wires, input_string, output_string, expand):
         """Test if ``QubitCarry`` produces the right output and is expandable."""
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitCarry, "decomposition")
 
         with qml.queuing.AnnotatedQueue() as q:
             for i, letter in enumerate(input_string):
@@ -95,14 +96,11 @@ class TestQubitCarry:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         if expand:
-            tape = tape.expand()
+            [tape], _ = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         result = dev.execute(tape)
         result = np.argmax(result)
         result = format(result, "04b")
         assert result == output_string
-
-        # checks that decomposition is only used when intended
-        assert expand is (len(spy.call_args_list) != 0)
 
     def test_superposition(self):
         """Test if ``QubitCarry`` works for superposition input states."""

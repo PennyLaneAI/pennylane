@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     jacobian_prim,
     qnode_prim,
+    transform_prim,
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -444,7 +445,8 @@ class TestExpandPlxprTransformIntegration:
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
         jaxpr = jax.make_jaxpr(f)(U.matrix())
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.unitary_to_rot._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.unitary_to_rot
 
         transformed_f = qml.capture.expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(U.matrix())

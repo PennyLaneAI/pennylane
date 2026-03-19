@@ -28,6 +28,8 @@ from pennylane.transforms.decompose import _operator_decomposition_gen, decompos
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 @pytest.fixture(autouse=True)
 def warnings_as_errors():
@@ -67,6 +69,24 @@ class InfiniteOp(Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
+@pytest.mark.unit
+def test_fixed_alt_decomps_not_available():
+    """Test that a TypeError is raised when graph is disabled and
+    fixed_decomps or alt_decomps is used."""
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(*_, **__):
+        raise NotImplementedError
+
+    tape = qml.tape.QuantumScript([])
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
+
+
 class TestDecompose:
     """Unit tests for decompose function"""
 
@@ -101,10 +121,7 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            {
-                "type": UserWarning,
-                "msg": "Gate weights were provided to a non-graph-based decomposition.",
-            },
+            None,
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
@@ -152,15 +169,8 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        if isinstance(gate_set, dict):
-            with pytest.raises(
-                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
-            ):
-                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-                qml.assert_equal(tape, decomposed_tape)
-        else:
-            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-            qml.assert_equal(tape, decomposed_tape)
+        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        qml.assert_equal(tape, decomposed_tape)
 
     def test_stopping_cond_without_gate_set(self):
         gate_set = None
@@ -187,13 +197,13 @@ class TestDecompose:
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
         with pytest.warns(UserWarning, match="does not define a decomposition"):
-            decompose(tape, gate_set=lambda op: op.name not in {"RX"})
+            decompose(tape, stopping_condition=lambda op: op.name not in {"RX"})
 
     def test_infinite_decomposition_loop(self):
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, gate_set=lambda obj: obj.has_matrix)
+            decompose(tape, stopping_condition=lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
@@ -215,15 +225,17 @@ class TestDecompose:
             qml.assert_equal(decomposed_tape, expected_tape)
 
     @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
-    def test_callable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
-        """Tests that gate sets defined by callables decompose correctly"""
+    def test_callable_stopping_condition(
+        self, initial_ops, gate_set, expected_ops, warning_pattern
+    ):
+        """Tests that stopping_condition defined by callables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 
         if warning_pattern is not None:
             with pytest.warns(UserWarning, match=warning_pattern):
-                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
         else:
-            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
 
         expected_tape = qml.tape.QuantumScript(expected_ops)
 
@@ -255,9 +267,7 @@ class TestDecompose:
                 qml.ops.Conditional(m0, qml.RX(0.5, wires=0)),
             ]
         )
-        [decomposed_tape], _ = qml.transforms.decompose(
-            [tape], gate_set={qml.RX, qml.RZ, MidMeasure}
-        )
+        [decomposed_tape], _ = qml.decompose([tape], gate_set={qml.RX, qml.RZ, MidMeasure})
         assert len(decomposed_tape.operations) == 10
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -292,7 +302,7 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
-    (_,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
+    (_,), fn = qml.decompose(tape, gate_set={qml.RX, qml.RZ})
     assert fn((1,)) == 1
 
 
@@ -361,4 +371,4 @@ class TestPrivateHelpers:
 
         tape = qml.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Invalid gate_set type."):
-            qml.transforms.decompose(tape, gate_set=123)
+            qml.decompose(tape, gate_set=123)

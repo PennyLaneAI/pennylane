@@ -178,9 +178,6 @@ class TestSingleOperation:
         expected = reduce(np.kron, [Y, Z, I]) - 0.5 * np.kron(X, np.eye(4))
         assert qml.math.allclose(mat, expected)
 
-    @pytest.mark.xfail(
-        reason="This test will fail because Hamiltonians are not queued to tapes yet!"
-    )
     def test_hamiltonian_qfunc(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
 
@@ -250,6 +247,7 @@ class TestSingleOperation:
 
 
 class TestMultipleOperations:
+
     def test_multiple_operations_tape(self):
         """Check the total matrix for a tape containing multiple gates"""
         wire_order = ["a", "b", "c"]
@@ -269,6 +267,20 @@ class TestMultipleOperations:
         qs_matrix = qml.matrix(qs, wire_order)
 
         assert np.allclose(qs_matrix, expected_matrix)
+
+    def test_multiple_operations_sequence(self):
+        """Check the total matrix for a sequence containing multiple gates"""
+        wire_order = ["a", "b", "c"]
+
+        op_list = [
+            qml.PauliX(wires="a"),
+            qml.S(wires="b"),
+            qml.Hadamard(wires="c"),
+            qml.CNOT(wires=["b", "c"]),
+        ]
+        matrix = qml.matrix(op_list, wire_order)
+        expected_matrix = I_CNOT @ X_S_H
+        assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
@@ -930,12 +942,15 @@ class TestWireOrderErrors:
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
+    @pytest.mark.parametrize("type_", ["tape", "sequence"])
     @pytest.mark.parametrize("ops", [[qml.PauliX(1), qml.PauliX(0)], []])
-    def test_error_tape_multiple_wires(self, ops):
+    def test_error_tape_multiple_wires(self, ops, type_):
         """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
-        qs = qml.tape.QuantumScript(ops)
+        if type_ == "tape":
+            ops = qml.tape.QuantumScript(ops)
+
         with pytest.raises(ValueError, match=r"wire_order is required"):
-            _ = qml.matrix(qs)
+            _ = qml.matrix(ops)
 
     def test_error_qnode(self):
         """Test that an error is raised when calling qml.matrix without wire_order on a QNode."""

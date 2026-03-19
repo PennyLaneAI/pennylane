@@ -26,6 +26,8 @@ import rustworkx as rx
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops.identity import I
+from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
@@ -38,13 +40,16 @@ def _get_wires(obj, all_wires):
 Layer = namedtuple("Layer", ["ops", "param_inds", "ops_inds"])
 """Parametrized layer of the circuit.
 
+A layer of a circuit contains all operators that can be applied in
+parallel. Two operators are considered to be in different layers if
+and only if they can only be applied sequentially.
+
 Args:
 
     ops (list[Operator]): parametrized operators in the layer
     param_inds (list[int]): corresponding free parameter indices
     ops_inds (list[int]): the indices into the circuit for ops
 """
-# TODO define what a layer is
 
 LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"])
 """Parametrized layer of the circuit.
@@ -60,17 +65,23 @@ Args:
 def _construct_graph_from_queue(queue, all_wires):
     inds_for_objs = defaultdict(list)  # dict from wrappedobjs to all indices for the objs
     nodes_on_wires = defaultdict(list)  # wire to list of nodes
+    mid_measure_nodes = {}  # MCMs to their corresponding nodes
 
     graph = rx.PyDiGraph(multigraph=False)
 
     for i, obj in enumerate(queue):
         inds_for_objs[WrappedObj(obj)].append(i)
-
         obj_node = graph.add_node(i)
+        if isinstance(obj, (MidMeasure, PauliMeasure)):
+            mid_measure_nodes[obj] = obj_node
         for w in _get_wires(obj, all_wires):
             if w in nodes_on_wires:
                 graph.add_edge(nodes_on_wires[w][-1], obj_node, "")
             nodes_on_wires[w].append(obj_node)
+        if isinstance(obj, Conditional):
+            for m in obj.meas_val.measurements:
+                if not graph.has_edge(mid_measure_nodes[m], obj_node):
+                    graph.add_edge(mid_measure_nodes[m], obj_node, "")
 
     return graph, inds_for_objs, nodes_on_wires
 

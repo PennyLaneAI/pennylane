@@ -14,7 +14,7 @@
 r"""Resource operators for PennyLane subroutine templates."""
 
 import pennylane.estimator as qre
-from pennylane.estimator.ops.op_math.symbolic import _apply_adj
+from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -350,7 +350,7 @@ class IntegerComparator(ResourceOperator):
     ):
         if register_size is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `register_size` and `wires`.")
+                raise ValueError("Must provide at least one of `register_size` and `wires`.")
             register_size = len(wires) - 1
 
         self.value = value
@@ -657,7 +657,7 @@ class RegisterComparator(ResourceOperator):
             gate_list.append(GateCount(one_qubit_compare, 1))
 
             for op in two_qubit_compare:
-                gate_list.append(_apply_adj(op) * (first_register - 1))
+                gate_list.append(apply_adj(op) * (first_register - 1))
 
             gate_list.append(
                 GateCount(
@@ -677,7 +677,7 @@ class RegisterComparator(ResourceOperator):
         gate_list.append(GateCount(one_qubit_compare, 1))
 
         for op in two_qubit_compare:
-            gate_list.append(_apply_adj(op) * (compare_register - 1))
+            gate_list.append(apply_adj(op) * (compare_register - 1))
 
         gate_list.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": one_qubit_compare}), 1)

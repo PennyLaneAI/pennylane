@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains unit tests for the ``sign_expand`` transform."""
-import functools
-
 import numpy as np
 import pytest
 
@@ -133,7 +131,7 @@ class TestSignExpand:
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
 
-        @functools.partial(qml.transforms.sign_expand, circuit=True)
+        @qml.transforms.sign_expand(circuit=True)
         @qml.qnode(dev)
         def qnode():
             for op in tape.operations:

@@ -11,6 +11,9 @@ build:
     python: "3.11"
   apt_packages:
     - graphviz
+  jobs:
+    post_install:
+      - pip install --group docs
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -27,6 +30,5 @@ formats:
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:
-    - requirements: doc/requirements.txt
     - method: pip
       path: .

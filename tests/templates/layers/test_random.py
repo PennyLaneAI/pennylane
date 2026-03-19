@@ -183,6 +183,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
             circuit(phi)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")

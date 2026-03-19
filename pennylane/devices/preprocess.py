@@ -26,13 +26,11 @@ from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
     DeviceError,
-    PennyLaneDeprecationWarning,
     QuantumFunctionError,
     WireError,
 )
 from pennylane.math import is_abstract, requires_grad
 from pennylane.measurements import (
-    MeasurementProcess,
     SampleMeasurement,
     StateMeasurement,
     counts,
@@ -42,9 +40,7 @@ from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (
-    defer_measurements,
     diagonalize_measurements,
-    dynamic_one_shot,
     resolve_dynamic_wires,
 )
 from pennylane.transforms.core import transform
@@ -54,8 +50,6 @@ from pennylane.transforms.decompose import (
 )
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-from .execution_config import MCMConfig
 
 
 def null_postprocessing(results):
@@ -188,49 +182,6 @@ def validate_device_wires(
 
 
 @transform
-def mid_circuit_measurements(
-    tape: QuantumScript,
-    device,
-    mcm_config=MCMConfig(),
-    **kwargs,  # pylint: disable=unused-argument
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Provide the transform to handle mid-circuit measurements.
-
-    In the case where no method is specified, if the tape or device
-    uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
-    applied, otherwise ``qml.defer_measurements`` is used instead.
-
-    .. warning::
-
-        This transform is deprecated and will be removed in a future release. Instead,
-        the device should determine which mcm method to use, and explicitly include
-        :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
-        in its preprocess transforms if necessary. See :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
-        and :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
-
-    """
-
-    warnings.warn(
-        "The mid_circuit_measurements transform is deprecated. Instead, the device should "
-        "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
-        "or qml.transforms.defer_measurements in the preprocess transform program if needed.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if isinstance(mcm_config, dict):
-        mcm_config = MCMConfig(**mcm_config)
-    mcm_method = mcm_config.mcm_method
-    if mcm_method is None:
-        mcm_method = "one-shot" if tape.shots else "deferred"
-
-    if mcm_method == "one-shot":
-        return dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
-    if mcm_method in ("tree-traversal", "device"):
-        return (tape,), null_postprocessing
-    return defer_measurements(tape, allow_postselect=False)
-
-
-@transform
 def validate_multiprocessing_workers(
     tape: QuantumScript, max_workers: int, device
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -324,9 +275,13 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     skip_initial_state_prep: bool = True,
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     device_wires: Wires | None = None,
-    target_gates: set | None = None,
+    num_work_wires: int | None = None,
+    target_gates: set | dict | None = None,
+    fixed_decomps: dict | None = None,
+    alt_decomps: dict | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
+    strict: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -346,21 +301,34 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
-        device_wires (Wires): The device wires. If provided along with ``target_gates``, will be
-            used to automatically set up graph decomposition when enabled.
-        target_gates (set): The target gate set for graph decomposition. If provided along with
-            ``device_wires``, will automatically enable graph-based decomposition when available.
+        device_wires (Wires): The device wires. If provided along with ``target_gates`` and
+            graph-based decomposition is enabled, will be used to infer available work wires.
+        num_work_wires (int): Number of work wires to be used if the graph-based decomposition
+            is enabled. If ``device_wires`` are given, they take precedence over ``num_work_wires``
+        target_gates (set or dict): Target gate set to be used if the graph-based decomposition
+            is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>` for more details.
+        fixed_decomps (dict): Fixed decomposition rules to be used if the graph-based decomposition
+            is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>` for more details.
+        alt_decomps (dict): Alternative decomposition rules to be used if the graph-based
+            decomposition is enabled. See :func:`qml.decompose <pennylane.transforms.decompose>`
+            for more details.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
+        strict (bool): If ``False``, operators that do not define a decomposition will be treated
+            as supported. Defaults to ``True``
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: This transform is intended for device developers. See :func:`qml.transforms.decompose <pennylane.transforms.decompose>` for a more user-friendly interface.
+    .. seealso::
+
+        This transform is intended for device developers. See
+        :func:`qml.decompose <pennylane.transforms.decompose>` for a more user-friendly
+        interface.
 
     Raises:
         Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.
@@ -410,25 +378,29 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    # Compute parameters for graph decomposition if device_wires and target_gates are provided
-    if device_wires is None:
-        num_available_work_wires = device_wires  # no constraint on work wires
-    else:
+    num_available_work_wires = None  # no constraint on work wires / not applicable with old system
+    graph_solution = None
+    if device_wires is not None:
         # Calculate work wires as device wires that are not used by the tape
         num_available_work_wires = len(set(device_wires) - set(tape.wires))
 
-    graph_solution = None
     if target_gates is not None and enabled_graph():
-        # Filter out MeasurementProcess instances that shouldn't be decomposed
-        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
+        # Compute parameters for graph decomposition if device_wires and target_gates are provided
+        if num_available_work_wires is None:
+            num_available_work_wires = num_work_wires
+
+        # Filter out instances of ops that don't need to be decomposed
+        decomposable_ops = [op for op in tape.operations if not stopping_condition(op)]
 
         # Construct and solve the decomposition graph
         graph_solution = _construct_and_solve_decomp_graph(
             operations=decomposable_ops,
             target_gates=target_gates,
             num_work_wires=num_available_work_wires,
-            fixed_decomps=None,
-            alt_decomps=None,
+            minimize_work_wires=False,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
+            strict=strict,
         )
 
     if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
@@ -446,7 +418,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                max_work_wires=num_available_work_wires,
+                num_work_wires=num_available_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,

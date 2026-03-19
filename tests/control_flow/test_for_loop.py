@@ -35,6 +35,17 @@ def test_early_exit():
     assert inner_loop(4) == 4
 
 
+def test_error_if_outputs_when_no_inputs():
+    """Test an error is raised if there is an output when there is no additional input."""
+
+    @qml.for_loop(3)
+    def f(i):  # pylint: disable=unused-argument
+        return 2
+
+    with pytest.raises(ValueError, match="should not return anything "):
+        f()
+
+
 def test_for_loop_python_fallback():
     """Test that qml.for_loop fallsback to Python
     interpretation if Catalyst is not available"""

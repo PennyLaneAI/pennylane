@@ -14,6 +14,8 @@
 """
 Unit tests for the ParticleConservingU1 template.
 """
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -30,6 +32,42 @@ def test_standard_validity(init_state):
     op = qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
 
     qml.ops.functions.assert_valid(op)
+
+
+def test_resources():
+    """Test the expected resources for the decomposition rule."""
+
+    rule = qml.list_decomps(qml.ParticleConservingU1)[0]
+
+    n_layers = 3
+    num_wires = 4
+
+    expected = {
+        qml.resource_rep(qml.BasisEmbedding, num_wires=num_wires): 1,
+        qml.resource_rep(qml.CZ): 3 * (num_wires - 1) * n_layers,
+        qml.resource_rep(qml.CRot): 3 * (num_wires - 1) * n_layers,
+        qml.resource_rep(qml.PhaseShift): 6 * (num_wires - 1) * n_layers,
+        qml.resource_rep(qml.CNOT): 4 * (num_wires - 1) * n_layers,
+    }
+    assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
+
+
+def _get_queue(op, system):
+    if system == "decomp_method":
+        return op.decomposition()
+    if system == "graph_decomp":
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.list_decomps(qml.ParticleConservingU1)[0](*op.data, op.wires, **op.hyperparameters)
+        return q.queue
+    jax = pytest.importorskip("jax")
+    qml.capture.enable()
+    try:
+        f = partial(qml.list_decomps(qml.ParticleConservingU1)[0], **op.hyperparameters)
+        jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        return tape.circuit
+    finally:
+        qml.capture.disable()
 
 
 class TestDecomposition:
@@ -61,7 +99,11 @@ class TestDecomposition:
 
         return exp_wires
 
-    def test_operations(self):
+    @pytest.mark.parametrize(
+        "system",
+        ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),
+    )
+    def test_operations(self, system):
         """Test the correctness of the ParticleConservingU1 template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
@@ -91,12 +133,14 @@ class TestDecomposition:
         nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
         op = qml.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
-        queue = op.decomposition()
+
+        queue = _get_queue(op, system)
 
         assert gate_count == len(queue)
 
         # check initialization of the qubit register
-        assert isinstance(queue[0], qml.BasisEmbedding)
+        expected = qml.BasisState if system == "capture" else qml.BasisEmbedding
+        assert isinstance(queue[0], expected)
 
         # check all quantum operations
         idx_CRot = 8
@@ -248,6 +292,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.ParticleConservingU1(

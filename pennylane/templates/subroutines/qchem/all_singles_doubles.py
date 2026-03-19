@@ -14,8 +14,10 @@
 r"""
 Contains the AllSinglesDoubles template.
 """
+
 # pylint: disable=too-many-arguments,protected-access
 import copy
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -24,7 +26,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -71,15 +74,15 @@ class AllSinglesDoubles(Operation):
     other states encoding multiply-excited configurations.
 
     Args:
-        weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
+        weights (TensorLike): size ``(len(singles) + len(doubles),)`` tensor containing the
             angles entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations, in that order
-        wires (Iterable): wires that the template acts on
-        hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        wires (WiresLike): wires that the template acts on
+        hf_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             Hartree-Fock state. ``hf_state`` is used to initialize the wires.
-        singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
+        singles (Sequence[tuple[int, int]] | None): An optional sequence of lists with the indices of the two qubits
             the :class:`~.pennylane.SingleExcitation` operations act on
-        doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
+        doubles (Sequence[tuple[int, int, int, int]] | None): An optional sequence of lists with the indices of the four qubits
             the :class:`~.pennylane.DoubleExcitation` operations act on
 
     .. details::
@@ -128,39 +131,47 @@ class AllSinglesDoubles(Operation):
 
     resource_keys = {"num_singles", "num_doubles", "num_wires"}
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
+    def __init__(
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        hf_state: Sequence[int],
+        singles: Sequence[tuple[int, int]] | None = None,
+        doubles: Sequence[tuple[int, int, int, int]] | None = None,
+        id=None,
+    ):
+        wires = Wires(wires)
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
             )
 
         if doubles is not None:
-            for d_wires in doubles:
-                if len(d_wires) != 4:
-                    raise ValueError(
-                        f"Expected entries of 'doubles' to be of size 4; got {d_wires} of length {len(d_wires)}"
-                    )
+            if any(len(d_wires) != 4 for d_wires in doubles):
+                raise ValueError("Expected all entries of 'doubles' to be of size 4.")
+        doubles = () if doubles is None else tuple(tuple(d) for d in doubles)
 
         if singles is not None:
-            for s_wires in singles:
-                if len(s_wires) != 2:
-                    raise ValueError(
-                        f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
-                    )
+            if any(len(s_wires) != 2 for s_wires in singles):
+                raise ValueError("Expected all entries of 'singles' to be of size 2.")
+        singles = () if singles is None else tuple(tuple(s) for s in singles)
 
         weights_shape = math.shape(weights)
         exp_shape = self.shape(singles, doubles)
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
+        if len(hf_state) != len(wires):
+            raise ValueError(
+                f"Expected length of 'hf_state' to match number of wires ({len(wires)})."
+            )
 
-        singles = tuple(tuple(s) for s in singles)
-        doubles = tuple(tuple(d) for d in doubles)
+        if (hf_dtype := hf_state[0].dtype) != np.dtype("int"):
+            raise ValueError(f"Elements of 'hf_state' must be integers, got {hf_dtype}.")
+        hf_state = tuple(hf_state)
 
         self._hyperparameters = {
-            "hf_state": tuple(hf_state),
+            "hf_state": hf_state,
             "singles": singles,
             "doubles": doubles,
         }

@@ -23,6 +23,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
@@ -280,7 +281,7 @@ def _single_excitation_resources():
 
 
 @register_resources(_single_excitation_resources)
-def _single_excitation_decomp(phi, wires, **__):
+def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires[0])
     qml.CNOT(wires)
     qml.RY(-phi / 2, wires[0])
@@ -289,7 +290,20 @@ def _single_excitation_decomp(phi, wires, **__):
     qml.Hadamard(wires[0])
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp)
+def _single_excitation_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YX"): 1,
+    }
+
+
+@register_resources(_single_excitation_ppr_resource)
+def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(phi / 2, "YX", wires=wires)
+    qml.PauliRot(-phi / 2, "XY", wires=wires)
+
+
+add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 
@@ -850,7 +864,7 @@ def _doublexcit_resource():
 
 
 @register_resources(_doublexcit_resource)
-def _doublexcit(phi, wires, **__):
+def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
     qml.CNOT(wires=[wires[2], wires[3]])
     qml.CNOT(wires=[wires[0], wires[2]])
     qml.Hadamard(wires=wires[3])
@@ -881,7 +895,32 @@ def _doublexcit(phi, wires, **__):
     qml.CNOT(wires=[wires[2], wires[3]])
 
 
-add_decomps(DoubleExcitation, _doublexcit)
+def _doublexcit_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="YYYX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YYXY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YXYY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YXXX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XYYY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XYXX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XXYX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XXXY"): 1,
+    }
+
+
+@register_resources(_doublexcit_ppr_resource)
+def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
+
+
+add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
 add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
