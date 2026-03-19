@@ -98,6 +98,7 @@
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
   [(#9151)](https://github.com/PennyLaneAI/pennylane/pull/9151)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
   [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
@@ -150,6 +151,16 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* `Callables` defining quantum operations can now be passed to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
+
+* The `default.qubit` device now supports parameter-broadcasted global phases.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
 
 * `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
   `capture` is disabled.
@@ -696,6 +707,13 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
+  program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
+
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+  
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
@@ -753,8 +771,9 @@ The following classes have been ported over:
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
-* Add documentation tests for the `decomposition` module.
+* Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -786,6 +805,11 @@ The following classes have been ported over:
   decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
+
+* Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
+  operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
+  symbolic decomposition rules that do not need to take an instance of the base operator as input.
+  [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
 
 <h3>Documentation 📝</h3>
 

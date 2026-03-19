@@ -696,7 +696,8 @@ class SumOfSlatersPrep(Operation):
     >>> where = np.where(prepared_state)
     >>> print(where)
     (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
-    >>> print(prepared_state[where])
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     print(prepared_state[where])
     [ 0.3536+0.j     -0.    -0.3536j  0.    +0.3536j  0.3536+0.j
       0.3536+0.j     -0.    -0.3536j  0.3536+0.j      0.    +0.3536j]
 
