@@ -47,8 +47,8 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.decomposition import resource_rep
+from pennylane.decomposition.reconstruct import decomps_use_reconstructor, get_decomp_kwargs
 from pennylane.ops.functions.assert_valid import (
-    _decomps_use_reconstructor,
     _test_decomposition_rule,
 )
 from pennylane.transforms import decompose
@@ -1145,12 +1145,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
             if rule.is_applicable(**pow_op.resource_params):
 
-                rep = resource_rep(pow_op.__class__, **pow_op.resource_params)
-                rule_params = (
-                    pow_op.resource_params
-                    if _decomps_use_reconstructor(rep.op_type, rep.params)
-                    else op.hyperparameters
-                )
+                rule_params = get_decomp_kwargs(pow_op)
 
                 with qml.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **rule_params)

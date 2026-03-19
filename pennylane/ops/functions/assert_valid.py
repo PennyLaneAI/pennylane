@@ -26,7 +26,11 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
+from pennylane.decomposition.reconstruct import (
+    decomps_use_reconstructor,
+    has_reconstructor,
+    reconstruct,
+)
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
@@ -137,14 +141,6 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
-def _decomps_use_reconstructor(op_type, op_params):
-    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
-    if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
-        return False
-    return has_reconstructor(op_type, op_params)
-
-
 def _check_reconstructor(op):
     """Checks that the op can be reconstructed."""
 
@@ -186,7 +182,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     rep = resource_rep(op.__class__, **op.resource_params)
     kwargs = (
         op.resource_params
-        if _decomps_use_reconstructor(rep.op_type, rep.params)
+        if decomps_use_reconstructor(rep.op_type, rep.params)
         else op.hyperparameters
     )
     with qml.queuing.AnnotatedQueue() as q:

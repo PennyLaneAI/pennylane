@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
-from pennylane.decomposition.reconstruct import register_reconstructor
+from pennylane.decomposition.reconstruct import get_decomp_kwargs, register_reconstructor
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -49,24 +49,24 @@ from tests.decomposition.conftest import to_resources
 
 class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-    resource_keys = set()
+    resource_keys = {"key"}
 
     @property
     def resource_params(self):
-        return {}
+        return {"key": 0}
 
 
 class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-    resource_keys = set()
+    resource_keys = {"key"}
 
     @property
     def resource_params(self):
-        return {}
+        return {"key": 0}
 
 
 @register_reconstructor(CustomOpWithReconstructor)
-def _reconsutruct_custom_op(wires):
+def _reconsutruct_custom_op(wires, key):  # pytest: disable=unused-argument
     return CustomOpWithReconstructor(wires)
 
 
@@ -274,12 +274,18 @@ class TestPowDecomposition:
         op4 = qml.pow(op_type(wires=[0, 1, 2]), 4)
         op5 = qml.pow(op_type(wires=[0, 1, 2]), 4.5)
 
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+        rule3_params = get_decomp_kwargs(op3)
+        rule4_params = get_decomp_kwargs(op4)
+        rule5_params = get_decomp_kwargs(op5)
+
         with qml.queuing.AnnotatedQueue() as q:
-            rule(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            rule(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            rule(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            rule(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
-            rule(*op5.parameters, wires=op5.wires, **op5.hyperparameters)
+            rule(*op1.parameters, wires=op1.wires, **rule1_params)
+            rule(*op2.parameters, wires=op2.wires, **rule2_params)
+            rule(*op3.parameters, wires=op3.wires, **rule3_params)
+            rule(*op4.parameters, wires=op4.wires, **rule4_params)
+            rule(*op5.parameters, wires=op5.wires, **rule5_params)
 
         assert q.queue == [
             op_type(wires=[0, 1, 2]),
@@ -287,15 +293,15 @@ class TestPowDecomposition:
             qml.pow(op_type(wires=[0, 1, 2]), 0.5),
         ]
         assert rule.compute_resources(**op1.resource_params) == Resources(
-            {resource_rep(op_type): 1}
+            {resource_rep(op_type, key=0): 1}
         )
         assert rule.compute_resources(**op3.resource_params) == Resources(
-            {resource_rep(op_type): 1}
+            {resource_rep(op_type, key=0): 1}
         )
         assert rule.compute_resources(**op2.resource_params) == Resources()
         assert rule.compute_resources(**op4.resource_params) == Resources()
         assert rule.compute_resources(**op5.resource_params) == Resources(
-            {pow_resource_rep(op_type, {}, 0.5): 1}
+            {pow_resource_rep(op_type, {"key": 0}, 0.5): 1}
         )
 
         assert not rule.is_applicable(op_type, {}, z=0.5)
