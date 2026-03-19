@@ -31,7 +31,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.reconstruct import (
     get_decomp_kwargs,
-    register_reconstructor,
 )
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning

@@ -28,6 +28,7 @@ import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import (
     decomps_use_reconstructor,
+    get_decomp_kwargs,
     has_reconstructor,
     reconstruct,
 )
