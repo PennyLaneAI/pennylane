@@ -43,7 +43,7 @@ def draw(
     qnode,
     wire_order=None,
     show_all_wires=False,
-    decimals=2,
+    decimals: int | None = 2,
     *,
     max_length=100,
     show_matrices=True,
@@ -57,13 +57,13 @@ def draw(
         wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
+        decimals (int | None): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -176,10 +176,9 @@ def draw(
 
         .. code-block:: python
 
-            from functools import partial
             from pennylane import numpy as np
 
-            @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+            @qml.gradients.param_shift(shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
             def transformed_circuit(x):
                 qml.RX(x, wires=0)
@@ -341,7 +340,7 @@ def _draw_qnode(
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
-    decimals=2,
+    decimals: int | None = 2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
@@ -410,7 +409,7 @@ def draw_mpl(
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int | None): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'pennylane', 'pennylane_sketch', 'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``.
@@ -433,7 +432,7 @@ def draw_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -834,7 +833,7 @@ def _draw_mpl_qnode(
     qnode,
     wire_order=None,
     show_all_wires=False,
-    decimals=None,
+    decimals: int | None = None,
     *,
     level="gradient",
     style="black_white",

@@ -85,9 +85,7 @@ def pattern_matching_optimization(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(pattern_matching_optimization, pattern_tapes = [pattern])
+        @pattern_matching_optimization(pattern_tapes = [pattern])
         @qml.qnode(device=dev)
         def circuit():
             qml.S(wires=0)
@@ -300,12 +298,12 @@ def pattern_matching_optimization(
                         qml.apply(inst)
 
                 qscript = QuantumScript.from_queue(q_inside)
-                [tape], _ = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                [tape], _ = qml.map_wires(qscript, wire_map=inverse_wires_map)
 
     new_tape = tape.copy(measurements=original_tape_meas)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

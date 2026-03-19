@@ -1,0 +1,53 @@
+# This workflow syncs the main branch to master every weekday. It will remain until the master branch is deleted.
+name: Sync main to master
+
+on:
+  # Scheduled trigger every weekday at 2:47am UTC
+  schedule:
+  - cron:  '47 2 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+          token: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+          fetch-depth: 0 
+
+      - name: Sync main to master
+        run: |
+          git fetch origin 
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"          
+          if git merge --no-commit --ff-only origin/main; then
+            echo "Synching from main to master."
+            echo "merge_conflict=false" >> $GITHUB_ENV
+            git push origin master 
+          else
+            echo "Merge conflict detected. Creating a PR ..."
+            echo "merge_conflict=true" >> $GITHUB_ENV
+            git merge --abort || true 
+          fi   
+
+        # If there are conflicts, create a PR for resolution
+      - name: Create PR for conflict resolution
+        env:
+          GH_TOKEN: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+        if: env.merge_conflict == 'true'            
+        run: |
+          git checkout main
+          BRANCH="main_$(date +'%Y-%m-%d-%H-%M-%S')"
+          echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
+          git checkout -b "$BRANCH"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          if ! git diff --quiet origin/master origin/main; then
+            git push --set-upstream origin "$BRANCH"
+            gh pr create --repo PennyLaneAI/pennylane --title "Daily main sync to master - conflict resolution" --body "" --base master 
+          else
+            echo "No new changes to sync from main to master."
+          fi 
+          exit 1

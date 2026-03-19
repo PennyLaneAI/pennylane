@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformContainer, TransformProgram
+from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.transforms.optimization import merge_rotations
 from pennylane.workflow import run
 
@@ -30,8 +30,8 @@ class TestNoInterfaceRequired:
 
     def test_numpy_interface(self, seed):
         """Test that tapes are executed correctly with the NumPy interface."""
-        container = TransformContainer(merge_rotations)
-        inner_tp = TransformProgram((container,))
+        container = BoundTransform(merge_rotations)
+        inner_tp = CompilePipeline(container)
         device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
@@ -51,8 +51,8 @@ class TestNoInterfaceRequired:
     )
     def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
-        container = TransformContainer(merge_rotations)
-        inner_tp = TransformProgram((container,))
+        container = BoundTransform(merge_rotations)
+        inner_tp = CompilePipeline(container)
         device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
@@ -70,7 +70,7 @@ class TestNoInterfaceRequired:
 @pytest.mark.parametrize("interface", ["autograd", "jax-jit", "jax", "torch"])
 def test_grad_on_execution_error(interface):
     """Tests that a ValueError is raised if the config uses grad_on_execution."""
-    inner_tp = TransformProgram()
+    inner_tp = CompilePipeline()
     device = qml.device("default.qubit")
     tapes = [
         QuantumScript(

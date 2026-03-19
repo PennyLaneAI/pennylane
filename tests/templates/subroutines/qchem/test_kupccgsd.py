@@ -14,6 +14,7 @@
 """
 Tests for the k-UpCCGSD template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -407,6 +408,14 @@ class TestInputs:
                 np.array([1.4, 1.3, 0.0, 0.0]),
                 "Elements of 'init_state' must be integers",
             ),
+            (
+                np.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]]),
+                [0, 1, 2, 3],
+                1,
+                0,
+                None,
+                "Requires `init_state` to be provided",
+            ),
         ],
     )
     def test_kupccgsd_exceptions(self, wires, weights, k, delta_sz, init_state, msg_match):
@@ -429,6 +438,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute can be set."""
         template = qml.kUpCCGSD(

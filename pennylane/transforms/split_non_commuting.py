@@ -235,7 +235,7 @@ def split_non_commuting(
 
         import functools
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        @qml.transforms.split_non_commuting(grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -266,7 +266,7 @@ def split_non_commuting(
 
     .. code-block:: python
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy=None)
+        @qml.transforms.split_non_commuting(grouping_strategy=None)
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -315,7 +315,6 @@ def split_non_commuting(
 
             import pennylane as qml
             from pennylane.transforms import split_non_commuting
-            from functools import partial
 
             ham = qml.Hamiltonian(
                 coeffs=[10, 0.1, 20, 100, 0.2],
@@ -330,7 +329,7 @@ def split_non_commuting(
 
             dev = qml.device("default.qubit")
 
-            @partial(split_non_commuting, shot_dist="weighted")
+            @split_non_commuting(shot_dist="weighted")
             @qml.qnode(dev, shots=10000)
             def circuit():
                 return qml.expval(ham)
@@ -352,7 +351,7 @@ def split_non_commuting(
                 prob_shots = np.array(max_per_group) / np.sum(max_per_group)
                 return np.round(total_shots * prob_shots)
 
-            @partial(split_non_commuting, shot_dist=my_shot_dist)
+            @split_non_commuting(shot_dist=my_shot_dist)
             @qml.qnode(dev, shots=10000)
             def circuit():
                 return qml.expval(ham)

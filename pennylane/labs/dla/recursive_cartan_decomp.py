@@ -253,7 +253,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         if verbose:
             print(f"Iteration {i}: {len(g):>4} -{name:-^8}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
-        if not bc is IDENTITY:
+        if bc is not IDENTITY:
             k = _apply_basis_change(bc, k)
             m = _apply_basis_change(bc, m)
         g = k

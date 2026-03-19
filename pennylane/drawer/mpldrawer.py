@@ -14,6 +14,7 @@
 """
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
+
 import warnings
 from collections.abc import Iterable, Sequence
 
@@ -241,7 +242,7 @@ class MPLDrawer:
     _pad = 0.2
     """Padding for FancyBboxPatch objects."""
 
-    _boxstyle = "round, pad=0.2"
+    _boxstyle = f"round, pad={_pad}"
     """Style for FancyBboxPatch objects."""
 
     _notch_width = 0.04
@@ -250,7 +251,10 @@ class MPLDrawer:
     _notch_height = 0.25
     """The height of active wire notches."""
 
-    _notch_style = "round, pad=0.05"
+    _notch_pad = 0.05
+    """The padding for the FancyBboxPatch of a notch."""
+
+    _notch_style = f"round, pad={_notch_pad}"
     """Box style for active wire notches."""
 
     _cond_shift = 0.03
@@ -530,12 +534,7 @@ class MPLDrawer:
         )
         self._ax.add_patch(box)
 
-        text_obj = self._ax.text(
-            layer,
-            box_center,
-            text,
-            **new_text_options,
-        )
+        text_obj = self._ax.text(layer, box_center, text, **new_text_options)
 
         if active_wire_notches and (len(wires) != (box_max - box_min + 1)):
             notch_options = box_options.copy()
@@ -950,6 +949,96 @@ class MPLDrawer:
                 text,
                 fontsize=(self.fontsize - 2),
             )
+
+    def pauli_measure(self, layer, pauli_word, wires, postselect=None, **kwargs):
+        """Draw a PauliMeasure at the designated layer."""
+
+        box_options = kwargs.get("box_options", {})
+        user_text_options = kwargs.get("text_options", {})
+        lines_options = kwargs.get("lines_options", {})
+        wires = _to_tuple(wires)
+        main_box_ratio = 4 / 5  # the main box has to be narrower to fit eveything
+        notch_box_ratio = 1 - main_box_ratio
+
+        box_min = min(wires)
+        box_max = max(wires)
+        box_center = (box_min + box_max) / 2
+
+        main_box_width = self._box_length * main_box_ratio - 2 * self._pad
+        main_box_height = box_max - box_min + self._box_length - 2 * self._pad
+        notch_width = self._box_length * notch_box_ratio - 2 * self._notch_pad
+        notch_height = self._box_length / 3 - 2 * self._notch_pad
+
+        main_box_x = layer - self._box_length / 2 + self._pad
+        main_box_y = box_min - self._box_length / 2 + self._pad
+        notch_x = main_box_x + main_box_width + self._pad
+        notch_y = box_center - notch_height / 2
+
+        main_box = patches.FancyBboxPatch(
+            (main_box_x, main_box_y),
+            main_box_width,
+            main_box_height,
+            boxstyle=self._boxstyle,
+            **box_options,
+        )
+
+        notch_box = patches.FancyBboxPatch(
+            (notch_x, notch_y),
+            notch_width,
+            notch_height,
+            boxstyle=self._boxstyle,
+            **box_options,
+        )
+
+        self._ax.add_patch(notch_box)
+        self._ax.add_patch(main_box)
+
+        text_options = {
+            "zorder": 3,
+            "ha": "center",
+            "va": "center",
+            "fontsize": self.fontsize if isinstance(self.fontsize, str) else self.fontsize * 1.1,
+        }
+        text_options.update(user_text_options)
+        text_x = main_box_x + main_box_width / 2
+        for symbol, wire in zip(pauli_word, wires):
+            self._ax.text(text_x, wire, symbol, **text_options)
+
+        measure_icon_x, measure_icon_y = notch_x + notch_width / 2 + self._notch_pad, box_center
+        if "zorder" not in lines_options:
+            lines_options["zorder"] = 3
+        lines_options["linewidth"] = 1.5
+        arc = patches.Arc(
+            (measure_icon_x, measure_icon_y),
+            notch_width + self._notch_pad * 2,
+            notch_height + self._notch_pad * 2,
+            theta1=270 if postselect is None else 320,
+            theta2=90,
+            **lines_options,
+        )
+        self._ax.add_patch(arc)
+
+        if postselect is not None:
+            self._ax.text(
+                measure_icon_x - self._notch_pad / 2,
+                measure_icon_y - notch_height / 2,
+                str(postselect),
+                fontsize=self.fontsize * 0.7,
+            )
+
+        self.ax.arrow(
+            measure_icon_x,
+            measure_icon_y,
+            notch_width + self._notch_pad,
+            notch_height / 2,
+            head_width=notch_width / 6,
+            **lines_options,
+        )
+
+    @property
+    def ppm_offset(self) -> float:
+        """Gets the x-offset for drawing the control wire of a PauliMeasure."""
+        return self._box_length / 10
 
     def _y(self, wire):
         """Used for determining the correct y coordinate for classical wires.

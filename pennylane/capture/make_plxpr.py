@@ -138,13 +138,9 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
-    """
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the ``make_plxpr`` function. "
-            "You can install jax via: pip install jax~=0.6.0"
-        )
 
+    """
+    assert has_jax
     if not qml.capture.enabled():
         raise RuntimeError(
             "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "

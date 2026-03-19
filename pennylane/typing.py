@@ -32,7 +32,7 @@ class InterfaceTensorMeta(type):
 
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)
+        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
 
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""

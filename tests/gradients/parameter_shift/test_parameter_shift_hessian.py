@@ -27,6 +27,28 @@ from pennylane.gradients.parameter_shift_hessian import (
 )
 
 
+def test_preprocessing_expansion():
+    """Test that the parameter-shift Hessian correctly expands templates into supported gates."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(
+        device=dev,
+    )
+    def circuit(params):
+        qml.StronglyEntanglingLayers(params, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    hessian_qnode = qml.gradients.param_shift_hessian(circuit)
+
+    params = qml.numpy.array(
+        [[[0.37237552, 0.12791554, 0.52721226], [-0.3707729, 1.75044345, 0.37902089]]],
+        requires_grad=True,
+    )
+    result = hessian_qnode(params)
+    assert result.shape == (1, 2, 3, 1, 2, 3)
+
+
 class TestProcessArgnum:
     """Tests for the helper method _process_argnum."""
 

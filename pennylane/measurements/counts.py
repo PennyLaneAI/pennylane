@@ -170,10 +170,9 @@ class CountsMP(SampleMeasurement):
 
              .. code-block:: python
 
-                from functools import partial
                 dev = qml.device("default.qubit", wires=2)
 
-                @partial(qml.set_shots, shots=4)
+                @qml.set_shots(shots=4)
                 @qml.qnode(dev)
                 def circuit(x):
                     qml.RX(x, wires=0)
@@ -342,6 +341,34 @@ if CountsMP._wires_primitive is not None:
         return keys, values
 
 
+# pylint: disable=protected-access, unused-argument
+if CountsMP._mcm_primitive is not None:
+
+    CountsMP._mcm_primitive.multiple_results = True
+
+    @CountsMP._mcm_primitive.def_impl
+    def _mcm_impl(*args, **kwargs):
+        raise NotImplementedError("Counts has no execution implementation with program capture.")
+
+    def _mcm_keys_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
+        return (2**n_wires,), int
+
+    def _mcm_values_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
+        return (2**n_wires,), int
+
+    abstract_mp = _get_abstract_measurement()
+
+    @CountsMP._mcm_primitive.def_abstract_eval
+    def _mcm_abstract_eval(*mcms, single_mcm, all_outcomes=False):
+        keys = abstract_mp(_mcm_keys_eval, n_wires=len(mcms), has_eigvals=False)
+        values = abstract_mp(_mcm_values_eval, n_wires=len(mcms), has_eigvals=False)
+        return keys, values
+
+
 def counts(
     op=None,
     wires=None,
@@ -386,7 +413,7 @@ def counts(
         from functools import partial
         dev = qml.device("default.qubit", seed=42, wires=2)
 
-        @partial(qml.set_shots, shots=4)
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -410,7 +437,7 @@ def counts(
         from functools import partial
         dev = qml.device("default.qubit", seed=42, wires=2)
 
-        @partial(qml.set_shots, shots=4)
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -431,7 +458,7 @@ def counts(
         from functools import partial
         dev = qml.device("default.qubit", seed=42, wires=2)
 
-        @partial(qml.set_shots, shots=4)
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit():
             qml.X(0)

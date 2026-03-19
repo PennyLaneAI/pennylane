@@ -7,7 +7,7 @@ Creating a Pull Request
 
 When you are ready, go ahead and click on "New Pull Request" on the
 `pull request page <https://github.com/PennyLaneAI/pennylane/pulls>`_.  On the next page, you need
-to select your fork and branch to merge into the PennyLane `master` branch.
+to select your fork and branch to merge into the PennyLane `main` branch.
 
 On the page for creating a new pull request, you need to specify the name of the PR and write an
 introductory description. We have a PR template with a checklist that can help

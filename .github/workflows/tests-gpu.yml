@@ -2,7 +2,7 @@ name: GPU Tests
 on:
   push:
     branches:
-      - master
+      - main
   merge_group:
     types:
       - checks_requested
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TORCH_VERSION: 2.5.1
+  TORCH_VERSION: 2.9.0
 
 jobs:
   gpu-tests:
@@ -43,6 +43,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
 
     env:
       SUITE: gpu
@@ -55,13 +56,13 @@ jobs:
           echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> $GITHUB_ENV
 
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Setup Python
         id: setup_python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -90,11 +91,15 @@ jobs:
           which python
           which pip
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.9.17
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
+          uv pip install --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |
@@ -102,11 +107,11 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          python -m build --wheel
-          pip install dist/pennylane*.whl
+          uv build --wheel
+          uv pip install dist/pennylane*.whl
 
       - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+        run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
         run: python -m pytest -m "${{ env.SUITE }}" tests

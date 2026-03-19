@@ -369,9 +369,8 @@ def quantum_fisher(
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
-    >>> from functools import partial
     >>> dev = qml.device("default.qubit", wires=n_wires+1)
-    >>> @partial(qml.set_shots, shots=1000)
+    >>> @qml.set_shots(shots=1000)
     ... @qml.qnode(dev)
     ... def circ(params):
     ...     qml.RY(params[0], wires=1)

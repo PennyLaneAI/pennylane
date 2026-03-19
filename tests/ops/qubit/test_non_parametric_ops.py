@@ -47,6 +47,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -496,19 +497,22 @@ class TestDecompositions:
         op = qml.CSWAP(wires=[0, 1, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        expected_ops = [qml.CNOT([2, 1]), qml.Toffoli([0, 1, 2]), qml.CNOT([2, 1])]
+        assert all(
+            qml.equal(dec_op, exp_op) for dec_op, exp_op in zip(res, expected_ops, strict=True)
+        )
 
         mats = []
 
         for i in reversed(res):  # only use 3 toffoli gates
-            if i.wires == Wires([0, 2, 1]) and i.name == "Toffoli":
+            if i.wires == Wires([2, 1]) and i.name == "CNOT":
                 mats.append(
                     np.array(
                         [
                             [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1],
                             [0, 0, 0, 0, 0, 0, 1, 0],
@@ -709,7 +713,7 @@ class TestMultiControlledX:
 
     @pytest.mark.parametrize("control_val", [0, 1])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
-    def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
+    def test_decomposition_with_flips(self, n_ctrl_wires, control_val):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
@@ -717,7 +721,6 @@ class TestMultiControlledX:
         control_target_wires = list(range(n_ctrl_wires)) + [n_ctrl_wires]
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
-        spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -727,7 +730,7 @@ class TestMultiControlledX:
                 control_values=control_values,
             )
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -741,7 +744,6 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_decomposition_with_custom_wire_labels(self, mocker):
@@ -759,7 +761,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=2)
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -773,7 +775,8 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_worker_state_unperturbed(self, mocker):
@@ -792,7 +795,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -804,7 +807,8 @@ class TestMultiControlledX:
             return qml.state()
 
         assert np.allclose(f(), rnd_state)
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
 
     def test_compute_matrix_no_control_values(self):
         """Test compute_matrix assumes all control on "1" if no
@@ -1091,12 +1095,16 @@ class TestControlledMethod:
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
     """Tests special decomposition rules for Pow of operators."""
 
+    @pytest.mark.parametrize("batched", [True, False])
     @pytest.mark.parametrize("op", [qml.X(0), qml.Y(0), qml.Z(0), qml.S(0)])
-    def test_op_fractional_power(self, op):
+    def test_op_fractional_power(self, op, batched):
         """Test that fractional powers of operators are decomposed correctly."""
 
-        half_op = qml.pow(op, 0.5)
-        quart_op = qml.pow(op, 0.25)
+        half_data = [0.5, 0.5] if batched else 0.5
+        quart_data = [0.25, 0.25] if batched else 0.25
+
+        half_op = qml.pow(op, half_data)
+        quart_op = qml.pow(op, quart_data)
 
         decomps = qml.list_decomps(f"Pow({op.name})")
         for rule in decomps:
@@ -1121,7 +1129,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
                 tape = qml.tape.QuantumScript.from_queue(q)
                 assert qml.math.allclose(qml.matrix(tape), qml.matrix(op))
 
-    @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9])
+    @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qml.ISWAP(wires=[0, 1]), qml.SISWAP(wires=[0, 1])])
     def test_ISWAP_and_SISWAP_powers(self, op, z):
         """Tests the power decomposition of ISWAP and SISWAP gates."""

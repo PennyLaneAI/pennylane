@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import clifford_t_decomposition
 from pennylane.tape import QuantumScript
 
 pytest.importorskip("pyzx")
@@ -38,6 +39,7 @@ def test_import_pyzx_error(monkeypatch):
             qml.transforms.zx.optimize_t_count(qs)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.external
 class TestOptimizeTCount:
 
@@ -62,7 +64,7 @@ class TestOptimizeTCount:
         """Test cancellation for each supported Hermitian gate (involution property HH=I)"""
         ops = [gate, gate]
 
-        qs = QuantumScript(ops)
+        [qs], _ = clifford_t_decomposition(QuantumScript(ops))
         (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == []

@@ -17,5 +17,6 @@ from circuits or compile circuits from an IR.
 """
 
 from .parity_matrix import parity_matrix
+from .parity_synth import parity_synth
 from .phase_polynomial import phase_polynomial
 from .rowcol import postorder_traverse, preorder_traverse, rowcol

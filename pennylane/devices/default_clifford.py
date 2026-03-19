@@ -45,7 +45,7 @@ from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters, defer_measurements, transform
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from .default_qubit import accepted_sample_measurement
@@ -181,6 +181,21 @@ def _pl_obs_to_linear_comb(meas_obs):
             r_word = "".join(map(pw.get, r_wire))
         paulis.append((r_word, r_wire))
     return coeffs, paulis
+
+
+def _handle_state_prep(prep, circuit, stim_circuit):
+    """Handles state preparation by either decomposing BasisState or building a Tableau."""
+    if isinstance(prep, ops.BasisState):
+        for op in prep.decomposition():
+            gate, wires = _pl_op_to_stim(op)
+            stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
+    else:
+        stim_tableau = stim.Tableau.from_state_vector(
+            math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+            endian="big",
+        )
+        stim_circuit += stim_tableau.to_circuit()
+    return stim_circuit
 
 
 @simulator_tracking
@@ -356,13 +371,11 @@ class DefaultClifford(Device):
             import pennylane as qml
             import numpy as np
 
-            from functools import partial
-
             dev = qml.device("default.clifford", seed=42)
 
             num_wires = 3
 
-            @partial(qml.set_shots, shots=1024)
+            @qml.set_shots(shots=1024)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(wires=[0])
@@ -457,15 +470,15 @@ class DefaultClifford(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device configuration.
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -475,35 +488,38 @@ class DefaultClifford(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(defer_measurements, allow_postselect=False)
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
-            transform_program.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name=self.name
+            compile_pileline.add_transform(
+                decompose,
+                target_gates=set(_OPERATIONS_MAP.keys()),
+                stopping_condition=operation_stopping_condition,
+                name=self.name,
             )
-            transform_program.add_transform(_validate_channels, name=self.name)
-        transform_program.add_transform(
+            compile_pileline.add_transform(_validate_channels, name=self.name)
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        transform_program.add_transform(validate_adjoint_trainable_params)
+        compile_pileline.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
             config = replace(config, gradient_method=None)
 
-        return transform_program, config
+        return compile_pileline, config
 
     def execute(
         self,
@@ -568,13 +584,8 @@ class DefaultClifford(Device):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 
-        # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
-            stim_tableau = stim.Tableau.from_state_vector(
-                math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
-                endian="big",
-            )
-            stim_circuit += stim_tableau.to_circuit()
+            stim_circuit = _handle_state_prep(prep, circuit, stim_circuit)
 
         # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
@@ -590,7 +601,7 @@ class DefaultClifford(Device):
                     self._apply_snapshot(circuit, stim_circuit, op, global_phase_ops, debugger)
 
         tableau_simulator.do_circuit(stim_circuit)
-        global_phase = ops.GlobalPhase(math.sum(op.data[0] for op in global_phase_ops))
+        global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
         # Perform measurements based on whether shots are provided
         if circuit.shots:
@@ -650,7 +661,7 @@ class DefaultClifford(Device):
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
             snap_sim.do_circuit(stim_circuit)
-            global_phase = ops.GlobalPhase(math.sum(op.data[0] for op in global_phase_ops))
+            global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
             snap_result = measurement_func(
                 meas,
@@ -893,9 +904,7 @@ class DefaultClifford(Device):
             )
         )
 
-        # Use the reduced row echelon form for finding rank efficiently
-        # tapering always come in handy :)
-        rank = math.sum(math.any(math.binary_finite_reduced_row_echelon(partition_mat), axis=1))
+        rank = math.binary_matrix_rank(partition_mat)
 
         # Compute the entropy
         entropy = math.log(2) * (rank - len(wires))

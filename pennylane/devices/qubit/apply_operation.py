@@ -360,6 +360,14 @@ def apply_mid_measure(
     slices[axis] = 0
     prob0 = math.real(math.norm(state[tuple(slices)])) ** 2
 
+    if interface == "numpy":
+        norm = math.sum(prob0, axis=-1)
+        eps = 10 * math.finfo(state.dtype).eps
+        if (norm - 1) > eps:
+            raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
+        if norm > 1:
+            prob0 = prob0 / norm
+
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
         from jax.random import binomial
@@ -411,8 +419,14 @@ def apply_identity(op: ops.Identity, state, is_state_batched: bool = False, debu
 def apply_global_phase(
     op: ops.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
 ):
-    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
-    return math.exp(-1j * math.cast(op.data[0], complex)) * state
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the
+    state by ``exp(-1j * op.data[0])``"""
+    phase = math.exp(-1j * math.cast(op.data[0], complex))
+    if phase.ndim > 0:
+        if not is_state_batched:
+            state = state.reshape((1,) + state.shape)
+        phase = phase.reshape((-1,) + (1,) * (state.ndim - 1))
+    return phase * state
 
 
 @apply_operation.register
@@ -729,7 +743,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax~=0.6.0"
+            "You can install jax via: pip install jax"
         ) from e
 
     if operation.data is None or operation.t is None:
