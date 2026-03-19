@@ -55,7 +55,6 @@ from .symbolic_decomposition import (
     qjit_compatible_decompose_to_base,
     qjit_compatible_flip_pow_adjoint,
     qjit_compatible_merge_powers,
-    qjit_compatible_pow_rotation,
     qjit_compatible_repeat_pow_base,
     repeat_pow_base,
     self_adjoint,
