@@ -24,7 +24,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.queuing import AnnotatedQueue
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -109,27 +109,42 @@ class TestQSVTBasics:
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
-        ("UA", "projectors"),
+        ("UA", "projectors", "expected"),
         [
             (
                 qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode(np.array([[0.1, 0.2], [0.3, 0.4]]), wires=[0, 1]),
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                ],
             ),
             (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.4]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode(np.array([[0.3, 0.1], [0.2, 0.4]]), wires=[0, 1]),
+                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                ],
             ),
             (
                 qml.Hadamard(wires=0),
                 [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                [qml.RZ(-2.46, wires=[0]), qml.Hadamard(wires=0), qml.RZ(1.0, wires=[0])],
             ),
         ],
     )
-    def test_decomposition_new(self, UA, projectors):
+    def test_decomposition_new(self, UA, projectors, expected):
         """Test the decomposition of the QSVT template."""
-        op = qml.QSVT(UA, projectors)
+
         for rule in qml.list_decomps(qml.QSVT):
-            _test_decomposition_rule(op, rule)
+            with AnnotatedQueue() as q:
+                rule(UA=UA, projectors=projectors)
+
+            for i, op in enumerate(expected):
+                assert op == q.queue[i]
 
     @pytest.mark.parametrize(
         ("UA", "projectors"),
