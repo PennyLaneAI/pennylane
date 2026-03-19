@@ -297,7 +297,7 @@ def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
 
 
 @register_resources(_all_singles_doubles_resouces)
-def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles, **_):
+def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
     BasisState(hf_state, wires=wires)
 
     if has_jax and capture.enabled():
