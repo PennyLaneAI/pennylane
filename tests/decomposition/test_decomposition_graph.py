@@ -35,7 +35,6 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
 from pennylane.ops.functions.assert_valid import _decomps_use_reconstructor
 
-
 # pylint: disable=protected-access,no-name-in-module
 
 

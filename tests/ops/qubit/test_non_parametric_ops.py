@@ -42,12 +42,15 @@ from gate_data import (
     Y,
     Z,
 )
-from pennylane.decomposition import resource_rep
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, _decomps_use_reconstructor
+from pennylane.decomposition import resource_rep
+from pennylane.ops.functions.assert_valid import (
+    _decomps_use_reconstructor,
+    _test_decomposition_rule,
+)
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
