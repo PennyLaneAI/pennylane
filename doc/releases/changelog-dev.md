@@ -702,8 +702,6 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-  [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
-  
 * Updated various docstrings to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
