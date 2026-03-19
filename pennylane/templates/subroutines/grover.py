@@ -231,7 +231,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
 
 
 @register_resources(_grover_operator_resources)
-def _grover_decomposition(wires, work_wires, n_wires, **_):
+def _grover_decomposition(wires, work_wires, n_wires):
     ctrl_values = [0] * (n_wires - 1)
 
     if capture.enabled():
