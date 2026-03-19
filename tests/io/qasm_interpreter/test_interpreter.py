@@ -1665,14 +1665,12 @@ class TestGates:
             T("q1") ** 2,
         ]
 
+
 @pytest.mark.external
-@pytest.mark.parametrize("initial_ctx", [
-    {},
-    {"scopes": {"subroutines": {}}},
-    {"scopes": {"custom_gates": {}}}
-])
+@pytest.mark.parametrize(
+    "initial_ctx", [{}, {"scopes": {"subroutines": {}}}, {"scopes": {"custom_gates": {}}}]
+)
 def test_context_initialization_robustness(initial_ctx):
     c = Context(initial_ctx)
-    
     assert "subroutines" in c.context["scopes"]
     assert "custom_gates" in c.context["scopes"]
