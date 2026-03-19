@@ -47,7 +47,9 @@ from pennylane.decomposition.symbolic_decomposition import (
 from tests.decomposition.conftest import to_resources
 
 
-class CustomOpWithoutReconstructor(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+class CustomOpWithoutReconstructor(
+    qml.operation.Operator
+):  # pylint: disable=too-few-public-methods
 
     resource_keys = {"key"}
 
@@ -65,9 +67,8 @@ class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-
         return {"key": 0}
 
 
-# pytest: disable=unused-argument
 @register_reconstructor(CustomOpWithReconstructor)
-def _reconsutruct_custom_op(wires, key):
+def _reconsutruct_custom_op(wires, **_):
     return CustomOpWithReconstructor(wires)
 
 
@@ -218,11 +219,14 @@ class TestPowDecomposition:
         with queuing.AnnotatedQueue() as q:
             flip_pow_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.adjoint(qml.pow(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]), 2))]
+        assert q.queue == [
+            qml.adjoint(qml.pow(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]), 2))
+        ]
         assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
-                    qml.ops.Pow, {"base_class": CustomOpWithoutReconstructor, "base_params": {}, "z": 2}
+                    qml.ops.Pow,
+                    {"base_class": CustomOpWithoutReconstructor, "base_params": {}, "z": 2},
                 ): 1
             }
         )
