@@ -101,6 +101,7 @@
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9151)](https://github.com/PennyLaneAI/pennylane/pull/9151)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
   [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
@@ -155,6 +156,10 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* `Callables` defining quantum operations can now be passed to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
 * The `default.qubit` device now supports parameter-broadcasted global phases.
   [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)

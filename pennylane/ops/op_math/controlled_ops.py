@@ -38,7 +38,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
     pow_involutory_no_reconstructor,
-    pow_rotation,
     qjit_compatible_adjoint_rotation,
     qjit_compatible_pow_rotation,
     qjit_compatible_self_adjoint,
@@ -2915,6 +2914,6 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
 add_decomps("Adjoint(ControlledPhaseShift)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
+add_decomps("Pow(ControlledPhaseShift)", qjit_compatible_pow_rotation)
 
 CPhase = ControlledPhaseShift

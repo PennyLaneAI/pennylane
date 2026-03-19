@@ -40,7 +40,7 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .reconstruct import has_reconstructor
+from .reconstruct import decomps_use_reconstructor, has_reconstructor
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
@@ -460,7 +460,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Gets the decomposition rules for the power of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
-        base_has_reconstructor = has_reconstructor(base_class, base_params)
+        base_has_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: power of zero
         if op.params["z"] == 0:

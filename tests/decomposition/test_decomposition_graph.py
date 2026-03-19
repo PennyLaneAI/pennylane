@@ -29,12 +29,12 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.reconstruct import register_reconstructor
+from pennylane.decomposition.reconstruct import (
+    get_decomp_kwargs,
+)
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
-from pennylane.ops.functions.assert_valid import _decomps_use_reconstructor
-
 
 # pylint: disable=protected-access,no-name-in-module
 
@@ -47,11 +47,6 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
     @property
     def resource_params(self):
         return {}
-
-
-@register_reconstructor(CustomOp)
-def _custom_op_reconstructor(wires):
-    return CustomOp(wires)
 
 
 class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
@@ -820,12 +815,7 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
-        rep = resource_rep(op.__class__, **op.resource_params)
-        rule_params = (
-            op.resource_params
-            if _decomps_use_reconstructor(rep.op_type, rep.params)
-            else op.hyperparameters
-        )
+        rule_params = get_decomp_kwargs(op)
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
@@ -835,12 +825,7 @@ class TestSymbolicDecompositions:
 
         op2 = qml.pow(qml.H(0), 6)
 
-        rep = resource_rep(op2.__class__, **op2.resource_params)
-        rule_params = (
-            op2.resource_params
-            if _decomps_use_reconstructor(rep.op_type, rep.params)
-            else op.hyperparameters
-        )
+        rule_params = get_decomp_kwargs(op2)
 
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
@@ -857,12 +842,7 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
-        rep = resource_rep(op.__class__, **op.resource_params)
-        rule_params = (
-            op.resource_params
-            if _decomps_use_reconstructor(rep.op_type, rep.params)
-            else op.hyperparameters
-        )
+        rule_params = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
@@ -891,17 +871,10 @@ class TestSymbolicDecompositions:
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
         op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
-        rule1_params = copy.copy(op1.hyperparameters)
-        rule1_params.update(op1.resource_params)
-
-        rule2_params = copy.copy(op2.hyperparameters)
-        rule2_params.update(op2.resource_params)
-
-        rule3_params = copy.copy(op3.hyperparameters)
-        rule3_params.update(op3.resource_params)
-
-        rule4_params = copy.copy(op4.hyperparameters)
-        rule4_params.update(op4.resource_params)
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+        rule3_params = get_decomp_kwargs(op3)
+        rule4_params = get_decomp_kwargs(op4)
 
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
@@ -976,12 +949,10 @@ class TestSymbolicDecompositions:
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
-
-            # TODO: Adjoint ops will be supported as of [sc-110066]
-            # solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [
             CustomOp(0),
             CustomOp(0),
-            # qml.adjoint(qml.pow(CustomOp(1), 2)),
+            qml.adjoint(qml.pow(CustomOp(1), 2)),
         ]
