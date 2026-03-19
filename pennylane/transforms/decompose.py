@@ -42,8 +42,7 @@ from pennylane.transforms.core import transform
 
 def _use_reconstructor(op_type, op_params):
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Pow also implemented in a different PR [sc-110069]
-    if op_type in (ops.Controlled, ops.Pow):
+    if op_type is ops.Controlled:
         return False
     return has_reconstructor(op_type, op_params)
 

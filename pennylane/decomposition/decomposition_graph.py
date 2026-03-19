@@ -54,6 +54,10 @@ from .symbolic_decomposition import (
     merge_powers,
     qjit_compatible_adjoint_rotation,
     qjit_compatible_cancel_adjoint,
+    qjit_compatible_decompose_to_base,
+    qjit_compatible_flip_pow_adjoint,
+    qjit_compatible_merge_powers,
+    qjit_compatible_repeat_pow_base,
     qjit_compatible_self_adjoint,
     repeat_pow_base,
     self_adjoint,
@@ -455,25 +459,30 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
-        base_class = op.params["base_class"]
+        base_class, base_params = (op.params["base_class"], op.params["base_params"])
+        base_has_reconstructor = has_reconstructor(base_class, base_params)
 
         # Special case: power of zero
         if op.params["z"] == 0:
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [decompose_to_base]
+            return [
+                qjit_compatible_decompose_to_base if base_has_reconstructor else decompose_to_base
+            ]
 
         # Special case: power of a power
         if issubclass(base_class, qml.ops.Pow):
-            return [merge_powers]
+            return [qjit_compatible_merge_powers if base_has_reconstructor else merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(base_class, qml.ops.Adjoint):
-            return [flip_pow_adjoint]
+            return [
+                qjit_compatible_flip_pow_adjoint if base_has_reconstructor else flip_pow_adjoint
+            ]
 
         # General case: repeat the operator z times
-        return [repeat_pow_base]
+        return [qjit_compatible_repeat_pow_base if base_has_reconstructor else repeat_pow_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""

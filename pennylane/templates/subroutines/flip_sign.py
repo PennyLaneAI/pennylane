@@ -173,7 +173,7 @@ def _flip_sign_resources(num_wires, arr_bin):
 
 
 @register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(wires, arr_bin):
+def _flip_sign_decomposition(wires, arr_bin, **_):
     cond(arr_bin[-1] == 0, X)(wires[-1])
 
     ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
