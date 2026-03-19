@@ -125,7 +125,9 @@ def change_op_basis(
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
 
-    A ``Callable`` can also be provided as an argument to ``ChangeOpBasis``.
+    A ``Callable`` can also be provided as an argument to ``ChangeOpBasis``. This can be a function that applies a series
+    of ``Operation`` s. Since ``ChangeOpBasis`` requires this ``Callable`` to have no input arguments, ``functools.partial``
+    can be used to absorb any necessary parameters.
 
     .. code-block:: python
 
