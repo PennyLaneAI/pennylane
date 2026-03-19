@@ -226,6 +226,14 @@ class ControlledQubitUnitary(ControlledOp):
         self._name = "ControlledQubitUnitary"
 
     @property
+    def data(self):
+        return (self.data[0], self.control_values)
+
+    @data.setter
+    def data(self, new_data):
+        self.base.data = new_data
+
+    @property
     def resource_params(self) -> dict:
         return {
             "num_target_wires": len(self.base.wires),
@@ -1574,15 +1582,15 @@ class MultiControlledX(ControlledOp):
     name = "MultiControlledX"
 
     def _flatten(self):
-        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
+        return (tuple(self.control_values),), (self.wires, self.work_wires, self.work_wire_type)
 
     @classmethod
-    def _unflatten(cls, _, metadata):
+    def _unflatten(cls, data, metadata):
         return cls(
+            control_values=data[0],
             wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
+            work_wires=metadata[1],
+            work_wire_type=metadata[2],
         )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -1650,6 +1658,10 @@ class MultiControlledX(ControlledOp):
         return (
             f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
         )
+
+    @property
+    def data(self):
+        return (self.control_values,)
 
     @property
     def wires(self):
@@ -1791,7 +1803,7 @@ def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values,
 
 @register_condition(lambda num_control_wires, **_: num_control_wires < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
-def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
+def _mcx_to_cnot_or_toffoli(control_values, wires, control_wires, **_):
     if len(wires) == 2 and not control_values[0]:
         qml.CNOT(wires=wires)
         qml.X(wires[1])

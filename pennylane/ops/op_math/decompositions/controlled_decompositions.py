@@ -400,7 +400,7 @@ def _controlled_two_qubit_unitary_resource(
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda num_target_wires, **_: num_target_wires == 2)
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
-def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
+def controlled_two_qubit_unitary_rule(U, control_values, wires, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
     zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
     for w in zero_control_wires:

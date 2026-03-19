@@ -222,7 +222,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
     )
-    def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
+    def _impl(*params, control_values, wires, control_wires, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
             qml.PauliX(w)
@@ -266,15 +266,14 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         work_wires=inner_decomp._work_wire_spec,
         exact=inner_decomp.exact_resources,
     )
-    def _impl(*params, wires, control_wires, control_values, **kwargs):
+    def _impl(*base_params, control_values, wires, control_wires, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
             qml.PauliX(w)
         inner_decomp(
-            *params,
+            *base_params,
             wires=wires,
             control_wires=control_wires,
-            control_values=[1] * len(control_wires),  # all control values are 1 now
             **kwargs,
         )
         for w in zero_control_wires:
@@ -307,7 +306,7 @@ def _flip_control_adjoint_resource(
 # pylint: disable=too-many-arguments
 @register_resources(_flip_control_adjoint_resource)
 def flip_control_adjoint(
-    *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
+    *base_params, control_values, wires, control_wires, work_wires, work_wire_type, base, **_
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
@@ -345,12 +344,12 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
-def _to_controlled_qu_condition(base_class, **__):
+def _to_controlled_qu_condition(base_class, **_):
     return base_class.has_matrix and base_class.num_wires == 1
 
 
 def _to_controlled_qu_resource(
-    num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **__
+    num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
 ):
     return {
         resource_rep(
@@ -366,7 +365,7 @@ def _to_controlled_qu_resource(
 
 @register_condition(_to_controlled_qu_condition)
 @register_resources(_to_controlled_qu_resource)
-def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
+def to_controlled_qubit_unitary(*_, control_values, wires, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
     matrix = base.matrix()
     qml.ControlledQubitUnitary(

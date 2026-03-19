@@ -824,7 +824,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
 
 
 @register_resources(_controlled_y_resource)
-def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_y_decomp(wires, control_wires, work_wires, work_wire_type, **_):
     if len(control_wires) == 1:
         qml.CY(wires=wires)
         return
@@ -1096,7 +1096,7 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 
 @register_resources(_controlled_z_resources)
-def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_z_decomp(wires, control_wires, work_wires, work_wire_type, **_):
     if len(control_wires) == 1:
         qml.CZ(wires=wires)
         return
@@ -1791,7 +1791,7 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
 
 
 @register_resources(_controlled_swap_resources)
-def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_swap_decomp(wires, control_wires, work_wires, work_wire_type, **_):
     if len(control_wires) == 1:
         qml.CSWAP(wires=wires)
         return

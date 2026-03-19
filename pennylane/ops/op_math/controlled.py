@@ -528,9 +528,8 @@ class Controlled(SymbolicOp):
     }
 
     def _flatten(self):
-        return (self.base,), (
+        return (self.base, tuple(self.control_values)), (
             self.control_wires,
-            tuple(self.control_values),
             self.work_wires,
             self.work_wire_type,
         )
@@ -539,10 +538,10 @@ class Controlled(SymbolicOp):
     def _unflatten(cls, data, metadata):
         return cls(
             data[0],
+            control_values=data[1],
             control_wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
+            work_wires=metadata[1],
+            work_wire_type=metadata[2],
         )
 
     # pylint: disable=no-self-argument
@@ -627,8 +626,8 @@ class Controlled(SymbolicOp):
                 f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
             )
 
+        self._control_values = control_values
         self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["work_wire_type"] = work_wire_type
         self._name = f"C({base.name})"
@@ -664,6 +663,16 @@ class Controlled(SymbolicOp):
             )
         )
 
+    @property
+    def data(self):
+        if self.__class__ in (Controlled, ControlledOp):
+            return (*self.base.data, self.control_values)
+        return self.base.data
+
+    @data.setter
+    def data(self, new_data):
+        self.base.data = new_data
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
@@ -682,7 +691,7 @@ class Controlled(SymbolicOp):
     def control_values(self):
         """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or
         ``False``."""
-        return self.hyperparameters["control_values"]
+        return self._control_values
 
     @property
     def _control_int(self):
@@ -870,7 +879,8 @@ class Controlled(SymbolicOp):
         decomp = _decompose_no_control_values(self)
         if decomp is None:
             no_control_values = copy(self).queue()
-            no_control_values.hyperparameters["control_values"] = [1] * len(self.control_wires)
+            # pylint: disable=protected-access
+            no_control_values._control_values = [1] * len(self.control_wires)
             d.append(no_control_values)
         else:
             d += decomp
