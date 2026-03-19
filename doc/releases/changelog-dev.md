@@ -704,6 +704,7 @@ The following classes have been ported over:
 
 * Refactor `qml.matrix` to use new transform dispatching for supported types.
   [(#8501)](https://github.com/PennyLaneAI/pennylane/pull/8501)
+
 * `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
   program capture.
   [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
