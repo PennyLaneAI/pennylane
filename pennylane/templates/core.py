@@ -133,8 +133,6 @@ def change_op_basis_subroutine_resource_rep(
 
         See :func:`~pennylane.decomposition.subroutine_resource_rep` for more information.
 
-    .. seealso:: :func:`~.ops.op_math.change_op_basis`
-
     """
     compute_rep = _get_non_adjoint_rep(compute)
     target_rep = _get_non_adjoint_rep(target)
