@@ -131,7 +131,7 @@ def change_op_basis(
 
     .. code-block:: python
 
-        def f(a, reg1, reg2):
+        def my_compute_op(a, reg1, reg2):
             qml.BasisState(np.zeros(len(reg2)), reg2)
             qml.QFT(reg1)
             qml.RX(a, reg1[0])
