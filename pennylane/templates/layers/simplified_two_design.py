@@ -245,7 +245,7 @@ def _simplified_two_design_resources(n_layers, num_wires):
 
 
 @register_resources(_simplified_two_design_resources)
-def _simplified_two_design_decomposition(initial_layer_weights, weights, wires, **_):
+def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]
 
     if has_jax and capture.enabled():
