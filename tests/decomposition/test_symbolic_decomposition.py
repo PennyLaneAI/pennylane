@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
+from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -34,6 +35,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
+    pow_involutory,
     pow_involutory_no_reconstructor,
     pow_rotation,
     repeat_pow_base,
@@ -43,6 +45,29 @@ from pennylane.decomposition.symbolic_decomposition import (
 
 # pylint: disable=no-name-in-module
 from tests.decomposition.conftest import to_resources
+
+
+class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+@register_reconstructor(CustomOpWithReconstructor)
+def _reconsutruct_custom_op(wires):
+    return CustomOpWithReconstructor(wires)
 
 
 @pytest.mark.unit
@@ -233,52 +258,47 @@ class TestPowDecomposition:
             }
         )
 
-    def test_pow_involutory(self):
+    @pytest.mark.parametrize(
+        ("op_type", "rule"),
+        [
+            (CustomOp, pow_involutory),
+            (CustomOpWithReconstructor, pow_involutory_no_reconstructor),
+        ],
+    )
+    def test_pow_involutory(self, op_type, rule):
         """Tests the pow_involutory decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        op1 = qml.pow(CustomOp(wires=[0, 1, 2]), 1)
-        op2 = qml.pow(CustomOp(wires=[0, 1, 2]), 2)
-        op3 = qml.pow(CustomOp(wires=[0, 1, 2]), 3)
-        op4 = qml.pow(CustomOp(wires=[0, 1, 2]), 4)
-        op5 = qml.pow(CustomOp(wires=[0, 1, 2]), 4.5)
+        op1 = qml.pow(op_type(wires=[0, 1, 2]), 1)
+        op2 = qml.pow(op_type(wires=[0, 1, 2]), 2)
+        op3 = qml.pow(op_type(wires=[0, 1, 2]), 3)
+        op4 = qml.pow(op_type(wires=[0, 1, 2]), 4)
+        op5 = qml.pow(op_type(wires=[0, 1, 2]), 4.5)
 
         with qml.queuing.AnnotatedQueue() as q:
-            pow_involutory_no_reconstructor(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            pow_involutory_no_reconstructor(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            pow_involutory_no_reconstructor(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            pow_involutory_no_reconstructor(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
-            pow_involutory_no_reconstructor(*op5.parameters, wires=op5.wires, **op5.hyperparameters)
+            rule(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            rule(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            rule(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            rule(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            rule(*op5.parameters, wires=op5.wires, **op5.hyperparameters)
 
         assert q.queue == [
-            CustomOp(wires=[0, 1, 2]),
-            CustomOp(wires=[0, 1, 2]),
-            qml.pow(CustomOp(wires=[0, 1, 2]), 0.5),
+            op_type(wires=[0, 1, 2]),
+            op_type(wires=[0, 1, 2]),
+            qml.pow(op_type(wires=[0, 1, 2]), 0.5),
         ]
-        assert pow_involutory_no_reconstructor.compute_resources(
-            **op1.resource_params
-        ) == Resources({resource_rep(CustomOp): 1})
-        assert pow_involutory_no_reconstructor.compute_resources(
-            **op3.resource_params
-        ) == Resources({resource_rep(CustomOp): 1})
-        assert (
-            pow_involutory_no_reconstructor.compute_resources(**op2.resource_params) == Resources()
+        assert rule.compute_resources(**op1.resource_params) == Resources(
+            {resource_rep(op_type): 1}
         )
-        assert (
-            pow_involutory_no_reconstructor.compute_resources(**op4.resource_params) == Resources()
+        assert rule.compute_resources(**op3.resource_params) == Resources(
+            {resource_rep(op_type): 1}
         )
-        assert pow_involutory_no_reconstructor.compute_resources(
-            **op5.resource_params
-        ) == Resources({pow_resource_rep(CustomOp, {}, 0.5): 1})
+        assert rule.compute_resources(**op2.resource_params) == Resources()
+        assert rule.compute_resources(**op4.resource_params) == Resources()
+        assert rule.compute_resources(**op5.resource_params) == Resources(
+            {pow_resource_rep(op_type, {}, 0.5): 1}
+        )
 
-        assert not pow_involutory_no_reconstructor.is_applicable(CustomOp, {}, z=0.5)
+        assert not rule.is_applicable(op_type, {}, z=0.5)
 
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
