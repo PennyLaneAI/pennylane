@@ -621,7 +621,7 @@ def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
         H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
         dev = qml.device("default.qubit", wires=range(2))
-        
+
         @qml.set_shots(shots=10_000)
         @qml.qnode(dev)
         def circuit(x, obs):
