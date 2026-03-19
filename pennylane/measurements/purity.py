@@ -91,8 +91,8 @@ def purity(wires) -> PurityMP:
             qml.BitFlip(p, wires=1)
             return qml.purity(wires=[0,1])
 
-    >>> circuit_purity(0.1)
-    np.float64(0.7048...)
+    >>> print(circuit_purity(0.1))
+    0.7048...
 
     .. seealso:: :func:`pennylane.math.purity`
     """
