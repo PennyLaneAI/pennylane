@@ -392,7 +392,7 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 
 # pylint: disable=unused-argument
 @register_resources(_calculate_resources)
-def _Subroutine_decomp(*data, wires, decomposition, **_):
+def _Subroutine_decomp(*data, wires, decomposition):
     _ = [queuing.apply(op) for op in decomposition]
 
 
