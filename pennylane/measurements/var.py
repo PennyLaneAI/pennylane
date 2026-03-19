@@ -145,8 +145,8 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     Executing this QNode:
 
-    >>> circuit(0.5)
-    np.float64(0.770...)
+    >>> print(circuit(0.5))
+    0.770...
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
