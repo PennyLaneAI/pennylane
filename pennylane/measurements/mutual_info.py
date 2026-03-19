@@ -157,8 +157,8 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
 
     Executing this QNode:
 
-    >>> circuit_mutual(np.pi/2)
-    np.float64(1.38...)
+    >>> print(circuit_mutual(np.pi/2))
+    1.38...
 
     It is also possible to get the gradient of the previous QNode:
 
