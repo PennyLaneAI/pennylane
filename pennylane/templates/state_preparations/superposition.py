@@ -421,7 +421,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
 @register_resources(_superposition_resources)
 def _superposition_decomposition(
-    coeffs, bases, wires, target_wires, work_wire, **_  # pylint: disable=unused-argument
+    coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
 ):
     dic_state = dict(zip(bases, coeffs))
     perms = order_states(bases)
