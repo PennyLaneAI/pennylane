@@ -60,7 +60,7 @@ def get_x_basis_circuit(wires, shots, interface="autograd", seed=None):
     def circuit():
         for wire in range(wires):
             qml.Hadamard(wire)
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed=seed)
 
     return circuit
 
@@ -77,7 +77,7 @@ def get_y_basis_circuit(wires, shots, interface="autograd", seed=None):
         for wire in range(wires):
             qml.Hadamard(wire)
             qml.RZ(np.pi / 2, wire)
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed=seed)
 
     return circuit
 
@@ -91,7 +91,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", seed=None):
     @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed=seed)
 
     return circuit
 
@@ -972,7 +972,7 @@ def get_basis_circuit(wires, shots, basis, interface="autograd", device="default
             if basis == "y":
                 qml.RZ(np.pi / 2, wire)
 
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed=seed)
 
     return circuit
 
