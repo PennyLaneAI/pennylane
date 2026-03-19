@@ -40,7 +40,7 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .reconstruct import decomps_use_reconstructor, has_reconstructor
+from .reconstruct import decomps_use_reconstructor
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
@@ -442,16 +442,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Gets the decomposition rules for the adjoint of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
-        base_has_reconstructor = has_reconstructor(base_class, base_params)
+        use_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qml.ops.Adjoint):
-            return [qjit_compatible_cancel_adjoint if base_has_reconstructor else cancel_adjoint]
+            return [qjit_compatible_cancel_adjoint if use_reconstructor else cancel_adjoint]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         return [
-            make_adjoint_decomp(base_decomp, base_has_reconstructor)
+            make_adjoint_decomp(base_decomp, use_reconstructor)
             for base_decomp in self._get_decompositions(base)
         ]
 
@@ -460,29 +460,25 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Gets the decomposition rules for the power of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
-        base_has_reconstructor = decomps_use_reconstructor(base_class, base_params)
+        use_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: power of zero
         if op.params["z"] == 0:
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [
-                qjit_compatible_decompose_to_base if base_has_reconstructor else decompose_to_base
-            ]
+            return [qjit_compatible_decompose_to_base if use_reconstructor else decompose_to_base]
 
         # Special case: power of a power
         if issubclass(base_class, qml.ops.Pow):
-            return [qjit_compatible_merge_powers if base_has_reconstructor else merge_powers]
+            return [qjit_compatible_merge_powers if use_reconstructor else merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(base_class, qml.ops.Adjoint):
-            return [
-                qjit_compatible_flip_pow_adjoint if base_has_reconstructor else flip_pow_adjoint
-            ]
+            return [qjit_compatible_flip_pow_adjoint if use_reconstructor else flip_pow_adjoint]
 
         # General case: repeat the operator z times
-        return [qjit_compatible_repeat_pow_base if base_has_reconstructor else repeat_pow_base]
+        return [qjit_compatible_repeat_pow_base if use_reconstructor else repeat_pow_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
