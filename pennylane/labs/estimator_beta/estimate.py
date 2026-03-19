@@ -33,6 +33,46 @@ from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_reso
 # pylint: disable=too-many-arguments
 
 
+def _update_counts_from_compressed_res_op(
+    comp_res_op: CompressedResourceOp,
+    gate_counts_dict: dict,
+    gate_set: set[str] | None = None,
+    scalar: int = 1,
+    config: ResourceConfig | None = None,
+) -> None:
+    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
+
+    Args:
+        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
+        gate_counts_dict (dict): base dictionary to modify with the resource counts
+        gate_set (set[str]): the set of operators to track resources with respect to
+        scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
+        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
+    """
+    if gate_set is None:
+        gate_set = DefaultGateSet
+
+    if config is None:
+        config = ResourceConfig()
+
+    ## Early return if compressed resource operator is already in our defined gate set
+    if comp_res_op.name in gate_set:
+        gate_counts_dict[comp_res_op] += scalar
+        return
+
+    resource_decomp = _get_resource_decomposition(comp_res_op, config)
+
+    for action in resource_decomp:
+        if isinstance(action, GateCount):
+            _update_counts_from_compressed_res_op(
+                action.gate,
+                gate_counts_dict,
+                scalar=scalar * action.count,
+                gate_set=gate_set,
+                config=config,
+            )
+
+
 def estimate(
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
@@ -194,13 +234,9 @@ def estimate(
            'Hadamard': 5
 
     """
-    if tight_wires_budget:
-        raise ValueError(
-            "The `tight_wires_budget = True` argument is not currently supported by this "
-            "experimental implementation of `estimate`"
-        )
-
-    return _estimate_resources_dispatch(workflow, gate_set, zeroed_wires, any_state_wires, config)
+    return _estimate_resources_dispatch(
+        workflow, gate_set, zeroed_wires, any_state_wires, tight_wires_budget, config
+    )
 
 
 @singledispatch
@@ -209,6 +245,7 @@ def _estimate_resources_dispatch(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
     """Internal singledispatch function for resource estimation."""
@@ -223,6 +260,7 @@ def _resources_from_resource(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a Resources object (i.e. a Resources object that
@@ -246,6 +284,12 @@ def _resources_from_resource(
         any_state=any_state,
     )
 
+    if tight_wires_budget:
+        if (new_zeroed + new_any_state) > (zeroed + any_state):
+            raise ValueError(
+                f"Allocated more wires than the prescribed wire budget. Allocated {new_zeroed + new_any_state} qubits with a budget of {zeroed + any_state}"
+            )
+
     return Resources(
         zeroed_wires=new_zeroed,
         any_state_wires=new_any_state,
@@ -260,6 +304,7 @@ def _resources_from_resource_operator(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
@@ -269,6 +314,7 @@ def _resources_from_resource_operator(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
+        tight_wires_budget=False,
         config=config,
     )
 
@@ -279,6 +325,7 @@ def _resources_from_pl_ops(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
@@ -289,6 +336,7 @@ def _resources_from_pl_ops(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
+        tight_wires_budget=False,
         config=config,
     )
 
@@ -299,6 +347,7 @@ def _resources_from_qfunc(
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
     """Estimate resources for a quantum function which queues operators"""
@@ -326,6 +375,13 @@ def _resources_from_qfunc(
             zeroed=zeroed,
             any_state=any_state,
         )
+
+        if tight_wires_budget:
+            if (final_zeroed + final_any_state) > (zeroed + any_state):
+                raise ValueError(
+                    f"Allocated more wires than the prescribed wire budget. Allocated {final_zeroed + final_any_state} qubits with a budget of {zeroed + any_state}"
+                )
+
         return Resources(
             zeroed_wires=final_zeroed,
             any_state_wires=final_any_state,
@@ -334,43 +390,3 @@ def _resources_from_qfunc(
         )
 
     return wrapper
-
-
-def _update_counts_from_compressed_res_op(
-    comp_res_op: CompressedResourceOp,
-    gate_counts_dict: dict,
-    gate_set: set[str] | None = None,
-    scalar: int = 1,
-    config: ResourceConfig | None = None,
-) -> None:
-    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
-
-    Args:
-        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
-        gate_counts_dict (dict): base dictionary to modify with the resource counts
-        gate_set (set[str]): the set of operators to track resources with respect to
-        scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
-    """
-    if gate_set is None:
-        gate_set = DefaultGateSet
-
-    if config is None:
-        config = ResourceConfig()
-
-    ## Early return if compressed resource operator is already in our defined gate set
-    if comp_res_op.name in gate_set:
-        gate_counts_dict[comp_res_op] += scalar
-        return
-
-    resource_decomp = _get_resource_decomposition(comp_res_op, config)
-
-    for action in resource_decomp:
-        if isinstance(action, GateCount):
-            _update_counts_from_compressed_res_op(
-                action.gate,
-                gate_counts_dict,
-                scalar=scalar * action.count,
-                gate_set=gate_set,
-                config=config,
-            )

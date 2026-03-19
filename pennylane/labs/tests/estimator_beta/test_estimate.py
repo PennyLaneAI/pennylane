@@ -241,12 +241,48 @@ class TestEstimateResources:
         with pytest.raises(TypeError, match="Could not obtain resources for workflow of type"):
             estimate(({1, 2, 3}))
 
-    def test_estimate_with_tight_budget(self):
-        """Test that an error is raised if a user provides `tight_budget=True`"""
+    def test_estimate_with_tight_budget_qfunc(self):
+        """Test that an error is raised if a user provides `tight_budget=True` and wire allocation
+        goes beyond the budget."""
+
+        def circ_wires():
+            DummyAlg1(num_iter=3)
+            DummyCNOT()
+            DummyAlg1(num_iter=3)
+            return
+
         with pytest.raises(
-            ValueError, match="The `tight_wires_budget = True` argument is not currently supported"
+            ValueError, match="Allocated more wires than the prescribed wire budget."
         ):
-            estimate(self.circ, tight_wires_budget=True)()
+            estimate(
+                circ_wires,
+                gate_set={"DummyCNOT", "DummyHadamard"},
+                zeroed_wires=2,
+                any_state_wires=2,
+                tight_wires_budget=True,
+            )()
+
+    def test_estimate_with_tight_budget_resources(self):
+        """Test that an error is raised if a user provides `tight_budget=True` and wire allocation
+        goes beyond the budget."""
+        gates = {DummyAlg1.resource_rep(num_iter=3): 2, DummyCNOT.resource_rep(): 1}
+        resource_wires = Resources(
+            zeroed_wires=0,
+            any_state_wires=0,
+            algo_wires=2,
+            gate_types=gates,
+        )
+
+        with pytest.raises(
+            ValueError, match="Allocated more wires than the prescribed wire budget."
+        ):
+            estimate(
+                resource_wires,
+                gate_set={"DummyCNOT", "DummyHadamard"},
+                zeroed_wires=2,
+                any_state_wires=2,
+                tight_wires_budget=True,
+            )
 
     def test_estimate_qnode(self):
         """Test that a QNode can be estimated."""
