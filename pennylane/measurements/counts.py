@@ -399,7 +399,7 @@ def counts(
     .. code-block:: python
 
         from functools import partial
-        dev = qml.device("default.qubit", seed=42, wires=2)
+        dev = qml.device("default.qubit", seed=43, wires=2)
 
         @qml.set_shots(shots=4)
         @qml.qnode(dev)
@@ -412,7 +412,7 @@ def counts(
     Executing this QNode:
 
     >>> print(circuit(0.5))
-    {np.float64(-1.0): np.int64(3), np.float64(1.0): np.int64(1)}
+    {np.float64(-1.0): np.int64(2), np.float64(1.0): np.int64(2)}
 
     If no observable is provided, then the raw basis state samples obtained
     from device are returned (e.g., for a qubit device, samples from the
@@ -435,7 +435,7 @@ def counts(
     Executing this QNode:
 
     >>> circuit(0.5)
-    {'00': np.int64(1), '01': np.int64(2), '10': np.int64(0), '11': np.int64(1)}
+    {'00': np.int64(1), '01': np.int64(3), '10': np.int64(0), '11': np.int64(0)}
 
     By default, outcomes that were not observed will not be included in the dictionary.
 
