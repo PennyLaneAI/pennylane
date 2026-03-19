@@ -170,9 +170,9 @@ so that we can verify our results mathematically.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", seed=42, wires=1)
 
-    @qml.set_shots(shots=10000)
+    @qml.set_shots(shots=10_000)
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
@@ -191,8 +191,8 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 :math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`\sin^2(\theta/2) = 0.333`. Using 10000 shots
 we should obtain the excited state 3333 times approximately.
 
->>> print(circuit(1.23)) # doctest: +SKIP
-3303.
+>>> print(circuit(1.23)) 
+3264.0
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
@@ -206,8 +206,8 @@ The gradient of the measurement process is
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
->>> print(qml.grad(circuit)(x)) # doctest: +SKIP
-4715.000000000001
+>>> print(qml.grad(circuit)(x)) 
+4711.5...
 
 .. note::
 
