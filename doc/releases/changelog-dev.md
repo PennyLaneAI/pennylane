@@ -104,7 +104,7 @@
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
-  from pennylane.templates import Subroutine
+  from pennylane.templates.core import Subroutine
 
   @Subroutine
   def MyTemplate(x, y, wires):
