@@ -272,7 +272,6 @@ def sample(
 
     .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", seed=42, wires=2)
 
         @qml.set_shots(shots=4)
@@ -295,7 +294,6 @@ def sample(
 
     .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", seed=42, wires=2)
 
         @qml.set_shots(shots=4)
