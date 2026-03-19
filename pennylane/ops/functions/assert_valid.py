@@ -139,7 +139,8 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 
 def _decomps_use_reconstructor(op_type, op_params):
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    if op_type is qml.ops.Controlled:
+    # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
+    if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
         return False
     return has_reconstructor(op_type, op_params)
 
