@@ -702,10 +702,6 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated various docstrings to be compatible with the new documentation testing approach.
-  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
-  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
-  
 * A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
   
@@ -769,6 +765,7 @@ The following classes have been ported over:
 * Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
+  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
