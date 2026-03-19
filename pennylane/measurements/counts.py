@@ -166,18 +166,6 @@ class CountsMP(SampleMeasurement):
             >>> mp._samples_to_counts(samples)
             {'00': np.int64(2), '01': np.int64(0), '10': np.int64(1), '11': np.int64(0)}
 
-            The variable all_outcomes can be set when running measurements.counts, i.e.:
-
-             .. code-block:: python
-
-                dev = qml.device("default.qubit", wires=2)
-
-                @qml.set_shots(shots=4)
-                @qml.qnode(dev)
-                def circuit(x):
-                    qml.RX(x, wires=0)
-                    return qml.counts(all_outcomes=True)
-
         """
 
         outcomes = []
