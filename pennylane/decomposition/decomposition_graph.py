@@ -451,7 +451,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Gets the decomposition rules for the power of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
-        base_has_reconstructor = has_reconstructor(base_class, base_params)
+        base_has_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: power of zero
         if op.params["z"] == 0:

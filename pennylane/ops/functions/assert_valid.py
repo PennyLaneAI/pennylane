@@ -179,12 +179,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
-    rep = resource_rep(op.__class__, **op.resource_params)
-    kwargs = (
-        op.resource_params
-        if decomps_use_reconstructor(rep.op_type, rep.params)
-        else op.hyperparameters
-    )
+    kwargs = get_decomp_kwargs(op)
     with qml.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **kwargs)
     tape = qml.tape.QuantumScript.from_queue(q)
