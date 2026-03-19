@@ -295,7 +295,7 @@ class TestDecompositionRule:
             pass
 
         @register_resources({qml.RX: 1, qml.RZ: 1})
-        def my_adjoint_custom_op(theta, wires, **_):
+        def my_adjoint_custom_op(theta, wires, **__):
             qml.RX(theta, wires=wires[0])
             qml.RZ(theta, wires=wires[1])
 

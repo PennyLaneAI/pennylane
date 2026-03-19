@@ -1167,7 +1167,7 @@ add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
 @register_resources({Rot: 1})
-def _adjoint_rot(phi, theta, omega, wires, **_):
+def _adjoint_rot(phi, theta, omega, wires, **__):
     Rot(-omega, -theta, -phi, wires=wires)
 
 
@@ -1342,7 +1342,7 @@ def _u1_phaseshift_resources():
 
 
 @register_resources(_u1_phaseshift_resources)
-def _u1_phaseshift(phi, wires, **_):
+def _u1_phaseshift(phi, wires, **__):
     PhaseShift(phi, wires=wires)
 
 
@@ -1515,7 +1515,7 @@ add_decomps(U2, _u2_phaseshift_rot)
 
 
 @register_resources({U2: 1})
-def _adjoint_u2(phi, delta, wires, **_):
+def _adjoint_u2(phi, delta, wires, **__):
     new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
     U2(new_phi, new_delta, wires=wires)
@@ -1717,7 +1717,7 @@ def _u3_phaseshift_rot_resources():
 
 
 @register_resources(_u3_phaseshift_rot_resources)
-def _u3_phaseshift_rot(theta, phi, delta, wires, **_):
+def _u3_phaseshift_rot(theta, phi, delta, wires, **__):
     Rot(delta, theta, -delta, wires=wires)
     PhaseShift(delta, wires=wires)
     PhaseShift(phi, wires=wires)
@@ -1727,7 +1727,7 @@ add_decomps(U3, _u3_phaseshift_rot)
 
 
 @register_resources({U3: 1})
-def _adjoint_u3(theta, phi, delta, wires, **_):
+def _adjoint_u3(theta, phi, delta, wires, **__):
     new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
     U3(theta, new_phi, new_delta, wires=wires)

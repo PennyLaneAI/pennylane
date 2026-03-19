@@ -268,13 +268,13 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_decompose_to_base_resource)
-def decompose_to_base(*params, wires, base, **_):
+def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     qml.pytrees.unflatten(*qml.pytrees.flatten(base))
 
 
 @register_resources(_decompose_to_base_resource)
-def qjit_compatible_decompose_to_base(*params, wires, base_class, base_params, **_):
+def qjit_compatible_decompose_to_base(*params, wires, base_class, base_params, **__):
     """Decompose a symbolic operator to its base in a qjit compatible way."""
     reconstruct(params, wires, base_class, base_params)
 
