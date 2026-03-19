@@ -95,8 +95,8 @@ jobs:
           "
 
           IGNORE="
-          ${IGNORE_OPTS_WONT_FIX}
-          ${IGNORE_OPTS_TO_DO}
+          ${IGNORE_WONT_FIX}
+          ${IGNORE_TO_DO}
           "
 
           pytest pennylane $IGNORE --ignore-glob='*tests*'
