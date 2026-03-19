@@ -957,12 +957,10 @@ class TestSymbolicDecompositions:
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
-
-            # TODO: Adjoint ops will be supported as of [sc-110066]
-            # solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [
             CustomOp(0),
             CustomOp(0),
-            # qml.adjoint(qml.pow(CustomOp(1), 2)),
+            qml.adjoint(qml.pow(CustomOp(1), 2)),
         ]
