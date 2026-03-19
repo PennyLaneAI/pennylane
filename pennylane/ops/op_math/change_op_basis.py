@@ -81,7 +81,7 @@ def change_op_basis(
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): A single operator or function with no inputs that applies quantum operations.
+        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
         target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
         uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
