@@ -347,7 +347,7 @@ def sample(
 
             .. code-block:: python
 
-                @qml.set_shots(10_000)
+                @qml.set_shots(100)
                 @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
                 def circuit():
                     qml.Hadamard(0)
