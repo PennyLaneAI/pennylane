@@ -1142,9 +1142,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
             if rule.is_applicable(**pow_op.resource_params):
 
-                rep = resource_rep(op.__class__, **op.resource_params)
+                rep = resource_rep(pow_op.__class__, **pow_op.resource_params)
                 rule_params = (
-                    op.resource_params
+                    pow_op.resource_params
                     if _decomps_use_reconstructor(rep.op_type, rep.params)
                     else op.hyperparameters
                 )

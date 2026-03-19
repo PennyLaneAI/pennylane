@@ -40,6 +40,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory_no_reconstructor,
     pow_rotation,
     qjit_compatible_adjoint_rotation,
+    qjit_compatible_pow_rotation,
     qjit_compatible_self_adjoint,
     self_adjoint,
 )
@@ -2040,7 +2041,7 @@ def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
 add_decomps("Adjoint(CRX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRX)", pow_rotation)
+add_decomps("Pow(CRX)", qjit_compatible_pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -2232,7 +2233,7 @@ def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRY, _cry, _cry_to_ppr)
 add_decomps("Adjoint(CRY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRY)", pow_rotation)
+add_decomps("Pow(CRY)", qjit_compatible_pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2467,7 +2468,7 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CRZ, _crz, _crz_to_ppr)
 add_decomps("Adjoint(CRZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRZ)", pow_rotation)
+add_decomps("Pow(CRZ)", qjit_compatible_pow_rotation)
 
 
 class CRot(ControlledOp):
