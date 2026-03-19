@@ -73,18 +73,18 @@ def _convert_to_prod(op_or_func):
 
 # pylint: disable=inconsistent-return-statements
 def change_op_basis(
-    compute_op: Operator | Callable,
-    target_op: Operator | Callable,
-    uncompute_op: Operator | Callable | None = None,
+    compute: Operator | Callable,
+    target: Operator | Callable,
+    uncompute: Operator | Callable | None = None,
 ):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
-            operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
+        compute (:class:`~.Operator` | Callable): A single operator or ``Callable`` (e.g. a function) with no inputs that applies quantum operations.
+        target (:class:`~.Operator` | Callable): A single operator or ``Callable`` (e.g. a function) with no inputs that applies quantum operations.
+        uncompute (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` (e.g. a function) with no inputs that applies quantum
+            operations. ``None`` corresponds to ``uncompute=qml.adjoint(compute)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
@@ -117,7 +117,7 @@ def change_op_basis(
 
         circuit2 = qml.decompose(circuit, max_expansion=1)
 
-    When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
+    When this circuit is decomposed, the ``compute`` and ``uncompute`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qml.draw(circuit2)())
@@ -131,20 +131,20 @@ def change_op_basis(
 
     .. code-block:: python
 
-        def f(a, reg1, reg2):
+        def my_compute_func(a, reg1, reg2):
             qml.BasisState(np.zeros(len(reg2)), reg2)
             qml.QFT(reg1)
             qml.RX(a, reg1[0])
 
-        def g(wires):
+        def my_target_func(wires):
             qml.PauliX(wires[0])
 
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
             # Use partial to absorb any input parameters
-            compute = partial(f, 0.1, [0], [1])
-            target = partial(g, [0])
+            compute = partial(my_compute_func, 0.1, [0], [1])
+            target = partial(my_target_func, [0])
             qml.change_op_basis(compute, target)
             return qml.state()
 
@@ -158,17 +158,17 @@ def change_op_basis(
     """
 
     if capture.enabled():
-        _apply_op_or_func(compute_op)
-        _apply_op_or_func(target_op)
-        if uncompute_op is not None:
-            _apply_op_or_func(uncompute_op)
+        _apply_op_or_func(compute)
+        _apply_op_or_func(target)
+        if uncompute is not None:
+            _apply_op_or_func(uncompute)
         else:
-            _apply_op_or_func(adjoint(compute_op))
+            _apply_op_or_func(adjoint(compute))
     else:
         return ChangeOpBasis(
-            _convert_to_prod(compute_op),
-            _convert_to_prod(target_op),
-            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
+            _convert_to_prod(compute),
+            _convert_to_prod(target),
+            _convert_to_prod(uncompute) if uncompute is not None else None,
         )
 
 
