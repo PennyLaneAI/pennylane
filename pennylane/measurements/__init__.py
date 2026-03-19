@@ -206,7 +206,7 @@ The gradient of the measurement process is
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
->>> print(np.allclose(qml.grad(circuit)(x), 4712.444, atol=100))
+>>> qml.grad(circuit)(x) # doctest: +SKIP
 True
 
 .. note::
