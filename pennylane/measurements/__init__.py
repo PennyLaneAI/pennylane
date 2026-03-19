@@ -207,7 +207,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
 >>> qml.grad(circuit)(x) # doctest: +SKIP
-True
+4715.000000000001
 
 .. note::
 
