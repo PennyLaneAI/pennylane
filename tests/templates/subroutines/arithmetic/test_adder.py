@@ -14,6 +14,7 @@
 """
 Tests for the Adder template.
 """
+from functools import partial
 
 import pytest
 
@@ -223,8 +224,9 @@ class TestAdder:
 
         ctrl_op1 = qml.ops.Controlled(
             qml.change_op_basis(
-                qml.QFT.operator(work_wires[:1] + x_wires),
+                partial(qml.QFT, work_wires[:1] + x_wires),
                 qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]),
+                partial(qml.adjoint(qml.QFT), work_wires[:1] + x_wires),
             ),
             control_wires,
             [1],

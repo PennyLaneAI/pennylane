@@ -14,6 +14,7 @@
 """
 Tests for the PhaseAdder template.
 """
+from functools import partial
 
 import pytest
 
@@ -254,9 +255,9 @@ class TestPhaseAdder:
 
             op_list.append(
                 qml.change_op_basis(
-                    qml.adjoint(qml.QFT)(wires=x_wires),
+                    partial(qml.adjoint(qml.QFT), wires=x_wires),
                     qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1),
-                    qml.QFT.operator(wires=x_wires),
+                    partial(qml.QFT, wires=x_wires),
                 )
             )
 

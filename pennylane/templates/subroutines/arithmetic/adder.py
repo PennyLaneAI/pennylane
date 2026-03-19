@@ -14,15 +14,19 @@
 """
 Contains the Adder template.
 """
+from functools import partial
+
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
+from pennylane.ops import adjoint
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
+    adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
@@ -216,7 +220,11 @@ class Adder(Operation):
             work_wire = work_wires[1:]
 
         op_list = [
-            change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+            change_op_basis(
+                partial(QFT, qft_wires),
+                PhaseAdder(k, qft_wires, mod, work_wire),
+                partial(adjoint(QFT), qft_wires),
+            )
         ]
 
         return op_list
@@ -228,6 +236,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
         change_op_basis_subroutine_resource_rep(
             subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
             resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
+            adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
         ): 1
     }
 
@@ -241,7 +250,11 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
         qft_wires = work_wires[:1] + x_wires
         work_wire = work_wires[1:]
 
-    change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    change_op_basis(
+        partial(QFT, qft_wires),
+        PhaseAdder(k, qft_wires, mod, work_wire),
+        partial(adjoint(QFT), qft_wires),
+    )
 
 
 add_decomps(Adder, _adder_decomposition)

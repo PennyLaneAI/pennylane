@@ -25,9 +25,9 @@ from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates.core import (
     AbstractArray,
+    CollectedSubroutine,
     Subroutine,
     SubroutineOp,
-    CollectedSubroutine,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,

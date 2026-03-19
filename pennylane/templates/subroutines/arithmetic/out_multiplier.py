@@ -14,15 +14,18 @@
 """
 Contains the OutMultiplier template.
 """
+from functools import partial
+
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import change_op_basis
+from pennylane.ops import adjoint, change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
+    adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
@@ -285,13 +288,14 @@ class OutMultiplier(Operation):
 
         op_list = [
             change_op_basis(
-                QFT.operator(wires=qft_output_wires),
+                partial(QFT, wires=qft_output_wires),
                 ControlledSequence(
                     ControlledSequence(
                         PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                     ),
                     control=y_wires,
                 ),
+                partial(adjoint(QFT), wires=qft_output_wires),
             ),
         ]
         return op_list
@@ -314,6 +318,7 @@ def _out_multiplier_decomposition_resources(
                 },
                 num_control_wires=num_y_wires,
             ),
+            adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
         ): 1
     }
 
@@ -335,11 +340,12 @@ def _out_multiplier_decomposition(
         work_wire = ()
 
     change_op_basis(
-        QFT.operator(wires=qft_output_wires),
+        partial(QFT, wires=qft_output_wires),
         ControlledSequence(
             ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
             control=y_wires,
         ),
+        partial(adjoint(QFT), wires=qft_output_wires),
     )
 
 

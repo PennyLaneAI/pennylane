@@ -14,6 +14,7 @@
 """
 Tests for the Multiplier template.
 """
+from functools import partial
 
 import numpy as np
 import pytest
@@ -118,10 +119,11 @@ class TestMultiplier:
 
         op_list.append(
             qml.change_op_basis(
-                qml.QFT.operator(wires=wires_aux),
+                partial(qml.QFT, wires=wires_aux),
                 qml.ControlledSequence(
                     qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires
                 ),
+                partial(qml.adjoint(qml.QFT), wires_aux),
             )
         )
 
@@ -140,12 +142,13 @@ class TestMultiplier:
 
         op_list.append(
             qml.change_op_basis(
-                qml.QFT.operator(wires=wires_aux),
+                partial(qml.QFT, wires=wires_aux),
                 qml.adjoint(
                     qml.ControlledSequence(
                         qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
                     )
                 ),
+                partial(qml.adjoint(qml.QFT), wires_aux),
             )
         )
 
