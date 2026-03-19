@@ -227,7 +227,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     @property
     def data(self):
-        return (self.data[0], self.control_values)
+        return (self.base.data[0], self.control_values)
 
     @data.setter
     def data(self, new_data):
