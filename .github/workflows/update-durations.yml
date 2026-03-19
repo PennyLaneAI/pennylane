@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: durations-*
           path: ./
@@ -41,7 +41,7 @@ jobs:
           jq -s 'add' durations-jax-*/*.json > durations/jax_tests_durations.json
 
       - name: Upload combined durations artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: merged-durations
           path: ./durations

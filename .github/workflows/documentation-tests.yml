@@ -36,10 +36,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -58,15 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e .
-
-      - name: Install testing packages
-        run: |
-          pip install sybil pytest
-
-      - name: Install additional packages
-        run: |
-          pip install "jax==0.7.1" "jaxlib==0.7.1" torch pyzx matplotlib
+          pip install --group docs --group dev -e . 
 
       - name: Print Dependencies
         run: |
@@ -86,8 +78,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
-          --ignore=pennylane/ops/qubit
-          --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
           --ignore=pennylane/devices
           "
