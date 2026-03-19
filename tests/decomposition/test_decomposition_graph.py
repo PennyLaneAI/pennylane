@@ -50,11 +50,6 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-@register_reconstructor(CustomOp)
-def _custom_op_reconstructor(wires):
-    return CustomOp(wires)
-
-
 class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
     """A custom op"""
 
