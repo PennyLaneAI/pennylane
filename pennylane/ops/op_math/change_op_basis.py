@@ -143,8 +143,8 @@ def change_op_basis(
         @qml.qnode(dev)
         def circuit():
             # Use partial to absorb any input parameters
-            compute = partial(f, 0.1, [0], [1])
-            target = partial(g, [0])
+            compute = partial(my_compute_op, 0.1, [0], [1])
+            target = partial(my_target_op, [0])
             qml.change_op_basis(compute, target)
             return qml.state()
 
