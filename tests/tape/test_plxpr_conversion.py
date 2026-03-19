@@ -71,7 +71,7 @@ class TestCollectOpsandMeas:
     def test_subroutine(self):
         """Test that CollectOpsandMeas collects a subroutine into a placeholder op."""
 
-        @partial(qml.templates.Subroutine, static_argnames="pauli_word")
+        @partial(qml.templates.core.Subroutine, static_argnames="pauli_word")
         def MyFunc(x, wires, pauli_word):
             qml.PauliRot(x, pauli_word, wires)
 
