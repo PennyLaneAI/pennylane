@@ -139,7 +139,7 @@ from .decompositions import (
 from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination
-from .pow import Pow, pow, PowOperation
+from .pow import Pow, pow
 from .prod import Prod, prod
 from .change_op_basis import ChangeOpBasis, change_op_basis
 from .sprod import SProd, s_prod

@@ -235,7 +235,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
 
 
 @register_resources(_fable_resources)
-def _fable_decomposition(input_matrix, wires, tol=0, **_):
+def _fable_decomposition(input_matrix, wires, tol=0):
     alphas = math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 

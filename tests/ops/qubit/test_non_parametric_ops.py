@@ -42,11 +42,12 @@ from gate_data import (
     Y,
     Z,
 )
+from pennylane.decomposition import resource_rep
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule, _decomps_use_reconstructor
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
@@ -1141,8 +1142,12 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
             if rule.is_applicable(**pow_op.resource_params):
 
-                rule_params = copy.copy(pow_op.hyperparameters)
-                rule_params.update(pow_op.resource_params)
+                rep = resource_rep(op.__class__, **op.resource_params)
+                rule_params = (
+                    op.resource_params
+                    if _decomps_use_reconstructor(rep.op_type, rep.params)
+                    else op.hyperparameters
+                )
 
                 with qml.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **rule_params)

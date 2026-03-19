@@ -268,7 +268,7 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
 
 
 @register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive, **_):
+def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
 
     if capture.enabled():
         wires = math.array(wires, like="jax")

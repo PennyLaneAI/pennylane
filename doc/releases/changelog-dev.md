@@ -707,6 +707,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
+  program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
+
 * A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
   

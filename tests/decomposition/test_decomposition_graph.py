@@ -33,6 +33,8 @@ from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
+from pennylane.ops.functions.assert_valid import _decomps_use_reconstructor
+
 
 # pylint: disable=protected-access,no-name-in-module
 
@@ -818,9 +820,12 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
-        rule_params = copy.copy(op.hyperparameters)
-        rule_params.update(op.resource_params)
-
+        rep = resource_rep(op.__class__, **op.resource_params)
+        rule_params = (
+            op.resource_params
+            if _decomps_use_reconstructor(rep.op_type, rep.params)
+            else op.hyperparameters
+        )
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
@@ -830,8 +835,12 @@ class TestSymbolicDecompositions:
 
         op2 = qml.pow(qml.H(0), 6)
 
-        rule_params = copy.copy(op2.hyperparameters)
-        rule_params.update(op2.resource_params)
+        rep = resource_rep(op2.__class__, **op2.resource_params)
+        rule_params = (
+            op2.resource_params
+            if _decomps_use_reconstructor(rep.op_type, rep.params)
+            else op.hyperparameters
+        )
 
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
@@ -848,9 +857,12 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
-        rule_params = copy.copy(op.hyperparameters)
-        rule_params.update(op.resource_params)
-
+        rep = resource_rep(op.__class__, **op.resource_params)
+        rule_params = (
+            op.resource_params
+            if _decomps_use_reconstructor(rep.op_type, rep.params)
+            else op.hyperparameters
+        )
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
