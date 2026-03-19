@@ -261,8 +261,8 @@ class TestPowDecomposition:
     @pytest.mark.parametrize(
         ("op_type", "rule"),
         [
-            (CustomOp, pow_involutory),
-            (CustomOpWithReconstructor, pow_involutory_no_reconstructor),
+            (CustomOp, pow_involutory_no_reconstructor),
+            (CustomOpWithReconstructor, pow_involutory),
         ],
     )
     def test_pow_involutory(self, op_type, rule):
