@@ -436,7 +436,6 @@ def counts(
 
     Executing this QNode:
 
-    >>> assert sum(circuit(0.5).values()) == 4  # number of shots
     >>> circuit(0.5)
     {'00': np.int64(1), '01': np.int64(2), '10': np.int64(0), '11': np.int64(1)}
 
