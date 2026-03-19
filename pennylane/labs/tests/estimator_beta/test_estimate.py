@@ -73,6 +73,10 @@ class DummyCNOT(ResourceOperator):
     def resource_decomp(cls, **kwargs):
         raise ResourcesUndefinedError
 
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
+
 
 class DummyHadamard(ResourceOperator):
     """Dummy class for testing"""
@@ -91,6 +95,10 @@ class DummyHadamard(ResourceOperator):
     @classmethod
     def resource_decomp(cls, **kwargs):
         raise ResourcesUndefinedError
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
 
 
 class DummyT(ResourceOperator):
@@ -131,6 +139,10 @@ class DummyZ(ResourceOperator):
         t = resource_rep(DummyT)
         return [GateCount(t, count=4)]
 
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
+
 
 class DummyRZ(ResourceOperator):
     """Dummy class for testing"""
@@ -155,6 +167,10 @@ class DummyRZ(ResourceOperator):
         t = resource_rep(DummyT)
         t_counts = round(1 / precision)
         return [GateCount(t, count=t_counts)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
 
 
 class DummyAlg1(ResourceOperator):
@@ -215,6 +231,37 @@ class DummyAlg2(ResourceOperator):
             GateCount(rz, num_wires),
             GateCount(alg1, num_wires // 2),
             Deallocate(num_wires=num_wires),
+        ]
+
+
+class DummyAlg3(ResourceOperator):
+    """Dummy class for testing"""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None) -> None:
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_wires):
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_decomp(cls, num_wires):
+        borrowed_qubits = Allocate(3, state="any", restored=True)
+        free_borrowed_qubits = Deallocate(allocated_register=borrowed_qubits)
+
+        return [
+            Allocate(num_wires=2),
+            borrowed_qubits,
+            GateCount(qre.X.resource_rep(), num_wires + 5),
+            free_borrowed_qubits,
+            Deallocate(num_wires=2),
         ]
 
 
@@ -612,3 +659,47 @@ class TestEstimateResources:
 
         assert res == expected_resources
         assert pl_res == expected_resources
+
+    @pytest.mark.parametrize(
+        "op, gate_set, expected_resources",
+        (
+            (
+                qre.Adjoint(DummyAlg3(num_wires=3)),
+                {"X"},
+                Resources(
+                    zeroed_wires=5,
+                    algo_wires=3,
+                    gate_types={qre.X.resource_rep(): 8},
+                ),
+            ),
+            (
+                qre.Adjoint(
+                    qre.Prod(
+                        (DummyAlg1(3), qre.Adjoint(DummyAlg1(3))),
+                    ),
+                ),
+                {"DummyCNOT", "DummyHadamard"},
+                Resources(
+                    zeroed_wires=3,
+                    algo_wires=2,
+                    gate_types={DummyCNOT.resource_rep(): 6, DummyHadamard.resource_rep(): 6},
+                ),
+            ),
+            (
+                qre.Controlled(DummyAlg3(num_wires=3), 3, 2),
+                {"MultiControlledX", "X"},
+                Resources(
+                    zeroed_wires=5,
+                    algo_wires=6,
+                    gate_types={
+                        qre.MultiControlledX.resource_rep(3, 0): 8,
+                        qre.X.resource_rep(): 4,
+                    },
+                ),
+            ),
+        ),
+    )
+    def test_estimator_symbolic_ops(self, op, gate_set, expected_resources):
+        """Test that using symbolic ops works with Allocate and Deallocate"""
+        actual_resources = estimate(op, gate_set)
+        assert actual_resources == expected_resources
