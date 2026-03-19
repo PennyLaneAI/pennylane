@@ -136,7 +136,7 @@ def change_op_basis(
             qml.QFT(reg1)
             qml.RX(a, reg1[0])
 
-        def g(wires):
+        def my_target_op(wires):
             qml.PauliX(wires[0])
 
         dev = qml.device("default.qubit")
