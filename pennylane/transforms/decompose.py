@@ -29,23 +29,14 @@ from pennylane.decomposition import (
     GateSet,
     enabled_graph,
     gate_sets,
-    resource_rep,
 )
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
-from pennylane.decomposition.reconstruct import has_reconstructor
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-
-
-def _use_reconstructor(op_type, op_params):
-    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
-    if op_type in (ops.Controlled, ops.Adjoint):
-        return False
-    return has_reconstructor(op_type, op_params)
 
 
 def null_postprocessing(results):
@@ -207,12 +198,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             args = (*op.parameters, *op.wires)
 
-            op_rep = resource_rep(op.__class__, **op.resource_params)
-            kwargs = (
-                op.resource_params
-                if _use_reconstructor(op_rep.op_type, op_rep.params)
-                else op.hyperparameters
-            )
+            kwargs = get_decomp_kwargs(op)
             decomp_fn = partial(compute_qfunc_decomposition, **kwargs)
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
@@ -874,13 +860,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
-        # It'd be nice if resource_params and hyperparameters can be unified.
-        op_rep = resource_rep(op.__class__, **op.resource_params)
-        kwargs = (
-            op.resource_params
-            if _use_reconstructor(op_rep.op_type, op_rep.params)
-            else op.hyperparameters
-        )
+        kwargs = get_decomp_kwargs(op)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **kwargs)
         decomp = decomposed_ops.queue
