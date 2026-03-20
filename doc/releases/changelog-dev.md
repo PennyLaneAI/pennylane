@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered. Rules for the 
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
   following `SymbolicOps` have been re-written.
 
   - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199)
