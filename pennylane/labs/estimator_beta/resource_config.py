@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Updated ResourceConfig."""
+r"""This module contains the LabsResourceConfig class, which tracks the configuration for resource estimation"""
 
 from pennylane.estimator.resource_config import ResourceConfig
 

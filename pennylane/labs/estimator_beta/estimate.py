@@ -83,7 +83,7 @@ def estimate(
 ) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
-    This function imporves upon the :func:`~.pennylane.estimator.estimate()` function in two main ways:
+    This function improves upon the :func:`~.pennylane.estimator.estimate()` function in two main ways:
 
     - Firstly, it uses a new system for wire tracking that more accurately estimates the number of auxiliary
       wires required for any quantum workflow.
