@@ -21,7 +21,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.exceptions import WireError
-from pennylane.templates import AbstractArray, subroutine_resource_rep
+from pennylane.templates.core import AbstractArray, subroutine_resource_rep
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
