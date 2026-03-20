@@ -275,7 +275,7 @@ def mottonen_decomp_resources(state_vector, wires):
     Subroutine,
     static_argnames=[],
     compute_resources=mottonen_decomp_resources,
-    exact_resources=False
+    exact_resources=False,
 )
 def MottonenStatePreparation(state_vector, wires):
     r"""
