@@ -26,7 +26,11 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.reconstruct import has_reconstructor, reconstruct
+from pennylane.decomposition.reconstruct import (
+    get_decomp_kwargs,
+    has_reconstructor,
+    reconstruct,
+)
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
@@ -175,8 +179,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
+    kwargs = get_decomp_kwargs(op)
     with qml.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*op.data, wires=op.wires, **kwargs)
     tape = qml.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
