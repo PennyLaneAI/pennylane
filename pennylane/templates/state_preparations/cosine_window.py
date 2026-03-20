@@ -148,18 +148,6 @@ class CosineWindow(StatePrepBase):
 
 
 def _cosine_window_resources(num_wires):
-    if capture.enabled():
-        ret = defaultdict(int)
-        ret.update(
-            {
-                resource_rep(qml.Hadamard): 1,
-                resource_rep(qml.RZ): 1,
-                resource_rep(qml.PhaseShift): num_wires,
-            }
-        )
-        for op, count in qml.QFT.compute_resources(wires=range(num_wires)).items():
-            ret[adjoint_resource_rep(op)] += count
-        return ret
     return {
         resource_rep(qml.Hadamard): 1,
         resource_rep(qml.RZ): 1,

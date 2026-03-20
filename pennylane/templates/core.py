@@ -824,7 +824,11 @@ class Subroutine:
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if len(register) > 0 and math.get_interface(register) != "jax":
+                if (
+                    len(register) > 0
+                    and math.get_interface(register) != "jax"
+                    and not isinstance(register, AbstractArray)
+                ):
                     # don't stack if already a jax array
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
