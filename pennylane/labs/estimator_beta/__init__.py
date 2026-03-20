@@ -21,8 +21,8 @@ resource estimation.
     with no guarantees of stability or backwards compatibility.
 
 
-Estimate
-~~~~~~~~
+Resource Estimation
+~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.estimator_beta
 
@@ -30,6 +30,7 @@ Estimate
     :toctree: api
 
     ~estimate
+    ~LabsResourceConfig
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +48,7 @@ Qubit Tracking Functionality
     ~MarkQubits
 
 """
-
+from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
 from .estimate import estimate

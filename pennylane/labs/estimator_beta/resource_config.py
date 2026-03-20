@@ -39,9 +39,8 @@ class LabsResourceConfig(ResourceConfig):
 
     .. code-block:: pycon
 
-        >>> import pennylane.estimator as qre
-        >>> import pennylane.labs.estimator_beta as exp_qre
-        >>> my_config = exp_qre.LabsResourceConfig()
+        >>> import pennylane.labs.estimator_beta as qre
+        >>> my_config = qre.LabsResourceConfig()
         >>> my_config.set_precision(qre.RX, precision=1e-5)
         >>> res = qre.estimate(
         ...     qre.RX(),
@@ -68,7 +67,7 @@ class LabsResourceConfig(ResourceConfig):
         ...     rz = qre.RZ.resource_rep(precision)
         ...     return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
         >>>
-        >>> my_config = exp_qre.LabsResourceConfig()
+        >>> my_config = qre.LabsResourceConfig()
         >>> my_config.set_decomp(qre.RX, custom_RX_decomp)
         >>> res = qre.estimate(
         ...     qre.RX(precision=None),

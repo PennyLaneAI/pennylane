@@ -46,10 +46,10 @@ class Allocate:
 
     **Example**
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> exp_qre.Allocate(4)
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qre.Allocate(4)
     Allocate(4, state=zero, restored=False)
-    >>> exp_qre.Allocate(2, state="any", restored=True)
+    >>> qre.Allocate(2, state="any", restored=True)
     Allocate(2, state=any, restored=True)
 
     """
@@ -140,14 +140,14 @@ class Deallocate:
     The simplest way to deallocate a register is to provide the instance of ``Allocate``
     where the register was allocated.
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> allocate_4 = exp_qre.Allocate(4)  # Allocate 4 qubits
-    >>> exp_qre.Deallocate(allocated_register=allocate_4)
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> allocate_4 = qre.Allocate(4)  # Allocate 4 qubits
+    >>> qre.Deallocate(allocated_register=allocate_4)
     Deallocate(4, state=zero, restored=False)
 
     We can also manually deallocate a register by specifically providing the details of the register.
 
-    >>> exp_qre.Deallocate(num_wires=4, state="zero", restored=False)
+    >>> qre.Deallocate(num_wires=4, state="zero", restored=False)
     Deallocate(4, state=zero, restored=False)
 
     .. note::
@@ -159,8 +159,8 @@ class Deallocate:
     If a register was allocated with ``state = "any"`` and ``restored = True``, this can
     only be deallocated by passing that specific instance of ``Allocate`` to deallocate.
 
-    >>> temp_register = exp_qre.Allocate(5, state="any", restored=True)
-    >>> exp_qre.Deallocate(allocated_register=temp_register)  # Restore the allocated register
+    >>> temp_register = qre.Allocate(5, state="any", restored=True)
+    >>> qre.Deallocate(allocated_register=temp_register)  # Restore the allocated register
     Deallocate(5, state=any, restored=True)
 
     """
@@ -309,8 +309,8 @@ class MarkClean(MarkQubits):
 
     **Example**
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> exp_qre.MarkClean(wires=[0,1,2])
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qre.MarkClean(wires=[0,1,2])
     MarkClean(Wires([0, 1, 2]))
 
     """

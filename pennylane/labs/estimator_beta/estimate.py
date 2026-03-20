@@ -83,6 +83,14 @@ def estimate(
 ) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
+    This function imporves upon the :func:`~.pennylane.estimator.estimate()` function in two main ways:
+
+    - Firstly, it uses a new system for wire tracking that more accurately estimates the number of auxiliary
+      wires required for any quantum workflow.
+    - Secondly, this function uses the :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`
+      by default. As a result it comes preloaded with experimental and state of the art resource decompositions
+      that lead to more optimal resource estimates.
+
     Args:
         workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | :class:`~.Operator` | QNode):
             The quantum circuit or operator for which to estimate resources.
@@ -108,15 +116,14 @@ def estimate(
 
     .. code-block:: python
 
-        import pennylane.estimator as qre
-        import pennylane.labs.estimator_beta as exp_qre
+        import pennylane.labs.estimator_beta as qre
 
         def circuit():
             qre.Hadamard()
             qre.CNOT()
             qre.QFT(num_wires=4)
 
-    >>> res = exp_qre.estimate(circuit)()
+    >>> res = qre.estimate(circuit)()
     >>> print(res)
     --- Resources: ---
      Total wires: 4
@@ -131,7 +138,7 @@ def estimate(
 
     The resource estimation can be performed with respect to an alternative gate set:
 
-    >>> res = exp_qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})()
+    >>> res = qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})()
     >>> print(res)
     --- Resources: ---
      Total wires: 4
@@ -155,8 +162,7 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             def circuit():
                 qre.CNOT()
@@ -164,7 +170,7 @@ def estimate(
                 qre.CNOT()
                 qre.MultiRZ(num_wires=3)
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 3
@@ -186,8 +192,7 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             def circuit():
                 qre.CNOT()
@@ -195,7 +200,7 @@ def estimate(
                 qre.CNOT()
                 qre.MultiRZ(wires=[2, 3, 4])
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 7
@@ -220,8 +225,7 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             def circuit():
                 qre.Hadamard()
@@ -275,7 +279,7 @@ def estimate(
         .. code-block:: python
 
             import pennylane as qml
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
@@ -283,7 +287,7 @@ def estimate(
                 qml.CNOT(wires=[0, 1])
                 qml.QFT(wires=[0, 1, 2, 3])
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 4
