@@ -31,19 +31,12 @@ from pennylane.decomposition import (
     gate_sets,
 )
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
-from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-
-
-def _use_reconstructor(op_type, op_params):
-    # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    if op_type is ops.Controlled:
-        return False
-    return has_reconstructor(op_type, op_params)
 
 
 def null_postprocessing(results):
