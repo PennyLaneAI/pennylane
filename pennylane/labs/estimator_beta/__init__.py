@@ -48,6 +48,8 @@ Qubit Tracking Functionality
 
 """
 
+from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+
 from .estimate import estimate
 from .wires_manager import (
     Allocate,
@@ -57,7 +59,6 @@ from .wires_manager import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
-from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
 
 # Register the new Allocate and Deallocate classes!

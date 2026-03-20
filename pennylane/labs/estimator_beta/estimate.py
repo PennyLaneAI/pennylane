@@ -108,12 +108,13 @@ def estimate(
 
     .. code-block:: python
 
+        import pennylane.estimator as qre
         import pennylane.labs.estimator_beta as exp_qre
 
         def circuit():
-            exp_qre.Hadamard()
-            exp_qre.CNOT()
-            exp_qre.QFT(num_wires=4)
+            qre.Hadamard()
+            qre.CNOT()
+            qre.QFT(num_wires=4)
 
     >>> res = exp_qre.estimate(circuit)()
     >>> print(res)
@@ -154,13 +155,14 @@ def estimate(
 
         .. code-block:: python
 
+            import pennylane.estimator as qre
             import pennylane.labs.estimator_beta as exp_qre
 
             def circuit():
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(num_wires=3)
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(num_wires=3)
+                qre.CNOT()
+                qre.MultiRZ(num_wires=3)
+                qre.CNOT()
+                qre.MultiRZ(num_wires=3)
 
         >>> res = exp_qre.estimate(circuit)()
         >>> print(res)
@@ -184,13 +186,14 @@ def estimate(
 
         .. code-block:: python
 
+            import pennylane.estimator as qre
             import pennylane.labs.estimator_beta as exp_qre
 
             def circuit():
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(wires=[0, 1, 2])
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(wires=[2, 3, 4])
+                qre.CNOT()
+                qre.MultiRZ(wires=[0, 1, 2])
+                qre.CNOT()
+                qre.MultiRZ(wires=[2, 3, 4])
 
         >>> res = exp_qre.estimate(circuit)()
         >>> print(res)
@@ -203,6 +206,66 @@ def estimate(
          Total gates : 98
            'T': 88,
            'CNOT': 10
+
+        For a detailed explanation of the "allocated wires", see the "Dynamic work wire allocation
+        in decompositions" section below.
+
+    .. details::
+        :title: Dynamic work wire allocation in decompositions
+
+        Some operators require additional auxiliary wires (work wires) to decompose. These wires
+        are not part of the operator's definition, so they will be dynamically allocated when
+        performing the operator's decomposition. The ``estimate`` function also tracks the usage
+        of these dynamically allocated wires.
+
+        .. code-block:: python
+
+            import pennylane.estimator as qre
+            import pennylane.labs.estimator_beta as exp_qre
+
+            def circuit():
+                qre.Hadamard()
+                qre.CNOT()
+                qre.AliasSampling(num_coeffs=3)
+
+        >>> res = qre.estimate(circuit)()
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 123
+           algorithmic wires: 2
+           allocated wires: 121
+             zero state: 58
+             any state: 63
+         Total gates : 1.150E+3
+           'Toffoli': 64,
+           'T': 88,
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
+
+        In the above example, a total of 121 work wires were allocated (in the zeroed state) to
+        perform the decomposition of the ``AliasSampling``, 58 of which were restored to the
+        original zeroed state before deallocation, and the rest were deallocated in an unknown
+        state. You may also pre-allocate work wires:
+
+        >>> res = qre.estimate(circuit, zeroed_wires=150)()
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 152
+           algorithmic wires: 2
+           allocated wires: 150
+             zero state: 87
+             any state: 63
+         Total gates : 1.150E+3
+           'Toffoli': 64,
+           'T': 88,
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
+
+        In this case, you have the option to treat this pre-allocated pool of work wires as the
+        only work wires available, by setting ``tight_wires_budget=True``, then an error is
+        raised if the required number of wires exceeds the number of pre-allocated wires.
 
     .. details::
         :title: Estimate the resources of a standard PennyLane circuit

@@ -32,7 +32,7 @@ from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
-# pylint: disable= no-self-use, arguments-differ
+# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -296,7 +296,6 @@ class TestEstimateResources:
             DummyAlg1(num_iter=3)
             DummyCNOT()
             DummyAlg1(num_iter=3)
-            return
 
         with pytest.raises(
             ValueError, match="Allocated more wires than the prescribed wire budget."
