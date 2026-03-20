@@ -69,25 +69,21 @@ jobs:
       # to be working correctly.
       - name: Run documentation tests
         run: |
-          IGNORE_OPTS_CLOSED="
+          WONT_FIX="
           --ignore=pennylane/labs
-          "
-          IGNORE_OPTS_CORE="
           --ignore=pennylane/workflow/interfaces/tensorflow.py
+          "
+
+          TO_DO="
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
-          --ignore=pennylane/measurements
           --ignore=pennylane/capture
           --ignore=pennylane/devices
-          "
-          IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
-          "
-          IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/io
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
@@ -98,11 +94,9 @@ jobs:
           --ignore=pennylane/qchem
           "
 
-          IGNORE_OPTS="
-          ${IGNORE_OPTS_CLOSED}
-          ${IGNORE_OPTS_CORE}
-          ${IGNORE_OPTS_AUXILIARY}
-          ${IGNORE_OPTS_TERTIARY}
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
           "
 
-          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+          pytest pennylane $IGNORE --ignore-glob='*tests*'

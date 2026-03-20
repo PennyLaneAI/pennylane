@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
+  following `SymbolicOps` have been re-written.
+
+  - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199)
+
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
   `qml.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
@@ -96,6 +101,7 @@
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
   [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9151)](https://github.com/PennyLaneAI/pennylane/pull/9151)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
   [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
   [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
@@ -150,6 +156,10 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* `Callables` defining quantum operations can now be passed to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
 * The `default.qubit` device now supports parameter-broadcasted global phases.
   [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
@@ -702,6 +712,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
+  program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
+
 * A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
   
@@ -765,6 +779,7 @@ The following classes have been ported over:
 * Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
+  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -797,6 +812,11 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
+  operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
+  symbolic decomposition rules that do not need to take an instance of the base operator as input.
+  [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
+
 <h3>Documentation 📝</h3>
 
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
@@ -813,6 +833,11 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
+  the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
+  environment.
+  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
 
 * Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
