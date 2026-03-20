@@ -930,19 +930,36 @@ def apply_parametrized_evolution(
     # shape(state) is static (not a tracer), we can use an if statement
     num_wires = len(math.shape(state)) - is_state_batched
     state = math.cast(state, complex)
-    if is_state_batched:
-        return _apply_operation_default(op, state, is_state_batched, debugger)
-    if op.hyperparameters["return_intermediate"] and not op.hyperparameters["complementary"]:
-        return apply_operation._evolve_state_vector_under_parametrized_evolution(
+    if (
+        op.hyperparameters["return_intermediate"]
+        and not op.hyperparameters["complementary"]
+        and not is_state_batched
+    ):
+        return _call_parametrized_evolution_state_vector_evolver(
             op, state, num_wires, is_state_batched
         )
-    if 2 * len(op.wires) <= num_wires or op.hyperparameters["complementary"]:
+    if (
+        2 * len(op.wires) <= num_wires
+        or op.hyperparameters["complementary"]
+        or (is_state_batched and op.hyperparameters["return_intermediate"])
+    ):
         # the subsystem operated on is half as big as the total system, or less
         # or we want complementary time evolution
+        # or both the state and the operation have a batch dimension
         # --> evolve matrix
         return _apply_operation_default(op, state, is_state_batched, debugger)
     # otherwise --> evolve state
-    return apply_operation._evolve_state_vector_under_parametrized_evolution(
+    return _call_parametrized_evolution_state_vector_evolver(op, state, num_wires, is_state_batched)
+
+
+def _call_parametrized_evolution_state_vector_evolver(op, state, num_wires, is_state_batched):
+    """Call the state-vector evolver through the dispatcher attribute.
+
+    Accessing the helper via ``apply_operation`` keeps test spies working even
+    when ``import pennylane.devices.qubit.apply_operation as ...`` resolves to
+    the exported dispatcher instead of the submodule.
+    """
+    return getattr(apply_operation, "_evolve_state_vector_under_parametrized_evolution")(
         op, state, num_wires, is_state_batched
     )
 
@@ -1011,6 +1028,8 @@ def _evolve_state_vector_under_parametrized_evolution(
     return result
 
 
-apply_operation._evolve_state_vector_under_parametrized_evolution = (  # type: ignore[attr-defined]
-    _evolve_state_vector_under_parametrized_evolution
+setattr(
+    apply_operation,
+    "_evolve_state_vector_under_parametrized_evolution",
+    _evolve_state_vector_under_parametrized_evolution,
 )
