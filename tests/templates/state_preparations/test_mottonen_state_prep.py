@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.core import CollectedSubroutine
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
@@ -360,20 +361,8 @@ class TestDecomposition:
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts, state)
         q = collector.state["ops"]
-        assert len(q) == 11
-
-        pi = jnp.array(jnp.pi)
-        qml.assert_equal(q[0], qml.RY(pi, 0))
-        qml.assert_equal(q[1], qml.RY(pi / 2, 1))
-        qml.assert_equal(q[2], qml.CNOT((0, 1)))
-        qml.assert_equal(q[3], qml.RY(-pi / 2, 1))
-        qml.assert_equal(q[4], qml.CNOT((0, 1)))
-        qml.assert_equal(q[5], qml.RZ(pi / 4, 0))
-        qml.assert_equal(q[6], qml.RZ(pi / 4, 1))
-        qml.assert_equal(q[7], qml.CNOT((0, 1)))
-        qml.assert_equal(q[8], qml.RZ(-pi / 4, 1))
-        qml.assert_equal(q[9], qml.CNOT((0, 1)))
-        qml.assert_equal(q[10], qml.GlobalPhase(-pi / 8, wires=(0, 1)))
+        assert isinstance(q[0], CollectedSubroutine)
+        assert q[0].name == "MottonenStatePreparation"
 
 
 class TestInputs:
