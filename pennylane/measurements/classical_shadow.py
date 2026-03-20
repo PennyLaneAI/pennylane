@@ -616,37 +616,37 @@ def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
-        dev = qml.device("default.qubit", wires=range(2))
+        dev = qml.device("default.qubit", seed=42, wires=range(2))
 
-        @qml.set_shots(shots=10000)
+        @qml.set_shots(shots=10_000)
         @qml.qnode(dev)
         def circuit(x, obs):
             qml.Hadamard(0)
             qml.CNOT((0,1))
             qml.RX(x, wires=0)
-            return qml.shadow_expval(obs)
+            return qml.shadow_expval(obs, seed=42)
 
-        x = np.array(0.5, requires_grad=True)
+        x = pnp.array(0.5, requires_grad=True)
 
     We can compute the expectation value of H as well as its gradient in the usual way.
 
-    >>> circuit(x, H)
-    array(1.8774)
-    >>> qml.grad(circuit)(x, H)
-    -0.44999999999999984
+    >>> print(circuit(x, H))
+    1.8936
+    >>> print(qml.grad(circuit)(x, H))
+    -0.4536...
 
     In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
     >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
-    >>> circuit(x, Hs)
-    array([ 1.881 , -0.0312, -0.0027, -0.0087])
-    >>> qml.jacobian(circuit)(x, Hs)
-    array([-0.4518,  0.0174, -0.0216, -0.0063])
+    >>> print(circuit(x, Hs))
+    [ 1.917   0.0282 -0.0156 -0.0066]
+    >>> print(qml.jacobian(circuit)(x, Hs))
+    [-4.743e-01 -1.140e-02 -4.500e-03  3.000e-04]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
@@ -686,32 +686,32 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
     Consider the following QNode that prepares a Bell state and performs a classical
     shadow measurement:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @qml.set_shots(shots=5)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.classical_shadow(wires=[0, 1])
+            return qml.classical_shadow(wires=[0, 1], seed=42)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
     >>> bits, recipes = circuit()
     >>> bits
-    tensor([[0, 0],
-            [1, 0],
-            [1, 0],
-            [0, 0],
-            [0, 1]], dtype=uint8, requires_grad=True)
+    array([[1, 1],
+           [0, 0],
+           [1, 1],
+           [1, 0],
+           [0, 0]], dtype=int8)
     >>> recipes
-    tensor([[2, 2],
-            [0, 2],
-            [1, 0],
-            [0, 2],
-            [0, 2]], dtype=uint8, requires_grad=True)
+    array([[2, 0],
+           [2, 2],
+           [0, 0],
+           [2, 1],
+           [2, 2]], dtype=int8)
 
     .. details::
         :title: Usage Details
@@ -721,22 +721,22 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         >>> bits, recipes = circuit()
         >>> bits
-        tensor([[0, 1],
-                [0, 1],
-                [0, 0],
-                [0, 1],
-                [1, 1]], dtype=uint8, requires_grad=True)
+        array([[0, 0],
+           [1, 1],
+           [1, 1],
+           [1, 1],
+           [0, 0]], dtype=int8)
         >>> recipes
-        tensor([[1, 0],
-                [2, 1],
-                [2, 2],
-                [1, 0],
-                [0, 0]], dtype=uint8, requires_grad=True)
+        array([[2, 0],
+           [2, 2],
+           [0, 0],
+           [2, 1],
+           [2, 2]], dtype=int8)
 
         To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
         interface should be used instead:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -746,15 +746,15 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
-        >>> np.all(recipes1 == recipes2)
+        >>> print(np.all(recipes1 == recipes2))
         True
-        >>> np.all(bits1 == bits2)
+        >>> print(np.all(bits1 == bits2))
         False
 
         If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
         different seeds should be used for the classical shadow:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -766,9 +766,9 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
-        >>> np.all(recipes1 == recipes2)
+        >>> print(np.all(recipes1 == recipes2))
         False
-        >>> np.all(bits1 == bits2)
+        >>> print(np.all(bits1 == bits2))
         False
     """
     wires = Wires(wires)
