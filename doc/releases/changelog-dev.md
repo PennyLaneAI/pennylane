@@ -453,6 +453,10 @@ The following classes have been ported over:
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
 
+* Created a new ``~.labs.estimator_beta.estimate()`` function which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
+  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
+
 <h3>Breaking changes 💔</h3>
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
