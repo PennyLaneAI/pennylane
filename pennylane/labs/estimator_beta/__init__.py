@@ -59,9 +59,9 @@ from .wires_manager import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
+from .resource_config import LabsResourceConfig
 
 
-# Register the new Allocate and Deallocate classes!
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
     return action

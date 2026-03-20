@@ -40,7 +40,7 @@ class LabsResourceConfig(ResourceConfig):
     .. code-block:: pycon
 
         >>> import pennylane.estimator as qre
-        >>> import pennylane.labs.estimator_betas as exp_qre
+        >>> import pennylane.labs.estimator_beta as exp_qre
         >>> my_config = exp_qre.LabsResourceConfig()
         >>> my_config.set_precision(qre.RX, precision=1e-5)
         >>> res = qre.estimate(

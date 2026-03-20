@@ -47,7 +47,7 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
+        config (dict | None): additional parameters to estimate the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -377,7 +377,7 @@ def _resources_from_resource_operator(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_wires_budget=False,
+        tight_wires_budget=tight_wires_budget,
         config=config,
     )
 
@@ -399,7 +399,7 @@ def _resources_from_pl_ops(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_wires_budget=False,
+        tight_wires_budget=tight_wires_budget,
         config=config,
     )
 
