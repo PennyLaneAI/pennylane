@@ -24,7 +24,7 @@ from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_involutory,
-    pow_rotation,
+    qjit_compatible_pow_rotation,
     self_adjoint,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
@@ -164,7 +164,7 @@ decompositions["C(Hadamard)"] = [_controlled_hadamard]
 decompositions["Adjoint(Hadamard)"] = [self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]
-decompositions["Pow(RX)"] = [pow_rotation]
+decompositions["Pow(RX)"] = [qjit_compatible_pow_rotation]
 decompositions["Adjoint(CNOT)"] = [self_adjoint]
 decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
 decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]

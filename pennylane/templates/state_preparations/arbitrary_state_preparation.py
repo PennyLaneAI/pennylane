@@ -168,7 +168,7 @@ def _arbitrary_state_preparation_resources(num_wires):
 
 
 @register_resources(_arbitrary_state_preparation_resources)
-def _arbitrary_state_preparation_decomposition(weights, wires):
+def _arbitrary_state_preparation_decomposition(weights, wires, **_):
     pauli_words = _state_preparation_pauli_words(len(wires))
 
     @for_loop(len(pauli_words))
