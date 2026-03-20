@@ -29,9 +29,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.reconstruct import (
-    get_decomp_kwargs,
-)
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
@@ -738,8 +736,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [qml.RX(0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
@@ -755,8 +754,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [qml.RX(-0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
@@ -787,8 +787,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 19
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [
             qml.adjoint(qml.T(2)),
