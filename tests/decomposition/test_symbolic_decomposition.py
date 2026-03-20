@@ -69,7 +69,7 @@ class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-
 
 
 @register_reconstructor(CustomOpWithReconstructor)
-def _reconsutruct_custom_op(*_, wires, **__):
+def _reconstruct_custom_op(*_, wires, **__):
     return CustomOpWithReconstructor(wires)
 
 
