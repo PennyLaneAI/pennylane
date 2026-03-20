@@ -140,7 +140,6 @@ def QFT(wires: WiresLike):
         >>> qml.set_shots(scFT_add, 1)(7, 3, n_wires=4) # doctest: +SKIP
         array([[1, 1, 1, 0]])
     """
-    wires = Wires(wires)
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
     if enabled():
