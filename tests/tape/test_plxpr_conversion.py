@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.condition import Conditional
+from pennylane.templates.core import CollectedSubroutine
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -62,9 +63,9 @@ class TestCollectOpsandMeas:
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        for i, op in enumerate(QFT_DECOMP):
-            qml.assert_equal(obj.state["ops"][2 + i], op)
-        assert len(obj.state["ops"]) == 2 + len(QFT_DECOMP)
+        assert isinstance(obj.state["ops"][2], CollectedSubroutine)
+        assert obj.state["ops"][2].name == "QFT"
+        assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
 
@@ -394,9 +395,9 @@ class TestCollectOpsandMeas:
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        for i, op in enumerate(QFT_DECOMP):
-            qml.assert_equal(obj.state["ops"][2 + i], op)
-        assert len(obj.state["ops"]) == 9
+        assert isinstance(obj.state["ops"][2], CollectedSubroutine)
+        assert obj.state["ops"][2].name == "QFT"
+        assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
 
@@ -417,9 +418,9 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        for i, op in enumerate(QFT_DECOMP):
-            qml.assert_equal(tape[2 + i], op)
-        assert len(tape.operations) == 9
+        assert isinstance(tape[2], CollectedSubroutine)
+        assert tape[2].name == "QFT"
+        assert len(tape.operations) == 3
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
         assert tape.shots == qml.measurements.Shots(100)
@@ -439,9 +440,9 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        for i, op in enumerate(QFT_DECOMP):
-            qml.assert_equal(tape[2 + i], op)
-        assert len(tape.operations) == 9
+        assert isinstance(tape[2], CollectedSubroutine)
+        assert tape[2].name == "QFT"
+        assert len(tape.operations) == 3
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
         assert tape.shots == qml.measurements.Shots(100)
