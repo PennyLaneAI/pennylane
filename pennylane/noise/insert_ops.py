@@ -20,7 +20,7 @@ from types import FunctionType
 from pennylane import templates
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
-from pennylane.operation import DecompositionUndefinedError, Operation, Operator
+from pennylane.operation import DecompositionUndefinedError, Gate, Operation, Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.transforms import transform
@@ -37,13 +37,13 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if Operation not in operation.__bases__:
+                if Operation not in operation.__bases__ and Gate not in operation.__bases__:
                     not_op = True
             except AttributeError:
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if Operation in position.__bases__:
+            if Operation in position.__bases__ or Gate in position.__bases__:
                 req_ops = [position]
             else:
                 not_op = True

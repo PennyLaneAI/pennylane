@@ -186,6 +186,15 @@ class ControlledQubitUnitary(ControlledOp):
             work_wire_type=work_wire_type,
         )
 
+    _wire_argnames = (
+        "wires",
+        "work_wires",
+    )
+    _static_argnames = (
+        "unitary_check",
+        "work_wire_type",
+    )
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
@@ -202,6 +211,15 @@ class ControlledQubitUnitary(ControlledOp):
 
         if not isinstance(base, Iterable):
             raise ValueError("Base must be a matrix.")
+
+        self._bound_args = self._bind_args(
+            base,
+            wires,
+            control_values=control_values,
+            unitary_check=unitary_check,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -341,6 +359,9 @@ class CH(ControlledOp):
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
+
+        self._bound_args = self._bind_args(wires=wires)
+
         base = type.__call__(qml.Hadamard, wires=target_wires)
         super().__init__(base, control_wires, id=id)
 
@@ -481,6 +502,9 @@ class CY(ControlledOp):
     def __init__(self, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
+
+        self._bound_args = self._bind_args(wires=wires)
+
         base = type.__call__(qml.Y, wires=wires[1:])
         super().__init__(base, wires[:1], id=id)
 
@@ -631,6 +655,9 @@ class CZ(ControlledOp):
     def __init__(self, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
+
+        self._bound_args = self._bind_args(wires=wires)
+
         base = type.__call__(qml.Z, wires=wires[1:])
         super().__init__(base, wires[:1], id=id)
 
@@ -769,6 +796,8 @@ class CSWAP(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
+
+        self._bound_args = self._bind_args(wires=wires)
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -946,6 +975,8 @@ class CCZ(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
+
+        self._bound_args = self._bind_args(wires=wires)
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -1148,6 +1179,8 @@ class CNOT(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
+        self._bound_args = self._bind_args(wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.X, wires=wires[1:])
@@ -1304,6 +1337,9 @@ class Toffoli(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
+
+        self._bound_args = self._bind_args(wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.X, wires=target_wires)
@@ -1573,6 +1609,12 @@ class MultiControlledX(ControlledOp):
 
     name = "MultiControlledX"
 
+    _wire_argnames = (
+        "wires",
+        "work_wires",
+    )
+    _static_argnames = ("work_wire_type",)
+
     def _flatten(self):
         return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
 
@@ -1630,10 +1672,18 @@ class MultiControlledX(ControlledOp):
                 f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
                 f"Need at least 2."
             )
+
         control_wires = wires[:-1]
         wires = wires[-1:]
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
+
+        self._bound_args = self._bind_args(
+            wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -1878,6 +1928,8 @@ class CRX(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires: WiresLike, id=None):
+        self._bound_args = self._bind_args(phi, wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RX, phi, wires=wires[1:])
@@ -2095,6 +2147,8 @@ class CRY(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
+        self._bound_args = self._bind_args(phi, wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RY, phi, wires=wires[1:])
@@ -2294,6 +2348,9 @@ class CRZ(ControlledOp):
     def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
+
+        self._bound_args = self._bind_args(phi, wires=wires)
+
         base = type.__call__(qml.RZ, phi, wires=wires[1:])
         super().__init__(base, control_wires=wires[:1], id=id)
 
@@ -2524,6 +2581,8 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, phi, theta, omega, wires, id=None):
+        self._bound_args = self._bind_args(phi, theta, omega, wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.Rot, phi, theta, omega, wires=wires[1:])
@@ -2733,6 +2792,8 @@ class ControlledPhaseShift(ControlledOp):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
+        self._bound_args = self._bind_args(phi, wires=wires)
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.PhaseShift, phi, wires=wires[1:])

@@ -185,14 +185,16 @@ import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
-from functools import lru_cache
-from typing import Any, ClassVar, Literal, Optional, Union
+from dataclasses import dataclass
+from functools import lru_cache, reduce
+from inspect import BoundArguments, signature
+from typing import Any, ClassVar, Literal, Optional, Union, final
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -211,7 +213,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .pytrees import register_pytree
+from .pytrees import flatten, register_pytree
 
 has_jax = True
 try:
@@ -221,6 +223,55 @@ except ImportError:
     has_jax = False
 
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
+    for specifying abstract information about a :class:`~.Subroutine` for
+    purposes of resource calculations used with graph decompositions.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
+        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        wires.
+    """
+
+    shape: tuple[int, ...]
+    dtype: type = int
+
+    def __len__(self):
+        if self.shape:
+            return reduce(lambda a, b: a * b, self.shape)
+        return 0
+
+
+def _create_signature_key(
+    bound_args, wire_argnames: tuple[str, ...], static_argnames: tuple[str, ...]
+):
+    key = []
+    for arg, val in bound_args.arguments.items():
+        if arg in static_argnames:
+            key.append(val)
+        elif arg in wire_argnames:
+            if val is not None:
+                key.append(
+                    AbstractArray(shape=(len(val),), dtype=int)
+                )  # TODO: move AbstractArray to a more convenient location
+            else:
+                key.append(AbstractArray(shape=(), dtype=int))
+        else:
+            leaves, struct = flatten(val)
+
+            shapes = (
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                for l in leaves
+            )
+            key.append((struct, tuple(shapes)))
+    return tuple(key)
 
 
 # =============================================================================
@@ -816,6 +867,26 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __hash__(self) -> int:
         return self.hash
 
+    def _bind_args(self, *args, **kwargs) -> BoundArguments:
+        bound_args = signature(self.__init__).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        for wire_argname in self._wire_argnames:
+            register = bound_args.arguments[wire_argname]
+            if register is not None:
+                bound_args.arguments[wire_argname] = Wires(register)
+        return bound_args
+
+    @property
+    def bound_signature(self):
+        """Useful for Gates with shapes that are determined by initialization parameters."""
+        key = _create_signature_key(
+            self._bound_args,
+            wire_argnames=self._wire_argnames,
+            static_argnames=self._static_argnames,
+        )
+        return {"signature_key": key}
+
     @staticmethod
     def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1148,6 +1219,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
 
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("wires",)
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = ()
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(*params, wires=wires)
+
         if id is not None:
             warnings.warn(
                 "The 'id' argument is deprecated and will be removed in v0.46.",
@@ -1270,7 +1348,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def num_params(self) -> int:
-        """Number of trainable parameters that the operator depends on.
+        """Number of parameters that the operator depends on.
 
         By default, this property returns as many parameters as were used for the
         operator creation. If the number of parameters for an operator subclass is fixed,
@@ -1845,6 +1923,9 @@ class Operation(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
+    _wire_argnames = ("wires",)
+    _static_argnames = ()
+
     @property
     def grad_method(self) -> Literal["A", "F", None]:
         """Gradient computation method.
@@ -1985,6 +2066,89 @@ class Operation(Operator):
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
+
+
+class Gate(Operation):
+    """A basic building block acting on a fixed, small number of qubits with a limited call
+    signature with fully determined parameter shapes.
+
+    For this class, both ``num_wires`` and ``num_params`` must be specified as class properties
+    and can only be integers.
+
+    Gate's cannot have additional ``resource_keys``. The resources need to apply them must be able
+    to be strictly determined by the class type.
+
+    By inheriting from this class and following the more rigid structure, the class will have
+    improved integration with Catalyst.
+
+    """
+
+    def __init_subclass__(cls, **_):
+        if len(cls.resource_keys) > 0:
+            raise ValueError("Gate's must not have any resource keys.")
+        if not isinstance(cls.num_wires, int):
+            raise ValueError("Gate's must have a fixed integer number of wires.")
+        if not isinstance(cls.num_params, int):
+            raise ValueError(
+                "Gate's must have a fixed integer number of parameters set ahead of time."
+            )
+        if cls.ndim_params == Operator.ndim_params:  # pylint: disable=comparison-with-callable
+            cls.ndim_params = tuple(0 for _ in range(cls.num_params))
+        elif isinstance(cls.ndim_params, Iterable) and any(dim != 0 for dim in cls.ndim_params):
+            raise ValueError(
+                "Gate's must only have scalar parameter inputs. ndim_params is"
+                "automatically set to this default and cannot be overwritten."
+            )
+        return super().__init_subclass__(**_)
+
+    resource_keys = frozenset()
+
+    @classmethod
+    def construct_instance(cls, *data, wires, signature_key):
+        assert len(signature_key) == len(data) + 1
+        assert len(wires) == len(signature_key[-1])
+        return cls(*data, wires=wires)
+
+    @classproperty
+    def signature(cls):  # pylint: disable=no-self-argument
+        """A signature can be inferred for an uninstantiated type if it takes simple 1-D params and wires."""
+        return {
+            "signature_key": tuple(
+                [AbstractArray((1,)) for _ in range(cls.num_params)]
+                + [
+                    AbstractArray((cls.num_wires,)),
+                ]
+            )
+        }
+
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
+        if not hasattr(self, "_wire_argnames"):
+            self._wire_argnames = ("wires",)
+        if not hasattr(self, "_static_argnames"):
+            self._static_argnames = ()
+        if not hasattr(self, "_bound_args"):
+            self._bound_args = self._bind_args(*params, wires=wires)
+
+        super().__init__(*params, wires=wires, id=id)
+
+    @property
+    @abc.abstractmethod
+    def num_wires(self) -> int:
+        """Number of wires the operator acts on."""
+
+    @property
+    @abc.abstractmethod
+    def num_params(self) -> int:
+        """Number of parameters that the operator depends on.
+
+        Returns:
+            int: number of parameters
+        """
+
+    @property
+    @final
+    def resource_params(self) -> dict:
+        return {}
 
 
 class Channel(Operation, abc.ABC):

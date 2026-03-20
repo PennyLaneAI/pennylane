@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
-from pennylane.operation import Channel, Operation, Operator, StatePrepBase
+from pennylane.operation import Channel, Gate, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
@@ -219,6 +219,7 @@ _CLASSES_TO_TEST = (
     - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
     - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
+    - {Gate}
 )
 """All operators, except those tested manually, abstract/meta classes, and templates."""
 

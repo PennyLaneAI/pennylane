@@ -312,6 +312,7 @@ class GlobalPhase(Operation):
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
+        self._bound_args = self._bind_args(phi, wires=wires)
         super().__init__(phi, wires=wires, id=id)
 
     @property
