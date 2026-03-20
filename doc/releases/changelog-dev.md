@@ -830,6 +830,11 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
+  the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
+  environment.
+  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
+
 * Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
