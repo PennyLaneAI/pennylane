@@ -38,6 +38,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_involutory_no_reconstructor,
     pow_rotation,
+    qjit_compatible_flip_pow_adjoint,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -68,7 +69,7 @@ class CustomOpWithReconstructor(qml.operation.Operator):  # pylint: disable=too-
 
 
 @register_reconstructor(CustomOpWithReconstructor)
-def _reconsutruct_custom_op(wires, **_):
+def _reconsutruct_custom_op(*_, wires, **__):
     return CustomOpWithReconstructor(wires)
 
 
@@ -212,21 +213,29 @@ class TestPowDecomposition:
         op = qml.pow(qml.H(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
 
-    def test_flip_pow_adjoint(self):
-        """Tests the flip_pow_adjoint decomposition."""
+    @pytest.mark.parametrize(
+        ("base_op", "rule"),
+        [
+            (CustomOpWithoutReconstructor, flip_pow_adjoint),
+            (CustomOpWithReconstructor, qjit_compatible_flip_pow_adjoint),
+        ],
+    )
+    def test_flip_pow_adjoint(self, base_op, rule):
+        """Tests the flip_pow_adjoint and qjit_compatible_flip_pow_adjoint decompositions."""
 
-        op = qml.pow(qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2])), 2)
+        op = qml.pow(qml.adjoint(base_op(0.5, wires=[0, 1, 2])), 2)
+
+        rule_params = get_decomp_kwargs(op)
+
         with queuing.AnnotatedQueue() as q:
-            flip_pow_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **rule_params)
 
-        assert q.queue == [
-            qml.adjoint(qml.pow(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]), 2))
-        ]
-        assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert q.queue == [qml.adjoint(qml.pow(base_op(0.5, wires=[0, 1, 2]), 2))]
+        assert rule.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
                     qml.ops.Pow,
-                    {"base_class": CustomOpWithoutReconstructor, "base_params": {"key": 0}, "z": 2},
+                    {"base_class": base_op, "base_params": {"key": 0}, "z": 2},
                 ): 1
             }
         )
