@@ -928,6 +928,14 @@ The following classes have been ported over:
 * Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
+* Fixed various small bugs within :mod:`pennylane.estimator`.
+  [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
+
+    - Fixed the resource decomposition of `~.estimator.QubitUnitary` to match the results from literature
+    - Fixed the resource decomposition of `~.estimator.OutMultiplier` to match the results from literature
+    - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
+    - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
