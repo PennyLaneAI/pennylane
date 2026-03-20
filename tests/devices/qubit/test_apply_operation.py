@@ -1818,6 +1818,20 @@ class TestNumpyFastPathCorrectness:
         expected = np.array([inv_sqrt2, inv_sqrt2])
         assert qml.math.allclose(result, expected)
 
+    def test_hadamard_numpy_state_without_cached_matrix(self, monkeypatch):
+        """Test Hadamard falls back to casting the shared matrix on a cache miss."""
+        cache = dict(apply_operation_module._HADAMARD_CACHE)
+        cache.pop(np.dtype(np.complex128), None)
+        monkeypatch.setattr(apply_operation_module, "_HADAMARD_CACHE", cache)
+
+        state = np.array([1.0 + 0j, 0.0], dtype=np.complex128)
+        op = qml.Hadamard(wires=0)
+        result = apply_operation(op, state)
+
+        inv_sqrt2 = 1 / np.sqrt(2)
+        expected = np.array([inv_sqrt2, inv_sqrt2], dtype=np.complex128)
+        assert qml.math.allclose(result, expected)
+
     def test_hadamard_numpy_multiqubit(self):
         """Test Hadamard on wire 1 of a 3-qubit numpy state."""
         state = np.zeros((2, 2, 2), dtype=complex)
