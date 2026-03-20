@@ -141,7 +141,7 @@ def QFT(wires: WiresLike):
         array([[1, 1, 1, 0]])
     """
     num_wires = len(wires)
-    shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+    shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
 
     if enabled():
         shifts = math.array(shifts, like="jax")
