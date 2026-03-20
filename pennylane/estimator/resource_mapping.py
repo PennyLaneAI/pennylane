@@ -551,10 +551,10 @@ def _(op: Controlled | ControlledOp):
 
 # Identity Ops: Operations that don't actually change the quantum state!
 @_map_to_resource_op.register
-def _(op: qops.Barrier):
+def _barrier_op(op: qops.Barrier):
     return re_ops.Identity()
 
 
 @_map_to_resource_op.register
-def _(op: qops.Snapshot):
+def _snapshot_op(op: qops.Snapshot):
     return re_ops.Identity()
