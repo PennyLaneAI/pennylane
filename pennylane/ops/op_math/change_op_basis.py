@@ -59,7 +59,7 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if isinstance(op_or_func, Callable):
         try:
-            return prod.prod(op_or_func)()
+            return prod.prod(op_or_func)()  # pylint: disable=no-member
         except TypeError as e:
             raise TypeError(
                 "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."

@@ -20,12 +20,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import math
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import WireError
 from pennylane.ops import Adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.queuing import AnnotatedQueue
 from pennylane.templates.core import (
     AbstractArray,
     CollectedSubroutine,
