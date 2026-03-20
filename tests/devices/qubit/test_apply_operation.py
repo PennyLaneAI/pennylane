@@ -15,6 +15,7 @@
 Tests the apply_operation functions from devices/qubit
 """
 
+import importlib
 from functools import reduce
 
 import numpy as np
@@ -25,7 +26,7 @@ from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
 import pennylane as qml
-import pennylane.devices.qubit.apply_operation as apply_operation_module
+apply_operation_module = importlib.import_module("pennylane.devices.qubit.apply_operation")
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,
@@ -1820,7 +1821,7 @@ class TestNumpyFastPathCorrectness:
 
     def test_hadamard_numpy_state_without_cached_matrix(self, monkeypatch):
         """Test Hadamard falls back to casting the shared matrix on a cache miss."""
-        cache = dict(apply_operation_module._HADAMARD_CACHE)
+        cache = dict(getattr(apply_operation_module, "_HADAMARD_CACHE"))
         cache.pop(np.dtype(np.complex128), None)
         monkeypatch.setattr(apply_operation_module, "_HADAMARD_CACHE", cache)
 
