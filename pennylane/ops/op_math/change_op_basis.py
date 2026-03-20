@@ -371,7 +371,7 @@ def _controlled_change_op_basis_decomposition(
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
         pytrees.unflatten(*pytrees.flatten(op))
 

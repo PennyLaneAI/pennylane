@@ -95,22 +95,22 @@ def QFT(wires: WiresLike):
         on the measurement values, allowing to reduce the number of two-qubit gates.
 
         As an example, consider the following circuit implementing addition between two
-        numbers with ``n_wires`` bits (modulo ``2**n_wires``):
+        numbers with ``num_wires`` bits (modulo ``2**num_wires``):
 
         .. code-block:: python
 
             dev = qml.device("default.qubit")
 
             @qml.qnode(dev, shots=1)
-            def qft_add(m, k, n_wires):
-                qml.BasisEmbedding(m, wires=range(n_wires))
-                qml.adjoint(qml.QFT)(wires=range(n_wires))
-                for j in range(n_wires):
+            def qft_add(m, k, num_wires):
+                qml.BasisEmbedding(m, wires=range(num_wires))
+                qml.adjoint(qml.QFT)(wires=range(num_wires))
+                for j in range(num_wires):
                     qml.RZ(-k * np.pi / (2**j), wires=j)
-                qml.QFT(wires=range(n_wires))
+                qml.QFT(wires=range(num_wires))
                 return qml.sample()
 
-        >>> qft_add(7, 3, n_wires=4)
+        >>> qft_add(7, 3, num_wires=4)
         array([[1, 0, 1, 0]])
 
         The last building block of this circuit is a QFT, so we may replace it by its
@@ -118,41 +118,42 @@ def QFT(wires: WiresLike):
 
         .. code-block:: python
 
-            def scFT(n_wires):
+            def scFT(num_wires):
                 '''semiclassical Fourier transform'''
-                for w in range(n_wires-1):
+                for w in range(num_wires-1):
                     qml.Hadamard(w)
                     mcm = qml.measure(w)
-                    for m in range(w + 1, n_wires):
+                    for m in range(w + 1, num_wires):
                         qml.cond(mcm, qml.PhaseShift)(np.pi / 2 ** (m + 1), wires=m)
-                qml.Hadamard(n_wires-1)
+                qml.Hadamard(num_wires-1)
 
             @qml.qnode(dev)
-            def scFT_add(m, k, n_wires):
-                qml.BasisEmbedding(m, wires=range(n_wires))
-                qml.adjoint(qml.QFT)(wires=range(n_wires))
-                for j in range(n_wires):
+            def scFT_add(m, k, num_wires):
+                qml.BasisEmbedding(m, wires=range(num_wires))
+                qml.adjoint(qml.QFT)(wires=range(num_wires))
+                for j in range(num_wires):
                     qml.RZ(-k * np.pi / (2**j), wires=j)
-                scFT(n_wires)
+                scFT(num_wires)
                 # Revert wire order because of PL's QFT convention
-                return qml.sample(wires=list(range(n_wires-1, -1, -1)))
+                return qml.sample(wires=list(range(num_wires-1, -1, -1)))
 
-        >>> qml.set_shots(scFT_add, 1)(7, 3, n_wires=4) # doctest: +SKIP
+        >>> qml.set_shots(scFT_add, 1)(7, 3, num_wires=4) # doctest: +SKIP
         array([[1, 1, 1, 0]])
     """
-    n_wires = len(wires)
-    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    num_wires = len(wires)
+    shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+
     if enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
     shift_len = len(shifts)
 
-    @for_loop(n_wires)
+    @for_loop(num_wires)
     def outer_loop(i):
         Hadamard(wires[i])
 
-        if n_wires > 1:
+        if num_wires > 1:
 
             @for_loop(shift_len - i)
             def cphaseshift_loop(j):
@@ -162,8 +163,8 @@ def QFT(wires: WiresLike):
 
     outer_loop()  # pylint: disable=no-value-for-parameter
 
-    @for_loop(n_wires // 2)
+    @for_loop(num_wires // 2)
     def swaps(i):
-        SWAP(wires=[wires[i], wires[n_wires - i - 1]])
+        SWAP(wires=[wires[i], wires[num_wires - i - 1]])
 
     swaps()  # pylint: disable=no-value-for-parameter
