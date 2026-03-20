@@ -173,7 +173,7 @@ def state() -> StateMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -209,10 +209,11 @@ def state() -> StateMP:
         ...     return qml.state()
         >>> def cost(x):
         ...     return np.abs(test(x)[0])
+        >>> x = pnp.array(0.54, requires_grad=True)
         >>> cost(x)
-        0.9987502603949663
+        tensor(0.963..., requires_grad=True)
         >>> qml.grad(cost)(x)
-        tensor(-0.02498958, requires_grad=True)
+        tensor(-0.13..., requires_grad=True)
     """
     return StateMP()
 
@@ -233,7 +234,7 @@ def density_matrix(wires) -> DensityMatrixMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -246,8 +247,8 @@ def density_matrix(wires) -> DensityMatrixMP:
     Executing this QNode:
 
     >>> circuit()
-    array([[0.+0.j 0.+0.j]
-        [0.+0.j 1.+0.j]])
+    array([[0.+0.j, 0.+0.j],
+           [0.+0.j, 1.+0.j]])
 
     The returned matrix is the reduced density matrix, where system 1 is traced out.
 
