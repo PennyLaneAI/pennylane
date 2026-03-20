@@ -856,7 +856,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert len(tape) == 1
         assert out is tape[0]
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qml.templates.SubroutineOp
+        assert out.base.__class__ is qml.templates.core.SubroutineOp
         assert out.wires == qml.wires.Wires((0, 1, 2))
 
     def test_adjoint_on_function(self):

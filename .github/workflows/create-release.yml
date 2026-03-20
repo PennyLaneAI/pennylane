@@ -25,17 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PennyLane repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.17
           enable-cache: true  
@@ -82,7 +82,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
     steps:
       - name: Checkout PennyLane repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
      
@@ -98,25 +98,25 @@ jobs:
           gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
 
   merge-rc-pr:
-    name: Create PR to merge RC branch into master
+    name: Create PR to merge RC branch into main
     runs-on: ubuntu-latest
     needs: [create_release]
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout PennyLane repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
 
       - name: Tag RC branch
         run: |
-          git checkout -b merge-rc-into-master-$(date +'%Y-%m-%d')
+          git checkout -b merge-rc-into-main-$(date +'%Y-%m-%d')
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
           git push origin "refs/tags/${{ inputs.release_branch }}"
 
-      - name: Merge RC branch into master
+      - name: Merge RC branch into main
         run: |
-          gh pr create --title "Merge ${{ inputs.release_branch }} into master" --body "" --base master --head ${{ inputs.release_branch }}
+          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head ${{ inputs.release_branch }}

@@ -14,16 +14,19 @@
 """
 Contains the OutMultiplier template.
 """
+from functools import partial
+
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import adjoint
+from pennylane.ops import adjoint, change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
     adjoint_subroutine_resource_rep,
+    change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
@@ -274,7 +277,7 @@ class OutMultiplier(Operation):
         **Example**
 
         >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [<QFT(wires=(5, 6))>, ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3]), Adjoint(<QFT(wires=(5, 6))>)]
+        [(Adjoint(<QFT(wires=(5, 6))>)) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ <QFT(wires=(5, 6))>]
         """
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
@@ -284,14 +287,16 @@ class OutMultiplier(Operation):
             work_wire = ()
 
         op_list = [
-            QFT.operator(wires=qft_output_wires),
-            ControlledSequence(
+            change_op_basis(
+                partial(QFT, wires=qft_output_wires),
                 ControlledSequence(
-                    PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+                    ControlledSequence(
+                        PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+                    ),
+                    control=y_wires,
                 ),
-                control=y_wires,
+                partial(adjoint(QFT), wires=qft_output_wires),
             ),
-            adjoint(QFT.operator(wires=qft_output_wires)),
         ]
         return op_list
 
@@ -301,18 +306,20 @@ def _out_multiplier_decomposition_resources(
 ) -> dict:
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
-        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
-        resource_rep(
-            ControlledSequence,
-            base_class=ControlledSequence,
-            base_params={
-                "base_class": PhaseAdder,
-                "base_params": {"num_x_wires": qft_wires, "mod": mod},
-                "num_control_wires": num_x_wires,
-            },
-            num_control_wires=num_y_wires,
-        ): 1,
-        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+        change_op_basis_subroutine_resource_rep(
+            subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
+            resource_rep(
+                ControlledSequence,
+                base_class=ControlledSequence,
+                base_params={
+                    "base_class": PhaseAdder,
+                    "base_params": {"num_x_wires": qft_wires, "mod": mod},
+                    "num_control_wires": num_x_wires,
+                },
+                num_control_wires=num_y_wires,
+            ),
+            adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
+        ): 1
     }
 
 
@@ -332,12 +339,14 @@ def _out_multiplier_decomposition(
         qft_output_wires = output_wires
         work_wire = ()
 
-    QFT.operator(wires=qft_output_wires)
-    ControlledSequence(
-        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
-        control=y_wires,
+    change_op_basis(
+        partial(QFT, wires=qft_output_wires),
+        ControlledSequence(
+            ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
+            control=y_wires,
+        ),
+        partial(adjoint(QFT), wires=qft_output_wires),
     )
-    adjoint(QFT.operator(wires=qft_output_wires))
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)

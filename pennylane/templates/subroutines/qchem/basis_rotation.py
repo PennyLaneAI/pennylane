@@ -21,11 +21,17 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import PhaseShift, SingleExcitation, cond
-from pennylane.templates import Subroutine
+from pennylane.templates.core import Subroutine
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
+
+
+def _qjit_or_capture():
+    return compiler.active() or capture.enabled()
 
 
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not compiler.active() and not capture.enabled()
+    return math.is_abstract(U) and not _qjit_or_capture()
 
 
 def _adjust_determinant(matrix):
@@ -78,9 +84,10 @@ def _real_unitary(unitary, wires):
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(givens_list))
     def givens_loop(idx):
@@ -96,10 +103,11 @@ def _complex_unitary(unitary, wires):
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         phase_list = math.array(phase_list, like="jax")
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(phase_list))
     def phase_loop(idx):
@@ -123,14 +131,13 @@ def _complex_unitary(unitary, wires):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
 @partial(
     Subroutine,
     static_argnames="check",
     compute_resources=basis_rotation_decomp_resources,
     exact_resources=False,
 )
-def BasisRotation(wires, unitary_matrix, check=False):
+def BasisRotation(wires: WiresLike, unitary_matrix: TensorLike, check: bool = False):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
     rotations and phase shifts.
 

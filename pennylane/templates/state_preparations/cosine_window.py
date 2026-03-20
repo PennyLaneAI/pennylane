@@ -14,14 +14,12 @@
 r"""
 Contains the CosineWindow template.
 """
-from collections import defaultdict
-
 import numpy as np
 
 import pennylane as qml
 from pennylane import capture, math, register_resources
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep
+from pennylane.decomposition import add_decomps, resource_rep
 from pennylane.exceptions import WireError
 from pennylane.operation import StatePrepBase
 from pennylane.templates.core import AbstractArray, adjoint_subroutine_resource_rep
@@ -148,18 +146,6 @@ class CosineWindow(StatePrepBase):
 
 
 def _cosine_window_resources(num_wires):
-    if capture.enabled():
-        ret = defaultdict(int)
-        ret.update(
-            {
-                resource_rep(qml.Hadamard): 1,
-                resource_rep(qml.RZ): 1,
-                resource_rep(qml.PhaseShift): num_wires,
-            }
-        )
-        for op, count in qml.QFT.compute_resources(wires=range(num_wires)).items():
-            ret[adjoint_resource_rep(op)] += count
-        return ret
     return {
         resource_rep(qml.Hadamard): 1,
         resource_rep(qml.RZ): 1,
@@ -169,7 +155,7 @@ def _cosine_window_resources(num_wires):
 
 
 @register_resources(_cosine_window_resources)
-def _cosine_window_decomposition(wires):
+def _cosine_window_decomposition(wires, **_):
     qml.Hadamard(wires=wires[-1])
     qml.RZ(np.pi, wires=wires[-1])
     qml.adjoint(qml.QFT)(wires=wires)

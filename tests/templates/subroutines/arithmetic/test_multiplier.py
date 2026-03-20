@@ -14,6 +14,7 @@
 """
 Tests for the Multiplier template.
 """
+from functools import partial
 
 import numpy as np
 import pytest
@@ -116,13 +117,15 @@ class TestMultiplier:
             wires_aux = work_wires[:3]
             wires_aux_swap = wires_aux
 
-        op_list.append(qml.QFT.operator(wires=wires_aux))
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires
+            qml.change_op_basis(
+                partial(qml.QFT, wires=wires_aux),
+                qml.ControlledSequence(
+                    qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires
+                ),
+                partial(qml.adjoint(qml.QFT), wires_aux),
             )
         )
-        op_list.append(qml.adjoint(qml.QFT.operator(wires=wires_aux)))
 
         op_list.append(
             qml.prod(
@@ -136,15 +139,18 @@ class TestMultiplier:
         )
 
         inv_k = pow(k, -1, mod)
-        op_list.append(qml.QFT.operator(wires=wires_aux))
+
         op_list.append(
-            qml.adjoint(
-                qml.ControlledSequence(
-                    qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
-                )
+            qml.change_op_basis(
+                partial(qml.QFT, wires=wires_aux),
+                qml.adjoint(
+                    qml.ControlledSequence(
+                        qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
+                    )
+                ),
+                partial(qml.adjoint(qml.QFT), wires_aux),
             )
         )
-        op_list.append(qml.adjoint(qml.QFT.operator(wires=wires_aux)))
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)

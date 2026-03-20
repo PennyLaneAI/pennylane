@@ -461,13 +461,13 @@ class TestQubitUnitary:
         import jax
         from jax import numpy as jnp
 
-        matrix = jnp.array(qml.matrix(qml.CNOT(wires=[0, 1])))
+        matrix = jnp.array(qml.matrix(qml.MultiControlledX(wires=[0, 1, 2])))
 
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit(matrix):
-            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
             return qml.state()
 
         state_expected = circuit(matrix)
@@ -545,6 +545,7 @@ class TestQubitUnitary:
             ),  # 2 cnots
             (qml.matrix(qml.CRY(1, wires=[0, 1]))),  # 2 cnots
             (qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1])),  # 3 cnots
+            (qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1]) * np.exp(-12j)),  # 3 cnots
             (qml.matrix(qml.RZ(1, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.CRY(-1, wires=[0, 1]))),  # 2 cnots
@@ -617,6 +618,11 @@ class TestQubitUnitary:
         [
             (qml.matrix(qml.RY(1, 0) @ qml.RY(2, 1)), qml.matrix(qml.RX(2, 0) @ qml.RZ(4, 1)), 4),
             (qml.matrix(qml.RY(1, 0)), qml.matrix(qml.RX(2, 0)), 2),
+            (
+                qml.matrix(qml.GroverOperator([0, 1, 2])),
+                qml.matrix(qml.MultiControlledX([0, 1, 2])),
+                8,
+            ),
         ],
     )
     def test_compute_udv(self, a, b, size):

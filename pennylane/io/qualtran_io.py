@@ -56,7 +56,7 @@ _Subroutine_to_bloq_map: dict = {}
 """A registry for SubroutineOps we want to convert to Bloq."""
 
 
-def _register_subroutine_call_graph(subroutine: qtemps.Subroutine):
+def _register_subroutine_call_graph(subroutine: qtemps.core.Subroutine):
     """Register a function for the call graph of a SubroutineOp using a decorator.
 
     .. code-block::
@@ -73,7 +73,7 @@ def _register_subroutine_call_graph(subroutine: qtemps.Subroutine):
     return subroutine_call_graph_decorator
 
 
-def _register_subroutine_to_bloq(subroutine: qtemps.Subroutine):
+def _register_subroutine_to_bloq(subroutine: qtemps.core.Subroutine):
     """Register a function conversion of a SubroutineOp to Bloq using a decorator.
 
     .. code-block::
@@ -123,7 +123,7 @@ def _get_op_call_graph(op):  # pylint: disable=unused-argument
 
 
 @_get_op_call_graph.register
-def _call_graph_for_subroutine(op: qtemps.SubroutineOp):
+def _call_graph_for_subroutine(op: qtemps.core.SubroutineOp):
     if op.subroutine in _Subroutine_call_graph_map:
         return _Subroutine_call_graph_map[op.subroutine](op)
     raise NotImplementedError(
@@ -573,7 +573,9 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
 
 
 @_map_to_bloq.register
-def _to_bloq_for_subroutine(op: qtemps.SubroutineOp, custom_mapping=None, map_ops=True, **kwargs):
+def _to_bloq_for_subroutine(
+    op: qtemps.core.SubroutineOp, custom_mapping=None, map_ops=True, **kwargs
+):
     if op.subroutine in _Subroutine_to_bloq_map:
         return _Subroutine_to_bloq_map[op.subroutine](
             op, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs

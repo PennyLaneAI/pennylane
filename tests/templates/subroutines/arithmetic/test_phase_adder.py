@@ -14,6 +14,7 @@
 """
 Tests for the PhaseAdder template.
 """
+from functools import partial
 
 import pytest
 
@@ -251,13 +252,24 @@ class TestPhaseAdder:
             aux_k = x_wires[0]
             op_list.extend(_add_k_fourier(k, x_wires))
             op_list.extend(qml.adjoint(_add_k_fourier)(mod, x_wires))
-            op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
-            op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1))
-            op_list.append(qml.QFT.operator(wires=x_wires))
+
+            op_list.append(
+                qml.change_op_basis(
+                    partial(qml.adjoint(qml.QFT), wires=x_wires),
+                    qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1),
+                    partial(qml.QFT, wires=x_wires),
+                )
+            )
+
             op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.append(qml.prod(qml.X(aux_k), *base_list_ops1))
-            op_list.append(qml.CNOT(wires=[aux_k, work_wire[0]]))
-            op_list.append(qml.prod(*base_list_ops2, qml.X(aux_k)))
+
+            op_list.append(
+                qml.change_op_basis(
+                    qml.prod(qml.X(aux_k), *base_list_ops1),
+                    qml.CNOT(wires=[aux_k, work_wire[0]]),
+                    qml.prod(*base_list_ops2, qml.X(aux_k)),
+                )
+            )
 
         for op1, op2 in zip(phase_adder_decomp, op_list):
             qml.assert_equal(op1, op2)
