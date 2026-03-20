@@ -449,7 +449,7 @@ class StatePrep(StatePrepBase):
         **Example:**
 
         >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
-        [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
+        [<MottonenStatePreparation(state_vector=[1 0 0 0], wires=(0, 1))>]
 
         """
         return [MottonenStatePreparation.operator(state, wires)]
