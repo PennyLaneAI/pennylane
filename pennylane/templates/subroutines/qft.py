@@ -25,7 +25,7 @@ from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.templates.core import Subroutine
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
 
 
 def qft_decomp_resources(wires: WiresLike):
