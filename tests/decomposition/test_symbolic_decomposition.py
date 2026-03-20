@@ -226,7 +226,7 @@ class TestPowDecomposition:
             {
                 adjoint_resource_rep(
                     qml.ops.Pow,
-                    {"base_class": CustomOpWithoutReconstructor, "base_params": {}, "z": 2},
+                    {"base_class": CustomOpWithoutReconstructor, "base_params": {"key": 0}, "z": 2},
                 ): 1
             }
         )
@@ -288,7 +288,7 @@ class TestPowDecomposition:
 
         assert q.queue == [CustomOpWithoutReconstructor(0.3 * 2.5, wires=[0, 1, 2])]
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOpWithoutReconstructor): 1}
+            {resource_rep(CustomOpWithoutReconstructor, key=0): 1}
         )
 
 
