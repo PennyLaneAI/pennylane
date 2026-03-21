@@ -688,7 +688,7 @@ class TestApplyParametrizedEvolution:
 
         H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy_evolve = mocker.spy(
-            apply_operation_module, "_evolve_state_vector_under_parametrized_evolution"
+            apply_operation, "_evolve_state_vector_under_parametrized_evolution"
         )
 
         phi = jnp.linspace(0.3, 0.7, 7)
