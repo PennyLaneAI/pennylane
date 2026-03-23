@@ -130,15 +130,13 @@ class ClassicalShadowMP(MeasurementTransform):
                 rotations = [
                     rot
                     for wire_idx, wire in enumerate(wires)
-                    for rot in obs_list[
-                        recipes[t][wire_idx]
-                    ].compute_diagonalizing_gates(wires=wire)
+                    for rot in obs_list[recipes[t][wire_idx]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
                 ]
 
                 device.reset()
-                device.apply(
-                    tape.operations, rotations=tape.diagonalizing_gates + rotations
-                )
+                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
         finally:
@@ -233,7 +231,9 @@ class ClassicalShadowMP(MeasurementTransform):
             stacked_dim = ascii_letters[num_remaining_qubits + 1]
 
             state_str = f"{stacked_dim}{ascii_letters[:num_remaining_qubits]}"
-            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ascii_letters[1:num_remaining_qubits]}"
+            conj_state_str = (
+                f"{stacked_dim}{conj_state_first_qubit}{ascii_letters[1:num_remaining_qubits]}"
+            )
             target_str = f"{stacked_dim}a{conj_state_first_qubit}"
 
             first_qubit_state = np.einsum(
@@ -243,9 +243,7 @@ class ClassicalShadowMP(MeasurementTransform):
             )
 
             # sample the observables on the first qubit
-            probs = (
-                np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1
-            ) / 2
+            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1) / 2
             samples = bit_rng.random(size=probs.shape) > probs
             outcomes[:, active_qubit] = samples
 
@@ -349,9 +347,7 @@ class ClassicalShadowMP(MeasurementTransform):
             )
 
             # sample the observables on the first qubit
-            probs = (
-                np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1
-            ) / 2
+            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1) / 2
             samples = bit_rng.random(size=probs.shape) > probs
             outcomes[:, active_qubit] = samples
 
@@ -413,9 +409,7 @@ class ClassicalShadowMP(MeasurementTransform):
     ) -> tuple:
         return (2, shots, n_wires), np.int8
 
-    def shape(
-        self, shots: int | None = None, num_device_wires: int = 0
-    ) -> tuple[int, int, int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
         if shots is None:
             raise MeasurementShapeError(
@@ -491,9 +485,7 @@ class ShadowExpvalMP(MeasurementTransform):
             ClassicalShadow,
         )
 
-        bits, recipes = classical_shadow(wires=self.wires, seed=self.seed).process(
-            tape, device
-        )
+        bits, recipes = classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
@@ -514,13 +506,11 @@ class ShadowExpvalMP(MeasurementTransform):
         Returns:
             float: The estimate of the expectation value.
         """
-        bits, recipes = classical_shadow(
-            wires=self.wires, seed=self.seed
-        ).process_state_with_shots(state, wire_order, shots, rng=rng)
-        # tach-ignore
-        from pennylane.shadows import (
-            ClassicalShadow,  # pylint:disable=import-outside-toplevel
+        bits, recipes = classical_shadow(wires=self.wires, seed=self.seed).process_state_with_shots(
+            state, wire_order, shots, rng=rng
         )
+        # tach-ignore
+        from pennylane.shadows import ClassicalShadow  # pylint:disable=import-outside-toplevel
 
         shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
@@ -622,7 +612,7 @@ def shadow_expval(
 
     Args:
         H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
-            Provide a single observable or a list to estimate multiple expectation values from the 
+            Provide a single observable or a list to estimate multiple expectation values from the
             same shadows data in a single circuit execution.
         k (int): Number of groups for the median-of-means estimator. The default is ``k=1``, which simply computes
             the simple mean of the group. ``k>1`` provides no expected advantage for Pauli measurements and Pauli
@@ -672,14 +662,18 @@ def shadow_expval(
     >>> print(circuit())
     [0.984 0.    0.03 ]
 
-    This is very close to their expected values! 
+    This is very close to their expected values!
 
     .. details::
         :title: Differentiability
 
-        .. code-block:: python
+        Consider the following observable,
 
-            H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+
+        We can estimate it's expectation value with the classical shadows protocol:
+
+        .. code-block:: python
 
             dev = qml.device("default.qubit", seed=42, wires=range(2))
 
@@ -692,8 +686,6 @@ def shadow_expval(
                 return qml.shadow_expval(obs, seed=99)
 
             x = pnp.array(0.5, requires_grad=True)
-
-        We can compute the expectation value of the obseravble as well as its gradient in the usual way,
 
         >>> print(circuit(x, H))
         1.8891
