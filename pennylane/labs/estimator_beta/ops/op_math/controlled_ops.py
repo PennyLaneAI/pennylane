@@ -69,7 +69,7 @@ def ch_resource_decomp() -> list[GateCount | qre.Allocate | qre.Deallocate]:
     ]
 
 
-def ch_toffoli_based_resource_decomp() -> list[GateCount]:
+def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.Deallocate]:
     r"""Returns a list representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.
 
     .. note::

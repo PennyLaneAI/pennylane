@@ -444,8 +444,8 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
-* Added updated decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.Hadamard`
-  operations.
+* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management

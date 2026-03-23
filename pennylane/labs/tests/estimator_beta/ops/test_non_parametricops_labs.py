@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for non parametric resource operators."""
+
+from collections import defaultdict
+
 import pytest
 
 import pennylane.labs.estimator_beta as qre
@@ -87,6 +90,65 @@ class TestHadamard:
                 assert r.equal(e)
             else:
                 assert r == e
+
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            qre.Resources(
+                zeroed_wires=0,
+                any_state_wires=0,
+                algo_wires=2,
+                gate_types=defaultdict(
+                    int,
+                    {
+                        resource_rep(qre.Hadamard): 2,
+                        resource_rep(qre.T): 2,
+                        resource_rep(qre.Z): 2,
+                        resource_rep(qre.S): 3,
+                        resource_rep(qre.CNOT): 1,
+                    },
+                ),
+            ),
+        ),
+        (
+            ["c1"],
+            [0],
+            qre.Resources(
+                zeroed_wires=0,
+                any_state_wires=0,
+                algo_wires=2,
+                gate_types=defaultdict(
+                    int,
+                    {
+                        resource_rep(qre.T): 2,
+                        resource_rep(qre.X): 2,
+                        resource_rep(qre.Z): 2,
+                        resource_rep(qre.S): 3,
+                        resource_rep(qre.Hadamard): 2,
+                        resource_rep(qre.CNOT): 1,
+                    },
+                ),
+            ),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled_estimate(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected when estimate is used."""
+        num_ctrl_wires = len(ctrl_wires)
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
+
+        result = qre.estimate(
+            qre.Controlled(
+                qre.Hadamard(), num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
+            )
+        )
+        print(result)
+        assert result == expected_res
 
     ctrl_data = (
         (
