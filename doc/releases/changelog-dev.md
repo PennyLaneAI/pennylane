@@ -836,10 +836,6 @@ The following classes have been ported over:
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
-* Fixed the ``apply_global_phase`` docstring to correctly state the phase convention as
-  :math:`e^{-i\phi}` instead of :math:`e^{i\phi}`.
-  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
-  
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
