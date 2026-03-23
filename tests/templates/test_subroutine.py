@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition import resource_rep
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates.core import (
     AbstractArray,
@@ -33,6 +34,22 @@ from pennylane.templates.core import (
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
 )
+
+
+def test_legacy_ui():
+    """Tests that the legacy UI of a subroutine raises an appropriate deprecation warning."""
+
+    def Simple(x, wires):
+        qml.RX(x, wires=wires)
+
+    S = Subroutine(Simple)
+    expected_msg = r"Subroutines must be converted to Operators with the '\.operator\(\)' method\."
+
+    with pytest.warns(PennyLaneDeprecationWarning, match=expected_msg):
+        S_op = S(3.14, 0)
+
+    assert isinstance(S_op, SubroutineOp)
+    assert S_op.decomposition() == [qml.RX(3.14, 0)]
 
 
 class TestInitialization:

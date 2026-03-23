@@ -28,6 +28,7 @@ This module contains the abstractions for defining subroutines.
 
 """
 import copy
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
@@ -49,6 +50,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import auto_wrap
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
@@ -867,6 +869,13 @@ class Subroutine:
             bound_args = self._full_setup_inputs(*args, **kwargs)
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
         op = self.operator(*args, id=id, **kwargs)
+
+        if op.output is None:
+            warnings.warn(
+                "Subroutines must be converted to Operators with the '.operator()' method.",
+                PennyLaneDeprecationWarning,
+            )
+            return op
         return op.output
 
 
