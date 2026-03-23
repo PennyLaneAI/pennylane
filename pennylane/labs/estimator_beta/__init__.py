@@ -78,6 +78,7 @@ from .resource_config import LabsResourceConfig
 from .ops.qubit.parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp
 from .templates.subroutines import selectPauliRot_controlled_resource_decomp
 
+
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
     return action
