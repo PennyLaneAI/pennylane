@@ -18,13 +18,12 @@ from functools import partial
 from typing import Tuple
 
 from pennylane import capture, math
-from pennylane.ops import cond, Prod
-
-from pennylane.ops import adjoint
 from pennylane.decomposition.resources import resource_rep
+from pennylane.ops import Prod, adjoint, cond
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
+    Subroutine,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
     subroutine_resource_rep,
@@ -33,7 +32,6 @@ from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
-from pennylane.templates.core import Subroutine
 
 has_jax = True
 try:
@@ -58,7 +56,7 @@ def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLik
 
 @partial(
     Subroutine,
-    static_argnames=[],
+    static_argnames=["mod"],
     compute_resources=adder_decomp_resources,
     wire_argnames=["x_wires", "work_wires"],
 )
@@ -167,10 +165,15 @@ def Adder(
         change_op_basis(
             partial(QFT, x_wires),
             PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else []),
-            partial(adjoint(QFT), qft_wires),
+            partial(adjoint(QFT), x_wires),
         )
+
     def false_body(k, x_wires, mod, work_wires):
-        qft_wires = jnp.concatenate(work_wires[:1], x_wires) if capture.enabled() else work_wires[:1] + x_wires
+        qft_wires = (
+            jnp.concatenate(work_wires[:1], x_wires)
+            if capture.enabled()
+            else work_wires[:1] + x_wires
+        )
         change_op_basis(
             partial(QFT, qft_wires),
             PhaseAdder(k, qft_wires, mod, work_wires[1:]),
