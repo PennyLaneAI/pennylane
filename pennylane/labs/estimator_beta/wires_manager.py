@@ -17,14 +17,17 @@ from typing import Literal
 
 from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
-from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
+from pennylane.estimator.wires_manager import Allocate as estimator_Allocate
+from pennylane.estimator.wires_manager import Deallocate as estimator_Deallocate
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from .resource_config import LabsResourceConfig
 
 
 class Allocate:
@@ -43,10 +46,10 @@ class Allocate:
 
     **Example**
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> exp_qre.Allocate(4)
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qre.Allocate(4)
     Allocate(4, state=zero, restored=False)
-    >>> exp_qre.Allocate(2, state="any", restored=True)
+    >>> qre.Allocate(2, state="any", restored=True)
     Allocate(2, state=any, restored=True)
 
     """
@@ -137,14 +140,14 @@ class Deallocate:
     The simplest way to deallocate a register is to provide the instance of ``Allocate``
     where the register was allocated.
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> allocate_4 = exp_qre.Allocate(4)  # Allocate 4 qubits
-    >>> exp_qre.Deallocate(allocated_register=allocate_4)
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> allocate_4 = qre.Allocate(4)  # Allocate 4 qubits
+    >>> qre.Deallocate(allocated_register=allocate_4)
     Deallocate(4, state=zero, restored=False)
 
     We can also manually deallocate a register by specifically providing the details of the register.
 
-    >>> exp_qre.Deallocate(num_wires=4, state="zero", restored=False)
+    >>> qre.Deallocate(num_wires=4, state="zero", restored=False)
     Deallocate(4, state=zero, restored=False)
 
     .. note::
@@ -156,8 +159,8 @@ class Deallocate:
     If a register was allocated with ``state = "any"`` and ``restored = True``, this can
     only be deallocated by passing that specific instance of ``Allocate`` to deallocate.
 
-    >>> temp_register = exp_qre.Allocate(5, state="any", restored=True)
-    >>> exp_qre.Deallocate(allocated_register=temp_register)  # Restore the allocated register
+    >>> temp_register = qre.Allocate(5, state="any", restored=True)
+    >>> qre.Deallocate(allocated_register=temp_register)  # Restore the allocated register
     Deallocate(5, state=any, restored=True)
 
     """
@@ -306,8 +309,8 @@ class MarkClean(MarkQubits):
 
     **Example**
 
-    >>> import pennylane.labs.estimator_beta as exp_qre
-    >>> exp_qre.MarkClean(wires=[0,1,2])
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qre.MarkClean(wires=[0,1,2])
     MarkClean(Wires([0, 1, 2]))
 
     """
@@ -320,10 +323,10 @@ def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: LabsResourceConfig | None = None,
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
-):  # pylint: disable=too-many-arguments,too-many-branches
+):  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
     """A recursive function that tracks auxiliary qubits via three quantities over the course of the workflow.
     It tracks the maximum number of qubits allocated, the maximum number of qubits deallocated and the total
     number of allocated qubits that weren't restored to the zero state by the end of the workflow.
@@ -337,7 +340,7 @@ def _estimate_auxiliary_wires(
         gate_set (set[str]): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig): configurations for the resource estimation pipeline
+        config (LabsResourceConfig): configurations for the resource estimation pipeline
         num_available_any_state_aux (int): The number of external qubits, in any quantum state, that
             can be treated as auxiliary and borrowed for use within this workflow. These would potentially reduce
             the number of qubits allocated within the workflow.
@@ -358,6 +361,9 @@ def _estimate_auxiliary_wires(
     """
     if scalar == 0:
         return 0, 0, 0
+
+    if config is None:
+        config = LabsResourceConfig()
 
     total = 0
     max_alloc = 0
@@ -391,7 +397,10 @@ def _estimate_auxiliary_wires(
             total += sub_total
             continue
 
-        if isinstance(action, Allocate):
+        if isinstance(action, (Allocate, estimator_Allocate)):
+            if isinstance(action, estimator_Allocate):
+                action = Allocate(action.num_wires)
+
             if action.state == AllocateState.ANY and action.restored is True:
                 diff = local_num_available_any_state_aux - action.num_wires
 
@@ -407,7 +416,10 @@ def _estimate_auxiliary_wires(
             else:
                 total += action.num_wires
 
-        if isinstance(action, Deallocate):
+        if isinstance(action, (Deallocate, estimator_Deallocate)):
+            if isinstance(action, estimator_Deallocate):
+                action = Deallocate(num_wires=action.num_wires)
+
             if action.state == AllocateState.ANY and action.restored is True:
                 try:
                     associated_alloc = any_state_aux_allocation.pop(action.allocated_register)
@@ -519,7 +531,7 @@ def _process_circuit_lst(
 def estimate_wires_from_circuit(
     circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -532,7 +544,7 @@ def estimate_wires_from_circuit(
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig | None): configurations for the resource estimation pipeline
+        config (LabsResourceConfig | None): configurations for the resource estimation pipeline
         zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
         any_state (int): The number of additional auxiliary wires, prepared in
@@ -548,7 +560,7 @@ def estimate_wires_from_circuit(
         ValueError: if more qubits were deallocated than initially allocated
     """
     if config is None:
-        config = ResourceConfig()
+        config = LabsResourceConfig()
 
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -606,7 +618,7 @@ def estimate_wires_from_circuit(
 def estimate_wires_from_resources(
     workflow: Resources,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
+    config: LabsResourceConfig | None = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -618,7 +630,7 @@ def estimate_wires_from_resources(
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.
-        config (ResourceConfig | None): configurations for the resource estimation pipeline
+        config (LabsResourceConfig | None): configurations for the resource estimation pipeline
         zeroed (int): The number of additional auxiliary wires, prepared in the
             zero state, that can be used as part of the decomposition.
         any_state (int): The number of additional auxiliary wires, prepared in
@@ -632,7 +644,7 @@ def estimate_wires_from_resources(
         ValueError: if more qubits were deallocated than initially allocated
     """
     if config is None:
-        config = ResourceConfig()
+        config = LabsResourceConfig()
 
     if gate_set is None:
         gate_set = DefaultGateSet
