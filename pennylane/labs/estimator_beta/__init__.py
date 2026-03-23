@@ -20,29 +20,62 @@ resource estimation.
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
+
+Resource Estimation
+~~~~~~~~~~~~~~~~~~~
+
 .. currentmodule:: pennylane.labs.estimator_beta
-
-Alternate Decompositions
-------------------------
-
-.. currentmodule:: pennylane.labs.estimator_beta.ops
 
 .. autosummary::
     :toctree: api
 
-    ~pauliRot_controlled_resource_decomp
-    ~selectPauliRot_toffoli_based_controlled_decom
+    ~estimate
+    ~LabsResourceConfig
 
+Qubit Tracking Functionality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~Allocate
+    ~Deallocate
+    ~estimate_wires_from_circuit
+    ~estimate_wires_from_resources
+    ~MarkClean
+    ~MarkQubits
 
 """
-
-
 from pennylane.estimator import *
-from .ops import pauliRot_controlled_resource_decomp
-from .templates import selectPauliRot_controlled_resource_decomp
+from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+
+from .estimate import estimate
+from .wires_manager import (
+    Allocate,
+    Deallocate,
+    MarkClean,
+    MarkQubits,
+    estimate_wires_from_circuit,
+    estimate_wires_from_resources,
+)
+from .resource_config import LabsResourceConfig
 
 
-# Monkey Patching the resource decomposition methods onto the relevant classes.
+@apply_controlled.register
+def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
+    return action
 
-PauliRot.controlled_resource_decomp = classmethod(pauliRot_controlled_resource_decomp)
-SelectPauliRot.controlled_resource_decomp = classmethod(selectPauliRot_controlled_resource_decomp)
+
+@apply_adj.register
+def _(action: Allocate):
+    return Deallocate(allocated_register=action)
+
+
+@apply_adj.register
+def _(action: Deallocate):
+    if action.allocated_register is not None:
+        return action.allocated_register
+
+    return Allocate(action.num_wires, state=action.state, restored=action.restored)

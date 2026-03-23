@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
+  following `SymbolicOps` have been re-written.
+
+  - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199)
+
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
   `qml.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
@@ -83,7 +88,7 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
-* Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
+* Adds a new `qml.templates.core.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
   and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
@@ -94,11 +99,17 @@
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
+  [(#9138)](https://github.com/PennyLaneAI/pennylane/pull/9138)
   [(#9119)](https://github.com/PennyLaneAI/pennylane/pull/9119)
+  [(#9151)](https://github.com/PennyLaneAI/pennylane/pull/9151)
   [(#9172)](https://github.com/PennyLaneAI/pennylane/pull/9172)
+  [(#9180)](https://github.com/PennyLaneAI/pennylane/pull/9180)
+  [(#9177)](https://github.com/PennyLaneAI/pennylane/pull/9177)
+  [(#9191)](https://github.com/PennyLaneAI/pennylane/pull/9191)
+  [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
-  from pennylane.templates import Subroutine
+  from pennylane.templates.core import Subroutine
 
   @Subroutine
   def MyTemplate(x, y, wires):
@@ -118,6 +129,7 @@
 
 The following classes have been ported over:
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+- `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
@@ -145,6 +157,23 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* `Callables` defining quantum operations can now be passed to the 
+  `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
+  [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
+
+* The `default.qubit` device now supports parameter-broadcasted global phases.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
+  [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
+
+* `qml.math.givens_decomposition` and `qml.BasisRotation` are now compatible with `qjit` when
+  `capture` is disabled.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
+* ZX-related transforms are now compatible with `pyzx` v0.10.0.
+  [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
 * The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
@@ -220,8 +249,10 @@ The following classes have been ported over:
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states.
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
+  [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -409,6 +440,23 @@ The following classes have been ported over:
   Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
+* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+  for resource estimation.
+  [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+
+  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
+  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
+  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+    from a circuit.
+  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
+    from a :class:`~.estimator.Resources` object.
+
+* Created a new ``~.labs.estimator_beta.estimate()`` function which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
+  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 <h3>Breaking changes 💔</h3>
 
@@ -669,6 +717,20 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
+  program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
+
+* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+  [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
+  
+* Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
+
+* The output of the `qml.while_loop` condition is now automatically converted
+  to a bool.
+  [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
+
 * When using :func:`~.specs` with Catalyst and with multiple levels,
   with the ``split-non-commuting`` MLIR pass applied,
   the returned :class:`.resource.CircuitSpecs` object will include
@@ -719,8 +781,10 @@ The following classes have been ported over:
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
-* Add documentation tests for the `decomposition` module.
+* Add documentation tests for various modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
+  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -753,7 +817,16 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
+  operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
+  symbolic decomposition rules that do not need to take an instance of the base operator as input.
+  [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
+
 <h3>Documentation 📝</h3>
+
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+  was clarified in its documentation.
+  [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
@@ -765,6 +838,14 @@ The following classes have been ported over:
 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
+  the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
+  environment.
+  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
+
+* Fixed a bug where `qml.math.givens_decomposition` modified the input in place when using `qjit`.
+  [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug where the hashable parameters of a `CompressedResourceOp` in the graph-based
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
@@ -852,6 +933,14 @@ The following classes have been ported over:
 * Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
+* Fixed various small bugs within :mod:`pennylane.estimator`.
+  [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
+
+    - Fixed the resource decomposition of `~.estimator.QubitUnitary` to match the results from literature
+    - Fixed the resource decomposition of `~.estimator.OutMultiplier` to match the results from literature
+    - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
+    - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -859,6 +948,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
