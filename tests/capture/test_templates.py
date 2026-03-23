@@ -312,7 +312,6 @@ tested_modified_templates = [
     qml.TTN,
     qml.QROM,
     qml.PhaseAdder,
-    qml.Adder,
     qml.SemiAdder,
     qml.Multiplier,
     qml.OutMultiplier,
@@ -1590,6 +1589,7 @@ unsupported_templates = [
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
     qml.templates.core.SubroutineOp,
     qml.templates.core.Subroutine,
+    qml.Adder
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
