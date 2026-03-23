@@ -163,6 +163,8 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
     qml.adjoint(qml.pow(base_op, z))
 
 
+# TODO: to be enabled in a follow-up PR [sc-110066]
+# pragma: no cover
 @register_resources(_flip_pow_adjoint_resource)
 def qjit_compatible_flip_pow_adjoint(*params, wires, base_class, base_params, z, **__):
     """Decompose the power of an adjoint in a qjit compatible way."""

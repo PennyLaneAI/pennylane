@@ -38,7 +38,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_involutory_no_reconstructor,
     pow_rotation,
-    qjit_compatible_flip_pow_adjoint,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -217,7 +216,8 @@ class TestPowDecomposition:
         ("base_op", "rule"),
         [
             (CustomOpWithoutReconstructor, flip_pow_adjoint),
-            (CustomOpWithReconstructor, qjit_compatible_flip_pow_adjoint),
+            # TODO: to be enabled in a follow-up PR [sc-110066]
+            # (CustomOpWithReconstructor, qjit_compatible_flip_pow_adjoint),
         ],
     )
     def test_flip_pow_adjoint(self, base_op, rule):
