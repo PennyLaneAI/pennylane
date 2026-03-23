@@ -15,6 +15,7 @@
 
 import inspect
 from collections.abc import Callable, Sequence
+from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -967,6 +968,21 @@ dummy_qnode = qml.QNode(dummy_fn, qml.device("default.qubit"))
 
 
 class TestSetupInputs:
+    def test_setup_inputs_called_once_on_qnode(self, mocker):
+        """Tests that the setup_inputs function is called once when a transform is applied to a qnode."""
+
+        def setup_inputs():
+            return (), {}
+
+        @partial(qml.transform, setup_inputs=setup_inputs)
+        def dummy_transform(tape):
+            return (tape,), lambda x: x[0]
+
+        spy = mocker.spy(dummy_transform, "setup_inputs")
+
+        _ = dummy_transform(dummy_qnode)()
+
+        assert spy.call_count == 1
 
     def test_setup_inputs_type_error(self):
         """Test that errors from the types indicate the original transform."""
@@ -1062,7 +1078,6 @@ class TestSetupInputs:
 
 
 class TestPassName:
-
     def test_no_pass_name_or_tape_def(self):
         """Test that an error is raised if neither a tape def or pass name are provided."""
 

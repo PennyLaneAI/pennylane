@@ -31,6 +31,7 @@ from pennylane.drawer._add_obj import (
     _add_measurement,
     _add_mid_measure_grouping_symbols,
     _add_obj,
+    _add_subroutine_mcm_grouping_symbols,
 )
 from pennylane.drawer.tape_text import _Config
 from pennylane.tape import QuantumScript
@@ -120,6 +121,23 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         """Test private _add_grouping_symbols function renders as expected for MidMeasures."""
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=1)
         assert out == _add_mid_measure_grouping_symbols(op, layer_str, config)
+
+    def test_subroutine_mcm_grouping(self):
+        """Unit test the _subroutine_mcm_grouping_symbols helper."""
+
+        @qml.templates.core.Subroutine
+        def f(wires):
+            return [2] + [qml.measure(w) for w in wires]
+
+        op = f.operator((0, 1, 2))
+        config = _Config(
+            wire_map={0: 0, 1: 1, 2: 2, 3: 3},
+            bit_map={op.output[1].measurements[0]: 0, op.output[2].measurements[0]: 2},
+            num_op_layers=4,
+            cur_layer=0,
+        )
+        new_layer = _add_subroutine_mcm_grouping_symbols(op, ["" for _ in range(7)], config)
+        assert new_layer == ["", "", "", "║", "╠", "║", "╚"]
 
     @pytest.mark.parametrize(
         "cond_op, args, kwargs, out, bit_map, mv, cur_layer",
@@ -365,6 +383,24 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         )
 
         assert out == _add_obj(op, layer_str, config)
+
+    def test_add_subroutine_op_with_output(self):
+        """Test that classical wires are drawn for subroutines with mcm outputs."""
+
+        @qml.templates.core.Subroutine
+        def f(wires):
+            return [2] + [qml.measure(w) for w in wires]
+
+        op = f.operator((0, 1, 2))
+        config = _Config(
+            wire_map={0: 0, 1: 1, 2: 2, 3: 3},
+            bit_map={op.output[1].measurements[0]: 0, op.output[2].measurements[0]: 2},
+            num_op_layers=4,
+            cur_layer=0,
+        )
+        initial = ["-"] * 4 + [" "] * 3
+        out = _add_obj(op, initial, config)
+        assert out == ["╭f", "├f", "╰f", "-║", " ╠", " ║", " ╚"]
 
     @pytest.mark.parametrize(
         "op, out",
