@@ -633,6 +633,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
         mat = _HADAMARD_CACHE.get(state_dtype)
         if mat is None:
             mat = _HADAMARD_MAT.astype(state_dtype, copy=False)
+            _HADAMARD_CACHE[state_dtype] = mat
         return _apply_single_qubit_np(mat, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
@@ -935,7 +936,7 @@ def apply_parametrized_evolution(
         and not op.hyperparameters["complementary"]
         and not is_state_batched
     ):
-        return _call_parametrized_evolution_state_vector_evolver(
+        return _evolve_state_vector_under_parametrized_evolution(
             op, state, num_wires, is_state_batched
         )
     if (
@@ -949,19 +950,7 @@ def apply_parametrized_evolution(
         # --> evolve matrix
         return _apply_operation_default(op, state, is_state_batched, debugger)
     # otherwise --> evolve state
-    return _call_parametrized_evolution_state_vector_evolver(op, state, num_wires, is_state_batched)
-
-
-def _call_parametrized_evolution_state_vector_evolver(op, state, num_wires, is_state_batched):
-    """Call the state-vector evolver through the dispatcher attribute.
-
-    Accessing the helper via ``apply_operation`` keeps test spies working even
-    when ``import pennylane.devices.qubit.apply_operation as ...`` resolves to
-    the exported dispatcher instead of the submodule.
-    """
-    return getattr(apply_operation, "_evolve_state_vector_under_parametrized_evolution")(
-        op, state, num_wires, is_state_batched
-    )
+    return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires, is_state_batched)
 
 
 def _evolve_state_vector_under_parametrized_evolution(
@@ -996,8 +985,8 @@ def _evolve_state_vector_under_parametrized_evolution(
 
     if operation.data is None or operation.t is None:
         raise ValueError(
-            "The parameters and the time window are required to execute a ParametrizedEvolution "
-            "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
+            "The parameters and the time window are required to compute the matrix. "
+            "You can update its values by calling the class: EV(params, t)."
         )
 
     if is_state_batched:
@@ -1026,10 +1015,3 @@ def _evolve_state_vector_under_parametrized_evolution(
     if is_state_batched:
         return math.moveaxis(result, -1, 0)
     return result
-
-
-setattr(
-    apply_operation,
-    "_evolve_state_vector_under_parametrized_evolution",
-    _evolve_state_vector_under_parametrized_evolution,
-)
