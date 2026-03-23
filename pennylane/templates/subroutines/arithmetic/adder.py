@@ -19,6 +19,7 @@ from typing import Tuple
 
 from pennylane import capture, math
 from pennylane.decomposition.resources import resource_rep
+from pennylane.math import is_abstract
 from pennylane.ops import Prod, adjoint, cond
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.core import (
@@ -56,7 +57,7 @@ def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLik
 
 @partial(
     Subroutine,
-    static_argnames=["mod"],
+    static_argnames=["mod", "k"],
     compute_resources=adder_decomp_resources,
     wire_argnames=["x_wires", "work_wires"],
 )
@@ -138,8 +139,8 @@ def Adder(
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
-    x_wires = Wires(x_wires)
-    work_wires = Wires(() if work_wires is None else work_wires)
+    if capture.enabled():
+        x_wires, work_wires = math.array(x_wires, like="jax"), math.array(work_wires, like="jax")
 
     num_works_wires = len(work_wires)
 
@@ -149,7 +150,7 @@ def Adder(
         raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
     if not isinstance(k, int) or not isinstance(mod, int):
         raise ValueError("Both k and mod must be integers")
-    if num_works_wires != 0:
+    if num_works_wires != 0 and not is_abstract(x_wires) and not is_abstract(work_wires):
         if any(wire in work_wires for wire in x_wires):
             raise ValueError("None of the wires in work_wires should be included in x_wires.")
     if mod > 2 ** len(x_wires):
@@ -157,9 +158,6 @@ def Adder(
             "Adder must have enough x_wires to represent mod. The maximum mod "
             f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
         )
-
-    if capture.enabled():
-        x_wires, work_wires = math.array(x_wires, like="jax"), math.array(work_wires, like="jax")
 
     def true_body(k, x_wires, mod, work_wires):
         change_op_basis(
@@ -170,7 +168,7 @@ def Adder(
 
     def false_body(k, x_wires, mod, work_wires):
         qft_wires = (
-            jnp.concatenate(work_wires[:1], x_wires)
+            jnp.concatenate((work_wires[:1], x_wires), axis=0)
             if capture.enabled()
             else work_wires[:1] + x_wires
         )
