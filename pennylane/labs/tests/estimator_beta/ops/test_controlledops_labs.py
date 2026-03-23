@@ -50,4 +50,4 @@ class TestCH:
             GateCount(resource_rep(qre.CZ), 1),
             qre.Deallocate(1),
         ]
-        assert self.op.toffoli_based_resource_decomp() == expected_resources
+        assert qre.ch_toffoli_based_resource_decomp() == expected_resources

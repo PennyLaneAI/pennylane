@@ -71,7 +71,7 @@ def ch_resource_decomp(cls) -> list[GateCount]:
     ]
 
 
-def ch_toffoli_based_resource_decomp(cls) -> list[GateCount]:
+def ch_toffoli_based_resource_decomp() -> list[GateCount]:
     r"""Returns a list representing the resources of controlled version of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
 
     .. note::
