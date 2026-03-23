@@ -61,7 +61,7 @@ State Preparation
 
 """
 from pennylane.estimator import *
-from .templates import ResourceMottonenStatePreparation, ResourceCosineWindow, ResourceSumOfSlatersPrep
+
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
 from .estimate import estimate
@@ -74,7 +74,7 @@ from .wires_manager import (
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
-
+from .templates import ResourceMottonenStatePreparation, ResourceCosineWindow, ResourceSumOfSlatersPrep
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
