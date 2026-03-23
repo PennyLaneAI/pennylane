@@ -34,6 +34,15 @@ from pennylane.wires import WiresLike
 from .phase_adder import PhaseAdder
 
 
+has_jax = True
+try:
+    import jax  # pylint: disable=unused-import
+    from jax import numpy as jnp
+
+except ImportError:
+    has_jax = False
+
+
 # pylint: disable=unused-argument
 def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
     """Computes the resources for an Adder Subroutine."""
