@@ -35,7 +35,7 @@ class TestCH:
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
             GateCount(qre.CNOT.resource_rep(), 1),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert qre.ch_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_toffoli_based_resources(self):
         """Test that the resources method produces the expected resources when using a Toffoli-based decomposition."""
@@ -50,4 +50,5 @@ class TestCH:
             GateCount(resource_rep(qre.CZ), 1),
             qre.Deallocate(1),
         ]
-        assert qre.ch_toffoli_based_resource_decomp() == expected_resources
+        print(qre.ch_toffoli_based_resource_decomp(**self.op.resource_params), expected_resources)
+        assert qre.ch_toffoli_based_resource_decomp(**self.op.resource_params) == expected_resources

@@ -19,7 +19,7 @@ from pennylane.estimator import GateCount, resource_rep
 # pylint: disable = unused-argument
 
 
-def ch_resource_decomp(cls) -> list[GateCount]:
+def ch_resource_decomp() -> list[GateCount]:
     r"""Returns a list of ``GateCount`` objects representing the resources of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
 
     Resources:
