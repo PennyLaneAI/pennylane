@@ -27,7 +27,7 @@ from pennylane.wires import WiresLike
 # pylint: disable=arguments-differ, too-many-arguments
 
 
-class MottonenStatePreparation(ResourceOperator):
+class ResourceMottonenStatePreparation(ResourceOperator):
     r"""Resource class for Mottonen state preparation.
 
     Args:
@@ -118,7 +118,7 @@ class MottonenStatePreparation(ResourceOperator):
         return gate_lst
 
 
-class CosineWindow(ResourceOperator):
+class ResourceCosineWindow(ResourceOperator):
     r"""Resource class for preparing an initial state with a cosine wave function.
 
     The wave function is defined below where :math:`m` is the number of wires.
@@ -219,7 +219,7 @@ class CosineWindow(ResourceOperator):
         ]
 
 
-class SumOfSlatersPrep(ResourceOperator):
+class ResourceSumOfSlatersPrep(ResourceOperator):
     r"""Resource class for preparing an initial state with the sum-of-Slaters technique.
 
     The operation prepares an arbitrary state
@@ -365,7 +365,7 @@ class SumOfSlatersPrep(ResourceOperator):
         condensed_state_qubits = int(np.ceil(np.log2(num_coeffs)))
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
-                MottonenStatePreparation, {"num_wires": condensed_state_qubits}
+                ResourceMottonenStatePreparation, {"num_wires": condensed_state_qubits}
             )
 
         gate_list.append(GateCount(stateprep_cmpr_op, 1))

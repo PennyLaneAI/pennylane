@@ -39,7 +39,7 @@ class TestMottonenStatePreparation:
 
         expected = [GateCount(rz, r_count), GateCount(cnot, cnot_count)]
 
-        assert qre.MottonenStatePreparation.resource_decomp(num_wires) == expected
+        assert qre.ResourceMottonenStatePreparation.resource_decomp(num_wires) == expected
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -47,7 +47,7 @@ class TestMottonenStatePreparation:
     )
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct"""
-        op = qre.MottonenStatePreparation(num_wires)
+        op = qre.ResourceMottonenStatePreparation(num_wires)
 
         assert op.resource_params == {"num_wires": num_wires}
 
@@ -59,15 +59,15 @@ class TestMottonenStatePreparation:
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = qre.CompressedResourceOp(
-            qre.MottonenStatePreparation,
+            qre.ResourceMottonenStatePreparation,
             num_wires,
             {"num_wires": num_wires},
         )
-        assert expected == qre.MottonenStatePreparation.resource_rep(num_wires)
+        assert expected == qre.ResourceMottonenStatePreparation.resource_rep(num_wires)
 
 
 class TestCosineWindow:
-    """Test the CosineWindow class"""
+    """Test the ResourceCosineWindow class"""
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -90,7 +90,7 @@ class TestCosineWindow:
             GateCount(phase_shift, num_wires),
         ]
 
-        assert qre.CosineWindow.resource_decomp(num_wires) == expected
+        assert qre.ResourceCosineWindow.resource_decomp(num_wires) == expected
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -98,7 +98,7 @@ class TestCosineWindow:
     )
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct"""
-        op = qre.CosineWindow(num_wires)
+        op = qre.ResourceCosineWindow(num_wires)
 
         assert op.resource_params == {"num_wires": num_wires}
 
@@ -110,15 +110,15 @@ class TestCosineWindow:
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = qre.CompressedResourceOp(
-            qre.CosineWindow,
+            qre.ResourceCosineWindow,
             num_wires,
             {"num_wires": num_wires},
         )
-        assert expected == qre.CosineWindow.resource_rep(num_wires)
+        assert expected == qre.ResourceCosineWindow.resource_rep(num_wires)
 
 
 class TestSumOfSlatersPrep:
-    """Test the SumOfSlatersPrep class"""
+    """Test the ResourceSumOfSlatersPrep class"""
 
     @pytest.mark.parametrize(
         "num_coeffs, num_wires, stateprep_op, select_swap_depth, expected_resources",
@@ -129,7 +129,9 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
+                    GateCount(
+                        resource_rep(qre.ResourceMottonenStatePreparation, {"num_wires": 6}), 1
+                    ),
                     GateCount(
                         resource_rep(
                             qre.QROM,
@@ -158,7 +160,9 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
+                    GateCount(
+                        resource_rep(qre.ResourceMottonenStatePreparation, {"num_wires": 6}), 1
+                    ),
                     GateCount(
                         resource_rep(
                             qre.QROM,
@@ -217,13 +221,8 @@ class TestSumOfSlatersPrep:
     ):
         """Test that the resources are correct"""
 
-        print(
-            qre.SumOfSlatersPrep.resource_decomp(
-                num_coeffs, num_wires, stateprep_op, select_swap_depth
-            )
-        )
         assert (
-            qre.SumOfSlatersPrep.resource_decomp(
+            qre.ResourceSumOfSlatersPrep.resource_decomp(
                 num_coeffs, num_wires, stateprep_op, select_swap_depth
             )
             == expected_resources
@@ -231,7 +230,7 @@ class TestSumOfSlatersPrep:
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
-        op = qre.SumOfSlatersPrep(num_coeffs=100, num_wires=10)
+        op = qre.ResourceSumOfSlatersPrep(num_coeffs=100, num_wires=10)
 
         assert op.resource_params == {
             "num_wires": 10,
@@ -244,7 +243,7 @@ class TestSumOfSlatersPrep:
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = qre.CompressedResourceOp(
-            qre.SumOfSlatersPrep,
+            qre.ResourceSumOfSlatersPrep,
             10,
             {
                 "num_wires": 10,
@@ -253,4 +252,4 @@ class TestSumOfSlatersPrep:
                 "select_swap_depth": None,
             },
         )
-        assert expected == qre.SumOfSlatersPrep.resource_rep(num_coeffs=100, num_wires=10)
+        assert expected == qre.ResourceSumOfSlatersPrep.resource_rep(num_coeffs=100, num_wires=10)

@@ -61,7 +61,7 @@ State Preparation
 
 """
 from pennylane.estimator import *
-from .templates import MottonenStatePreparation, CosineWindow, SumOfSlatersPrep
+from .templates import ResourceMottonenStatePreparation, ResourceCosineWindow, ResourceSumOfSlatersPrep
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
 from .estimate import estimate
