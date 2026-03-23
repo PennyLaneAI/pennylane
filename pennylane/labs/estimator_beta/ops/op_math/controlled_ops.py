@@ -19,8 +19,8 @@ from pennylane.estimator import GateCount, resource_rep
 # pylint: disable = unused-argument
 
 
-def ch_resource_decomp() -> list[GateCount]:
-    r"""Returns a list of ``GateCount`` objects representing the resources of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
+def ch_resource_decomp() -> list[GateCount | qre.Allocate | qre.Deallocate]:
+    r"""Returns a list of :class:`~.pennylane.estimator.resource_operator.GateCount` objects representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.
 
     Resources:
         The resources are derived from the following identities:
@@ -47,8 +47,6 @@ def ch_resource_decomp() -> list[GateCount]:
         The final resources are: 2 ``Hadamard``, 1 ``T``, 1 ``Adjoint(T)``,
         1 ``S``, 1 ``Adjoint(S)``, and 1 ``CNOT``.
 
-
-
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
         where each object represents a specific quantum gate and the number of times it appears
@@ -72,7 +70,7 @@ def ch_resource_decomp() -> list[GateCount]:
 
 
 def ch_toffoli_based_resource_decomp() -> list[GateCount]:
-    r"""Returns a list representing the resources of controlled version of the :class:`~pennylane.estimator.ops.op_math.CH` operator.
+    r"""Returns a list representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.
 
     .. note::
 

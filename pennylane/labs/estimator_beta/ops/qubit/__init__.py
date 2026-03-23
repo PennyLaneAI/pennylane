@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""This module contains single qubit operations."""
+r"""This module contains alternate decompositions for single qubit operations."""
 
 from .non_parametric_ops import (
     hadamard_controlled_resource_decomp,
