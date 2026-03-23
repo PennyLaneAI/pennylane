@@ -38,6 +38,10 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_involutory_no_reconstructor,
     pow_rotation,
+    qjit_compatible_adjoint_rotation,
+    qjit_compatible_cancel_adjoint,
+    qjit_compatible_flip_pow_adjoint,
+    qjit_compatible_self_adjoint,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -76,49 +80,73 @@ def _reconstruct_custom_op(*_, wires, **__):
 class TestAdjointDecompositionRules:
     """Tests the decomposition rules defined for the adjoint of operations."""
 
-    def test_cancel_adjoint(self):
+    @pytest.mark.parametrize(
+        ("op_type", "rule"),
+        [
+            (CustomOpWithoutReconstructor, cancel_adjoint),
+            (CustomOpWithReconstructor, qjit_compatible_cancel_adjoint),
+        ],
+    )
+    def test_cancel_adjoint(self, op_type, rule):
         """Tests that the adjoint of an adjoint cancels out."""
 
-        op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
+        op = qml.adjoint(qml.adjoint(op_type(0.5, wires=0)))
 
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [qml.RX(0.5, wires=0)]
-        assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources({qml.RX: 1})
+        assert q.queue == [op_type(0.5, wires=0)]
+        assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources(
+            {resource_rep(op_type, key=0): 1}
+        )
 
     @pytest.mark.capture
-    def test_cancel_adjoint_capture(self):
+    @pytest.mark.parametrize(
+        ("op_type", "rule"),
+        [
+            (CustomOpWithoutReconstructor, cancel_adjoint),
+            (CustomOpWithReconstructor, qjit_compatible_cancel_adjoint),
+        ],
+    )
+    def test_cancel_adjoint_capture(self, op_type, rule):
         """Tests that the adjoint of an adjoint works with capture."""
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-        op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
+        op = qml.adjoint(qml.adjoint(op_type(0.5, wires=0)))
+
+        kwargs = get_decomp_kwargs(op)
 
         def circuit():
-            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **kwargs)
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
-        assert collector.state["ops"] == [qml.RX(0.5, wires=0)]
+        assert collector.state["ops"] == [op_type(0.5, wires=0)]
 
-    def test_adjoint_general(self):
+    @pytest.mark.parametrize(
+        "op_type, use_reconstructor",
+        [(CustomOpWithReconstructor, True), (CustomOpWithoutReconstructor, False)],
+    )
+    def test_adjoint_general(self, op_type, use_reconstructor):
         """Tests the adjoint of a general operator can be correctly decomposed."""
 
         @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
-        def _custom_decomp(phi, wires):
+        def _custom_decomp(phi, wires, **_):
             qml.H(wires[0])
             qml.CNOT(wires=wires[:2])
             qml.RX(phi, wires=wires[1])
             qml.CNOT(wires=wires[1:3])
             qml.T(wires[2])
 
-        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
-        rule = make_adjoint_decomp(_custom_decomp)
+        op = qml.adjoint(op_type(0.5, wires=[0, 1, 2]))
+        rule = make_adjoint_decomp(_custom_decomp, use_reconstructor)
 
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [
             qml.adjoint(qml.T(2)),
@@ -137,28 +165,44 @@ class TestAdjointDecompositionRules:
             }
         )
 
-    def test_adjoint_rotation(self):
+    @pytest.mark.parametrize(
+        ("op_type", "rule"),
+        [
+            (CustomOpWithoutReconstructor, adjoint_rotation),
+            (CustomOpWithReconstructor, qjit_compatible_adjoint_rotation),
+        ],
+    )
+    def test_adjoint_rotation(self, op_type, rule):
         """Tests the adjoint_rotation decomposition."""
 
-        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
+        op = qml.adjoint(op_type(0.5, wires=[0, 1, 2]))
+        kwargs = get_decomp_kwargs(op)
         with queuing.AnnotatedQueue() as q:
-            adjoint_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [CustomOpWithoutReconstructor(-0.5, wires=[0, 1, 2])]
-        assert adjoint_rotation.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOpWithoutReconstructor, key=0): 1}
+        assert q.queue == [op_type(-0.5, wires=[0, 1, 2])]
+        assert rule.compute_resources(**op.resource_params) == Resources(
+            {resource_rep(op_type, key=0): 1}
         )
 
-    def test_self_adjoint(self):
+    @pytest.mark.parametrize(
+        ("op_type", "rule"),
+        [
+            (CustomOpWithoutReconstructor, self_adjoint),
+            (CustomOpWithReconstructor, qjit_compatible_self_adjoint),
+        ],
+    )
+    def test_self_adjoint(self, op_type, rule):
         """Tests the self_adjoint decomposition."""
 
-        op = qml.adjoint(CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2]))
+        op = qml.adjoint(op_type(0.5, wires=[0, 1, 2]))
+        kwargs = get_decomp_kwargs(op)
         with queuing.AnnotatedQueue() as q:
-            self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [CustomOpWithoutReconstructor(0.5, wires=[0, 1, 2])]
-        assert self_adjoint.compute_resources(**op.resource_params) == Resources(
-            {resource_rep(CustomOpWithoutReconstructor, key=0): 1}
+        assert q.queue == [op_type(0.5, wires=[0, 1, 2])]
+        assert rule.compute_resources(**op.resource_params) == Resources(
+            {resource_rep(op_type, key=0): 1}
         )
 
 
@@ -216,8 +260,7 @@ class TestPowDecomposition:
         ("base_op", "rule"),
         [
             (CustomOpWithoutReconstructor, flip_pow_adjoint),
-            # TODO: to be enabled in a follow-up PR [sc-110066]
-            # (CustomOpWithReconstructor, qjit_compatible_flip_pow_adjoint),
+            (CustomOpWithReconstructor, qjit_compatible_flip_pow_adjoint),
         ],
     )
     def test_flip_pow_adjoint(self, base_op, rule):

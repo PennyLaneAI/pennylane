@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
-import copy
+
 import warnings
 from unittest.mock import patch
 
@@ -908,11 +908,8 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 0)
         op2 = qml.pow(CustomOp(1), 1)
 
-        rule1_params = copy.copy(op1.hyperparameters)
-        rule1_params.update(op1.resource_params)
-
-        rule2_params = copy.copy(op2.hyperparameters)
-        rule2_params.update(op2.resource_params)
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
 
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
@@ -941,11 +938,8 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 2)
         op2 = qml.pow(qml.adjoint(CustomOp(1)), 2)
 
-        rule1_params = copy.copy(op1.hyperparameters)
-        rule1_params.update(op1.resource_params)
-
-        rule2_params = copy.copy(op2.hyperparameters)
-        rule2_params.update(op2.resource_params)
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
 
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
