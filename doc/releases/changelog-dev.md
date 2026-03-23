@@ -827,6 +827,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Improve documentation for the :func:`~.shadow_expval` measurement.
+  [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
+
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
