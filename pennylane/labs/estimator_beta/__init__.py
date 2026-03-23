@@ -47,6 +47,19 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+Alternate Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~selectPauliRot_controlled_resource_decomp
+    ~pauliRot_controlled_resource_decomp
+
+
+
 """
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
@@ -62,6 +75,8 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
+from .ops.qubit.parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp
+from .templates.subroutines import selectPauliRot_controlled_resource_decomp
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):

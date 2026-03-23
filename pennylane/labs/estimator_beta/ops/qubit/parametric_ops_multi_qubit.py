@@ -33,9 +33,7 @@ PAULI_ROT_SPECIAL_CASES = {
 }
 
 
-@classmethod
 def pauliRot_controlled_resource_decomp(
-    cls,
     num_ctrl_wires: int,
     num_zero_ctrl: int,
     target_resource_params: dict,

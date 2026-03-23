@@ -139,13 +139,15 @@ class TestPauliRot:
         """Test that the controlled resources are as expected"""
 
         op = qre.PauliRot(pauli_word, precision=1e-5)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
+            qre.pauliRot_controlled_resource_decomp(
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
+                target_resource_params=op.resource_params,
+            )
             == expected_res
         )
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     @pytest.mark.parametrize(
         "pauli_string, precision, expected",
@@ -248,11 +250,12 @@ class TestPauliRot:
     )
     def test_controlled_resource_decomp_special_cases(self, pauli_string, expected, precision):
         """Test that the controlled resources method produces the correct result for all special cases."""
+        op = qre.PauliRot(pauli_string, precision=precision)
         assert (
-            qre.PauliRot.controlled_resource_decomp(
-                target_resource_params={"pauli_string": pauli_string, "precision": precision},
+            qre.pauliRot_controlled_resource_decomp(
                 num_ctrl_wires=1,
                 num_zero_ctrl=0,
+                target_resource_params=op.resource_params,
             )
             == expected
         )

@@ -102,7 +102,7 @@ class TestResourceSelectPauliRot:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[qml.estimator.SelectPauliRot]
             assert (
-                qre.SelectPauliRot.controlled_resource_decomp(
+                qre.selectPauliRot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     num_zero_ctrl=num_zero_ctrl,
                     target_resource_params={
@@ -115,7 +115,7 @@ class TestResourceSelectPauliRot:
             )
         else:
             assert (
-                qre.SelectPauliRot.controlled_resource_decomp(
+                qre.selectPauliRot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     num_zero_ctrl=num_zero_ctrl,
                     target_resource_params={

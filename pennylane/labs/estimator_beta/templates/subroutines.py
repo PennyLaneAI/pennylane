@@ -21,7 +21,7 @@ from pennylane.estimator import GateCount, resource_rep
 
 
 def selectPauliRot_controlled_resource_decomp(
-    cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
+    num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
 ):
     r"""Returns a list representing the resources of the controlled version of the :class:`~pennylane.estimator.templates.SelectPauliRot` operator.
     Each object in the list
