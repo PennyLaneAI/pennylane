@@ -47,6 +47,18 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+State Preparation
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~MottonenStatePreparation
+    ~CosineWindow
+    ~SumOfSlatersPrep
+
 """
 from pennylane.estimator import *
 from .templates import MottonenStatePreparation, CosineWindow, SumOfSlatersPrep
