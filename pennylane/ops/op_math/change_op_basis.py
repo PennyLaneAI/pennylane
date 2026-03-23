@@ -16,8 +16,9 @@ This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter, defaultdict
 from functools import reduce
+from typing import Callable
 
-from pennylane import math, pytrees, queuing
+from pennylane import capture, math, pytrees, queuing
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -32,23 +33,64 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl
+from pennylane.ops.op_math import adjoint, ctrl, prod
 
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+def _apply_op_or_func(op_or_func):
+    if isinstance(op_or_func, Callable):
+        try:
+            op_or_func()
+        except TypeError as e:
+            raise TypeError(
+                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
+            ) from e
+    elif isinstance(op_or_func, Operator):
+        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
+    elif math.is_abstract(op_or_func):
+        pass
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
+
+
+def _convert_to_prod(op_or_func):
+    if isinstance(op_or_func, Callable):
+        try:
+            return prod(op_or_func)()
+        except TypeError as e:
+            raise TypeError(
+                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
+            ) from e
+    if isinstance(op_or_func, Operator):
+        return op_or_func
+    raise TypeError(
+        f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+    )
+
+
+# pylint: disable=inconsistent-return-statements
+def change_op_basis(
+    compute_op: Operator | Callable,
+    target_op: Operator | Callable,
+    uncompute_op: Operator | Callable | None = None,
+):
     """Construct an operator that represents the product of the
     operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator`): An optional single operator or a product that applies quantum
+        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
+
+    Raises:
+        TypeError: if any arguments are not ``Callables`` or :class:`~.Operator` s, or a ``Callable`` argument has input parameters.
 
     **Example**
 
@@ -83,10 +125,51 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
 
+    A ``Callable`` can also be provided as an argument to ``ChangeOpBasis``. This can be a function that applies a series
+    of ``Operation`` s. Since ``ChangeOpBasis`` requires this ``Callable`` to have no input arguments, ``functools.partial``
+    can be used to absorb any necessary parameters.
+
+    .. code-block:: python
+
+        def my_compute_op(a, reg1, reg2):
+            qml.BasisState(np.zeros(len(reg2)), reg2)
+            qml.QFT(reg1)
+            qml.RX(a, reg1[0])
+
+        def my_target_op(wires):
+            qml.PauliX(wires[0])
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def circuit():
+            # Use partial to absorb any input parameters
+            compute = partial(my_compute_op, 0.1, [0], [1])
+            target = partial(my_target_op, [0])
+            qml.change_op_basis(compute, target)
+            return qml.state()
+
+        circuit3 = qml.decompose(circuit, max_expansion=1)
+
+    >>> print(qml.draw(circuit3)())
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
 
-    return ChangeOpBasis(compute_op, target_op, uncompute_op)
+    if capture.enabled():
+        _apply_op_or_func(compute_op)
+        _apply_op_or_func(target_op)
+        if uncompute_op is not None:
+            _apply_op_or_func(uncompute_op)
+        else:
+            _apply_op_or_func(adjoint(compute_op))
+    else:
+        return ChangeOpBasis(
+            _convert_to_prod(compute_op),
+            _convert_to_prod(target_op),
+            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
+        )
 
 
 class ChangeOpBasis(CompositeOp):
@@ -287,7 +370,7 @@ def _controlled_change_op_basis_decomposition(
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
         pytrees.unflatten(*pytrees.flatten(op))
 
