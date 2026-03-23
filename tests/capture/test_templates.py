@@ -1151,7 +1151,7 @@ class TestModifiedTemplates:
         kwargs = {
             "k": 3,
             "x_wires": [0, 1],
-            "mod": 1,
+            "mod": 4,
             "work_wires": [2, 3],
         }
 
