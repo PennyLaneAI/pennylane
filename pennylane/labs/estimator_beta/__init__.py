@@ -21,6 +21,17 @@ resource estimation.
     with no guarantees of stability or backwards compatibility.
 
 
+Resource Estimation
+~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate
+    ~LabsResourceConfig
+
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -37,6 +48,10 @@ Qubit Tracking Functionality
     ~MarkQubits
 
 """
+from pennylane.estimator import *
+from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+
+from .estimate import estimate
 from .wires_manager import (
     Allocate,
     Deallocate,
@@ -45,3 +60,22 @@ from .wires_manager import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
+from .resource_config import LabsResourceConfig
+
+
+@apply_controlled.register
+def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
+    return action
+
+
+@apply_adj.register
+def _(action: Allocate):
+    return Deallocate(allocated_register=action)
+
+
+@apply_adj.register
+def _(action: Deallocate):
+    if action.allocated_register is not None:
+        return action.allocated_register
+
+    return Allocate(action.num_wires, state=action.state, restored=action.restored)

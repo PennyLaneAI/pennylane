@@ -98,7 +98,7 @@ class TestDefaultBitMap:
     def test_subroutine(self):
         """Test that default_bit_map can handle subroutines that return measurement values."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             return [qml.measure(w) for w in wires]
 
@@ -446,7 +446,7 @@ class TestCwireConnections:
     def test_subroutine_with_output(self):
         """Test that cwire_connections can handle a subroutine with MCM outputs."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             return [2] + [qml.measure(w) for w in wires]
 
