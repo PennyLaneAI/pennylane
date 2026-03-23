@@ -96,6 +96,7 @@ def change_op_basis(
 
     Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
     a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
+   a ``SWAP``, followed by a ``PhaseAdder``, and finally an inverse ``SWAP``.
 
     .. code-block:: python
 
