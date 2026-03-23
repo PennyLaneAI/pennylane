@@ -274,8 +274,19 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
-                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2, wires=[2, 0, 1]),
+                qtemps.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                re_temps.QPE(base=re_ops.Z(2), num_estimation_wires=2, wires=[0, 1]),
+            ),
+            (
+                qtemps.QuantumPhaseEstimation(
+                    qops.MultiControlledX(wires=[0, 1, 2, 3], work_wires=["w0", "w1"]),
+                    estimation_wires=[4, 5],
+                ),
+                re_temps.QPE(
+                    base=re_ops.MultiControlledX(3, 0, wires=[0, 1, 2, 3]),
+                    num_estimation_wires=2,
+                    wires=[4, 5],
+                ),
             ),
             (
                 qml.TrotterProduct(
@@ -512,6 +523,17 @@ class TestMapToResourceOp:
             re_ops.CNOT(wires=[0, 1])
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        (
+            (qops.Barrier(wires=[1, 2, 3]), re_ops.Identity()),
+            (qops.Snapshot(measurement=qml.state()), re_ops.Identity()),
+        ),
+    )
+    def test_map_to_identity(self, operator, expected_res_op):
+        """Test that these special operators map to the identity"""
+        assert _map_to_resource_op(operator) == expected_res_op
 
 
 @pytest.mark.parametrize(
