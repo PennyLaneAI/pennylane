@@ -55,9 +55,9 @@ State Preparation
 .. autosummary::
     :toctree: api
 
-    ~MottonenStatePreparation
-    ~CosineWindow
-    ~SumOfSlatersPrep
+    ~ResourceMottonenStatePreparation
+    ~ResourceCosineWindow
+    ~ResourceSumOfSlatersPrep
 
 """
 from pennylane.estimator import *
