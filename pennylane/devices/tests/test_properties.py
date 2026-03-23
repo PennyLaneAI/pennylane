@@ -161,7 +161,7 @@ class TestCapabilities:
         # without raising an error
 
         if interface == "tf":
-            pytest.skip("Cannot import tensorflow.")
+            pytest.skip("Tensorflow testing has been removed.")
 
         if interface == "autograd":
             x = pnp.array(0.1, requires_grad=True)
