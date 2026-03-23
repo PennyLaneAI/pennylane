@@ -688,7 +688,7 @@ class TestApplyParametrizedEvolution:
 
         H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy_evolve = mocker.spy(
-            apply_operation, "_evolve_state_vector_under_parametrized_evolution"
+            apply_operation_module, "_evolve_state_vector_under_parametrized_evolution"
         )
 
         phi = jnp.linspace(0.3, 0.7, 7)
@@ -1822,9 +1822,7 @@ class TestNumpyFastPathCorrectness:
 
     def test_hadamard_numpy_state_without_cached_matrix(self, monkeypatch):
         """Test Hadamard falls back to casting the shared matrix on a cache miss."""
-        cache = dict(getattr(apply_operation_module, "_HADAMARD_CACHE"))
-        cache.pop(np.dtype(np.complex128), None)
-        monkeypatch.setattr(apply_operation_module, "_HADAMARD_CACHE", cache)
+        monkeypatch.setattr(apply_operation_module, "_HADAMARD_CACHE", {})
 
         state = np.array([1.0 + 0j, 0.0], dtype=np.complex128)
         op = qml.Hadamard(wires=0)
