@@ -15,12 +15,11 @@
 Contains the Adder template.
 """
 from functools import partial
-from typing import Tuple
 
 from pennylane import capture, math
 from pennylane.decomposition.resources import resource_rep
 from pennylane.math import is_abstract
-from pennylane.ops import Prod, adjoint, cond
+from pennylane.ops import adjoint, cond
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.core import (
     AbstractArray,
@@ -30,20 +29,14 @@ from pennylane.templates.core import (
     subroutine_resource_rep,
 )
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
 
 from .phase_adder import PhaseAdder
 
-has_jax = True
-try:
-    import jax
-    from jax import numpy as jnp
 
-except ImportError:
-    has_jax = False
-
-
+# pylint: disable=unused-argument
 def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
+    """Computes the resources for an Adder Subroutine."""
     num_x_wires = len(x_wires)
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
