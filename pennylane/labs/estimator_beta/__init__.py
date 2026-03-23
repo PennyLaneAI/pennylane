@@ -75,7 +75,13 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .ops import ch_resource_decomp, ch_toffoli_based_resource_decomp, hadamard_controlled_resource_decomp, hadamard_toffoli_based_controlled_decomp
+from .ops import (
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
+
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):

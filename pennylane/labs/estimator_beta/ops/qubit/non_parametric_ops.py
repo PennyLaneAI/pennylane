@@ -21,7 +21,6 @@ from pennylane.estimator.resource_operator import GateCount, resource_rep
 
 
 def hadamard_controlled_resource_decomp(
-    cls,
     num_ctrl_wires: int,
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,
@@ -103,7 +102,6 @@ def hadamard_controlled_resource_decomp(
 
 
 def hadamard_toffoli_based_controlled_decomp(
-    cls,
     num_ctrl_wires: int,
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,

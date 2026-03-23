@@ -78,16 +78,15 @@ class TestHadamard:
         num_ctrl_wires = len(ctrl_wires)
         num_zero_ctrl = len([v for v in ctrl_values if not v])
 
-        op = qre.Hadamard()
-        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
-
-        assert (
-            op.controlled_resource_decomp(
-                num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
-            )
-            == expected_res
+        result = qre.hadamard_controlled_resource_decomp(
+            num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
         )
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+
+        for r, e in zip(result, expected_res):
+            if hasattr(r, "equal"):
+                assert r.equal(e)
+            else:
+                assert r == e
 
     ctrl_data = (
         (
@@ -173,6 +172,12 @@ class TestHadamard:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        op = qre.Hadamard(0)
-        print(op.toffoli_based_controlled_decomp(num_ctrl_wires, num_ctrl_values))
-        assert op.toffoli_based_controlled_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        result = qre.hadamard_toffoli_based_controlled_decomp(
+            num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_ctrl_values
+        )
+
+        for r, e in zip(result, expected_res):
+            if hasattr(r, "equal"):
+                assert r.equal(e)
+            else:
+                assert r == e

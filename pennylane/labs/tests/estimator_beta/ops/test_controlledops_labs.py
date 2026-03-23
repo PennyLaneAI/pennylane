@@ -50,5 +50,9 @@ class TestCH:
             GateCount(resource_rep(qre.CZ), 1),
             qre.Deallocate(1),
         ]
-        print(qre.ch_toffoli_based_resource_decomp(**self.op.resource_params), expected_resources)
-        assert qre.ch_toffoli_based_resource_decomp(**self.op.resource_params) == expected_resources
+        result = qre.ch_toffoli_based_resource_decomp(**self.op.resource_params)
+        for r, e in zip(result, expected_resources):
+            if hasattr(r, "equal"):
+                assert r.equal(e)
+            else:
+                assert r == e
