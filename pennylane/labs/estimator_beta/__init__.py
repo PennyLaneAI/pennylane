@@ -74,7 +74,12 @@ from .wires_manager import (
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
-from .templates import ResourceMottonenStatePreparation, ResourceCosineWindow, ResourceSumOfSlatersPrep
+from .templates import (
+    ResourceMottonenStatePreparation,
+    ResourceCosineWindow,
+    ResourceSumOfSlatersPrep,
+)
+
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
