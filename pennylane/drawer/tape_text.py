@@ -251,7 +251,7 @@ def tape_text(
     .. code-block:: python
 
         ops = [
-            qml.QFT(wires=(0, 1, 2)),
+            qml.QFT.operator(wires=(0, 1, 2)),
             qml.RX(1.234, wires=0),
             qml.RY(1.234, wires=1),
             qml.RZ(1.234, wires=2),

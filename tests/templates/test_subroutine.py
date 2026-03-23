@@ -23,12 +23,15 @@ import pytest
 import pennylane as qml
 from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
-from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
+    AbstractArray,
     CollectedSubroutine,
+    Subroutine,
+    SubroutineOp,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
+    subroutine_resource_rep,
 )
 
 
@@ -115,7 +118,6 @@ class TestInitialization:
 
         def compute_resources(x, wires, metadata):
             assert metadata == 2  # test filled in with default values.
-            assert isinstance(wires, qml.wires.Wires)
             return {qml.RX: len(wires)}
 
         @partial(Subroutine, compute_resources=compute_resources)
@@ -232,14 +234,14 @@ def test_fallback_creating_resources_AbstractArray():
 def test_fallback_resources_error():
     """Test that if an error occurs when using the resources fallback, we get a more informative error."""
 
-    @qml.templates.Subroutine
+    @qml.templates.core.Subroutine
     def f(wires):
         raise ValueError("AHHHH")
 
     with pytest.raises(
         ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
     ):
-        f.compute_resources(qml.templates.AbstractArray((2,)))
+        f.compute_resources(qml.templates.core.AbstractArray((2,)))
 
 
 class TestSubroutineOp:
@@ -422,7 +424,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             assert wires.shape == (1,)
             qml.X(wires[0])
@@ -453,7 +455,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             return [qml.measure(w) for w in wires]
 
@@ -600,7 +602,7 @@ class TestTapePLIntegration:
     def test_mcm_integration(self):
         """Test that subroutines can return the results of mid circuit measurements."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def MCMTester(wires):
             return [qml.measure(wires=w, reset=True) for w in wires]
 
@@ -619,7 +621,7 @@ class TestTapePLIntegration:
     def test_drawing(self):
         """Test that subroutines can be drawn."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -638,7 +640,7 @@ class TestTapePLIntegration:
     def test_specs(self):
         """Test that subroutines show up as gate types in specs."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -658,17 +660,17 @@ class TestGraphDecomposition:
     def test_creating_abstract_array(self):
         """Test basic checks for creating an AbstractArray."""
 
-        a = qml.templates.AbstractArray((2, 2, 3), np.float64)
+        a = qml.templates.core.AbstractArray((2, 2, 3), np.float64)
         assert a.shape == (2, 2, 3)
         assert a.dtype is np.dtype(np.float64)
 
-        b = qml.templates.AbstractArray(())
+        b = qml.templates.core.AbstractArray(())
         assert b.shape == ()
         assert b.dtype is np.dtype(np.int64)
 
         assert a != b
         assert hash(a)
-        assert b == qml.templates.AbstractArray(())
+        assert b == qml.templates.core.AbstractArray(())
 
     @pytest.mark.torch
     def test_torch_dtype_converted_to_numpy(self):
@@ -677,7 +679,7 @@ class TestGraphDecomposition:
         import torch
 
         x = torch.tensor(0.5, dtype=torch.float64)
-        a = qml.templates.AbstractArray((), x.dtype)
+        a = qml.templates.core.AbstractArray((), x.dtype)
         assert a.dtype is np.dtype(np.float64)
 
     def test_inbuilt_type_promotion_to_numpy(self):
@@ -689,7 +691,7 @@ class TestGraphDecomposition:
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
 
-        a = qml.templates.AbstractArray((2, 3, 3))
+        a = qml.templates.core.AbstractArray((2, 3, 3))
         assert len(a) == 18
 
     def test_resource_keys(self):
@@ -991,7 +993,7 @@ class TestGraphDecomposition:
     def test_pytree_array_input_resource_params(self):
         """Test calculating the resource params when the dynamic input has a pytree structure."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
@@ -1015,7 +1017,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -1033,7 +1035,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -1057,7 +1059,7 @@ class TestGraphDecomposition:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -1065,7 +1067,7 @@ class TestGraphDecomposition:
         def RYLayerResources(params, wires):
             return {qml.RY: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RYLayerResources)
+        @partial(qml.templates.core.Subroutine, compute_resources=RYLayerResources)
         def RYLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RY(params[i], wires[i])
