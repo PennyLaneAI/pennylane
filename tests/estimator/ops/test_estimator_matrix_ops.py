@@ -59,14 +59,19 @@ class TestResourceQubitUnitary:
                 1,
                 None,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-9})),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-9})),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-9}), 2),
                 ],
             ),
             (
                 2,
                 1e-3,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-3}), 4),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-3})),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-3}), 2),
+                    GateCount(
+                        resource_rep(qre.QubitUnitary, {"num_wires": 1, "precision": 1e-3}), 4
+                    ),
                     GateCount(resource_rep(qre.CNOT), 3),
                 ],
             ),
@@ -74,7 +79,12 @@ class TestResourceQubitUnitary:
                 5,
                 1e-5,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-5}), (4**3) * 4),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-5}), 4**3),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-5}), (4**3) * 2),
+                    GateCount(
+                        resource_rep(qre.QubitUnitary, {"num_wires": 1, "precision": 1e-5}),
+                        (4**3) * 4,
+                    ),
                     GateCount(resource_rep(qre.CNOT), (4**3) * 3),
                     GateCount(
                         resource_rep(

@@ -559,7 +559,9 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(gate_set={qml.X, qml.Y, qml.Z, "Adjoint(PauliX)", "Adjoint(PauliY)"})
         def f():
-            qml.change_op_basis(qml.prod(qml.X(0), qml.Y(0)), qml.Z(0))
+            qml.change_op_basis(
+                qml.prod(qml.X(0), qml.Y(0)), qml.Z(0), qml.adjoint(qml.prod(qml.X(0), qml.Y(0)))
+            )
 
         plxpr = jax.make_jaxpr(f)()
         tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
