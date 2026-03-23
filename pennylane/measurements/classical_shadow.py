@@ -696,9 +696,9 @@ def shadow_expval(
         We can compute the expectation value of the obseravble as well as its gradient in the usual way,
 
         >>> print(circuit(x, H))
-        1.8936
+        1.8891
         >>> print(qml.grad(circuit)(x, H))
-        -0.4536...
+        -0.4653...
 
         In ``shadow_expval``, we can also pass a list of observables to estimate them
         all from the same shadow data.
@@ -707,9 +707,9 @@ def shadow_expval(
 
         >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
         >>> print(circuit(x, Hs))
-        [ 1.917   0.0282 -0.0156 -0.0066]
+        [ 1.8783  0.0096 -0.0174  0.0138]
         >>> print(qml.jacobian(circuit)(x, Hs))
-        [-4.743e-01 -1.140e-02 -4.500e-03  3.000e-04]
+        [-0.4851 -0.0063 -0.0099  0.0006]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
