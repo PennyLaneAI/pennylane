@@ -447,7 +447,7 @@ class TestDecomposeGraphEnabled:
 
     @pytest.mark.integration
     def test_controlled_pow(self):
-        """Tests that a controlled Pow is correctly decompose."""
+        """Tests that a controlled Pow is correctly decomposed."""
 
         op = qml.ctrl(qml.pow(qml.QubitUnitary([[0, 1], [1, 0]], wires=0), 1), control=1)
         tape = qml.tape.QuantumScript([op])
