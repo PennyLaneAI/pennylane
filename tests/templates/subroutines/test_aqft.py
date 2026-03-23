@@ -78,10 +78,10 @@ class TestAQFT:
 
     @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
     def test_matrix_higher_order(self, wires):
-        """Test if the matrix from AQFT and QFT are same for higher order"""
+        """Test the matrix from AQFT for higher order."""
 
         m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
-        m2 = qml.matrix(qml.QFT(wires=range(wires)))
+        m2 = qml.matrix(qml.QFT, wire_order=range(wires))(wires=range(wires))
 
         assert np.allclose(m1, m2)
 

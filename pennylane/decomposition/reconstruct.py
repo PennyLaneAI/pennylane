@@ -30,6 +30,9 @@ def decomps_use_reconstructor(op_type, op_params):
     # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
     if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
         return False
+    if issubclass(op_type, qml.ops.Pow):
+        base_class, base_params = op_params["base_class"], op_params["base_params"]
+        return decomps_use_reconstructor(base_class, base_params)
     return has_reconstructor(op_type, op_params)
 
 
