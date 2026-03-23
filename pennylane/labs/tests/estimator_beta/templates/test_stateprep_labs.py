@@ -148,9 +148,8 @@ class TestSumOfSlatersPrep:
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 11, "num_zero_ctrl": 0}
                         ),
-                        72,
+                        39,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 156),
                 ],
             ),
             (
@@ -178,9 +177,8 @@ class TestSumOfSlatersPrep:
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 11, "num_zero_ctrl": 0}
                         ),
-                        104,
+                        55,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 156),
                 ],
             ),
             (
@@ -208,9 +206,8 @@ class TestSumOfSlatersPrep:
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 13, "num_zero_ctrl": 0}
                         ),
-                        191,
+                        99,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 399),
                 ],
             ),
         ],

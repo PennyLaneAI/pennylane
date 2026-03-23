@@ -399,11 +399,7 @@ class SumOfSlatersPrep(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX, {"num_ctrl_wires": num_ctrl_wires, "num_zero_ctrl": 0}
         )
-        num_mcx = 2 * (num_coeffs - 1) - condensed_state_qubits
+        num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))
 
-        cache_cnots = condensed_state_qubits * (
-            2 ** (condensed_state_qubits - 1) - condensed_state_qubits
-        )
-        gate_list.append(GateCount(cnot, cache_cnots))
         return gate_list
