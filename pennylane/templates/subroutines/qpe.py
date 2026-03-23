@@ -301,7 +301,7 @@ class QuantumPhaseEstimation(ErrorOperation):
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
         op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
-        op_list.append(ops.adjoint(QFT.operator(wires=estimation_wires)))
+        op_list.append(ops.adjoint(QFT)(wires=estimation_wires))
 
         return op_list
 
@@ -333,7 +333,7 @@ def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unuse
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):
         ops.ctrl(qml_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
-    ops.adjoint(QFT.operator(wires=estimation_wires))
+    ops.adjoint(QFT)(wires=estimation_wires)
 
 
 add_decomps(QuantumPhaseEstimation, _qpe_decomp)
