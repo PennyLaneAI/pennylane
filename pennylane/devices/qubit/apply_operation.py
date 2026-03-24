@@ -932,14 +932,6 @@ def apply_parametrized_evolution(
     num_wires = len(math.shape(state)) - is_state_batched
     state = math.cast(state, complex)
     if (
-        op.hyperparameters["return_intermediate"]
-        and not op.hyperparameters["complementary"]
-        and not is_state_batched
-    ):
-        return _evolve_state_vector_under_parametrized_evolution(
-            op, state, num_wires, is_state_batched
-        )
-    if (
         2 * len(op.wires) <= num_wires
         or op.hyperparameters["complementary"]
         or (is_state_batched and op.hyperparameters["return_intermediate"])
