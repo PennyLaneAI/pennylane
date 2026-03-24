@@ -51,6 +51,13 @@ def test_legacy_ui():
     assert isinstance(S_op, SubroutineOp)
     assert S_op.decomposition() == [qml.RX(3.14, 0)]
 
+    with qml.queuing.AnnotatedQueue() as q:
+        S_op = S(3.14, 0)
+
+    assert S_op is None
+    assert len(q.queue) == 1
+    qml.assert_equal(q.queue[0], S.operator(3.14, 0))
+
 
 class TestInitialization:
 
