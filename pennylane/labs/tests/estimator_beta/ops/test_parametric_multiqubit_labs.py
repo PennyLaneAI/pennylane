@@ -14,9 +14,12 @@
 
 r"""Unit tests for the parametric multi-qubit operators."""
 
+from collections import defaultdict
+
 import pytest
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.estimator.resource_operator import resource_rep
 
 
 # pylint: disable = no-self-use
@@ -259,3 +262,68 @@ class TestPauliRot:
             )
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "pauli_string, precision, expected",
+        (
+            (
+                "X",
+                None,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=2,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 2,
+                            resource_rep(qre.T): 88,
+                            resource_rep(qre.Hadamard): 2,
+                        },
+                    ),
+                ),
+            ),
+            (
+                "XX",
+                1e-3,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=3,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 4,
+                            resource_rep(qre.T): 42,
+                            resource_rep(qre.Hadamard): 2,
+                        },
+                    ),
+                ),
+            ),
+            (
+                "YY",
+                1e-3,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=3,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 4,
+                            resource_rep(qre.T): 42,
+                            resource_rep(qre.Z): 2,
+                            resource_rep(qre.S): 4,
+                        },
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_controlled_decomp_estimate(self, pauli_string, expected, precision):
+        """Test that the controlled resources method produces the correct result when estimate is used."""
+        op = qre.Controlled(
+            qre.PauliRot(pauli_string, precision=precision), num_ctrl_wires=1, num_zero_ctrl=0
+        )
+        print(qre.estimate(op))
+        assert qre.estimate(op) == expected
