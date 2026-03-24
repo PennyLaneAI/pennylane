@@ -615,7 +615,7 @@ def shadow_expval(
             Provide a single observable or a sequence to estimate the expectation values of multiple
             observables from the same classical shadows data.
         k (int): Number of groups for the median-of-means estimator. The default is ``k=1``, which simply computes
-            the simple mean of the group. ``k>1`` provides no expected advantage for Pauli measurements and Pauli
+            the mean of all measurements. ``k>1`` provides no expected advantage for Pauli measurements and Pauli
             obseravbles.
         seed (int | None):  Optional seed for the random Pauli measurement basis in the
             classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
