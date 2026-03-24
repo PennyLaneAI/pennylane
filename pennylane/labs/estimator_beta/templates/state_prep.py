@@ -81,7 +81,7 @@ class ResourceMottonenStatePreparation(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
@@ -182,7 +182,7 @@ class ResourceCosineWindow(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
@@ -316,7 +316,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(
             cls,
@@ -343,7 +343,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         Args:
             num_coeffs(int): number of coefficients of the sparse state to prepare
             num_wires (int): the number of wires the state is being prepared on
-            stateprep_cmpr_op (CompressedResourceOp | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+            stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
                 is provided, the resources will be computed assuming the condensed state preparation is performed
                 using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
