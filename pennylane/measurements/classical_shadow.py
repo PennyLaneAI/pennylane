@@ -599,13 +599,6 @@ def shadow_expval(
     (even non-commuting ones) using a single set of random Pauli measurements.
     See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal.
 
-    .. note::
-
-        This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
-        :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
-        To compute correct gradients using PennyLane's automatic differentiation system,
-        you must use this measurement.
-
     Args:
         H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
             Provide a single observable or a sequence to estimate the expectation values of multiple
@@ -634,6 +627,11 @@ def shadow_expval(
 
     Returns:
         ShadowExpvalMP: Measurement process instance
+
+    .. seealso::
+
+        This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
+        :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
 
     **Example**
 
