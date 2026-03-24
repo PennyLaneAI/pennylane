@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import PhaseShift, SingleExcitation, cond
-from pennylane.templates.core import Subroutine
+from pennylane.templates import Subroutine
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
