@@ -16,9 +16,12 @@
 from dataclasses import replace
 from unittest.mock import MagicMock
 
+from cachetools import LRUCache
+
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import CompilePipeline
+from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 
@@ -48,21 +51,21 @@ def test_gradient_expand_transform():
 
     full_tp, _ = _setup_transform_program(device, config)
 
-    assert repr(full_tp) == "CompilePipeline(_expand_transform_param_shift)"
+    assert full_tp == CompilePipeline(qml.transform(qml.gradients.param_shift.expand_transform))
 
 
 def test_device_transform_program():
     """Test that the device transform is correctly placed in the transform program."""
     config = ExecutionConfig(use_device_gradient=True)
 
-    container = qml.transforms.core.BoundTransform(device_transform)
-    device_tp = qml.CompilePipeline(container)
+    container = BoundTransform(device_transform)
+    device_tp = CompilePipeline(container)
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
-    assert repr(full_tp) == "CompilePipeline(device_transform)"
+    assert full_tp == CompilePipeline(device_transform)
     assert not inner_tp
 
     config = replace(config, use_device_gradient=False)
@@ -70,7 +73,7 @@ def test_device_transform_program():
     full_tp, inner_tp = _setup_transform_program(device, config)
 
     assert not full_tp
-    assert repr(inner_tp) == "CompilePipeline(device_transform)"
+    assert inner_tp == CompilePipeline(device_transform)
 
 
 def test_interface_data_not_supported():
@@ -125,8 +128,10 @@ def test_cache_handling():
     device.preprocess_transforms = MagicMock(return_value=CompilePipeline())
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
-
-    assert repr(inner_tp) == "CompilePipeline(_cache_transform)"
+    # pylint: disable=protected-access
+    assert inner_tp == CompilePipeline(
+        BoundTransform(qml.workflow._cache_transform, kwargs={"cache": LRUCache(maxsize=10000)})
+    )
     assert not full_tp
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=False)

@@ -22,17 +22,12 @@ import numpy as np
 
 from pennylane import math
 from pennylane.decomposition import gate_sets
-from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import (
-    DecompositionUndefinedError,
-    OperatorPropertyUndefined,
-    ParameterFrequenciesUndefinedError,
-)
+from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import split_to_single_terms
+from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -794,11 +789,9 @@ def _expand_transform_param_shift(
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = decompose(
         tape,
-        target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
         stopping_condition=_param_shift_stopping_condition,
-        skip_initial_state_prep=False,
-        name="param_shift",
-        error=DecompositionUndefinedError,
+        strict=False,
     )
     if any(math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])):
         try:

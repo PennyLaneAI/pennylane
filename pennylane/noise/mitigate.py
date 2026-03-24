@@ -430,7 +430,7 @@ def mitigate_with_zne(
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @qml.transforms.decompose(gate_set = ["RY", "CZ"])
+        @qml.decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))

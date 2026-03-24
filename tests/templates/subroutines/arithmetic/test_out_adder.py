@@ -181,15 +181,11 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        _adder_decomposition = (
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
-            .decomposition()
-        )
+        _adder_decomposition = qml.OutAdder(
+            x_wires, y_wires, output_wires, mod, work_wires
+        ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
         adder_decomposition = [
-            _adder_decomposition[0],
-            *_adder_decomposition[1].decomposition(),
-            _adder_decomposition[2],
+            *_adder_decomposition[0].decomposition(),
         ]
 
         op_list = []
@@ -199,15 +195,13 @@ class TestOutAdder:
         else:
             qft_new_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_new_output_wires))
-        op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-            )
-        )
+        op_list.append(qml.QFT.operator(wires=qft_new_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
+            )
+            @ qml.ControlledSequence(
+                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
             )
         )
         op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))

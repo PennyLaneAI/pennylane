@@ -14,11 +14,19 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+from functools import singledispatch
 
 import numpy as np
 
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.pytrees import flatten
+from pennylane.templates.core import SubroutineOp
+
+
+def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
+    leaves = flatten(op.output)[0]
+    return [mv for mv in leaves if isinstance(mv, MeasurementValue)]
 
 
 def default_wire_map(tape):
@@ -61,6 +69,13 @@ def default_bit_map(tape):
 
     mcm_idx = 0
     for op in tape:
+        if isinstance(op, SubroutineOp):
+            mvs = _get_subroutine_mvs(op)
+            for mv in mvs:
+                for mcm in mv.measurements:
+                    mcms[mcm] = mcm_idx
+                    mcm_idx += 1
+
         if isinstance(op, (MidMeasure, PauliMeasure)):
             mcms[op] = mcm_idx
             mcm_idx += 1
@@ -76,9 +91,7 @@ def default_bit_map(tape):
             else:
                 for m in op.mv:
                     bit_map[m.measurements[0]] = None
-
     bit_map = {mcm: i for i, mcm in enumerate(sorted(bit_map, key=mcms.get))}
-
     return bit_map
 
 
@@ -161,6 +174,43 @@ def unwrap_controls(op):
     return control_wires, control_values, next_ctrl
 
 
+# pylint: disable=unused-argument
+@singledispatch
+def _get_meas(op, bit_map):
+    return [], None
+
+
+@_get_meas.register
+def _get_subroutine_mcms(op: SubroutineOp, bit_map):
+    _meas = []
+    for mcm in (mcm for mv in _get_subroutine_mvs(op) for mcm in mv.measurements):
+        if mcm in bit_map:
+            _meas.append(mcm)
+    return _meas, max(op.wires)
+
+
+@_get_meas.register(MidMeasure)
+@_get_meas.register(PauliMeasure)
+def _get_mm(op: MidMeasure | PauliMeasure, bit_map):
+    if op not in bit_map:
+        return [], None
+    return [op], op.wires[0]
+
+
+@_get_meas.register
+def _get_c(op: Conditional, bit_map):
+    return op.meas_val.measurements, max(op.wires)
+
+
+@_get_meas.register
+def _get_mp(op: MeasurementProcess, bit_map):
+    if op.mv is None:
+        return [], None
+    if isinstance(op.mv, MeasurementValue):
+        return op.mv.measurements, None
+    return [m.measurements[0] for m in op.mv], None
+
+
 def cwire_connections(layers, bit_map):
     """Extract the information required for classical control wires.
 
@@ -211,23 +261,7 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, (MidMeasure, PauliMeasure)) and op in bit_map:
-                _meas = [op]
-                con_wire = op.wires[0]
-
-            elif isinstance(op, Conditional):
-                _meas = op.meas_val.measurements
-                con_wire = max(op.wires)
-
-            elif isinstance(op, MeasurementProcess) and op.mv is not None:
-                if isinstance(op.mv, MeasurementValue):
-                    _meas = op.mv.measurements
-                else:
-                    _meas = [m.measurements[0] for m in op.mv]
-                con_wire = None
-
-            else:
-                continue
+            _meas, con_wire = _get_meas(op, bit_map)
 
             for m in _meas:
                 cwire = bit_map[m]

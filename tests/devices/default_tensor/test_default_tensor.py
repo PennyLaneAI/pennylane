@@ -86,7 +86,6 @@ operations_list = {
     "SX": qml.SX(wires=[0]),
     "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
-    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(1.234, wires=[0, 1]),
     "IsingYY": qml.IsingYY(1.234, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(1.234, wires=[0, 1]),

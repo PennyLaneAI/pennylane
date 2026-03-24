@@ -99,16 +99,14 @@ ops_rep = (
 class TestInitialization:
     """Test initialization of the SProd Class."""
 
-    @pytest.mark.parametrize("test_id", ("foo", "bar"))
-    def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), id=test_id)
+    def test_init_sprod_op(self):
+        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"))
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
         assert sprod_op.wires == Wires(("a",))
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
-        assert sprod_op.id == test_id
 
         assert sprod_op.data == (3.14, 0.23)
         assert sprod_op.parameters == [3.14, 0.23]
@@ -258,12 +256,11 @@ class TestMscMethods:
     def test_copy(self, op_scalar_tup):
         """Test the copy dunder method properly copies the operator."""
         scalar, op = op_scalar_tup
-        sprod_op = SProd(scalar, op, id="something")
+        sprod_op = SProd(scalar, op)
         copied_op = copy(sprod_op)
 
         assert sprod_op.scalar == copied_op.scalar
 
-        assert sprod_op.id == copied_op.id
         assert sprod_op.data == copied_op.data
         assert sprod_op.wires == copied_op.wires
 
@@ -477,7 +474,6 @@ class TestMatrix:
         assert np.allclose(mat, true_mat)
 
     templates_and_mats = (
-        (qml.QFT(wires=[0, 1, 2]), qml.QFT(wires=[0, 1, 2]).compute_matrix(3)),
         (
             qml.GroverOperator(wires=[0, 1, 2]),
             qml.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
@@ -747,10 +743,10 @@ class TestSparseMatrix:
 class TestProperties:
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_queue_category(self, op_scalar_tup):
-        """Test queue_category property is always None."""  # currently not supporting queuing SProd
+        """Test queue_category property is "_ops" by inheritance."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert sprod_op._queue_category is None  # pylint: disable=protected-access
+        assert sprod_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
@@ -983,10 +979,8 @@ class TestWrapperFunc:
 
         coeff, op = op_scalar_tup
 
-        op_id = "sprod_op"
-
-        sprod_func_op = s_prod(coeff, op, id=op_id)
-        sprod_class_op = SProd(coeff, op, id=op_id)
+        sprod_func_op = s_prod(coeff, op)
+        sprod_class_op = SProd(coeff, op)
         qml.assert_equal(sprod_func_op, sprod_class_op)
 
     def test_lazy_mode(self):

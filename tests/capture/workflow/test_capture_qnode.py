@@ -14,14 +14,14 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-
-# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
-
 import pytest
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
 from tests.capture.capture_utils import extract_ops_and_meas_prims
+
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
+
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -295,6 +295,17 @@ def test_qnode_pytree_output():
     assert qml.math.allclose(out["a"], jnp.cos(1.2))
     assert qml.math.allclose(out["b"], -jnp.sin(1.2))
     assert list(out.keys()) == ["a", "b"]
+
+
+def test_informative_error_raw_mcm_return():
+    """Test that a more informative error is raised when returning a raw mcm."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def c():
+        return qml.measure(0)
+
+    with pytest.raises(ValueError, match="Only Measurement Processes can be returned from QNode"):
+        jax.make_jaxpr(c)()
 
 
 class TestShots:
@@ -603,12 +614,11 @@ class TestDevicePreprocessing:
 
     def test_non_native_ops_execution(self, dev_name, seed):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
-        dev = qml.device(dev_name, wires=2, seed=seed)
+        dev = qml.device(dev_name, wires=[0, 1], seed=seed)
 
         @qml.qnode(dev)
         def circuit():
-            # QFT not supported on DQ or LQ
-            qml.QFT(wires=[0, 1])
+            qml.AQFT(10, [0, 1])
             return qml.state()
 
         assert qml.math.allclose(circuit(), [0.5] * 4)

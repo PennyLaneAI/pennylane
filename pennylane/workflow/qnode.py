@@ -35,7 +35,7 @@ from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import CompilePipeline, Transform
+from pennylane.transforms.core import BoundTransform, CompilePipeline, Transform
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -162,7 +162,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform) -> None:
+def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform | None) -> None:
     if diff_method is None:
         return
 
@@ -896,6 +896,10 @@ def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+
     new_qnode = copy.copy(obj)
-    new_qnode._compile_pipeline = transform(new_qnode.compile_pipeline, *targs, **tkwargs)
+    new_pipeline = copy.copy(new_qnode.compile_pipeline)
+    new_pipeline.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
+    # Append bound transforms to new pipeline
+    new_qnode._compile_pipeline = new_pipeline
     return new_qnode

@@ -329,6 +329,7 @@ class NullQubit(Device):
                     return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
+                t.kwargs["strict"] = False
 
                 original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
                 if original_shots_stopping_condition:

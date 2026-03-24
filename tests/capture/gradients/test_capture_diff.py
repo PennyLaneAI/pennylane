@@ -32,7 +32,7 @@ jnp = jax.numpy
 
 def test_error_with_non_scalar_function():
     """Test that an error is raised if the differentiated function has non-scalar outputs."""
-    with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
+    with pytest.raises(TypeError, match="only applies to scalar-output functions."):
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
@@ -57,7 +57,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         assert eqn.params["fn"] == fn
 
 
-@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian, qml.value_and_grad))
 class TestGradJacobian:
     """Test for capturing both qml.grad and qml.jacobian."""
 
@@ -84,6 +84,13 @@ class TestGradJacobian:
         with pytest.raises(ValueError, match="Invalid value"):
             grad_fn(lambda x: x**2, method="fd")(0.5)
 
+    @pytest.mark.parametrize("argnums", (4.5, "abc"))
+    def test_error_bad_argnums(self, grad_fn, argnums):
+        """Test that an error is raised if the argnums is not a collection."""
+
+        with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
+            grad_fn(lambda x: x**2, argnums=argnums)(0.5)
+
     def test_dynamic_kwarg(self, grad_fn):
         """Test that numerical kwargs are still treated like inputs."""
 
@@ -99,7 +106,8 @@ class TestGradJacobian:
         assert len(fn_jaxpr.invars) == 2
         assert len(fn_jaxpr.constvars) == 0
 
-        assert len(jaxpr.eqns[0].outvars) == 1  # just derivative of x
+        num_out = 2 if grad_fn == qml.value_and_grad else 1
+        assert len(jaxpr.eqns[0].outvars) == num_out
 
 
 class TestGrad:

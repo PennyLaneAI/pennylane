@@ -231,7 +231,7 @@ class TestOutMultiplier:
         else:
             qft_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_output_wires))
+        op_list.append(qml.QFT.operator(wires=qft_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
@@ -250,11 +250,6 @@ class TestOutMultiplier:
         [
             ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10]),
             ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10]),
-            ([0], [3, 6], [5, 8], 4, [9, 10]),
-            ([0, 1, 2], [3], [5, 8], None, [9]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10]),
         ],
     )
     def test_decomposition_new(

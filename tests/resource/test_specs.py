@@ -20,7 +20,11 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
-from pennylane.resource.specs import _preprocess_level_input
+from pennylane.resource.specs import (
+    _get_last_tape_transform_level,
+    _make_level_name_unique,
+    _preprocess_level_input,
+)
 
 devices_list = [
     (qml.device("default.qubit"), None),
@@ -62,6 +66,7 @@ def test_preprocess_levels(level, output, expect_warnings):
     marker_to_level = {
         "foo": 2,
         "bar": 3,
+        # Treat MLIR lowering as level 4
         "baz": 5,
     }
 
@@ -71,19 +76,68 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert _preprocess_level_input(level, marker_to_level) == output
+            assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
     else:
-        assert _preprocess_level_input(level, marker_to_level) == output
+        assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
+
+
+def test_make_level_name_unique():
+    existing_levels = {"foo", "foo-2", "bar"}
+
+    assert _make_level_name_unique("foo", existing_levels) == "foo-3"
+    assert _make_level_name_unique("bar", existing_levels) == "bar-2"
+    assert _make_level_name_unique("baz", existing_levels) == "baz"
+
+
+@pytest.mark.parametrize(
+    "num_tapes, expected",
+    [
+        (  # If there are no tape transforms, the "Before Tape Transforms" level should be skipped
+            0,
+            list(range(5)),
+        ),
+        (2, list(range(6))),
+        (5, list(range(6))),
+    ],
+)
+def test_preprocess_levels_all(num_tapes, expected):
+    # Assume there are always 4 transforms in the pipeline
+    assert _preprocess_level_input("all", {}, 4, num_tapes) == expected
 
 
 def test_preprocess_levels_invalid():
     with pytest.raises(
         ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
     ):
-        _preprocess_level_input(-1, {})
+        _preprocess_level_input(-1, {}, [], 0)
 
     with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        _preprocess_level_input("foo", {})
+        _preprocess_level_input("foo", {}, [], 0)
+
+
+def test_get_last_tape_transform_level():
+    """Test that _get_last_tape_transform_level works correctly"""
+
+    @qml.transform
+    def dummy_transform(tape):
+        return (tape,), lambda res: res[0]
+
+    # If there are no transforms, the last transform level should be 0
+    assert _get_last_tape_transform_level(qml.CompilePipeline()) == 0
+    # If there are *any* tape transforms, this should return the number of tape transforms
+    # since there is an implied level 0 for "Before Tape Transforms"
+    assert _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform)) == 1
+    assert (
+        _get_last_tape_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
+    )
+
+    # MLIR passes should not be counted
+    assert (
+        _get_last_tape_transform_level(
+            qml.CompilePipeline(dummy_transform, qml.transform(pass_name="cancel_inverses"))
+        )
+        == 1
+    )
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -336,7 +390,7 @@ class TestSpecsTransform:
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose,
-                    target_gates=qml.devices.default_qubit.ALL_DQ_GATE_SET,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATES,
                     stopping_condition=self.stopping_condition,
                 )
                 return program
@@ -436,48 +490,41 @@ Device wires: None
 Shots: Shots(total=None)
 Level: 2
 
-Resource specifications:
-  Batched tape 0:
-    Total wire allocations: 2
+Batched tape a:
+    Wire allocations: 2
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 1:
-    Total wire allocations: 3
+Batched tape b:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5
 
-  Batched tape 2:
-    Total wire allocations: 3
+Batched tape c:
+    Wire allocations: 3
     Total gates: 5
-    Circuit depth: 5
-
-    Gate types:
-      RandomLayers: 1
-      RX: 1
-      SWAP: 1
-      PauliX: 2
-
+    Gate counts:
+    - RandomLayers: 1
+    - RX: 1
+    - SWAP: 1
+    - PauliX: 2
     Measurements:
-      expval(Prod(num_wires=2, num_terms=2)): 1"""
+    - expval(Prod(num_wires=2, num_terms=2)): 1
+    Depth: 5"""
         )
 
     @pytest.mark.parametrize(
@@ -510,7 +557,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():

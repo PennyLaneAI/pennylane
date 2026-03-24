@@ -135,12 +135,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
-        assert prod_op.id == id
 
         assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
@@ -465,10 +464,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_gen = prod(qfunc, lazy=False)
         prod_op = prod_gen(1.1)
 
-        assert prod_op.id == 123987  # id was set
         qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
@@ -617,26 +615,15 @@ class TestMatrix:
     def test_prod_templates(self):
         """Test that we can compose templates and the generated matrix is correct."""
 
-        def get_qft_mat(num_wires):
-            omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-            mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-            for m in range(2**num_wires):
-                for n in range(2**num_wires):
-                    mat[m, n] = omega ** (m * n)
-
-            return 1 / math.sqrt(2**num_wires) * mat
-
         wires = [0, 1, 2]
-        prod_op = Prod(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
+        prod_op = Prod(qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
         mat = prod_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
-        qft_mat = get_qft_mat(3)
         x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
         x_mat = math.kron(x, math.eye(4, dtype="complex128"))
 
-        true_mat = qft_mat @ grov_mat @ x_mat
+        true_mat = grov_mat @ x_mat
         assert np.allclose(mat, true_mat)
 
     def test_prod_qchem_ops(self):
@@ -1344,10 +1331,9 @@ class TestWrapperFunc:
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "prod_op"
 
-        prod_func_op = prod(*factors, id=op_id)
-        prod_class_op = Prod(*factors, id=op_id)
+        prod_func_op = prod(*factors)
+        prod_class_op = Prod(*factors)
         qml.assert_equal(prod_func_op, prod_class_op)
 
     def test_lazy_mode(self):

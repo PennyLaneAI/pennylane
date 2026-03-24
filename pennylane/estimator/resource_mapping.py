@@ -79,6 +79,40 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
     )
 
 
+_Subroutine_map: dict = {}
+"""A registry for how to calculate the resources from a SubroutineOp."""
+
+
+def _register_subroutine(subroutine: qtemps.Subroutine):
+    """Register a function for calculating the resources of a SubroutineOp using a decorator.
+
+    .. code-block::
+        @_register_subroutine(MySubroutine)
+        def _resources(op: SubroutineOp):
+            return re_estimation_version(...)
+
+    """
+
+    def subroutine_resources_decorator(f):
+        _Subroutine_map[subroutine] = f
+        return f
+
+    return subroutine_resources_decorator
+
+
+@_map_to_resource_op.register
+def _resources_for_subroutine(op: qtemps.core.SubroutineOp):
+    if op.subroutine in _Subroutine_map:
+        return _Subroutine_map[op.subroutine](op)
+    with QueuingManager.stop_recording():
+        decomp = op.decomposition()
+
+    if len(decomp) == 1:
+        return _map_to_resource_op(decomp[0])
+
+    return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
+
+
 @_map_to_resource_op.register
 def _(op: qops.Identity):
     return re_ops.Identity(wires=op.wires)
@@ -261,8 +295,8 @@ def _(op: qtemps.SemiAdder):
     )
 
 
-@_map_to_resource_op.register
-def _(op: qtemps.QFT):
+@_register_subroutine(qtemps.QFT)
+def _handle_qft(op):
     return re_temps.QFT(num_wires=len(op.wires), wires=op.wires)
 
 
@@ -275,8 +309,8 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_map_to_resource_op.register
-def _(op: qtemps.BasisRotation):
+@_register_subroutine(qtemps.BasisRotation)
+def _handle_basis_rotation(op):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 
@@ -284,6 +318,52 @@ def _(op: qtemps.BasisRotation):
 def _(op: qtemps.Select):
     res_ops = [_map_to_resource_op(select_op) for select_op in op.hyperparameters["ops"]]
     return re_temps.Select(ops=res_ops, wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.HybridQRAM):
+    data = op.data[0]
+    tree_wire_manager = op.hyperparameters["tree_wire_manager"]
+    select_wires = op.hyperparameters["select_wires"]
+    signal_wire = op.hyperparameters["signal_wire"]
+    control_wires = tree_wire_manager.control_wires
+    target_wires = tree_wire_manager.target_wires
+    return re_temps.HybridQRAM(
+        data=data,
+        num_wires=len(op.wires),
+        num_control_wires=len(control_wires),
+        num_select_wires=len(select_wires),
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=signal_wire
+        + tree_wire_manager.bus_wire
+        + tree_wire_manager.dir_wires
+        + tree_wire_manager.portL_wires
+        + tree_wire_manager.portR_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectOnlyQRAM):
+    data = op.data[0]
+    control_wires = op.hyperparameters["control_wires"]
+    select_wires = op.hyperparameters["select_wires"]
+    target_wires = op.hyperparameters["target_wires"]
+    select_value = op.hyperparameters["select_value"]
+    num_control_wires = len(control_wires)
+    num_select_wires = len(select_wires)
+    num_wires = num_control_wires + num_select_wires + len(target_wires)
+
+    return re_temps.SelectOnlyQRAM(
+        data,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    )
 
 
 @_map_to_resource_op.register
@@ -348,12 +428,13 @@ def _(op: qtemps.ControlledSequence):
 @_map_to_resource_op.register
 def _(op: qtemps.QuantumPhaseEstimation):
     res_base = _map_to_resource_op(op.hyperparameters["unitary"])
-    num_estimation_wires = len(op.hyperparameters["estimation_wires"])
+    estimation_wires = op.hyperparameters["estimation_wires"]
+    num_estimation_wires = len(estimation_wires)
     return re_temps.QPE(
         base=res_base,
         num_estimation_wires=num_estimation_wires,
         adj_qft_op=None,
-        wires=op.wires,
+        wires=estimation_wires + res_base.wires,
     )
 
 
@@ -466,3 +547,14 @@ def _(op: Controlled | ControlledOp):
         num_zero_ctrl=num_zero_ctrl,
         wires=ctrl_wires,
     )
+
+
+# Identity Ops: Operations that don't actually change the quantum state!
+@_map_to_resource_op.register
+def _barrier_op(op: qops.Barrier):
+    return re_ops.Identity()
+
+
+@_map_to_resource_op.register
+def _snapshot_op(op: qops.Snapshot):
+    return re_ops.Identity()

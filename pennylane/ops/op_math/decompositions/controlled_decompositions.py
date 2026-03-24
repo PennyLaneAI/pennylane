@@ -807,16 +807,16 @@ def _ctrl_decomp_bisect_general(U, wires):
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(c1, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -841,14 +841,14 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     ctrl_k2 = wires[mid:-1]
 
     if not skip_initial_cx:
-        _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+        ops.ctrl(qml.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
 
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.ctrl(qml.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
@@ -1036,17 +1036,6 @@ def _ctrl_global_phase(
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def _controlled_x(target_wire, control, work_wires, work_wire_type):
-    if len(control) == 1:
-        ops.CNOT([control[0], target_wire])
-    elif len(control) == 2:
-        ops.Toffoli([control[0], control[1], target_wire])
-    else:
-        ops.MultiControlledX(
-            control + [target_wire], work_wires=work_wires, work_wire_type=work_wire_type
-        )
 
 
 # pylint: disable=no-value-for-parameter

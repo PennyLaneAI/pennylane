@@ -35,7 +35,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     .. warning::
         The ``expand_tape`` function is deprecated in PennyLane v0.45 and will be removed in v0.46.
-        Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+        Please use the ``qml.decompose`` function for decomposing circuits.
 
     Args:
         tape (QuantumTape): The tape to expand
@@ -148,7 +148,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     warnings.warn(
         """
         The expand_tape function is deprecated in PennyLane v0.45 and will be removed in v0.46.
-        Please use the qml.transforms.decompose function for decomposing circuits.
+        Please use the qml.decompose function for decomposing circuits.
         """,
         PennyLaneDeprecationWarning,
     )
@@ -219,7 +219,7 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     .. warning::
         The ``expand_tape_state_prep`` function is deprecated in PennyLane v0.45 and will be removed in v0.46.
-        Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+        Please use the ``qml.decompose`` function for decomposing circuits.
 
     Args:
         tape (QuantumScript): The tape to expand.
@@ -249,7 +249,7 @@ def expand_tape_state_prep(tape, skip_first=True):
     warnings.warn(
         """
         The expand_tape_state_prep function is deprecated in PennyLane v0.45 and will be removed in v0.46.
-        Please use the qml.transforms.decompose function for decomposing circuits.
+        Please use the qml.decompose function for decomposing circuits.
         """,
         PennyLaneDeprecationWarning,
     )

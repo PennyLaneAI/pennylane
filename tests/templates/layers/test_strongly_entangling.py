@@ -252,6 +252,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
     )
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
     ):  # pylint:disable=too-many-arguments
@@ -334,6 +335,7 @@ class TestInputs:
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")

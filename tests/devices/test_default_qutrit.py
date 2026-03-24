@@ -844,8 +844,10 @@ class TestDefaultQutritIntegration:
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_qutrit_circuit_adjoint_integration(self):
         """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
+
         dev = qml.device("default.qutrit", wires=3)
 
         def ansatz(phi, theta, omega, U):
@@ -856,6 +858,7 @@ class TestDefaultQutritIntegration:
             qml.TRY(theta, wires=0, subspace=(1, 2))
             qml.TSWAP([0, 2])
             qml.QutritUnitary(U, wires=[2, 1])
+            qml.ControlledQutritUnitary(U, wires=[2, 1], control_wires=[0])
             qml.TRZ(omega, wires=1, subspace=(0, 2))
 
         @qml.qnode(dev)

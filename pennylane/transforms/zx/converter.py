@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import gate_sets
+from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
@@ -319,8 +320,16 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
+
+    ######################################################################
+    # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
+    # populated only via add_label(label, row).  Use it so output boundary
+    # vertices are created later.
+    from packaging.version import Version
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
+
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
@@ -376,15 +385,20 @@ def to_zx(tape, expand_measurements=False):
             vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
             inputs.append(vertex)
             q_mapper.set_prev_vertex(i, vertex)
-            q_mapper.set_next_row(i, 1)
-            q_mapper.set_qubit(i, i)
+            if _pyzx_010:
+                # add_label(i, 1) does all three things: set qubit, set rows, update labels
+                q_mapper.add_label(i, 1)
+            else:  # pragma: no cover
+                # pyzx 0.9: `add_label(l)` has a different signature (no `row` param) and destructive semantics (set_all_rows).
+                # We must call `set_next_row(i, 1)` + `set_qubit(i, i)` separately.
+                q_mapper.set_next_row(i, 1)
+                q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        [mapped_tape], _ = qml.transforms.decompose(
-            mapped_tape,
-            gate_set=gate_sets.PYZX,
-            max_expansion=10,
-        )
+        kwargs = {"gate_set": gate_sets.PYZX}
+        if qml.decomposition.enabled_graph():
+            kwargs["fixed_decomps"] = {qml.GlobalPhase: null_decomp}
+        [mapped_tape], _ = qml.transforms.decompose(mapped_tape, **kwargs)
 
         if expand_measurements:
             [mapped_tape], _ = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)

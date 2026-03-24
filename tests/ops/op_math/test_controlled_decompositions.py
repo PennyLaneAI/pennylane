@@ -344,7 +344,7 @@ class TestControlledDecompBisect:
         qml.assert_equal(mcx1, op_seq[0])
         qml.assert_equal(mcx1, op_seq[4])
 
-        mcx2 = qml.Toffoli(wires=[4, 5, 0])
+        mcx2 = qml.MultiControlledX(wires=Wires([4, 5, 0]), work_wires=Wires([1, 2, 3]))
         qml.assert_equal(mcx2, op_seq[2])
         qml.assert_equal(mcx2, op_seq[6])
 

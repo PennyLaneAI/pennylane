@@ -15,7 +15,6 @@
 This module contains the qml.ops.functions.check_validity function for determining whether or not an
 Operator class is correctly defined.
 """
-
 import copy
 import itertools
 import pickle
@@ -27,6 +26,12 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.reconstruct import (
+    get_decomp_kwargs,
+    has_reconstructor,
+    reconstruct,
+)
+from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
 from .equal import assert_equal
@@ -139,6 +144,34 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
+def _check_reconstructor(op):
+    """Checks that the op can be reconstructed."""
+
+    op_rep = resource_rep(op.__class__, **op.resource_params)
+    if not has_reconstructor(op_rep.op_type, op_rep.params):
+        return  # skip ops that are not meant to be compatible
+
+    if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+        return
+
+    reconstructed_op = reconstruct(op.data, op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, op)
+
+    adjoint_op = qml.adjoint(op)
+    op_rep = adjoint_resource_rep(op.__class__, op.resource_params)
+    assert has_reconstructor(op_rep.op_type, op_rep.params)
+
+    reconstructed_op = reconstruct(adjoint_op.data, adjoint_op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, adjoint_op)
+
+    pow_op = qml.pow(op, z=2)
+    op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
+    assert has_reconstructor(op_rep.op_type, op_rep.params)
+
+    reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
+    qml.assert_equal(reconstructed_op, pow_op)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -149,8 +182,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
+    kwargs = get_decomp_kwargs(op)
     with qml.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*op.data, wires=op.wires, **kwargs)
     tape = qml.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
@@ -163,10 +197,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qml.ops.Conditional):
             _op = _op.base
-        resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-        actual_gate_counts[resource_rep] += 1
+        op_rep = qml.resource_rep(type(_op), **_op.resource_params)
+        actual_gate_counts[op_rep] += 1
 
-    if rule.exact_resources:
+    if rule.exact_resources and not (
+        isinstance(op, qml.templates.core.SubroutineOp) and not op.subroutine.exact_resources
+    ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
@@ -175,7 +211,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts)
+        assert all(op in gate_counts for op in actual_gate_counts), (
+            "\nGate counts expected from resource function to contain actual gates:\n"
+            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            "Missing in gate counts from resource function:\n"
+            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+        )
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix and not skip_decomp_matrix_check:
@@ -323,7 +364,10 @@ def _check_copy(op, skip_deepcopy):
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
     if not skip_deepcopy:
-        assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
+        try:
+            assert_equal(copy.deepcopy(op), op)
+        except AssertionError as e:
+            raise AssertionError("deep copied op must also be equal") from e
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -345,8 +389,12 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
-    assert op == new_op, "metadata and data must be able to reproduce the original operation"
-
+    try:
+        assert_equal(op, new_op)
+    except AssertionError as e:
+        raise AssertionError(
+            "metadata and data must be able to reproduce the original operation"
+        ) from e
     try:
         import jax
     except ImportError:
@@ -362,6 +410,8 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+    if isinstance(op, qml.templates.core.SubroutineOp):
+        return
     try:
         import jax
     except ImportError:
@@ -448,7 +498,6 @@ def _check_differentiation(op):
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
-
     if skip_wire_mapping:
         return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
@@ -486,6 +535,7 @@ def assert_valid(
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
+        skip_capture: If ``True``, the program capture tests will be skipped.
 
     **Examples:**
 
@@ -538,6 +588,7 @@ def assert_valid(
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+        _check_reconstructor(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

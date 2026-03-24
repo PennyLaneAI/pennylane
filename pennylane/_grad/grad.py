@@ -17,6 +17,7 @@ This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
+from collections.abc import Sequence
 from functools import lru_cache, wraps
 
 from autograd import jacobian as _jacobian
@@ -75,7 +76,7 @@ def _get_jacobian_prim():
         in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
-            _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
@@ -83,12 +84,27 @@ def _get_jacobian_prim():
     return jacobian_prim
 
 
-def _shape(shape, dtype, weak_type=False):
+def _ShapedArray(shape, dtype, weak_type=False):
     if jax.config.jax_dynamic_shapes and any(
         not isinstance(s, int) for s in shape
     ):  # pragma: no cover
         return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
+
+
+def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...], bool]:
+    if argnums is None:
+        argnums = 0
+    if argnums_is_int := isinstance(argnums, int):
+        argnums = (argnums,)
+    if not isinstance(argnums, Sequence):
+        raise ValueError(
+            f"argnums should be an integer or a Sequence of integers, got type {type(argnums)}"
+        )
+    argnums = tuple(argnums)
+    if not all(isinstance(a, int) for a in argnums):
+        raise ValueError(f"argnums should be an integer or a Sequence of integers, got {argnums}")
+    return argnums, argnums_is_int
 
 
 def _args_and_argnums(args, argnums):
@@ -108,11 +124,7 @@ def _args_and_argnums(args, argnums):
     * extracting out the pytree just for the trainable args
 
     """
-    if argnums is None:
-        argnums = 0
-    if argnums_is_int := isinstance(argnums, int):
-        argnums = (argnums,)
-    argnums = tuple(argnums)
+    argnums, argnums_is_int = _setup_argnums(argnums)
 
     if max(argnums) >= len(args):
         raise ValueError(
@@ -284,6 +296,9 @@ class grad:
 
         self._func = func
         self._argnums = argnums
+
+        # just the validation
+        _setup_argnums(argnums)
 
         if self._argnums is not None:
             # If the differentiable argnum is provided, we can construct

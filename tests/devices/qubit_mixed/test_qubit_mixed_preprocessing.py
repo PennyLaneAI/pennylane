@@ -28,7 +28,7 @@ from pennylane.devices.default_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
 # pylint: disable=protected-access
@@ -79,6 +79,20 @@ class NoMatNoDecompOp(qml.operation.Operation):
     @property
     def has_matrix(self):
         return False
+
+
+@pytest.fixture(scope="function", autouse=True)
+def custom_decomps():
+    """Locally register decomposition rules."""
+
+    @qml.register_resources({qml.X: 1, qml.Y: 1})
+    def custom_rule_no_mat_op(wires):
+        qml.X(wires)
+        qml.Y(wires)
+
+    with qml.decomposition.local_decomps():
+        qml.add_decomps(NoMatOp, custom_rule_no_mat_op)
+        yield
 
 
 # pylint: disable=too-few-public-methods
@@ -317,8 +331,13 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                with pytest.warns(DecompositionWarning):
+                    program(tapes)
+        else:
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                program(tapes)
 
     @pytest.mark.parametrize(
         "readout_err, req_warn",

@@ -82,6 +82,13 @@ class TestErrors:
         with pytest.raises(ValueError, match="tangents must be a Sequence"):
             qml.jvp(lambda x: x**2, (1.0,), 1.0)
 
+    @pytest.mark.parametrize("argnums", (4.5, "abc"))
+    def test_error_bad_argnums(self, argnums):
+        """Test that an error is raised if the argnums is not a collection."""
+
+        with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
+            qml.jvp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
+
 
 class TestCapturingJVP:
 

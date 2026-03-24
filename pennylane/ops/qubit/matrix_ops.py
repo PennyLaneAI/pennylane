@@ -656,7 +656,7 @@ def _diagonal_qu_resource(num_wires):
 
 
 @register_resources(_diagonal_qu_resource)
-def _diagonal_qu_decomp(D, wires):
+def _diagonal_qu_decomp(D, wires, **_):
     angles = qml.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2

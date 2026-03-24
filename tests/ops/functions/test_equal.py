@@ -21,12 +21,15 @@ import re
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.drawer.label import LabelledOp
+from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
@@ -1413,19 +1416,17 @@ class TestPauliErrorEqual:
 
     ARGS_ONE = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
     ]
     ARGS_TWO = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
-        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
-        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
-        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
+        ["XYZ", 0.1, (0, 1, 2)],  # different Pauli strs, number of wires
+        ["XZ", 0.1, (0, 1)],  # different Pauli strs
+        ["XY", 0.1, (0, 2)],  # different wire numbers
     ]
-    EQS = [True, True, False, False, False]
+    EQS = [True, False, False, False]
 
     @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
     def test_equality(self, args1, args2, eqs):
@@ -1662,11 +1663,11 @@ class TestMeasurementsEqual:
     def test_mid_measure(self):
         """Test that `MidMeasure`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id")
+        mp = qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="test_id")
 
-        mp1 = qml.ops.MidMeasure(wires=Wires([1]), reset=True, id="test_id")
-        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, id="test_id")
-        mp3 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="foo")
+        mp1 = qml.ops.MidMeasure(wires=Wires([1]), reset=True, meas_uid="test_id")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, meas_uid="test_id")
+        mp3 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1675,7 +1676,7 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id"),
+                qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="test_id"),
             )
             is True
         )
@@ -1683,25 +1684,28 @@ class TestMeasurementsEqual:
     def test_pauli_measure(self):
         """Test the equal check of pauli measures."""
 
-        mp = PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")
+        mp = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="test_id")
 
-        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), id="test_id")
-        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), id="test_id")
-        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), id="foo")
-        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, id="test_id")
+        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), meas_uid="test_id")
+        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), meas_uid="test_id")
+        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="foo")
+        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, meas_uid="test_id")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
         assert qml.equal(mp, mp3) is False
         assert qml.equal(mp, mp4) is False
-        assert qml.equal(mp, PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")) is True
+        assert qml.equal(mp, PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="test_id")) is True
 
     def test_equal_measurement_value(self):
         """Test that MeasurementValue's are equal when their measurements are the same."""
         mv1 = qml.measure(0)
         mv2 = qml.measure(0)
         # qml.equal of MidMeasure checks the id
-        mv2.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv2.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         assert qml.equal(mv1, mv1) is True
         assert qml.equal(mv1, mv2) is True
@@ -1718,7 +1722,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(0)
         # qml.equal of MidMeasure checks the id
-        mv3.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv3.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         assert qml.equal(mv1 * mv2, mv2 * mv1) is True
         assert qml.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1733,7 +1740,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1763,7 +1773,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -2027,18 +2040,28 @@ class TestSymbolicOpComparison:
                 assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
+    @pytest.mark.parametrize(
+        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+    )
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qml.MultiRZ(1.23, [0, 1])
         base2 = qml.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2)
+        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        # res is given by the wire parametrization, but is overwritten to False if the work
+        # wire types differ. match is only used if res=False, and is adjusted if res was True
+        match = "op1 and op2 have different work wires."
+        if res and wwt1 != wwt2:
+            match = "op1 and op2 have different work wire types."
+            res = False
+
+        assert qml.equal(op1, op2) is res
+
         if res:
-            assert qml.equal(op1, op2) == res
             assert_equal(op1, op2)
         else:
-            assert qml.equal(op1, op2) is False
-            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+            with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
@@ -2105,7 +2128,10 @@ class TestSymbolicOpComparison:
         m2 = qml.measure(wire2)
         if wire1 == wire2:
             # qml.equal checks id for MidMeasure, but here we only care about them acting on the same wire
-            m2.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            m2.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
+                "meas_uid"
+            ]
         base = qml.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
@@ -2846,10 +2872,10 @@ class TestBasisRotation:
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
-    op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
-    op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
-    op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
+    op1 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qml.BasisRotation.operator(wires=range(2, 4), unitary_matrix=rotation_mat)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -2857,7 +2883,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different data"):
+        with pytest.raises(AssertionError, match="has different values"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2869,7 +2895,10 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=re.escape("op1 has value (0, 1) and op2 has value (2, 3)"),
+        ):
             assert_equal(op, other_op)
 
     @pytest.mark.jax
@@ -2883,12 +2912,12 @@ class TestBasisRotation:
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
         )
-        other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
+        other_op = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False) is True
         assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match=r"have different interfaces"):
+        with pytest.raises(AssertionError, match=r"has different interfaces"):
             assert_equal(op, other_op)
 
 
@@ -3047,6 +3076,14 @@ def test_ops_with_abstract_parameters_not_equal():
     with pytest.raises(AssertionError, match="Data contains a tracer"):
         jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
 
+    assert not jax.jit(qml.equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+
+    assert not jax.jit(qml.equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+
 
 @pytest.mark.parametrize(
     "op, other_op",
@@ -3121,3 +3158,120 @@ def test_select():
     op2 = qml.Select((qml.X(0),), control=2)
     qml.assert_equal(op1, op2)
     assert qml.equal(op1, op2) is True
+
+
+# pylint: disable=unused-argument
+class TestCompareSubroutines:
+
+    def test_different_subroutine_defs(self):
+        """Test SubroutineOp are not equal if their Subroutines are not equal."""
+
+        @qml.templates.core.Subroutine
+        def Subroutine1(wires):
+            qml.X(wires)
+
+        @qml.templates.core.Subroutine
+        def Subroutine2(wires):
+            qml.Y(wires)
+
+        op1 = qml.tape.make_qscript(Subroutine1)(0)[0]
+        op2 = qml.tape.make_qscript(Subroutine2)(0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op1 is <Subroutine: Subroutine1>"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_static_args(self):
+        """Test they are different if they have different static args."""
+
+        @partial(qml.templates.core.Subroutine, static_argnames=("a",))
+        def f(a, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)("val1", 0)[0]
+        op2 = qml.tape.make_qscript(f)("val2", 0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op2 has value val2 for input a"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_wires(self):
+        """Test they are different if their wires are different."""
+
+        @partial(qml.templates.core.Subroutine, wire_argnames=("reg1", "reg2"))
+        def f(reg1, reg2):
+            pass
+
+        op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
+        op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match=r"has value \(1,\) for register reg1"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_pytree_inputs(self):
+        """Test that if the pytrees for an input are different, the ops are different."""
+
+        @qml.templates.core.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)((0.5,), 0)[0]
+        op2 = qml.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="have different pytree structures"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_data(self):
+        """Test that if there is different data, they are different operators."""
+
+        @qml.templates.core.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)(np.array(0.5), 0)[0]
+        op2 = qml.tape.make_qscript(f)(np.array(0.5 + 1e-5), 0)[0]
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, rtol=1e-4)
+        assert qml.equal(op1, op2, atol=1e-4)
+
+        op3 = qml.tape.make_qscript(f)(qml.numpy.array(0.5, requires_grad=False), 0)[0]
+        assert not qml.equal(op1, op3)
+        assert qml.equal(op1, op3, check_interface=False)
+
+        op4 = qml.tape.make_qscript(f)(qml.numpy.array(0.5), 0)[0]
+        assert not qml.equal(op3, op4)
+        assert qml.equal(op3, op4, check_trainability=False)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_labelled_op_comparison(self, base):
+        """Test that equal compares two objects of the LabelledOp class"""
+        op1 = LabelledOp(base, "my-base")
+        op2 = LabelledOp(base, "my-base")
+        op3 = LabelledOp(qml.PauliX(15), "my-base")
+        op4 = LabelledOp(base, "blah")
+
+        assert qml.equal(op1, op2) is True
+        assert qml.equal(op1, op3) is False
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
+            assert_equal(op1, op4)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_marked_op_comparison(self, base):
+        """Test that equal compares two objects of the MarkedOp class"""
+        op1 = MarkedOp(base, "my-base")
+        op2 = MarkedOp(base, "my-base")
+        op3 = MarkedOp(qml.PauliX(15), "my-base")
+        op4 = MarkedOp(base, "blah")
+
+        assert qml.equal(op1, op2) is True
+        assert qml.equal(op1, op3) is False
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
+            assert_equal(op1, op4)

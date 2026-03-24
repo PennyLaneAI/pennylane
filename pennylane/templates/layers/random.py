@@ -55,8 +55,8 @@ class RandomLayers(Operation):
         weights (tensor_like): weight tensor of shape ``(L, k)``,
         wires (Iterable): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (tuple[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+        imprimitive (Type[pennylane.ops.Operation]): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+        rotations (tuple[Type[pennylane.ops.Operation]]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
@@ -197,8 +197,8 @@ class RandomLayers(Operation):
             weights (tensor_like): weight tensor
             wires (Any or Iterable[Any]): wires that the operator acts on
             ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-            imprimitive (pennylane.ops.Operation): two-qubit gate to use
-            rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates.
+            imprimitive (Type[pennylane.ops.Operation]): two-qubit gate to use
+            rotations (list[Type[pennylane.ops.Operation]]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates.
             seed (int): seed to generate random architecture
 
         Returns:

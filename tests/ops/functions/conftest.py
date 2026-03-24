@@ -23,11 +23,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
+from pennylane.fourier.mark import MarkedOp
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.templates.core import SubroutineOp
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
@@ -39,6 +42,8 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    (LabelledOp(qml.X(0), "my-x"), {}),
+    (MarkedOp(qml.X(0), "my-x"), {}),
     (qml.ops.MidMeasure(wires=0), {"skip_capture": True}),
     (qml.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
     (ChangeOpBasis(qml.T(0), qml.PauliZ(0)), {}),
@@ -72,8 +77,11 @@ _INSTANCES_TO_TEST = [
     (qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
     (qml.adjoint(qml.PauliX(0)), {}),
     (qml.adjoint(qml.RX(1.1, 0)), {}),
-    (qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]), {}),
-    (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
+    (
+        qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
+        {"skip_differentiation": True},
+    ),
+    (qml.s_prod(1.1, qml.RX(1.1, 0)), {"skip_differentiation": True}),
     (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),
     (qml.ctrl(qml.RX(1.1, 0), 1), {}),
     (qml.exp(qml.PauliX(0), 1.1), {}),
@@ -85,6 +93,7 @@ _INSTANCES_TO_TEST = [
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
     (qml.Identity(0), {}),
+    (qml.Hermitian(np.eye(2), wires=[0]), {"skip_differentiation": True}),
     (
         TrotterizedQfunc(
             0.1,
@@ -165,6 +174,8 @@ These operators need to break PL conventions, and each one's reason is specified
 
 
 _ABSTRACT_OR_META_TYPES = {
+    LabelledOp,
+    MarkedOp,
     Adjoint,
     AdjointOperation,
     Operator,
@@ -179,6 +190,7 @@ _ABSTRACT_OR_META_TYPES = {
     qml.ops.ControlledOp,
     qml.ops.qubit.BasisStateProjector,
     qml.ops.qubit.StateVectorProjector,
+    qml.templates.core.CollectedSubroutine,
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
@@ -208,6 +220,7 @@ _CLASSES_TO_TEST = (
     - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
     - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
+    - {SubroutineOp}
 )
 """All operators, except those tested manually, abstract/meta classes, and templates."""
 

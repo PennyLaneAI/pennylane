@@ -65,7 +65,6 @@ class Hadamard(Operation):
     """
 
     is_verified_hermitian = True
-    _queue_category = "_ops"
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -334,7 +333,6 @@ class PauliX(Operation):
 
     batch_size = None
 
-    _queue_category = "_ops"
     is_verified_hermitian = True
 
     @property
@@ -618,8 +616,6 @@ class PauliY(Operation):
 
     batch_size = None
 
-    _queue_category = "_ops"
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -861,7 +857,6 @@ class PauliZ(Operation):
     """
 
     is_verified_hermitian = True
-    _queue_category = "_ops"
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1284,7 +1279,7 @@ def _pow_s(wires, z, **_):
     qml.PhaseShift(np.pi * z_mod4 / 2, wires=wires)
 
 
-add_decomps("Pow(S)", make_pow_decomp_with_period(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
+add_decomps("Pow(S)", make_pow_decomp_with_period(4, True), _pow_s, _pow_s_to_t, _pow_s_to_z)
 
 
 class T(Operation):
@@ -1441,7 +1436,7 @@ def _pow_t(wires, z, **_):
     qml.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
 
 
-add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
+add_decomps("Pow(T)", make_pow_decomp_with_period(8, True), _pow_t)
 
 
 class SX(Operation):
@@ -1607,7 +1602,7 @@ def _pow_sx(wires, z, **_):
     qml.GlobalPhase(-np.pi / 4 * z_mod4, wires=wires)
 
 
-add_decomps("Pow(SX)", make_pow_decomp_with_period(4), _pow_sx_to_x, _pow_sx)
+add_decomps("Pow(SX)", make_pow_decomp_with_period(4, True), _pow_sx_to_x, _pow_sx)
 
 
 class SWAP(Operation):
@@ -2162,7 +2157,9 @@ def _pow_iswap_to_zz(wires, **__):
     qml.Z(wires=wires[1])
 
 
-add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
+add_decomps(
+    "Pow(ISWAP)", make_pow_decomp_with_period(4, True), _pow_iswap_to_zz, _pow_iswap_to_siswap
+)
 
 
 class SISWAP(Operation):
@@ -2378,7 +2375,9 @@ def _pow_siswap_to_zz(wires, **_):
     qml.Z(wires=wires[1])
 
 
-add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
+add_decomps(
+    "Pow(SISWAP)", make_pow_decomp_with_period(8, True), _pow_siswap_to_zz, _pow_siswap_to_iswap
+)
 
 
 SQISW = SISWAP

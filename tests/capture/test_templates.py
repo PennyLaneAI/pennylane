@@ -61,15 +61,6 @@ unmodified_templates_cases = [
     (qml.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qml.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qml.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
-    (qml.BasisEmbedding, (jnp.array([1, 0]), [2, 3]), {}),
-    pytest.param(
-        qml.BasisEmbedding,
-        (),
-        {"features": jnp.array([1, 0]), "wires": [2, 3]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata [sc-104808]"),
-    ),
-    (qml.BasisEmbedding, (6, [0, 5, 2]), {"id": "my_id"}),
-    (qml.BasisEmbedding, (jnp.array([1, 0, 1]),), {"wires": [0, 2, 3]}),
     (qml.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.1]), [0, 10]), {"n_repeats": 3, "pattern": None}),
@@ -81,7 +72,7 @@ unmodified_templates_cases = [
         {"local_field": "Z", "wires": [0, 2, 3]},
     ),
     (qml.BasicEntanglerLayers, (jnp.ones((5, 2)), [2, 3]), {}),
-    (qml.BasicEntanglerLayers, (jnp.ones((2, 1)), [0]), {"rotation": "X", "id": "my_id"}),
+    (qml.BasicEntanglerLayers, (jnp.ones((2, 1)), [0]), {"rotation": "X"}),
     (
         qml.BasicEntanglerLayers,
         (jnp.array([[0.3, 0.1, 0.2]]),),
@@ -99,7 +90,7 @@ unmodified_templates_cases = [
         ),
     ),
     # (qml.GateFabric, (jnp.zeros((2, 3, 2)), jnp.ones(8)), {"include_pi": False, "wires": list(range(8))}), # Can't even init
-    # (qml.GateFabric, (jnp.ones((5, 2, 2)), list(range(6)), jnp.array([0, 0, 1, 1, 0, 1])), {"include_pi": True, "id": "my_id"}), # Can't trace
+    # (qml.GateFabric, (jnp.ones((5, 2, 2)), list(range(6)), jnp.array([0, 0, 1, 1, 0, 1])), {"include_pi": True}), # Can't trace
     # https://github.com/PennyLaneAI/pennylane/issues/5522
     # (qml.ParticleConservingU1, (jnp.ones((3, 1, 2)), [2, 3]), {}),
     (qml.ParticleConservingU1, (jnp.ones((3, 1, 2)), [2, 3]), {"init_state": [0, 1]}),
@@ -182,7 +173,7 @@ unmodified_templates_cases = [
     (
         qml.MottonenStatePreparation,
         (jnp.ones(8) / jnp.sqrt(8),),
-        {"wires": [3, 2, 0], "id": "your_id"},
+        {"wires": [3, 2, 0]},
     ),
     pytest.param(
         qml.MottonenStatePreparation,
@@ -195,8 +186,6 @@ unmodified_templates_cases = [
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
-    (qml.QFT, ([0, 1],), {}),
-    (qml.QFT, (), {"wires": [0, 1]}),
     (qml.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qml.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -239,8 +228,13 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
-    (qml.TemporaryAND, (), ({"wires": [0, 1, 2], "control_values": [0, 1]})),
-    (qml.TemporaryAND, ([0, 1, 2],), ({"control_values": [0, 1]})),
+    (qml.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
+    (qml.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (
+        qml.SumOfSlatersPrep,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+    ),
 ]
 
 
@@ -292,11 +286,11 @@ def test_unmodified_templates(template, args, kwargs):
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
 tested_modified_templates = [
+    qml.BasisEmbedding,
     qml.TrotterProduct,
     qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
-    qml.BasisRotation,
     qml.BBQRAM,
     qml.CommutingEvolution,
     qml.ControlledSequence,
@@ -337,6 +331,17 @@ tested_modified_templates = [
 # pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
+
+    def test_basis_embedding_is_basis_state(self):
+        """Test that basis embedding is just BasisState."""
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
     @pytest.mark.parametrize(
         "template, kwargs",
@@ -425,36 +430,6 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
-
-    def test_basis_rotation(self):
-        """Test the primitive bind call of BasisRotation."""
-
-        mat = np.eye(4)
-        wires = [0, 5]
-
-        def qfunc(wires, mat):
-            qml.BasisRotation(wires, mat, check=True)
-
-        # Validate inputs
-        qfunc(wires, mat)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
-
-        assert len(jaxpr.eqns) == 1
-
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.BasisRotation._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"check": True, "id": None}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
@@ -680,13 +655,13 @@ class TestModifiedTemplates:
             "block": block,
             "n_params_block": 2,
             "template_weights": kwargs["template_weights"],
-            "id": None,
             "n_wires": 4,
         }
         if template is qml.MPS:
             expected_params["offset"] = None
         # JAX 0.7.0 converts lists to tuples for hashability
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(expected_params)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -769,12 +744,13 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.MPSPrep._primitive
         assert eqn.invars[:4] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        assert eqn.params == {
-            "id": None,
+        expected_params = {
             "n_wires": 3,
             "work_wires": None,
             "right_canonicalize": False,
         }
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert actual_params == expected_params
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -832,7 +808,7 @@ class TestModifiedTemplates:
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
 
-        kwargs = {"func": func, "id": None, "num_target_wires": 6}
+        kwargs = {"func": func, "num_target_wires": 6}
 
         def qfunc(probs, target_wires, estimation_wires):
             qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
@@ -848,7 +824,9 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QuantumMonteCarlo._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        relevant_keys = {"func", "num_target_wires"}
+        actual_params = {k: v for k, v in eqn.params.items() if k in relevant_keys}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1437,7 +1415,7 @@ class TestModifiedTemplates:
         assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
         assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
         assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params == {"n_wires": 1, "id": None}
+        assert gqps_eqn.params["n_wires"] == 1
         assert len(gqps_eqn.outvars) == 1
         assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
 
@@ -1592,7 +1570,11 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qml.templates."""
-    return inspect.isclass(member) and member.__module__.startswith("pennylane.templates")
+    return (
+        inspect.isclass(member)
+        and member.__module__.startswith("pennylane.templates")
+        and issubclass(member, qml.operation.Operator)
+    )
 
 
 _, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn))
@@ -1606,6 +1588,8 @@ unsupported_templates = [
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
+    qml.templates.core.SubroutineOp,
+    qml.templates.core.Subroutine,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
@@ -1617,6 +1601,8 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
+    if template == qml.templates.core.SubroutineOp:
+        return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
 

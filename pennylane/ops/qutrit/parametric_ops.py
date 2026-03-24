@@ -21,6 +21,8 @@ import functools
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation
 from pennylane.operation import Operation
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
@@ -198,6 +200,9 @@ class TRX(Operation):
         return [TRX(self.data[0] * z, wires=self.wires, subspace=self.subspace)]
 
 
+add_decomps("Adjoint(TRX)", adjoint_rotation)
+
+
 class TRY(Operation):
     r"""
     The single qutrit Y rotation
@@ -344,6 +349,9 @@ class TRY(Operation):
         return [TRY(self.data[0] * z, wires=self.wires, subspace=self.subspace)]
 
 
+add_decomps("Adjoint(TRY)", adjoint_rotation)
+
+
 class TRZ(Operation):
     r"""The single qutrit Z rotation
 
@@ -485,3 +493,6 @@ class TRZ(Operation):
 
     def pow(self, z):
         return [TRZ(self.data[0] * z, wires=self.wires, subspace=self.subspace)]
+
+
+add_decomps("Adjoint(TRZ)", adjoint_rotation)

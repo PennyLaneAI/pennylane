@@ -179,7 +179,7 @@ class StronglyEntanglingLayers(Operation):
         return {
             "imprimitive": self.hyperparameters["imprimitive"],
             "n_wires": len(self.wires),
-            "n_layers": math.shape(self.data)[-3],
+            "n_layers": math.shape(self.data[0])[-3],
         }
 
     @property

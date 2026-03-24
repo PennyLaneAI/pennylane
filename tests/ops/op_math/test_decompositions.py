@@ -61,7 +61,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
             qml.math.unwrap(gate.parameters),
             expected_params[i],
             atol=1e-7,
-        ), "Incorrect gate parameters"
+        ), f"Incorrect gate parameters\n{qml.math.unwrap(gate.parameters)}\n{expected_params[i]}"
 
     obtained_mat = reduce(
         qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
@@ -1440,7 +1440,7 @@ class TestTwoQubitDecompositionWarnings:
     "U, n_wires",
     [
         (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
-        (qml.QFT.compute_matrix(5), 5),
+        (qml.matrix(qml.QFT, wire_order=range(5))(range(5)), 5),
         (qml.GroverOperator.compute_matrix(6, []), 6),
     ],
 )
@@ -1592,8 +1592,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
+            (qml.matrix(qml.QFT, wire_order=range(2))(range(2)), 2),
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [2, 0])), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
-            (qml.QFT.compute_matrix(5), 5),
+            (qml.matrix(qml.QFT, wire_order=range(5))(range(5)), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
         ],
     )

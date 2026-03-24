@@ -545,8 +545,10 @@ class TestAutogradExecuteIntegration:
 
         device = get_device(device_name, seed=seed)
 
-        class U3(qml.U3):
+        class MyU3(qml.U3):
             """Dummy operator."""
+
+            name = "MyU3"
 
             def decomposition(self):
                 theta, phi, lam = self.data
@@ -558,7 +560,7 @@ class TestAutogradExecuteIntegration:
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+                [qml.RX(a, wires=0), MyU3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
             diff_method = execute_kwargs["diff_method"]
 
@@ -583,7 +585,7 @@ class TestAutogradExecuteIntegration:
                 qml.Rot(lam, theta, -lam, wires)
                 qml.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(U3, _decomp)
+            qml.add_decomps(MyU3, _decomp)
 
             a = pnp.array(0.1, requires_grad=False)
             p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)

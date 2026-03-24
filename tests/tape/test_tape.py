@@ -832,6 +832,8 @@ class TestInverseAdjoint:
         assert isinstance(adjoint_tape, QuantumTape)
 
 
+# We're deprecating tape.expand so we don't care if tests pass with graph enabled
+@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestExpand:
     """Tests for tape expansion"""
 

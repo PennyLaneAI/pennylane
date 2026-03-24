@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the cond_measure function"""
-
 from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionWarning
 from pennylane.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
@@ -228,7 +228,11 @@ class TestWorkflows:
         # without the transform, the mid-circuit measurements are all treated as computational
         # basis measurements, and they are inside Conditional, which doesn't execute correctly,
         # so we return incorrect results, even with a high atol (± ~20-30% of expected outcome)
-        assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        if qml.decomposition.enabled_graph():
+            with pytest.warns(DecompositionWarning):
+                assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        else:
+            assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
@@ -266,5 +270,10 @@ class TestWorkflows:
         # this can't be executed without diagonalize_mcms, because without the transform, it
         # tries to get concrete values for measurements that weren't executed when it hits
         # the conditional that depends on m2, and can't find it in the measurements dictionary
-        with pytest.raises(KeyError):
-            circ(x, y)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(KeyError):
+                with pytest.warns(DecompositionWarning):
+                    circ(x, y)
+        else:
+            with pytest.raises(KeyError):
+                circ(x, y)

@@ -71,7 +71,7 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._grad import grad, jacobian, vjp, jvp
+from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -112,6 +112,7 @@ from pennylane.transforms import (
     batch_input,
     batch_partial,
     compile,
+    decompose,
     defer_measurements,
     dynamic_one_shot,
     quantum_monte_carlo,

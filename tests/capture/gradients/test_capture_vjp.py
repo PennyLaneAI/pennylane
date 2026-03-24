@@ -85,6 +85,13 @@ class TestErrors:
         with pytest.raises(ValueError, match=r"got function output params shape"):
             qml.vjp(f, params, cotangents)
 
+    @pytest.mark.parametrize("argnums", (4.5, "abc"))
+    def test_error_bad_argnums(self, argnums):
+        """Test that an error is raised if the argnums is not a collection."""
+
+        with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
+            qml.vjp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
+
 
 class TestCapturingVJP:
 

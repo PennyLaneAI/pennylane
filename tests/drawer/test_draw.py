@@ -897,6 +897,60 @@ class TestMidCircuitMeasurements:
 
         assert drawing == expected_drawing
 
+    def test_subroutine_with_mcm_output(self):
+        """ "Test we can properly draw a subroutine with mcm output.
+        Making sure to include testing for:
+        * classical output output that is not an mcm
+        * multiple mcm outputs
+        * multiple uses of an mcm
+        * a quantum wire in the same layer not occupied by the subroutine
+        * a classical wire in the same layer not used by the subroutine
+        * mcm output that is not used by anything
+        """
+
+        @qml.templates.core.Subroutine
+        def f(wires):
+            return [2] + [qml.measure(w) for w in wires]
+
+        def c():
+            m = qml.measure(3)
+            ms = f((0, 1, 2))
+
+            qml.cond(m, qml.S)(0)
+            qml.cond(ms[1], qml.T)(0)
+            qml.cond(ms[2], qml.SX)(0)
+            return qml.expval(ms[1])
+
+        out = qml.draw(c)()
+
+        expected_drawing = (
+            "0: ──────╭f──S──T──SX─┤       \n"
+            "1: ──────├f──║──║──║──┤       \n"
+            "2: ──────╰f──║──║──║──┤       \n"
+            "3: ──┤↗├──║──║──║──║──┤       \n"
+            "      ╚═══║══╝  ║  ║          \n"
+            "          ╠═════╩══║══╡  <MCM>\n"
+            "          ╚════════╝          "
+        )
+        assert out == expected_drawing
+
+    def test_subroutine_with_multi_measure_measurement_value(self):
+        """Test that the subroutine can output a measurement value with multiple measurements."""
+
+        @qml.templates.core.Subroutine
+        def f(wires):
+            m0 = qml.measure(wires[0])
+            m1 = qml.measure(wires[1])
+            return m0 + m1
+
+        def c():
+            m = f((0, 1))
+            qml.cond(m == 1, qml.S)(0)
+
+        out = qml.draw(c)()
+        expected = "0: ─╭f──S─┤  \n1: ─╰f──║─┤  \n     ╠══╣    \n     ╚══╝    "
+        assert out == expected
+
 
 class TestPauliMeasure:
     """Tests PauliMeasure in a circuit drawing."""
@@ -1089,7 +1143,7 @@ class TestLevelExpansionStrategy:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
