@@ -671,7 +671,7 @@ def shadow_expval(
 
         >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
-        We can estimate it's expectation value with the classical shadows protocol:
+        We can estimate its expectation value with the classical shadows protocol:
 
         .. code-block:: python
 
