@@ -985,8 +985,8 @@ def _evolve_state_vector_under_parametrized_evolution(
 
     if operation.data is None or operation.t is None:
         raise ValueError(
-            "The parameters and the time window are required to compute the matrix. "
-            "You can update its values by calling the class: EV(params, t)."
+            "The parameters and the time window are required to execute a ParametrizedEvolution "
+            "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
         )
 
     if is_state_batched:
