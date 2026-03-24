@@ -56,7 +56,7 @@ def test_legacy_ui():
     with qml.queuing.AnnotatedQueue() as q:
         S_op = S(3.14, 0)
 
-    assert S_op is None
+    assert isinstance(S_op, SubroutineOp)
     assert len(q.queue) == 1
     qml.assert_equal(q.queue[0], S_op_correct)
 
@@ -370,7 +370,7 @@ class TestSubroutineCall:
         with qml.queuing.AnnotatedQueue() as q:
             out = f(0, ["X"])
         op = q.queue[0]
-        assert out is None
+        assert isinstance(out, SubroutineOp)
         assert op.bound_args.arguments["pauli_words"] == ("X",)
 
     def test_fill_in_default_values(self):
@@ -382,8 +382,8 @@ class TestSubroutineCall:
 
         with qml.queuing.AnnotatedQueue() as q:
             out = f(0)
-        assert out is None
         op = q.queue[0]
+        assert isinstance(out, SubroutineOp)
         assert op.bound_args.arguments["metadata"] == "default_value"
 
     @pytest.mark.usefixtures("ignore_id_deprecation")

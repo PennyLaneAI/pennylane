@@ -870,15 +870,16 @@ class Subroutine:
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
         op = self.operator(*args, id=id, **kwargs)
 
-        if op.output is not None or queuing.QueuingManager.recording():
+        if op.output is not None:
             return op.output
 
-        warnings.warn(
-            f"Calling '{self.name}' in order to obtain an 'Operator' instance outside a queuing context is deprecated "
-            "and will be removed in a future release. Please use '{self.name}.operator(*args, **kwargs)' in order to "
-            "obtain the operator explicitly.",
-            PennyLaneDeprecationWarning,
-        )
+        if not queuing.QueuingManager.recording():
+            warnings.warn(
+                f"Calling '{self.name}' in order to obtain an 'Operator' instance outside a queuing context is deprecated "
+                "and will be removed in a future release. Please use '{self.name}.operator(*args, **kwargs)' in order to "
+                "obtain the operator explicitly.",
+                PennyLaneDeprecationWarning,
+            )
         return op
 
 
