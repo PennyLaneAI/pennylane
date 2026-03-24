@@ -136,7 +136,7 @@ class ResourceCosineWindow(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources were obtained from Figure 6 in arXiv:2110.09590 `<https://arxiv.org/pdf/2110.09590>`_.
+        The resources were obtained from Figure 6 in `arXiv:2110.09590 <https://arxiv.org/pdf/2110.09590>`_.
 
 
     .. seealso:: :class:`~.CosineWindow`
