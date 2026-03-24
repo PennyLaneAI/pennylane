@@ -43,7 +43,7 @@ def test_legacy_ui():
         qml.RX(x, wires=wires)
 
     S = Subroutine(Simple)
-    expected_msg = r"Subroutines must be converted to Operators with the '\.operator\(\)' method\."
+    expected_msg = r"Calling 'Simple' outside a queuing context is deprecated.*"
 
     with pytest.warns(PennyLaneDeprecationWarning, match=expected_msg):
         S_op = S(3.14, 0)
