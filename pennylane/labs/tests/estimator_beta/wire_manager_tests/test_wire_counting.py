@@ -18,7 +18,10 @@ import pytest
 import pennylane as qml
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
-from pennylane.estimator import GateCount, Resources
+from pennylane.estimator import (
+    GateCount,
+    Resources,
+)
 from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,
@@ -1203,7 +1206,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4]),
                     AllocateOp(Allocate(3)),
                     qre.CNOT(),
                     DeallocateOp(Deallocate(2)),
@@ -1361,7 +1364,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=2,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1450,7 +1453,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1477,7 +1480,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1504,7 +1507,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1531,7 +1534,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1558,7 +1561,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1585,7 +1588,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT.operator(wires=[0, 1, 2, 3, 4, 5]),
+                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
