@@ -20,6 +20,9 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 
+# pylint: disable=no-self-use
+
+
 class TestOutOfPlaceIntegerComparator:
     """Test the OutOfPlaceIntegerComparator class."""
 
@@ -139,7 +142,10 @@ class TestOutOfPlaceIntegerComparator:
                 2,
                 True,
                 [
-                    GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}), 1),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        1,
+                    ),
                     GateCount(resource_rep(qre.CNOT), 2),
                     GateCount(resource_rep(qre.X), 1),
                     Deallocate(1),
@@ -150,7 +156,10 @@ class TestOutOfPlaceIntegerComparator:
                 4,
                 True,
                 [
-                    GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}), 3),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        3,
+                    ),
                     GateCount(resource_rep(qre.CNOT), 6),
                     GateCount(resource_rep(qre.X), 1),
                     Deallocate(3),
@@ -162,7 +171,10 @@ class TestOutOfPlaceIntegerComparator:
                 4,
                 False,
                 [
-                    GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}), 3),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        3,
+                    ),
                     GateCount(resource_rep(qre.CNOT), 6),
                     Deallocate(3),
                 ],
@@ -172,7 +184,10 @@ class TestOutOfPlaceIntegerComparator:
                 2,
                 False,
                 [
-                    GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}), 1),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        1,
+                    ),
                     GateCount(resource_rep(qre.CNOT), 2),
                     Deallocate(1),
                 ],
@@ -232,7 +247,7 @@ class TestRegisterEquality:
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
             qre.RegisterEquality,
-            2*register_size + 1,
+            2 * register_size + 1,
             {"register_size": register_size},
         )
         assert qre.RegisterEquality.resource_rep(register_size) == expected
@@ -242,7 +257,14 @@ class TestRegisterEquality:
         (
             (0, []),
             (1, [GateCount(resource_rep(qre.X)), GateCount(resource_rep(qre.CNOT), 2)]),
-            (3, [Allocate(1), GateCount(resource_rep(qre.Toffoli), 2), GateCount(resource_rep(qre.CNOT), 3)]),
+            (
+                3,
+                [
+                    Allocate(1),
+                    GateCount(resource_rep(qre.Toffoli), 2),
+                    GateCount(resource_rep(qre.CNOT), 3),
+                ],
+            ),
             (
                 6,
                 [
@@ -267,7 +289,14 @@ class TestRegisterEquality:
         (
             (0, []),
             (1, [GateCount(resource_rep(qre.X)), GateCount(resource_rep(qre.CNOT), 2)]),
-            (3, [GateCount(resource_rep(qre.Toffoli), 2), GateCount(resource_rep(qre.CNOT), 3), Deallocate(1)]),
+            (
+                3,
+                [
+                    GateCount(resource_rep(qre.Toffoli), 2),
+                    GateCount(resource_rep(qre.CNOT), 3),
+                    Deallocate(1),
+                ],
+            ),
             (
                 6,
                 [
@@ -286,4 +315,3 @@ class TestRegisterEquality:
                 assert r.equal(e)
             else:
                 assert r == e
-
