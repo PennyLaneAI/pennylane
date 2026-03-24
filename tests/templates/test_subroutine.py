@@ -43,20 +43,22 @@ def test_legacy_ui():
         qml.RX(x, wires=wires)
 
     S = Subroutine(Simple)
-    expected_msg = r"Calling 'Simple' in order to obtain an 'Operator' instance outside a queuing context is deprecated.*"
+    S_op_correct = S.operator(3.14, 0)
 
+    expected_msg = r"Calling 'Simple' in order to obtain an 'Operator' instance outside a queuing context is deprecated.*"
     with pytest.warns(PennyLaneDeprecationWarning, match=expected_msg):
         S_op = S(3.14, 0)
 
     assert isinstance(S_op, SubroutineOp)
     assert S_op.decomposition() == [qml.RX(3.14, 0)]
+    qml.assert_equal(S_op, S_op_correct)
 
     with qml.queuing.AnnotatedQueue() as q:
         S_op = S(3.14, 0)
 
     assert S_op is None
     assert len(q.queue) == 1
-    qml.assert_equal(q.queue[0], S.operator(3.14, 0))
+    qml.assert_equal(q.queue[0], S_op_correct)
 
 
 class TestInitialization:
