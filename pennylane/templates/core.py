@@ -870,17 +870,14 @@ class Subroutine:
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
         op = self.operator(*args, id=id, **kwargs)
 
-        if op.output is not None:
+        if op.output is not None or queuing.QueuingManager.recording():
             return op.output
 
-        if not queuing.QueuingManager.recording():
-            warnings.warn(
-                "Subroutines must be converted to Operators with the '.operator()' method.",
-                PennyLaneDeprecationWarning,
-            )
-            return op
-
-        return op.output
+        warnings.warn(
+            "Subroutines must be converted to Operators with the '.operator()' method.",
+            PennyLaneDeprecationWarning,
+        )
+        return op
 
 
 class CollectedSubroutine(Operation):
