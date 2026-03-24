@@ -874,7 +874,7 @@ class Subroutine:
             return op.output
 
         warnings.warn(
-            f"Calling '{self.name}' outside a queuing context is deprecated "
+            f"Calling '{self.name}' in order to obtain an 'Operator' instance outside a queuing context is deprecated "
             "and will be removed in a future release. Please use '.operator(*args, **kwargs)' in order to "
             "obtain the operator explicitly.",
             PennyLaneDeprecationWarning,
