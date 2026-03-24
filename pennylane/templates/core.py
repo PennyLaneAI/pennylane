@@ -874,7 +874,9 @@ class Subroutine:
             return op.output
 
         warnings.warn(
-            "Subroutines must be converted to Operators with the '.operator()' method.",
+            f"Calling '{self.name}' outside a queuing context is deprecated "
+            "and will be removed in a future release. Please use '.operator(*args, **kwargs)' in order to "
+            "obtain the operator explicitly.",
             PennyLaneDeprecationWarning,
         )
         return op
