@@ -312,7 +312,6 @@ tested_modified_templates = [
     qml.TTN,
     qml.QROM,
     qml.PhaseAdder,
-    qml.Adder,
     qml.SemiAdder,
     qml.Multiplier,
     qml.OutMultiplier,
@@ -1152,8 +1151,8 @@ class TestModifiedTemplates:
         kwargs = {
             "k": 3,
             "x_wires": [0, 1],
-            "mod": None,
-            "work_wires": None,
+            "mod": 4,
+            "work_wires": [2, 3],
         }
 
         def qfunc():
@@ -1165,20 +1164,12 @@ class TestModifiedTemplates:
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 1
+        assert len(jaxpr.eqns) == 7
 
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.Adder._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
+        eqn = jaxpr.eqns[-1]
+        assert eqn.primitive.name == "quantum_subroutine_prim"
+        assert len(eqn.invars) == 2
+        assert len(eqn.outvars) == 0
 
     def test_semiadder(self):
         """Test the primitive bind call of SemiAdder."""
@@ -1590,6 +1581,7 @@ unsupported_templates = [
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
     qml.templates.core.SubroutineOp,
     qml.templates.core.Subroutine,
+    qml.Adder,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
