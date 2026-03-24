@@ -171,11 +171,25 @@ class PrepFirstQuantization(ResourceOperator):
 
         eta = fq_ham.num_electrons
         # Step:1: Rotate the ancilla qubit for selecting between T and U+V Preparations
-        gate_list.append(GateCount("Ry", 1))
+        gate_list.append(GateCount(resource_rep(qre.RY), 1))
 
-        # Step 2: Prepare an equal superposition over i and j registers and check that i != j
+        # Step 2a: Prepare an equal superposition over i and j registers
         n_eta = ceil_log2(eta)
+        ineq = resource_rep(qre.OutOfPlaceIntegerComparator, {"value": eta, "register_size": n_eta, "geq": False})
+        gate_list.append(GateCount(ineq, 2)) # one for i and one for j
 
+        toffoli = resource_rep(qre.Toffoli)
+        gate_list.append(GateCount(toffoli, 2 * br - 6))  # for rotation on ancilla
 
+        cz = resource_rep(qre.CZ)
+        gate_list.append(GateCount(cz, 2))
+
+        gate_list.append(GateCount(toffoli, 2* br - 6)) # invert the rotation
+
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 2)) # uncompute the inequality
+
+        gate_list.append(GateCount(toffoli, n_eta - 1)) # Reflection on n_eta - 1 qubits
+
+        gate_list.append(GateCount(ineq, 2)) # compute the inequality again
         return gate_list
 
