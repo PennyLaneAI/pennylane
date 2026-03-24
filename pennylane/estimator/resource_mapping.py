@@ -101,7 +101,7 @@ def _register_subroutine(subroutine: qtemps.Subroutine):
 
 
 @_map_to_resource_op.register
-def _resources_for_subroutine(op: qtemps.core.SubroutineOp):
+def _resources_for_subroutine(op: qtemps.SubroutineOp):
     if op.subroutine in _Subroutine_map:
         return _Subroutine_map[op.subroutine](op)
     with QueuingManager.stop_recording():
@@ -295,8 +295,8 @@ def _(op: qtemps.SemiAdder):
     )
 
 
-@_register_subroutine(qtemps.QFT)
-def _handle_qft(op):
+@_map_to_resource_op.register
+def _(op: qtemps.QFT):
     return re_temps.QFT(num_wires=len(op.wires), wires=op.wires)
 
 
