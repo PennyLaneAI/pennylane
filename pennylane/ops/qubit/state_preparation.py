@@ -34,7 +34,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.templates.state_preparations.mottonen import MottonenStatePreparation
+from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 

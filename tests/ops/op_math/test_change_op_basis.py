@@ -29,7 +29,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.queuing import AnnotatedQueue
-from pennylane.templates.core import Subroutine
+from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ

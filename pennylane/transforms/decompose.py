@@ -35,7 +35,7 @@ from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
 
@@ -101,7 +101,6 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         ):  # pylint: disable=too-many-arguments
             self.max_expansion = max_expansion
             self._current_depth = 0
-            self.subroutine_cache = {}
 
             if not enabled_graph() and (fixed_decomps or alt_decomps):
                 raise TypeError(
