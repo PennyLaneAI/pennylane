@@ -624,7 +624,7 @@ def shadow_expval(
             .. note::
 
                 The ``seed`` argument only controls the measurement basis choice.
-                The device's ``seed`` sepeartely controls the sampling outcomes.
+                The ``seed`` of a simulator device separately controls the sampling outcomes.
                 For fully reproducible results, you must seed both the device and the measurement.
 
                 .. code-block:: python
