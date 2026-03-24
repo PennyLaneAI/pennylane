@@ -343,10 +343,10 @@ class OutSquare(Operation):
                 ]
             )
             # Mark that the copying has happened and does not have to happen via an adder below
-            x_wires_to_multiply = x_wires[:-1]
+            x_wires_to_multiply = x_wires[-m:-1]
             start = 1
         else:
-            x_wires_to_multiply = x_wires
+            x_wires_to_multiply = x_wires[-m:]
             start = 0
 
         for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
@@ -358,16 +358,14 @@ class OutSquare(Operation):
             # in the output register can have grown by then.
             start_add_y_wires = max(0, m - n - i - 1) if output_wires_zeroed else 0
             add_y_wires = output_wires[start_add_y_wires : max(0, m - i)]
-            op_list.extend(
-                [
-                    CNOT([x_wire, work_wires[0]]),
-                    Controlled(
-                        SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:]),
-                        control_wires=work_wires[:1],
-                    ),
-                    CNOT([x_wire, work_wires[0]]),
-                ]
+            op_list.append(CNOT([x_wire, work_wires[0]]))
+            op_list.append(
+                Controlled(
+                    SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:]),
+                    control_wires=work_wires[:1],
+                )
             )
+            op_list.append(CNOT([x_wire, work_wires[0]]))
 
         return op_list
 
@@ -379,19 +377,16 @@ def _out_square_resources(
     n = num_x_wires
     m = num_output_wires
     resources = defaultdict(int)
-    resources[resource_rep(CNOT)] = 2 * (n - 1)
     if output_wires_zeroed:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
         resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (n - 1)
-    else:
-        # Copying is done via CNOT-wrapped controlled adder. Account for CNOTs here
-        resources[resource_rep(CNOT)] += 2
+        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (min(n, m) - 1)
 
     # Controlled adders, includes the one for copying if output_wires_zeroed=False
     for i in range(output_wires_zeroed, min(num_x_wires, num_output_wires)):
         start_add_y_wires = max(0, m - n - i - 1) if output_wires_zeroed else 0
         num_out = max(0, m - i) - start_add_y_wires
+        resources[resource_rep(CNOT)] += 2
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,

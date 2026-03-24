@@ -118,6 +118,45 @@ class TestOutSquare:
             out_ints = [int("".join(map(str, out[0])), 2) for out in output]
             assert np.allclose(out_ints, [x, (z + x**2) % mod, 0])
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_qjit_dynamic_wires(self, output_wires_zeroed):
+        """Test the OutSquare template with dynamic wires."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        x_wires = np.array([0, 1, 2, 3])
+        output_wires = np.array([4, 5, 6, 7, 8])
+        work_wires = np.array([9, 10, 11, 12, 13])
+
+        dev = qml.device("lightning.qubit")
+
+        x = 13
+        mod = 2 ** len(output_wires)
+        if output_wires_zeroed:
+            z = 0
+        else:
+            z = mod - 2  # Some number close to causing overflows
+
+        @qml.qjit
+        @qml.set_shots(1)
+        @qml.qnode(dev)
+        def circuit(x, z, x_wires, work_wires):
+            qml.BasisEmbedding(x, wires=x_wires)
+            qml.BasisEmbedding(z, wires=output_wires)
+            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+            return (
+                qml.sample(wires=x_wires),
+                qml.sample(wires=output_wires),
+                qml.sample(wires=work_wires),
+            )
+
+        output = circuit(x, z, x_wires, work_wires)
+        out_ints = [int("".join(map(str, out[0])), 2) for out in output]
+        assert np.allclose(out_ints, [x, (z + x**2) % mod, 0])
+
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "msg_match"),
         [
@@ -158,6 +197,13 @@ class TestOutSquare:
             ([0], [3, 4, 5], [6, 7, 8], True, False),
             ([0], [3, 4, 5], [6, 7], True, False),
             ([0], [3, 4, 5], [6], True, True),
+            ([0, 1, 2], [3, 4, 5], [6, 7, 8], False, False),
+            ([0, 1, 2], [3, 4, 5], [6, 7], False, True),
+            ([0, 1], [3, 4, 5], [6, 7, 8], False, False),
+            ([0, 1], [3, 4, 5], [6, 7], False, True),
+            ([0], [3, 4, 5], [6, 7, 8], False, False),
+            ([0], [3, 4, 5], [6, 7], False, True),
+            ([0], [3, 4, 5], [6], False, True),
         ],
     )
     def test_work_wire_number(
