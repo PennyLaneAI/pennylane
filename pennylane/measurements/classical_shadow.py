@@ -643,7 +643,7 @@ def shadow_expval(
 
     With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
     observables requires its own separate circuit execution. However, with ``shadow_expval``
-    we can use shadow data from a single circuit execution to estimate expectation values.
+    we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
 
     Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
     (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` in a single circuit execution.
