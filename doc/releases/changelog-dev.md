@@ -5,7 +5,7 @@
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
   following `SymbolicOps` have been re-written.
 
-  - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199)
+  - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
@@ -88,7 +88,7 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
-* Adds a new `qml.templates.core.Subroutine` class for adding a layer of abstraction for
+* Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
   and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
@@ -109,7 +109,7 @@
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
-  from pennylane.templates.core import Subroutine
+  from pennylane.templates import Subroutine
 
   @Subroutine
   def MyTemplate(x, y, wires):
@@ -129,7 +129,6 @@
 
 The following classes have been ported over:
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
-- `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
@@ -427,6 +426,9 @@ The following classes have been ported over:
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
+
+* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter. 
+  [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -961,4 +963,5 @@ Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
 David Wierichs,
+Fuyuan Xia,
 Jake Zaia.
