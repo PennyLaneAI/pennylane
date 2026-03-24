@@ -601,7 +601,7 @@ def shadow_expval(
 
     Classical shadows provide a way to estimate a large number of expectation values
     (even non-commuting ones) using a single set of random Pauli measurements.
-    See `2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal.
+    See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal.
 
     .. note::
 
