@@ -26,7 +26,7 @@ from pennylane.ops import (
     PauliMeasure,
 )
 from pennylane.pytrees import flatten
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates import SubroutineOp
 
 from .utils import default_wire_map, unwrap_controls
 

@@ -124,6 +124,7 @@ operations = {
     "QubitSum",
     "OrbitalRotation",
     "FermionicSWAP",
+    "QFT",
     "ThermalRelaxationError",
     "ECR",
     "ParametrizedEvolution",

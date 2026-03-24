@@ -116,8 +116,8 @@ class TestCompressedResourceOp:
     def test_initialization(self):
         """Tests creating a CompressedResourceOp object."""
 
-        op = CompressedResourceOp(qml.MultiControlledX, {"num_wires": 5})
-        assert op.op_type is qml.MultiControlledX
+        op = CompressedResourceOp(qml.QFT, {"num_wires": 5})
+        assert op.op_type is qml.QFT
         assert op.params == {"num_wires": 5}
 
         op = CompressedResourceOp(qml.RX)
@@ -139,13 +139,13 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qml.RX, {})
         assert isinstance(hash(op), int)
 
-        op = CompressedResourceOp(qml.MultiControlledX, {"num_wires": 5})
+        op = CompressedResourceOp(qml.QFT, {"num_wires": 5})
         assert isinstance(hash(op), int)
 
         op = CompressedResourceOp(
             qml.ops.Controlled,
             {
-                "base_class": qml.MultiControlledX,
+                "base_class": qml.QFT,
                 "base_params": {"num_wires": 5},  # nested dictionary in params
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
