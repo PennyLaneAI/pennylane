@@ -641,7 +641,7 @@ def shadow_expval(
 
     **Example**
 
-    With the standard :func:`~.pennylane.expval` measurement each group of non-commuting
+    With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
     observables requires it's own separate circuit execution. However, with ``shadow_expval``
     we can use shadow data from a single circuit execution to estimate expectation values.
 
