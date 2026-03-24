@@ -681,7 +681,7 @@ class TestApplyParametrizedEvolution:
             apply_operation(ev, state)
 
     def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
-        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        """Test that when executing a ParametrizedEvolution with ``2 * op.wires > num_wires``
         and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
         method is used."""
         import jax.numpy as jnp
@@ -693,7 +693,7 @@ class TestApplyParametrizedEvolution:
 
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi - phi[0]
-        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        state = jnp.array([1.0 + 0j, 0.0], dtype=complex)
         ev = qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
         state_ev = apply_operation(ev, state)
         state_rx = apply_operation(qml.RX(phi_for_RX, 0), state)
