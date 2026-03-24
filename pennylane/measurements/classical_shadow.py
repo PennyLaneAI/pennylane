@@ -646,7 +646,7 @@ def shadow_expval(
     we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
 
     Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
-    (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` in a single circuit execution.
+    (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` state.
     Theoretically, we would expect that :math:`\langle X \rangle = 1`, :math:`\langle Y \rangle = \langle Z \rangle = 0`.
 
     .. code-block:: python
