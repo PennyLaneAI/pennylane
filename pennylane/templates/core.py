@@ -871,10 +871,11 @@ class Subroutine:
         op = self.operator(*args, id=id, **kwargs)
 
         if op.output is None:
-            warnings.warn(
-                "Subroutines must be converted to Operators with the '.operator()' method.",
-                PennyLaneDeprecationWarning,
-            )
+            if not queuing.QueuingManager.recording():
+                warnings.warn(
+                    "Subroutines must be converted to Operators with the '.operator()' method.",
+                    PennyLaneDeprecationWarning,
+                )
             return op
         return op.output
 
