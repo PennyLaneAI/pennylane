@@ -67,7 +67,6 @@ from .arithmetic import (
     OutPoly,
     SemiAdder,
     Elbow,
-    SignedOutMultiplier,
     TemporaryAND,
 )
 
@@ -124,5 +123,4 @@ __all__ = [
     "SemiAdder",
     "Elbow",
     "TemporaryAND",
-    "SignedOutMultiplier",
 ]

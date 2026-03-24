@@ -39,8 +39,7 @@ class OutSquare(Operation):
     .. math::
         \text{OutSquare} |x \rangle |b \rangle = |x \rangle |(b + x^2) \; \text{mod} \; 2^n \rangle,
 
-    .. seealso:: :class:`~.SemiAdder`, :class:`~.Multiplier` , :class:`~.OutMultiplier`
-        and :class:`~.SignedOutMultiplier`.
+    .. seealso:: :class:`~.SemiAdder`, :class:`~.Multiplier` , and :class:`~.OutMultiplier`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`

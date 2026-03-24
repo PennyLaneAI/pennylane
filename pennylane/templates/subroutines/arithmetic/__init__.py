@@ -24,4 +24,3 @@ from .out_poly import OutPoly
 from .temporary_and import TemporaryAND, Elbow
 from .out_square import OutSquare
 from .phase_adder import PhaseAdder
-from .signed_out_multiplier import SignedOutMultiplier
