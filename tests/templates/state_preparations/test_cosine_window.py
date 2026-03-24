@@ -20,15 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition import resource_rep
 from pennylane.exceptions import WireError
-from pennylane.ops import Adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.core import (
-    AbstractArray,
-    CollectedSubroutine,
-    adjoint_subroutine_resource_rep,
-)
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
@@ -39,7 +32,7 @@ def test_standard_validity():
 
     op = qml.CosineWindow(wires=[0, 1])
 
-    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -60,19 +53,22 @@ class TestDecomposition:
         for rule in qml.list_decomps(qml.CosineWindow):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
+            [0, 1, 2],
+            [0, 1, 2, 3],
+            [0, 1, 2, 3, 4],
+        ],
+    )
     @pytest.mark.capture
-    def test_resources_capture(self):
+    def test_decomposition_new_capture(self, wires):
         """Tests the decomposition rule implemented with the new system."""
-        expected = {
-            resource_rep(qml.H): 1,
-            resource_rep(qml.RZ): 1,
-            adjoint_subroutine_resource_rep(qml.QFT, AbstractArray((2,))): 1,
-            resource_rep(qml.PhaseShift): 2,
-        }
+        op = qml.CosineWindow(wires=wires)
 
         for rule in qml.list_decomps(qml.CosineWindow):
-            actual = rule.compute_resources(num_wires=2)
-            assert actual.gate_counts == expected
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.integration
     @pytest.mark.capture
@@ -93,14 +89,10 @@ class TestDecomposition:
         jaxpr = jax.make_jaxpr(decomposed_f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
-        assert collector.state["ops"][0:2] == [
+        assert collector.state["ops"] == [
             qml.Hadamard(1),
             qml.RZ(3.141592653589793, wires=[1]),
-        ]
-        assert isinstance(collector.state["ops"][2], Adjoint)
-        assert isinstance(collector.state["ops"][2].base, CollectedSubroutine)
-        assert collector.state["ops"][2].base.name == "QFT"
-        assert collector.state["ops"][3:] == [
+            qml.adjoint(qml.QFT(wires=[0, 1])),
             qml.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
             qml.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
         ]

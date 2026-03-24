@@ -50,7 +50,7 @@ from pennylane.ops import (
 )
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import TemporaryAND
 
 

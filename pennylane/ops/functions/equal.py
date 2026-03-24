@@ -43,7 +43,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
