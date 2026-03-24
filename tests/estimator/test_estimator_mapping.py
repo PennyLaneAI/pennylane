@@ -48,14 +48,14 @@ class TestMapToResourceOp:
     def test_unknown_subroutine_decomposition(self):
         """Test that if an unknown subroutine is provided, it just uses the decomposition."""
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(wires):
             qml.X(wires)
 
         r_op = _map_to_resource_op(f.operator(0))
         assert r_op == re_ops.X()
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def g(wires):
             qml.X(wires)
             qml.Y(wires)
@@ -128,7 +128,7 @@ class TestMapToResourceOp:
                 qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
-            (qtemps.QFT.operator(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
+            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
@@ -405,7 +405,7 @@ class TestMapToResourceOp:
             ),
             (
                 qops.ChangeOpBasis(
-                    compute_op=qtemps.QFT.operator(wires=[0, 1, 2]),
+                    compute_op=qtemps.QFT(wires=[0, 1, 2]),
                     target_op=qtemps.ControlledSequence(qops.S(wires=2), control=[0, 1]),
                     uncompute_op=qops.adjoint(qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4])),
                 ),

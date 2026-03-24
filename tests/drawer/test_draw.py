@@ -908,7 +908,7 @@ class TestMidCircuitMeasurements:
         * mcm output that is not used by anything
         """
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(wires):
             return [2] + [qml.measure(w) for w in wires]
 
@@ -937,7 +937,7 @@ class TestMidCircuitMeasurements:
     def test_subroutine_with_multi_measure_measurement_value(self):
         """Test that the subroutine can output a measurement value with multiple measurements."""
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(wires):
             m0 = qml.measure(wires[0])
             m1 = qml.measure(wires[1])

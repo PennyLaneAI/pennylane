@@ -30,7 +30,6 @@ from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.templates.core import SubroutineOp
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
@@ -220,7 +219,6 @@ _CLASSES_TO_TEST = (
     - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
     - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
-    - {SubroutineOp}
 )
 """All operators, except those tested manually, abstract/meta classes, and templates."""
 
