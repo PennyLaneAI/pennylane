@@ -612,8 +612,8 @@ def shadow_expval(
 
     Args:
         H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
-            Provide a single observable or a list to estimate multiple expectation values from the
-            same shadows data in a single circuit execution.
+            Provide a single observable or a sequence to estimate the expectation values of multiple
+            observables from the same classical shadows data.
         k (int): Number of groups for the median-of-means estimator. The default is ``k=1``, which simply computes
             the simple mean of the group. ``k>1`` provides no expected advantage for Pauli measurements and Pauli
             obseravbles.
