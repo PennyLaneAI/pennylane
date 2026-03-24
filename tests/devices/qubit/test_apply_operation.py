@@ -381,7 +381,7 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(new_state, state_via_mat)
 
     def test_identity(self, method, wire, ml_framework):
-        """Test the application of a GlobalPhase gate on a two qubit state."""
+        """Test the application of an Identity gate on a two qubit state."""
 
         initial_state = np.array(
             [
@@ -413,6 +413,52 @@ class TestTwoQubitStateSpecialCases:
 
         assert qml.math.allclose(shift * initial_state, new_state_with_wire)
         assert qml.math.allclose(shift * initial_state, new_state_no_wire)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize("wire", (0, 1))
+@pytest.mark.parametrize("state_batched", [False, True])
+def test_globalphase_batched(wire, ml_framework, state_batched):
+    """Test the application of a broadcasted/batched GlobalPhase gate on a two qubit state.
+    We separate this test from the class above because we do not actually want to test
+    apply_operation_tensordot or apply_operation_einsum.
+    """
+    if state_batched:
+        initial_state = np.array(
+            [
+                [
+                    [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                    [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+                ],
+                [
+                    [0.46839138 + 0.15105547j, 0.1036027 + 0.62185902j],
+                    [0.07187697 + 0.06806823j, 0.28904686 + 0.5167223j],
+                ],
+                [
+                    [0.03489189 + 0.39277094j, 0.58190323 + 0.35221565j],
+                    [0.24276751 + 0.33673728j, 0.36968426 + 0.26991074j],
+                ],
+            ]
+        )
+    else:
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+    initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+    phase = qml.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
+    shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
+
+    new_state_with_wire = apply_operation(
+        qml.GlobalPhase(phase, wire), initial_state, state_batched
+    )
+    new_state_no_wire = apply_operation(qml.GlobalPhase(phase), initial_state, state_batched)
+
+    assert qml.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)
+    assert qml.math.allclose(shift[:, None, None] * initial_state, new_state_no_wire)
 
 
 def time_independent_hamiltonian():

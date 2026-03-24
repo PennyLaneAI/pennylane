@@ -215,6 +215,33 @@ def _preprocess_level_input(
     return level_sorted
 
 
+def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: no cover
+    # This is function is covered by integration tests within the Catalyst frontend
+    """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
+
+    gate_types = {}
+    gate_sizes = defaultdict(int)
+
+    for res_name, sizes in resources.operations.items():
+        for size, count in sizes.items():
+            gate_sizes[size] += count
+
+        if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+            # Separate out PPMs and PPRs by weight
+            for size, count in sizes.items():
+                gate_types[f"{res_name}-w{size}"] = count
+        else:
+            gate_types[res_name] = sum(sizes.values())
+
+    return SpecsResources(
+        gate_types=gate_types,
+        gate_sizes=dict(gate_sizes),
+        measurements=dict(resources.measurements),
+        num_allocs=resources.num_allocs,
+        depth=None,  # Can't get depth from MLIR pass results
+    )
+
+
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[int, SpecsResources | list[SpecsResources]],
     dict[int, str],
@@ -303,30 +330,15 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
                 f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
             ) from ve
 
-        for lvl, (level_name, res) in zip(mlir_levels, results.items()):
-            gate_types = {}
-            gate_sizes = defaultdict(int)
-
-            for res_name, sizes in res.operations.items():
-                for size, count in sizes.items():
-                    gate_sizes[size] += count
-
-                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-                    # Separate out PPMs and PPRs by weight
-                    for size, count in sizes.items():
-                        gate_types[f"{res_name}-w{size}"] = count
-                else:
-                    gate_types[res_name] = sum(sizes.values())
-
-            res_resources = SpecsResources(
-                gate_types=gate_types,
-                gate_sizes=dict(gate_sizes),
-                measurements=dict(res.measurements),
-                num_allocs=res.num_allocs,
-                depth=None,  # Can't get depth for intermediate stages
-            )
-            resources[level_name] = res_resources
+        for lvl, (level_name, result) in zip(mlir_levels, results.items()):
             output_level[lvl + num_tape_levels] = level_name
+
+            if isinstance(result, list):
+                result = [_mlir_resources_to_specs_resources(res) for res in result]
+            else:
+                result = _mlir_resources_to_specs_resources(result)
+
+            resources[level_name] = result
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
@@ -634,15 +646,15 @@ def specs(
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
-        >>> all_specs = qml.specs(circuit, level="all")(1.23)  # doctest: +SKIP
-        >>> print(all_specs)  # doctest: +SKIP
+        >>> all_specs = qml.specs(circuit, level="all")(1.23)
+        >>> print(all_specs)
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - 0: Before MLIR Passes (MLIR-0)
-        - 1: cancel-inverses (MLIR-1)
-        - 2: merge-rotations (MLIR-2)
+        - 0: Before MLIR Passes
+        - 1: cancel-inverses
+        - 2: merge-rotations
         <BLANKLINE>
         ↓Metric     Level→ |  0 |  1 |  2
         ---------------------------------
@@ -661,12 +673,12 @@ def specs(
         level name directly, use the ``level`` attribute of the returned :class:`~.resource.CircuitSpecs` object, which
         maps int levels to their associated transform or pass name. For example, the level names for the above example
 
-        >>> print(all_specs.level)  # doctest: +SKIP
-        {0: 'Before MLIR Passes (MLIR-0)', 1: 'cancel-inverses (MLIR-1)', 2: 'merge-rotations (MLIR-2)'}
+        >>> print(all_specs.level)
+        {0: 'Before MLIR Passes', 1: 'cancel-inverses', 2: 'merge-rotations'}
 
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
-        >>> print(all_specs.resources['merge-rotations (MLIR-2)'])  # doctest: +SKIP
+        >>> print(all_specs.resources['merge-rotations'])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -678,7 +690,7 @@ def specs(
 
         Or, equivalently, by using the int level directly:
 
-        >>> print(all_specs.resources[all_specs.level[2]])  # doctest: +SKIP
+        >>> print(all_specs.resources[all_specs.level[2]])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -706,15 +718,15 @@ def specs(
                 qml.X(0)
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
-        >>> print(qml.specs(circuit, level="all")())  # doctest: +SKIP
+        >>> print(qml.specs(circuit, level="all")())
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
         - 0: Before Tape Transforms
         - 1: split_non_commuting
-        - 2: Before MLIR Passes (MLIR-0)
-        - 3: cancel-inverses (MLIR-1)
+        - 2: Before MLIR Passes
+        - 3: cancel-inverses
         <BLANKLINE>
         ↓Metric   Level→ |    0 |  1-a |  1-b |    2 |    3
         ---------------------------------------------------
