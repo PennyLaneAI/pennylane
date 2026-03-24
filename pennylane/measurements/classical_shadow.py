@@ -373,11 +373,7 @@ class ClassicalShadowMP(MeasurementTransform):
             stacked_state = rotated_state[np.arange(shots), sampled_index]
             stacked_state = np.stack(
                 [
-                    np.take(
-                        stacked_state[i],
-                        sampled_index[i],
-                        axis=num_remaining_qubits - 1,
-                    )
+                    np.take(stacked_state[i], sampled_index[i], axis=num_remaining_qubits - 1)
                     for i in range(shots)
                 ]
             )
