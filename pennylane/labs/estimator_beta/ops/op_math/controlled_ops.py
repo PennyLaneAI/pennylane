@@ -70,7 +70,7 @@ def ch_resource_decomp() -> list[GateCount | qre.Allocate | qre.Deallocate]:
 
 
 def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.Deallocate]:
-    r"""Returns a list representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.
+    r"""Returns a list representing the resources of the :class:`~.estimator.ops.op_math.controlled_ops.CH` operator.
 
     .. note::
 
@@ -78,7 +78,7 @@ def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.De
         Users should ensure the cost of constructing such a state has been accounted for.
 
     Resources:
-        The resources are derived from Figure: 17 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+        The resources are derived from Figure 17 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

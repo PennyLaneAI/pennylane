@@ -52,7 +52,7 @@ class TestHadamard:
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1),
                 GateCount(qre.S.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
-                GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
                 qre.Deallocate(1),
             ],
         ),
@@ -66,7 +66,7 @@ class TestHadamard:
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1),
                 GateCount(qre.S.resource_rep(), 1),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
-                GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
                 qre.Deallocate(1),
             ],
         ),
@@ -160,11 +160,9 @@ class TestHadamard:
                 GateCount(qre.S.resource_rep(), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(resource_rep(qre.Toffoli), 1),
-                GateCount(resource_rep(qre.CNOT), 4),
+                GateCount(resource_rep(qre.CNOT), 5),
                 GateCount(resource_rep(qre.CZ), 1),
-                GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 1, "num_zero_ctrl": 0}), 1
-                ),
+                GateCount(resource_rep(qre.X), 4),
                 qre.Deallocate(1),
             ],
         ),
@@ -177,11 +175,9 @@ class TestHadamard:
                 GateCount(qre.S.resource_rep(), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(resource_rep(qre.Toffoli), 1),
-                GateCount(resource_rep(qre.CNOT), 4),
+                GateCount(resource_rep(qre.CNOT), 5),
                 GateCount(resource_rep(qre.CZ), 1),
-                GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 1, "num_zero_ctrl": 1}), 1
-                ),
+                GateCount(resource_rep(qre.X), 4),
                 qre.Deallocate(1),
             ],
         ),
@@ -195,13 +191,11 @@ class TestHadamard:
                 GateCount(qre.S.resource_rep(), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(resource_rep(qre.Toffoli), 1),
-                GateCount(resource_rep(qre.CNOT), 4),
+                GateCount(resource_rep(qre.CNOT), 5),
                 GateCount(resource_rep(qre.CZ), 1),
+                GateCount(resource_rep(qre.X), 4),
                 GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 2, "num_zero_ctrl": 0}), 1
-                ),
-                GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 2, "num_zero_ctrl": 0}), 1
+                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 2, "num_zero_ctrl": 0}), 2
                 ),
                 qre.Deallocate(1),
                 qre.Deallocate(1),
@@ -217,13 +211,11 @@ class TestHadamard:
                 GateCount(qre.S.resource_rep(), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1),
                 GateCount(resource_rep(qre.Toffoli), 1),
-                GateCount(resource_rep(qre.CNOT), 4),
+                GateCount(resource_rep(qre.CNOT), 5),
                 GateCount(resource_rep(qre.CZ), 1),
+                GateCount(resource_rep(qre.X), 4),
                 GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 2}), 1
-                ),
-                GateCount(
-                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 2}), 1
+                    resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 2}), 2
                 ),
                 qre.Deallocate(1),
                 qre.Deallocate(1),

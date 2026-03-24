@@ -18,10 +18,7 @@ import pytest
 import pennylane as qml
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
-from pennylane.estimator import (
-    GateCount,
-    Resources,
-)
+from pennylane.estimator import GateCount, Resources
 from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,

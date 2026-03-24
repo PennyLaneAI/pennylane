@@ -96,7 +96,7 @@ def hadamard_controlled_resource_decomp(
     gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1))
     gate_lst.append(GateCount(resource_rep(qre.S), 1))
     gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1))
-    gate_lst.append(GateCount(mcx, 1))
+    gate_lst.append(GateCount(mcx, 2))
     gate_lst.append(qre.Deallocate(1))
     return gate_lst
 
@@ -122,7 +122,7 @@ def hadamard_toffoli_based_controlled_decomp(
             of the target operator.
 
     Resources:
-        The resources are derived from Figure: 17 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+        The resources are derived from Figure 17 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -149,12 +149,12 @@ def hadamard_toffoli_based_controlled_decomp(
     gate_lst.append(GateCount(resource_rep(qre.S), 2))
     gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1))
     gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
-    gate_lst.append(GateCount(resource_rep(qre.CNOT), 4))
+    gate_lst.append(GateCount(resource_rep(qre.CNOT), 5))
     gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
-    gate_lst.append(GateCount(mcx, 1))
+    gate_lst.append(GateCount(resource_rep(qre.X), 4))
 
     if num_ctrl_wires > 1:
-        gate_lst.append(GateCount(mcx, 1))
+        gate_lst.append(GateCount(mcx, 2))
         gate_lst.append(qre.Deallocate(1))
 
     gate_lst.append(qre.Deallocate(1))
