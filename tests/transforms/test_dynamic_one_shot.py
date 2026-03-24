@@ -28,6 +28,7 @@ from pennylane.measurements import (
     SampleMP,
 )
 from pennylane.ops import MeasurementValue, MidMeasure
+from pennylane.transforms import dynamic_one_shot
 from pennylane.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
@@ -37,6 +38,12 @@ from pennylane.transforms.dynamic_one_shot import (
 )
 
 # pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_pass_name():
+    """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""
+
+    assert dynamic_one_shot.pass_name == "dynamic-one-shot"
 
 
 def test_gather_non_mcm_unsupported_measurement():

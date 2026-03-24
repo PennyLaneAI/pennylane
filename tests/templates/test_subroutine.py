@@ -14,12 +14,25 @@
 """Tests for Subroutine and SubroutineOp"""
 # pylint: disable=unused-argument
 import inspect
+from collections import Counter, defaultdict
 from functools import partial
 
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates import Subroutine, SubroutineOp
+from pennylane.decomposition import resource_rep
+from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
+from pennylane.templates.core import (
+    AbstractArray,
+    CollectedSubroutine,
+    Subroutine,
+    SubroutineOp,
+    _make_signature_key,
+    adjoint_subroutine_resource_rep,
+    change_op_basis_subroutine_resource_rep,
+    subroutine_resource_rep,
+)
 
 
 class TestInitialization:
@@ -42,6 +55,7 @@ class TestInitialization:
         assert S.static_argnames == tuple()
         assert S.wire_argnames == ("wires",)
         assert S.dynamic_argnames == ("x",)
+        assert S.exact_resources
 
         with qml.queuing.AnnotatedQueue() as q:
             S.definition(0.5, 0)
@@ -49,10 +63,10 @@ class TestInitialization:
         assert len(q.queue) == 1
         qml.assert_equal(q.queue[0], qml.RX(0.5, 0))
 
-        with pytest.raises(
-            NotImplementedError, match="does not have a defined compute_resources function."
-        ):
-            S.compute_resources(0.5, wires=0)
+        resources = S.compute_resources(0.5, wires=0)
+        expected = defaultdict(int)
+        expected[qml.resource_rep(qml.RX)] = 1
+        assert resources == expected
 
     def test_wire_argnames(self):
         """Test that wire argnames can be specified."""
@@ -104,7 +118,6 @@ class TestInitialization:
 
         def compute_resources(x, wires, metadata):
             assert metadata == 2  # test filled in with default values.
-            assert isinstance(wires, qml.wires.Wires)
             return {qml.RX: len(wires)}
 
         @partial(Subroutine, compute_resources=compute_resources)
@@ -118,6 +131,27 @@ class TestInitialization:
         out2 = HasResources.compute_resources(0.5, 0)
         assert out2 == {qml.RX: 1}
 
+    @pytest.mark.parametrize("exact_resources", (True, False))
+    def test_setting_exact_resources(self, exact_resources):
+        """Test that exact_resources can be set."""
+
+        @partial(Subroutine, exact_resources=exact_resources)
+        def f(wires):
+            qml.X(wires)
+
+        assert f.exact_resources == exact_resources
+
+    def test_error_if_wire_argnames_not_present(self):
+        """Test that an error is raised if a wire argname is not present in the signature."""
+
+        def f(register):
+            pass
+
+        with pytest.raises(
+            ValueError, match="wire argname 'wires' not present in function signature."
+        ):
+            Subroutine(f)
+
 
 def Example1(x, y, reg1, reg2, pauli_words):
     qml.PauliRot(x, pauli_words[0], reg1)
@@ -129,11 +163,19 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
     return (x, y, reg1, reg2, tuple(pauli_words)), {}
 
 
+def Example1Resources(x, y, reg1, reg2, pauli_words):
+    return {
+        qml.resource_rep(qml.PauliRot, pauli_word=pw): num
+        for pw, num in Counter(pauli_words).items()
+    }
+
+
 Example1Subroutine = Subroutine(
     Example1,
     wire_argnames=("reg1", "reg2"),
     static_argnames=("pauli_words",),
     setup_inputs=Example1SetupInputs,
+    compute_resources=Example1Resources,
 )
 
 
@@ -157,6 +199,49 @@ def test_operator_method():
     assert isinstance(op, SubroutineOp)
     assert op.output == 2
     qml.equal(op.decomposition()[0], qml.RX(0.5, 0))
+
+
+def test_fallback_creating_resources_AbstractArray():
+    """Test that the fallback for calculating resources works with AbstractArray's."""
+
+    @partial(Subroutine, static_argnames="rotation")
+    def f(params, wires, rotation):
+        for (
+            p,
+            w,
+        ) in zip(params["a"], wires):
+            qml.PauliRot(p, rotation, w)
+        qml.MultiControlledX(wires)
+
+    p = AbstractArray((3,), float)
+    w = AbstractArray((3,))
+
+    resources = f.compute_resources({"a": p}, w, "Z")
+    expected = defaultdict(int)
+    expected[qml.resource_rep(qml.PauliRot, pauli_word="Z")] = 3
+
+    r = qml.resource_rep(
+        qml.MultiControlledX,
+        num_control_wires=2,
+        num_zero_control_values=0,
+        num_work_wires=0,
+        work_wire_type="borrowed",
+    )
+    expected[r] = 1
+    assert resources == expected
+
+
+def test_fallback_resources_error():
+    """Test that if an error occurs when using the resources fallback, we get a more informative error."""
+
+    @qml.templates.core.Subroutine
+    def f(wires):
+        raise ValueError("AHHHH")
+
+    with pytest.raises(
+        ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
+    ):
+        f.compute_resources(qml.templates.core.AbstractArray((2,)))
 
 
 class TestSubroutineOp:
@@ -339,7 +424,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             assert wires.shape == (1,)
             qml.X(wires[0])
@@ -370,7 +455,7 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(wires):
             return [qml.measure(w) for w in wires]
 
@@ -443,6 +528,39 @@ class TestSubroutineCapture:
         assert "id" not in jaxpr.eqns[-1].params
 
 
+@pytest.mark.capture
+class TestCollectedSubroutine:
+
+    def test_no_abstract_capturing(self):
+        """Test that CollectedSubroutine can't occur during an abstract evaluation."""
+
+        jax = pytest.importorskip("jax")
+
+        def f():
+            CollectedSubroutine("bla", [qml.X(0)])
+
+        with pytest.raises(NotImplementedError, match="should never be hit"):
+            jax.make_jaxpr(f)()
+
+    def test_adjoint_of_subroutine_impl(self):
+        """Test that if the adjoint of a subroutine is called without make_jaxpr and capture is enabled,
+        we get the adjoint of a CollectedSubroutine."""
+
+        @Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.adjoint(f)(0)
+
+        [adj_op] = q.queue
+        assert isinstance(adj_op, qml.ops.Adjoint)
+        base = adj_op.base
+        assert isinstance(base, CollectedSubroutine)
+        assert base.name == "f"
+        qml.assert_equal(base.decomposition()[0], qml.X(0))
+
+
 @pytest.mark.integration
 class TestTapePLIntegration:
 
@@ -484,7 +602,7 @@ class TestTapePLIntegration:
     def test_mcm_integration(self):
         """Test that subroutines can return the results of mid circuit measurements."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def MCMTester(wires):
             return [qml.measure(wires=w, reset=True) for w in wires]
 
@@ -503,7 +621,7 @@ class TestTapePLIntegration:
     def test_drawing(self):
         """Test that subroutines can be drawn."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -522,7 +640,7 @@ class TestTapePLIntegration:
     def test_specs(self):
         """Test that subroutines show up as gate types in specs."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Tester(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[1])
@@ -534,3 +652,492 @@ class TestTapePLIntegration:
 
         specs = qml.specs(c, level="top")(0.5, 1.2)
         assert specs.resources.gate_types["Tester"] == 1
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestGraphDecomposition:
+
+    def test_creating_abstract_array(self):
+        """Test basic checks for creating an AbstractArray."""
+
+        a = qml.templates.core.AbstractArray((2, 2, 3), np.float64)
+        assert a.shape == (2, 2, 3)
+        assert a.dtype is np.dtype(np.float64)
+
+        b = qml.templates.core.AbstractArray(())
+        assert b.shape == ()
+        assert b.dtype is np.dtype(np.int64)
+
+        assert a != b
+        assert hash(a)
+        assert b == qml.templates.core.AbstractArray(())
+
+    @pytest.mark.torch
+    def test_torch_dtype_converted_to_numpy(self):
+        """Test that torch data types are converted to numpy data types."""
+
+        import torch
+
+        x = torch.tensor(0.5, dtype=torch.float64)
+        a = qml.templates.core.AbstractArray((), x.dtype)
+        assert a.dtype is np.dtype(np.float64)
+
+    def test_inbuilt_type_promotion_to_numpy(self):
+        """Test that python types are converted to numpy types."""
+        assert AbstractArray((), int).dtype is np.dtype(np.int64)
+        assert AbstractArray((), float).dtype is np.dtype(np.float64)
+        assert AbstractArray((), complex).dtype is np.dtype(np.complex128)
+
+    def test_abstract_array_len(self):
+        """Test that AbstractArray's have a length."""
+
+        a = qml.templates.core.AbstractArray((2, 3, 3))
+        assert len(a) == 18
+
+    def test_resource_keys(self):
+        """Test that the SubroutineOp resource keys are subroutine and signature key."""
+
+        assert SubroutineOp.resource_keys == frozenset(("subroutine", "signature_key"))
+
+    def test_accessing_resource_params(self):
+        """Test that the resource_params creates the signature key properly."""
+
+        op1 = generate_subroutine_op_example(
+            0.5, 0.6, qml.wires.Wires((0, "a")), qml.wires.Wires(("a", 1)), ("XY", "YZ")
+        )
+        rp = op1.resource_params
+        assert list(rp.keys()) == ["subroutine", "signature_key"]
+        assert rp["subroutine"] == Example1Subroutine
+
+        struct = qml.pytrees.flatten(0.5)[1]
+        key = (
+            (struct, (AbstractArray((), float),)),
+            (struct, (AbstractArray((), float),)),
+            AbstractArray((2,)),
+            AbstractArray((2,)),
+            ("XY", "YZ"),
+        )
+        assert rp["signature_key"] == key
+
+    # pylint: disable=too-many-statements
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+
+        # use a non-standard order
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+            resource_rep(qml.PauliX),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "SubroutineOp"
+        assert rr.params["compute_op"].op_type == SubroutineOp
+        assert rr.params["compute_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(SubroutineOp)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"].params == {
+            "base_class": SubroutineOp,
+            "base_params": {
+                "subroutine": f,
+                "signature_key": _make_signature_key(
+                    f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                ),
+            },
+        }
+
+    def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+
+        rr = change_op_basis_subroutine_resource_rep(
+            qml.PauliZ(0),
+            resource_rep(qml.PauliX),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "PauliZ"
+        assert rr.params["compute_op"].op_type == PauliZ
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+
+    def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            resource_rep(qml.PauliX),
+            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "PauliX"
+        assert rr.params["compute_op"].op_type == PauliX
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "SubroutineOp"
+        assert rr.params["target_op"].op_type == SubroutineOp
+        assert rr.params["target_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            qml.CNOT([0, 1]),
+            qml.PauliX(0),
+            subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "CNOT"
+        assert rr.params["compute_op"].op_type == CNOT
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "SubroutineOp"
+        assert rr.params["uncompute_op"].op_type == SubroutineOp
+        assert rr.params["uncompute_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
+
+    def test_adjoint_subroutine_resource_rep(self):
+        """Test creating a CompressedResourceRep specific to adjoint templates."""
+
+        # use a non-standard order
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = adjoint_subroutine_resource_rep(
+            f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "Adjoint(SubroutineOp)"
+        assert rr.params["base_params"]["subroutine"] == f
+
+        s = qml.pytrees.flatten(x)[1]
+
+        # note that order is reflected in the call signature order, not order
+        # provided to adjoint_subroutine_resource_rep
+        expected_signature_key = (
+            "X",
+            AbstractArray(()),
+            AbstractArray((2,)),
+            (s, (AbstractArray((3,), float),)),
+        )
+        assert rr.params["base_params"]["signature_key"] == expected_signature_key
+
+        rr_all_positional = adjoint_subroutine_resource_rep(
+            f, "X", AbstractArray(()), AbstractArray((2,)), x
+        )
+        assert rr_all_positional == rr
+        assert hash(rr) == hash(rr_all_positional)
+
+        # test against slight changes to make sure they are picked up in the condensed rep
+        diff_pytree = {"b": AbstractArray((3,), float)}
+        rr_diff_pytree = subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_pytree
+        )
+        assert rr != rr_diff_pytree
+
+        diff_len = {"a": AbstractArray((4,), float)}
+        rr_diff_len = adjoint_subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_len
+        )
+        assert rr != rr_diff_len
+
+        diff_dtype = {"a": AbstractArray((3,), np.int32)}
+        rr_dtype = adjoint_subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_dtype
+        )
+        assert rr != rr_dtype
+
+        diff_num_wires = adjoint_subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((3,)), x=x
+        )
+        assert diff_num_wires != rr
+
+        diff_metadata = adjoint_subroutine_resource_rep(
+            f, "Y", AbstractArray(()), reg2=AbstractArray((2,)), x=x
+        )
+        assert rr != diff_metadata
+
+    def test_subroutine_resource_rep(self):
+        """Test creating a CompressedResourceRep specific to templates."""
+
+        # use a non-standard order
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "SubroutineOp"
+        assert rr.params["subroutine"] == f
+
+        s = qml.pytrees.flatten(x)[1]
+
+        # note that order is reflected in the call signature order, not order
+        # provided to subroutine_resource_rep
+        expected_signature_key = (
+            "X",
+            AbstractArray(()),
+            AbstractArray((2,)),
+            (s, (AbstractArray((3,), float),)),
+        )
+        assert rr.params["signature_key"] == expected_signature_key
+
+        rr_all_positional = subroutine_resource_rep(
+            f, "X", AbstractArray(()), AbstractArray((2,)), x
+        )
+        assert rr_all_positional == rr
+        assert hash(rr) == hash(rr_all_positional)
+
+        # test against slight changes to make sure they are picked up in the condensed rep
+        diff_pytree = {"b": AbstractArray((3,), float)}
+        rr_diff_pytree = subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_pytree
+        )
+        assert rr != rr_diff_pytree
+
+        diff_len = {"a": AbstractArray((4,), float)}
+        rr_diff_len = subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_len
+        )
+        assert rr != rr_diff_len
+
+        diff_dtype = {"a": AbstractArray((3,), np.int32)}
+        rr_dtype = subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_dtype
+        )
+        assert rr != rr_dtype
+
+        diff_num_wires = subroutine_resource_rep(
+            f, "X", AbstractArray(()), reg2=AbstractArray((3,)), x=x
+        )
+        assert diff_num_wires != rr
+
+        diff_metadata = subroutine_resource_rep(
+            f, "Y", AbstractArray(()), reg2=AbstractArray((2,)), x=x
+        )
+        assert rr != diff_metadata
+
+    def test_subroutine_resource_rep_default_values(self):
+        """Test that subroutine_resource_rep fills in default values."""
+
+        @partial(Subroutine, static_argnames="a")
+        def f(wires, a="a"):
+            pass
+
+        rr = subroutine_resource_rep(f, AbstractArray(()))
+        expected_key = (AbstractArray(()), "a")
+        assert rr.params["signature_key"] == expected_key
+
+        rr2 = subroutine_resource_rep(f, AbstractArray(()), "a")
+        assert rr == rr2
+
+    def test_pytree_array_input_resource_params(self):
+        """Test calculating the resource params when the dynamic input has a pytree structure."""
+
+        @qml.templates.core.Subroutine
+        def f(x, wires):
+            pass
+
+        x = {"a": np.zeros((3, 4), dtype=np.float32), "b": np.ones((5, 4), dtype=np.int32)}
+        op = f.operator(x, wires=0)
+
+        struct = qml.pytrees.flatten(x)[1]
+
+        expected_signature_key = (
+            (
+                struct,
+                (AbstractArray((3, 4), dtype=np.float32), AbstractArray((5, 4), dtype=np.int32)),
+            ),
+            AbstractArray((1,)),
+        )
+        assert op.resource_params["signature_key"] == expected_signature_key
+
+    def test_adjoint_of_subroutine(self):
+        """Test that we can take the adjoint of a subroutine with graph decomps."""
+
+        def RXLayerResources(params, wires):
+            return {qml.RX: qml.math.shape(params)[0]}
+
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
+        def RXLayer(params, wires):
+            for i in range(params.shape[0]):
+                qml.RX(params[i], wires[i])
+
+        op = qml.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
+        tape = qml.tape.QuantumScript([op])
+        new_tape = qml.decompose(tape)[0][0]
+        qml.assert_equal(new_tape[0], qml.RX(-3, 3))
+        qml.assert_equal(new_tape[1], qml.RX(-2, 2))
+        qml.assert_equal(new_tape[2], qml.RX(-1, 1))
+
+    def test_ctrl_of_subroutine(self):
+        """ "Test that graph decompositions can handle the ctrl of a subroutineop."""
+
+        def RXLayerResources(params, wires):
+            return {qml.RX: qml.math.shape(params)[0]}
+
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
+        def RXLayer(params, wires):
+            for i in range(params.shape[0]):
+                qml.RX(params[i], wires[i])
+
+        op = qml.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
+        tape = qml.tape.QuantumScript([op])
+        new_tape = qml.decompose(tape, max_expansion=1)[0][0]
+        qml.assert_equal(new_tape[0], qml.ctrl(qml.RX(1, 1), (4, 5)))
+        qml.assert_equal(new_tape[1], qml.ctrl(qml.RX(2, 2), (4, 5)))
+        qml.assert_equal(new_tape[2], qml.ctrl(qml.RX(3, 3), (4, 5)))
+
+    def test_operator_decompose_to_subroutine(self):
+        """Test that an Operator can decompose to a subroutine, and that the choice
+        of decomposition involving a subroutine can be optimally chosen based on the gateset.
+
+        Here we have two subroutines, one with RX's and one with RY's.  We chose between the
+        two of them based on the gate_set provided to the decompose transform.
+
+        """
+
+        def RXLayerResources(params, wires):
+            return {qml.RX: qml.math.shape(params)[0]}
+
+        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
+        def RXLayer(params, wires):
+            for i in range(params.shape[0]):
+                qml.RX(params[i], wires[i])
+
+        def RYLayerResources(params, wires):
+            return {qml.RY: qml.math.shape(params)[0]}
+
+        @partial(qml.templates.core.Subroutine, compute_resources=RYLayerResources)
+        def RYLayer(params, wires):
+            for i in range(params.shape[0]):
+                qml.RY(params[i], wires[i])
+
+        # pylint: disable=too-few-public-methods
+        class SubroutineDemoOp(qml.operation.Operator):
+
+            resource_keys = frozenset(())
+
+            @property
+            def resource_params(self):
+                return {}
+
+        rx_rr = subroutine_resource_rep(RXLayer, AbstractArray((3,), float), AbstractArray((3,)))
+        ry_rr = subroutine_resource_rep(RYLayer, AbstractArray((3,), float), AbstractArray((3,)))
+
+        @qml.decomposition.register_resources({rx_rr: 1})
+        def rx_decomp(wires):
+            RXLayer(np.array([0.0, 1.0, 2.0]), wires)
+
+        @qml.decomposition.register_resources({ry_rr: 1})
+        def ry_decomp(wires):
+            RYLayer(np.array([0.0, 1.0, 2.0]), wires)
+
+        qml.add_decomps(SubroutineDemoOp, rx_decomp, ry_decomp)
+
+        op = SubroutineDemoOp(wires=(0, 1, 2))
+        tape = qml.tape.QuantumScript([op])
+
+        tape_rx = qml.decompose(tape, gate_set={qml.RX})[0][0]
+        qml.assert_equal(tape_rx[0], qml.RX(0.0, 0))
+        qml.assert_equal(tape_rx[1], qml.RX(1.0, 1))
+        qml.assert_equal(tape_rx[2], qml.RX(2.0, 2))
+
+        tape_ry = qml.decompose(tape, gate_set={qml.RY})[0][0]
+        qml.assert_equal(tape_ry[0], qml.RY(0.0, 0))
+        qml.assert_equal(tape_ry[1], qml.RY(1.0, 1))
+        qml.assert_equal(tape_ry[2], qml.RY(2.0, 2))
+
+    def test_inexact_resources_testing(self):
+        """Test that assert_valid will work on a Subroutine with inexact resources."""
+
+        def r(wires):
+            return {qml.X: 2}
+
+        @partial(Subroutine, compute_resources=r, exact_resources=False)
+        def f(wires):
+            qml.X(wires)
+
+        op = f.operator(0)
+        qml.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+
+    def test_compute_resources_fallback(self):
+        """Test that the compute_resources fallback allows integration with decomps by default."""
+
+        @partial(Subroutine, static_argnames="rotation")
+        def f(params, wires, rotation):
+            for (
+                p,
+                w,
+            ) in zip(params, wires):
+                qml.PauliRot(p, rotation, w)
+            qml.MultiControlledX(wires)
+
+        params = np.array([0.5, 1.2, 3.4])
+        wires = [0, 1, 2]
+        tape = qml.tape.QuantumScript([f.operator(params, wires, "X")])
+        [decomposed], _ = qml.decompose(tape, gate_set=qml.gate_sets.ALL_OPS)
+        print(decomposed.circuit)
+        qml.assert_equal(decomposed[0], qml.PauliRot(0.5, "X", 0))
+        qml.assert_equal(decomposed[1], qml.PauliRot(1.2, "X", 1))
+        qml.assert_equal(decomposed[2], qml.PauliRot(3.4, "X", 2))
+        qml.assert_equal(decomposed[3], qml.MultiControlledX(wires))

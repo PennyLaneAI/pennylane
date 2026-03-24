@@ -403,8 +403,8 @@ class TestPreprocessing:
             (qml.CRX(0.1, wires=[0, 1]), True),
             (qml.Snapshot(), True),
             (qml.Barrier(), False),
-            (qml.QFT(wires=range(5)), True),
-            (qml.QFT(wires=range(10)), False),
+            (qml.QFT.operator(wires=range(5)), False),
+            (qml.QFT.operator(wires=range(10)), False),
             (qml.GroverOperator(wires=range(10)), True),
             (qml.GroverOperator(wires=range(14)), False),
             (

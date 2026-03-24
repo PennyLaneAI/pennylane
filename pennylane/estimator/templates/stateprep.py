@@ -376,9 +376,9 @@ class MPSPrep(ResourceOperator):
         allocated wires: 3
              zero state: 3
              any state: 0
-     Total gates : 1.654E+3
-      'RZ': 728,
-      'RY': 152,
+     Total gates : 2.820E+3
+      'RZ': 1.258E+3,
+      'RY': 788,
       'CNOT': 774
     """
 

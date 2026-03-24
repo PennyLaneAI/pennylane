@@ -177,10 +177,10 @@ class TestOutPoly:
             return x + y
 
         expected_decomposition = [
-            qml.QFT(wires=[3]),
+            qml.QFT.operator(wires=[3]),
             qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[2]),
             qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[1]),
-            qml.adjoint(qml.QFT(wires=[3])),
+            qml.adjoint(qml.QFT)(wires=[3]),
         ]
 
         ops = qml.OutPoly(
@@ -213,12 +213,12 @@ class TestOutPoly:
         pa2 = qml.PhaseAdder(k=2, mod=4, x_wires=[4, 5])
         pa1 = qml.PhaseAdder(k=1, mod=4, x_wires=[4, 5])
         expected = [
-            qml.QFT(wires=[4, 5]),
+            qml.QFT.operator(wires=[4, 5]),
             qml.ctrl(pa1, [3]),
             qml.ctrl(pa2, 2),
             qml.ctrl(pa1, 1),
             qml.ctrl(pa2, 0),
-            qml.adjoint(qml.QFT(wires=[4, 5])),
+            qml.adjoint(qml.QFT)(wires=[4, 5]),
         ]
         for op1, op2 in zip(decomp, expected):
             qml.assert_equal(op1, op2)

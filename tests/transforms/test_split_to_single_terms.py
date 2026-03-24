@@ -61,6 +61,11 @@ class NoTermsDevice(qml.devices.DefaultQubit):
 class TestUnits:
     """Unit tests for components of the ``split_to_single_terms`` transform"""
 
+    def test_pass_name(self):
+        """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""
+
+        assert split_to_single_terms.pass_name == "split-to-single-terms"
+
     def test_single_term_observable(self):
         """Test that the transform does not affect a circuit that
         contains only an observable with a single term"""

@@ -45,6 +45,24 @@ class TestMapToResourceOp:
         ):
             _map_to_resource_op(operation)
 
+    def test_unknown_subroutine_decomposition(self):
+        """Test that if an unknown subroutine is provided, it just uses the decomposition."""
+
+        @qml.templates.core.Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        r_op = _map_to_resource_op(f.operator(0))
+        assert r_op == re_ops.X()
+
+        @qml.templates.core.Subroutine
+        def g(wires):
+            qml.X(wires)
+            qml.Y(wires)
+
+        r_op_g = _map_to_resource_op(g.operator(0))
+        assert r_op_g == re_ops.Prod([re_ops.X(), re_ops.Y()])
+
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
@@ -110,13 +128,13 @@ class TestMapToResourceOp:
                 qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
-            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
+            (qtemps.QFT.operator(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
@@ -256,8 +274,19 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
-                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2, wires=[2, 0, 1]),
+                qtemps.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                re_temps.QPE(base=re_ops.Z(2), num_estimation_wires=2, wires=[0, 1]),
+            ),
+            (
+                qtemps.QuantumPhaseEstimation(
+                    qops.MultiControlledX(wires=[0, 1, 2, 3], work_wires=["w0", "w1"]),
+                    estimation_wires=[4, 5],
+                ),
+                re_temps.QPE(
+                    base=re_ops.MultiControlledX(3, 0, wires=[0, 1, 2, 3]),
+                    num_estimation_wires=2,
+                    wires=[4, 5],
+                ),
             ),
             (
                 qml.TrotterProduct(
@@ -376,7 +405,7 @@ class TestMapToResourceOp:
             ),
             (
                 qops.ChangeOpBasis(
-                    compute_op=qtemps.QFT(wires=[0, 1, 2]),
+                    compute_op=qtemps.QFT.operator(wires=[0, 1, 2]),
                     target_op=qtemps.ControlledSequence(qops.S(wires=2), control=[0, 1]),
                     uncompute_op=qops.adjoint(qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4])),
                 ),
@@ -494,6 +523,17 @@ class TestMapToResourceOp:
             re_ops.CNOT(wires=[0, 1])
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        (
+            (qops.Barrier(wires=[1, 2, 3]), re_ops.Identity()),
+            (qops.Snapshot(measurement=qml.state()), re_ops.Identity()),
+        ),
+    )
+    def test_map_to_identity(self, operator, expected_res_op):
+        """Test that these special operators map to the identity"""
+        assert _map_to_resource_op(operator) == expected_res_op
 
 
 @pytest.mark.parametrize(

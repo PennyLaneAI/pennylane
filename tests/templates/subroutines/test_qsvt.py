@@ -14,6 +14,7 @@
 """
 Tests for the QSVT template and qsvt wrapper function.
 """
+
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
@@ -23,14 +24,14 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.queuing import AnnotatedQueue
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
-    _poly_func,
+    _poly_func_scipy,
     _qsp_iterate,
     _qsp_iterate_broadcast,
-    _qsp_optimization,
+    _qsp_optimization_scipy,
     _W_of_x,
     _z_rotation,
 )
@@ -108,27 +109,42 @@ class TestQSVTBasics:
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
-        ("UA", "projectors"),
+        ("UA", "projectors", "expected"),
         [
             (
                 qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode(np.array([[0.1, 0.2], [0.3, 0.4]]), wires=[0, 1]),
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                ],
             ),
             (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.4]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode(np.array([[0.3, 0.1], [0.2, 0.4]]), wires=[0, 1]),
+                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                ],
             ),
             (
                 qml.Hadamard(wires=0),
                 [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                [qml.RZ(-2.46, wires=[0]), qml.Hadamard(wires=0), qml.RZ(1.0, wires=[0])],
             ),
         ],
     )
-    def test_decomposition_new(self, UA, projectors):
+    def test_decomposition_new(self, UA, projectors, expected):
         """Test the decomposition of the QSVT template."""
-        op = qml.QSVT(UA, projectors)
+
         for rule in qml.list_decomps(qml.QSVT):
-            _test_decomposition_rule(op, rule)
+            with AnnotatedQueue() as q:
+                rule(UA=UA, projectors=projectors)
+
+            for i, op in enumerate(expected):
+                assert op == q.queue[i]
 
     @pytest.mark.parametrize(
         ("UA", "projectors"),
@@ -163,7 +179,7 @@ class TestQSVTBasics:
         """Test that the wire order is preserved."""
 
         op1 = qml.GroverOperator(wires=[0, 3])
-        op2 = qml.QFT(wires=[2, 1])
+        op2 = qml.QFT.operator(wires=[2, 1])
         qsvt_wires = qml.QSVT(op2, [op1]).wires
         assert qsvt_wires == op1.wires + op2.wires
 
@@ -977,7 +993,7 @@ class TestRootFindingSolver:
     def test_raise_error(self, poly, routine, angle_solver, msg_match):
         """Test that proper errors are raised"""
 
-        with pytest.raises(AssertionError, match=msg_match):
+        with pytest.raises((AssertionError, ValueError), match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
 
 
@@ -998,7 +1014,7 @@ class TestIterativeSolver:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
+        phis, cost_func = _qsp_optimization_scipy(degree, target_polynomial_coeffs)
 
         rng = np.random.default_rng(123)
         x_point = rng.uniform(size=1, low=-1.0, high=1.0)
@@ -1028,7 +1044,7 @@ class TestIterativeSolver:
 
         assert qml.math.isclose(
             _qsp_iterate_broadcast(phis, x_point, None),
-            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            _poly_func_scipy(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
 
@@ -1054,43 +1070,67 @@ class TestIterativeSolver:
             (generate_polynomial_coeffs(12, 0), 0, 0.3),
         ],
     )
-    def test_poly_func(self, coeffs, parity, x):
-        """Test internal function _poly_func"""
-        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
+    def test_poly_func_scipy(self, coeffs, parity, x):
+        """Test internal function _poly_func_scipy"""
+        val = _poly_func_scipy(coeffs=coeffs[parity::2], parity=parity, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    def test_z_rotation(self, angle):
-        """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+    def test_z_rotation_scipy(self, angle):
+        """Test internal function _z_rotation_scipy"""
+        try:
+            import jax  # pylint: disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    def test_qsp_iterate(self, phi):
-        """Test internal function _qsp_iterate"""
-        mtx = _qsp_iterate(0.0, phi, None)
+    def test_qsp_iterate_scipy(self, phi):
+        """Test internal function _qsp_iterate_scipy"""
+        try:
+            import jax  # pylint: disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+
+        mtx = _qsp_iterate(0.0, phi, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "x",
         list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
-    def test_qsp_iterate_broadcast(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast"""
-        from jax import numpy as jnp
+    def test_qsp_iterate_broadcast_scipy(self, x, degree):
+        """Test internal function _qsp_iterate_broadcast_scipy"""
+        try:
+            from jax import numpy as np  # pylint: disable=redefined-outer-name
 
-        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
+            interface = "jax"
+        except ModuleNotFoundError:
+            import numpy as np
+
+            interface = "numpy"
+        phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        qsp_be = _qsp_iterate_broadcast(phis, x, interface)
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert jnp.isclose(qsp_be, ref)
+        assert np.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    def test_W_of_x(self, x):
-        """Test internal function _W_of_x"""
-        mtx = _W_of_x(x, None)
+    def test_W_of_x_scipy(self, x):
+        """Test internal function _W_of_x_scipy"""
+        try:
+            import jax  # pylint:disable=unused-import
+
+            interface = "jax"
+        except ModuleNotFoundError:
+            interface = None
+        mtx = _W_of_x(x, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 

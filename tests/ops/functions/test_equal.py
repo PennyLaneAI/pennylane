@@ -2872,10 +2872,10 @@ class TestBasisRotation:
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
-    op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
-    op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
-    op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
+    op1 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qml.BasisRotation.operator(wires=range(2, 4), unitary_matrix=rotation_mat)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -2883,7 +2883,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different data"):
+        with pytest.raises(AssertionError, match="has different values"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2895,7 +2895,10 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=re.escape("op1 has value (0, 1) and op2 has value (2, 3)"),
+        ):
             assert_equal(op, other_op)
 
     @pytest.mark.jax
@@ -2909,12 +2912,12 @@ class TestBasisRotation:
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
         )
-        other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
+        other_op = qml.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False) is True
         assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match=r"have different interfaces"):
+        with pytest.raises(AssertionError, match=r"has different interfaces"):
             assert_equal(op, other_op)
 
 
@@ -3163,11 +3166,11 @@ class TestCompareSubroutines:
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine1(wires):
             qml.X(wires)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine2(wires):
             qml.Y(wires)
 
@@ -3181,7 +3184,7 @@ class TestCompareSubroutines:
     def test_different_static_args(self):
         """Test they are different if they have different static args."""
 
-        @partial(qml.templates.Subroutine, static_argnames=("a",))
+        @partial(qml.templates.core.Subroutine, static_argnames=("a",))
         def f(a, wires):
             pass
 
@@ -3195,20 +3198,20 @@ class TestCompareSubroutines:
     def test_different_wires(self):
         """Test they are different if their wires are different."""
 
-        @partial(qml.templates.Subroutine, wire_argnames=("reg1", "reg2"))
+        @partial(qml.templates.core.Subroutine, wire_argnames=("reg1", "reg2"))
         def f(reg1, reg2):
             pass
 
         op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
         op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
         assert not qml.equal(op1, op2)
-        with pytest.raises(AssertionError, match=r"has value Wires\(\[1\]\) for register reg1"):
+        with pytest.raises(AssertionError, match=r"has value \(1,\) for register reg1"):
             qml.assert_equal(op1, op2)
 
     def test_different_pytree_inputs(self):
         """Test that if the pytrees for an input are different, the ops are different."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
@@ -3222,7 +3225,7 @@ class TestCompareSubroutines:
     def test_different_data(self):
         """Test that if there is different data, they are different operators."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 

@@ -35,7 +35,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(transform, pass_name="split-to-single-terms")
 def split_to_single_terms(tape):
     """Splits any expectation values of multi-term observables in a circuit into single term
     expectation values for devices that don't natively support measuring expectation values
@@ -138,6 +138,23 @@ def split_to_single_terms(tape):
 
         >>> processing_fn(results)
         (np.float64(2.0), np.float64(2.0), np.float64(1.0))
+
+    .. details::
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with ``qjit`` with a few minor differences to be aware of.
+        Currently, when combined with ``qjit``, this transform will not work with shot vectors
+        and will not simplify any tensor products like ``X(0) @ Y(0)`` contained in measurements.
+
+        We can apply the MLIR pass by simply decorating our ``QNode`` with ``@qml.qjit``:
+
+        .. code-block:: python
+
+            @qml.qjit
+            @qml.transforms.split_to_single_terms
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
 
     """
 

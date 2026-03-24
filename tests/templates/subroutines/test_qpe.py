@@ -122,7 +122,7 @@ class TestDecomposition:
             qml.Hadamard(2)
             qml.ctrl(qml.pow(unitary, 2), control=[1])
             qml.ctrl(qml.pow(unitary, 1), control=[2])
-            qml.adjoint(qml.QFT(wires=[1, 2]))
+            qml.adjoint(qml.QFT)(wires=[1, 2])
         qscript2 = qml.tape.QuantumScript.from_queue(q)
         assert len(qscript) == len(qscript2)
         # qml.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
@@ -138,7 +138,7 @@ class TestDecomposition:
         assert qscript[3].control_wires == qscript2[3].control_wires
 
         assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)  # pylint: disable=no-member
-        qml.assert_equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
+        qml.assert_equal(qscript[-1].base, qml.QFT.operator(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
         assert np.allclose(qscript[3].matrix(), qscript[3].matrix())

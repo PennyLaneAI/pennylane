@@ -397,7 +397,7 @@ def tape_mpl(
     .. code-block:: python
 
         ops = [
-            qml.QFT(wires=(0,1,2,3)),
+            qml.QFT.operator(wires=(0,1,2,3)),
             qml.IsingXX(1.234, wires=(0,2)),
             qml.Toffoli(wires=(0,1,2)),
             qml.CSWAP(wires=(0,2,3)),

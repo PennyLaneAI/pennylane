@@ -293,7 +293,7 @@ class TestToQasmUnitTests:
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
-            creg c[3];
+            creg c[2];
             rx(0.43) q[0];
             ry(0.35) q[1];
             rz(0.35) q[2];
@@ -302,7 +302,7 @@ class TestToQasmUnitTests:
             cx q[2],q[0];
             x q[1];
             measure q[0] -> c[0];
-            measure q[2] -> c[2];
+            measure q[2] -> c[1];
             """
         )
 

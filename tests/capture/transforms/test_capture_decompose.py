@@ -142,7 +142,7 @@ class TestDecomposeInterpreter:
         """Test that decompose works when there is a subroutine in the circuit."""
         interpreter = DecomposeInterpreter(gate_set=qml.gate_sets.ROTATIONS_PLUS_CNOT)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             qml.IsingXX(x, wires)
 
@@ -152,7 +152,6 @@ class TestDecomposeInterpreter:
             f(x, (1, 2))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
-
         eqn1 = jaxpr.eqns[3]  # the first subroutine prim
         eqn2 = jaxpr.eqns[7]  # the second subroutine prim
 

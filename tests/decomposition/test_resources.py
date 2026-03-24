@@ -116,8 +116,8 @@ class TestCompressedResourceOp:
     def test_initialization(self):
         """Tests creating a CompressedResourceOp object."""
 
-        op = CompressedResourceOp(qml.QFT, {"num_wires": 5})
-        assert op.op_type is qml.QFT
+        op = CompressedResourceOp(qml.MultiControlledX, {"num_wires": 5})
+        assert op.op_type is qml.MultiControlledX
         assert op.params == {"num_wires": 5}
 
         op = CompressedResourceOp(qml.RX)
@@ -139,13 +139,13 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qml.RX, {})
         assert isinstance(hash(op), int)
 
-        op = CompressedResourceOp(qml.QFT, {"num_wires": 5})
+        op = CompressedResourceOp(qml.MultiControlledX, {"num_wires": 5})
         assert isinstance(hash(op), int)
 
         op = CompressedResourceOp(
             qml.ops.Controlled,
             {
-                "base_class": qml.QFT,
+                "base_class": qml.MultiControlledX,
                 "base_params": {"num_wires": 5},  # nested dictionary in params
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
@@ -224,6 +224,14 @@ class TestCompressedResourceOp:
         op2 = CompressedResourceOp(qml.MultiRZ, {"num_wires": 6})
         assert op1 != op2
 
+        op1 = CompressedResourceOp(
+            qml.ops.Prod, {"resources": {CompressedResourceOp(DummyOp, {"foo": 1, "bar": 2}): 1}}
+        )
+        op2 = CompressedResourceOp(
+            qml.ops.Prod, {"resources": {CompressedResourceOp(DummyOp, {"bar": 2, "foo": 1}): 1}}
+        )
+        assert op1 == op2
+
     def test_repr(self):
         """Tests the repr defined for debugging purposes."""
 
@@ -233,8 +241,11 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
         assert repr(op) == "MultiRZ(num_wires=5)"
 
+        op = CompressedResourceOp(DummyOp, {"bar": 1, "foo": 2})
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
+
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
-        assert repr(op) == "DummyOp(foo=2, bar=1)"
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
 
     @pytest.mark.parametrize(
         "op, expected_name",
