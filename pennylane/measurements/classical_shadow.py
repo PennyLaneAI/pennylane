@@ -613,7 +613,7 @@ def shadow_expval(
         k (int): Number of groups for the median-of-means estimator. The default is ``k=1``, which simply computes
             the mean of all measurements. ``k>1`` provides no expected advantage for Pauli measurements and Pauli
             observables.
-        seed (int | None):  Optional seed for the random Pauli measurement basis in the
+        seed (int | None): Optional seed for the random Pauli measurement basis in the
             classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
             in per shot. If ``None``, a random seed will be generated.
 
