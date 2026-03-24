@@ -69,6 +69,7 @@ class TestCH:
             GateCount(resource_rep(qre.Toffoli), 1),
             GateCount(resource_rep(qre.CNOT), 5),
             GateCount(resource_rep(qre.CZ), 1),
+            GateCount(resource_rep(qre.X), 4),
             qre.Deallocate(1),
         ]
         result = qre.ch_toffoli_based_resource_decomp(**self.op.resource_params)

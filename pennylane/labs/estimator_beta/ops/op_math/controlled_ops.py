@@ -97,6 +97,7 @@ def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.De
     gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
     gate_lst.append(GateCount(resource_rep(qre.CNOT), 5))
     gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
+    gate_lst.append(GateCount(resource_rep(qre.X), 4))
     gate_lst.append(qre.Deallocate(1))
 
     return gate_lst

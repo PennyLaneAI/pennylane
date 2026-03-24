@@ -96,7 +96,7 @@ def hadamard_controlled_resource_decomp(
     gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.T)}), 1))
     gate_lst.append(GateCount(resource_rep(qre.S), 1))
     gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}), 1))
-    gate_lst.append(GateCount(mcx))
+    gate_lst.append(GateCount(mcx, 1))
     gate_lst.append(qre.Deallocate(1))
     return gate_lst
 
@@ -151,9 +151,12 @@ def hadamard_toffoli_based_controlled_decomp(
     gate_lst.append(GateCount(resource_rep(qre.Toffoli), 1))
     gate_lst.append(GateCount(resource_rep(qre.CNOT), 4))
     gate_lst.append(GateCount(resource_rep(qre.CZ), 1))
-    gate_lst.append(GateCount(mcx))
-    gate_lst.append(qre.Deallocate(1))
+    gate_lst.append(GateCount(mcx, 1))
 
     if num_ctrl_wires > 1:
+        gate_lst.append(GateCount(mcx, 1))
         gate_lst.append(qre.Deallocate(1))
+
+    gate_lst.append(qre.Deallocate(1))
+
     return gate_lst
