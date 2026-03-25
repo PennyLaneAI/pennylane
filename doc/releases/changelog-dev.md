@@ -831,7 +831,7 @@ The following classes have been ported over:
 <h3>Documentation 📝</h3>
 
 * For gridsynth decomposition, updated the warning to reflect that for epsilon smaller than 1e-6, the result may be inaccurate of errors may arise.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
   was clarified in its documentation.
