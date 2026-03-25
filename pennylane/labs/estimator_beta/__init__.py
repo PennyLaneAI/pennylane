@@ -50,7 +50,7 @@ Qubit Tracking Functionality
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.estimator_beta.ops
+.. currentmodule:: pennylane.labs.estimator_beta
 
 .. autosummary::
     :toctree: api
