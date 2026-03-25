@@ -16,10 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
 
-from pennylane.estimator.estimate import (
-    _get_resource_decomposition,
-    _ops_to_compressed_reps,
-)
+from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
