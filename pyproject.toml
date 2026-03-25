@@ -23,7 +23,8 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy>=2.0"
+    "numpy>=2.0",
+    "gast"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -185,7 +186,7 @@ version = {attr = "pennylane._version.__version__"}
 [tool.setuptools_scm]
 
 [tool.setuptools.package-data]
-pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
+pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sign_expand/sign_expand_data.json"]
 
 [tool.black]
 line-length = 100
