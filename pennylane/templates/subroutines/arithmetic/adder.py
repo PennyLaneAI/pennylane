@@ -39,8 +39,8 @@ try:
     import jax  # pylint: disable=unused-import
     from jax import numpy as jnp
 
-except ImportError:
-    has_jax = False
+except ImportError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 # pylint: disable=unused-argument
