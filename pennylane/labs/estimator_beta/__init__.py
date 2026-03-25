@@ -62,7 +62,9 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import OutOfPlaceIntegerComparator, RegisterEquality
+from .templates import OutOfPlaceIntegerComparator, RegisterEquality, PrepFirstQuantization
+
+from .compact_hamiltonian import FirstQuantizedHamiltonian
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
     return action

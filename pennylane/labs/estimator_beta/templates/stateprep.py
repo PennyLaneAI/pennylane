@@ -14,8 +14,12 @@
 r"""Resource operators for state preparation templates."""
 import math
 
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+import pennylane.labs.estimator_beta as qre
+from pennylane.labs.estimator_beta.compact_hamiltonian import FirstQuantizedHamiltonian
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
+from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 from pennylane.math.utils import ceil_log2
+from pennylane.wires import WiresLike
 
 class PrepFirstQuantization(ResourceOperator):
     r"""Resource class for preparing the state for first quantization algorithms.
@@ -69,10 +73,10 @@ class PrepFirstQuantization(ResourceOperator):
         self.fq_ham = fq_ham
         self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth
-        num_orb = fq_ham.num_orbitals
+        self.num_wires = 10  # This is a placeholder value. The actual number of wires will depend on the Hamiltonian and the implementation details of the state preparation algorithm.
 
-        if wires is not None and len(Wires(wires)) != self.num_wires:
-            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        # if wires is not None and len(Wires(wires)) != self.num_wires:
+        #     raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -81,7 +85,7 @@ class PrepFirstQuantization(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+                * fq_ham (:class:`~.pennylane.estimator.compact_hamiltonian.FirstQuantizedHamiltonian`): a first quantized
                   Hamiltonian for which the state is being prepared
                 * coeff_precision (int): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. The default value is set to ``15`` bits.
@@ -125,13 +129,7 @@ class PrepFirstQuantization(ResourceOperator):
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
-        num_orb = fq_ham.num_orbitals
-        tensor_rank = fq_ham.tensor_rank
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = ceil_log2(num_coeff)
-
-        num_wires = 4 * ceil_log2(tensor_rank + 1) + coeff_register + coeff_precision * 2 + 8
-
+        num_wires = 10
         params = {
             "fq_ham": fq_ham,
             "coeff_precision": coeff_precision,
@@ -168,10 +166,11 @@ class PrepFirstQuantization(ResourceOperator):
         """
 
         gate_list = []
+        br = 8
 
         eta = fq_ham.num_electrons
-        # Step:1: Rotate the ancilla qubit for selecting between T and U+V Preparations
-        gate_list.append(GateCount(resource_rep(qre.RY), 1))
+        # # Step:1: Rotate the ancilla qubit for selecting between T and U+V Preparations
+        # gate_list.append(GateCount(resource_rep(qre.RY), 1))
 
         # Step 2a: Prepare an equal superposition over i and j registers
         n_eta = ceil_log2(eta)
@@ -183,13 +182,41 @@ class PrepFirstQuantization(ResourceOperator):
 
         cz = resource_rep(qre.CZ)
         gate_list.append(GateCount(cz, 2))
-
         gate_list.append(GateCount(toffoli, 2* br - 6)) # invert the rotation
-
         gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 2)) # uncompute the inequality
-
-        gate_list.append(GateCount(toffoli, n_eta - 1)) # Reflection on n_eta - 1 qubits
-
+        gate_list.append(GateCount(toffoli, 2*(n_eta - 1))) # Reflection on n_eta - 1 qubits
         gate_list.append(GateCount(ineq, 2)) # compute the inequality again
+
+        # Step 2b and 2c:
+        eq = resource_rep(qre.RegisterEquality, {"register_size": n_eta})
+        gate_list.append(GateCount(eq, 1)) # compute the equality for i and j registers
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": eq}), 1)) # adjoint of equality test
+        gate_list.append(GateCount(toffoli, 2)) # Extra toffolis to flag and invert the success of the equality test
+
+        # Step 2d: Invert the superposition over i and j registers
+
+        gate_list.append(GateCount(ineq, 2)) # one for i and one for j
+        gate_list.append(GateCount(toffoli, 2 * br - 6))  # for rotation on ancilla
+        gate_list.append(GateCount(cz, 2))
+        gate_list.append(GateCount(toffoli, 2* br - 6)) # invert the rotation
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 2)) # uncompute the inequality
+        gate_list.append(GateCount(toffoli, 2*(n_eta - 1))) # Reflection on n_eta - 1 qubits
+        gate_list.append(GateCount(ineq, 2)) # compute the inequality again
+
+        # Step 3: Prepare the superposition over w,r,s registers to use for T part of the select operation
+        # Over w register: 3 spatial coordinates
+        n_w = ceil_log2(3)
+        ineq = resource_rep(qre.OutOfPlaceIntegerComparator, {"value": 3, "register_size": n_w, "geq": False})
+        gate_list.append(GateCount(ineq, 1)) # one for i and one for j
+        gate_list.append(GateCount(toffoli, br - 3))  # for rotation on ancilla
+        gate_list.append(GateCount(cz, 1))
+        gate_list.append(GateCount(toffoli, br - 3)) # invert the rotation
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 1)) # uncompute the inequality
+        gate_list.append(GateCount(toffoli, n_w - 1)) # Reflection on n_w - 1 qubits
+        gate_list.append(GateCount(ineq, 1)) # compute the inequality again
+
+        # Over r and s registers: we need a cascade of controlled Hadamard gates
+
+
         return gate_list
 

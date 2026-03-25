@@ -160,16 +160,17 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(
-        cls, value: int, register_size: int, geq: bool = False
+        cls, target_resource_params: dict
         ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
-            value (int): The value :math:`L` that the state’s decimal representation is compared against.
-            register_size (int): size of the register for basis state
-            geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
-                ``False``, the comparison made will be :math:`n \lt L`.
+            target_resource_params (dict): A dictionary containing the resource parameters:
+                * value (int): The value :math:`L` that the state’s decimal representation is compared against.
+                * register_size (int): size of the register for basis state
+                * geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+                    ``False``, the comparison made will be :math:`n \lt L`.
 
         Resources:
             The resources are computed based on Figure 6 of Appendix E in
@@ -180,6 +181,10 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
             list[GateCount]: A list of gate counts representing the resources of the adjoint of the operator.
         """
         gate_lst = []
+        value = target_resource_params["value"]
+        register_size = target_resource_params["register_size"]
+        geq = target_resource_params["geq"]
+
         if value == 0:
             if not geq:
                 gate_lst.append(GateCount(resource_rep(qre.X), 1))
