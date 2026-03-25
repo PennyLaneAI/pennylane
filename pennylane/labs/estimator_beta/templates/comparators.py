@@ -151,7 +151,6 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), register_size - 1))
 
         gate_lst.append(GateCount(resource_rep(qre.CNOT), 2 * (register_size - 1)))
-        print(gate_lst)
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -220,7 +219,7 @@ class RegisterEquality(ResourceOperator):
         The circuit computes the bitwise XOR of the two registers using
         CNOTs, then checks whether all results are zero via a Toffoli
         cascade (AND reduction), following Lemma 7.2 of
-        `Barenco et al. (1995) https://arxiv.org/abs/quant-ph/9503016`_.
+        `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     """
 
