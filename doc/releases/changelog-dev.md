@@ -444,6 +444,10 @@ The following classes have been ported over:
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
+* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
+
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
   [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
@@ -952,6 +956,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Isaac De Vlugt,
+Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,

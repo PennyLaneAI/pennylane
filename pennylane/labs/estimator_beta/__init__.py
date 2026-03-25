@@ -47,6 +47,19 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+Alternate Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~ch_resource_decomp
+    ~ch_toffoli_based_resource_decomp
+    ~hadamard_controlled_resource_decomp
+    ~hadamard_toffoli_based_controlled_decomp
+
 """
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
@@ -61,6 +74,13 @@ from .wires_manager import (
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
+
+from .ops import (
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
 
 
 @apply_controlled.register
