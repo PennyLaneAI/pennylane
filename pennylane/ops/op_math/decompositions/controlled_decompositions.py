@@ -440,10 +440,6 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
 
-    if compiler.active() or qml.capture.enabled():
-        control_wires = math.array(control_wires, like="jax")
-        work_wires = math.array(work_wires, like="jax")
-
     if work_wire_type == "borrowed":
         up_gate = down_gate = ops.Toffoli
     else:
@@ -452,10 +448,22 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
 
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
+        if qml.math.is_abstract(i) and (compiler.active() or qml.capture.enabled()):
+            nonlocal control_wires, work_wires
+            if not qml.math.is_abstract(control_wires):
+                control_wires = math.array(control_wires, like="jax")
+            if not qml.math.is_abstract(work_wires):
+                work_wires = math.array(work_wires, like="jax")
         up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     @control_flow.for_loop(len(work_wires) - 1, 0, -1)
     def loop_down(i):
+        if qml.math.is_abstract(i) and (compiler.active() or qml.capture.enabled()):
+            nonlocal control_wires, work_wires
+            if not qml.math.is_abstract(control_wires):
+                control_wires = math.array(control_wires, like="jax")
+            if not qml.math.is_abstract(work_wires):
+                work_wires = math.array(work_wires, like="jax")
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     if work_wire_type == "borrowed":

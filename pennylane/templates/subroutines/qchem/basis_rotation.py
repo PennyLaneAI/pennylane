@@ -84,15 +84,22 @@ def _real_unitary(unitary, wires):
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if _qjit_or_capture():
-        givens_ids = math.array(givens_ids, like="jax")
-        givens_matrices = math.array(givens_matrices, like="jax")
-        wires = math.array(wires, like="jax")
-
     @for_loop(len(givens_list))
     def givens_loop(idx):
+        if math.is_abstract(idx) and (compiler.active() or capture.enabled()):
+            nonlocal givens_matrices, givens_ids
+            if not math.is_abstract(givens_matrices):
+                givens_matrices = math.array(givens_matrices, like="jax")
+            if not math.is_abstract(givens_ids):
+                givens_ids = math.array(givens_ids, like="jax")
         grot_mat = givens_matrices[idx]
         (i, j) = givens_ids[idx]
+        if (math.is_abstract(i) or math.is_abstract(j)) and (
+            compiler.active() or capture.enabled()
+        ):
+            nonlocal wires
+            if not math.is_abstract(wires):
+                wires = math.array(wires, like="jax")
         theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 

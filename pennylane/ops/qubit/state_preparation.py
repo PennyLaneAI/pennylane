@@ -226,19 +226,14 @@ def _basis_state_decomp_resources(num_wires):
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    if qml.capture.enabled() or qml.compiler.active():
-        # This branch makes sure that state and wires are cast to objects into which
-        # a traced loop index is allowed to index (if they aren't already traced)
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        if not qml.math.is_abstract(state):
-            state = jnp.array(state)
-
-        if not qml.math.is_abstract(wires):
-            wires = jnp.array(wires)
-
     @qml.for_loop(len(state))
     def _loop(i):
+        if qml.math.is_abstract(i) and (qml.compiler.active() or qml.capture.enabled()):
+            nonlocal state, wires
+            if not qml.math.is_abstract(state):
+                state = math.array(state, like="jax")
+            if not qml.math.is_abstract(wires):
+                wires = math.array(wires, like="jax")
         qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter

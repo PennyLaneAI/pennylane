@@ -1073,11 +1073,13 @@ def _sos_state_prep(
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
-    if qml.compiler.active():
-        enumeration_wires = qml.math.array(enumeration_wires, like="jax")
     # The following functions are called conditionally from within `uncompute_enumeration`
 
     def single_mcx(k):
+        if qml.math.is_abstract(k) and (qml.compiler.active() or qml.capture.enabled()):
+            nonlocal enumeration_wires
+            if not qml.math.is_abstract(enumeration_wires):
+                enumeration_wires = math.array(enumeration_wires, like="jax")
         # If k is a power of two, we can directly use an MCX gate
         # This is an additional optimization compared to the paper, saving one MCX gate
         target = math.ceil_log2(k)
@@ -1088,6 +1090,10 @@ def _sos_state_prep(
         )
 
     def two_mcx(k):
+        if qml.math.is_abstract(k) and (qml.compiler.active() or qml.capture.enabled()):
+            nonlocal enumeration_wires
+            if not qml.math.is_abstract(enumeration_wires):
+                enumeration_wires = math.array(enumeration_wires, like="jax")
         # If k is a sum of two powers of two, we can directly use two MCX gates
         # This is an additional optimization compared to the paper, saving aux wire usage
         target0 = math.ceil_log2(k) - 1
@@ -1119,18 +1125,24 @@ def _sos_state_prep(
 
         qml.MultiControlledX(**mcx_kwargs)
 
-    if compiler.active():
-        b_bits = qml.math.array(b_bits, like="jax")
-        mcx_ctrl_wires = qml.math.array(mcx_ctrl_wires, like="jax")
-
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
+        if qml.math.is_abstract(k) and (qml.compiler.active() or qml.capture.enabled()):
+            nonlocal b_bits
+            if not qml.math.is_abstract(b_bits):
+                b_bits = math.array(b_bits, like="jax")
         bits = b_bits[:, k]
         flip_bits = qml.math.bitwise_xor(bits, prev_bits)
 
         @for_loop(m)
         def _flip(i):
+            if qml.math.is_abstract(i) and (qml.compiler.active() or qml.capture.enabled()):
+                nonlocal flip_bits, mcx_ctrl_wires
+                if not qml.math.is_abstract(flip_bits):
+                    flip_bits = math.array(flip_bits, like="jax")
+                if not qml.math.is_abstract(mcx_ctrl_wires):
+                    mcx_ctrl_wires = math.array(mcx_ctrl_wires, like="jax")
             qml.cond(flip_bits[i], qml.X)(mcx_ctrl_wires[i])
 
         _flip()
@@ -1147,6 +1159,12 @@ def _sos_state_prep(
 
     @for_loop(m)
     def flip(i):
+        if qml.math.is_abstract(i) and (qml.compiler.active() or qml.capture.enabled()):
+            nonlocal last_bits, mcx_ctrl_wires
+            if not qml.math.is_abstract(last_bits):
+                last_bits = math.array(last_bits, like="jax")
+            if not qml.math.is_abstract(mcx_ctrl_wires):
+                mcx_ctrl_wires = math.array(mcx_ctrl_wires, like="jax")
         qml.cond(~last_bits[i], qml.X)(mcx_ctrl_wires[i])
 
     # flip_bits = qml.math.bitwise_xor(qml.math.ones(m, dtype=int, like="jax"), last_bits)
