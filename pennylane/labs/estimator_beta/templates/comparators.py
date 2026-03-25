@@ -282,7 +282,7 @@ class RegisterEquality(ResourceOperator):
             The circuit computes the bitwise XOR of the two registers using
             CNOTs, then checks whether all results are zero via a Toffoli
             cascade (AND reduction), following Lemma 7.2 of
-            `Barenco et al. (1995) https://arxiv.org/abs/quant-ph/9503016`_.
+            `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the operator.
@@ -314,7 +314,7 @@ class RegisterEquality(ResourceOperator):
             The circuit computes the bitwise XOR of the two registers using
             CNOTs, then checks whether all results are zero via a Toffoli
             cascade (AND reduction), following Lemma 7.2 of
-            `Barenco et al. (1995) https://arxiv.org/abs/quant-ph/9503016`_.
+            `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the adjoint of the operator.
