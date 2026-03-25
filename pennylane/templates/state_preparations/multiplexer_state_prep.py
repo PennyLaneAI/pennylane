@@ -122,7 +122,9 @@ def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
 
 
 @register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
-def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
+def _multiplexer_state_prep_decomposition(
+    state_vector, wires, **_
+):  # pylint: disable=arguments-differ
     r"""
     Computes the decomposition operations for the given state vector.
 

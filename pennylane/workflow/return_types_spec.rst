@@ -97,7 +97,7 @@ array([[1.        , 0.        ],
 >>> tape = qml.tape.QuantumScript((op,), [qml.expval(qml.Z(0))])
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
-array([1.    , 0.7071, 0.    ])
+array([1.    , 0.7071..., 0.    ])
 >>> result.shape
 (3,)
 

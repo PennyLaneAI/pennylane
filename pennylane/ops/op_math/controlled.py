@@ -499,13 +499,14 @@ class Controlled(SymbolicOp):
     Sparse matrices are available if the base class defines either a sparse matrix
     or only a dense matrix.
 
-    >>> np.set_printoptions(precision=4) # easier to read the matrix
-    >>> qml.matrix(op)
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     qml.matrix(op)
     array([[0.8156+0.j    , 0.    -0.5786j, 0.    +0.j    , 0.    +0.j    ],
            [0.    -0.5786j, 0.8156+0.j    , 0.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 1.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
-    >>> qml.eigvals(op)
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
     >>> print(qml.generator(op, format='observable'))
     Projector(array([0]), wires=[0]) @ (-0.5 * X(1))

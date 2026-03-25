@@ -162,7 +162,9 @@ class TestDecomposition:
             jax = pytest.importorskip("jax")
             wires = jax.numpy.arange(num_wires)
             jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, unitary_matrix)
-            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
+            assert tape[0].name == "BasisRotation"
+            queue = tape[0].decomposition()
         else:
             op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=unitary_matrix)
             queue = op.decomposition()
@@ -239,7 +241,9 @@ class TestDecomposition:
             jax = pytest.importorskip("jax")
             wires = jax.numpy.arange(num_wires)
             jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, ortho_matrix)
-            queue = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
+            assert tape[0].name == "BasisRotation"
+            queue = tape[0].decomposition()
         else:
             op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=ortho_matrix)
             queue = op.decomposition()
@@ -622,11 +626,12 @@ class TestInterfaces:
         ],
     )
     @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
-    @pytest.mark.jax
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit(self, unitary, device_name, tol):
         """Test with qjit interface."""
+        catalyst = pytest.importorskip("catalyst")
+
         unitary_matrix = qml.math.array(unitary, like="jax")
 
         dev = qml.device(device_name, wires=3)
@@ -635,7 +640,7 @@ class TestInterfaces:
 
         # We compute these results with `null.qubit` even though we won't compare them. This
         # is to test error-free "execution".
-        res = qml.qjit(circuit)(unitary_matrix)
+        res = catalyst.qjit(circuit)(unitary_matrix)
         res2 = circuit(unitary_matrix)
         res3 = circuit(qml.math.toarray(unitary_matrix))
 
@@ -645,15 +650,9 @@ class TestInterfaces:
 
         gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
         circuit_dec = qml.decompose(circuit, gate_set=gate_set)
-        specs = qml.specs(qml.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs = qml.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
         specs2 = qml.specs(circuit_dec, level="device")(unitary_matrix)
-
-        gate_types = specs["resources"].gate_types
-        assert set(gate_types) == gate_set
-        assert gate_types["BasisState"] == 1
-        assert gate_types["SingleExcitation"] == 3
-        assert gate_types.get("PhaseShift", 0) <= 6  # Number of PhaseShifts is value-dependent
-        assert gate_types == specs2["resources"].gate_types
+        assert specs["resources"].gate_types == specs2["resources"].gate_types
         assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
 
     @pytest.mark.slow

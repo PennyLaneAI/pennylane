@@ -19,8 +19,8 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v6
+        
       - name: Assess changed files
         id: changed-files
         uses: tj-actions/changed-files@v46
