@@ -70,7 +70,7 @@ jobs:
           path: uv.lock
 
   upload-stable-deps:
-    needs: tests
+    needs: [tests, update-lock-files]
     uses: ./.github/workflows/check_in_artifact.yml
     if: github.event_name == 'schedule'
     with:
