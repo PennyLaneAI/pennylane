@@ -440,7 +440,7 @@ def cancel_inverses(
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: cancel-inverses (MLIR-1)
+        Level: cancel-inverses
         <BLANKLINE>
         Wire allocations: 1
         Total gates: 1
