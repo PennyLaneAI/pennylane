@@ -52,7 +52,7 @@ def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
 
     .. warning::
 
-        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results or errors,
+        Using an ``epsilon`` value smaller than ``1e-6`` may lead to inaccurate results or errors,
         due to potential integer overflow in the solver.
 
     .. warning::

@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
   - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
@@ -157,7 +157,7 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* `Callables` defining quantum operations can now be passed to the 
+* `Callables` defining quantum operations can now be passed to the
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
@@ -174,11 +174,11 @@ The following classes have been ported over:
 * ZX-related transforms are now compatible with `pyzx` v0.10.0.
   [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
-* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
+* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations.
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
-  
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
@@ -248,7 +248,7 @@ The following classes have been ported over:
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
@@ -427,7 +427,7 @@ The following classes have been ported over:
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
-* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter. 
+* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter.
   [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
@@ -729,7 +729,7 @@ The following classes have been ported over:
 
 * A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
-  
+
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
@@ -748,7 +748,7 @@ The following classes have been ported over:
 
 * Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
   [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
-  
+
 * Updated the `diastatic-malt` dependency to version v2.15.3.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
@@ -830,7 +830,10 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+* For gridsynth decomposition, updated the warning to reflect that for epsilon smaller than 1e-6, the result may be inaccurate of errors may arise.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
@@ -961,6 +964,7 @@ Marcus Edwards,
 Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
