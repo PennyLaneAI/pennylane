@@ -88,7 +88,7 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
-* Adds a new `qml.templates.core.Subroutine` class for adding a layer of abstraction for
+* Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
   and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
@@ -109,7 +109,7 @@
   [(#9176)](https://github.com/PennyLaneAI/pennylane/pull/9176)
 
   ```python
-  from pennylane.templates.core import Subroutine
+  from pennylane.templates import Subroutine
 
   @Subroutine
   def MyTemplate(x, y, wires):
@@ -129,7 +129,6 @@
 
 The following classes have been ported over:
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
-- `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
@@ -428,6 +427,9 @@ The following classes have been ported over:
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
+* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter. 
+  [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -440,6 +442,10 @@ The following classes have been ported over:
   Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
+* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
@@ -949,6 +955,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Isaac De Vlugt,
+Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
@@ -961,4 +968,5 @@ Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
 David Wierichs,
+Fuyuan Xia,
 Jake Zaia.

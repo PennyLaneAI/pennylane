@@ -21,7 +21,7 @@ import numpy as np
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 from pennylane.pytrees import flatten
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates import SubroutineOp
 
 
 def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
