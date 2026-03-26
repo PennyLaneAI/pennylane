@@ -196,7 +196,9 @@ class TestOutOfPlaceIntegerComparator:
     )
     def test_adjoint_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct for the adjoint of the operator."""
-        result = qre.OutOfPlaceIntegerComparator.adjoint_resource_decomp(value, register_size, geq)
+        result = qre.OutOfPlaceIntegerComparator.adjoint_resource_decomp(
+            {"value": value, "register_size": register_size, "geq": geq}
+        )
         for r, e in zip(result, expected_res):
             if hasattr(r, "equal"):
                 assert r.equal(e)
