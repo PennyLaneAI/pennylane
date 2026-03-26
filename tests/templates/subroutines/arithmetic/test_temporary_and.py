@@ -105,11 +105,11 @@ class TestTemporaryAND:
         assert qml.math.allclose(iso_and, iso_toffoli)
         assert qml.math.allclose(iso_M_and_adj, iso_toffoli_adj)
 
-    def test_and_decompositions(self):
+    @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    def test_and_decompositions(self, cvals):
         """Tests that TemporaryAND is decomposed properly."""
-
         for rule in qml.list_decomps(qml.TemporaryAND):
-            _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=(0, 0)), rule)
+            _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=cvals), rule)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values):
@@ -275,11 +275,14 @@ class TestTemporaryAND:
         @qml.qnode(dev)
         def circuit(values):
             qml.Hadamard(0)
-            qml.X(1)
             qml.Hadamard(1)
             qml.TemporaryAND(wires=[0, 1, 2], control_values=values)
             return qml.probs([0, 1, 2])
 
+        exp_probs = qml.math.array([1, 0, 0, 1, 1, 0, 1, 0]) / 4
         qjit_circuit = qml.qjit(circuit)
         values = qml.math.array([0, 1], like="jax")
-        assert qml.math.allclose(circuit(values), qjit_circuit(values))
+        out = circuit(values)
+        qjit_out = qjit_circuit(values)
+        assert qml.math.allclose(out, exp_probs)
+        assert qml.math.allclose(out, qjit_out)
