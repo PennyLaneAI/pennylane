@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""This module contains resource operators for basic PennyLane Operators"""
 
-"""
-Version number (major.minor.patch[-label])
-"""
-
-__version__ = "0.45.0-dev66"
+from .op_math import ch_resource_decomp, ch_toffoli_based_resource_decomp
+from .qubit import hadamard_controlled_resource_decomp, hadamard_toffoli_based_controlled_decomp
