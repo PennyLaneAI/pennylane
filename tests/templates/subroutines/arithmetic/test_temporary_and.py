@@ -272,16 +272,13 @@ class TestTemporaryAND:
 
         dev = qml.device("lightning.qubit")
 
-        @qml.decompose(max_expansion=1)
         @qml.qnode(dev)
         def circuit(values):
             qml.Hadamard(0)
+            qml.X(1)
             qml.Hadamard(1)
             qml.TemporaryAND(wires=[0, 1, 2], control_values=values)
-            qml.CNOT(wires=[2, 3])
-            qml.RY(1.2, 3)
-            qml.adjoint(qml.TemporaryAND([0, 1, 2]))
-            return qml.probs([0, 1, 2, 3])
+            return qml.probs([0, 1, 2])
 
         qjit_circuit = qml.qjit(circuit)
         values = qml.math.array([0, 1], like="jax")

@@ -633,7 +633,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
-            qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
+            qml.math.hstack([qml.math.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
 
