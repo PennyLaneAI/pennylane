@@ -65,7 +65,6 @@ def test_optimization_success(quadratic_problem):
     assert jnp.allclose(result.final_params, target, atol=1e-1)
 
 
-@pytest.mark.usefixtures("skip_if_no_jaxopt")
 def test_determinism(quadratic_problem):
     # pylint: disable=redefined-outer-name
     """
@@ -197,14 +196,13 @@ def test_iqp_optimization():
     gates = {0: [[0]], 1: [[1]]}
 
     params_init = jnp.array([0.1, 0.1])
-
-    ops_strings = [["Z", "I"], ["I", "Z"]]
+    ops_ints = [[3, 0], [0, 3]]
 
     key = jax.random.PRNGKey(42)
 
     config = CircuitConfig(
         gates=gates,
-        observables=ops_strings,
+        observables=ops_ints,
         n_samples=n_samples,
         key=key,
         n_qubits=n_qubits,

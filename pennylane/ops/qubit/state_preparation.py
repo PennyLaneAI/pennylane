@@ -84,6 +84,10 @@ class BasisState(StatePrepBase):
 
     resource_keys = {"num_wires"}
 
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        return super()._primitive_bind_call(state, wires, **kwargs)
+
     @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
