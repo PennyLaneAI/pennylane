@@ -20,6 +20,7 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
+from typing import Any, Hashable, Iterable, Tuple
 
 import numpy as np
 
@@ -706,7 +707,7 @@ class PCPhase(Operation):
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
-    resource_keys = {"num_wires", "dim"}
+    resource_keys = {"num_wires", "dimension"}
 
     def generator(self) -> "qml.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
@@ -730,8 +731,12 @@ class PCPhase(Operation):
         mat = np.diag([1] * dim + [-1] * (N - dim))
         return qml.Hermitian(mat, wires=self.wires)
 
+    @classmethod
+    def _unflatten(cls, data: Iterable[Any], metadata: Tuple):
+        return cls(*data, dim=metadata[1][0][1], wires=metadata[0])
+
     def _flatten(self) -> FlatPytree:
-        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
+        hyperparameter = (("dimension", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
     def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
@@ -748,7 +753,7 @@ class PCPhase(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
+        return {"num_wires": len(self.wires), "dimension": self.hyperparameters["dimension"]}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
@@ -942,10 +947,10 @@ class PCPhase(Operation):
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
 
 
-# TODO: add test
-@register_reconstructor(PauliRot)
-def _pcphase_reconstructor(phi, dim, wires):
-    return PCPhase(phi, dim, wires)
+# pylint: disable=unused-argument
+@register_reconstructor(PCPhase)
+def _pcphase_reconstructor(phi, wires, dimension, num_wires):
+    return PCPhase(phi, dimension[0], wires)
 
 
 def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
@@ -1033,9 +1038,10 @@ def _ctrl_phase_shift(
     return 0.0
 
 
-def _decompose_pcphase_resource(num_wires, dim):
+def _decompose_pcphase_resource(num_wires, dimension):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
+    dim, _ = dimension
     gate_count = Counter()
     flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
     sigma = (-1) ** flipped
