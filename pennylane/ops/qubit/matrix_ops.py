@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import FlatPytree, Operation
@@ -132,7 +133,7 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
+    resource_keys = {"num_wires", "unitary_check"}
 
     grad_method = None
     """Gradient computation method."""
@@ -147,6 +148,8 @@ class QubitUnitary(Operation):
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
+
+        self.unitary_check = unitary_check
 
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
@@ -186,7 +189,7 @@ class QubitUnitary(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+        return {"num_wires": len(self.wires), "unitary_check": self.unitary_check}
 
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
@@ -350,6 +353,12 @@ class QubitUnitary(Operation):
         cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+# pylint: disable=unused-argument
+@register_reconstructor(QubitUnitary)
+def _qubit_unitary_reconstructor(U, wires, unitary_check, num_wires):
+    return QubitUnitary(U, wires, unitary_check)
 
 
 add_decomps(
