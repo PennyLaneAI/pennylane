@@ -247,11 +247,11 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane as qp
     >>> import pennylane.labs.estimator_beta as qre
-    >>> import numpy as np
     >>> num_coeffs = 100
-    >>> condensed_state = qre.QROMStatePreparation(num_state_qubits = int(np.ceil(np.log2(num_coeffs))))
-    >>> sos_state = qre.SumOfSlatersPrep(num_coeffs=num_coeffs, num_wires=8, stateprep_op = condensed_state)
+    >>> condensed_state = qre.QROMStatePreparation(num_state_qubits = qp.math.ceil_log2(num_coeffs))
+    >>> sos_state = qre.ResourceSumOfSlatersPrep(num_coeffs=num_coeffs, num_wires=8, stateprep_op = condensed_state)
     >>> print(qre.estimate(sos_state))
     --- Resources: ---
      Total wires: 71
@@ -268,7 +268,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
        'Hadamard': 9.636E+3
     """
 
-    resource_keys = {"num_wires"}
+    resource_keys = {"num_coeffs", "num_wires", "stateprep_cmpr_op", "select_swap_depth"}
 
     def __init__(
         self,
