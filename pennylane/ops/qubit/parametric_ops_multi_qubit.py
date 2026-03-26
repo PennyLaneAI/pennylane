@@ -20,7 +20,7 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
-from typing import Any, Hashable, Iterable, Tuple
+from typing import Any, Iterable, Tuple
 
 import numpy as np
 
