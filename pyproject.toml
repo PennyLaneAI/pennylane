@@ -109,7 +109,7 @@ docs = [
     "tensornetwork==0.3",
     "jinja2>=3.1",
     "networkx==3.1",
-    "pennylane-sphinx-theme",
+    "pennylane-sphinx-theme @ git+https://github.com/XanaduAI/pennylane-sphinx-theme.git@sc-110105-replace-all-jquery-in-xanadu-sphinx-theme-to",
     "tomli~=2.0.0",
     "sphinxext-opengraph==0.9.0",
     "sphinx-sitemap",
