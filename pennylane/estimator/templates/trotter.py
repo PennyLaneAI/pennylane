@@ -1059,14 +1059,14 @@ class TrotterVibrational(ResourceOperator):
         allocated wires: 75
              zero state: 75
              any state: 0
-     Total gates : 1.239E+5
-      'Toffoli': 2.248E+4,
+     Total gates : 2.195E+5
+      'Toffoli': 4.160E+4,
       'T': 749,
-      'CNOT': 3.520E+4,
+      'CNOT': 5.432E+4,
       'X': 1.216E+3,
       'Z': 1,
       'S': 1,
-      'Hadamard': 6.422E+4
+      'Hadamard': 1.216E+5
     """
 
     resource_keys = {
@@ -1487,14 +1487,14 @@ class TrotterVibronic(ResourceOperator):
         allocated wires: 75
              zero state: 75
              any state: 0
-     Total gates : 1.332E+5
-      'Toffoli': 2.320E+4,
+     Total gates : 2.288E+5
+      'Toffoli': 4.232E+4,
       'T': 749,
-      'CNOT': 4.144E+4,
+      'CNOT': 6.056E+4,
       'X': 1.456E+3,
       'Z': 1,
       'S': 1,
-      'Hadamard': 6.638E+4
+      'Hadamard': 1.237E+5
     """
 
     resource_keys = {

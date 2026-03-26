@@ -17,7 +17,7 @@ environment, so you can go ahead and put your code to the test!
 
 Creating a test
 ~~~~~~~~~~~~~~~
-Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
+Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/main/tests>`__.
 The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
 
 Most tests typically will not require the use of an interface or autodifferentiation framework (such as Autograd, PyTorch, and JAX). Tests without an interface will be marked
@@ -130,7 +130,7 @@ Another example of a test involving multiple interfaces is shown below:
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
+The `tests <https://github.com/PennyLaneAI/pennylane/tree/main/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
 
 .. code-block:: bash
 

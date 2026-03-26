@@ -198,15 +198,15 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> print(qml.specs(circuit)()['resources'])
-    Total wire allocations: 3
+    Wire allocations: 3
     Total gates: 4
-    Circuit depth: 3
-    Gate types:
-      Hadamard: 2
-      PauliMeasure: 1
-      Conditional(PauliX): 1
+    Gate counts:
+    - Hadamard: 2
+    - PauliMeasure: 1
+    - Conditional(PauliX): 1
     Measurements:
-      expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: 3
     """
 
     if capture_enabled():

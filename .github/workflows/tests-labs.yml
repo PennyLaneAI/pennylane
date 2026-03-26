@@ -2,7 +2,7 @@ name: PennyLane Labs Unit-Tests
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 concurrency:
   group: qml-labs-${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +19,7 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Assess changed files
         id: changed-files

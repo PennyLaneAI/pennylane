@@ -14,10 +14,6 @@
 """
 Tests for the Phox simulator utility functions.
 """
-import pytest
-
-jaxopt = pytest.importorskip("jaxopt")
-
 from pennylane.labs.phox.utils import (
     create_lattice_gates,
     create_local_gates,
@@ -30,6 +26,7 @@ class TestGateGeneration:
     """Tests for gate generation helper functions."""
 
     def test_create_local_gates(self):
+        """Test that create_local_gates returns correct gate structure."""
         n_qubits = 3
         max_weight = 2
         gates = create_local_gates(n_qubits, max_weight)
@@ -40,6 +37,7 @@ class TestGateGeneration:
         assert all(isinstance(v, list) and isinstance(v[0], list) for v in gates.values())
 
     def test_create_lattice_gates_2x2(self):
+        """Test lattice gate generation for a 2x2 grid."""
         rows, cols = 2, 2
         gates = create_lattice_gates(rows, cols, distance=1, max_weight=2, periodic=False)
         gate_set = {tuple(sorted(v[0])) for v in gates.values()}
@@ -50,11 +48,13 @@ class TestGateGeneration:
         assert len(gates) == 8
 
     def test_create_lattice_gates_periodic(self):
+        """Test lattice gate generation with periodic boundary conditions."""
         gates = create_lattice_gates(1, 3, periodic=True, max_weight=2)
         gate_set = {tuple(sorted(v[0])) for v in gates.values()}
         assert (0, 2) in gate_set
 
     def test_create_random_gates(self):
+        """Test random gate generation with weight constraints."""
         n_qubits = 5
         n_gates = 10
         seed = 42
@@ -67,6 +67,7 @@ class TestGateGeneration:
             assert len(set(gate)) == len(gate)
 
     def test_create_random_gates_determinism(self):
+        """Test that random gate generation is deterministic given the same seed."""
         g1 = create_random_gates(4, 5, seed=123)
         g2 = create_random_gates(4, 5, seed=123)
         g3 = create_random_gates(4, 5, seed=999)
@@ -78,6 +79,7 @@ class TestObservableGeneration:
     """Tests for observable generation helper mapped to integers."""
 
     def test_generate_pauli_observables_single_z(self):
+        """Test Pauli observable generation for single-qubit Z."""
         n_qubits = 2
         obs = generate_pauli_observables(n_qubits, orders=[1], bases=["Z"])
 
@@ -86,6 +88,7 @@ class TestObservableGeneration:
         assert [0, 3] in obs
 
     def test_generate_pauli_observables_multi_basis(self):
+        """Test Pauli observable generation with multiple bases and orders."""
         n_qubits = 2
         obs = generate_pauli_observables(n_qubits, orders=[1, 2], bases=["X", "Z"])
 
@@ -95,6 +98,7 @@ class TestObservableGeneration:
         assert [1, 3] not in obs
 
     def test_generate_pauli_observables_higher_order(self):
+        """Test Pauli observable generation for higher-order terms."""
         n_qubits = 3
         obs = generate_pauli_observables(n_qubits, orders=[3], bases=["Y"])
 
@@ -102,5 +106,6 @@ class TestObservableGeneration:
         assert obs[0] == [2, 2, 2]
 
     def test_generate_pauli_observables_skip_invalid_order(self):
+        """Test that invalid orders are skipped gracefully."""
         obs = generate_pauli_observables(2, orders=[5])
         assert len(obs) == 0

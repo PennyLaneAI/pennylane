@@ -22,9 +22,13 @@ from typing import Any, Callable, Iterator, NamedTuple
 
 import jax
 import jax.numpy as jnp
-import jaxopt
-import optax
-from tqdm import tqdm
+
+try:
+    import jaxopt
+    import optax
+    from tqdm import tqdm
+except (ModuleNotFoundError, ImportError) as import_error:
+    pass
 
 
 @dataclass
@@ -103,6 +107,7 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
     Raises:
         ValueError: If the optimizer name is not recognized.
     """
+    # pylint: disable=import-outside-toplevel
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
     if name == "Adam":
@@ -275,6 +280,7 @@ def train(
         TrainingResult: The results of the training process, including final parameters and loss history.
             See :class:`TrainingResult` for further details.
     """
+
     options = options or TrainingOptions()
 
     unroll_steps = max(1, options.unroll_steps)
@@ -310,12 +316,15 @@ def train(
 
             current_step = (i + 1) * unroll_steps
 
+            # Check based on validation loss if available, else training loss
             metric_acc = val_loss_acc if options.val_kwargs else loss_acc
 
             history_needed = 2 * options.convergence_interval
 
             if current_step > history_needed:
-                recent_history = jnp.concatenate(metric_acc[-10:])
+                recent_history = jnp.concatenate(
+                    metric_acc[-10:]
+                )  # Grab last 10 chunks (heuristic)
 
                 if len(recent_history) >= history_needed:
                     if _check_convergence(recent_history, options.convergence_interval):

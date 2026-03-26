@@ -166,6 +166,7 @@ class TestIQPExpval:
     def test_build_expval_func_core_vs_pennylane(
         self, n_samples, obs_strings, generators_pl, params, init_state_spec
     ):
+        """Test core expval function against PennyLane ground truth."""
         # pylint: disable=too-many-arguments
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
@@ -215,6 +216,7 @@ class TestIQPExpval:
     def test_build_expval_func_vs_pennylane(
         self, n_qubits, gates, params, obs_strings, init_state_spec
     ):
+        """Test built expval function versus full PennyLane simulation."""
         # pylint: disable=too-many-arguments
         generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
         generators_pl = [list(np.where(row)[0]) for row in generators_binary]
@@ -244,6 +246,7 @@ class TestIQPExpval:
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
     def test_iqp_parameter_broadcasting(self):
+        """Test that single parameter is broadcast to multiple generators."""
         n_qubits = 3
         gates = {0: [[0, 1], [1, 2]]}
         params = [0.8]
@@ -274,6 +277,8 @@ class TestIQPExpval:
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
     def test_build_expval_func_with_phase_layer(self):
+        """Test expectation values when a phase layer is supplied."""
+
         def compute_phase(params, z):
             hamming = jnp.mean(jnp.abs(z))
             hamming_powers = jnp.array([hamming**t for t in range(4)])
@@ -345,6 +350,7 @@ class TestIQPExpval:
     ],
 )
 def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
+    """Test generator parsing produces expected matrices and parameter maps."""
     generators, param_map = _parse_generator_dict(circuit_def, n_qubits)
 
     assert isinstance(generators, jnp.ndarray)
@@ -361,6 +367,7 @@ def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expect
 
 
 def test_parse_generator_dict_index_error():
+    """Test generator parsing raises IndexError for invalid qubit indices."""
     circuit_def = {0: [[5]]}
     n_qubits = 2
 
