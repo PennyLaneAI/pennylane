@@ -257,7 +257,7 @@ def _to_general_c_qu_resource(num_target_wires, **kwargs):
         resource_rep(
             qml.ops.Controlled,
             base_class=qml.QubitUnitary,
-            base_params={"num_wires": num_target_wires, "unitary_check": False},
+            base_params={"num_wires": num_target_wires},
             **kwargs,
         ): 1
     }

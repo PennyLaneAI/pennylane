@@ -377,7 +377,7 @@ zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz
 def _two_qubit_resource(**_):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
     return {
-        resource_rep(ops.QubitUnitary, num_wires=1, unitary_check=False): 4,
+        resource_rep(ops.QubitUnitary, num_wires=1): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
@@ -413,7 +413,7 @@ def two_qubit_decomp_rule(U, wires, **__):
 
 def _multi_qubit_decomp_resource(num_wires, **_):
     return {
-        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1, unitary_check=False): 4,
+        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
         resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
         resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
     }

@@ -444,7 +444,7 @@ def _hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires, unitary_check=False)] += 1
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
 
     return resources
 
@@ -468,7 +468,7 @@ def _local_hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires, unitary_check=False)] += 1
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
 
     return resources
 
