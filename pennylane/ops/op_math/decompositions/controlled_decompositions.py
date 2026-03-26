@@ -231,8 +231,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     # this is a general overestimate based on the resource requirement of the general case.
     if len_k1 == len_k2:
         return {
-            resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
-            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+            resource_rep(ops.QubitUnitary, num_wires=num_target_wires, unitary_check=False): 4,
+            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires, "unitary_check": False}): 4,
             controlled_resource_rep(
                 ops.X,
                 {},
@@ -251,8 +251,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             ): 1,
         }
     return {
-        resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
-        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+        resource_rep(ops.QubitUnitary, num_wires=num_target_wires, unitary_check=False): 4,
+        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires, "unitary_check": False}): 4,
         controlled_resource_rep(
             ops.X,
             {},
@@ -724,7 +724,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
     if len_k1 == len_k2:
         return {
             ops.Hadamard: 2,
-            resource_rep(ops.QubitUnitary, num_wires=1): 2,
+            resource_rep(ops.QubitUnitary, num_wires=1, unitary_check=False): 2,
             controlled_resource_rep(
                 ops.X,
                 {},
@@ -732,12 +732,12 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
                 num_work_wires=len_k1,
                 work_wire_type="borrowed",
             ): 4,
-            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1, "unitary_check": False}): 2,
             controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
         }
     return {
         ops.Hadamard: 2,
-        resource_rep(ops.QubitUnitary, num_wires=1): 2,
+        resource_rep(ops.QubitUnitary, num_wires=1, unitary_check=False): 2,
         controlled_resource_rep(
             ops.X,
             {},
@@ -752,7 +752,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
             num_work_wires=len_k2,
             work_wire_type="borrowed",
         ): 2,
-        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1, "unitary_check": False}): 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
 

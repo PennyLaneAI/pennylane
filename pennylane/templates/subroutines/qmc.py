@@ -370,7 +370,7 @@ class QuantumMonteCarlo(Operation):
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
             "q_resource_rep": resource_rep(
-                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
+                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"]), unitary_check=False
             ),
         }
 
@@ -463,8 +463,8 @@ if QuantumMonteCarlo._primitive is not None:
 
 def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
     return {
-        resource_rep(QubitUnitary, num_wires=num_target_wires - 1): 1,
-        resource_rep(QubitUnitary, num_wires=num_target_wires): 1,
+        resource_rep(QubitUnitary, num_wires=num_target_wires - 1, unitary_check=False): 1,
+        resource_rep(QubitUnitary, num_wires=num_target_wires, unitary_check=False): 1,
         resource_rep(
             QuantumPhaseEstimation,
             base_resource_rep=q_resource_rep,
