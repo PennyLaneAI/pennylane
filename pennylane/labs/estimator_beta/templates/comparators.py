@@ -28,20 +28,20 @@ from pennylane.wires import WiresLike
 class OutOfPlaceIntegerComparator(ResourceOperator):
     r"""Resource class for an out-of-place integer comparator.
 
-     Compares an n-bit quantum register |x> against a classical
-     integer L, storing the result x < L (or x >= L)
+     Compares an n-bit quantum register :math:`|x\rangle` against a classical
+     integer :math:`L`, storing the result :math:`x < L` (or :math:`x \geq L`)
      in a dedicated output qubit.
 
-     The circuit computes the borrow chain of the subtraction x - L.
+     The circuit computes the borrow chain of the subtraction :math:`x - L`.
      The n - 1 intermediate borrow qubits are kept dirty after the
      forward pass, enabling the inverse to be performed with Clifford gates
      only (0 Toffoli cost).
 
     Args:
-        value (int): The classical integer L to compare against.
-        register_size (int): Number of qubits n encoding x.
-        geq (bool): If True, compute x >= L instead of
-            x < L.  This adds a single X gate on the output qubit
+        value (int): The classical integer :math:`L` to compare against.
+        register_size (int): Number of qubits :math:`n` encoding :math:`x`.
+        geq (bool): If True, compute :math:`x \geq L` instead of
+            :math:`x < L`.  This adds a single ``X`` gate on the output qubit
             (0 Toffoli cost).  Default False.
         wires (WiresLike | None): The wires the operation acts on.
 
@@ -204,11 +204,11 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
 class RegisterEquality(ResourceOperator):
     r"""Resource class for testing the equality of two quantum registers.
 
-    Compares two n-bit quantum registers |i⟩ and |j⟩,
-    storing the result (i == j) in a dedicated output qubit.
+    Compares two n-bit quantum registers :math:`|i\rangle` and :math:`|j\rangle`,
+    storing the result (:math:`i == j`) in a dedicated output qubit.
 
     The circuit computes the bitwise XOR of the two registers
-    using CNOTs, then uses a TemporaryAND cascade to flag whether
+    using CNOTs, then uses a ``TemporaryAND`` cascade to flag whether
     all XOR results are zero (i.e., the registers are equal).
 
     Args:
@@ -247,9 +247,11 @@ class RegisterEquality(ResourceOperator):
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
         Returns:
             dict: A dictionary containing the resource parameters:
                 * register_size (int): size of the registers for basis state
+
         """
         return {
             "register_size": self.register_size,
