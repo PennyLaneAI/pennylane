@@ -942,6 +942,12 @@ class PCPhase(Operation):
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
 
 
+# TODO: add test
+@register_reconstructor(PauliRot)
+def _pcphase_reconstructor(phi, dim, wires):
+    return PCPhase(phi, dim, wires)
+
+
 def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
     if n_control_wires == 0:
         return {qml.PhaseShift: 1}
