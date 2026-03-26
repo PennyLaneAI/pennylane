@@ -32,7 +32,7 @@ networkx==3.1
 requests==2.32.4
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
-pennylane-sphinx-theme @ git+https://github.com/XanaduAI/pennylane-sphinx-theme.git@sc-110105-replace-all-jquery-in-xanadu-sphinx-theme-to
+pennylane-sphinx-theme @ git+https://github.com/PennyLaneAI/pennylane-sphinx-theme.git@sc-110105-replace-all-jquery-in-xanadu-sphinx-theme-to
 sphinxext-opengraph==0.9.0
 sphinx-sitemap
 matplotlib==3.10.0
