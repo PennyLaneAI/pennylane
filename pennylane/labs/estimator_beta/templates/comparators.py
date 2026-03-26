@@ -41,8 +41,8 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         value (int): The classical integer :math:`L` to compare against.
         register_size (int): Number of qubits :math:`n` encoding :math:`x`.
         geq (bool): If True, compute :math:`x \geq L` instead of
-            :math:`x < L`.  This adds a single ``X`` gate on the output qubit
-            (0 Toffoli cost).  Default False.
+            :math:`x < L`. This adds a single ``X`` gate on the output qubit
+            (0 Toffoli cost). Default ``False``.
         wires (WiresLike | None): The wires the operation acts on.
 
      Resources:
