@@ -264,3 +264,25 @@ class TestTemporaryAND:
         jit_circuit = jax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.external
+    def test_jax_qjit_control_values(self):
+        """Tests that TemporaryAND works with jax and jit"""
+
+        dev = qml.device("lightning.qubit")
+
+        @qml.decompose(max_expansion=1)
+        @qml.qnode(dev)
+        def circuit(values):
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.TemporaryAND(wires=[0, 1, 2], control_values=values)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(1.2, 3)
+            qml.adjoint(qml.TemporaryAND([0, 1, 2]))
+            return qml.probs([0, 1, 2, 3])
+
+        qjit_circuit = qml.qjit(circuit)
+        values = qml.math.array([0, 1], like="jax")
+        assert qml.math.allclose(circuit(values), qjit_circuit(values))

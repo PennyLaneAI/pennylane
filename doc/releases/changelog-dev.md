@@ -157,6 +157,15 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.TemporaryAND` is now compatible with traced control values.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
+* The decomposition of :class:`~.MultiRZ` is now compatible with traced wires.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
+* The decomposition of :class:`~.DiagonalQubitUnitary` is now compatible with traced data.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
 * `Callables` defining quantum operations can now be passed to the 
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
