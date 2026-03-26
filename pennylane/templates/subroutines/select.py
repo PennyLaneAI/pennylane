@@ -620,7 +620,6 @@ def _add_first_k_units(ops, controls, work_wires, k):
     controls = controls[:needed_controls]
 
     and_wires = controls[:3]
-    new_work_wires = work_wires + controls[:2]
     new_controls = controls[2:]
 
     a = math.ceil_log2(k)  # a >= 2 because k>2 by assertion above
@@ -633,9 +632,9 @@ def _add_first_k_units(ops, controls, work_wires, k):
     # Open TemporaryAND (controlled on |00>) + first quarter + CX (controlled on |0>) + second quarter
     first_half = (
         [TemporaryAND(and_wires, control_values=(0, 0))]
-        + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
+        + _add_k_units(ops[:k0], new_controls, work_wires, k0)
         + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
-        + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
+        + _add_k_units(ops[k0:k01], new_controls, work_wires, k1)
     )
 
     if l == 1:  # first variant
@@ -644,7 +643,6 @@ def _add_first_k_units(ops, controls, work_wires, k):
         # TemporaryAND gates at all
         and_wires_sec_half = []
         new_controls_sec_half = controls
-        new_work_wires_sec_half = work_wires
         # Closing TemporaryAND for first half
         middle_part = [adjoint(TemporaryAND)(and_wires, control_values=(0, 1))]
 
@@ -652,7 +650,6 @@ def _add_first_k_units(ops, controls, work_wires, k):
         c_bar = 2 * (math.ceil_log2(k) - math.ceil_log2(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
         new_controls_sec_half = controls[c_bar + 2 :]
-        new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
 
         if c_bar > 0:  # second variant
             # Closing TemporaryAND for first half, opening TemporaryAND for second half
@@ -663,13 +660,11 @@ def _add_first_k_units(ops, controls, work_wires, k):
         else:  # third variant
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
 
-    second_half = _add_k_units(
-        ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
-    )
+    second_half = _add_k_units(ops[k01 : k01 + k2], new_controls_sec_half, work_wires, k2)
     if and_wires_sec_half:
         second_half += (
             [CNOT(and_wires_sec_half[::2])]
-            + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, new_work_wires_sec_half, k3)
+            + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, work_wires, k3)
             + [adjoint(TemporaryAND)(and_wires_sec_half)]
         )
 
@@ -718,14 +713,13 @@ def _add_k_units(ops, controls, work_wires, k):
     controls = controls[:1] + controls[-(needed_controls - 1) :]
 
     and_wires = controls[:3]
-    new_work_wires = work_wires + controls[:2]
     new_controls = controls[2:]
     k_first = 2 ** (num_bits - 1)
     return (
         [TemporaryAND(and_wires, control_values=(1, 0))]
-        + _add_k_units(ops[:k_first], new_controls, new_work_wires, k_first)
+        + _add_k_units(ops[:k_first], new_controls, work_wires, k_first)
         + [CNOT(and_wires[::2])]
-        + _add_k_units(ops[k_first:], new_controls, new_work_wires, k - k_first)
+        + _add_k_units(ops[k_first:], new_controls, work_wires, k - k_first)
         + [adjoint(TemporaryAND)(and_wires)]
     )
 
@@ -749,29 +743,8 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
             ] += 1
         return dict(resources)
 
-    def _make_first_flipped_bits(c, i=0):
-        """Compute the pattern [c-1, c-2, c-1, c-3, c-1, c-2, c-1, c-4...] recursively.
-
-        For example, for ``c=4``, we get a first call (with ``i=0``) that produces
-        ``output =_make_first_flipped_bit(4, 0) = sub_0 + [0] + sub_0``, where
-        ``sub_0 = _make_first_flipped_bit(3, 1) = sub_1 + [1] + sub_1``, where
-        ``sub_1 = _make_first_flipped_bit(2, 2) = sub_2 + [2] + sub_2``, where
-        ``sub_2 = _make_first_flipped_bit(1, 3) = [3]``.
-
-        Overall this gives
-        ``sub_1 = [3, 2, 3]``
-        ``sub_0 = [3, 2, 3, 1, 3, 2, 3]``
-        ``output = [3, 2, 3, 1, 3, 2, 3, 0, 3, 2, 3, 1, 3, 2, 3]``.
-        """
-        if c == 1:
-            return [i]
-        sub = _make_first_flipped_bits(c - 1, i=i + 1)
-        return sub + [i] + sub
-
-    # c-1 left elbows at the beginning and c-1-max(a,1) left elbows for each of the target
-    # operators, except the last one, where a is the first flipped bit. Same for right elbows.
-    first_flipped_bits = np.array(_make_first_flipped_bits(c)[: K - 1], dtype=int)
-    num_elbows = c - 1 + np.sum(c - 1 - np.clip(first_flipped_bits, a_min=1, a_max=None))
+    ell = (K - 1).bit_count() + int(np.floor((K - 1) / 2 ** (c - 1)))
+    num_elbows = c + K - ell - 2
 
     resources[resource_rep(TemporaryAND)] += num_elbows
     resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
@@ -959,7 +932,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         )
 
     unary_work_wires = work_wires[: c - 1]
-    new_work_wires = work_wires[c - 1 :] + control
+    new_work_wires = work_wires[c - 1 :]
     aux_control = [control[0]]
     for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=False):
         aux_control.append(ctrl_wire)
