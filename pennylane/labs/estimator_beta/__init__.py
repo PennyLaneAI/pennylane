@@ -52,12 +52,22 @@ State Preparation
 
 .. currentmodule:: pennylane.labs.estimator_beta.templates
 
-.. autosummary::
-    :toctree: api
-
     ~ResourceMottonenStatePreparation
     ~ResourceCosineWindow
     ~ResourceSumOfSlatersPrep
+
+Alternate Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~ch_resource_decomp
+    ~ch_toffoli_based_resource_decomp
+    ~hadamard_controlled_resource_decomp
+    ~hadamard_toffoli_based_controlled_decomp
 
 """
 from pennylane.estimator import *
@@ -78,6 +88,13 @@ from .templates import (
     ResourceMottonenStatePreparation,
     ResourceCosineWindow,
     ResourceSumOfSlatersPrep,
+)
+
+from .ops import (
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
 )
 
 
