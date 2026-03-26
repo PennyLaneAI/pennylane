@@ -20,7 +20,8 @@ import pytest
 import scipy as sp
 
 import pennylane as qml
-from pennylane.exceptions import WireError
+from pennylane.exceptions import PennyLaneDeprecationWarning, WireError
+from pennylane.ops.functions.assert_valid import _check_reconstructor
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
@@ -184,10 +185,17 @@ class TestDecomposition:
     def test_stateprep_resources(self):
         """Test the resources for StatePrep"""
 
-        assert qml.StatePrep.resource_keys == frozenset({"num_wires"})
+        assert qml.StatePrep.resource_keys == frozenset(
+            {"num_wires", "pad_with", "normalize", "validate_norm"}
+        )
 
         op = qml.StatePrep([0, 0, 0, 1], wires=(0, 1))
-        assert op.resource_params == {"num_wires": 2}
+        assert op.resource_params == {
+            "num_wires": 2,
+            "pad_with": None,
+            "normalize": False,
+            "validate_norm": False,
+        }
 
     def test_decomposition_rule_stateprep(self):
         """Test that stateprep has a correct decomposition rule registered."""
@@ -257,6 +265,14 @@ class TestStatePrepIntegration:
 
         op = qml.StatePrep(U, wires=wires)
         assert op.batch_size == 3
+
+    def test_StatePrep_reconstructor(self):
+        state = np.array([0, 1])
+        wires = qml.wires.Wires([0])
+        op = qml.StatePrep(state, wires=wires, normalize=True)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            _check_reconstructor(op)
 
 
 class TestStateVector:
