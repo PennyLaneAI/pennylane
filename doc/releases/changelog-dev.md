@@ -151,8 +151,8 @@ The following classes have been ported over:
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
-* Users can now apply the `diagonalize-final-measurements` compilation pass, using the 
-  :func:`~pennylane.transforms.diagonalize_measurements`.
+* Users can now apply :func:`~pennylane.transforms.diagonalize_measurements`  
+  within a ``qjit`` workflow.
   [(#9100)](https://github.com/PennyLaneAI/pennylane/pull/9100)
 
 * A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.

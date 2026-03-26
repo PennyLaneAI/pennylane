@@ -58,8 +58,7 @@ def diagonalize_final_measurements_setup_inputs(
 
     .. warning::
 
-        An error will be raised if non-commuting terms are encountered in either tape transform or
-        xDSL compilation pass.
+        An error will be raised if non-commuting terms are encountered.
 
 
     .. warning::
@@ -108,7 +107,7 @@ def null_postprocessing(results):
     setup_inputs=diagonalize_final_measurements_setup_inputs,
 )
 def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
-    """Diagonalize a set of measurements into the standard basis. Raises an error if the
+    """Diagonalize a set of measurements into the ``Z`` basis. Raises an error if the
     measurements do not commute.
 
     See the usage details for more information on which measurements are supported.
@@ -221,10 +220,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         :title: Usage with Catalyst
 
         This transform is compatible with ``qjit``, where it will be applied as an MLIR pass rather than a tape-level transform.
-        That being said, there are a few differences to be aware of when using the MLIR pass:
-
-        - ``to_eigvals`` can be specified as ``False``. An ``ValueError`` would be
-            raised if ``to_eigvals`` is set as ``True``.
+        However, when using the MLIR pass, the ``to_eigvals`` option is not supported. A ``ValueError`` would be raised if ``to_eigvals`` is set as ``True``.
 
         .. code-block:: python
 
