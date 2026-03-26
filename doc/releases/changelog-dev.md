@@ -823,6 +823,11 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the `default.qubit` device.
+  These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
+  states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+  
 * Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
   operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
   symbolic decomposition rules that do not need to take an instance of the base operator as input.
@@ -841,7 +846,6 @@ The following classes have been ported over:
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
-
 
 <h3>Bug fixes 🐛</h3>
 
@@ -959,6 +963,7 @@ Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 Oumarou Oumarou,
