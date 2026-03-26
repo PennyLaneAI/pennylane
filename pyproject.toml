@@ -84,7 +84,7 @@ docker = [
 upload-reports = [
     "pydantic==2.10.6",
     "pydantic-settings==2.8.0",
-    "requests==2.32.4",
+    "requests==2.33.0",
 ]
 docs = [
     "jax==0.7.1",
@@ -115,7 +115,7 @@ docs = [
     "sphinx-sitemap",
     "matplotlib==3.10.0",
     "galois",
-    "requests==2.32.4",
+    "requests==2.33.0",
     "aiohttp",
     "fsspec",
     "h5py",
