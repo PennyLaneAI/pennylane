@@ -43,12 +43,15 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
     if parametrized:
         ops = [qml.RX(0.2, 0) for _ in range(num_ops)]
     else:
-        ops = [qml.PauliX(0) for _ in range(num_ops)]
+        ops = [qml.MultiControlledX([0, 10, 11, 12]) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
     op = qml.Select(ops, control, work_wires, partial=partial)
     if num_ops > 0:
-        assert op.target_wires == qml.wires.Wires(0)
+        if parametrized:
+            assert op.target_wires == qml.wires.Wires(0)
+        else:
+            assert op.target_wires == qml.wires.Wires([0, 10, 11, 12])
     else:
         assert op.target_wires == qml.wires.Wires([])
     qml.ops.functions.assert_valid(op)

@@ -808,7 +808,9 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
             }
         )
 
-    num_work_wires = num_work_wires - (num_control_wires - 1)
+    # Due to partial=True, we are allowed to restrict to a subset of the control wires
+    unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
+    num_work_wires = num_work_wires - unary_control_wires
     for op in op_reps:
         counts[
             controlled_resource_rep(
