@@ -24,7 +24,7 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane import math, queuing
+from pennylane import compiler, math, queuing
 from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import (
     add_decomps,
@@ -236,6 +236,9 @@ def _multi_rz_decomposition_resources(num_wires):
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+
+    if compiler.active() or qml.capture.enabled():
+        wires = math.array(wires, like="jax")
 
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
