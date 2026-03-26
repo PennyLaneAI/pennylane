@@ -125,7 +125,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_subroutine_mcm_grouping(self):
         """Unit test the _subroutine_mcm_grouping_symbols helper."""
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(wires):
             return [2] + [qml.measure(w) for w in wires]
 
@@ -387,7 +387,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_subroutine_op_with_output(self):
         """Test that classical wires are drawn for subroutines with mcm outputs."""
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(wires):
             return [2] + [qml.measure(w) for w in wires]
 

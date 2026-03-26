@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
-"""
+r"""This module contains classes which integrate arithmetic operators with
+resource estimation."""
 
-from .core import (
-    Subroutine,
-    SubroutineOp,
-    AbstractArray,
-    subroutine_resource_rep,
-    adjoint_subroutine_resource_rep,
-)
-from .embeddings import *
-from .layer import layer
-from .state_preparations import *
-from .subroutines import *
-from .layers import *
-from .swapnetworks import *
-from .tensornetworks import *
+from .controlled_ops import ch_resource_decomp, ch_toffoli_based_resource_decomp

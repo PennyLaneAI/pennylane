@@ -50,7 +50,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
-from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
+from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -62,7 +62,7 @@ class AbstractArray:
     """An abstract representation of an array that contains the shape and dtype
     attributes necessary for resource calculations.
 
-    This class is used with :func:`~pennylane.templates.core.subroutine_resource_rep`
+    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
     for specifying abstract information about a :class:`~.Subroutine` for
     purposes of resource calculations used with graph decompositions.
 
@@ -196,7 +196,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         def S_resources(params, wires, rotation):
             return {qml.resource_rep(rotation): params.shape[0]}
 
-        @partial(qml.templates.core.Subroutine, static_argnames="rotation", compute_resources=S_resources)
+        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
             for x in params:
                 rotation(x, wires)
@@ -206,7 +206,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.templates.core import AbstractArray, subroutine_resource_rep
+        from pennylane.templates import AbstractArray, subroutine_resource_rep
 
         class MyOp(qml.operation.Operation):
             pass
@@ -274,8 +274,8 @@ def _get_array_types():
     if has_jax:
         import jax  # pylint: disable=import-outside-toplevel
 
-        return (jax.numpy.ndarray, np.ndarray, AbstractArray)
-    return (np.ndarray, AbstractArray)
+        return (jax.numpy.ndarray, np.ndarray)
+    return (np.ndarray,)
 
 
 @lru_cache
@@ -487,7 +487,7 @@ class Subroutine:
     .. code-block:: python
 
         from functools import partial
-        from pennylane.templates.core import Subroutine
+        from pennylane.templates import Subroutine
 
         @Subroutine
         def MyTemplate(x, y, wires):
@@ -624,7 +624,7 @@ class Subroutine:
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qml.templates.core.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
@@ -632,7 +632,7 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
 
-    >>> from pennylane.templates.core import AbstractArray
+    >>> from pennylane.templates import AbstractArray
     >>> abstract_params = AbstractArray((10,), float)
     >>> abstract_wires = AbstractArray((10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
@@ -643,7 +643,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.templates.core import AbstractArray, subroutine_resource_rep
+        from pennylane.templates import AbstractArray, subroutine_resource_rep
 
         class MyOp(qml.operation.Operation):
             pass
@@ -697,7 +697,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def f(x, wires):
             if x < 0:
                 qml.X(wires)
@@ -724,7 +724,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         @qml.capture.run_autograph
         def UsingAutograph(x, wires):
             if x < 0:
@@ -732,7 +732,7 @@ class Subroutine:
             else:
                 qml.Y(wires)
 
-        @qml.templates.core.Subroutine
+        @qml.templates.Subroutine
         def UsingCond(x, wires):
             qml.cond(x  > 0, qml.X, qml.Y)(wires)
 
@@ -824,15 +824,11 @@ class Subroutine:
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if (
-                    len(register) > 0
-                    and math.get_interface(register) != "jax"
-                    and not isinstance(register, AbstractArray)
-                ):
+                if len(register) > 0 and math.get_interface(register) != "jax":
                     # don't stack if already a jax array
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
-                bound_args.arguments[wire_argname] = register
+                bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
 
     @property
