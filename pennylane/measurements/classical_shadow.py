@@ -595,7 +595,7 @@ def shadow_expval(
 ) -> ShadowExpvalMP:
     r"""Estimate expectation values using Classical Shadows with full differentiability support.
 
-    Classical shadows provide a way to estimate a large number of expectation values
+    The Classical Shadows protocol provide a way to estimate a large number of expectation values
     (even non-commuting ones) using a single set of random Pauli measurements.
     See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal.
 
