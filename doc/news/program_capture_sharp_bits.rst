@@ -53,17 +53,14 @@ Device wires
 With program capture enabled, all devices that Catalyst supports require 
 that ``wires`` be specified at device instantiation.
 
-.. code-block:: python 
-
-    import pennylane as qml
-
-    @qml.qjit(capture=True)
-    @qml.qnode(qml.device('lightning.qubit'))
-    def circuit():
-        qml.Hadamard(0)
-        return qml.state()
-
->>> circuit()
+>>> import pennylane as qml
+>>> @qml.qjit(capture=True)
+... @qml.qnode(qml.device('lightning.qubit'))
+... def circuit():
+...     qml.Hadamard(0)
+...     return qml.state()
+Traceback (most recent call last):
+...
 NotImplementedError: devices must specify wires for integration with program capture.
 
 .. code-block:: python 
