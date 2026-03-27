@@ -21,16 +21,14 @@ from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 from pennylane.math.utils import ceil_log2
 from pennylane.wires import WiresLike
 
-class PrepFirstQuantization(ResourceOperator):
-    r"""Resource class for preparing the state for first quantization algorithms.
+class SelectFirstQuantization(ResourceOperator):
+    r"""Resource class for ``Select`` operator for block encoding of first quantized operators.
 
-    This operator customizes the Prepare circuit based on the structure of the first quantizated Hamiltonian.
+    This operator customizes the ``Select`` circuit based on the structure of the first quantized Hamiltonian.
 
     Args:
         fq_ham (:class:`~pennylane.labs.estimator_beta.FirstQuantizedHamiltonian`): a first quantized
             Hamiltonian for which the state is being prepared
-        coordinates_precision (int): The number of bits used to represent the precision for loading
-            the nuclear coordinates. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
@@ -239,109 +237,3 @@ class PrepFirstQuantization(ResourceOperator):
         num_pw = fq_ham.num_plane_waves
         n_eta = ceil_log2(eta)
         omega = fq_ham.omega
-
-        # number of qubits required to store a signed
-        # binary representation of one component of the momentum
-        # of a single electron, taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = ceil_log2(num_pw ** (1 / 3) + 1)
-
-        lambda_zeta = eta + fq_ham.charge # sum of nuclear charges
-
-        # Number of ancilla qubits in inequality testing for preparation of Coulomb potential
-        # Taken from https://arxiv.org/pdf/2602.20234
-        n_M = ceil_log2(4*eta**2/ omega**(1/3))
-
-        # Step:1: Rotate the ancilla qubit for selecting between T and U+V Preparations
-        gate_list.append(GateCount(resource_rep(qre.RY), 1))
-
-        # Step 2a: Prepare an equal superposition over i and j registers
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
-
-        # Step 2b and 2c:
-        eq = resource_rep(qre.RegisterEquality, {"register_size": n_eta})
-        gate_list.append(GateCount(eq, 1)) # compute the equality for i and j registers
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": eq}), 1)) # adjoint of equality test
-        toffoli = resource_rep(qre.Toffoli)
-        gate_list.append(GateCount(toffoli, 2)) # Extra toffolis to flag and invert the success of the equality test
-
-        # Step 2d: Invert the superposition over i and j registers
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
-
-        # Step 3: Prepare the superposition over w,r,s registers to use for T part of the select operation
-        # Over w register: 3 spatial coordinates
-        n_w = ceil_log2(3)
-        gate_list.extend(cls._superposition_prep_costs(3, n_w))
-
-        # Over r and s registers: we need a cascade of controlled Hadamard gates
-        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * (2 * (n_p-2)))
-
-        # Step 4: Prepare the superposition state for selection between U and V registers
-        n_eta_lz = ceil_log2(eta + 2*lambda_zeta)
-        gate_list.extend(cls._superposition_prep_costs(eta + 2*lambda_zeta, n_eta_lz))
-        ineq = resource_rep(
-                qre.OutOfPlaceIntegerComparator,
-                {"value": eta, "register_size": n_eta_lz, "geq": False},
-        )
-        gate_list.append(GateCount(ineq, 1))
-        gate_list.append(GateCount(toffoli, 1))
-
-        # Step 5: Prepare the superposition over \nu register
-        # a) Create a superposition over \mu register
-        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * (n_p-1))
-
-        # b) Create a superposition over \nu register for all 3 spatial coordinates
-        gate_list.append(GateCount(resource_rep(qre.Hadamard), 6))
-        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * (3 * (n_p-1)))
-
-        # c) remove -0 from the representation of \nu in the superposition
-        gate_list.append(Allocate(2)) # flag qubits
-        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires":n_p+1, "num_zero_ctrl":0})
-        gate_list.append(GateCount(mcx, 3))
-        gate_list.append(GateCount(resource_rep(qre.Toffoli), 2)) # Check if any of them returned True
-        gate_list.append(Deallocate(2))
-
-        # d) test whether all of νx, νy , and νz are smaller in absolute value than 2μ−2
-        # convert the \mu register to one-hot unary
-        gate_list.append(Allocate(1))
-        cnot = resource_rep(qre.CNOT)
-        gate_list.append(GateCount(cnot, n_p-1)) # cascade of CNOTs to convert from binary to unary
-
-        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires":4, "num_zero_ctrl":0})
-        gate_list.append(GateCount(mcx, n_p))
-
-        # e) compute m(\nu_x^2 + \nu_y^2 + \nu_z^2)
-        # sum of three squares
-        gate_list.append(qre.Allocate(2*n_p+2))
-        gate_list.append(GateCount(toffoli, 3*n_p**2 - n_p - 1))
-
-
-        # Multiply two numbers of length log(M) and 2*n_p + 2
-        gate_list.append(qre.Allocate(2*max(n_M, 2*n_p + 2))) # Allocate output register for multiplication
-        mult = resource_rep(qre.OutMultiplier, {"a_num_wires": n_M, "b_num_wires": 2*n_p + 2})
-        gate_list.append(GateCount(mult, 1))
-
-        # f) Test inequality
-
-        gate_list.append(GateCount(toffoli, 2*n_p + n_M + 2)) # Cost of testing the inequality using Toffolis
-        gate_list.append(Deallocate(1))
-        gate_list.append(Deallocate(2*max(n_M, 2*n_p + 2))) # Deallocate the multiplication ancillas
-
-        # g) Toffolis to flag the success
-        gate_list.append(Allocate(2))
-        gate_list.append(GateCount(toffoli, 3))
-        gate_list.append(Deallocate(2))
-
-        # h) uncompute the state prep- rest of the cost is in Cliffords
-        # only the controlled-Hadamards used to prepare \mu and \nu registers need to be uncomputed
-        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * 4 * (n_p-1))
-
-        gate_list.append(qre.Deallocate(2*n_p+2)) # Deallocate the ancilla used for sum of squares
-
-        # Step 6: Amplitude loading for T, U and V
-        qrom = resource_rep(qre.QROM, {"num_bitstrings": lambda_zeta, "size_bitstring": coordinates_precision, "select_swap_depth": select_swap_depth})
-        gate_list.append(GateCount(qrom, 1))
-
-        return gate_list
-
