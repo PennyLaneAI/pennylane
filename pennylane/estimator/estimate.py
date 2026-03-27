@@ -67,6 +67,13 @@ def estimate(
     Raises:
         TypeError: If the ``workflow`` is of an invalid type.
 
+    .. note::
+
+        This function does not guarantee resources can be expressed the target gate set.
+        If a :class:`~.pennylane.estimator.resource_operator.ResourceOperator` which is not
+        in the provided ``gate_set`` does not have a resource decomposition,
+        PennyLane errors out with a ``ResourcesUndefinedError``.
+        
     **Example**
 
     The resources of a quantum workflow can be estimated by supplying a quantum function describing
