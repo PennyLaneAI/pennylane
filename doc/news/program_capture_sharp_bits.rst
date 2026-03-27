@@ -488,20 +488,3 @@ a QNode, and will raise an error:
 >>> circuit()
 ...
 TransformError: Input is not an Operator, tape, QNode, or quantum function
-
-Instead, ``qml.matrix`` must be invoked on an operator *type* (e.g., ``qml.X`` instead of ``qml.X(0)``):
-
-.. code-block:: python
-
-    import pennylane as qml 
-
-    dev = qml.device("lightning.qubit", wires=1)
-
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
-    def circuit():
-        mat = qml.matrix(qml.X)
-        return qml.state()
-
->>> circuit()
-Array([1.+0.j, 0.+0.j], dtype=complex128)
