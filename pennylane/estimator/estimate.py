@@ -66,6 +66,7 @@ def estimate(
 
     Raises:
         TypeError: If the ``workflow`` is of an invalid type.
+        ResourcesUndefinedError: If encountering a ``ResourceOperator`` without a resource decomposition.
 
     .. note::
 
