@@ -625,77 +625,77 @@ def shadow_expval(
                         qml.H(0)
                         return qml.shadow_expval(qml.Z(0), seed=99)
 
-     Returns:
-         ShadowExpvalMP: Measurement process instance
+    Returns:
+        ShadowExpvalMP: Measurement process instance
 
-     .. seealso::
+    .. seealso::
 
-         This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
-         :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
+        This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
+        :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
 
-     **Example**
+    **Example**
 
-     With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
-     observables requires its own separate circuit execution. However, with ``shadow_expval``
-     we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
+    With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
+    observables requires its own separate circuit execution. However, with ``shadow_expval``
+    we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
 
-     Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
-     (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` state.
-     Theoretically, we would expect that :math:`\langle X \rangle = 1`, :math:`\langle Y \rangle = \langle Z \rangle = 0`.
+    Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
+    (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` state.
+    Theoretically, we would expect that :math:`\langle X \rangle = 1`, :math:`\langle Y \rangle = \langle Z \rangle = 0`.
 
-     .. code-block:: python
+    .. code-block:: python
 
-         device = qml.device("default.qubit", seed=42)
+        device = qml.device("default.qubit", seed=42)
 
-         @qml.set_shots(1_000)
-         @qml.qnode(device)
-         def circuit():
-             qml.H(0) # Create |+> state
-             return qml.shadow_expval((qml.X(0), qml.Y(0), qml.Z(0)), seed=99)
+        @qml.set_shots(1_000)
+        @qml.qnode(device)
+        def circuit():
+            qml.H(0) # Create |+> state
+            return qml.shadow_expval((qml.X(0), qml.Y(0), qml.Z(0)), seed=99)
 
-     >>> print(circuit())
-     [0.984 0.    0.03 ]
+    >>> print(circuit())
+    [0.984 0.    0.03 ]
 
-     This is very close to their expected values!
+    This is very close to their expected values!
 
-     .. details::
-         :title: Differentiability
+    .. details::
+        :title: Differentiability
 
-         Consider the following observable,
+        Consider the following observable,
 
-         >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
-         We can estimate its expectation value with the classical shadows protocol:
+        We can estimate its expectation value with the classical shadows protocol:
 
-         .. code-block:: python
+        .. code-block:: python
 
-             dev = qml.device("default.qubit", seed=42, wires=range(2))
+            dev = qml.device("default.qubit", seed=42, wires=range(2))
 
-             @qml.set_shots(shots=10_000)
-             @qml.qnode(dev)
-             def circuit(x, obs):
-                 qml.Hadamard(0)
-                 qml.CNOT((0,1))
-                 qml.RX(x, wires=0)
-                 return qml.shadow_expval(obs, seed=99)
+            @qml.set_shots(shots=10_000)
+            @qml.qnode(dev)
+            def circuit(x, obs):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return qml.shadow_expval(obs, seed=99)
 
-             x = pnp.array(0.5, requires_grad=True)
+            x = pnp.array(0.5, requires_grad=True)
 
-         >>> print(circuit(x, H))
-         1.8891
-         >>> print(qml.grad(circuit)(x, H))
-         -0.4653...
+        >>> print(circuit(x, H))
+        1.8891
+        >>> print(qml.grad(circuit)(x, H))
+        -0.4653...
 
-         In ``shadow_expval``, we can also pass a list of observables to estimate them
-         all from the same shadow data.
-         Note that each qnode execution internally performs one quantum measurement, so be sure
-         to include all observables that you want to estimate from a single measurement in the same execution.
+        In ``shadow_expval``, we can also pass a list of observables to estimate them
+        all from the same shadow data.
+        Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
 
-         >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
-         >>> print(circuit(x, Hs))
-         [ 1.8783  0.0096 -0.0174  0.0138]
-         >>> print(qml.jacobian(circuit)(x, Hs))
-         [-0.4851 -0.0063 -0.0099  0.0006]
+        >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
+        >>> print(circuit(x, Hs))
+        [ 1.8783  0.0096 -0.0174  0.0138]
+        >>> print(qml.jacobian(circuit)(x, Hs))
+        [-0.4851 -0.0063 -0.0099  0.0006]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
