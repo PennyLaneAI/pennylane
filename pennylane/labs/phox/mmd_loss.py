@@ -19,7 +19,6 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 from jax.typing import ArrayLike
 
 from .expval_functions import CircuitConfig, build_expval_func
@@ -27,10 +26,22 @@ from .expval_functions import CircuitConfig, build_expval_func
 
 @dataclass(frozen=True)
 class MMDConfig:
-    """Hyperparameters for MMD loss calculation.
+    """Hyperparameters for Maximum Mean Discrepancy (MMD) loss calculation.
 
     Args:
         bandwidth (float | Sequence[float]): RBF kernel bandwidth(s) for the MMD calculation.
+            If a sequence is provided, the loss will be computed for each bandwidth and either
+            averaged or returned as a list depending on ``return_per_bandwidth``.
+        n_ops (int): The number of binary operators (observables) to sample when approximating
+            the MMD loss.
+        wires (Sequence[int] | None, optional): The specific wires (qubits) to evaluate the
+            MMD over. If ``None``, the calculation defaults to using all available qubits.
+            Defaults to ``None``.
+        sqrt_loss (bool, optional): If ``True``, computes the square root of the absolute
+            reduced MMD loss. Defaults to ``False``.
+        return_per_bandwidth (bool, optional): If ``True``, returns a list containing the
+            individual loss estimates for each bandwidth. If ``False``, returns the scalar
+            average across all specified bandwidths. Defaults to ``False``.
     """
 
     bandwidth: float | Sequence[float]
@@ -38,33 +49,6 @@ class MMDConfig:
     wires: Sequence[int] | None = None
     sqrt_loss: bool = False
     return_per_bandwidth: bool = False
-
-
-def median_heuristic(samples: ArrayLike) -> float:
-    """Compute a robust median-distance heuristic for RBF bandwidth selection.
-
-    Args:
-        samples (ArrayLike): Dataset with shape ``(n_samples, n_features)``.
-
-    Returns:
-        float: Median non-zero pairwise Euclidean distance. Returns ``1.0`` when all
-        pairwise distances are zero.
-
-    Raises:
-        ValueError: If fewer than two samples are provided.
-    """
-    arr = np.asarray(samples, dtype=float)
-    if len(arr) < 2:
-        raise ValueError("median_heuristic requires at least two samples")
-
-    diffs = arr[:, None, :] - arr[None, :, :]
-    dists = np.sqrt(np.sum(diffs * diffs, axis=-1))
-    pairwise = dists[np.triu_indices(len(arr), k=1)]
-    nonzero = pairwise[pairwise > 0]
-
-    if len(nonzero) > 0:
-        return float(np.median(nonzero))
-    return 1.0
 
 
 @jax.jit
