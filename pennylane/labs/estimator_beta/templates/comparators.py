@@ -28,14 +28,14 @@ from pennylane.wires import WiresLike
 class OutOfPlaceIntegerComparator(ResourceOperator):
     r"""Resource class for an out-of-place integer comparator.
 
-     Compares an n-bit quantum register :math:`|x\rangle` against a classical
-     integer :math:`L`, storing the result :math:`x < L` (or :math:`x \geq L`)
-     in a dedicated output qubit.
+    Compares an n-bit quantum register :math:`|x\rangle` against a classical
+    integer :math:`L`, storing the result :math:`x < L` (or :math:`x \geq L`)
+    in a dedicated output qubit.
 
-     The circuit computes the borrow chain of the subtraction :math:`x - L`.
-     The n - 1 intermediate borrow qubits are kept dirty after the
-     forward pass, enabling the inverse to be performed with Clifford gates
-     only (0 Toffoli cost).
+    The circuit computes the borrow chain of the subtraction :math:`x - L`.
+    The n - 1 intermediate borrow qubits are kept dirty after the
+    forward pass, enabling the inverse to be performed with Clifford gates
+    only (0 Toffoli cost).
 
     Args:
         value (int): The classical integer :math:`L` to compare against.
@@ -45,10 +45,10 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
             (0 Toffoli cost). Default ``False``.
         wires (WiresLike | None): The wires the operation acts on.
 
-     Resources:
-         The resources are computed based on Figure 6 of Appendix E in
-         `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. This decomposition
-         is useful when extra auxiliary wires are available and an inverse of the operation is required in the same circuit.
+    Resources:
+        The resources are computed based on Figure 6 of Appendix E in
+        `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. This decomposition
+        is useful when extra auxiliary wires are available and an inverse of the operation is required in the same circuit.
 
     """
 
