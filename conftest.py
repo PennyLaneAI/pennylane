@@ -17,6 +17,7 @@ from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
 from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
+from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
 
 import numpy as base_numpy
 import scipy as base_scipy
@@ -62,7 +63,8 @@ pytest_collect_file = Sybil(
     parsers=[
         DocTestParser(optionflags=ELLIPSIS | NORMALIZE_WHITESPACE),
         PythonCodeBlockParser(),
+        MarkDownPythonCodeBlockParser(),
     ],
-    patterns=["*.rst", "*.py"],
+    patterns=["*.rst", "*.py", "*.md"],
     teardown=reset_pennylane_state,
 ).pytest()
