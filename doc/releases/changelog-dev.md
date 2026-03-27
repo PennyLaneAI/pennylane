@@ -845,7 +845,7 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
-* Updated docs for gridsynth decomposition as we now issue a warning when users provide epsilon smaller than 1e-6, and simulation for PPR is now possible.
+* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
   [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
 * Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
