@@ -860,6 +860,7 @@ The following classes have been ported over:
 
 * Fixed a bug where :func:`~.estimator.estimate.estimate` was incorrectly raising ``ResourcesUndefinedError`` when
   certain elementary operators are not included in the ``gate_set`` argument.
+  [(#9229)](https://github.com/PennyLaneAI/pennylane/pull/9229)
 
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
