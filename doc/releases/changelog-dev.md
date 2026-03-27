@@ -844,6 +844,10 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions 
+  for achieving reproducible results with the seed keyword argument.
+  [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
+
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
