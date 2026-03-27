@@ -287,11 +287,11 @@ def multi_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    def _resource_fn(num_wires, **_):  # pylint: disable=unused-argument
+    def _resource_fn(num_wires):  # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
     # Resources are not exact because the global phase or rotations might be skipped
-    @register_condition(lambda num_wires, **_: num_wires == 1)
+    @register_condition(lambda num_wires: num_wires == 1)
     @register_resources(_resource_fn, exact=False)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
@@ -385,7 +385,7 @@ def _two_qubit_resource(**_):
     }
 
 
-@register_condition(lambda num_wires, **_: num_wires == 2)
+@register_condition(lambda num_wires: num_wires == 2)
 @register_resources(_two_qubit_resource, exact=False)
 def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
@@ -411,7 +411,7 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
-def _multi_qubit_decomp_resource(num_wires, **_):
+def _multi_qubit_decomp_resource(num_wires):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
         resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
@@ -419,7 +419,7 @@ def _multi_qubit_decomp_resource(num_wires, **_):
     }
 
 
-@register_condition(lambda num_wires, **_: num_wires > 2)
+@register_condition(lambda num_wires: num_wires > 2)
 @register_resources(_multi_qubit_decomp_resource)
 def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""

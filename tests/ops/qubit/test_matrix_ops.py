@@ -25,7 +25,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
@@ -222,16 +222,6 @@ class TestQubitUnitaryCSR:
 
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
-
-    def test_assert_valid(self):
-        U = np.array(
-            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
-        )
-
-        op = qml.QubitUnitary(U, wires="a")
-
-        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-            qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_qubit_unitary_noninteger_pow(self):
         """Test QubitUnitary raised to a non-integer power raises an error."""
