@@ -53,7 +53,7 @@ def paulirot_controlled_resource_decomp(
 
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated controlled single qubit rotation gate: (:code:`CRX`,
-            :code:`CRY`, :code:`CRZ`, controlled-\ :code:`GlobalPhase`).
+            :code:`CRY`, :code:`CRZ`, controlled- :code:`GlobalPhase`).
 
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
