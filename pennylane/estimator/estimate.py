@@ -73,7 +73,7 @@ def estimate(
         If an encountered :class:`~.pennylane.estimator.resource_operator.ResourceOperator`
         is not included in the provided ``gate_set`` and does not have a resource decomposition,
         PennyLane will raise a ``ResourcesUndefinedError``.
-        
+
     **Example**
 
     The resources of a quantum workflow can be estimated by supplying a quantum function describing
