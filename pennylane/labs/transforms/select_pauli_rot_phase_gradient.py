@@ -129,6 +129,7 @@ def select_pauli_rot_phase_gradient(
 
             pg_op = _select_pauli_rot_phase_gradient(
                 angles,
+                rot_axis,
                 control_wires=control_wires,
                 target_wire=target_wire,
                 angle_wires=angle_wires,
@@ -136,25 +137,7 @@ def select_pauli_rot_phase_gradient(
                 work_wires=work_wires,
             )
 
-            match rot_axis:
-                case "X":
-                    operations.append(
-                        qml.change_op_basis(
-                            qml.Hadamard(target_wire),
-                            pg_op,
-                            qml.Hadamard(target_wire),
-                        )
-                    )
-                case "Y":
-                    operations.append(
-                        qml.change_op_basis(
-                            qml.Hadamard(target_wire) @ qml.adjoint(qml.S(target_wire)),
-                            pg_op,
-                            qml.S(target_wire) @ qml.Hadamard(target_wire),
-                        )
-                    )
-                case "Z":
-                    operations.append(pg_op)
+            operations.append(pg_op)
 
         else:
             operations.append(op)

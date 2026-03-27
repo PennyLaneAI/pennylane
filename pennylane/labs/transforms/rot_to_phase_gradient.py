@@ -38,6 +38,7 @@ def ladder(wires):
 # pylint: disable=too-many-arguments
 def _select_pauli_rot_phase_gradient(
     phis: np.ndarray,
+    rot_axis: str,
     control_wires: Wires,
     target_wire: Wires,
     angle_wires: Wires,
@@ -57,10 +58,21 @@ def _select_pauli_rot_phase_gradient(
         )
     ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
 
-    return qp.change_op_basis(
+    pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
     )
+
+    match rot_axis:
+        case "X":
+            comp = uncomp = qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+        case "Y":
+            comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
+            uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+
+    return pg_op
 
 
 def _pauli_rot_phase_gradient(op, **other_wires):
@@ -207,21 +219,13 @@ def rot_to_phase_gradient(
 
             pg_op = _select_pauli_rot_phase_gradient(
                 op.data[0],
+                op.hyperparameters["rot_axis"],
                 control_wires=control_wires,
                 target_wire=target_wire,
                 **kwargs,
             )
 
-            match op.hyperparameters["rot_axis"]:
-                case "X":
-                    comp = uncomp = qp.Hadamard(target_wire)
-                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
-                case "Y":
-                    comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
-                    uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
-                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
-                case "Z":
-                    operations.append(pg_op)
+            operations.append(pg_op)
 
         elif isinstance(op, (qp.RX, qp.RY, qp.RZ, qp.PhaseShift)) or (
             isinstance(op, qp.MultiRZ) and len(op.wires) == 1
