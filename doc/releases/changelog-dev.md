@@ -166,7 +166,7 @@ The following classes have been ported over:
 * The decomposition of :class:`~.DiagonalQubitUnitary` is now compatible with traced data.
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
-* `Callables` defining quantum operations can now be passed to the 
+* `Callables` defining quantum operations can now be passed to the
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
@@ -837,7 +837,7 @@ The following classes have been ported over:
   These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
   states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
-  
+
 * Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
   operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
   symbolic decomposition rules that do not need to take an instance of the base operator as input.
@@ -845,14 +845,14 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
-* For gridsynth decomposition, updated the warning to reflect that for epsilon smaller than 1e-6, the result may be inaccurate of errors may arise.
+* Updated docs for gridsynth decomposition as we now issue a warning when users provide epsilon smaller than 1e-6, and simulation for PPR is now possible.
   [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions 
+* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
