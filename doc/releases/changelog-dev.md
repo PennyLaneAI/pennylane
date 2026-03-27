@@ -858,6 +858,9 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.estimator.estimate.estimate` was incorrectly raising ``ResourcesUndefinedError`` when
+  certain elementary operators are not included in the ``gate_set`` argument.
+
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
   environment.
