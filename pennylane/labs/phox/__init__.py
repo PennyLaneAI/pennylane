@@ -128,6 +128,7 @@ from .utils import (
     create_random_gates,
     generate_pauli_observables,
 )
+from .mmd_loss import mmd_loss, median_heuristic
 
 __all__ = [
     "CircuitConfig",

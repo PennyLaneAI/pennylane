@@ -328,7 +328,7 @@ class TestIQPExpval:
             gates=gates,
             observables=obs_batch,
             init_state=jax_state,
-            phase_layer=compute_phase,
+            phase_fn=compute_phase,
             n_samples=50000,
             key=jax.random.PRNGKey(42),
         )
