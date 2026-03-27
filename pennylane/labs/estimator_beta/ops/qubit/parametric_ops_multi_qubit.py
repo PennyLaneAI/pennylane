@@ -68,7 +68,7 @@ def paulirot_controlled_resource_decomp(
             we conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
 
             if the :code:`pauli_string` is :code:`XX`, :code:`YY` or :code:`ZZ` the cost is a multi-controlled version of the associated rotation gate
-            (:code:`CRX`, :code:`CRY`, :code:`CRZ` respectively) and 2 :code:`CNOT` gates.
+            (:code:`RX`, :code:`RY`, :code:`RZ` respectively) and 2 :code:`CNOT` gates.
 
     Returns:
         list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
