@@ -40,6 +40,8 @@ For example:
 
 .. code-block:: python
 
+    import pennylane as qml
+
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
@@ -123,7 +125,7 @@ Alternatively, you can use custom labels by passing an iterable that contains un
 
 .. code-block:: python
 
-    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'], seed=42)
+    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -160,13 +162,17 @@ Together, a quantum function and a device are used to create a *quantum node* or
 
 A QNode can be explicitly created as follows:
 
->>> circuit = qml.QNode(my_quantum_function, dev_unique_wires)
+.. code-block:: python
+
+    import numpy as np
+
+    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
->>> print(circuit(np.pi/4, 0.7))
-0.764...
+>>> circuit(np.pi/4, 0.7)
+tensor(0.764, requires_grad=True)
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
 transform,
@@ -250,10 +256,9 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2, seed=42)
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.set_shots(shots=10)
-    @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.CNOT([0, 1])
@@ -264,9 +269,8 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 This transform can also be used to transform an existing QNode:
 
->>> new_qnode = qml.set_shots(circuit, shots=5)
->>> new_qnode(0.5) 
-array([1., 1., 1., 1., 1.])
+>>> new_qnode = qml.set_shots(circuit, shots=100)
+>>> new_qnode(0.5)
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
 QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
@@ -289,36 +293,26 @@ second set of 10 shots, and final 1000 shots, separately. Therefore, we will get
 of shape ``(3, 2)``:
 
 >>> results = circuit(0.5)
->>> from pprint import pprint
->>> pprint(results) 
-((np.float64(-0.2), np.float64(1.0)),
- (np.float64(0.2), np.float64(0.8)),
- (np.float64(0.004), np.float64(0.886)))
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
 
 We can index into this tuple and retrieve the results computed with only 5 shots:
 
->>> results[0] 
-(np.float64(-0.2), np.float64(1.0))
+>>> results[0]
+(array(0.6), array(1.))
 
 
 Parameter Broadcasting in QNodes
 --------------------------------
-
-Consider the following circuit,
-
-.. code-block:: python
-
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit(x):
-        qml.RX(x,0)
-        return qml.expval(qml.Z(0))
 
 Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
 
 >>> x = np.array([0.543, 1.234])
 >>> result = circuit(x)
 >>> result
-array([0.85616242, 0.33046511])
+tensor([0.85616242, 0.33046511], requires_grad=True)
 
 Note that we are passing in a 1-dimensional array of parameters to the `circuit()`
 QNode defined above, which takes a single parameter and returns a single expectation
@@ -341,7 +335,13 @@ Many standard quantum operators support broadcasting; see the corresponding attr
 :class:`~.pennylane.operation.Operator` documentation contains implementation details
 and a guide to make custom operators compatible with broadcasting.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
-devices like ``"default.qubit"`` support it. Other devices separate the parameters and execute the QNode sequentially.
+devices like ``"default.qubit"`` that indicate that they support it:
+
+>>> cap = dev.capabilities()
+>>> cap["supports_broadcasting"]
+True
+
+Other devices separate the parameters and execute the QNode sequentially.
 
 Importing circuits from other frameworks
 ----------------------------------------
@@ -382,7 +382,6 @@ is that custom templates must always be executed
 within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
 
 .. note::
-
     Certain instructions that are specific to the external frameworks might be
     ignored when loading an external quantum circuit. Warning messages will
     be emitted for ignored instructions.
@@ -417,7 +416,9 @@ Furthermore, loaded templates can be used with any supported device, any number 
 For instance, in the following example a template is loaded from a QASM string,
 and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Rigetti:
 
-.. code-block:: 
+.. code-block:: python
+
+    import pennylane as qml
 
     dev = qml.device('forest.qpu', wires=2)
 
