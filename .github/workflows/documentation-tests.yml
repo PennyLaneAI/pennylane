@@ -122,6 +122,7 @@ jobs:
           --ignore=doc/introduction/importing_workflows.rst
           --ignore=doc/introduction/inspecting_circuits.rst
           --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
           --ignore=doc/introduction/pennylane.rst
