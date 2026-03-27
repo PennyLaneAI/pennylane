@@ -86,17 +86,14 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-<<<<<<< update_PauliRot
-from .ops.qubit.parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp
-from .templates.subroutines import selectPauliRot_controlled_resource_decomp
-=======
+from .templates import selectPauliRot_controlled_resource_decomp
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
+    pauliRot_controlled_resource_decomp
 )
->>>>>>> main
 
 
 @apply_controlled.register

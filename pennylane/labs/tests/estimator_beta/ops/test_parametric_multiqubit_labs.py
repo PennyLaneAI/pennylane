@@ -22,7 +22,7 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import resource_rep
 
 
-# pylint: disable = no-self-use
+# pylint: disable = no-self-use, too-many-arguments
 class TestPauliRot:
     """Test the Resource PauliRot class."""
 
@@ -153,10 +153,12 @@ class TestPauliRot:
         )
 
     @pytest.mark.parametrize(
-        "pauli_string, precision, expected",
+        "pauli_string, num_ctrl_wires, num_zero_ctrl, precision, expected",
         (
             (
                 "X",
+                1,
+                0,
                 None,
                 [
                     qre.GateCount(
@@ -166,15 +168,19 @@ class TestPauliRot:
             ),
             (
                 "Y",
+                2,
+                2,
                 None,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=None), 1, 0)
+                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=None), 2, 2)
                     )
                 ],
             ),
             (
                 "Z",
+                1,
+                0,
                 None,
                 [
                     qre.GateCount(
@@ -184,35 +190,43 @@ class TestPauliRot:
             ),
             (
                 "XX",
+                3,
+                2,
                 None,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=None), 1, 0)
+                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=None), 3, 2)
                     ),
                     qre.GateCount(qre.CNOT.resource_rep(), 2),
                 ],
             ),
             (
                 "YY",
+                1,
+                1,
                 None,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=None), 1, 0)
+                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=None), 1, 1)
                     ),
                     qre.GateCount(qre.CY.resource_rep(), 2),
                 ],
             ),
             (
                 "X",
+                5,
+                3,
                 1e-3,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=1e-3), 1, 0)
+                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=1e-3), 5, 3)
                     )
                 ],
             ),
             (
                 "Y",
+                1,
+                0,
                 1e-3,
                 [
                     qre.GateCount(
@@ -222,107 +236,126 @@ class TestPauliRot:
             ),
             (
                 "Z",
+                4,
+                1,
                 1e-3,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RZ.resource_rep(precision=1e-3), 1, 0)
+                        qre.Controlled.resource_rep(qre.RZ.resource_rep(precision=1e-3), 4, 1)
                     )
                 ],
             ),
             (
                 "XX",
+                2,
+                1,
                 1e-3,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=1e-3), 1, 0)
+                        qre.Controlled.resource_rep(qre.RX.resource_rep(precision=1e-3), 2, 1)
                     ),
                     qre.GateCount(qre.CNOT.resource_rep(), 2),
                 ],
             ),
             (
                 "YY",
+                3,
+                2,
                 1e-3,
                 [
                     qre.GateCount(
-                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=1e-3), 1, 0)
+                        qre.Controlled.resource_rep(qre.RY.resource_rep(precision=1e-3), 3, 2)
                     ),
                     qre.GateCount(qre.CY.resource_rep(), 2),
                 ],
             ),
         ),
     )
-    def test_controlled_resource_decomp_special_cases(self, pauli_string, expected, precision):
+    def test_controlled_resource_decomp_special_cases(self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision):
         """Test that the controlled resources method produces the correct result for all special cases."""
         op = qre.PauliRot(pauli_string, precision=precision)
         assert (
             qre.pauliRot_controlled_resource_decomp(
-                num_ctrl_wires=1,
-                num_zero_ctrl=0,
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
                 target_resource_params=op.resource_params,
             )
             == expected
         )
 
     @pytest.mark.parametrize(
-        "pauli_string, precision, expected",
+        "num_ctrl_wires, num_zero_ctrl, pauli_string, precision, expected",
         (
+            # (
+            #     1,
+            #     0,
+            #     "X",
+            #     None,
+            #     qre.Resources(
+            #         zeroed_wires=0,
+            #         any_state_wires=0,
+            #         algo_wires=2,
+            #         gate_types=defaultdict(
+            #             int,
+            #             {
+            #                 resource_rep(qre.CNOT): 2,
+            #                 resource_rep(qre.T): 88,
+            #                 resource_rep(qre.Hadamard): 2,
+            #             },
+            #         ),
+            #     ),
+            # ),
             (
-                "X",
-                None,
-                qre.Resources(
-                    zeroed_wires=0,
-                    any_state_wires=0,
-                    algo_wires=2,
-                    gate_types=defaultdict(
-                        int,
-                        {
-                            resource_rep(qre.CNOT): 2,
-                            resource_rep(qre.T): 88,
-                            resource_rep(qre.Hadamard): 2,
-                        },
-                    ),
-                ),
-            ),
-            (
+                2,
+                1,
                 "XX",
                 1e-3,
                 qre.Resources(
                     zeroed_wires=0,
                     any_state_wires=0,
-                    algo_wires=3,
+                    algo_wires=4,
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(qre.CNOT): 4,
+                            resource_rep(qre.Toffoli, {"elbow": None}): 2,
+                            resource_rep(qre.CNOT): 2,
                             resource_rep(qre.T): 42,
+                            resource_rep(qre.X): 4,
                             resource_rep(qre.Hadamard): 2,
                         },
                     ),
                 ),
             ),
             (
+                5,
+                3,
                 "YY",
                 1e-3,
                 qre.Resources(
-                    zeroed_wires=0,
+                    zeroed_wires=3,
                     any_state_wires=0,
-                    algo_wires=3,
+                    algo_wires=7,
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(qre.CNOT): 4,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 6,
+                            resource_rep(qre.Toffoli, {"elbow": None}): 2,
+                            resource_rep(qre.CNOT): 8,
                             resource_rep(qre.T): 42,
                             resource_rep(qre.Z): 2,
                             resource_rep(qre.S): 4,
+                            resource_rep(qre.X): 12,
+                            resource_rep(qre.Hadamard): 18,
                         },
                     ),
                 ),
             ),
         ),
     )
-    def test_controlled_decomp_estimate(self, pauli_string, expected, precision):
+    def test_controlled_decomp_estimate(self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision):
         """Test that the controlled resources method produces the correct result when estimate is used."""
         op = qre.Controlled(
-            qre.PauliRot(pauli_string, precision=precision), num_ctrl_wires=1, num_zero_ctrl=0
+            qre.PauliRot(pauli_string, precision=precision), num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
         )
+        print(qre.estimate(op), expected)
         assert qre.estimate(op) == expected

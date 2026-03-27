@@ -16,7 +16,8 @@ r"""This module contains the LabsResourceConfig class, which tracks the configur
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_config import ResourceConfig
 
-from .ops import ch_resource_decomp, hadamard_controlled_resource_decomp
+from .ops import ch_resource_decomp, hadamard_controlled_resource_decomp, pauliRot_controlled_resource_decomp
+from .templates import selectPauliRot_controlled_resource_decomp
 
 
 class LabsResourceConfig(ResourceConfig):
