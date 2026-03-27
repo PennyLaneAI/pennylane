@@ -109,7 +109,7 @@ jobs:
           --ignore=doc/_static
           --ignore=doc/_templates
           "
-          TODO="
+          TO_DO="
           --ignore=doc/development
           --ignore=doc/news
           --ignore=doc/introduction/chemistry.rst

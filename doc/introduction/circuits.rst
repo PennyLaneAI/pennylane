@@ -382,6 +382,7 @@ is that custom templates must always be executed
 within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
 
 .. note::
+
     Certain instructions that are specific to the external frameworks might be
     ignored when loading an external quantum circuit. Warning messages will
     be emitted for ignored instructions.
