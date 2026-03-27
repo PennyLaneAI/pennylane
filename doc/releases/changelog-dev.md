@@ -157,6 +157,15 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.TemporaryAND` is now compatible with traced control values.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
+* The decomposition of :class:`~.MultiRZ` is now compatible with traced wires.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
+* The decomposition of :class:`~.DiagonalQubitUnitary` is now compatible with traced data.
+  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+
 * `Callables` defining quantum operations can now be passed to the 
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
@@ -771,9 +780,10 @@ The following classes have been ported over:
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows.
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
+  [(#9218)](https://github.com/PennyLaneAI/pennylane/pull/9218)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -795,6 +805,7 @@ The following classes have been ported over:
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
+  [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -827,12 +838,21 @@ The following classes have been ported over:
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the `default.qubit` device.
+  These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
+  states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+  
 * Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
   operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
   symbolic decomposition rules that do not need to take an instance of the base operator as input.
   [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
 
 <h3>Documentation 📝</h3>
+
+* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions 
+  for achieving reproducible results with the seed keyword argument.
+  [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
   was clarified in its documentation.
@@ -845,7 +865,6 @@ The following classes have been ported over:
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
-
 
 <h3>Bug fixes 🐛</h3>
 
@@ -963,6 +982,7 @@ Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 Oumarou Oumarou,
