@@ -50,26 +50,17 @@ Qubit Tracking Functionality
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-<<<<<<< update_PauliRot
 .. currentmodule:: pennylane.labs.estimator_beta
-=======
-.. currentmodule:: pennylane.labs.estimator_beta.ops
->>>>>>> main
 
 .. autosummary::
     :toctree: api
 
-<<<<<<< update_PauliRot
     ~selectPauliRot_controlled_resource_decomp
     ~pauliRot_controlled_resource_decomp
-
-
-=======
     ~ch_resource_decomp
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
->>>>>>> main
 
 """
 from pennylane.estimator import *

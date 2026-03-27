@@ -51,24 +51,24 @@ def paulirot_controlled_resource_decomp(
         `The Bravyi-Kitaev transformation for quantum computation of electronic structure
         <https://arxiv.org/abs/1208.5986>`_, in combination with the following identities:
 
-            When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
-            the cost is the associated controlled single qubit rotation gate: (:code:`CRX`,
-            :code:`CRY`, :code:`CRZ`, controlled- :code:`GlobalPhase`).
+        When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
+        the cost is the associated controlled single qubit rotation gate: (:code:`CRX`,
+        :code:`CRY`, :code:`CRZ`, controlled- :code:`GlobalPhase`).
 
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
+        The resources are derived from the following identity. If an operation :math:`\hat{A}`
+        can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+        then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+        .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
-            Specifically, the resources are one multi-controlled RZ-gate and a cascade of
-            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
-            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
-            a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word
-            we conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
+        Specifically, the resources are one multi-controlled RZ-gate and a cascade of
+        :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+        the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
+        a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word
+        we conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
 
-            if the :code:`pauli_string` is :code:`XX`, :code:`YY` or :code:`ZZ` the cost is a multi-controlled version of the associated rotation gate
-            (:code:`RX`, :code:`RY`, :code:`RZ` respectively) and 2 :code:`CNOT` gates.
+        if the :code:`pauli_string` is :code:`XX`, :code:`YY` or :code:`ZZ` the cost is a multi-controlled version of the associated rotation gate
+        (:code:`RX`, :code:`RY`, :code:`RZ` respectively) and 2 :code:`CNOT` gates.
 
     Returns:
         list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
