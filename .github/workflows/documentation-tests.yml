@@ -127,4 +127,4 @@ jobs:
           --ignore=doc/introduction/unsupported_gradients.rst
           "
 
-          pytest doc $IGNORE
+          pytest doc ${IGNORE_TODO}
