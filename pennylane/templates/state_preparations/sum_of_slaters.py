@@ -667,7 +667,7 @@ class SumOfSlatersPrep(Operation):
 
         coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j]) / np.sqrt(8)
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
-        wires = qml.wires.Wires(range(7))
+        wires = list(range(7))
 
     This is all the information we require to create the state
     preparation: ``coefficients``, ``indices``, and ``wires``.
@@ -696,7 +696,8 @@ class SumOfSlatersPrep(Operation):
     >>> where = np.where(prepared_state)
     >>> print(where)
     (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
-    >>> print(prepared_state[where])
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     print(prepared_state[where])
     [ 0.3536+0.j     -0.    -0.3536j  0.    +0.3536j  0.3536+0.j
       0.3536+0.j     -0.    -0.3536j  0.3536+0.j      0.    +0.3536j]
 
@@ -741,7 +742,7 @@ class SumOfSlatersPrep(Operation):
 
             coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
             indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-            wires = qml.wires.Wires(range(5))
+            wires = list(range(5))
             first_free_wire = max(wires)+1
 
             @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)

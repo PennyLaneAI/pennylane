@@ -216,16 +216,7 @@ def sample(
         ... def circuit(wires):
         ...     return qml.sample(wires=wires)
 
-        We previously squeezed out singleton dimensions like:
-
-        >>> qml.set_shots(circuit, 1)(wires=1)
-        array(0)
-        >>> qml.set_shots(circuit, 2)(0)
-        array([0, 0])
-        >>> qml.set_shots(circuit, 1)((0,1))
-        array([0, 0])
-
-        With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
+        The above circuit returns an array of shape ``(shots, num_wires)``.
 
         >>> qml.set_shots(circuit, 1)(wires=1)
         array([[0]])
@@ -234,8 +225,6 @@ def sample(
         [0]])
         >>> qml.set_shots(circuit, 1)((0,1))
         array([[0, 0]])
-
-        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
@@ -281,9 +270,9 @@ def sample(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @qml.set_shots(shots=4)
         @qml.qnode(dev)
@@ -296,16 +285,16 @@ def sample(
     Executing this QNode:
 
     >>> circuit(0.5)
-    array([ 1.,  1.,  1., -1.])
+    array([-1., -1., -1., -1.])
 
     If no observable is provided, then the raw basis state samples obtained
     from the device are returned (e.g., for a qubit device, samples from the
     computational basis are returned). In this case, ``wires`` can be specified
     so that sample results only include measurement results of the qubits of interest.
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @qml.set_shots(shots=4)
         @qml.qnode(dev)
@@ -320,8 +309,8 @@ def sample(
     >>> circuit(0.5)
     array([[0, 1],
            [0, 0],
-           [1, 1],
-           [0, 0]])
+           [0, 1],
+           [0, 1]])
 
     .. details::
             :title: Setting the precision of the samples
@@ -338,7 +327,7 @@ def sample(
 
             **Example:**
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 @qml.set_shots(1000000)
                 @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
@@ -352,13 +341,13 @@ def sample(
             >>> samples.dtype
             dtype('int8')
             >>> type(samples)
-            jaxlib._jax.ArrayImpl
+            <class 'jaxlib._jax.ArrayImpl'>
 
             If an observable is provided, the samples will be floating point numbers:
 
-            .. code-block:: python3
+            .. code-block:: python
 
-                @qml.set_shots(1000000)
+                @qml.set_shots(100)
                 @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
                 def circuit():
                     qml.Hadamard(0)
@@ -370,7 +359,7 @@ def sample(
             >>> samples.dtype
             torch.float32
             >>> type(samples)
-            torch.Tensor
+            <class 'torch.Tensor'>
 
     """
     return SampleMP(obs=op, wires=None if wires is None else Wires(wires), dtype=dtype)

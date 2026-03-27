@@ -258,8 +258,9 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     return R
 
 
-def _set_unitary_matrix(unitary_matrix, index, value, like=None):
-    """Set the values in the ``unitary_matrix`` at the specified index.
+def _set_unitary_matrix(unitary_matrix, index, value, like=None, real_valued=False):
+    """Set the values in the ``unitary_matrix`` at the specified index. Modifies the input matrix
+    in place if no compiler is active, but not if ``qjit`` or ``jax.jit`` is used.
 
     Args:
         unitary_matrix (tensor_like): unitary being modified
@@ -278,11 +279,16 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     """
     if like is None:
         like = math.get_interface(unitary_matrix)
+    if real_valued:
+        value = math.real(value, like=like)
 
     if like == "jax":
-        return unitary_matrix.at[index[0], index[1]].set(
-            value, indices_are_sorted=True, unique_indices=True
+        z = math.zeros_like(unitary_matrix, like=like)
+        z = z.at[index[0], index[1]].set(
+            value - unitary_matrix[index[0], index[1]], indices_are_sorted=True, unique_indices=True
         )
+        unitary_matrix = unitary_matrix + z
+        return unitary_matrix
 
     unitary_matrix[index[0], index[1]] = value
     return unitary_matrix
@@ -430,8 +436,12 @@ def _absorb_phases_so(left_givens, right_givens, phases):
         grot_mat, (i, j) = last_rotations[k]
 
         ph0 = math.sign(phases[j, j]) if mod else math.sign(phases[i, i])
-        phases = _set_unitary_matrix(phases, (i, i), ph0 * phases[i, i], like=interface)
-        phases = _set_unitary_matrix(phases, (j, j), ph0 * phases[j, j], like=interface)
+        phases = _set_unitary_matrix(
+            phases, (i, i), ph0 * phases[i, i], like=interface, real_valued=True
+        )
+        phases = _set_unitary_matrix(
+            phases, (j, j), ph0 * phases[j, j], like=interface, real_valued=True
+        )
         grot_mat = ph0 * grot_mat
         ph1 = phases[i, i] if mod else phases[j, j]
         if interface == "jax":
@@ -488,7 +498,9 @@ def _commute_phases_u(left_givens, right_givens, phases):
             grot_mat[1, 1] / abs_c * phases[j, j],
         ]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
-            phases = _set_unitary_matrix(phases, diag_idx, diag_val, like=interface)
+            phases = _set_unitary_matrix(
+                phases, diag_idx, diag_val, like=interface, real_valued=False
+            )
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
 
@@ -518,7 +530,11 @@ def _right_givens_core(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True, real_valued=real_valued)
     unitary = _set_unitary_matrix(
-        unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+        unitary,
+        (Ellipsis, indices),
+        unitary[:, indices] @ grot_mat.T,
+        like=interface,
+        real_valued=real_valued,
     )
     return unitary, math.conj(grot_mat)
 
@@ -544,7 +560,11 @@ def _left_givens_core(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=real_valued)
     unitary = _set_unitary_matrix(
-        unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+        unitary,
+        (indices, Ellipsis),
+        grot_mat @ unitary[indices, :],
+        like=interface,
+        real_valued=real_valued,
     )
     return unitary, grot_mat
 
