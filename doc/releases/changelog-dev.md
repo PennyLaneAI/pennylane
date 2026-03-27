@@ -30,11 +30,11 @@
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
-  ```pycon
-  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
-  >>> coefficients = np.array(coefficients)
-  >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-  >>> wires = qml.wires.Wires(range(5))
+  ```python
+  coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
+  coefficients = np.array(coefficients)
+  indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  wires = range(5)
   ```
 
   And this is all the information we require to create the state
@@ -56,7 +56,8 @@
   >>> where = np.where(prepared_state)
   >>> print(where)
   (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
-  >>> print(prepared_state[where])
+  >>> with np.printoptions(precision=2, suppress=True): # doctest: +SKIP
+  ...   print(prepared_state[where])
   [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
    -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
   ```
@@ -125,6 +126,7 @@
   ```pycon
   >>> print(qml.draw(c)())
   0: ──MyTemplate(0.10,0.20)─┤  State
+
   ```
 
 The following classes have been ported over:
@@ -243,6 +245,7 @@ The following classes have been ported over:
   - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
+
   ```
 
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
@@ -297,16 +300,18 @@ The following classes have been ported over:
     [1] cancel_inverses()
      └─▶ after-cancel-inverses
   )
+
   ```
 
   As usual, marker labels can be used as an argument to `level` in `draw`
   and `specs`, showing the cumulative result of applying transforms up to said marker:
 
   ```pycon
-  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
+  >>> print(qml.draw(circuit, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
-  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
+  >>> print(qml.draw(circuit, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
+
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -510,6 +515,7 @@ The following classes have been ported over:
   0: ───────────┤ ╭<𝓗(0.20,0.10)>
   1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
   2: ───────────┤ ╰<𝓗(0.20,0.10)>
+
   ```
 
   However, if we convert an operator ``A`` to numerical data, from which a new
@@ -529,10 +535,11 @@ The following classes have been ported over:
   ```
 
   ```pycon
-  >>> print(qp.draw(expval)(0.4))
+  >>> print(qml.draw(expval)(0.4))
   0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
   1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │
   2: ─────────────────────────┤ ╰<𝓗(M0)>
+
   ```
 
   As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
@@ -615,6 +622,7 @@ The following classes have been ported over:
   >>> print(qml.draw(qnode, level="device")())
   0: ────╭●────┤
   1: ──H─╰Z──H─┤  <X>
+
   ```
 
 * The `pennylane.operation.Operator.is_hermitian` property has been removed and replaced
