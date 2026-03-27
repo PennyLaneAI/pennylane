@@ -125,7 +125,7 @@ Alternatively, you can use custom labels by passing an iterable that contains un
 
 .. code-block:: python
 
-    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
+    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'], seed=42)
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -171,7 +171,7 @@ A QNode can be explicitly created as follows:
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
->>> circuit(np.pi/4, 0.7) # doctest: +SKIP
+>>> circuit(np.pi/4, 0.7) 
 tensor(0.764, requires_grad=True)
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
@@ -256,7 +256,7 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qml.device('default.qubit', wires=2, seed=42)
 
     @qml.set_shots(shots=10)
     @qml.qnode(dev)
@@ -271,7 +271,7 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 This transform can also be used to transform an existing QNode:
 
 >>> new_qnode = qml.set_shots(circuit, shots=5)
->>> new_qnode(0.5) # doctest: +SKIP
+>>> new_qnode(0.5) 
 array([-1.,  1.,  1.,  1.,  1.])
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
@@ -296,14 +296,14 @@ of shape ``(3, 2)``:
 
 >>> results = circuit(0.5)
 >>> from pprint import pprint
->>> pprint(results) # doctest: +SKIP
+>>> pprint(results) 
 ((np.float64(-0.2), np.float64(1.0)),
  (np.float64(0.0), np.float64(0.8)),
  (np.float64(-0.028), np.float64(0.866)))
 
 We can index into this tuple and retrieve the results computed with only 5 shots:
 
->>> results[0] # doctest: +SKIP
+>>> results[0] 
 (np.float64(-0.6), np.float64(1.0))
 
 
