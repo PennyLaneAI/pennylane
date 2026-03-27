@@ -67,7 +67,7 @@ jobs:
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
-      - name: Run documentation tests
+      - name: Test 'pennylane' folder
         run: |
           WONT_FIX="
           --ignore=pennylane/labs
@@ -100,3 +100,39 @@ jobs:
           "
 
           pytest pennylane $IGNORE --ignore-glob='*tests*'
+
+      - name: Test 'doc' folder
+        run: |
+          WONT_FIX="
+          --ignore=doc/code
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
+          "
+          TO_DO="
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/circuits.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/interfaces
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest doc ${IGNORE}
