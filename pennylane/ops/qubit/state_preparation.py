@@ -32,7 +32,6 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.reconstruct import register_reconstructor
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
@@ -381,16 +380,11 @@ class StatePrep(StatePrepBase):
 
     """
 
-    resource_keys = frozenset({"num_wires", "pad_with", "normalize", "validate_norm"})
+    resource_keys = frozenset({"num_wires"})
 
     @property
     def resource_params(self):
-        return {
-            "num_wires": len(self.wires),
-            "pad_with": self.hyperparameters["pad_with"],
-            "normalize": self.hyperparameters["normalize"],
-            "validate_norm": self.hyperparameters["validate_norm"],
-        }
+        return {"num_wires": len(self.wires)}
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -629,20 +623,7 @@ class StatePrep(StatePrepBase):
         return state
 
 
-# pylint: disable=unused-argument
-@register_reconstructor(StatePrep)
-def _state_prep_reconstructor(
-    state: TensorLike | csr_matrix,
-    wires: WiresLike,
-    pad_with,
-    normalize: bool,
-    validate_norm: bool,
-    num_wires: int,
-):
-    return StatePrep(state, wires, pad_with, normalize, validate_norm)
-
-
-def _stateprep_resources(num_wires, **_):
+def _stateprep_resources(num_wires):
     return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
