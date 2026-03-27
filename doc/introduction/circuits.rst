@@ -40,8 +40,6 @@ For example:
 
 .. code-block:: python
 
-    import pennylane as qml
-
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
@@ -162,17 +160,13 @@ Together, a quantum function and a device are used to create a *quantum node* or
 
 A QNode can be explicitly created as follows:
 
-.. code-block:: python
-
-    import numpy as np
-
-    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
+>>> circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
->>> circuit(np.pi/4, 0.7) 
-tensor(0.764, requires_grad=True)
+>>> print(circuit(np.pi/4, 0.7))
+0.764...
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
 transform,
@@ -272,7 +266,7 @@ This transform can also be used to transform an existing QNode:
 
 >>> new_qnode = qml.set_shots(circuit, shots=5)
 >>> new_qnode(0.5) 
-array([-1.,  1.,  1.,  1.,  1.])
+array([1., 1., 1., 1., 1.])
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
 QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
@@ -298,13 +292,13 @@ of shape ``(3, 2)``:
 >>> from pprint import pprint
 >>> pprint(results) 
 ((np.float64(-0.2), np.float64(1.0)),
- (np.float64(0.0), np.float64(0.8)),
- (np.float64(-0.028), np.float64(0.866)))
+ (np.float64(0.2), np.float64(0.8)),
+ (np.float64(0.004), np.float64(0.886)))
 
 We can index into this tuple and retrieve the results computed with only 5 shots:
 
 >>> results[0] 
-(np.float64(-0.6), np.float64(1.0))
+(np.float64(-0.2), np.float64(1.0))
 
 
 Parameter Broadcasting in QNodes
@@ -422,9 +416,7 @@ Furthermore, loaded templates can be used with any supported device, any number 
 For instance, in the following example a template is loaded from a QASM string,
 and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Rigetti:
 
-.. code-block:: python
-
-    import pennylane as qml
+.. code-block:: 
 
     dev = qml.device('forest.qpu', wires=2)
 
