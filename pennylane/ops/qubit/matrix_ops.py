@@ -620,7 +620,7 @@ class DiagonalQubitUnitary(Operation):
                 qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
             ]
         return [  # Note that we use the first qubits as control, the reference uses the last qubits
-            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1]),
             qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
         ]
 
@@ -633,7 +633,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
-            qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
+            qml.math.hstack([qml.math.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
 
@@ -664,7 +664,7 @@ def _diagonal_qu_decomp(D, wires, **_):
         qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
         qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
     else:
-        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1])
         qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
