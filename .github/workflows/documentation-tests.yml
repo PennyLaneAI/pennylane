@@ -103,13 +103,13 @@ jobs:
 
       - name: Test 'doc' folder
         run: |
-          IGNORE_WONTFIX="
+          WONT_FIX="
           --ignore=doc/code
           --ignore=doc/releases
           --ignore=doc/_static
           --ignore=doc/_templates
           "
-          IGNORE_TODO="
+          TODO="
           --ignore=doc/development
           --ignore=doc/news
           --ignore=doc/introduction/chemistry.rst
