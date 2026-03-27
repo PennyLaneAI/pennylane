@@ -600,30 +600,30 @@ def shadow_expval(
     See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal and theoretical details.
 
     Args:
-         H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
-             Provide a single observable or a sequence to estimate the expectation values of multiple
-             observables from the same classical shadows data.
-         k (int): Number of equal parts for which to split the shadow's measurements in order to compute the median of means.
-             The default is ``k=1``, which simply computes the mean of all measurements.
-             ``k>1`` provides no expected advantage for Pauli measurements and Pauli observables.
-         seed (int | None): Optional seed for the random Pauli measurement basis in the
-             classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
-             in per shot. If ``None``, a random seed will be generated.
+        H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
+            Provide a single observable or a sequence to estimate the expectation values of multiple
+            observables from the same classical shadows data.
+        k (int): Number of equal parts for which to split the shadow's measurements in order to compute the median of means.
+            The default is ``k=1``, which simply computes the mean of all measurements.
+            ``k>1`` provides no expected advantage for Pauli measurements and Pauli observables.
+        seed (int | None): Optional seed for the random Pauli measurement basis in the
+            classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
+            in per shot. If ``None``, a random seed will be generated.
 
-             .. note::
+            .. note::
 
-                 The ``seed`` argument only controls the measurement basis choice.
-                 The ``seed`` of a simulator device separately controls the sampling outcomes.
-                 For fully reproducible results, you must seed both the device and the measurement.
+                The ``seed`` argument only controls the measurement basis choice.
+                The ``seed`` of a simulator device separately controls the sampling outcomes.
+                For fully reproducible results, you must seed both the device and the measurement.
 
-                 .. code-block:: python
+                .. code-block:: python
 
-                     dev = qml.device("default.qubit", seed=42, shots=100)
+                    dev = qml.device("default.qubit", seed=42, shots=100)
 
-                     @qml.qnode(dev)
-                     def circuit():
-                         qml.H(0)
-                         return qml.shadow_expval(qml.Z(0), seed=99)
+                    @qml.qnode(dev)
+                    def circuit():
+                        qml.H(0)
+                        return qml.shadow_expval(qml.Z(0), seed=99)
 
      Returns:
          ShadowExpvalMP: Measurement process instance
