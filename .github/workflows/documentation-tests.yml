@@ -133,8 +133,8 @@ jobs:
           "
 
           IGNORE="
-          {$IGNORE_DIRS}
-          {$IGNORE_FILES}
+          ${IGNORE_DIRS}
+          ${IGNORE_FILES}
           "
 
           pytest doc $IGNORE
