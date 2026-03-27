@@ -73,7 +73,7 @@ class DummyCNOT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyHadamard(ResourceOperator):
@@ -92,7 +92,7 @@ class DummyHadamard(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyT(ResourceOperator):
@@ -111,7 +111,7 @@ class DummyT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyZ(ResourceOperator):
@@ -330,6 +330,12 @@ class TestEstimateResources:
         )
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
+    
+    def test_estimate_resources_from_resource_operator_no_decomp(self):
+        """Test that a ResourcesUndefinedError is raised when obtaining resources for
+        a resource operator which has no resource_decomp defined"""
+        with pytest.raises(ResourcesUndefinedError):
+            estimate(workflow=DummyT(), gate_set={DummyCNOT})
 
     def test_estimate_resources_from_scaled_resource_operator(self):
         """Test that we can accurately obtain resources from resource operator"""
