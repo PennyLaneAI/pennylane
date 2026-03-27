@@ -32,7 +32,7 @@ def ladder(wires):
     """ladder operator"""
     if len(wires) == 1:
         return qp.I(wires)
-    return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[~0:0:-1], wires[~1::-1])][::-1])
+    return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[1:], wires[:-1])])
 
 
 # pylint: disable=too-many-arguments
@@ -73,11 +73,8 @@ def _pauli_rot_phase_gradient(op, **other_wires):
 
     # collect diagonalizing gates of each wire
     # this turns any rotation to MultiRZ
-    diagonalizing_gates = []
-    for sub_op in op.decomposition():
-        if isinstance(sub_op, qp.MultiRZ):
-            break
-        diagonalizing_gates.append(sub_op)
+    diagonalizing_gates = op.decomposition()
+    diagonalizing_gates = diagonalizing_gates[:(len(diagonalizing_gates)-1)/2]
     diagonalizing_gate = ladder(wires) @ qp.prod(*diagonalizing_gates[::-1])
 
     pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)

@@ -386,13 +386,13 @@ class TestPauliRotationDecomposition:
 
         @qp.qnode(qp.device("lightning.qubit", wires=wire_order))
         def node(phi):
-            qp.S(wire)  # prepare some state
+            qp.H(wire)  # prepare some state
             qp.SX(wire)
             prepare_phase_gradient(phase_grad_wires)
             RGate(phi, wires=[wire])
 
             qp.adjoint(qp.SX(wire))  # unprepare some state
-            qp.adjoint(qp.S(wire))
+            qp.adjoint(qp.H(wire))
             return qp.state()
 
         new_node = rot_to_phase_gradient(node, angle_wires, phase_grad_wires, work_wires)
