@@ -26,15 +26,18 @@
   reversible bit encodings.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
+  [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
 
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
   ```pycon
-  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
-  >>> coefficients = np.array(coefficients)
-  >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-  >>> wires = qml.wires.Wires(range(5))
+  >>> import numpy as np
+  >>> import pennylane as qml
+  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]                   
+  >>> coefficients = np.array(coefficients)                                                            
+  >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)                                                  
+  >>> wires = list(range(5))                                                            
   ```
 
   And this is all the information we require to create the state
@@ -42,23 +45,23 @@
 
   ```python
   qml.decomposition.enable_graph()
-  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+  gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "StatePrep", "CNOT", "X"}
 
   @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-  @qml.decompose(gate_set=gate_set, num_work_wires=10)
-  @qml.qnode(qml.device("lightning.qubit", wires=13))
+  @qml.decompose(gate_set=gate_set, num_work_wires=11)
+  @qml.qnode(qml.device("lightning.qubit", wires=16))
   def circuit():
       qml.SumOfSlatersPrep(coefficients, wires, indices)
       return qml.state()
   ```
   ```pycon
-  >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
-  >>> where = np.where(prepared_state)
+  >>> prepared_state = circuit()[::2**11] # Slice the state, as there are eleven work wires
+  >>> where = np.where(np.abs(prepared_state) > 1e-12)
   >>> print(where)
   (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
   >>> print(prepared_state[where])
   [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
-   -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+    0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
   ```
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
