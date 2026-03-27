@@ -27,7 +27,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
@@ -36,7 +36,7 @@ from .symbolicop import ScalarSymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, id=None):
+def pow(base, z=1, lazy=True, id=None) -> Operator:
     """Raise an Operator to a power.
 
     Args:
