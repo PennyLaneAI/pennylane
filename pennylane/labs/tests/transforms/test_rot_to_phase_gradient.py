@@ -379,7 +379,7 @@ class TestPauliRotationDecomposition:
     )
     @pytest.mark.parametrize("use_qjit", [False, True])
     def test_integration_single_wire_qnode(self, phi, RGate, use_qjit):
-        """Test that the transform applies the RZ, RX, and RY gates correctly"""
+        """Test that the correct transform is applied"""
         precision = 3
         wire, angle_wires, phase_grad_wires, work_wires = self.make_wires(precision, use_qjit)
         wire_order = [wire] + phase_grad_wires + angle_wires + work_wires
@@ -400,7 +400,7 @@ class TestPauliRotationDecomposition:
             new_node = qp.qjit(new_node)
         output = new_node(phi)
         output_expected = qp.matrix(
-            qp.adjoint(qp.S(0)) @ qp.adjoint(qp.SX(0)) @ RGate(phi, wires=0) @ qp.SX(0) @ qp.S(0)
+            qp.adjoint(qp.H(0)) @ qp.adjoint(qp.SX(0)) @ RGate(phi, wires=0) @ qp.SX(0) @ qp.H(0)
         )[:, 0]
         B = 2**precision
         phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
