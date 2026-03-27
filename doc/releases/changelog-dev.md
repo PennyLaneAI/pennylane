@@ -337,7 +337,6 @@ The following classes have been ported over:
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
-
   @qml.qjit(target="mlir")
   @qml.transforms.to_ppr
   @qml.qnode(qml.device("null.qubit", wires=2))
@@ -350,26 +349,24 @@ The following classes have been ported over:
   ```
 
   ```pycon
-  >>> print(qml.specs(circuit, level=2)())
+  >>> print(qml.specs(circuit, level=1)())
   Device: null.qubit
   Device wires: 2
   Shots: Shots(total=None)
-  Level: 2
-
-  Resource specifications:
-      Total wire allocations: 2
-      Total gates: 11
-      Circuit depth: Not computed
-
-  Gate types:
-      GlobalPhase: 3
-      PPR-pi/4-w1: 5
-      PPR-pi/4-w2: 1
-      PPM-w1: 1
-      PPR-pi/8-w1: 1
-
+  Level: to-ppr
+  <BLANKLINE>
+  Wire allocations: 2
+  Total gates: 11
+  Gate counts:
+  - GlobalPhase: 3
+  - PPR-pi/4-w1: 5
+  - PPR-pi/4-w2: 1
+  - PPM-w1: 1
+  - PPR-pi/8-w1: 1
   Measurements:
-      expval(PauliZ): 1
+  - expval(PauliZ): 1
+  Depth: Not computed
+
   ```
 
 * :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept
@@ -535,7 +532,7 @@ The following classes have been ported over:
   ```
 
   ```pycon
-  >>> print(qml.draw(expval)(0.4))
+  >>> print(qml.draw(expval, show_matrices=False)(0.4))
   0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
   1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │
   2: ─────────────────────────┤ ╰<𝓗(M0)>
@@ -580,7 +577,7 @@ The following classes have been ported over:
 
   Instead of defining the ``CNOT`` decomposition as:
 
-  ```python
+  ```py
   def custom_cnot(wires):
     return [
       qml.Hadamard(wires=wires[1]),
