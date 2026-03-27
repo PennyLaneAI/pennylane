@@ -125,7 +125,7 @@ def _approximate_set(basis_gates, max_length=10):
 
     Args:
         basis_gates (tuple[str]): Basis set to be used for Solovay-Kitaev decomposition build using the following
-        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers to the gate adjoint.
+            terms, ``('X', 'Y', 'Z', 'H', 'T', 'Adjoint(T)', 'S', 'Adjoint(S)')``.
         max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is ``10``
 
     Returns:
@@ -142,8 +142,10 @@ def _approximate_set(basis_gates, max_length=10):
         "H": qml.Hadamard(0),
         "T": qml.T(0),
         "T*": qml.adjoint(qml.T(0)),
+        "ADJOINT(T)": qml.adjoint(qml.T(0)),
         "S": qml.S(0),
         "S*": qml.adjoint(qml.S(0)),
+        "ADJOINT(S)": qml.adjoint(qml.S(0)),
     }
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
@@ -293,8 +295,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
             a greater number of passes. Default is ``5``.
         basis_set (tuple[str]): Basis set to be used for the decomposition and building an approximate set internally.
-            It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers
-            to the gate adjoint. Default value is ``('H', 'S', 'T')``.
+            It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'Adjoint(T)', 'S', 'Adjoint(S)')`` to the
+            gate adjoint. Default value is ``('H', 'S', 'T')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
