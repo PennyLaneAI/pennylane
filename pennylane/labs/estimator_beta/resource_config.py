@@ -16,6 +16,8 @@ r"""This module contains the LabsResourceConfig class, which tracks the configur
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_config import ResourceConfig
 
+from .ops import ch_resource_decomp, hadamard_controlled_resource_decomp
+
 
 class LabsResourceConfig(ResourceConfig):
     """Sets the values of precisions and custom decompositions when estimating resources for a
@@ -92,12 +94,13 @@ class LabsResourceConfig(ResourceConfig):
         super().__init__()
 
         # Add modified decomps here:
-        custom_decomps = {}
+        custom_decomps = {qre.CH: ch_resource_decomp}
         pow_custom_decomps = {}
         adj_custom_decomps = {}
         ctrl_custom_decomps = {
             qre.PauliRot: qre.pauliRot_controlled_resource_decomp,
             qre.SelectPauliRot: qre.selectPauliRot_controlled_resource_decomp,
+            qre.Hadamard: hadamard_controlled_resource_decomp
         }
 
         self._custom_decomps = custom_decomps

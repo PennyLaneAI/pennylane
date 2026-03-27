@@ -11,6 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+<<<<<<< update_PauliRot
 r"""This module contains resource operators for single qubit operations."""
 
 from .parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp
+=======
+
+r"""This module contains alternate decompositions for single qubit operations."""
+
+from .non_parametric_ops import (
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
+>>>>>>> main
