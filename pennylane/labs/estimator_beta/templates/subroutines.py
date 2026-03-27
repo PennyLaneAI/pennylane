@@ -20,7 +20,7 @@ from pennylane.estimator import GateCount, resource_rep
 # pylint: disable=unused-argument
 
 
-def selectPauliRot_controlled_resource_decomp(
+def selectpaulirot_controlled_resource_decomp(
     num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
 ):
     r"""Returns a list representing the resources of the controlled version of the :class:`~pennylane.estimator.templates.SelectPauliRot` operator.

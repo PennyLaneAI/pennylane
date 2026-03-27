@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import resource_rep
 
 # pylint: disable = no-self-use, too-many-arguments
 class TestPauliRot:
-    """Test the Resource PauliRot class."""
+    """Test the alternate controlled decomposition for PauliRot class."""
 
     ctrl_data = (
         (
@@ -144,7 +144,7 @@ class TestPauliRot:
         op = qre.PauliRot(pauli_word, precision=1e-5)
 
         assert (
-            qre.pauliRot_controlled_resource_decomp(
+            qre.paulirot_controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
                 target_resource_params=op.resource_params,
@@ -275,7 +275,7 @@ class TestPauliRot:
         """Test that the controlled resources method produces the correct result for all special cases."""
         op = qre.PauliRot(pauli_string, precision=precision)
         assert (
-            qre.pauliRot_controlled_resource_decomp(
+            qre.paulirot_controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
                 target_resource_params=op.resource_params,
@@ -286,25 +286,25 @@ class TestPauliRot:
     @pytest.mark.parametrize(
         "num_ctrl_wires, num_zero_ctrl, pauli_string, precision, expected",
         (
-            # (
-            #     1,
-            #     0,
-            #     "X",
-            #     None,
-            #     qre.Resources(
-            #         zeroed_wires=0,
-            #         any_state_wires=0,
-            #         algo_wires=2,
-            #         gate_types=defaultdict(
-            #             int,
-            #             {
-            #                 resource_rep(qre.CNOT): 2,
-            #                 resource_rep(qre.T): 88,
-            #                 resource_rep(qre.Hadamard): 2,
-            #             },
-            #         ),
-            #     ),
-            # ),
+            (
+                1,
+                0,
+                "X",
+                None,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=2,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 2,
+                            resource_rep(qre.T): 88,
+                            resource_rep(qre.Hadamard): 2,
+                        },
+                    ),
+                ),
+            ),
             (
                 2,
                 1,

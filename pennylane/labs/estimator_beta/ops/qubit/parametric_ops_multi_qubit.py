@@ -33,7 +33,7 @@ PAULI_ROT_SPECIAL_CASES = {
 }
 
 
-def pauliRot_controlled_resource_decomp(
+def paulirot_controlled_resource_decomp(
     num_ctrl_wires: int,
     num_zero_ctrl: int,
     target_resource_params: dict,

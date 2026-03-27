@@ -14,7 +14,7 @@
 r"""This module contains resource operators for basic PennyLane Operators"""
 
 from .qubit import (
-    pauliRot_controlled_resource_decomp,
+    paulirot_controlled_resource_decomp,
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
 )

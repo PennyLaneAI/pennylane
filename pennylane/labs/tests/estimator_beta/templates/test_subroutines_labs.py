@@ -26,7 +26,7 @@ from pennylane.estimator import GateCount, ResourceConfig, resource_rep
 
 # pylint: disable=too-few-public-methods, too-many-arguments, no-self-use
 class TestResourceSelectPauliRot:
-    """Test the ResourceSelectPauliRot template"""
+    """Test the custom controlled decomposition for ResourceSelectPauliRot template"""
 
     @pytest.mark.parametrize(
         "num_ctrl_wires, num_zero_ctrl, num_ctrl_wires_base, rot_axis, precision, expected_res",
@@ -104,7 +104,7 @@ class TestResourceSelectPauliRot:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[qml.estimator.SelectPauliRot]
             assert (
-                qre.selectPauliRot_controlled_resource_decomp(
+                qre.selectpaulirot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     num_zero_ctrl=num_zero_ctrl,
                     target_resource_params={
@@ -117,7 +117,7 @@ class TestResourceSelectPauliRot:
             )
         else:
             assert (
-                qre.selectPauliRot_controlled_resource_decomp(
+                qre.selectpaulirot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     num_zero_ctrl=num_zero_ctrl,
                     target_resource_params={
