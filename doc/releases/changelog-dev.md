@@ -844,6 +844,11 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+  that an error will be raised if a ``ResourceOperator`` is encountered which does not have
+  a resource decomposition defined and is not in the provided ``gate_set``.
+  [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
+
 * Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions 
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
