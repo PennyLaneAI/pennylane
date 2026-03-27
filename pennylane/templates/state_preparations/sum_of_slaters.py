@@ -20,7 +20,12 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import allocate, for_loop, math
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 
@@ -804,7 +809,7 @@ class SumOfSlatersPrep(Operation):
          'enumeration_wires': 4,
          'identification_wires': 0,
          'qrom_work_wires': 3,
-         'mcx_cache_wire': 1}
+         'mcx_cache_wires': 1} # TODO
 
         .. note::
 
@@ -870,11 +875,11 @@ class SumOfSlatersPrep(Operation):
                 "enumeration_wires": 0,
                 "identification_wires": 0,
                 "qrom_work_wires": 0,
-                "mcx_cache_wire": 0,
+                "mcx_cache_wires": 0,
             }
 
         d = math.ceil_log2(num_entries)
-        m = 2 * d - 1
+        m = min(num_bits, 2 * d - 1)
         if num_bits <= m:
             # Identity encoding. We do not need the identification register but can use the
             # (subselection of) system wires directly
@@ -883,16 +888,12 @@ class SumOfSlatersPrep(Operation):
             # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
             num_identification = m
 
-        # If num_entries<=7, we only have encoded bits with bit count at most 2, so that we will not use
-        # a cache qubit for the MultiControlledX ops.
-        num_mcx_cache = int(num_entries > 7)
-
         return {
             "wires": num_wires,
             "enumeration_wires": d,
             "identification_wires": num_identification,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wire": num_mcx_cache,
+            "mcx_cache_wires": m - 1,
         }
 
 
@@ -927,34 +928,12 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
         resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
+    resources[resource_rep(qml.TemporaryAND)] += (num_entries - 1) * (m - 1)
+    resources[adjoint_resource_rep(qml.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
-    if m == 1:
-        mcx_rep = resource_rep(qml.CNOT)
-    elif m == 2:
-        mcx_rep = resource_rep(qml.Toffoli)
-    else:
-        mcx_params = {
-            "num_work_wires": 0,  # Work wires will be allocated by MCX itself
-            "work_wire_type": "borrowed",
-            "num_control_wires": m,
-            "num_zero_control_values": 0,
-        }
-        mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
-
-    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
-    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
-    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
-    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
-
-    # If k is a power of two, we can directly use an MCX gate
-    resources[mcx_rep] += counts.pop(1, 0)
-    # If k is a sum of two powers of two, we can directly use two MCX gates
-    resources[mcx_rep] += 2 * counts.pop(2, 0)
-    # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
-    # control to flip the targets via ``bit_count`` many CNOTs
-    resources[mcx_rep] += 2 * sum(counts.values())
-    for bit_count, count in counts.items():
-        resources[resource_rep(qml.CNOT)] += count * bit_count
+    # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
+    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    resources[resource_rep(qml.CNOT)] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
@@ -1015,7 +994,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         enumeration_wires = allocated[start : (start := start + sizes["enumeration_wires"])]
         identification_wires = allocated[start : (start := start + sizes["identification_wires"])]
         qrom_work_wires = allocated[start : (start := start + sizes["qrom_work_wires"])]
-        mcx_cache_wire = allocated[start : (start := start + sizes["mcx_cache_wire"])]
+        mcx_cache_wires = allocated[start : (start := start + sizes["mcx_cache_wires"])]
         # Step 1 in paper (p.7): Dense state preparation in enumeration register
         qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
@@ -1046,42 +1025,26 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
         mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
-        # The following functions are called conditionally from within `uncompute_enumeration`
+        # Create wires for elbow ladder
+        elbow_wires = mcx_ctrl_wires[:1] + [
+            _wires[k] for k in range(m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
+        ]
+        elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(m - 1)]
+        cnot_control_wire = elbow_wires[-1]
 
-        def single_mcx(k):
-            # If k is a power of two, we can directly use an MCX gate
-            # This is an additional optimization compared to the paper, saving one MCX gate
-            target = math.ceil_log2(k)
-            qml.MultiControlledX(mcx_ctrl_wires + [enumeration_wires[~target]])
+        @for_loop(m - 1)
+        def left_elbow_ladder(i):
+            qml.TemporaryAND(elbow_triples[i])
 
-        def two_mcx(k):
-            # If k is a sum of two powers of two, we can directly use two MCX gates
-            # This is an additional optimization compared to the paper, saving aux wire usage
-            target0 = math.ceil_log2(k) - 1
-            target1 = math.ceil_log2(k - 2**target0)
-            for target in [target0, target1]:
-                qml.MultiControlledX(mcx_ctrl_wires + [enumeration_wires[~target]])
+        @for_loop(d)
+        def cnot_loop(j, k):
+            bit_is_set = (k >> (d - 1 - j)) & 1
+            qml.cond(bit_is_set, qml.CNOT)([cnot_control_wire, enumeration_wires[j]])
+            return k
 
-        def multi_mcx_via_cache(k):
-            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
-            # control to flip the targets
-
-            # Note that this gate is a generalized left elbow, which we currently do not
-            # exploit.
-            # TODO: add decomposition that makes use of zeroed input state on target qubit.
-            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wire)
-
-            @for_loop(d)
-            def inner_loop(j):
-                bit_is_set = (k >> (d - 1 - j)) & 1
-                qml.cond(bit_is_set, qml.CNOT)([mcx_cache_wire[0], enumeration_wires[j]])
-
-            inner_loop()
-
-            # Note that this gate is a generalized right elbow, which we currently do not
-            # exploit.
-            # TODO: add decomposition that makes use of zeroed output state on target qubit.
-            qml.MultiControlledX(mcx_ctrl_wires + mcx_cache_wire)
+        @for_loop(m - 2, -1, -1)
+        def right_elbow_ladder(i):
+            qml.adjoint(qml.TemporaryAND(elbow_triples[i]))
 
         @for_loop(m)
         def flip(i, bits_to_flip):
@@ -1092,17 +1055,10 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         @for_loop(1, num_entries)
         def uncompute_enumeration(k, prev_bits):
             bits = b_bits[:, k]
-            flip_bits = bits ^ prev_bits
-
-            flip(flip_bits)
-
-            bit_count = np.bitwise_count(k)
-            qml.cond(
-                bit_count == 1,
-                true_fn=single_mcx,
-                elifs=((bit_count == 2, two_mcx),),
-                false_fn=multi_mcx_via_cache,
-            )(k)
+            flip(bits ^ prev_bits)
+            left_elbow_ladder()
+            cnot_loop(k)
+            right_elbow_ladder()
             return bits
 
         last_bits = uncompute_enumeration(np.ones(m, dtype=int))
