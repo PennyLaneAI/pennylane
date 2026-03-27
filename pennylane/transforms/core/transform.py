@@ -109,16 +109,19 @@ def specific_apply_transform(transform, obj, *targs, **tkwargs):
 
 @singledispatch
 def generic_apply_transform(obj, transform, *targs, **tkwargs):
-    """Apply an generic transform to a specific type of object. A singledispatch function
-    used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
-    to allow is to be used by singledispatch.
+    """Apply a generic transform to a generic type of object.
 
     When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
     this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
 
-        decompose(gate_set=gate_set) + merge_rotations(1e-6)
+    >>> from pennylane.transforms import decompose, merge_rotations
+    >>> decompose(gate_set=qml.gate_sets.ALL_OPS) + merge_rotations(1e-6)
+    CompilePipeline(
+      [1] <decompose(gate_set=All PennyLane Gates)>,
+      [2] <merge_rotations(1e-06)>
+    )
 
-    where transforms are called with just configuration parameters and combined into a CompilePipeline
+    where transforms are called with just configuration parameters and combined into a CompilePipeline.
     """
     # If the first argument is not a valid dispatch target, return a BoundTransform
     # with the first argument and any additional args/kwargs stored as transform parameters.

@@ -606,6 +606,55 @@ class TestInterfaces:
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "unitary",
+        [
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                ]
+            ),  # complex unitary
+            np.array(
+                [
+                    [-0.22081075, -0.29306608, -0.93024453],
+                    [-0.67705210, -0.64047179, 0.36248634],
+                    [-0.70202783, 0.70986489, -0.05699795],
+                ]
+            ),  # real unitary
+        ],
+    )
+    @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_qjit(self, unitary, device_name, tol):
+        """Test with qjit interface."""
+        catalyst = pytest.importorskip("catalyst")
+
+        unitary_matrix = qml.math.array(unitary, like="jax")
+
+        dev = qml.device(device_name, wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+
+        # We compute these results with `null.qubit` even though we won't compare them. This
+        # is to test error-free "execution".
+        res = catalyst.qjit(circuit)(unitary_matrix)
+        res2 = circuit(unitary_matrix)
+        res3 = circuit(qml.math.toarray(unitary_matrix))
+
+        if device_name == "lightning.qubit":
+            assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+            assert qml.math.allclose(res, res3, atol=tol, rtol=0)
+
+        gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
+        circuit_dec = qml.decompose(circuit, gate_set=gate_set)
+        specs = qml.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs2 = qml.specs(circuit_dec, level="device")(unitary_matrix)
+        assert specs["resources"].gate_types == specs2["resources"].gate_types
+        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
+
     @pytest.mark.slow
     @pytest.mark.tf
     def test_tf(self, tol):

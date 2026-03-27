@@ -62,7 +62,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
     .. note::
 
         Subroutines are only available when using the program capture
-        interface. To activate the program capture interface with Catalyst, 
+        interface. To activate the program capture interface with Catalyst,
         please set `qml.qjit(capture=True)`.
 
     Args:

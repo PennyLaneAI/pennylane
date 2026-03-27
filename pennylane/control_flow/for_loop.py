@@ -156,7 +156,7 @@ def for_loop(
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         The following discussion applies to the experimental capture infrastructure, which can be
-        turned on with ``qml.qjit(capture=True)`` when using Catalyst. 
+        turned on with ``qml.qjit(capture=True)`` when using Catalyst.
         See the ``capture`` module for more information.
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is

@@ -280,7 +280,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
 
             ppm = qml.pauli_measure(pauli_word="ZX", wires=[0, 1])
 
-            return 
+            return
 
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
