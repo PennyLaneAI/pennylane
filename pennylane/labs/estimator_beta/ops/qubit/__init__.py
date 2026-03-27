@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-r"""This module contains single qubit operations."""
+r"""This module contains resource operators for single qubit operations."""
 
 from .parametric_ops_multi_qubit import pauliRot_controlled_resource_decomp
