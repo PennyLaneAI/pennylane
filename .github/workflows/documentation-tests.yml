@@ -103,14 +103,15 @@ jobs:
 
       - name: Test 'doc' folder
         run: |
-          IGNORE_TODO="
+          IGNORE_WONTFIX="
           --ignore=doc/code
-          --ignore=doc/demos_getting-started
-          --ignore=doc/development
-          --ignore=doc/news
           --ignore=doc/releases
           --ignore=doc/_static
           --ignore=doc/_templates
+          "
+          IGNORE_TODO="
+          --ignore=doc/development
+          --ignore=doc/news
           --ignore=doc/introduction/chemistry.rst
           --ignore=doc/introduction/compiling_circuits.rst
           --ignore=doc/introduction/compiling_workflows.rst
@@ -127,4 +128,9 @@ jobs:
           --ignore=doc/introduction/unsupported_gradients.rst
           "
 
-          pytest doc ${IGNORE_TODO}
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest doc ${IGNORE}
