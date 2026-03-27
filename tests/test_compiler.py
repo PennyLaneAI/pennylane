@@ -316,6 +316,26 @@ class TestCatalyst:
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
+    def test_while_loop_defined_outside_qjit(self):
+        """Test that the while loop can be defined outside the qjit."""
+
+        @qml.while_loop(lambda n: n < 4)
+        def w(n):
+            return n + 1
+
+        res = qml.qjit(w)(0)
+        assert qml.math.allclose(res, 4)
+
+    def test_for_loop_defined_outside_qjit(self):
+        """Test that a for_loop can be defined outside the qjit."""
+
+        @qml.for_loop(5)
+        def f(i, x):
+            return x + i
+
+        res = qml.qjit(f)(0)
+        assert qml.math.allclose(res, 10)
+
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -539,6 +559,30 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
+    @pytest.mark.parametrize("argnums", (None, 0))
+    @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
+    def test_lazy_dispatch_grad(self, g_fn, argnums):
+        """Test that grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        g = qml.qjit(g_fn(f, argnums=argnums))(0.5)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
+    @pytest.mark.parametrize("argnums", (None, 0))
+    def test_lazy_dispatch_value_and_grad(self, argnums):
+        """Test that value_and_grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        r, g = qml.qjit(qml.value_and_grad(f, argnums=argnums))(0.5)
+        assert qml.math.allclose(r, 0.25)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -608,7 +652,7 @@ class TestCatalystGrad:
 
         @qml.qjit
         def dsquare(x: float):
-            return catalyst.grad(square)(x)
+            return qml.grad(square)(x)
 
         assert jnp.allclose(dsquare(2.3), 4.6)
 
@@ -626,7 +670,7 @@ class TestCatalystGrad:
             return qml.jacobian(func, method="auto")(p)
 
         result = workflow(0.5)
-        reference = qml.jacobian(func, argnum=0)(0.5)
+        reference = qml.jacobian(func, argnums=0)(0.5)
 
         assert jnp.allclose(result, reference)
 
@@ -667,12 +711,6 @@ class TestCatalystGrad:
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
 
-        with pytest.raises(
-            ValueError,
-            match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
-        ):
-            workflow(np.array([2.0, 1.0]))
-
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 
@@ -691,6 +729,42 @@ class TestCatalystGrad:
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
         assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
 
+    def test_jvp_argnums(self):
+        """Test that res."""
+
+        def f(x, y):
+            return y * x**2
+
+        @qml.qjit
+        def w(x, y):
+            return qml.jvp(f, [x, y], [1.0], argnums=[1])
+
+        x = jnp.array(0.5)
+        y = jnp.array(3.0)
+
+        res, dres = w(x, y)
+
+        assert qml.math.allclose(res, f(x, y))
+        assert qml.math.allclose(dres, x**2)
+
+    def test_vjp_argnums(self):
+        """Test that res."""
+
+        def f(x, y):
+            return y * x**2
+
+        @qml.qjit
+        def w(x, y):
+            return qml.vjp(f, [x, y], [1.0], argnums=[1])
+
+        x = jnp.array(0.5)
+        y = jnp.array(3.0)
+
+        res, dres = w(x, y)
+
+        assert qml.math.allclose(res, f(x, y))
+        assert qml.math.allclose(dres, x**2)
+
     def test_jvp_without_qjit(self):
         """Test that an error is raised when using JVP without QJIT."""
 
@@ -705,7 +779,7 @@ class TestCatalystGrad:
         tangent = jnp.array([0.3, 0.6])
 
         with pytest.raises(
-            CompileError, match="Pennylane does not support the JVP function without QJIT."
+            CompileError, match="PennyLane does not support the JVP function without QJIT."
         ):
             jvp(x, tangent)
 
@@ -726,25 +800,7 @@ class TestCatalystGrad:
         res = vjp(x, dy)
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1][0], jnp.array([-0.43750208, 0.07000001]))
-
-    def test_vjp_without_qjit(self):
-        """Test that an error is raised when using VJP without QJIT."""
-
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
-
-            return qml.vjp(f, [params], [cotangent])
-
-        x = jnp.array([0.1, 0.2])
-        dy = jnp.array([-0.5, 0.1, 0.3])
-
-        with pytest.raises(
-            CompileError, match="Pennylane does not support the VJP function without QJIT."
-        ):
-            vjp(x, dy)
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
 class TestCatalystSample:
@@ -753,9 +809,10 @@ class TestCatalystSample:
     def test_sample_measure(self):
         """Test that qml.sample can be used with catalyst.measure."""
 
-        dev = qml.device("lightning.qubit", wires=1, shots=1)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -794,9 +851,10 @@ class TestCatalystMCMs:
 
         shots = 8000
 
-        dq = qml.device("default.qubit", shots=shots, seed=seed)
+        dq = qml.device("default.qubit", seed=seed)
 
         @qml.defer_measurements
+        @qml.set_shots(shots)
         @qml.qnode(dq)
         def ref_func(x, y):
             qml.RX(x, wires=0)
@@ -810,9 +868,10 @@ class TestCatalystMCMs:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)

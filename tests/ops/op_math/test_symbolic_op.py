@@ -12,15 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the SymbolicOp class of qubit operations"""
+
 from copy import copy
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
+
+
+def test_id_deprecation():
+    """Tests that the id kwarg is deprecated"""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = SymbolicOp(qml.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
@@ -43,15 +52,14 @@ class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-def test_intialization():
+def test_initialization():
     """Test initialization for a SymbolicOp"""
     base = Operator("a")
 
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
 
     assert op.base is base
     assert op.hyperparameters["base"] is base
-    assert op.id == "something"
     assert op.name == "Symbolic"
 
 
@@ -74,7 +82,7 @@ def test_copy():
 def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
     # pylint:disable=attribute-defined-outside-init,protected-access
     op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
@@ -150,11 +158,11 @@ class TestProperties:
         """Test that symbolic op is hermitian if the base is hermitian."""
 
         class DummyOp(Operator):
-            is_hermitian = is_herm
+            is_verified_hermitian = is_herm
 
         base = DummyOp("b")
         op = SymbolicOp(base)
-        assert op.is_hermitian == is_herm
+        assert op.is_verified_hermitian == is_herm
 
     @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
@@ -189,6 +197,15 @@ class TestProperties:
         base = Operator("a")
         op = SymbolicOp(base)
         assert op.pauli_rep is None
+
+    def test_raise_error_with_mcm_input(self):
+        """Test that symbolic ops of mid-circuit measurements are not supported."""
+        mcm = qml.ops.MidMeasure(0)
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(mcm)
+        ppm = qml.ops.PauliMeasure("XY", wires=[0, 1])
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(ppm)
 
 
 class TestQueuing:

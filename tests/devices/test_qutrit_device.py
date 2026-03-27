@@ -1057,11 +1057,11 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,expected_shape", shot_data)
     def test_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         """Test a probability return"""
-        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+        dev = mock_qutrit_device_shots(wires=2)
 
         shots = qml.measurements.Shots(shot_list)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shot_list)
         def circuit(x, z):
             RZ_01 = pnp.array(
                 [
@@ -1085,15 +1085,15 @@ class TestShotList:
             assert isinstance(res, tuple)
             copies = shot_list[0][1]
             assert len(res) == copies
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
-        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     marginal_shot_data = [
         [[1, 2, 3, 10], (4, 3)],
@@ -1105,11 +1105,11 @@ class TestShotList:
     @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,expected_shape", marginal_shot_data)
     def test_marginal_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
-        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+        dev = mock_qutrit_device_shots(wires=2)
 
         shots = qml.measurements.Shots(shot_list)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shot_list)
         def circuit(x, z):
             RZ_01 = pnp.array(
                 [
@@ -1133,16 +1133,16 @@ class TestShotList:
             assert isinstance(res, tuple)
             copies = shot_list[0][1]
             assert len(res) == copies
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     shot_data = [
         [[1, 2, 3, 10], (4, 3, 2)],
@@ -1155,11 +1155,11 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,expected_shape", shot_data)
     def test_multiple_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         """Test multiple probability returns"""
-        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+        dev = mock_qutrit_device_shots(wires=2)
 
         shots = qml.measurements.Shots(shot_list)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shot_list)
         def circuit(U):
             qml.QutritUnitary(np.eye(3), wires=0)
             qml.QutritUnitary(np.eye(3), wires=0)
@@ -1172,16 +1172,16 @@ class TestShotList:
             assert isinstance(res, tuple)
             copies = shot_list[0][1]
             assert len(res) == copies
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device.shots == shots
+            assert circuit.shots == shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
+        # res = qml.jacobian(circuit, argnums=[0])(pnp.eye(9, dtype=np.complex128))
 
 
 class TestUnimplemented:

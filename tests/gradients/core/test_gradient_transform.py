@@ -24,7 +24,7 @@ from pennylane.gradients.gradient_transform import (
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 
 def test_supported_gradient_kwargs():
@@ -40,7 +40,7 @@ def test_supported_gradient_kwargs():
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
-        if isinstance(obj, TransformDispatcher):
+        if isinstance(obj, Transform):
             grad_transforms.append(obj)
 
     # Collect arguments of all gradient transforms
@@ -226,8 +226,9 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights):
             if slicing:
@@ -255,8 +256,9 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=[0])
@@ -290,8 +292,9 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weight0, weight1):
             qml.RX(weight0, wires=[0])
@@ -372,10 +375,17 @@ class TestGradientTransformIntegration:
 
             grad_method = None
 
+            # hard coded false in rx
+            has_decomposition = True
+
             @staticmethod
-            def compute_decomposition(x, wires):
+            def compute_decomposition(phi, wires):
                 """Decompose into a qml.RX gate."""
-                return [qml.RX(x, wires=wires)]
+                return [qml.RX(phi, wires=wires)]
+
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(phi, wires):
+            qml.RX(phi, wires)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -388,7 +398,10 @@ class TestGradientTransformIntegration:
         grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
-        res = grad_fn(w)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NonDiffRXGate, _decomp)
+            res = grad_fn(w)
 
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])

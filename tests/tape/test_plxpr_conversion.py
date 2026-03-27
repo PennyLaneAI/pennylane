@@ -14,18 +14,20 @@
 """
 Tests for CollectOpsandMeas and plxpr_to_tape
 """
+from functools import partial
+
 import pytest
 
 import pennylane as qml
+from pennylane.ops.op_math.condition import Conditional
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-
-from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
-    CollectOpsandMeas,
-)
+# pylint: disable=wrong-import-position
+from pennylane.ops.mid_measure import MidMeasure
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestCollectOpsandMeas:
@@ -48,6 +50,39 @@ class TestCollectOpsandMeas:
         assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
+
+    def test_subroutine(self):
+        """Test that CollectOpsandMeas collects a subroutine into a placeholder op."""
+
+        @partial(qml.templates.Subroutine, static_argnames="pauli_word")
+        def MyFunc(x, wires, pauli_word):
+            qml.PauliRot(x, pauli_word, wires)
+
+        def workflow(x):
+            MyFunc(x, (0, 1), "XY")
+            MyFunc(x + 1, (2, 3), "YZ")
+            MyFunc(x + 2, (3, 4), "XY")
+
+        interpreter = CollectOpsandMeas()
+        x = 0.5
+        interpreter(workflow)(x)
+
+        ops = interpreter.state["ops"]
+        for op in ops:
+            assert op.name == "MyFunc"
+            assert repr(op) == "<CollectedSubroutine: MyFunc>"
+
+        assert ops[0].wires == qml.wires.Wires((0, 1))
+        assert ops[1].wires == qml.wires.Wires((2, 3))
+        assert ops[2].wires == qml.wires.Wires((3, 4))
+
+        qml.assert_equal(ops[0].decomposition()[0], qml.PauliRot(0.5, "XY", (0, 1)))
+        qml.assert_equal(
+            ops[1].decomposition()[0], qml.PauliRot(jax.numpy.array(1.5), "YZ", (2, 3))
+        )
+        qml.assert_equal(
+            ops[2].decomposition()[0], qml.PauliRot(jax.numpy.array(2.5), "XY", (3, 4))
+        )
 
     def test_for_loop(self):
         """Test collecting the operations in a for loop."""
@@ -118,7 +153,7 @@ class TestCollectOpsandMeas:
         obj(f)()
 
         assert len(obj.state["ops"]) == 1
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasure)
         assert obj.state["ops"][0].wires == qml.wires.Wires(0)
 
         assert isinstance(obj.state["measurements"][0], qml.measurements.SampleMP)
@@ -141,7 +176,7 @@ class TestCollectOpsandMeas:
         mv = obj(f)(x)
 
         assert len(obj.state["ops"]) == 2
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasure)
         assert mv.measurements[0] is obj.state["ops"][0]
 
         qml.assert_equal(obj.state["ops"][1], qml.ops.Conditional(mv, qml.RX(x, 2)))
@@ -256,9 +291,76 @@ class TestCollectOpsandMeas:
         grad_fn = fn(g)
         with pytest.raises(
             NotImplementedError,
-            match=f"CollectOpsandMeas cannot handle the {fn.__name__} primitive",
+            match="CollectOpsandMeas cannot handle the jacobian primitive",
         ):
             collector(grad_fn)(0.5)
+
+    def test_value_and_grad_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the value_and_grad of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        collector = CollectOpsandMeas()
+        grad_fn = qml.value_and_grad(g)
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the value_and_grad primitive",
+        ):
+            collector(grad_fn)(0.5)
+
+    def test_vjp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the vjp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.vjp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the vjp primitive",
+        ):
+            collector(w)(0.5)
+
+    def test_jvp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the jvp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.jvp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the jvp primitive",
+        ):
+            collector(w)(0.5)
 
     def test_qnode(self):
         """Test that collecting ops from a QNode works."""
@@ -392,7 +494,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(tape.operations) == 1
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasure)
         assert tape.operations[0].wires == qml.wires.Wires(0)
 
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
@@ -415,7 +517,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasure)
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
         mp = tape.measurements[0]
         assert mp.mv.measurements[0] is tape.operations[0]
@@ -442,7 +544,11 @@ class TestPlxprToTape:
         x = jax.numpy.array(0.5)
         jaxpr = jax.make_jaxpr(f)(x)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
-        assert tape  # TODO
+        assert len(tape.operations) == 5
+        assert isinstance(tape.operations[0], MidMeasure)
+        assert isinstance(tape.operations[1], MidMeasure)
+        for i in range(2, 5):
+            assert isinstance(tape.operations[i], Conditional)
 
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):
@@ -501,3 +607,21 @@ class TestPlxprToTape:
         jaxpr = jax.make_jaxpr(f)(0.5, False)
         with pytest.raises(ValueError, match="Cannot use qml.cond with a combination"):
             qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, False)
+
+    def test_dynamic_allocation(self):
+        """Tests that circuits containing dynamic wire allocation can be converted."""
+
+        def circuit():
+            qml.H(0)
+            with qml.allocation.allocate(2, state="zero", restored=True) as wires:
+                qml.CNOT(wires)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert len(tape.operations) == 4
+        qml.assert_equal(tape.operations[0], qml.H(0))
+        assert isinstance(tape.operations[1], qml.allocation.Allocate)
+        assert isinstance(tape.operations[2], qml.CNOT)
+        assert tape.operations[2].wires == tape.operations[1].wires
+        assert isinstance(tape.operations[3], qml.allocation.Deallocate)
+        assert tape.operations[3].wires == tape.operations[1].wires

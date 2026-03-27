@@ -17,42 +17,108 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .arbitrary_unitary import ArbitraryUnitary
-from .approx_time_evolution import ApproxTimeEvolution
-from .commuting_evolution import CommutingEvolution
-from .fermionic_double_excitation import FermionicDoubleExcitation
+from .time_evolution import (
+    ApproxTimeEvolution,
+    CommutingEvolution,
+    QDrift,
+    TrotterizedQfunc,
+    TrotterProduct,
+    trotterize,
+)
 from .interferometer import Interferometer
-from .fermionic_single_excitation import FermionicSingleExcitation
-from .uccsd import UCCSD
 from .permute import Permute
 from .qft import QFT
 from .qpe import QuantumPhaseEstimation
 from .qmc import QuantumMonteCarlo
-from .all_singles_doubles import AllSinglesDoubles
 from .grover import GroverOperator
-from .kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
-from .basis_rotation import BasisRotation
 from .fable import FABLE
 from .select import Select
 from .prepselprep import PrepSelPrep
 from .reflection import Reflection
 from .qubitization import Qubitization
-from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
-from .trotter import TrotterProduct, TrotterizedQfunc, trotterize
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
+from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
+from .iqp import IQP
 from .qrom import QROM
-from .phase_adder import PhaseAdder
-from .adder import Adder
-from .multiplier import Multiplier
-from .out_multiplier import OutMultiplier
-from .out_adder import OutAdder
-from .mod_exp import ModExp
-from .out_poly import OutPoly
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
-from .temporary_and import TemporaryAND, Elbow
-from .semi_adder import SemiAdder
 from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
+
+from .qchem import (
+    FermionicDoubleExcitation,
+    FermionicSingleExcitation,
+    UCCSD,
+    AllSinglesDoubles,
+    kUpCCGSD,
+    BasisRotation,
+)
+from .arithmetic import (
+    PhaseAdder,
+    Adder,
+    Multiplier,
+    OutMultiplier,
+    OutAdder,
+    ModExp,
+    OutPoly,
+    SemiAdder,
+    Elbow,
+    TemporaryAND,
+)
+
+__all__ = [
+    "ArbitraryUnitary",
+    "ApproxTimeEvolution",
+    "BBQRAM",
+    "CommutingEvolution",
+    "QDrift",
+    "TrotterizedQfunc",
+    "TrotterProduct",
+    "trotterize",
+    "Interferometer",
+    "IQP",
+    "Permute",
+    "QFT",
+    "QuantumPhaseEstimation",
+    "GroverOperator",
+    "HilbertSchmidt",
+    "HybridQRAM",
+    "LocalHilbertSchmidt",
+    "FlipSign",
+    "BasisRotation",
+    "QuantumMonteCarlo",
+    "FABLE",
+    "Select",
+    "SelectOnlyQRAM",
+    "PrepSelPrep",
+    "Reflection",
+    "Qubitization",
+    "ControlledSequence",
+    "AQFT",
+    "AmplitudeAmplification",
+    "QROM",
+    "GQSP",
+    "SelectPauliRot",
+    "poly_to_angles",
+    "QSVT",
+    "qsvt",
+    "transform_angles",
+    "FermionicDoubleExcitation",
+    "FermionicSingleExcitation",
+    "UCCSD",
+    "AllSinglesDoubles",
+    "kUpCCGSD",
+    "PhaseAdder",
+    "Adder",
+    "Multiplier",
+    "OutMultiplier",
+    "OutAdder",
+    "ModExp",
+    "OutPoly",
+    "SemiAdder",
+    "Elbow",
+    "TemporaryAND",
+]

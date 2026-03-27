@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 from types import FunctionType
 
 from pennylane import templates
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
 from pennylane.ops.op_math import Adjoint
@@ -99,13 +100,11 @@ def insert(
 
     The following QNode can be transformed to add noise to the circuit:
 
-    .. code-block:: python3
-
-        from functools import partial
+    .. code-block:: python
 
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.noise.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+        @qml.noise.insert(op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -118,7 +117,7 @@ def insert(
     Executions of this circuit will differ from the noise-free value:
 
     >>> f(0.9, 0.4, 0.5, 0.6)
-    tensor(0.754847, requires_grad=True)
+    np.float64(0.7548469968854761)
     >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
@@ -131,7 +130,7 @@ def insert(
         Instead of specifying ``op`` as a single :class:`~.Operation`, we can instead define a
         quantum function. For example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def op(x, y, wires):
                 qml.RX(x, wires=wires)
@@ -139,12 +138,12 @@ def insert(
 
         This operation can be inserted into the following circuit:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @partial(qml.transforms.insert, op=op, op_args=[0.2, 0.3], position="end")
+            @qml.noise.insert(op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -163,7 +162,7 @@ def insert(
 
         Consider the following tape:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             ops = [
                 qml.RX(0.9, wires=0),
@@ -177,7 +176,7 @@ def insert(
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
-        >>> from pennylane.transforms import insert
+        >>> from pennylane.noise import insert
         >>> [noisy_tape], _ = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
@@ -187,7 +186,7 @@ def insert(
 
         Consider the following QNode:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.mixed", wires=2)
 
@@ -204,14 +203,14 @@ def insert(
         Execution of the circuit on ``dev`` will be noise-free:
 
         >>> qnode(0.9, 0.4, 0.5, 0.6)
-        tensor(0.86243536, requires_grad=True)
+        np.float64(0.8624353588253786)
 
         However, noise can be easily added to the device:
 
         >>> dev_noisy = qml.noise.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
-        tensor(0.72945434, requires_grad=True)
+        np.float64(0.7294543367428854)
     """
 
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
@@ -223,7 +222,11 @@ def insert(
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(
-        tape, stopping_condition=stop_at, name="insert", error=DecompositionUndefinedError
+        tape,
+        target_gates=gate_sets.ALL_OPS,
+        stopping_condition=stop_at,
+        name="insert",
+        error=DecompositionUndefinedError,
     )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
@@ -258,7 +261,10 @@ def insert(
 
         if req_ops:
             for operation in req_ops:
-                if operation == type(circuit_op):
+                # Use `isinstance` rather than checking `operation == type(circuit_op)`
+                # circuit_op is an instance of an operation.
+                # operation is a type; either Operator or some subclass of Operator.
+                if isinstance(circuit_op, operation):
                     for w in circuit_op.wires:
                         sub_tape = make_qscript(op)(*op_args, wires=w)
                         new_operations.extend(sub_tape.operations)
@@ -274,7 +280,7 @@ def insert(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

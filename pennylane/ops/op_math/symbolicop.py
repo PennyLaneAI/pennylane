@@ -14,12 +14,15 @@
 """
 This submodule defines a base class for symbolic operations representing operator math.
 """
+
+import warnings
 from abc import abstractmethod
 from copy import copy
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
@@ -73,9 +76,19 @@ class SymbolicOp(Operator):
     # pylint: disable=super-init-not-called
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
+        if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+            raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
         self._id = id
         self._pauli_rep = None
         self.queue()
+        self._wires = base.wires
+        self.__queue_category = base._queue_category  # pylint: disable=protected-access
 
     @property
     def batch_size(self):
@@ -99,11 +112,6 @@ class SymbolicOp(Operator):
     def num_params(self):
         return self.base.num_params
 
-    @property
-    @handle_recursion_error
-    def wires(self):
-        return self.base.wires
-
     # pylint:disable = missing-function-docstring
     @property
     @handle_recursion_error
@@ -121,12 +129,12 @@ class SymbolicOp(Operator):
         return self.base.has_matrix
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian
 
     @property
     def _queue_category(self):
-        return self.base._queue_category  # pylint: disable=protected-access
+        return self.__queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
         context.remove(self.base)
@@ -150,7 +158,9 @@ class SymbolicOp(Operator):
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
         new_op = copy(self)
-        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        new_base = self.base.map_wires(wire_map=wire_map)
+        new_op.hyperparameters["base"] = new_base
+        new_op._wires = new_base.wires  # pylint:disable=protected-access
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
         return new_op
@@ -265,7 +275,9 @@ class ScalarSymbolicOp(SymbolicOp):
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
-        elif scalar_interface == "tensorflow":
+        elif (
+            scalar_interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             # just cast everything to complex128. Otherwise we may have casting problems
             # where things get truncated like in SProd(tf.Variable(0.1), qml.X(0))
             scalar = qml.math.cast(scalar, "complex128")

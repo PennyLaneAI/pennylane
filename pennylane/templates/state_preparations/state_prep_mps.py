@@ -254,7 +254,7 @@ class MPSPrep(Operation):
 
     Example using the ``lightning.tensor`` device:
 
-    .. code-block::
+    .. code-block:: python
 
         mps = [
             np.array([[0.0, 0.107], [0.994, 0.0]]),
@@ -267,21 +267,21 @@ class MPSPrep(Operation):
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
+    .. code-block::
+
         dev = qml.device("lightning.tensor", wires=3)
         @qml.qnode(dev)
         def circuit():
             qml.MPSPrep(mps, wires = [0,1,2])
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
+    >>> print(circuit()) # doctest: +SKIP
+    [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
+    0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
 
     Example using the ``default.qubit`` device:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=4)
         @qml.qnode(dev)
@@ -289,11 +289,9 @@ class MPSPrep(Operation):
             qml.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit()[:8])
-        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
+    >>> print(circuit()[:8]) # doctest: +SKIP
+    [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
+      0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
 
     .. details::
         :title: Usage Details
@@ -404,15 +402,12 @@ class MPSPrep(Operation):
             self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None):
-        # pylint: disable=arguments-differ
-        if cls._primitive is None:
-            # guard against this being called when primitive is not defined.
-            return type.__call__(
-                cls, mps=mps, wires=wires, id=id, work_wires=work_wires
-            )  # pragma: no cover
-        return cls._primitive.bind(*mps, wires=wires, id=id, work_wires=work_wires)
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None, right_canonicalize=False):
+        return super()._primitive_bind_call(
+            *mps, wires=wires, work_wires=work_wires, id=id, right_canonicalize=right_canonicalize
+        )
 
     def decomposition(self):
         filtered_hyperparameters = {
@@ -455,7 +450,8 @@ class MPSPrep(Operation):
 
         if max_bond_dimension > 2 ** len(work_wires):
             raise ValueError(
-                f"Incorrect number of `work_wires`. At least {int(qml.math.ceil(qml.math.log2(max_bond_dimension)))} `work_wires` must be provided."
+                "Incorrect number of `work_wires`. At least "
+                f"{qml.math.ceil_log2(max_bond_dimension)} `work_wires` must be provided."
             )
 
         ops = []
@@ -508,8 +504,9 @@ class MPSPrep(Operation):
 if MPSPrep._primitive is not None:  # pylint: disable=protected-access
 
     @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, **kwargs):
-        return type.__call__(MPSPrep, args, **kwargs)
+    def _(*args, n_wires, **kwargs):
+        mps, wires = args[:-n_wires], args[-n_wires:]
+        return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
 def _mps_prep_decomposition_resources(

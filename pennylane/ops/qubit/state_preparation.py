@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+from importlib.util import find_spec
+
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
@@ -24,7 +26,12 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qml
 from pennylane import math
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    pow_resource_rep,
+    register_condition,
+    register_resources,
+)
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
@@ -76,6 +83,10 @@ class BasisState(StatePrepBase):
     """
 
     resource_keys = {"num_wires"}
+
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -185,35 +196,59 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
+def _jax_jit_basis_state_resources(num_wires):
+    resources = {
+        pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
+        pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
+    }
+    return resources
+
+
+def _jax_jit_basis_state_cond(**_):
+    if qml.capture.enabled() or qml.compiler.active():
+        return False
+
+    if find_spec("jax") is None:
+        return False
+
+    x = qml.math.array(0.2, like="jax")
+    # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
+    return qml.math.is_abstract(x)
+
+
+@register_condition(_jax_jit_basis_state_cond)
+@register_resources(_jax_jit_basis_state_resources, exact=False)
+def _jax_jit_basis_state_decomp(state, wires, **__):
+    _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+
+
 def _basis_state_decomp_resources(num_wires):
-    # Represent one of the X gates as an RX and a GlobalPhase because RX is
-    # used when jax-jit is enabled without capture/qjit.
-    return {qml.X: num_wires - 1 or num_wires, qml.RX: 1, qml.GlobalPhase: 1}
+    return {qml.X: num_wires - num_wires // 2}
 
 
-@register_resources(_basis_state_decomp_resources)
+@register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
+@register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    if qml.math.is_abstract(state) and not (qml.capture.enabled() or qml.compiler.active()):
-        # This branch is for supporting jax-jit without capture/qjit.
-        global_phase = 0.0
-        for wire, basis in zip(wires, state):
-            qml.RX(basis * np.pi, wires=wire)
-            global_phase += basis * np.pi / 2
-        qml.GlobalPhase(-global_phase)
-        return
+    if qml.capture.enabled() or qml.compiler.active():
+        # This branch makes sure that state and wires are cast to objects into which
+        # a traced loop index is allowed to index (if they aren't already traced)
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
-    def _X(w):
-        qml.X(w)
+        if not qml.math.is_abstract(state):
+            state = jnp.array(state)
 
-    @qml.for_loop(0, len(wires), 1)
+        if not qml.math.is_abstract(wires):
+            wires = jnp.array(wires)
+
+    @qml.for_loop(len(state))
     def _loop(i):
-        qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
+        qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp)
+add_decomps(BasisState, _basis_state_decomp, _jax_jit_basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
@@ -271,7 +306,7 @@ class StatePrep(StatePrepBase):
         The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
 
         >>> state
-        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
+        array([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j])
 
     .. details::
         :title: Usage Details
@@ -296,7 +331,7 @@ class StatePrep(StatePrepBase):
             res, state = circuit([15, 15, 15, 15])
 
         >>> state
-        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
+        array([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j])
 
         **Padding**
 
@@ -315,7 +350,7 @@ class StatePrep(StatePrepBase):
             res, state = circuit([1/sqrt(2), 1/sqrt(2)])
 
         >>> state
-        tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
+        array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
 
         **Sparse state input**
         `state` can also be provided as a sparse matrix.  The state will be implicitly
@@ -323,18 +358,17 @@ class StatePrep(StatePrepBase):
 
         .. code-block:: pycon
 
-            >>> import scipy as sp
             >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
             >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
             >>> wire_order = [0, 1, 2]
             >>> ket = qsv_op.state_vector(wire_order=wire_order)
             >>> print(ket)  # Sparse representation
-            <Compressed Sparse Row sparse matrix of dtype 'float64'
-                    with 1 stored elements and shape (1, 8)>
-              Coords        Values
-              (0, 2)        1.0
+            <Compressed Sparse Row sparse array of dtype 'int64'
+                with 1 stored elements and shape (1, 8)>
+              Coords    Values
+              (0, 2)    1
             >>> print(ket.toarray().flatten())  # Dense representation
-            [0. 0. 1. 0. 0. 0. 0. 0.]
+            [0 0 1 0 0 0 0 0]
 
             # Normalization also works with sparse inputs:
             >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
@@ -364,7 +398,7 @@ class StatePrep(StatePrepBase):
         state: TensorLike | csr_matrix,
         wires: WiresLike,
         pad_with=None,
-        normalize=False,
+        normalize: bool = False,
         id: str | None = None,
         validate_norm: bool = False,
     ):
@@ -414,7 +448,7 @@ class StatePrep(StatePrepBase):
         **Example:**
 
         >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
-        [MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1])]
+        [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
         return [MottonenStatePreparation(state, wires)]
@@ -569,7 +603,7 @@ class StatePrep(StatePrepBase):
             # pad a csr_matrix with zeros
             state.resize((1, dim))
 
-        if not validate_norm:
+        if not (validate_norm or normalize):
             return state
 
         # normalize
@@ -646,10 +680,10 @@ class QubitDensityMatrix(Operation):
         Running this circuit:
 
         >>> circuit()
-        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
+        array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
     """
 
     num_params = 1

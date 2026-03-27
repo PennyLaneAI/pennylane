@@ -18,6 +18,8 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
+from pennylane.decomposition import add_decomps
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import AdjointUndefinedError
 from pennylane.operation import Operation
 from pennylane.wires import Wires
@@ -98,7 +100,7 @@ class TShift(Operation):
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
+        [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
         """
         return np.array([OMEGA, OMEGA**2, 1])
 
@@ -408,6 +410,9 @@ class TSWAP(Operation):
         return TSWAP(wires=self.wires)
 
 
+add_decomps("Adjoint(TSWAP)", self_adjoint)
+
+
 class THadamard(Operation):
     r"""THadamard(wires, subspace)
     The ternary Hadamard operator
@@ -475,9 +480,7 @@ class THadamard(Operation):
 
     def __init__(self, wires, subspace=None):
         self._subspace = validate_subspace(subspace) if subspace is not None else None
-        self._hyperparameters = {
-            "subspace": self.subspace,
-        }
+        self._hyperparameters = {"subspace": self.subspace}
 
         super().__init__(wires=wires)
 
@@ -514,9 +517,9 @@ class THadamard(Operation):
         **Example**
 
         >>> print(qml.THadamard.compute_matrix(subspace=(0, 2)))
-        array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
-               [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
-               [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
+        [[ 0.70710678+0.j  0.        +0.j  0.70710678+0.j]
+         [ 0.        +0.j  1.        +0.j  0.        +0.j]
+         [ 0.70710678+0.j  0.        +0.j -0.70710678+0.j]]
         """
 
         if subspace is None:

@@ -84,6 +84,8 @@ class BooleanFn:
         False
 
         >>> (has_bit_length_3 & is_int)(2.3)
+        Traceback (most recent call last):
+            ...
         AttributeError: 'float' object has no attribute 'bit_length'
 
     """

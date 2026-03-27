@@ -48,9 +48,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )

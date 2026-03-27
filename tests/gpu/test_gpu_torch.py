@@ -196,3 +196,48 @@ def test_qnn_torchlayer():
     loss = torch.sum(res).squeeze()
     loss.backward()
     assert loss.is_cuda
+
+
+@pytest.mark.skipif(
+    not torch_cuda.is_available() or torch.cuda.device_count() < 2,
+    reason="a multi-gpu device is required",
+)
+class TestTorchMultiGPUDevice:
+    """Test Multi-GPU with cuda for Torch device."""
+
+    def test_multi_gpu_outval(self):
+        """Test that the output value of a multi-GPU QNode is on the correct device."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            return qml.state()
+
+        params0 = torch.randn(2, dtype=torch.float64, device="cuda:0")
+        res0 = circuit(params0)
+        assert res0.device == torch.device("cuda:0")
+
+        param1 = torch.randn(2, dtype=torch.float64, device="cuda:1")
+        res1 = circuit(param1)
+        assert res1.device == torch.device("cuda:1")
+
+    def test_multi_gpu_concat(self):
+        """Test that the concatenation of multi-GPU QNode outputs works correctly."""
+
+        x = torch.tensor([1, 2, 3], device="cuda:1")
+        y = torch.tensor([4, 5], device="cuda:1")
+
+        res = qml.math.concatenate([x, y], axis=0)
+        assert res.device == torch.device("cuda:1")
+
+    def test_dist_tensors_concat(self):
+        """Test that concatenation of distributed tensors works correctly."""
+
+        x = torch.tensor([1, 2, 3], device="cuda:0")
+        y = torch.tensor([4, 5], device="cuda:1")
+
+        with pytest.raises(RuntimeError, match="Expected all tensors to be on the same device"):
+            qml.math.concatenate([x, y], axis=0)

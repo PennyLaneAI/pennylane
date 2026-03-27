@@ -24,7 +24,7 @@ from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 
-deltas = [0.5, 0.1, 0.01]
+deltas = [1, 0.5, 0.1, 0.01]
 
 np.random.seed(42)
 fragment_list = [
@@ -130,10 +130,11 @@ def test_sixth_order(fragments, delta):
     u6 = 1 / (4 - 4 ** (1 / 5))
     v4 = 1 - 4 * u4
     v6 = 1 - 4 * u6
-    h_y3_hhh = -2.76996810612187 * 10e-6
-    h_y3_y3 = -1.0079377060157 * 10e-5
-    h_y5_h = 5.28018804117902 * 10e-5
-    y7 = 0.000134097740473571
+
+    h_y3_hhh = -2.76996721648715 * 1e-6
+    h_y3_y3 = -1.0079627372761 * 1e-5
+    h_y5_h = 5.28014551264278 * 1e-5
+    y7 = 1.34083888042369 * 1e-4
 
     frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
     frag_coeffs = [1 / 2] * len(frag_labels)
@@ -147,12 +148,15 @@ def test_sixth_order(fragments, delta):
     expected = copy.copy(ham)
 
     bch = bch_expansion(second_order, order=7)
+    for (comm1, coeff1), (comm2, coeff2) in product(bch[2].items(), repeat=2):
+        comm1 = tuple(1j * delta * fragments[x] for x in comm1)
+        comm2 = tuple(1j * delta * fragments[x] for x in comm2)
+        new_commutator = (comm1, comm2, ham)
+        expected += h_y3_y3 * coeff1 * coeff2 * nested_commutator(new_commutator)
+
     for commutator, coeff in bch[2].items():
         commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        new_commutator = (ham, commutator, commutator)
-        expected += h_y3_y3 * coeff * nested_commutator(new_commutator)
-
-        new_commutator = (ham, commutator, ham, ham, ham)
+        new_commutator = (ham, ham, ham, commutator, ham)
         expected += h_y3_hhh * coeff * nested_commutator(new_commutator)
 
     for commutator, coeff in bch[4].items():
@@ -277,3 +281,45 @@ def test_against_matrix_log(fragments, product_formula):
     log_error = log - (1j * t * ham) / t**order
 
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
+
+
+params = [
+    ("serial", 1),
+    ("mp_pool", 1),
+    ("mp_pool", 2),
+    ("cf_procpool", 1),
+    ("cf_procpool", 2),
+    ("cf_threadpool", 1),
+    ("cf_threadpool", 2),
+    ("mpi4py_pool", 1),
+    ("mpi4py_pool", 2),
+    ("mpi4py_comm", 1),
+    ("mpi4py_comm", 2),
+]
+
+
+@pytest.mark.parametrize("backend, num_workers", params)
+def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
+    """Test that effective_hamiltonian function runs without errors for different backends."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    r, delta = 1, 0.5
+
+    fragments = {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))}
+    n_frags = len(fragments)
+
+    first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
+    actual = effective_hamiltonian(
+        first_order, fragments, order=2, num_workers=num_workers, backend=backend
+    )
+
+    ham = sum(fragments.values(), np.zeros(shape=(3, 3)))
+    expected = np.zeros(shape=(3, 3), dtype=np.complex128)
+    for j in range(n_frags - 1):
+        for k in range(j + 1, n_frags):
+            expected += (1 / 2) * nested_commutator([fragments[j], fragments[k]])
+    expected *= 1j / r * delta
+
+    assert np.allclose(1j * delta * (expected + ham), actual)

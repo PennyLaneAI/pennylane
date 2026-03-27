@@ -16,7 +16,7 @@ Contains the SqueezingEmbedding template.
 """
 from pennylane import math
 
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 from pennylane.operation import Operation
 from pennylane.ops.cv import Squeezing
 

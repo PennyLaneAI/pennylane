@@ -35,7 +35,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(transform, pass_name="split-to-single-terms")
 def split_to_single_terms(tape):
     """Splits any expectation values of multi-term observables in a circuit into single term
     expectation values for devices that don't natively support measuring expectation values
@@ -58,7 +58,7 @@ def split_to_single_terms(tape):
     This transform allows us to transform a QNode that measures multi-term observables into individual measurements,
     each corresponding to a single term.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -73,7 +73,7 @@ def split_to_single_terms(tape):
     Instead of decorating the QNode, we can also create a new function that yields the same
     result in the following way:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(x):
@@ -99,7 +99,7 @@ def split_to_single_terms(tape):
     as the user provides in the return statement.
 
     >>> circuit([np.pi/4, np.pi/4])
-    [0.8535533905932737, -0.7071067811865475]
+    [np.float64(0.853...), np.float64(-0.707...)]
 
     .. details::
         :title: Usage Details
@@ -107,7 +107,7 @@ def split_to_single_terms(tape):
         Internally, this function works with tapes. We can create a tape that returns
         expectation values of multi-term observables:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.Z(0) + qml.Z(1)),
@@ -131,13 +131,31 @@ def split_to_single_terms(tape):
         >>> dev = qml.device("default.qubit", wires=2)
         >>> results = dev.execute(tapes)
         >>> results
-        ((1.0, 1.0, 0.0, 0.0),)
+        ((np.float64(1.0), np.float64(1.0), np.float64(0.0), np.float64(0.0)),)
 
         The processing function can be used to reorganize the results to get the 3 expectation
         values returned by the circuit:
 
         >>> processing_fn(results)
-        (2.0, 2.0, 1.0)
+        (np.float64(2.0), np.float64(2.0), np.float64(1.0))
+
+    .. details::
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with ``qjit`` with a few minor differences to be aware of.
+        Currently, when combined with ``qjit``, this transform will not work with shot vectors
+        and will not simplify any tensor products like ``X(0) @ Y(0)`` contained in measurements.
+
+        We can apply the MLIR pass by simply decorating our ``QNode`` with ``@qml.qjit``:
+
+        .. code-block:: python
+
+            @qml.qjit
+            @qml.transforms.split_to_single_terms
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
+
     """
 
     if len(tape.measurements) == 0:

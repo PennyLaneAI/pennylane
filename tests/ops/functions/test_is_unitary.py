@@ -87,12 +87,10 @@ class TestIsUnitary:
     def test_all_interfaces(self):
         """Test unitary check with all available interfaces."""
         import jax
-        import tensorflow as tf
         import torch
 
         torch_param = torch.tensor(1.23)
         jax_param = jax.numpy.array(1.23)
-        tf_param = tf.Variable(1.23)
 
-        for param in [torch_param, jax_param, tf_param]:
+        for param in [torch_param, jax_param]:
             assert qml.is_unitary(qml.RX(param, 0))

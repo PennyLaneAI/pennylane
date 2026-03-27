@@ -22,7 +22,10 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.mid_measure.measurement_value import MeasurementValue
+from pennylane.ops.mid_measure.mid_measure import MidMeasure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
@@ -229,42 +232,6 @@ class TestCircuitGraph:
         """Test that the `operations` property returns the list of operations in the circuit."""
         assert str(circuit.operations) == str(ops)
 
-    def test_observables_in_order_deprecation(self, circuit, obs):
-        """Test that a deprecation warning is raised."""
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.observables_in_order`` is deprecated"
-        ):
-            assert str(circuit.observables_in_order) == str(obs)
-
-    def test_operations_in_order_deprecation(self, circuit, ops):
-        """Test that a deprecation warning is raised."""
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.operations_in_order`` is deprecated"
-        ):
-            assert str(circuit.operations_in_order) == str(ops)
-
-    def test_ancestors_in_order_deprecation(self):
-        """Test that a deprecation warning is raised."""
-        op = qml.X(0)
-        ops = [op, qml.Y(0), qml.Z(0)]
-        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.ancestors_in_order`` is deprecated"
-        ):
-            graph.ancestors_in_order([op])
-
-    def test_descendants_in_order_deprecation(self):
-        """Test that a deprecation warning is raised."""
-        op = qml.X(0)
-        ops = [op, qml.Y(0), qml.Z(0)]
-        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.descendants_in_order`` is deprecated"
-        ):
-            graph.descendants_in_order([op])
-
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
         a given wire"""
@@ -373,18 +340,6 @@ class TestCircuitGraph:
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
         assert str(circuit_w_wires) == expected
 
-    def test_print_contents_deprecation(self):
-        """Test that a deprecation warning is raised."""
-        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
-
-        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.print_contents`` is deprecated"
-        ):
-            circuit_w_wires.print_contents()
-
     tape_depth = (
         ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
         ([qml.X(0)] * 4, 4),
@@ -427,6 +382,16 @@ def test_has_path():
     assert graph.has_path_idx(0, 2)
     assert not graph.has_path(ops[0], ops[4])
     assert not graph.has_path_idx(0, 4)
+
+
+def test_path_from_mcm_to_conditional():
+    mcm = MidMeasure(wires=Wires([0]))
+    ppm = PauliMeasure("XY", wires=Wires([0, 1]))
+    m0 = MeasurementValue([mcm, ppm])
+    ops = [mcm, ppm, Conditional(m0, qml.Z(0))]
+    graph = CircuitGraph(ops, [], wires=Wires([0, 1, 2]))
+    assert graph.has_path(mcm, ops[2])
+    assert graph.has_path(ppm, ops[2])
 
 
 def test_has_path_repeated_ops():

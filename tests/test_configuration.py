@@ -26,9 +26,6 @@ config_filename = "default_config.toml"
 
 
 test_config = """\
-[main]
-shots = 1000
-
 [default.gaussian]
 hbar = 2
 
@@ -150,8 +147,6 @@ class TestProperties:
     def test_get_item(self, default_config):
         """Test getting items."""
         # get existing options
-        assert default_config["main.shots"] == 1000
-        assert default_config["main"]["shots"] == 1000
         assert default_config["strawberryfields.global.hbar"] == 1
         assert default_config["strawberryfields.global"]["hbar"] == 1
 
@@ -229,4 +224,4 @@ class TestPennyLaneInit:
         dev = qml.device("default.gaussian", wires=2, config=default_config)
 
         assert dev.hbar == 2
-        assert dev.shots == qml.measurements.Shots(1000)
+        assert not dev.shots

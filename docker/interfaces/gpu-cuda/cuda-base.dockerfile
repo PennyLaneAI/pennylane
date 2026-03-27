@@ -39,11 +39,11 @@ ENV PATH="/opt/venv/bin:$PATH"
 #Setup and Build pennylane
 WORKDIR /opt/pennylane
 COPY  . .
+RUN pip install --upgrade pip
 RUN git submodule update --init --recursive \
     && pip install wheel \
-    && pip install -r requirements.txt \
+    && pip install --group docker --group dev \
     && python3 -m pip install . \
-    && pip install -r requirements-dev.txt \
     && make test
 
 # create Second small build.

@@ -246,6 +246,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
 
     def single_qubit_fusion_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``single_qubit_fusion`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
@@ -575,7 +577,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

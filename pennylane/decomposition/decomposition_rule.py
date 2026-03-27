@@ -19,14 +19,16 @@ from __future__ import annotations
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
 from pennylane.operation import Operator
 
-from .resources import CompressedResourceOp, Resources, resource_rep
-from .utils import translate_op_alias
+from .resources import Resources, auto_wrap
+from .utils import to_name
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,11 @@ class WorkWireSpec:
 
     garbage: int = 0
     """Garbage wires could be allocated in any state, and can be deallocated in any state."""
+
+    @property
+    def total(self) -> int:
+        """The total number of work wires."""
+        return self.zeroed + self.borrowed + self.burnable + self.garbage
 
 
 @overload
@@ -111,7 +118,7 @@ def register_condition(
     def _decorator(_qfunc) -> DecompositionRule:
         if not isinstance(_qfunc, DecompositionRule):
             _qfunc = DecompositionRule(_qfunc)
-        _qfunc.set_condition(condition)
+        _qfunc.add_condition(condition)
         return _qfunc
 
     return _decorator(qfunc) if qfunc else _decorator
@@ -119,17 +126,22 @@ def register_condition(
 
 @overload
 def register_resources(
-    ops: Callable | dict, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict, *, work_wires: Callable | dict | None = None, exact: bool = True
 ) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(
-    ops: Callable | dict, qfunc: Callable, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict,
+    qfunc: Callable,
+    *,
+    work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> DecompositionRule: ...
 def register_resources(
     ops: Callable | dict,
     qfunc: Callable | None = None,
     *,
     work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
@@ -147,12 +159,17 @@ def register_resources(
             to their number of occurrences therein. If a function is provided instead of a static
             dictionary, a dictionary must be returned from the function. For more information,
             consult the "Quantum Functions as Decomposition Rules" section below.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Keyword Args:
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
             ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
             "Dynamic Allocation of Work Wires" section below.
-        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
-            returns a decorator for acting on a function.
+        exact (bool): whether the resources are computed exactly (``True``, default) or
+            estimated heuristically (``False``). This information is only relevant for testing
+            and validation purposes.
 
     Returns:
         DecompositionRule:
@@ -167,7 +184,6 @@ def register_resources(
 
     .. code-block:: python
 
-        from functools import partial
         import pennylane as qml
 
         qml.decomposition.enable_graph()
@@ -178,7 +194,7 @@ def register_resources(
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @partial(qml.transforms.decompose, gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -277,7 +293,7 @@ def register_resources(
 
             :func:`~pennylane.resource_rep`
 
-    .. details:
+    .. details::
        :title: Dynamically Allocated Wires as a Resource
 
        Some decomposition rules make use of work wires, which can be dynamically requested within
@@ -288,7 +304,7 @@ def register_resources(
        There are four types of work wires:
 
        - "zeroed" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
-         must be restored to the :math:`|0\rangle>` state before deallocation.
+         must be restored to the :math:`|0\rangle` state before deallocation.
 
        - "borrowed" wires are allocated in an arbitrary state, but they must be restored to the same initial state before deallocation.
 
@@ -297,11 +313,10 @@ def register_resources(
 
        - "garbage" wires can be allocated in any state, and can be deallocated in any state.
 
-       Here's a decomposition for a multi-controlled `Rot` that uses a zeroed work wire:
+       Here's a decomposition for a multi-controlled ``Rot`` that uses a zeroed work wire:
 
-       .. code-block: python
+       .. code-block:: python
 
-          from functools import partial
           import pennylane as qml
           from pennylane.allocation import allocate
           from pennylane.decomposition import controlled_resource_rep
@@ -317,12 +332,14 @@ def register_resources(
           @qml.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
           @qml.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
-              with allocate(1, require_zeros=True, restored=True) as work_wires:
+              with allocate(1, state="zero", restored=True) as work_wires:
                   qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
                   qml.CRot(*params, wires=[work_wires[0], wires[-1]])
                   qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
 
-          @partial(qml.transforms.decompose, fixed_decomps={"C(Rot)": _controlled_rot_decomp})
+          decomps = {"C(Rot)": _controlled_rot_decomp}
+
+          @qml.decompose(fixed_decomps=decomps, num_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -339,11 +356,13 @@ def register_resources(
 
     def _decorator(_qfunc) -> DecompositionRule:
         if isinstance(_qfunc, DecompositionRule):
-            _qfunc.set_resources(ops)
+            _qfunc.set_resources(ops, exact_resources=exact)
             if work_wires:
                 _qfunc.set_work_wire_spec(work_wires)
             return _qfunc
-        return DecompositionRule(_qfunc, resources=ops, work_wires=work_wires)
+        return DecompositionRule(
+            _qfunc, resources=ops, work_wires=work_wires, exact_resources=exact
+        )
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -356,6 +375,7 @@ class DecompositionRule:
         func: Callable,
         resources: Callable | dict | None = None,
         work_wires: Callable | dict | None = None,
+        exact_resources: bool = True,
     ):
 
         self._impl = func
@@ -375,8 +395,9 @@ class DecompositionRule:
         else:
             self._compute_resources = resources
 
-        self._condition = None
+        self._conditions = []
         self._work_wire_spec = work_wires or {}
+        self.exact_resources = exact_resources
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -393,26 +414,24 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                gate_counter.update({_auto_wrap(op): count})
+                gate_counter.update({auto_wrap(op): count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
-        if self._condition is None:
-            return True
-        return self._condition(*args, **kwargs)
+        return all(condition(*args, **kwargs) for condition in self._conditions)
 
-    def work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
+    def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
         if isinstance(self._work_wire_spec, dict):
             return WorkWireSpec(**self._work_wire_spec)
         return WorkWireSpec(**self._work_wire_spec(*args, **kwargs))
 
-    def set_condition(self, condition: Callable[..., bool]) -> None:
-        """Sets the condition for this decomposition rule."""
-        self._condition = condition
+    def add_condition(self, condition: Callable[..., bool]) -> None:
+        """Adds a condition for this decomposition rule."""
+        self._conditions.append(condition)
 
-    def set_resources(self, resources: Callable | dict) -> None:
+    def set_resources(self, resources: Callable | dict, exact_resources: bool = True) -> None:
         """Sets the resources for this decomposition rule."""
 
         if isinstance(resources, dict):
@@ -423,32 +442,17 @@ class DecompositionRule:
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
+        self.exact_resources = exact_resources
 
     def set_work_wire_spec(self, work_wires: Callable | dict) -> None:
         """Sets the work wire usage of this decomposition rule."""
         self._work_wire_spec = work_wires
 
 
-def _auto_wrap(op_type):
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qml.resource_rep"
-        ) from e
-
-
-_decompositions = defaultdict(list)
+_decompositions_private = defaultdict(list)
 """dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
+
+_decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
 def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
@@ -524,12 +528,10 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    _decompositions[translate_op_alias(op_type)].extend(decomps)
+    _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
-def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
+def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -540,8 +542,9 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to retrieve decomposition rules for. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to retrieve decomposition
+            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
+            ``"C(RX)"``, etc.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -549,31 +552,31 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
     **Example**
 
     >>> import pennylane as qml
-    >>> qml.list_decomps(qml.CRX)
-    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+    >>> from pprint import pprint
+    >>> pprint(qml.list_decomps(qml.CRX))
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>]
 
     Each decomposition rule can be inspected:
 
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-        qml.RX(-phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
     >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    return _decompositions[translate_op_alias(op_type)][:]
+    return _decompositions_var.get()[to_name(op)][:]
 
 
-def has_decomp(op_type: type[Operator] | str) -> bool:
+def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     .. note::
@@ -584,20 +587,57 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to check for decomposition rules. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to check for
+            decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
+            ``"Pow(H)"``, ``"C(RX)"``, etc.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    op_type = translate_op_alias(op_type)
-    return op_type in _decompositions and len(_decompositions[op_type]) > 0
+    op_name = to_name(op)
+    _decompositions = _decompositions_var.get()
+    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+
+
+@contextmanager
+def local_decomps():
+    """Start a new context in which additions to decomposition rules are localized.
+
+    This context manager is thread-safe because it uses ``ContextVar`` under the hood.
+
+    """
+    _new_decompositions = defaultdict(list, {k: v[:] for k, v in _decompositions_private.items()})
+    token = _decompositions_var.set(_new_decompositions)
+    try:
+        yield
+    finally:
+        _decompositions_var.reset(token)
 
 
 @register_resources({})
 def null_decomp(*_, **__):
-    """A decomposition rule that does nothing."""
+    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.decomposition import null_decomp
+
+        qml.decomposition.enable_graph()
+
+        @qml.decompose(
+            gate_set={qml.RZ},
+            fixed_decomps={qml.GlobalPhase: null_decomp}
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.Z(0)
+
+    >>> print(qml.draw(circuit)())
+    0: ──RZ(3.14)─┤
+
+    """
     return

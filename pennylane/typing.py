@@ -32,7 +32,7 @@ class InterfaceTensorMeta(type):
 
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)
+        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
 
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
@@ -74,7 +74,6 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             from jax import Array
@@ -88,7 +87,9 @@ def _is_jax(other, subclass=False):
     return False
 
 
-def _is_tensorflow(other, subclass=False):
+def _is_tensorflow(
+    other, subclass=False
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Check if other is an instance or a subclass of a tensorflow tensor."""
     if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
         with contextlib.suppress(ImportError):

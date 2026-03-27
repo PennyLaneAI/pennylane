@@ -21,6 +21,8 @@ from pennylane.transforms.core import TransformError
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+from pennylane.capture.primitives import transform_prim
+
 
 def _find_eq_with_name(jaxpr, name):
     for eq in jaxpr.eqns:
@@ -34,7 +36,6 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     measure_prim,
     qnode_prim,
@@ -159,11 +160,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
 
             qml.X(collision_wire)  # Each branch of the cond will have a collision with this wire
@@ -186,11 +187,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.Z(0)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(2)
 
             cond_f()  # Each branch of the cond will have a collision with this wire
@@ -213,11 +214,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.Z(1)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(2)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(3)
 
             qml.X(0)
@@ -246,12 +247,12 @@ class TestRepeatedQubitTransformErrors:
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
@@ -685,14 +686,14 @@ class TestHigherOrderPrimitiveIntegration:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(1)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(2)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
@@ -821,38 +822,6 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_grad_prim(self):
-        """Test that the transform works correctly when applied with grad_prim."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @MergeAmplitudeEmbeddingInterpreter()
-        @qml.qnode(dev)
-        def circuit(a, b):
-            qml.AmplitudeEmbedding(jnp.array([a, b]), wires=0)
-            qml.Hadamard(0)
-            qml.AmplitudeEmbedding(jnp.array([a, b]), wires=1)
-            return qml.expval(qml.Z(0))
-
-        f = qml.grad(circuit)
-        jaxpr = jax.make_jaxpr(f)(0, 1)
-        assert jaxpr.eqns[0].primitive == grad_prim
-        inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
-        qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
-        # Get all operators in qfunc
-        qfunc_jaxpr = qfunc_jaxpr.replace(
-            eqns=[
-                eqn
-                for eqn in qfunc_jaxpr.eqns
-                if getattr(eqn.primitive, "prim_type", "") == "operator"
-            ]
-        )
-        assert len(qfunc_jaxpr.eqns) == 3
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-
     def test_jacobian_prim(self):
         """Test that the transform works correctly when applied with jacobian_prim."""
 
@@ -866,12 +835,9 @@ class TestHigherOrderPrimitiveIntegration:
             qml.AmplitudeEmbedding(jnp.array([a, b]), wires=1)
             return qml.expval(qml.Z(0))
 
-        f = qml.jacobian(circuit)
-
-        jaxpr = jax.make_jaxpr(f)(0.0, 1.0)
-
+        f = qml.grad(circuit)
+        jaxpr = jax.make_jaxpr(f)(0, 1)
         assert jaxpr.eqns[0].primitive == jacobian_prim
-
         inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
         qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
         # Get all operators in qfunc
@@ -1079,9 +1045,10 @@ class TestExpandPlxprTransformIntegration:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
+        assert jaxpr.eqns[0].primitive == transform_prim
         assert (
-            jaxpr.eqns[0].primitive
-            == qml.transforms.optimization.merge_amplitude_embedding._primitive
+            jaxpr.eqns[0].params["transform"]
+            == qml.transforms.optimization.merge_amplitude_embedding
         )
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)

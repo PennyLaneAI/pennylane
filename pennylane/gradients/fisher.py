@@ -44,7 +44,7 @@ def _torch_jac(circ):
 
 
 # TODO: create qml.math.jacobian and replace it here
-def _tf_jac(circ):
+def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """TF jacobian as a callable function"""
     import tensorflow as tf
 
@@ -258,7 +258,9 @@ def classical_fisher(qnode, argnums=0):
         elif interface == "autograd":
             jac = jacobian(new_qnode)
 
-        elif interface == "tf":
+        elif (
+            interface == "tf"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             jac = _tf_jac(new_qnode)
         else:
             raise ValueError(
@@ -277,7 +279,7 @@ def classical_fisher(qnode, argnums=0):
             for j_i in j:
                 res.append(_compute_cfim(p, j_i))
 
-            if len(j) == 1:
+            if len(j) == 1:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 return res[0]
 
             return res
@@ -367,9 +369,8 @@ def quantum_fisher(
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
-    >>> from functools import partial
     >>> dev = qml.device("default.qubit", wires=n_wires+1)
-    >>> @partial(qml.set_shots, shots=1000)
+    >>> @qml.set_shots(shots=1000)
     ... @qml.qnode(dev)
     ... def circ(params):
     ...     qml.RY(params[0], wires=1)
@@ -385,7 +386,7 @@ def quantum_fisher(
 
     """
 
-    if device.shots or not isinstance(device, DefaultQubit):
+    if tape.shots or not isinstance(device, DefaultQubit):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):

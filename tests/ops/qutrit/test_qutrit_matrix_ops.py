@@ -643,14 +643,14 @@ class TestUnitaryLabels:
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
         cache = {"matrices": []}
-        assert op.label(cache=cache) == "U(M0)"
+        assert op.label(cache=cache) == "U\n(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
         cache = {"matrices": [TSWAP]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
 
         assert len(cache["matrices"]) == 2
         assert qml.math.allclose(cache["matrices"][1], mat)
@@ -659,7 +659,7 @@ class TestUnitaryLabels:
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
         cache = {"matrices": [TSWAP, mat]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
 
         assert len(cache["matrices"]) == 2
 
@@ -673,11 +673,11 @@ class TestInterfaceMatricesLabel:
         op = qml.QutritUnitary(mat, wires=0)
 
         cache = {"matrices": []}
-        assert op.label(cache=cache) == "U(M0)"
+        assert op.label(cache=cache) == "U\n(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
         cache = {"matrices": [0, mat, 0]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
         assert len(cache["matrices"]) == 3
 
     @pytest.mark.torch

@@ -102,12 +102,11 @@ class TestInitialization:
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Adjoint(base, id="something")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -120,12 +119,11 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Adjoint(base, id="id")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
-        assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -275,16 +273,16 @@ class TestProperties:
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
-    def test_is_hermitian(self, value):
-        """Test `is_hermitian` property mirrors that of the base."""
+    def test_is_verified_hermitian(self, value):
+        """Test `is_verified_hermitian` property mirrors that of the base."""
 
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op = Adjoint(DummyOp(0))
-        assert op.is_hermitian == value
+        assert op.is_verified_hermitian == value
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -509,6 +507,28 @@ class TestQueueing:
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        with qml.queuing.AnnotatedQueue() as q:
+            op = Adjoint(base)
+
+        assert len(q) == 1
+        assert q.queue[0] is op
+
+    def test_queueing_observable(self):
+        """Test queuing and metadata when both Adjoint and a Hermitian
+        base defined inside a recording context."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            base = qml.Hermitian(np.eye(4), wires=[0, "x"])
+            _ = Adjoint(base)
+
+        assert base not in q
+        assert len(q) == 1
+
+    def test_queuing_base_defined_outside_observable(self):
+        """Test that a Hermitian base isn't added to queue if it's
+        defined outside the recording context."""
+
+        base = qml.Hermitian(np.eye(4), wires=[0, "x"])
         with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
@@ -765,6 +785,13 @@ def test_error_adjoint_on_noncallable(obj):
     is not callable, as it silently does not have any effect on those."""
     with pytest.raises(ValueError, match=f"{type(obj)} is not callable."):
         adjoint(obj)
+
+
+def test_error_on_None():
+    """Test that the error on None points to Subroutines needing to be treated as a Quantum Function."""
+
+    with pytest.raises(ValueError, match="if you apply adjoint to the output of a Subroutine"):
+        adjoint(None)
 
 
 class TestAdjointConstructorPreconstructedOp:

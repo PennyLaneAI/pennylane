@@ -15,12 +15,10 @@
 An internal module for working with pytrees.
 """
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import autograd
-
-import pennylane.queuing
 
 has_jax = True
 try:
@@ -69,7 +67,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 def unflatten_dict(data, metadata) -> dict:
     """Unflatten a dictionary."""
-    return dict(zip(metadata, data))
+    return dict(zip(metadata, data, strict=True))
 
 
 unflatten_registrations: dict[type, UnflattenFn] = {
@@ -178,14 +176,14 @@ def get_typename_type(typename: str) -> type[Any]:
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
-@dataclass(repr=False)
+@dataclass(repr=False, frozen=True)
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.
 
     >>> op = qml.adjoint(qml.RX(0.1, 0))
     >>> data, structure = qml.pytrees.flatten(op)
     >>> structure
-    PyTree(AdjointOperation, (), [PyTree(RX, (Wires([0]), ()), [Leaf])])
+    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),)),))
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
@@ -196,7 +194,7 @@ class PyTreeStructure:
     metadata: Metadata = ()
     """Any metadata needed to reproduce the original object."""
 
-    children: list["PyTreeStructure"] = field(default_factory=list)
+    children: tuple["PyTreeStructure", ...] = ()
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
 
     @property
@@ -213,10 +211,12 @@ class PyTreeStructure:
         if self.is_leaf:
             return "Leaf"
         children_string = ", ".join(str(c) for c in self.children)
-        return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
+        if len(self.children) == 1:
+            children_string += ","
+        return f"PyTree({self.type_.__name__}, {self.metadata}, ({children_string}))"
 
 
-leaf = PyTreeStructure(None, (), [])
+leaf = PyTreeStructure(None, (), ())
 
 
 def flatten(
@@ -245,7 +245,7 @@ def flatten(
     [1.2, 2.3, 3.4]
 
     >>> structure
-    <PyTree(AdjointOperation, (), (<PyTree(Rot, (Wires([0]), ()), (Leaf, Leaf, Leaf))>,))>
+    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(Rot, (Wires([0]), ()), (PyTreeStructure(), PyTreeStructure(), PyTreeStructure())),))
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     # set the flag is_leaf_node if is_leaf argument is provided and returns true
@@ -261,7 +261,7 @@ def flatten(
         flattened_leaves += child_leaves
         child_structures.append(child_structure)
 
-    structure = PyTreeStructure(type(obj), metadata, child_structures)
+    structure = PyTreeStructure(type(obj), metadata, tuple(child_structures))
     return flattened_leaves, structure
 
 
@@ -285,8 +285,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Adjoint(Rot(-2, -3, -4, wires=[0]))
 
     """
-    with pennylane.queuing.QueuingManager.stop_recording():
-        return _unflatten(iter(data), structure)
+    return _unflatten(iter(data), structure)
 
 
 def _unflatten(new_data, structure):
@@ -296,8 +295,6 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=no-member
 register_pytree(
     autograd.builtins.list,
     lambda obj: (list(obj), ()),

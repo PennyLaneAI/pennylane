@@ -17,13 +17,12 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=bad-option-value,arguments-renamed
+# pylint: disable=arguments-renamed
 import itertools
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import EigvalsUndefinedError, QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
@@ -61,7 +60,7 @@ class QutritDevice(QubitDevice):
     Args:
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
@@ -406,11 +405,9 @@ class QutritDevice(QubitDevice):
             indices = np.array(indices)  # Add np.array here for Jax support.
             try:
                 samples = observable.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
+            except EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {observable.name}."
-                ) from e
+                raise EigvalsUndefinedError(f"Cannot compute samples of {observable.name}.") from e
 
         if bin_size is None:
             if counts:

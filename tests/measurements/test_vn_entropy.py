@@ -72,7 +72,7 @@ class TestInitialization:
         "state_vector,expected",
         [([1.0, 0.0, 0.0, 1.0] / qml.math.sqrt(2), qml.math.log(2)), ([1.0, 0.0, 0.0, 0.0], 0)],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_vn_entropy(self, interface, state_vector, expected):
         """Tests the output of qml.vn_entropy"""
         dev = qml.device("default.qubit", wires=2)
@@ -116,7 +116,7 @@ class TestInitialization:
         assert meas.shape(shots, 1) == shape
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, log_base, expected_entropy",
         [
@@ -146,7 +146,7 @@ class TestInitialization:
         )
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(
             vn_entropy, expected_entropy, atol=atol
@@ -179,8 +179,9 @@ class TestIntegration:
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with vn_entropy."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])

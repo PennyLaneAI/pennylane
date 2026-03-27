@@ -14,10 +14,19 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+from functools import singledispatch
+
 import numpy as np
 
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.ops import Conditional, Controlled
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
+
+
+def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
+    leaves = flatten(op.output)[0]
+    return [mv for mv in leaves if isinstance(mv, MeasurementValue)]
 
 
 def default_wire_map(tape):
@@ -43,21 +52,31 @@ def default_wire_map(tape):
 
 
 def default_bit_map(tape):
-    """Create a dictionary mapping ``MidMeasureMP``'s to indices corresponding to classical
-    wires. We only add mid-circuit measurements that are used for classical conditions and for
-    collecting statistics to this dictionary.
+    """Create a dictionary mapping ``MidMeasure``'s and ``PauliMeasure``'s to indices
+    corresponding to classical wires. We only add mid-circuit measurements that are used
+    for classical conditions and for collecting statistics to this dictionary.
 
     Args:
         tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
 
     Returns:
-        dict: map from mid-circuit measurements to classical wires."""
+        dict: map from mid-circuit measurements to classical wires.
+
+    """
+
     bit_map = {}
     mcms = {}
 
     mcm_idx = 0
     for op in tape:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, SubroutineOp):
+            mvs = _get_subroutine_mvs(op)
+            for mv in mvs:
+                for mcm in mv.measurements:
+                    mcms[mcm] = mcm_idx
+                    mcm_idx += 1
+
+        if isinstance(op, (MidMeasure, PauliMeasure)):
             mcms[op] = mcm_idx
             mcm_idx += 1
 
@@ -72,9 +91,7 @@ def default_bit_map(tape):
             else:
                 for m in op.mv:
                     bit_map[m.measurements[0]] = None
-
     bit_map = {mcm: i for i, mcm in enumerate(sorted(bit_map, key=mcms.get))}
-
     return bit_map
 
 
@@ -139,9 +156,7 @@ def unwrap_controls(op):
 
     next_ctrl = op
     if isinstance(op, Controlled):
-
         while hasattr(next_ctrl, "base"):
-
             if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
@@ -157,6 +172,43 @@ def unwrap_controls(op):
 
     control_values = [bool(int(i)) for i in control_values] if control_values else control_values
     return control_wires, control_values, next_ctrl
+
+
+# pylint: disable=unused-argument
+@singledispatch
+def _get_meas(op, bit_map):
+    return [], None
+
+
+@_get_meas.register
+def _get_subroutine_mcms(op: SubroutineOp, bit_map):
+    _meas = []
+    for mcm in (mcm for mv in _get_subroutine_mvs(op) for mcm in mv.measurements):
+        if mcm in bit_map:
+            _meas.append(mcm)
+    return _meas, max(op.wires)
+
+
+@_get_meas.register(MidMeasure)
+@_get_meas.register(PauliMeasure)
+def _get_mm(op: MidMeasure | PauliMeasure, bit_map):
+    if op not in bit_map:
+        return [], None
+    return [op], op.wires[0]
+
+
+@_get_meas.register
+def _get_c(op: Conditional, bit_map):
+    return op.meas_val.measurements, max(op.wires)
+
+
+@_get_meas.register
+def _get_mp(op: MeasurementProcess, bit_map):
+    if op.mv is None:
+        return [], None
+    if isinstance(op.mv, MeasurementValue):
+        return op.mv.measurements, None
+    return [m.measurements[0] for m in op.mv], None
 
 
 def cwire_connections(layers, bit_map):
@@ -177,14 +229,16 @@ def cwire_connections(layers, bit_map):
         they contain the measured quantum wires and the largest quantum wire of conditionally
         applied operations (no entries for terminal statistics of mid-circuit measurements).
 
+    >>> from pennylane.drawer.utils import cwire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
     ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
-    >>> layers = drawable_layers(tape)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> layers = drawable_layers(tape, bit_map=bit_map)
     >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
     >>> new_bit_map == bit_map # No reusage happening
     True
@@ -207,23 +261,7 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, MidMeasureMP) and op in bit_map:
-                _meas = [op]
-                con_wire = op.wires[0]
-
-            elif isinstance(op, Conditional):
-                _meas = op.meas_val.measurements
-                con_wire = max(op.wires)
-
-            elif isinstance(op, MeasurementProcess) and op.mv is not None:
-                if isinstance(op.mv, MeasurementValue):
-                    _meas = op.mv.measurements
-                else:
-                    _meas = [m.measurements[0] for m in op.mv]
-                con_wire = None
-
-            else:
-                continue
+            _meas, con_wire = _get_meas(op, bit_map)
 
             for m in _meas:
                 cwire = bit_map[m]
@@ -279,7 +317,7 @@ def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
 def transform_deferred_measurements_tape(tape):
     """Helper function to replace MeasurementValues with wires for tapes using
     deferred measurements."""
-    if not any(isinstance(op, MidMeasureMP) for op in tape.operations) and any(
+    if not any(isinstance(op, (MidMeasure, PauliMeasure)) for op in tape.operations) and any(
         m.mv is not None for m in tape.measurements
     ):
         new_measurements = []

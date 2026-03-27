@@ -29,7 +29,7 @@ class FermiWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`a^{\dagger}_0 a_1` can then be constructed as
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> print(w)
     a⁺(0) a(1)
     """
@@ -112,7 +112,7 @@ class FermiWord(dict):
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'a⁺(0) a(1)'
         """
@@ -210,7 +210,7 @@ class FermiWord(dict):
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a constant.
 
-        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         a⁺(0) a(1) a⁺(0) a(1)
         """
@@ -264,7 +264,7 @@ class FermiWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Fermi word to an integer power.
 
-        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         a⁺(0) a(1) a⁺(0) a(1) a⁺(0) a(1)
         """
@@ -295,12 +295,12 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.to_mat()
-        array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+        array([[0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
         """
         largest_orb_id = max(key[1] for key in self.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
@@ -349,7 +349,7 @@ class FermiWord(dict):
         **Example**
 
         >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
-        >>> w.shift_operator(0, 1)
+        >>> print(w.shift_operator(0, 1))
         -1 * a(1) a⁺(0)
         """
 
@@ -419,14 +419,13 @@ class FermiWord(dict):
         return fs
 
 
-# pylint: disable=useless-super-delegation
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.
 
-    >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
@@ -525,7 +524,7 @@ class FermiSentence(dict):
     def __rsub__(self, other):
         """Subtract a FermiSentence to a constant, i.e.
 
-        >>> 2 - FermiSentence({...})
+        >>> 2 - FermiSentence({...}) # doctest: +SKIP
         """
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
@@ -626,12 +625,14 @@ class FermiSentence(dict):
 
         **Example**
 
-        >>> fs = FermiSentence({FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2, FermiWord({(0, 0): "+", (1, 0): "-"}): 3.1})
+        >>> fw1 = qml.FermiWord({(0, 0): "+", (1, 1): "-"})
+        >>> fw2 = qml.FermiWord({(0, 0): "+", (1, 0): "-"})
+        >>> fs = qml.FermiSentence({fw1: 1.2, fw2: 3.1})
         >>> fs.to_mat()
-        array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
+        array([[0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
+               [0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
+               [0. +0.j, 1.2+0.j, 3.1+0.j, 0. +0.j],
+               [0. +0.j, 0. +0.j, 0. +0.j, 3.1+0.j]])
         """
         largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
@@ -664,16 +665,17 @@ def from_string(fermi_string):
 
     **Example**
 
-    >>> from_string('0+ 1- 0+ 1-')
+    >>> from pennylane.fermi import from_string
+    >>> print(from_string('0+ 1- 0+ 1-'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> from_string('0+ 1 0+ 1')
+    >>> print(from_string('0+ 1 0+ 1'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> from_string('0^ 1 0^ 1')
+    >>> print(from_string('0^ 1 0^ 1'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
+    >>> op1 = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     >>> op2 = from_string('0+ 1- 2+ 3-')
     >>> op1 == op2
     True
@@ -707,11 +709,11 @@ def _to_string(fermi_op, of=False):
 
     **Example**
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w)
     '0+ 1-'
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w, of=True)
     '0^ 1'
     """
@@ -753,7 +755,7 @@ class FermiC(FermiWord):
 
     To construct the operator :math:`a^{\dagger}_0`:
 
-    >>> w = FermiC(0)
+    >>> w = qml.FermiC(0)
     >>> print(w)
     a⁺(0)
 
@@ -797,7 +799,7 @@ class FermiA(FermiWord):
 
     To construct the operator :math:`a_0`:
 
-    >>> w = FermiA(0)
+    >>> w = qml.FermiA(0)
     >>> print(w)
     a(0)
 

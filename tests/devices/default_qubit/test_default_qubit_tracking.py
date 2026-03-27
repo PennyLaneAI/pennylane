@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 
 
 class TestTracking:
@@ -55,7 +55,29 @@ class TestTracking:
             "executions": [1, 1, 1],
             "simulations": [1, 1, 1],
             "results": [1.0, 1.0, 1.0],
-            "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
+            "resources": [
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={},
+                    gate_sizes={},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=0,
+                ),
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={},
+                    gate_sizes={},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=0,
+                ),
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={},
+                    gate_sizes={},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=0,
+                ),
+            ],
             "derivative_batches": [1],
             "derivatives": [1],
             "errors": [{}, {}, {}],
@@ -72,7 +94,13 @@ class TestTracking:
             "executions": 1,
             "simulations": 1,
             "results": 1,
-            "resources": Resources(num_wires=1),
+            "resources": SpecsResources(
+                num_allocs=1,
+                gate_types={},
+                gate_sizes={},
+                measurements={"expval(PauliZ)": 1},
+                depth=0,
+            ),
             "errors": {},
         }
 
@@ -103,7 +131,16 @@ class TestTracking:
             "vjps": [5, 6],
             "vjp_batches": [1],
             "execute_and_vjp_batches": [1],
-            "resources": [Resources(num_wires=1)] * 12,
+            "resources": [
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={},
+                    gate_sizes={},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=0,
+                )
+            ]
+            * 12,
             "errors": [{}] * 12,
         }
 
@@ -121,11 +158,11 @@ class TestTracking:
             [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliY(2))],
         )
 
-        expected_resources = Resources(
-            num_wires=3,
-            num_gates=6,
+        expected_resources = SpecsResources(
+            num_allocs=3,
             gate_types={"Hadamard": 3, "CNOT": 2, "RZ": 1},
             gate_sizes={1: 4, 2: 2},
+            measurements={"expval(PauliZ)": 1, "expval(PauliY)": 1},
             depth=3,
         )
 

@@ -5,7 +5,7 @@ repos:
       - id: gitleaks
         name: "🔒 gitleaks · Detect hardcoded secrets"
 -   repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 25.9.0
     hooks:
     - id: black
       name: "🐍 black · Format code"
@@ -15,7 +15,7 @@ repos:
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
     - id: isort
       name: "🐍 isort · Sort imports"
@@ -31,7 +31,7 @@ repos:
     -   id: tach
         name: "🐍 tach · Check module dependencies"
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
     -   id: pyupgrade
         name: "🐍 pyupgrade · Check language features"

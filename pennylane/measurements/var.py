@@ -19,12 +19,12 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement
-from .mid_measure import MeasurementValue
 from .probs import probs
 from .sample import SampleMP
 
@@ -132,7 +132,7 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -145,8 +145,8 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     Executing this QNode:
 
-    >>> circuit(0.5)
-    0.7701511529340698
+    >>> print(circuit(0.5))
+    0.770...
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)

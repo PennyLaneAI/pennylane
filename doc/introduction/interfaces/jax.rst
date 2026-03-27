@@ -3,13 +3,29 @@
 JAX interface
 =================
 
+.. important::
+
+    To use the JAX interface in PennyLane, you must first
+    install ``jax`` and ``jaxlib`` with:
+    
+    .. code-block:: bash
+
+        pip install jax==0.7.1 jaxlib==0.7.1
+    
+    You can then import PennyLane and JAX as follows:
+
+    .. code::
+
+        import pennylane as qml
+        import jax
+        import jax.numpy as jnp
+
 Born out of the autograd package, `JAX <https://jax.readthedocs.io/en/latest/index.html>`_ is the
 next generation of differentiable functional computation, adding support for powerful hardware
 accelerators like GPUs and TPUs via `XLA <https://www.tensorflow.org/xla>`_. To use
 PennyLane in combination with JAX, we have to generate JAX-compatible quantum nodes. A basic
 ``QNode`` can be translated into a quantum node that interfaces with JAX by using the
 ``interface='jax'`` flag in the QNode decorator.
-
 
 .. note::
 
@@ -24,17 +40,6 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
 
     However, when using ``diff_method="backprop"``, all QNode measurement statistics
     are supported.
-
-.. note::
-
-    To use the JAX interface in PennyLane, you must first
-    install ``jax`` and ``jaxlib``. You can then import PennyLane and JAX as follows:
-
-    .. code::
-
-        import pennylane as qml
-        import jax
-        import jax.numpy as jnp
 
 .. note::
 
@@ -168,7 +173,6 @@ Example:
 .. code-block:: python
 
     import jax
-    from functools import partial
     import pennylane as qml
 
 
@@ -179,7 +183,7 @@ Example:
         # method when using a PRNGKey.
         dev = qml.device('default.qubit', wires=2, seed=key)
 
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, interface='jax', diff_method=None)
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
@@ -218,14 +222,13 @@ used to optimize a QNode that is transformed by ``jax.jit``:
     import pennylane as qml
     import jax
     import jaxopt
-    from functools import partial
 
     jax.config.update("jax_enable_x64", True)
 
     dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
-    @partial(qml.set_shots, shots=None)
+    @qml.set_shots(shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)
@@ -248,14 +251,13 @@ QNode:
     from jax import numpy as jnp
     import jax
     import optax
-    from functools import partial
 
     learning_rate = 0.15
 
     dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
-    @partial(qml.set_shots, shots=None)
+    @qml.set_shots(shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)

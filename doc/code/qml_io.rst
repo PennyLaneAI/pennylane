@@ -25,6 +25,7 @@ Functions
     ~from_quil
     ~from_quil_file
     ~to_bloq
+    ~to_openqasm
 
 Classes
 ^^^^^^^

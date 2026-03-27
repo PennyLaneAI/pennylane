@@ -59,7 +59,7 @@ def _assert_has_jax(transform_name):
     if not has_jax:  # pragma: no cover
         raise ImportError(
             f"Module jax is required for the {transform_name} gradient transform. "
-            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0."
+            "You can install jax via: pip install jax"
         )
 
 

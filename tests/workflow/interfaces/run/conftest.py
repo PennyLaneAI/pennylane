@@ -19,7 +19,7 @@ from dataclasses import replace
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig
+from pennylane.devices import ExecutionConfig
 from pennylane.measurements import Shots
 
 
@@ -39,7 +39,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots((100000, 100000)),
@@ -48,7 +48,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots(100000),
@@ -57,7 +57,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots(None),
@@ -66,7 +66,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="backprop",
         ),
         Shots(None),
@@ -75,7 +75,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="adjoint",
             use_device_jacobian_product=True,
         ),
@@ -85,7 +85,7 @@ test_matrix = [
     [
         "default.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="adjoint",
         ),
         Shots(None),
@@ -94,7 +94,7 @@ test_matrix = [
     [
         "reference.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots((100000, 100000)),
@@ -103,7 +103,7 @@ test_matrix = [
     [
         "reference.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots(100000),
@@ -112,7 +112,7 @@ test_matrix = [
     [
         "reference.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method=qml.gradients.param_shift,
         ),
         Shots(None),
@@ -121,7 +121,7 @@ test_matrix = [
     [
         "param_shift.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="device",
             use_device_jacobian_product=False,
         ),
@@ -131,7 +131,7 @@ test_matrix = [
     [
         "param_shift.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="device",
             use_device_jacobian_product=False,
         ),
@@ -141,7 +141,7 @@ test_matrix = [
     [
         "param_shift.qubit",
         replace(
-            DefaultExecutionConfig,
+            ExecutionConfig(),
             gradient_method="device",
             use_device_jacobian_product=False,
         ),

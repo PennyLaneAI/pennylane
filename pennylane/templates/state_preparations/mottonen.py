@@ -169,11 +169,13 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
+    _ATOL = np.finfo(qml.math.get_dtype_name(theta)).eps
+
     if gray_code_rank == 0:
         if (
             qml.math.is_abstract(theta)
             or qml.math.requires_grad(theta)
-            or qml.math.all(theta[..., 0] != 0.0)
+            or qml.math.any(qml.math.abs(theta[..., 0]) > _ATOL)
         ):
             gate(theta[..., 0], wires=[target_wire])
         return
@@ -186,38 +188,16 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
-            (theta != 0.0) if qml.math.ndim(theta) == 1 else qml.math.any(theta != 0.0, axis=0)
+            qml.math.abs(theta) > _ATOL
+            if qml.math.ndim(theta) == 1
+            else qml.math.any(qml.math.abs(theta) > _ATOL, axis=0)
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
-        # If we do not _never_ skip, we might skip _some_ rotation
-        if skip_none or qml.math.all(theta[..., i] != 0.0):
+        # Gate should be applied if we (1) never skip or (2) the angle is above desired tolerance
+        if skip_none or qml.math.any(qml.math.abs(theta[..., i]) > _ATOL):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
-
-
-def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
-    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
-
-    Args:
-        gate (.Operation): gate to be applied, needs to have exactly one parameter
-        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
-        control_wires (array[int]): wires that act as control
-        target_wire (int): wire that acts as target
-
-    Returns:
-          list[.Operator]: sequence of operators defined by this function
-
-    """
-
-    with qml.queuing.AnnotatedQueue() as q:
-        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
-
-    if qml.queuing.QueuingManager.recording():
-        for op in q.queue:
-            qml.apply(op)
-
-    return q.queue
 
 
 def _get_alpha_z(omega, n, k):
@@ -236,14 +216,14 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    indices1 = [
-        [(2 * j - 1) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
-        for j in range(1, 2 ** (n - k) + 1)
-    ]
-    indices2 = [
-        [(2 * j - 2) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
-        for j in range(1, 2 ** (n - k) + 1)
-    ]
+    indices1 = (
+        qml.math.arange(1, 2 ** (n - k + 1) + 1, 2)[:, None] * 2 ** (k - 1)
+        + qml.math.arange(2 ** (k - 1))[None]
+    )
+    indices2 = (
+        qml.math.arange(0, 2 ** (n - k + 1), 2)[:, None] * 2 ** (k - 1)
+        + qml.math.arange(2 ** (k - 1))[None]
+    )
 
     term1 = qml.math.take(omega, indices=indices1, axis=-1)
     term2 = qml.math.take(omega, indices=indices2, axis=-1)
@@ -268,18 +248,17 @@ def _get_alpha_y(a, n, k):
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
-    indices_numerator = [
-        [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
-        for j in range(2 ** (n - k))
-    ]
+    indices_numerator = (qml.math.arange(1, 2 ** (n - k + 1) + 1, 2) * 2 ** (k - 1))[
+        :, None
+    ] + np.arange(2 ** (k - 1))[None]
     numerator = qml.math.take(a, indices=indices_numerator, axis=-1)
     numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=-1)
 
-    indices_denominator = [[j * 2**k + l for l in range(2**k)] for j in range(2 ** (n - k))]
+    indices_denominator = (qml.math.arange(2 ** (n - k)) * 2**k)[:, None] + np.arange(2**k)[None]
     denominator = qml.math.take(a, indices=indices_denominator, axis=-1)
     denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=-1)
 
-    # Divide only where denominator is zero, else leave initial value of zero.
+    # Divide only where denominator is nonzero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
 
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -363,44 +342,34 @@ class MottonenStatePreparation(Operation):
         return {"num_wires": len(self.wires)}
 
     grad_method = None
+    num_params = 1
     ndim_params = (1,)
 
     def __init__(self, state_vector, wires, id=None):
-        # check if the `state_vector` param is batched
-        batched = len(qml.math.shape(state_vector)) > 1
+        # check shape of `state_vector` param
+        shape = qml.math.shape(state_vector)
+        if len(shape) > 2:
+            raise ValueError(
+                f"state_vector must be one-dimensional, or two-dimensional if broadcasted; "
+                f"has shape {shape}."
+            )
 
-        state_batch = state_vector if batched else [state_vector]
+        dim = 2 ** len(qml.wires.Wires(wires))
 
-        # apply checks to each state vector in the batch
-        for i, state in enumerate(state_batch):
-            shape = qml.math.shape(state)
-
-            if len(shape) != 1:
-                raise ValueError(
-                    f"State vectors must be one-dimensional; vector {i} has shape {shape}."
-                )
-
-            n_amplitudes = shape[0]
-            if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
-                raise ValueError(
-                    f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
-                )
-
-            if not qml.math.is_abstract(state):
-                norm = qml.math.sum(qml.math.abs(state) ** 2)
-                if not qml.math.allclose(norm, 1.0, atol=1e-3):
-                    raise ValueError(
-                        f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
-                    )
+        if shape[-1] != dim:
+            raise ValueError(
+                f"state_vector must have a last axis of size {2 ** len(wires)} for {len(wires)} "
+                f"wires; got {shape[-1]}."
+            )
+        if not qml.math.is_abstract(state_vector):
+            norms = qml.math.linalg.norm(state_vector, axis=-1)
+            if not qml.math.is_abstract(norms) and not qml.math.allclose(norms, 1.0, atol=1e-3):
+                raise ValueError(f"state_vector has to be of norm 1.0, got norm(s) {norms}")
 
         super().__init__(state_vector, wires=wires, id=id)
 
-    @property
-    def num_params(self):
-        return 1
-
     @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(state_vector, wires, **_):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -419,19 +388,15 @@ class MottonenStatePreparation(Operation):
         **Example**
 
         >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
-        [RY(array(1.57079633), wires=['a']),
-        RY(array(1.57079633), wires=['b']),
+        >>> ops = qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
+        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
-        """
-        if len(qml.math.shape(state_vector)) > 1:
-            raise ValueError(
-                "Broadcasting with MottonenStatePreparation is not supported. Please use the "
-                "qml.transforms.broadcast_expand transform to use broadcasting with "
-                "MottonenStatePreparation."
-            )
 
+        """
         a = qml.math.abs(state_vector)
         omega = qml.math.angle(state_vector)
         # change ordering of wires, since original code
@@ -457,10 +422,10 @@ class MottonenStatePreparation(Operation):
                 alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
                 control = wires_reverse[k:]
                 target = wires_reverse[k - 1]
-                if len(alpha_z_k) > 0:
+                if qml.math.shape(alpha_z_k)[-1] > 0:
                     op_list.extend(_uniform_rotation_dagger_ops(qml.RZ, alpha_z_k, control, target))
 
-            global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
+            global_phase = -1 * qml.math.sum(omega, axis=-1) / qml.math.shape(state_vector)[-1]
             op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
 
         return op_list
@@ -473,7 +438,7 @@ def _mottonen_resources(num_wires):
 
 
 mottonen_decomp = qml.register_resources(
-    _mottonen_resources, MottonenStatePreparation.compute_decomposition
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
 )
 
 qml.add_decomps(MottonenStatePreparation, mottonen_decomp)

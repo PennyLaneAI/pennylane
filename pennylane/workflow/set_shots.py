@@ -37,7 +37,7 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
     """Transform used to set or update a circuit's shots.
 
     Args:
-        qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
+        qnode (QNode): The QNode to transform. If not provided, ``set_shots`` can be used as a decorator directly.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
 
@@ -53,15 +53,19 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
 
     **Examples**
 
-    Set the number of shots as a decorator (positional argument):
+    Set the number of shots as a decorator with either a positional or keyword argument:
 
     .. code-block:: python
 
-        @qml.set_shots(500)
+        @qml.set_shots(1_000)
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
+        def circuit_sample():
             qml.RX(1.23, wires=0)
-            return qml.expval(qml.Z(0))
+            return qml.sample(qml.Z(0))
+
+    >>> result = circuit_sample()
+    >>> result.shape
+    (1000,)
 
     Set analytic mode as a decorator (positional argument):
 
@@ -69,46 +73,26 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
 
         @qml.set_shots(None)
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
+        def circuit_expval():
             qml.RX(1.23, wires=0)
             return qml.expval(qml.Z(0))
 
-    Set the number of shots as a decorator (keyword argument):
+    >>> result = circuit_expval()
+    >>> np.allclose(result, np.cos(1.23))
+    True
 
-    .. code-block:: python
+    The shots can be updated in-line for an existing circuit:
 
-        @qml.set_shots(shots=2)
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
-            qml.RX(1.23, wires=0)
-            return qml.sample(qml.Z(0))
-
-    Set analytic mode as a decorator (keyword argument):
-
-    .. code-block:: python
-
-        @qml.set_shots(shots=None)
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
-            qml.RX(1.23, wires=0)
-            return qml.expval(qml.Z(0))
-
-    Run the circuit:
-
-    >>> circuit()
-    array([1., -1.])
-
-    Update the shots in-line for an existing circuit:
-
-    >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
-    >>> new_circ()
+    >>> new_circ = qml.set_shots(circuit_sample, shots=(4, 10)) # shot vector
+    >>> result = new_circ()
+    >>> a, b = result
+    >>> a.shape
+    (4,)
+    >>> b.shape
+    (10,)
+    >>> result # doctest: +SKIP
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
-    Set analytic mode in-line for an existing circuit:
-
-    >>> analytic_circ = qml.set_shots(circuit, shots=None)
-    >>> analytic_circ()
-    0.5403023058681398
     """
     # Keyword-only case: @set_shots(shots=500) or @set_shots(shots=None)
     if len(args) == 0 and shots is not _SHOTS_NOT_PROVIDED:

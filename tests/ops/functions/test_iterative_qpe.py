@@ -163,8 +163,9 @@ class TestIQPE:
     def test_size_return(self, iters):
         """Test to check that the size of the returned list is correct"""
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev, mcm_method="one-shot")
         def circuit():
             m = qml.iterative_qpe(qml.RZ(1.0, wires=[0]), [1], iters=iters)

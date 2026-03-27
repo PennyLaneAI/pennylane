@@ -176,22 +176,26 @@ class TestGeneralizedAmplitudeDamping:
     def test_gamma_p_zero(self, tol):
         """Test p=0, gamma=0 gives correct Kraus matrices"""
         op = channel.GeneralizedAmplitudeDamping
+        assert np.allclose(op(0, 0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
         assert np.allclose(
-            op(0, 0, wires=0).kraus_matrices()[0], np.zeros((2, 2)), atol=tol, rtol=0
+            op(0, 0, wires=0).kraus_matrices()[2], np.zeros((2, 2)), atol=tol, rtol=0
         )
-        assert np.allclose(op(0, 0, wires=0).kraus_matrices()[2], np.eye(2), atol=tol, rtol=0)
 
     def test_gamma_p_arbitrary(self, tol):
         """Test arbitrary p and gamma values give correct first Kraus matrix"""
 
         op = channel.GeneralizedAmplitudeDamping
         # check K0 for gamma=0.1, p =0.1
-        expected_K0 = np.array([[0.31622777, 0.0], [0.0, 0.3]])
+        expected_K0 = np.array([[0.94868330, 0.0], [0.0, 0.9]])
         assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         # check K3 for gamma=0.1, p=0.5
         expected_K3 = np.array([[0.0, 0.0], [0.2236068, 0.0]])
         assert np.allclose(op(0.1, 0.5, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0)
+
+        # check K0 for gamma=0.1, p =0.9
+        expected_K0 = np.array([[0.31622777, 0.0], [0.0, 0.3]])
+        assert np.allclose(op(0.1, 0.9, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
         with pytest.raises(ValueError, match="gamma must be in the interval"):
@@ -205,25 +209,25 @@ class TestGeneralizedAmplitudeDamping:
     def expected_jac_fn(gamma, p):
         return (
             [
-                qml.math.sqrt(p)
+                qml.math.sqrt(1 - p)
                 * qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
-                qml.math.sqrt(p) * qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
                 qml.math.sqrt(1 - p)
+                * qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
+                qml.math.sqrt(p)
                 * qml.math.array([[-1 / (2 * qml.math.sqrt(1 - gamma)), 0], [0, 0]]),
-                qml.math.sqrt(1 - p)
-                * qml.math.array([[0, 0], [1 / (2 * qml.math.sqrt(gamma)), 0]]),
+                qml.math.sqrt(p) * qml.math.array([[0, 0], [1 / (2 * qml.math.sqrt(gamma)), 0]]),
             ],
             [
+                -1
+                / (2 * qml.math.sqrt(1 - p))
+                * qml.math.array([[1, 0], [0, qml.math.sqrt(1 - gamma)]]),
+                -1
+                / (2 * qml.math.sqrt(1 - p))
+                * qml.math.array([[0, qml.math.sqrt(gamma)], [0, 0]]),
                 1
                 / (2 * qml.math.sqrt(p))
-                * qml.math.array([[1, 0], [0, qml.math.sqrt(1 - gamma)]]),
-                1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, qml.math.sqrt(gamma)], [0, 0]]),
-                -1
-                / (2 * qml.math.sqrt(1 - p))
                 * qml.math.array([[qml.math.sqrt(1 - gamma), 0], [0, 1]]),
-                -1
-                / (2 * qml.math.sqrt(1 - p))
-                * qml.math.array([[0, 0], [qml.math.sqrt(gamma), 0]]),
+                1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, 0], [qml.math.sqrt(gamma), 0]]),
             ],
         )
 
@@ -435,7 +439,7 @@ class TestPhaseFlip:
 
     # TODO: bring back angle 0 when the bug fixed https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
-    def test_grad_phaseflip(self, angle):
+    def test_jacobian_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 

@@ -13,18 +13,19 @@
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
 # pylint:disable=protected-access,unused-argument, wrong-import-position
+
 import pytest
 
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
+
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     qnode_prim,
     while_loop_prim,
@@ -32,15 +33,17 @@ from pennylane.capture.primitives import (
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("disable_graph_decomposition"),
+]
 
 
 class TestDecomposeInterpreter:
     """Unit tests for the DecomposeInterpreter class for decomposing plxpr."""
 
-    @pytest.mark.parametrize(
-        "gate_set", [["RX"], [qml.RX], lambda op: op.name == "RX", qml.RX, "RX"]
-    )
+    @pytest.mark.parametrize("gate_set", [["RX"], [qml.RX], qml.RX, "RX"])
     @pytest.mark.parametrize("max_expansion", [None, 4])
     def test_init(self, gate_set, max_expansion):
         """Test that DecomposeInterpreter is initialized correctly."""
@@ -48,8 +51,8 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter._stopping_condition(valid_op)
-        assert not interpreter._stopping_condition(invalid_op)
+        assert interpreter.stopping_condition(valid_op)
+        assert not interpreter.stopping_condition(invalid_op)
 
     @pytest.mark.unit
     def test_fixed_alt_decomps_not_available_capture(self):
@@ -67,23 +70,12 @@ class TestDecomposeInterpreter:
             DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
-    def test_stopping_condition(self, op, recwarn):
+    def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
         # pylint: disable=unnecessary-lambda-assignment
-        gate_set = lambda op: op.name == "RX"
-        interpreter = DecomposeInterpreter(gate_set=gate_set)
-
-        if gate_set(op):
-            assert interpreter.stopping_condition(op)
-            assert len(recwarn) == 0
-
-        else:
-            if not op.has_decomposition:
-                with pytest.warns(UserWarning, match="does not define a decomposition"):
-                    assert interpreter.stopping_condition(op)
-            else:
-                assert not interpreter.stopping_condition(op)
-                assert len(recwarn) == 0
+        stopping_condition = lambda op: op.name == "RX"
+        interpreter = DecomposeInterpreter(stopping_condition=stopping_condition)
+        assert interpreter.stopping_condition(op) == stopping_condition(op)
 
     def test_decompose_simple(self):
         """Test that a simple function can be decomposed correctly."""
@@ -145,6 +137,32 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[1].primitive == qml.Rot._primitive
         assert jaxpr.eqns[2].primitive == qml.PhaseShift._primitive
         assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
+
+    def test_subroutine(self):
+        """Test that decompose works when there is a subroutine in the circuit."""
+        interpreter = DecomposeInterpreter(gate_set=qml.gate_sets.ROTATIONS_PLUS_CNOT)
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            qml.IsingXX(x, wires)
+
+        @interpreter
+        def w(x):
+            f(x, (0, 1))
+            f(x, (1, 2))
+
+        jaxpr = jax.make_jaxpr(w)(0.5)
+        eqn1 = jaxpr.eqns[3]  # the first subroutine prim
+        eqn2 = jaxpr.eqns[7]  # the second subroutine prim
+
+        for eqn in [eqn1, eqn2]:
+            assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+            j = eqn.params["jaxpr"]
+            assert j.eqns[4].primitive == qml.CNOT._primitive
+            assert j.eqns[5].primitive == qml.RX._primitive
+            assert j.eqns[6].primitive == qml.CNOT._primitive
+
+        assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
 
     @pytest.mark.parametrize("decompose", [True, False])
     def test_decompose_sum(self, decompose, recwarn):
@@ -243,7 +261,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Controlled` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ, qml.CNOT]
         if not decompose:
-            gate_set.append(qml.ops.Controlled)
+            gate_set.extend([f"C({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -275,7 +293,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Adjoint` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ]
         if not decompose:
-            gate_set.append(qml.ops.Adjoint)
+            gate_set.extend([f"Adjoint({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -329,12 +347,12 @@ class TestDecomposeInterpreter:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.Z(0)
                 return qml.expval(qml.X(0))
 
@@ -464,10 +482,7 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(0.5, 1.5, 2.5)
 
-        if grad_fn == qml.grad:
-            assert jaxpr.eqns[0].primitive == grad_prim
-        else:
-            assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RZ._primitive

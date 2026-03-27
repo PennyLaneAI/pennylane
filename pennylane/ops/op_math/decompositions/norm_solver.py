@@ -38,7 +38,7 @@ def _(elem1, elem2):
 @_gcd.register(ZOmega)
 def _(elem1, elem2):
     while elem2 != 0:
-        elem1, elem2 = elem2, elem2 % elem1
+        elem1, elem2 = elem2, elem1 % elem2
     return elem1
 
 

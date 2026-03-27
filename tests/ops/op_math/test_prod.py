@@ -135,12 +135,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
-        assert prod_op.id == id
 
         assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
@@ -465,10 +464,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_gen = prod(qfunc, lazy=False)
         prod_op = prod_gen(1.1)
 
-        assert prod_op.id == 123987  # id was set
         qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
@@ -897,10 +895,10 @@ class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
-    def test_is_hermitian(self, ops_lst, hermitian_status):
-        """Test is_hermitian property updates correctly."""
+    def test_is_verified_hermitian(self, ops_lst, hermitian_status):
+        """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
-        assert prod_op.is_hermitian == hermitian_status
+        assert prod_op.is_verified_hermitian == hermitian_status
 
     @pytest.mark.tf
     def test_is_hermitian_tf(self):
@@ -1344,10 +1342,9 @@ class TestWrapperFunc:
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "prod_op"
 
-        prod_func_op = prod(*factors, id=op_id)
-        prod_class_op = Prod(*factors, id=op_id)
+        prod_func_op = prod(*factors)
+        prod_class_op = Prod(*factors)
         qml.assert_equal(prod_func_op, prod_class_op)
 
     def test_lazy_mode(self):
@@ -1377,14 +1374,22 @@ class TestWrapperFunc:
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.prod(qml.QSVT)(qml.X(1), [qml.Z(1)])
-            qml.prod(qml.QSVT(qml.X(1), [qml.Z(1)]))
+        def f(op):
+            qml.apply(op)
 
-        for op in q.queue:
-            assert op.name == "QSVT"
+        def f2(op, op2=None):
+            qml.X(0)
+            qml.apply(op)
+            if op2:
+                qml.apply(op2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.prod(f)(qml.Z(0))
+            qml.prod(f2)(qml.Y(0), op2=qml.Z(0))
 
         assert len(q.queue) == 2
+        assert q.queue[0] == qml.Z(0)
+        assert q.queue[1] == qml.Z(0) @ qml.Y(0) @ qml.X(0)
 
 
 class TestIntegration:
@@ -1436,9 +1441,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1451,9 +1457,10 @@ class TestIntegration:
 
     def test_measurement_process_counts(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1716,14 +1723,15 @@ class TestDecomposition:
 
         assert q.queue == _ops[::-1]
 
-    def test_integration(self, enable_graph_decomposition):
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_integration(self):
         """Test that prod's can be integrated into the decomposition."""
 
         op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
 
         graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(**op.hyperparameters)
+            solution.decomposition(op)(**op.hyperparameters)
 
         assert q.queue == list(op[::-1])

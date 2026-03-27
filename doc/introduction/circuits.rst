@@ -19,10 +19,10 @@ are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
+:doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
 :doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
@@ -204,7 +204,7 @@ but is not limited to, executing on a different quantum device, using a new diff
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
 way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
-used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
+used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the compile pipeline cannot be updated 
 using this method.
 
 For instance, to use a different quantum device, the configuration can be updated with,
@@ -256,11 +256,9 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 .. code-block:: python
 
-    from functools import partial
-
     dev = qml.device('default.qubit', wires=2)
 
-    @partial(qml.set_shots, shots=10)
+    @qml.set_shots(shots=10)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.CNOT([0, 1])
@@ -282,7 +280,7 @@ Consider
 
 .. code-block:: python
 
-    @partial(qml.set_shots, shots=[5, 10, 1000])
+    @qml.set_shots(shots=[5, 10, 1000])
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
@@ -351,7 +349,7 @@ Importing circuits from other frameworks
 PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
 add the ability to perform analytic differentiation, and interface with machine
-learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+learning libraries such as PyTorch or JAX. Currently, ``QuantumCircuit``
 objects from Qiskit, OpenQASM files, pyQuil ``programs``, and Quil files can
 be loaded by using the following functions:
 

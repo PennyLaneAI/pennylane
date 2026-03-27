@@ -23,6 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -67,12 +68,13 @@ class TestControlledQubitUnitary:
         "op",
         [
             qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
-            qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3, 4)),
+            qml.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
+            qml.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
         ],
     )
     def test_standard_validity(self, op):
         """Test that the operation is valid."""
-        qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
@@ -157,6 +159,39 @@ class TestControlledQubitUnitary:
         state_2 = f2()
 
         assert np.allclose(state_1, state_2)
+
+    def test_toffoli_elbow_decomposition(self):
+        """Test that the decomposed Toffoli gate using TemporaryAnd operators works properly."""
+
+        wires = qml.wires.Wires([0, 1, 2])
+
+        def arbitrary_input(wires):
+            for ind, wire in enumerate(wires):
+                qml.RX(ind + 0.3, wire)
+
+        dev = qml.device("default.qubit", wires=5)
+
+        with qml.tape.QuantumTape() as tape:
+            arbitrary_input(wires=wires)
+            qml.Toffoli(
+                wires=wires,
+            )
+
+            _toffoli_elbow(
+                wires=wires,
+            )
+
+            qml.adjoint(arbitrary_input)(wires=wires)
+
+        qs = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires)])
+
+        assert len(qs.wires) == 4  # one work wire has been allocated
+
+        program, _ = dev.preprocess()
+        tape = program([qs])
+        output = dev.execute(tape[0])[0]
+
+        assert np.isclose(output[0], 1.0)
 
     @pytest.mark.parametrize("target_wire", range(3))
     def test_toffoli_broadcasted(self, target_wire):

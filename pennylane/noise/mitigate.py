@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+
 from collections.abc import Sequence
-from copy import copy
 from typing import Any
 
 from pennylane import math
-from pennylane.math import mean, round, shape
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
-from pennylane.queuing import AnnotatedQueue, apply
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -35,7 +33,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left(\lambda - 1 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
-    The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
+    The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.noise.mitigate_with_zne`.
 
     Args:
         tape (QNode or QuantumTape): the quantum circuit to be folded
@@ -44,7 +42,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The folded circuit as described in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
+    .. seealso:: :func:`~.pennylane.noise.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
     .. note::
 
@@ -60,7 +58,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
         x = np.arange(6)
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device('default.qubit'))
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -75,28 +73,32 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
     Setting ``scale_factor=1`` does not affect the circuit:
 
-    >>> folded = qml.transforms.fold_global(circuit, 1)
+    >>> folded = qml.noise.fold_global(circuit, 1)
     >>> print(qml.draw(folded)(x))
-    0: ──RX(0.0)─╭●──RX(3.0)──────────┤ ╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)─┤ ├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)─┤ ╰<Z@Z@Z>
+    0: ──RX(0.00)─╭●──RX(3.00)───────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.00)─╰X─╭●─────────RY(4.00)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.00)────╰X─────────RZ(5.00)─┤ ╰<Z@Z@Z>
 
     Setting ``scale_factor=2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
     with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
 
-    >>> folded = qml.transforms.fold_global(circuit, 2)
+    >>> folded = qml.noise.fold_global(circuit, 2)
     >>> print(qml.draw(folded)(x))
-    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†──RX(3.0)──────────────────┤ ╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╭●──RY(4.0)─┤ ├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†─╰X──RZ(5.0)─┤ ╰<Z@Z@Z>
+    0: ──RX(0.00)─╭●──RX(3.00)──RX(3.00)†──RX(3.00)───────────────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.00)─╰X─╭●─────────RY(4.00)───RY(4.00)†─╭X†─╭●──RY(4.00)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.00)────╰X─────────RZ(5.00)───RZ(5.00)†─╰X†─╰X──RZ(5.00)─┤ ╰<Z@Z@Z>
 
     Setting ``scale_factor=3`` results in the folded circuit :math:`U (U^\dagger U)`.
 
-    >>> folded = qml.transforms.fold_global(circuit, 3)
-    >>> print(qml.draw(folded)(x))
-    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭●─────────RX(0.0)†──RX(0.0)─╭●──RX(3.0)──────────┤╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
+    >>> folded = qml.noise.fold_global(circuit, 3)
+    >>> print(qml.draw(folded, decimals=1)(x))
+    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭X†────────RX(0.0)†──RX(0.0)─╭●──RX(3.0) ···
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭X†─╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────── ···
+    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────── ···
+    <BLANKLINE>
+    0: ··· ──────────┤ ╭<Z@Z@Z>
+    1: ··· ──RY(4.0)─┤ ├<Z@Z@Z>
+    2: ··· ──RZ(5.0)─┤ ╰<Z@Z@Z>
 
     .. note::
 
@@ -107,7 +109,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
     .. details::
 
-        The main purpose of folding is for zero noise extrapolation (ZNE). PennyLane provides a differentiable transform :func:`~.pennylane.transforms.mitigate_with_zne`
+        The main purpose of folding is for zero noise extrapolation (ZNE). PennyLane provides a differentiable transform :func:`~.pennylane.noise.mitigate_with_zne`
         that allows you to perform ZNE as a black box. If you want more control and `see` the extrapolation, you can follow the logic of the following example.
 
         We start by setting up a noisy device using the mixed state simulator and a noise channel.
@@ -122,7 +124,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
             # Load devices
             dev_ideal = qml.device("default.mixed", wires=n_wires)
-            dev_noisy = qml.noise.insert(noise_gate, noise_strength)(dev_ideal)
+            dev_noisy = qml.noise.insert(dev_ideal, noise_gate, noise_strength)
 
             x = np.arange(6)
 
@@ -145,24 +147,26 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
         We can then create folded versions of the noisy qnode and execute them for different scaling factors.
 
         >>> scale_factors = [1., 2., 3.]
-        >>> folded_res = [qml.transforms.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
+        >>> folded_res = [qml.noise.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
 
         We want to later compare the ZNE with the ideal result.
 
         >>> ideal_res = qnode_ideal(x)
 
         ZNE is, as the name suggests, an extrapolation in the noise to zero. The underlyding assumption is that the level of noise is proportional to the scaling factor
-        by artificially increasing the circuit depth. We can perform a polynomial fit using ``numpy`` functions. Note that internally in :func:`~.pennylane.transforms.mitigate_with_zne`
-        a differentiable polynomial fit function :func:`~.pennylane.transforms.poly_extrapolate` is used.
+        by artificially increasing the circuit depth. We can perform a polynomial fit using ``numpy`` functions. Note that internally in :func:`~.pennylane.noise.mitigate_with_zne`
+        a differentiable polynomial fit function :func:`~.pennylane.noise.poly_extrapolate` is used.
 
         >>> # coefficients are ordered like coeffs[0] * x**2 + coeffs[1] * x + coeffs[0]
         >>> coeffs = np.polyfit(scale_factors, folded_res, 2)
         >>> zne_res = coeffs[-1]
 
-        We used a polynomial fit of ``order=2``. Using ``order=len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.richardson_extrapolate`.
+        We used a polynomial fit of ``order=2``. Using ``order=len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.noise.richardson_extrapolate`.
         We can now visualize our fit to see how close we get to the ideal result with this mitigation technique.
 
         .. code-block:: python
+
+            from matplotlib import pyplot as plt
 
             x_fit = np.linspace(0, 3, 20)
             y_fit = np.poly1d(coeffs)(x_fit)
@@ -180,42 +184,8 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
 
     """
-    # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
-    # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
-    # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
-    return [fold_global_tape(tape, scale_factor)], lambda x: x[0]
 
-
-def _divmod(a, b):
-    """Performs divmod but in an all-interface compatible manner"""
-    out1 = math.floor(a / b)
-    out2 = a - out1 * b
-    return int(out1), out2
-
-
-def fold_global_tape(circuit, scale_factor):
-    r"""
-    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`.
-    For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
-
-    Args:
-        circuit (QuantumTape): the circuit to be folded
-        scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
-
-    Returns:
-        QuantumTape: Folded circuit
-
-    """
-
-    # TODO: simplify queing via qfunc(op) - currently just a workaround, to solve the problem of ownership when tape contains adjoint(op)
-    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work
-    # in Q3 2022 should make it possible to substantially simplify this.
-    def qfunc(op):
-        copy(op).queue()
-
-    # Generate base_circuit without measurements
-    # Treat all circuits as lists of operations, build new tape in the end
-    base_ops = circuit.operations
+    base_ops = tape.operations
     if any(isinstance(op, Channel) for op in base_ops):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
@@ -226,37 +196,26 @@ def fold_global_tape(circuit, scale_factor):
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
     n_ops = len(base_ops)
-    num_to_fold = int(round(fraction_scale * n_ops / 2))
+    num_to_fold = int(math.round(fraction_scale * n_ops / 2))
 
-    # Create new_circuit from folded list
-    with AnnotatedQueue() as new_circuit_q:
-        # Original U
-        for op in base_ops:
-            qfunc(op)
+    adjoints = [adjoint(op) for op in base_ops]
 
-        # Folding U => U (U^H U)**n.
-        for _ in range(int(num_global_folds)):
-            for op in base_ops[::-1]:
-                adjoint(qfunc)(op)
+    ops = base_ops + (adjoints[::-1] + base_ops) * num_global_folds
 
-            for op in base_ops:
-                qfunc(op)
+    if num_to_fold:
+        ops += adjoints[: -num_to_fold - 1 : -1] + base_ops[-num_to_fold:]
 
-        # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
-        for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
-            adjoint(qfunc)(base_ops[i])
-
-        for i in range(n_ops - num_to_fold, n_ops):
-            qfunc(base_ops[i])
-
-        # Append measurements
-        for meas in circuit.measurements:
-            apply(meas)
-
-    return QuantumScript.from_queue(new_circuit_q)
+    new_tape = tape.copy(ops=ops)
+    return [new_tape], lambda x: x[0]
 
 
-# TODO: make this a pennylane.math function
+def _divmod(a, b):
+    """Performs divmod but in an all-interface compatible manner"""
+    out1 = math.floor(a / b)
+    out2 = a - out1 * b
+    return int(out1), out2
+
+
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
     x = math.convert_like(x, y[0])
@@ -292,14 +251,15 @@ def poly_extrapolate(x, y, order):
     Returns:
         float: Extrapolated value at f(0).
 
-    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
+    .. seealso:: :func:`~.pennylane.noise.richardson_extrapolate`, :func:`~.pennylane.noise.mitigate_with_zne`
 
     **Example:**
 
     >>> x = np.linspace(1, 10, 5)
-    >>> y = x**2 + x + 1 + 0.3 * np.random.rand(len(x))
-    >>> qml.transforms.poly_extrapolate(x, y, 2)
-    tensor(1.01717601, requires_grad=True)
+    >>> rng = np.random.default_rng(12345)
+    >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
+    >>> qml.noise.poly_extrapolate(x, y, 2)
+    np.float64(0.97...)
 
     """
     coeff = _polyfit(x, y, order)
@@ -309,7 +269,7 @@ def poly_extrapolate(x, y, order):
 def richardson_extrapolate(x, y):
     r"""Polynomial fit where the degree of the polynomial is fixed to being equal to the length of ``x``.
 
-    In a nutshell, this function is calling  :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
+    In a nutshell, this function is calling  :func:`~.pennylane.noise.poly_extrapolate` with ``order = len(x)-1``.
     This function is compatible with all interfaces supported by pennylane.
 
     Args:
@@ -319,14 +279,15 @@ def richardson_extrapolate(x, y):
     Returns:
         float: Extrapolated value at f(0).
 
-    .. seealso:: :func:`~.pennylane.transforms.poly_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
+    .. seealso:: :func:`~.pennylane.noise.poly_extrapolate`, :func:`~.pennylane.noise.mitigate_with_zne`
 
     **Example:**
 
     >>> x = np.linspace(1, 10, 5)
-    >>> y = x**2 + x + 1 + 0.3 * np.random.rand(len(x))
-    >>> qml.transforms.richardson_extrapolate(x, y)
-    tensor(1.15105156, requires_grad=True)
+    >>> rng = np.random.default_rng(12345)
+    >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
+    >>> qml.noise.richardson_extrapolate(x, y)
+    np.float64(1.26...)
 
     """
     return poly_extrapolate(x, y, len(x) - 1)
@@ -348,15 +309,16 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     Returns:
         float: Extrapolated value at f(0).
 
-    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`.
+    .. seealso:: :func:`~.pennylane.noise.richardson_extrapolate`, :func:`~.pennylane.noise.mitigate_with_zne`.
 
     **Example:**
 
-    >>> np.random.seed(0)
     >>> x = np.linspace(1, 10, 5)
-    >>> y = np.exp(-x) + np.random.normal(scale=0.1, size=len(x))
-    >>> qml.transforms.exponential_extrapolate(x, y)
-    0.23365009000522544
+    >>> rng = np.random.default_rng(12345)
+    >>> y = np.exp(-x) + rng.normal(scale=0.1, size=len(x))
+    >>> qml.noise.exponential_extrapolate(x, y)
+    np.float64(1.015...)
+
     """
     y = math.stack(y)
     slope, y_intercept = _polyfit(x, y, 1)
@@ -424,7 +386,7 @@ def mitigate_with_zne(
     We first create a noisy device using ``default.mixed`` by adding :class:`~.AmplitudeDamping` to
     each gate of circuits executed on the device using the :func:`~.transforms.add_noise` transform:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import pennylane as qml
 
@@ -445,32 +407,30 @@ def mitigate_with_zne(
 
     We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.decompose`
     and then applying this transform by passing ``folding`` and ``extrapolate`` functions. PennyLane provides native
-    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate`, or
-    :func:`~.pennylane.transforms.richardson_extrapolate`, that allow for differentiating through them. Custom functions, as well as
+    functions :func:`~.pennylane.noise.fold_global` and :func:`~.pennylane.noise.poly_extrapolate`, or
+    :func:`~.pennylane.noise.richardson_extrapolate`, that allow for differentiating through them. Custom functions, as well as
     functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package are supported as well (see usage details below).
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import numpy as np
-        from functools import partial
         from pennylane import qnode
-        from pennylane.transforms import fold_global, poly_extrapolate
+        from pennylane.noise import fold_global, poly_extrapolate
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        rng = np.random.default_rng(12345)
+        w1, w2 = [rng.random(s) for s in shapes]
 
-        @partial(
-            qml.transforms.mitigate_with_zne,
+        @qml.noise.mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
+        @qml.decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -479,21 +439,21 @@ def mitigate_with_zne(
     Executions of ``circuit`` will now be mitigated:
 
     >>> circuit(w1, w2)
-    0.19113067088978522
+    np.float64(0.231...)
 
     The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
     ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
 
     This mitigated qnode can be differentiated like any other qnode.
 
-    >>> qml.grad(circuit)(w1, w2)
-    (array([-0.89319941,  0.37949841]),
-     array([[[-7.04121596e-01,  3.00073104e-01]],
-            [[-6.41155176e-01,  8.32667268e-17]]]))
+    >>> qml.grad(circuit)(qml.numpy.array(w1), qml.numpy.array(w2))
+    (array([-0.92625176,  0.28914607]), array([[[-1.01036246e+00,  2.99296508e-01]],
+    <BLANKLINE>
+           [[-6.93099601e-01, -7.92154137e-04]]]))
 
     .. note::
 
-        As of PennyLane v0.39, the native function :func:`~.pennylane.transforms.fold_global`
+        As of PennyLane v0.39, the native function :func:`~.pennylane.noise.fold_global`
         no longer decomposes the circuit as part of the folding procedure. Users are
         encouraged to use :func:`~.pennylane.transforms.decompose` to unroll the circuit into a target
         gateset before folding, when using this transform.
@@ -532,7 +492,7 @@ def mitigate_with_zne(
         This transform applies ZNE to an input circuit using the unitary folding approach. It
         requires a callable to be passed as the ``folding`` argument with signature
 
-        .. code-block:: python
+        .. code-block:: python3
 
             fn(circuit, scale_factor, **folding_kwargs)
 
@@ -561,7 +521,7 @@ def mitigate_with_zne(
         This transform also requires a callable to be passed to the ``extrapolate`` argument that
         returns the extrapolated value(s). Its function should be
 
-        .. code-block:: python
+        .. code-block:: python3
 
             fn(scale_factors, results, **extrapolate_kwargs)
 
@@ -585,7 +545,6 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
@@ -619,13 +578,15 @@ def mitigate_with_zne(
         for i in range(0, len(results), reps_per_factor):
             # The stacking ensures the right interface is used
             # averaging over axis=0 is critical because the qnode may have multiple outputs
-            results_flattened.append(mean(math.stack(results[i : i + reps_per_factor]), axis=0))
+            results_flattened.append(
+                math.mean(math.stack(results[i : i + reps_per_factor]), axis=0)
+            )
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
 
-        extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        extrapolated = extrapolated[0] if math.shape(extrapolated) == (1,) else extrapolated
 
         # unstack the results in the case of multiple measurements
-        return extrapolated if shape(extrapolated) == () else tuple(math.unstack(extrapolated))
+        return extrapolated if math.shape(extrapolated) == () else tuple(math.unstack(extrapolated))
 
     return out_tapes, processing_fn

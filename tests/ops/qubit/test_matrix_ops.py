@@ -836,6 +836,22 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qml.math.allclose(orig_mat, decomp_mat)
         assert qml.math.allclose(orig_mat, decomp_mat2)
 
+    @pytest.mark.external
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_decomposition_matrix_match_jit(self, n, seed):
+        """Test that the matrix of the decomposition matches the original matrix with jit."""
+        rng = np.random.default_rng(seed)
+        D = np.exp(1j * rng.random(2**n))
+        wires = tuple(range(n))
+        decomp_mat_fn = qml.matrix(qml.DiagonalQubitUnitary.compute_decomposition, wire_order=wires)
+        decomp_mat = qml.qjit(decomp_mat_fn, static_argnums=[1])(D, wires)
+
+        mat_mat = qml.DiagonalQubitUnitary(D, wires=wires).matrix()
+        orig_mat = np.diag(D)
+
+        assert qml.math.allclose(orig_mat, decomp_mat)
+        assert qml.math.allclose(orig_mat, mat_mat)
+
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match_broadcasted(self, n, seed):
         """Test that the broadcasted matrix of the decomposition matches the original matrix."""
@@ -874,62 +890,78 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert decomp1[1].data[0].dtype == r_dtype
         assert decomp2[1].data[0].dtype == r_dtype
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.DiagonalQubitUnitary(np.array([1j, -1]), wires=[0]),
-            qml.DiagonalQubitUnitary(np.exp(1j * np.array([1, -1, 0.5, 1])), wires=[0, 1]),
-            qml.DiagonalQubitUnitary(
-                np.exp(1j * np.array([1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3])), wires=[0, 1, 2]
-            ),
-        ],
-    )
+    standard_case_ops = [
+        qml.DiagonalQubitUnitary(np.array([1j, -1]), wires=[0]),
+        qml.DiagonalQubitUnitary(np.exp(1j * np.array([1, -1, 0.5, 1])), wires=[0, 1]),
+        qml.DiagonalQubitUnitary(
+            np.exp(1j * np.array([1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3])), wires=[0, 1, 2]
+        ),
+    ]
+
+    @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new(self, op):
         """Tests the decomposition rule compatible with the graph-based interface."""
         for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            pytest.param(qml.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), id="Identity-2Q"),
-            pytest.param(
-                qml.DiagonalQubitUnitary(np.array([1j, 1j, 1j, 1j]), wires=[0, 1]),
-                id="GlobalPhase-2Q",
+    @pytest.mark.external
+    @pytest.mark.parametrize("op", standard_case_ops)
+    def test_decomposition_rule_new_qjit(self, op):
+        """Tests the decomposition rule for various edge cases."""
+        for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
+            fn = qml.qjit(qml.matrix(rule, wire_order=op.wires), static_argnums=[1])
+            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            assert qml.math.allclose(mat, np.diag(op.data[0]))
+
+    edge_case_ops = [
+        pytest.param(qml.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), id="Identity-2Q"),
+        pytest.param(
+            qml.DiagonalQubitUnitary(np.array([1j, 1j, 1j, 1j]), wires=[0, 1]),
+            id="GlobalPhase-2Q",
+        ),
+        pytest.param(
+            qml.DiagonalQubitUnitary(np.array([1, 1, 1, -1]), wires=[0, 1]),
+            id="CZ-Gate",
+        ),
+        pytest.param(
+            qml.DiagonalQubitUnitary(np.array([1, 1, 1, 1, 1, 1, 1, -1]), wires=[0, 1, 2]),
+            id="CCZ-Gate",
+        ),
+        pytest.param(
+            # angles are [pi, -pi]. diff is -2pi (equiv to 0), mean is 0.
+            # Should decompose to a GlobalPhase and an Identity RZ.
+            qml.DiagonalQubitUnitary(np.exp(1j * np.array([np.pi, -np.pi])), wires=[0]),
+            id="Phase-Wrap-Around",
+        ),
+        pytest.param(
+            qml.DiagonalQubitUnitary(np.exp(1j * np.array([1e-12, 2e-12])), wires=[0]),
+            id="Small-Angle-Difference",
+        ),
+        pytest.param(
+            qml.DiagonalQubitUnitary(
+                # d0 is just below the negative real axis, d1 is on it.
+                # Normalizing to ensure they remain unitary.
+                np.array([(-1 - 1e-9j) / np.abs(-1 - 1e-9j), -1 + 0j]),
+                wires=[0],
             ),
-            pytest.param(
-                qml.DiagonalQubitUnitary(np.array([1, 1, 1, -1]), wires=[0, 1]),
-                id="CZ-Gate",
-            ),
-            pytest.param(
-                qml.DiagonalQubitUnitary(np.array([1, 1, 1, 1, 1, 1, 1, -1]), wires=[0, 1, 2]),
-                id="CCZ-Gate",
-            ),
-            pytest.param(
-                # angles are [pi, -pi]. diff is -2pi (equiv to 0), mean is 0.
-                # Should decompose to a GlobalPhase and an Identity RZ.
-                qml.DiagonalQubitUnitary(np.exp(1j * np.array([np.pi, -np.pi])), wires=[0]),
-                id="Phase-Wrap-Around",
-            ),
-            pytest.param(
-                qml.DiagonalQubitUnitary(np.exp(1j * np.array([1e-12, 2e-12])), wires=[0]),
-                id="Small-Angle-Difference",
-            ),
-            pytest.param(
-                qml.DiagonalQubitUnitary(
-                    # d0 is just below the negative real axis, d1 is on it.
-                    # Normalizing to ensure they remain unitary.
-                    np.array([(-1 - 1e-9j) / np.abs(-1 - 1e-9j), -1 + 0j]),
-                    wires=[0],
-                ),
-                id="Angle-Branch-Cut-Boundary",
-            ),
-        ],
-    )
+            id="Angle-Branch-Cut-Boundary",
+        ),
+    ]
+
+    @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("op", edge_case_ops)
+    def test_decomposition_rule_edge_cases_qjit(self, op):
+        """Tests the decomposition rule for various edge cases."""
+        for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
+            fn = qml.qjit(qml.matrix(rule, wire_order=op.wires), static_argnums=[1])
+            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            assert qml.math.allclose(mat, np.diag(op.data[0]))
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
@@ -1024,7 +1056,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1047,7 +1079,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1069,7 +1101,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         within a QNode that uses TensorFlow autograph"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @tf.function
         @qml.qnode(dev)
@@ -1121,7 +1153,7 @@ class TestUnitaryLabels:
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
         cache = {"matrices": []}
-        assert op.label(cache=cache) == "U(M0)"
+        assert op.label(cache=cache) == "U\n(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
     @pytest.mark.parametrize("mat, op", zip(labels, ops))
@@ -1129,7 +1161,7 @@ class TestUnitaryLabels:
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
         cache = {"matrices": [Z]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
 
         assert len(cache["matrices"]) == 2
         assert qml.math.allclose(cache["matrices"][1], mat)
@@ -1139,7 +1171,7 @@ class TestUnitaryLabels:
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
         cache = {"matrices": [Z, mat, S]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
 
         assert len(cache["matrices"]) == 3
 
@@ -1589,11 +1621,11 @@ class TestInterfaceMatricesLabel:
         op = qml.QubitUnitary(mat, wires=0)
 
         cache = {"matrices": []}
-        assert op.label(cache=cache) == "U(M0)"
+        assert op.label(cache=cache) == "U\n(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
         cache = {"matrices": [0, mat, 0]}
-        assert op.label(cache=cache) == "U(M1)"
+        assert op.label(cache=cache) == "U\n(M1)"
         assert len(cache["matrices"]) == 3
 
     @pytest.mark.torch

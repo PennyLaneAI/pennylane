@@ -21,7 +21,7 @@ from scipy.special import factorial
 
 from pennylane import concurrency
 
-# pylint: disable = redefined-outer-name, too-many-positional-arguments
+# pylint: disable=too-many-positional-arguments
 
 try:
     import h5py
@@ -143,7 +143,7 @@ def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos, 
     """
     local_kin_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii, jj) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
+        # Skip unnecessary combinations
         if jj >= ii:
             continue
         Usum = np.einsum("i,i->", pes.uloc[:, ii], pes.uloc[:, jj])
@@ -361,7 +361,7 @@ def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii, jj) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
+        # Skip unnecessary combinations
         if jj >= ii:
             continue
 
@@ -456,7 +456,7 @@ def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
 
     for nn, (ii, jj) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
+        # Skip unnecessary combinations
         if jj >= ii:
             continue
         for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
@@ -553,7 +553,7 @@ def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_comb
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
+        # Skip unnecessary combinations
         if ii2 >= ii1 or ii3 >= ii2:
             continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
@@ -658,7 +658,7 @@ def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mo
     local_dipole_cform_threebody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
 
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
+        # Skip unnecessary combinations
         if ii2 >= ii1 or ii3 >= ii2:
             continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):

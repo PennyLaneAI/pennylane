@@ -14,8 +14,6 @@
 """
 Tests for the insert transform.
 """
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -385,7 +383,7 @@ def test_insert_qnode():
     without."""
     dev = qml.device("default.mixed", wires=2)
 
-    @partial(insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+    @insert(op=qml.AmplitudeDamping, op_args=0.2, position="end")
     @qml.qnode(dev)
     def f_noisy(w, x, y, z):
         qml.RX(w, wires=0)
@@ -475,7 +473,7 @@ def test_insert_template():
     """Test that ops are inserted correctly into a decomposed template"""
     dev = qml.device("default.mixed", wires=2)
 
-    @partial(insert, op=qml.PhaseDamping, op_args=0.3, position="all")
+    @insert(op=qml.PhaseDamping, op_args=0.3, position="all")
     @qml.qnode(dev)
     def f1(w1, w2):
         qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
@@ -513,7 +511,7 @@ def test_insert_transform_works_with_non_qwc_obs():
     dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
-    @partial(insert, op=op, op_args=0.3, position="all")
+    @insert(op=op, op_args=0.3, position="all")
     def noisy_circuit(circuit_param):
         qml.RY(circuit_param, wires=0)
         qml.Hadamard(wires=0)

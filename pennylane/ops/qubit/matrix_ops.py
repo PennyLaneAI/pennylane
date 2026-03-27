@@ -207,8 +207,8 @@ class QubitUnitary(Operation):
 
         >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
         >>> qml.QubitUnitary.compute_matrix(U)
-        [[0.98877108+0.j, 0.-0.14943813j],
-        [0.-0.14943813j, 0.98877108+0.j]]
+         array([[0.988...+0.j        , 0.        -0.149...j],
+                [0.        -0.149...j, 0.988...+0.j        ]])
         """
         if sp.sparse.issparse(U):
             raise qml.operation.MatrixUndefinedError(
@@ -228,10 +228,16 @@ class QubitUnitary(Operation):
 
         **Example**
 
-        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> U = np.array([
+        ...     [1, 0, 0, 0],
+        ...     [0, 1, 0, 0],
+        ...     [0, 0, 0, 1],
+        ...     [0, 0, 1, 0]
+        ... ])
+        >>> U = sp.sparse.csr_matrix(U)
         >>> qml.QubitUnitary.compute_sparse_matrix(U)
-        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
-            with 2 stored elements in Compressed Sparse Row format>
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+            with 4 stored elements and shape (4, 4)>
         """
         if sp.sparse.issparse(U):
             return U.asformat(format)
@@ -260,8 +266,13 @@ class QubitUnitary(Operation):
         **Example:**
 
         >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        >>> qml.QubitUnitary.compute_decomposition(U, 0)
-        [Rot(tensor(3.14159265, requires_grad=True), tensor(1.57079633, requires_grad=True), tensor(0., requires_grad=True), wires=[0])]
+        >>> decomp = qml.QubitUnitary.compute_decomposition(U, 0)
+        >>> from pprint import pprint
+        >>> pprint(decomp)
+        [RZ(np.float64(3.141...), wires=[0]),
+        RY(np.float64(1.570...), wires=[0]),
+        RZ(np.float64(0.0), wires=[0]),
+        GlobalPhase(np.float64(-1.570...), wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -609,7 +620,7 @@ class DiagonalQubitUnitary(Operation):
                 qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
             ]
         return [  # Note that we use the first qubits as control, the reference uses the last qubits
-            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1]),
             qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
         ]
 
@@ -622,7 +633,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
-            qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
+            qml.math.hstack([qml.math.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
 
@@ -635,7 +646,7 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+def _diagonal_qu_resource(num_wires):
     if num_wires == 1:
         return {qml.RZ: 1, qml.GlobalPhase: 1}
     return {
@@ -645,7 +656,7 @@ def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
 
 
 @register_resources(_diagonal_qu_resource)
-def _diagonal_qu_decomp(D, wires):
+def _diagonal_qu_decomp(D, wires, **_):
     angles = qml.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
@@ -653,7 +664,7 @@ def _diagonal_qu_decomp(D, wires):
         qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
         qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
     else:
-        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.DiagonalQubitUnitary(qml.math.exp(1j * mean), wires=wires[:-1])
         qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
@@ -835,8 +846,8 @@ class BlockEncode(Operation):
 
         >>> A = np.array([[0.1,0.2],[0.3,0.4]])
         >>> A
-        tensor([[0.1, 0.2],
-                [0.3, 0.4]])
+        array([[0.1, 0.2],
+            [0.3, 0.4]])
         >>> qml.BlockEncode.compute_matrix(A, subspace=[2,2,4])
         array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
                [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
@@ -884,7 +895,9 @@ def _process_blockencode(A, subspace):
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
-        if like == "tensorflow":
+        if (
+            like == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             axis = 1 if h else 0
             return qml.math.concat(lst, like=like, axis=axis)
         return qml.math.hstack(lst) if h else qml.math.vstack(lst)

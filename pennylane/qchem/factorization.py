@@ -77,7 +77,7 @@ def factorize(
     .. note::
 
         Packages JAX and Optax are required when performing CDF with ``compressed=True``.
-        Install them using ``pip install jax~=0.6.0 optax``.
+        Install them using ``pip install jax optax``.
 
     Args:
         two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
@@ -248,7 +248,7 @@ def factorize(
 
         # compute the core tensors and leaf tensors from the factors' eigendecomposition
         core_tensors, leaf_tensors = [], []
-        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs):
+        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs, strict=True):
             fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
             core_tensors.append(qml.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
             leaf_tensors.append(f_eigvec[:, fidx])
@@ -262,7 +262,7 @@ def factorize(
         if not has_jax_optax:
             raise ImportError(
                 "Jax and Optax libraries are required for optimizing the factors. Install them via "
-                "pip install jax~=0.6.0 optax"
+                "pip install jax optax"
             )  # pragma: no cover
 
         norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")
@@ -279,7 +279,11 @@ def factorize(
         if cholesky and init_params is None:
             # compute the factors via cholesky decomposition routine
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
-                two, tol_factor, shape, interface, num_factors
+                two,
+                tol_factor=tol_factor,
+                shape=shape,
+                interface=interface,
+                num_factors=num_factors,
             )
             # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
@@ -464,7 +468,7 @@ def _double_factorization_compressed(
         params = (
             {"X": jnp.zeros((1, norb, norb)), "Z": jnp.zeros((1, norb, norb))}
             if init_params is None
-            else {"X": init_params["X"][fidx][None, :], "Z": init_params["X"][fidx][None, :]}
+            else {"X": init_params["X"][fidx][None, :], "Z": init_params["Z"][fidx][None, :]}
         )
         opt_state = optimizer.init(params)
 
@@ -742,8 +746,6 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=invalid-unary-operand-type
         one_body_coeffs = -np.einsum("prrs", chemist_two_body_coeffs)
 
         if chemist_one_body_coeffs is None:

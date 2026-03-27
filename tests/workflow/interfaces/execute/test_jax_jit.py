@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import execute
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
 
@@ -104,10 +105,10 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 diff_method=param_shift,
-                interface="None",
+                interface="blah",
             )[0]
 
-        with pytest.raises(ValueError, match="Unknown interface"):
+        with pytest.raises(ValueError, match="'blah' is not a valid Interface"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):
@@ -181,7 +182,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -210,7 +211,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -237,7 +238,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -616,7 +617,10 @@ class TestJaxExecuteIntegration:
         """Test that operation and nested tapes expansion
         is differentiable"""
 
-        class U3(qml.U3):
+        class MyU3(qml.U3):
+
+            name = "MyU3"
+
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -627,36 +631,52 @@ class TestJaxExecuteIntegration:
 
         def cost_fn(a, p, device):
             qscript = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+                [qml.RX(a, wires=0), MyU3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
             qscript = qscript.expand(
                 stop_at=lambda obj: qml.devices.default_qubit.stopping_condition(obj)
             )
             return execute([qscript], device, **execute_kwargs)[0]
 
-        a = jax.numpy.array(0.1)
-        p = jax.numpy.array([0.1, 0.2, 0.3])
+        with qml.decomposition.local_decomps():
 
-        dev = qml.device("default.qubit", wires=1)
-        res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            def _decomp(theta, phi, lam, wires):
+                qml.Rot(lam, theta, -lam, wires)
+                qml.PhaseShift(phi + lam, wires)
 
-        jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
-        res = jac_fn(a, p, device=dev)
-        expected = jax.numpy.array(
-            [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            qml.add_decomps(MyU3, _decomp)
+
+            a = jax.numpy.array(0.1)
+            p = jax.numpy.array([0.1, 0.2, 0.3])
+
+            dev = qml.device("default.qubit", wires=1)
+
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
+
+            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
+
+            jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
+
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                res = jac_fn(a, p, device=dev)
+
+            expected = jax.numpy.array(
+                [
+                    np.cos(p[1])
+                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                    - np.sin(p[1])
+                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                    np.sin(a)
+                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+                ]
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable
@@ -803,7 +823,7 @@ class TestVectorValuedJIT:
 
     def test_qnode_sample(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
         grad_meth = execute_kwargs.get("diff_method", "")
@@ -818,14 +838,14 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
 
-            tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
             res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
 
-        assert res.shape == (dev.shots.total_shots,)
+        assert res.shape == (10,)
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
@@ -944,7 +964,7 @@ class TestJitAllCounts:
 def test_diff_method_None_jit():
     """Test that jitted execution works when `diff_method=None`."""
 
-    dev = qml.device("default.qubit", wires=1, shots=10)
+    dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
     def wrapper(x):
@@ -952,7 +972,7 @@ def test_diff_method_None_jit():
             qml.RX(x, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
         return qml.execute([tape], dev, diff_method=None)
 

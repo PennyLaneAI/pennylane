@@ -23,7 +23,6 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     measure_prim,
     qnode_prim,
@@ -406,13 +405,13 @@ class TestCancelInversesInterpreter:
                 return qml.S(0)
 
             @cond_fn.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.S(0)
                 qml.adjoint(qml.S(0))
                 return qml.T(0)
 
             @cond_fn.otherwise
-            def _():
+            def _else():
                 qml.adjoint(qml.T(0))
                 qml.T(0)
                 return qml.Hadamard(0)
@@ -564,7 +563,7 @@ class TestCancelInversesInterpreter:
         jaxpr = jax.make_jaxpr(f)(1.5)
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
+        assert jaxpr.eqns[1].primitive == jacobian_prim
         assert jaxpr.eqns[2].primitive == qml.RY._primitive
 
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]

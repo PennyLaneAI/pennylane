@@ -557,9 +557,9 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1, shots=3)
+        dev = qml.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=3)
         def circuit():
             return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
@@ -686,9 +686,9 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the var is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1, shots=3)
+        dev = qml.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=3)
         def circuit():
             return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
@@ -705,12 +705,12 @@ class TestSample:
     def test_sample_dtype(self):
         """Test that if the raw samples are requested, they are of dtype int."""
 
-        dev = qml.device("default.qutrit", wires=1, shots=10)
+        dev = qml.device("default.qutrit", wires=1)
 
         tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
         res = dev.execute(tape)
         assert qml.math.get_dtype_name(res)[0:3] == "int"
-        assert res.shape == (10,)
+        assert res.shape == (10, 1)
 
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
@@ -720,7 +720,10 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qml.device("default.qutrit", wires=2, shots=1000)
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
 
@@ -752,7 +755,10 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qml.device("default.qutrit", wires=2, shots=1000)
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
         dev.target_device._wires_measured = {0}
@@ -838,8 +844,10 @@ class TestDefaultQutritIntegration:
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_qutrit_circuit_adjoint_integration(self):
         """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
+
         dev = qml.device("default.qutrit", wires=3)
 
         def ansatz(phi, theta, omega, U):
@@ -850,6 +858,7 @@ class TestDefaultQutritIntegration:
             qml.TRY(theta, wires=0, subspace=(1, 2))
             qml.TSWAP([0, 2])
             qml.QutritUnitary(U, wires=[2, 1])
+            qml.ControlledQutritUnitary(U, wires=[2, 1], control_wires=[0])
             qml.TRZ(omega, wires=1, subspace=(0, 2))
 
         @qml.qnode(dev)
@@ -1068,7 +1077,10 @@ class TestTensorSample:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
         """Test that sampling tensor products involving Gell-Mann observables works correctly"""
-        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qml.device("default.qutrit", wires=2, shots=1_000_000)
 
         obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
@@ -1109,7 +1121,10 @@ class TestTensorSample:
         correctly"""
 
         np.random.seed(seed)
-        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qml.device("default.qutrit", wires=3, shots=1_000_000)
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
@@ -1160,8 +1175,8 @@ class TestProbabilityIntegration:
     )
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
-        dev_analytic = qml.device("default.qutrit", wires=2, shots=None)
+        dev = qml.device("default.qutrit", wires=2)
+        dev_analytic = qml.device("default.qutrit", wires=2)
 
         def circuit(x):
             qml.QutritUnitary(x[0], wires=0)
@@ -1169,7 +1184,7 @@ class TestProbabilityIntegration:
             qml.QutritUnitary(TADD, wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        prob = qml.QNode(circuit, dev)
+        prob = qml.QNode(circuit, dev, shots=1000)
         prob_analytic = qml.QNode(circuit, dev_analytic)
 
         assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
@@ -1181,7 +1196,10 @@ class TestProbabilityIntegration:
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qml.device("default.qutrit", wires=2, shots=1000)
         monkeypatch.setattr(dev.target_device, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
@@ -1234,9 +1252,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )

@@ -22,6 +22,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -32,8 +33,8 @@ from pennylane.measurements import (
 )
 from pennylane.ops.cv import PolyXP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
@@ -465,7 +466,13 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                 g = math.zeros_like(math.atleast_1d(results[0]), like=interface)
 
                 if grad_value:
-                    g = math.scatter_element_add(g, obs_ind, grad_value, like=interface)
+                    grad_value_isscalar = math.ndim(grad_value[0]) == 0
+                    g = math.scatter_element_add(
+                        g,
+                        obs_ind,
+                        grad_value[0] if grad_value_isscalar else grad_value,
+                        like=interface,
+                    )
 
                 grads.append(g[0] if isscalar else g)
                 continue
@@ -498,6 +505,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
     return gradient_tapes, processing_fn
 
 
+def _stop_at_expand_invalid_trainable(obj):
+    return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
+
+
 # pylint: disable=too-many-positional-arguments
 def _expand_transform_param_shift_cv(
     tape: QuantumScript,
@@ -510,10 +521,14 @@ def _expand_transform_param_shift_cv(
     force_order2=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift CV."""
-    expanded_tape = expand_invalid_trainable(tape)
+    [expanded_tape], _ = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=_stop_at_expand_invalid_trainable,
+    )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

@@ -1,11 +1,11 @@
 <p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
-    <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=master&style=flat-square" />
+    <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=main&style=flat-square" />
   </a>
   <!-- CodeCov -->
   <a href="https://codecov.io/gh/PennyLaneAI/pennylane">
-    <img src="https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square" />
+    <img src="https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/main.svg?logo=codecov&style=flat-square" />
   </a>
   <!-- ReadTheDocs -->
   <a href="https://docs.pennylane.ai/en/latest">
@@ -35,7 +35,7 @@
 
 <p align="center">
   The definitive open-source framework for quantum programming. Built by researchers, for research.
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/pl-logo-lightmode.png#gh-light-mode-only" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/pl-logo-lightmode.png#gh-light-mode-only" width="700px">
     <!--
     Use a relative import for the dark mode image. When loading on PyPI, this
     will fail automatically and show nothing.
@@ -43,9 +43,10 @@
     <img src="./doc/_static/readme/pl-logo-darkmode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
+
 ## Key Features
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/code.png" width="400px" align="right">
 
 - <strong>*Program quantum computers*</strong>. Build quantum circuits with a wide range of state preparations, gates, and measurements. Run on [high-performance simulators](https://pennylane.ai/performance/) or [various hardware devices](https://pennylane.ai/plugins/), with advanced features like mid-circuit measurements and error mitigation.
 
@@ -84,15 +85,15 @@ Get up and running quickly with PennyLane by following our [quickstart guide](ht
 
 Whether you're exploring quantum machine learning (QML), quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research:
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/research.png" align="right" width="350px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/research.png" align="right" width="350px">
 
 ### Key Resources:
 
-* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations.html)
+* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations)
 * [Learn Quantum Programming](https://pennylane.ai/qml/) with the [Codebook](https://pennylane.ai/codebook/) and [Coding Challenges](https://pennylane.ai/challenges/)
-* [Frequently Asked Questions](https://pennylane.ai/faq.html)
-* [Glossary](https://pennylane.ai/qml/glossary.html)
-* [Videos](https://pennylane.ai/qml/videos.html)
+* [Frequently Asked Questions](https://pennylane.ai/faq)
+* [Glossary](https://pennylane.ai/qml/glossary)
+* [Videos](https://pennylane.ai/qml/videos)
 
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
@@ -103,10 +104,10 @@ quantum device.
 
 ## Demos
 
-Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
+Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations).
 
 <a href="https://pennylane.ai/qml/demonstrations">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/demos.png" width="900px">
 </a>
 
 If you would like to contribute your own demo, see our [demo submission
@@ -138,7 +139,7 @@ We also encourage bug reports, suggestions for new features and enhancements, an
 projects or applications built on PennyLane.
 
 See our [contributions
-page](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CONTRIBUTING.md) and our
+page](https://github.com/PennyLaneAI/pennylane/blob/main/.github/CONTRIBUTING.md) and our
 [Development guide](https://pennylane.readthedocs.io/en/stable/development/guide.html) for more
 details.
 

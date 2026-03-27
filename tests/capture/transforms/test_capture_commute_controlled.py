@@ -14,7 +14,6 @@
 """Unit tests for the ``CommuteControlledInterpreter`` class"""
 
 # pylint:disable=wrong-import-position, unused-argument, protected-access
-from functools import partial
 
 import numpy as np
 import pytest
@@ -768,7 +767,7 @@ class TestCommuteControlledPLXPR:
         """Test that the commute-controlled transformation works when applying the plxpr decorator."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(commute_controlled)
+        @commute_controlled
         def circuit():
             qml.PauliX(wires=1)
             qml.S(wires=0)

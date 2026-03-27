@@ -24,6 +24,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
@@ -163,9 +164,7 @@ def cut_circuit(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.cut_circuit, auto_cutter=True)
+        @qml.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -437,9 +436,9 @@ def cut_circuit(
     )
 
 
-@cut_circuit.custom_qnode_transform
-def _qnode_transform(self, qnode, targs, tkwargs):
+@cut_circuit.register
+def _qnode_transform(qnode: QNode, *targs, **tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    return cut_circuit.generic_apply_transform(qnode, *targs, **tkwargs)

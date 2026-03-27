@@ -524,8 +524,10 @@ class TestTorchExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class U3(qml.U3):
+        class MyU3(qml.U3):
             """Dummy operator."""
+
+            name = "MyU3"
 
             def decomposition(self):
                 theta, phi, lam = self.data
@@ -537,7 +539,7 @@ class TestTorchExecuteIntegration:
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+                [qml.RX(a, wires=0), MyU3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
             diff_method = execute_kwargs["diff_method"]
             if diff_method is None:
@@ -554,37 +556,48 @@ class TestTorchExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        a = torch.tensor(0.1, requires_grad=False)
-        p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+        with qml.decomposition.local_decomps():
 
-        res = cost_fn(a, p)
-        expected = torch.cos(a) * torch.cos(p[1]) * torch.sin(p[0]) + torch.sin(a) * (
-            torch.cos(p[2]) * torch.sin(p[1]) + torch.cos(p[0]) * torch.cos(p[1]) * torch.sin(p[2])
-        )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            def _decomp(theta, phi, lam, wires):
+                qml.Rot(lam, theta, -lam, wires)
+                qml.PhaseShift(phi + lam, wires)
 
-        res = torch.autograd.functional.jacobian(lambda _p: cost_fn(a, _p), p)
-        expected = torch.tensor(
-            [
-                torch.cos(p[1])
-                * (
-                    torch.cos(a) * torch.cos(p[0])
-                    - torch.sin(a) * torch.sin(p[0]) * torch.sin(p[2])
-                ),
-                torch.cos(p[1]) * torch.cos(p[2]) * torch.sin(a)
-                - torch.sin(p[1])
-                * (
-                    torch.cos(a) * torch.sin(p[0])
-                    + torch.cos(p[0]) * torch.sin(a) * torch.sin(p[2])
-                ),
-                torch.sin(a)
-                * (
-                    torch.cos(p[0]) * torch.cos(p[1]) * torch.cos(p[2])
-                    - torch.sin(p[1]) * torch.sin(p[2])
-                ),
-            ]
-        )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            qml.add_decomps(MyU3, _decomp)
+
+            a = torch.tensor(0.1, requires_grad=False)
+            p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+
+            res = cost_fn(a, p)
+            expected = torch.cos(a) * torch.cos(p[1]) * torch.sin(p[0]) + torch.sin(a) * (
+                torch.cos(p[2]) * torch.sin(p[1])
+                + torch.cos(p[0]) * torch.cos(p[1]) * torch.sin(p[2])
+            )
+            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+
+            res = torch.autograd.functional.jacobian(lambda _p: cost_fn(a, _p), p)
+
+            expected = torch.tensor(
+                [
+                    torch.cos(p[1])
+                    * (
+                        torch.cos(a) * torch.cos(p[0])
+                        - torch.sin(a) * torch.sin(p[0]) * torch.sin(p[2])
+                    ),
+                    torch.cos(p[1]) * torch.cos(p[2]) * torch.sin(a)
+                    - torch.sin(p[1])
+                    * (
+                        torch.cos(a) * torch.sin(p[0])
+                        + torch.cos(p[0]) * torch.sin(a) * torch.sin(p[2])
+                    ),
+                    torch.sin(a)
+                    * (
+                        torch.cos(p[0]) * torch.cos(p[1]) * torch.cos(p[2])
+                        - torch.sin(p[1]) * torch.sin(p[2])
+                    ),
+                ]
+            )
+            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape

@@ -71,7 +71,7 @@ class TestSpsaGradient:
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape, h=h_val)
 
         all_res = fn(dev.execute(tapes))
@@ -100,7 +100,7 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape, h=h_val, num_directions=num_directions)
         all_res = fn(dev.execute(tapes))
 
@@ -125,7 +125,7 @@ class TestSpsaGradient:
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
         weights = [0.1, 0.2]
         with qml.queuing.AnnotatedQueue() as q:
@@ -149,7 +149,7 @@ class TestSpsaGradient:
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters with multiple returns."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
         weights = [0.1, 0.2]
         with qml.queuing.AnnotatedQueue() as q:
@@ -177,8 +177,9 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(default_shot_vector)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
@@ -193,8 +194,9 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(default_shot_vector)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
@@ -209,8 +211,9 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(default_shot_vector)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
@@ -225,8 +228,9 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(default_shot_vector)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
@@ -241,8 +245,9 @@ class TestSpsaGradient:
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4)
 
+        @qml.set_shots(default_shot_vector)
         @qml.qnode(dev)
         def circuit(params):
             qml.Rot(*params, wires=0)
@@ -266,8 +271,9 @@ class TestSpsaGradient:
         identified to be 0, and that no tapes were generated."""
         rng = np.random.default_rng(seed)
 
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4)
 
+        @qml.set_shots(many_shots_shot_vector)
         @qml.qnode(dev)
         def circuit(params):
             qml.Rot(*params, wires=0)
@@ -313,7 +319,7 @@ class TestSpsaGradient:
 
     def test_y0_provided(self):
         """Test that by providing y0 the number of tapes is equal the number of parameters."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
@@ -338,7 +344,7 @@ class TestSpsaGradient:
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
@@ -394,7 +400,7 @@ class TestSpsaGradient:
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4)
 
         def cost1(x):
             qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
@@ -421,7 +427,10 @@ class TestSpsaGradient:
             return qml.probs([0, 1]), qml.probs([2, 3])
 
         x = pnp.random.rand(3)
-        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+        circuits = [
+            qml.set_shots(qml.QNode(cost, dev), shots=many_shots_shot_vector)
+            for cost in (cost1, cost2, cost3, cost4, cost5, cost6)
+        ]
 
         transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
 
@@ -515,7 +524,7 @@ class TestSpsaGradientIntegration:
 
     def test_ragged_output(self, approx_order, strategy, validate, seed):
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
-        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=3, seed=seed)
         params = [1.0, 1.0, 1.0]
         rng = np.random.default_rng(seed)
 
@@ -559,7 +568,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -606,7 +615,7 @@ class TestSpsaGradientIntegration:
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -659,7 +668,7 @@ class TestSpsaGradientIntegration:
         jacobian will match the expected analytical value.
         """
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -714,7 +723,7 @@ class TestSpsaGradientIntegration:
         jacobian will match the expected analytical value.
         """
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -756,7 +765,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -810,7 +819,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
         x = 0.543
         y = -0.654
@@ -865,7 +874,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -948,7 +957,7 @@ class TestSpsaGradientDifferentiation:
     def test_autograd(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(seed)
 
@@ -991,7 +1000,7 @@ class TestSpsaGradientDifferentiation:
     def test_autograd_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(seed)
 
@@ -1033,7 +1042,7 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(seed)
 
@@ -1075,7 +1084,7 @@ class TestSpsaGradientDifferentiation:
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(seed)
 
@@ -1114,7 +1123,7 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
         rng = np.random.default_rng(seed)
 
@@ -1157,7 +1166,7 @@ class TestSpsaGradientDifferentiation:
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
         rng = np.random.default_rng(seed)
 
@@ -1235,7 +1244,7 @@ class TestReturn:
     @pytest.mark.parametrize("op_wires", [0, 2])
     def test_1_1(self, shot_vec, meas, shape, op_wires):
         """Test one param one measurement case"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3)
         x = 0.543
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1262,7 +1271,7 @@ class TestReturn:
     @pytest.mark.parametrize("op_wire", [0, 1])
     def test_1_N(self, shot_vec, op_wire):
         """Test single param multi-measurement case"""
-        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=6)
         x = 0.543
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1299,7 +1308,7 @@ class TestReturn:
     @pytest.mark.parametrize("op_wires", [0, 2])
     def test_N_1(self, shot_vec, meas, shape, op_wires):
         """Test multi-param single measurement case"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3)
         x = 0.543
         y = 0.213
 
@@ -1331,7 +1340,7 @@ class TestReturn:
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
     def test_N_N(self, shot_vec, op_wires):
         """Test multi-param multi-measurement case"""
-        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=6)
         params = np.random.random(6)
 
         with qml.queuing.AnnotatedQueue() as q:

@@ -214,7 +214,7 @@ class TestLoad:
 class TestOpenQasm:
     """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
-    dev = qml.device("default.qubit", wires=2, shots=100)
+    dev = qml.device("default.qubit", wires=2)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_return_from_qasm3(self):
@@ -287,6 +287,7 @@ class TestOpenQasm:
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -314,6 +315,7 @@ class TestOpenQasm:
     def test_measure_qubits_subset_only(self):
         """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -327,10 +329,10 @@ class TestOpenQasm:
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
-            creg c[2];
+            creg c[1];
             h q[0];
             cx q[0],q[1];
-            measure q[1] -> c[1];
+            measure q[1] -> c[0];
             """
         )
         assert qasm == expected
@@ -338,6 +340,7 @@ class TestOpenQasm:
     def test_rotations_with_expval(self):
         """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -367,6 +370,7 @@ class TestOpenQasm:
     def test_precision(self):
         """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.RX(np.pi, wires=0)
@@ -389,3 +393,62 @@ class TestOpenQasm:
         )
 
         assert qasm == expected
+
+    def test_to_openqasm_without_measurements(self):
+        """Test unitary circuit without measurements exports to qasm `measure_all=False`
+        does not add classical registers."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg" not in qasm
+
+    def test_final_measurements_with_measure_all_false(self):
+        """Test circuits with terminal measurements still generate classical registers
+        when ``measure_all=False``."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.RX(np.pi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        assert "creg c[1];" in qasm
+
+    def test_mid_circuit_measurements_with_measure_all_false(self):
+        """Test circuits with mid-circuit measurements generate a dedicated classical
+        register for measurement results when `measure_all=False`."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=0)
+            return m
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg c[" not in qasm
+        assert "creg mcms[1];" in qasm
+
+    def test_mid_and_final_measurements_with_measure_all_false(self):
+        """Test circuits with both mid-circuit and terminal measurements generate
+        separate classical registers for each measurement type when `measure_all=False`."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg c[1];" in qasm
+        assert "creg mcms[1];" in qasm

@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+
 import inspect
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
@@ -53,7 +54,7 @@ class ValidOp(CompositeOp):
         return qml.pauli.PauliSentence({})
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
@@ -82,6 +83,21 @@ class TestConstruction:
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):
             _ = ValidOp(qml.PauliX(0))
+
+    def test_raise_error_with_mcm_input(self):
+        """Test that composite ops of mid-circuit measurements are not supported."""
+        mcm_0 = qml.ops.MidMeasure(0)
+        mcm_1 = qml.ops.MidMeasure(1)
+        ppm = qml.ops.PauliMeasure("XY", wires=[0, 1])
+        op = qml.RX(0.5, 2)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(op, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, op)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(ppm, op)
 
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
@@ -233,11 +249,19 @@ def test_no_recursion_error_raised_sprod():
     _assert_method_and_property_no_recursion_error(op)
 
 
+def test_no_recursion_error_raised_prod():
+    """Tests that no RecursionError is raised from any property of method of a nested Prod."""
+
+    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    for _ in range(5000):
+        op = qml.prod(qml.I(0), op)
+    _assert_method_and_property_no_recursion_error(op)
+
+
 def _assert_method_and_property_no_recursion_error(instance):
     """Checks that all methods and properties do not raise a RecursionError when accessed."""
 
     for name, attr in inspect.getmembers(instance.__class__):
-
         if inspect.isfunction(attr) and _is_method_with_no_argument(attr):
             _assert_method_no_recursion_error(instance, name)
 
@@ -310,7 +334,7 @@ class TestMscMethods:
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
         op = ValidOp(qml.PauliX(0), ValidOp(qml.PauliY(1), qml.QubitUnitary(U, wires=0)))
-        assert op.label(cache=cache) == "X#(Y#U(M0))"
+        assert op.label(cache=cache) == "X#(Y#U\n(M0))"
         assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -319,7 +343,6 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         copied_op = copy(op)
 
-        assert op.id == copied_op.id
         assert op.data == copied_op.data
         assert op.wires == copied_op.wires
 

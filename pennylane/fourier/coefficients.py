@@ -122,10 +122,14 @@ def coefficients(
     Then we can obtain the coefficients:
 
     >>> coeffs = coefficients(partial_circuit, num_inputs, degree)
-    >>> print(coeffs)
-    [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
-    [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
-    [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
+    >>> print(coeffs) # doctest: +SKIP
+    [[-1.23358114e-17+0.00000000e+00j -4.93432455e-17-3.08395285e-18j
+      -4.93432455e-17+3.08395285e-18j]
+     [-1.40219669e-03-2.20118490e-02j -3.43071461e-01-4.08458392e-02j
+      -1.49310501e-01+3.74473726e-02j]
+     [-1.40219669e-03+2.20118490e-02j -1.49310501e-01-3.74473726e-02j
+      -3.43071461e-01+4.08458392e-02j]]
+
 
     If the specified degree is lower than the highest frequency of the function,
     aliasing may occur, and the resultant coefficients will be incorrect as they
@@ -142,7 +146,7 @@ def coefficients(
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device('default.qubit', wires=2))
         def circuit(inpt):
             qml.RX(inpt[0], wires=0)
             qml.RY(inpt[0], wires=1)
@@ -159,8 +163,8 @@ def coefficients(
 
     However if we enable the low-pass filter, we can still obtain the correct coefficients:
 
-    >>> coefficients(circuit, 1, 1, lowpass_filter=True)
-    array([0.5+0.j, 0. +0.j, 0. +0.j])
+    >>> coefficients(circuit, 1, 1, lowpass_filter=True) # doctest: +SKIP
+    array([5.00000000e-01+0.j, 5.55111512e-17+0.j, 5.55111512e-17+0.j])
 
     Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
     in other situations it may be desirable to set the threshold value explicitly.

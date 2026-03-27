@@ -24,12 +24,14 @@ import numpy as np
 import pennylane.ops as qops
 from pennylane import math
 from pennylane.circuit_graph import LayerData
-from pennylane.exceptions import WireError
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
+from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import expand_multipar, expand_nonunitary_gen
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -72,6 +74,17 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
     return _mt_cjac_tdot(mt, cjac)
 
 
+def _multipar_stopping_fn(obj):
+    try:
+        return len(obj.data) == 0 or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+    except TermsUndefinedError:
+        return True
+
+
+def _expand_nonunitary_gen_stop_at(obj):
+    return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
+
+
 # pylint: disable=too-many-positional-arguments
 def _expand_metric_tensor(
     tape: QuantumScript,
@@ -85,8 +98,19 @@ def _expand_metric_tensor(
     # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
-        return [expand_nonunitary_gen(tape)], lambda x: x[0]
-    return [expand_multipar(tape)], lambda x: x[0]
+        [new_tape], postprocessing = decompose(
+            tape,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=_expand_nonunitary_gen_stop_at,
+        )
+    else:
+        [new_tape], postprocessing = decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn
+        )
+    if new_tape is not tape:
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
@@ -356,23 +380,24 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
 
         .. code-block:: python
 
-            >>> dev = qml.device("default.qubit", wires=3)
-            >>> @qml.qnode(dev, interface="autograd")
-            >>> def circuit(weights):
-            ...     qml.RX(weights[1], wires=0)
-            ...     qml.RY(weights[0], wires=0)
-            ...     qml.CNOT(wires=[0, 1])
-            ...     qml.RZ(weights[2], wires=1)
-            ...     qml.RZ(weights[3], wires=0)
-            ...     return qml.expval(qml.Z(0))
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev, interface="autograd")
+            def circuit(weights):
+                qml.RX(weights[1], wires=0)
+                qml.RY(weights[0], wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RZ(weights[2], wires=1)
+                qml.RZ(weights[3], wires=0)
+                return qml.expval(qml.Z(0))
 
-            >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
-            >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
-            >>> print(mt)
-            [[ 0.          0.          0.          0.        ]
-             [ 0.          0.25       -0.02495835 -0.02495835]
-             [ 0.         -0.02495835  0.01226071  0.01226071]
-             [ 0.         -0.02495835  0.01226071  0.01226071]]
+            weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+            mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+
+        >>> print(mt)
+        [[ 0.          0.          0.          0.        ]
+         [ 0.          0.25       -0.02495835 -0.02495835]
+         [ 0.         -0.02495835  0.01226071  0.01226071]
+         [ 0.         -0.02495835  0.01226071  0.01226071]]
 
         Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
         underlying tape, it is the 1st tape parameter.

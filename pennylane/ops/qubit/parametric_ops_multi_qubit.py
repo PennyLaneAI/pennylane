@@ -24,9 +24,19 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane import math, queuing
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane import compiler, math, queuing
+from pennylane.capture.autograph import disable_autograph
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
+from pennylane.decomposition.reconstruct import register_reconstructor
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    qjit_compatible_pow_rotation,
+)
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
 from pennylane.typing import TensorLike
@@ -108,11 +118,14 @@ class MultiRZ(Operation):
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -152,11 +165,14 @@ class MultiRZ(Operation):
 
         >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
-                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -221,6 +237,9 @@ def _multi_rz_decomposition_resources(num_wires):
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
+    if compiler.active() or qml.capture.enabled():
+        wires = math.array(wires, like="jax")
+
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
         qml.CNOT(wires=(wires[i], wires[i - 1]))
@@ -236,7 +255,7 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
 add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
-add_decomps("Pow(MultiRZ)", pow_rotation)
+add_decomps("Pow(MultiRZ)", qjit_compatible_pow_rotation)
 
 
 class PauliRot(Operation):
@@ -288,9 +307,7 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = {
-        "pauli_word",
-    }
+    resource_keys = {"pauli_word"}
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -363,7 +380,7 @@ class PauliRot(Operation):
         >>> op.label(decimals=2)
         'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
-        'PauliRot\n(0.10)'
+        'PauliRot'
 
         """
         pauli_word = self.hyperparameters["pauli_word"]
@@ -412,8 +429,8 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_matrix(0.5, 'X')
-        [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
-         [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+        array([[0.96891242+0.j        , 0.        -0.24740396j],
+               [0.        -0.24740396j, 0.96891242+0.j        ]])
         """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -423,7 +440,9 @@ class PauliRot(Operation):
 
         interface = math.get_interface(theta)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
@@ -443,7 +462,9 @@ class PauliRot(Operation):
             math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
@@ -487,9 +508,11 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
-        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Identity must be treated specially because its eigenvalues are all the same
@@ -519,12 +542,8 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        [H(0),
-        RX(1.5707963267948966, wires=[1]),
-        MultiRZ(1.2, wires=[0, 1]),
-        H(0),
-        RX(-1.5707963267948966, wires=[1])]
+        >>> qml.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
+        [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """
         if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
@@ -561,6 +580,11 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
+@register_reconstructor(PauliRot)
+def _pauli_rot_reconstructor(theta, wires, pauli_word):
+    return PauliRot(theta, pauli_word, wires)
+
+
 def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
         return {qml.GlobalPhase: 1}
@@ -573,7 +597,8 @@ def _pauli_rot_resources(pauli_word):
 
 
 @register_resources(_pauli_rot_resources)
-def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+@disable_autograph
+def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
         return
@@ -595,7 +620,7 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
 add_decomps("Adjoint(PauliRot)", adjoint_rotation)
-add_decomps("Pow(PauliRot)", pow_rotation)
+add_decomps("Pow(PauliRot)", qjit_compatible_pow_rotation)
 
 
 class PCPhase(Operation):
@@ -657,21 +682,21 @@ class PCPhase(Operation):
 
     >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qml.draw(op_13.decomposition)())
-    1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-    2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-    3: ──GlobalPhase(-1.23)────────────├○───────────┤
-    4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+    1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+    3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+    4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
     If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
 
     >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
     >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
-    0: ──GlobalPhase(1.23)────╭○───────────┤
-    1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─┤
-    2: ──GlobalPhase(1.23)─────────────────┤
-    3: ──GlobalPhase(1.23)─────────────────┤
-    4: ──GlobalPhase(1.23)─────────────────┤
-    5: ──GlobalPhase(1.23)─────────────────┤
+    0: ────╭○───────────╭GlobalPhase(1.23)─┤  
+    1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤  
+    2: ─────────────────├GlobalPhase(1.23)─┤  
+    3: ─────────────────├GlobalPhase(1.23)─┤  
+    4: ─────────────────├GlobalPhase(1.23)─┤  
+    5: ─────────────────╰GlobalPhase(1.23)─┤
 
     """
 
@@ -733,7 +758,9 @@ class PCPhase(Operation):
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = dimension
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(1j * math.cast_like(phi, 1j))
             minus_p = math.exp(-1j * math.cast_like(phi, 1j))
             zeros = math.zeros_like(p)
@@ -763,7 +790,9 @@ class PCPhase(Operation):
         phi = params[0]
         d, t = hyperparams["dimension"]
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(1j * math.cast_like(phi, 1j))
             minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
             return stack_last([phase if index < d else minus_phase for index in range(t)])
@@ -800,10 +829,10 @@ class PCPhase(Operation):
 
         >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
         >>> print(qml.draw(op_13.decomposition)())
-        1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-        2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-        3: ──GlobalPhase(-1.23)────────────├○───────────┤
-        4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+        3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+        4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
         In the following we provide a detailed example for illustration purposes.
 
@@ -869,10 +898,10 @@ class PCPhase(Operation):
         which concludes the decomposition, now reading:
 
         >>> print(qml.draw(op_3.decomposition)())
-        0: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
-        1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
-        2: ──GlobalPhase(1.23)─────────────────├●─────────┤
-        3: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
+        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤  
+        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤  
+        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤  
+        3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
 
         """
         with queuing.AnnotatedQueue() as q:
@@ -1039,7 +1068,7 @@ def _decompose_pcphase_resource(num_wires, dim):
 
 
 @register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi, wires, dimension):
+def _decompose_pcphase(phi, wires, dimension, **_):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
     dim, _ = dimension
@@ -1181,7 +1210,9 @@ class IsingXX(Operation):
 
         eye = math.eye(4, like=phi)
         rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
             eye = math.cast_like(eye, 1j)
@@ -1213,7 +1244,7 @@ class IsingXX(Operation):
         **Example:**
 
         >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]]
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         decomp_ops = [
@@ -1250,9 +1281,18 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
+def _isingxx_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="XX"): 1}
+
+
+@register_resources(_isingxx_to_ppr_resource)
+def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "XX", wires=wires)
+
+
+add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
 add_decomps("Adjoint(IsingXX)", adjoint_rotation)
-add_decomps("Pow(IsingXX)", pow_rotation)
+add_decomps("Pow(IsingXX)", qjit_compatible_pow_rotation)
 
 
 class IsingYY(Operation):
@@ -1360,12 +1400,15 @@ class IsingYY(Operation):
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
                 [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
-                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
+                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
+               dtype=torch.complex128)
         """
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1414,9 +1457,18 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     qml.CY(wires=wires)
 
 
-add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+def _isingyy_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="YY"): 1}
+
+
+@register_resources(_isingyy_to_ppr_resource)
+def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "YY", wires=wires)
+
+
+add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
 add_decomps("Adjoint(IsingYY)", adjoint_rotation)
-add_decomps("Pow(IsingYY)", pow_rotation)
+add_decomps("Pow(IsingYY)", qjit_compatible_pow_rotation)
 
 
 class IsingZZ(Operation):
@@ -1527,7 +1579,9 @@ class IsingZZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(-0.5j * math.cast_like(phi, 1j))
             if math.ndim(p) == 0:
                 return math.diag([p, math.conj(p), math.conj(p), p])
@@ -1571,7 +1625,9 @@ class IsingZZ(Operation):
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(-0.5j * math.cast_like(phi, 1j))
             return stack_last([phase, math.conj(phase), math.conj(phase), phase])
 
@@ -1609,9 +1665,18 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+def _isingzz_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="ZZ"): 1}
+
+
+@register_resources(_isingzz_to_ppr_resource)
+def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "ZZ", wires=wires)
+
+
+add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
-add_decomps("Pow(IsingZZ)", pow_rotation)
+add_decomps("Pow(IsingZZ)", qjit_compatible_pow_rotation)
 
 
 class IsingXY(Operation):
@@ -1745,7 +1810,9 @@ class IsingXY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1796,7 +1863,9 @@ class IsingXY(Operation):
         >>> qml.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         signs = np.array([1, -1, 0, 0])
@@ -1837,7 +1906,7 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
 add_decomps("Adjoint(IsingXY)", adjoint_rotation)
-add_decomps("Pow(IsingXY)", pow_rotation)
+add_decomps("Pow(IsingXY)", qjit_compatible_pow_rotation)
 
 
 class PSWAP(Operation):
@@ -1932,12 +2001,18 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_matrix(0.5)
-        array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
-              [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
+        array([[1.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.87758256+0.47942554j, 0.        +0.j        ],
+               [0.        +0.j        , 0.87758256+0.47942554j,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.        +0.j        ]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -1979,9 +2054,12 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_eigvals(0.5)
-        array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
+        array([ 1.        +0.j        ,  1.        +0.j        ,
+               -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -2013,7 +2091,24 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
     qml.CNOT(wires=wires)
 
 
-add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+def _pswap_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
+    }
+
+
+@register_resources(_pswap_to_ppr_resources)
+def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
+    qml.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qml.GlobalPhase(np.pi / 4 - phi / 2)
+
+
+add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
 add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
@@ -2097,12 +2192,14 @@ class CPhaseShift00(Operation):
         **Example**
 
         >>> qml.CPhaseShift00.compute_matrix(torch.tensor(0.5))
-            tensor([[0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2148,7 +2245,9 @@ class CPhaseShift00(Operation):
         >>> qml.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2234,7 +2333,7 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift00, _cphaseshift00)
 add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift00)", pow_rotation)
+add_decomps("Pow(CPhaseShift00)", qjit_compatible_pow_rotation)
 
 
 class CPhaseShift01(Operation):
@@ -2317,12 +2416,14 @@ class CPhaseShift01(Operation):
         **Example**
 
         >>> qml.CPhaseShift01.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2368,7 +2469,9 @@ class CPhaseShift01(Operation):
         >>> qml.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2445,7 +2548,7 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift01, _cphaseshift01)
 add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift01)", pow_rotation)
+add_decomps("Pow(CPhaseShift01)", qjit_compatible_pow_rotation)
 
 
 class CPhaseShift10(Operation):
@@ -2527,12 +2630,14 @@ class CPhaseShift10(Operation):
         **Example**
 
         >>> qml.CPhaseShift10.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2578,7 +2683,9 @@ class CPhaseShift10(Operation):
         >>> qml.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2650,4 +2757,4 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 add_decomps(CPhaseShift10, _cphaseshift10)
 add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
-add_decomps("Pow(CPhaseShift10)", pow_rotation)
+add_decomps("Pow(CPhaseShift10)", qjit_compatible_pow_rotation)

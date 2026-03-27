@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit.apply_operation import MidMeasureMP
 from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
+from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
@@ -55,7 +55,7 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
     """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
 
     dev = qml.device("default.qubit")
-    dev_shots = qml.device("default.qubit", shots=10)
+    dev_shots = qml.device("default.qubit")
 
     def circuit_op():
         m = qml.measure(0, postselect=1)
@@ -71,7 +71,7 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
         )
 
     res1 = qml.QNode(circuit_op, dev, mcm_method="deferred")()
-    res2 = qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method)()
+    res2 = qml.set_shots(qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots=10)()
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -83,9 +83,10 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
 def test_unsupported_measurement(mcm_method):
     """Test that circuits with unsupported measurements raise the correct error."""
 
-    dev = qml.device("default.qubit", shots=1000)
+    dev = qml.device("default.qubit")
     params = np.pi / 4 * np.ones(2)
 
+    @qml.set_shots(1000)
     @qml.qnode(dev, mcm_method=mcm_method)
     def func(x, y):
         qml.RX(x, wires=0)
@@ -142,7 +143,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     if batch_size is not None and shots is not None and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
 
-    dev = qml.device("default.qubit", shots=shots, seed=seed)
+    dev = qml.device("default.qubit", seed=seed)
     obs = qml.PauliY(1)
     state = qml.math.zeros((4,))
     state[0] = 1.0
@@ -169,8 +170,8 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
             )
         )
 
-    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*params)
-    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
+    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*params)
+    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
     measurements = (
         [qml.expval, qml.probs, qml.var, qml.expval, qml.probs, qml.var]
@@ -225,7 +226,7 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
             "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
         )
 
-    dev = qml.device("default.qubit", shots=shots, seed=seed)
+    dev = qml.device("default.qubit", seed=seed)
     param = qml.numpy.array([np.pi / 3, np.pi / 6])
 
     def func(x, y):
@@ -242,8 +243,8 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
         )
         return measure_f(op=obs)
 
-    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*param)
-    results1 = qml.QNode(func, dev, mcm_method="deferred")(*param)
+    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*param)
+    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*param)
 
     mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
@@ -257,10 +258,11 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed
     measurement and a conditional gate. A single measurement of a common observable is
     performed at the end."""
 
-    dev = qml.device("default.qubit", shots=shots, seed=seed)
+    dev = qml.device("default.qubit", seed=seed)
     param = qml.numpy.array([np.pi / 3, np.pi / 6])
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, diff_method="parameter-shift")
     def func(x, y):
         qml.RX(x, 0)
@@ -289,13 +291,14 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed
 def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
     """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
-        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
+        [qml.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.transforms.dynamic_one_shot(tape)
 
-    dev = qml.device("default.qubit", shots=10, seed=seed)
+    dev = qml.device("default.qubit", seed=seed)
 
+    @qml.set_shots(10)
     @qml.qnode(dev, mcm_method=mcm_method)
     def circuit(x):
         qml.RX(x, 0)
@@ -320,7 +323,7 @@ class TestJaxIntegration:
         # pylint: disable=import-outside-toplevel
         from jax.random import PRNGKey
 
-        dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(seed))
+        dev = qml.device("default.qubit", seed=PRNGKey(seed))
         params = [np.pi / 4, np.pi / 3]
         obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -328,9 +331,9 @@ class TestJaxIntegration:
             obs_tape(x, y, None, postselect=postselect)
             return qml.sample(op=obs)
 
-        func0 = qml.QNode(func, dev, mcm_method=mcm_method)
+        func0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)
         results0 = func0(*params)
-        results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
+        results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
         mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
 
@@ -362,10 +365,11 @@ class TestJaxIntegration:
 
         shots = 10
 
-        dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
         obs = qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=diff_method)
         def func(x, y, z):
             m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)

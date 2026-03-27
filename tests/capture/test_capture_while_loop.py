@@ -92,18 +92,26 @@ class TestCaptureWhileLoop:
         with pytest.raises(ValueError, match="my random error"):
             _ = jax.make_jaxpr(w)(0)
 
+    def test_condition_converted_to_bool(self):
+        """Test that the cond condition output is converted to bool"""
+
+        @qml.while_loop(lambda i: 5)
+        def f(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(f)(0.0)
+        cond = jaxpr.eqns[0].params["jaxpr_cond_fn"]
+        assert cond.outvars[0].aval.dtype == jnp.bool
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_capture(self, autograph):
+    def test_while_loop_capture(self):
         """Test that a while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -124,14 +132,11 @@ class TestCaptureCircuitsWhileLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(1.2, -0.16852022), (1.6, 0.598211352)])
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_circuit_args(self, arg, expected, autograph):
+    def test_circuit_args(self, arg, expected):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -182,14 +187,11 @@ class TestCaptureCircuitsWhileLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_nested(self, upper_bound, arg, expected, autograph):
+    def test_while_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -266,15 +268,11 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_grad(self, autograph):
+    def test_while_loop_grad(self):
         """Test simple while-loop primitive with gradient."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
-
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
@@ -301,9 +299,17 @@ class TestCaptureCircuitsWhileLoop:
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnum"] == [0]
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 

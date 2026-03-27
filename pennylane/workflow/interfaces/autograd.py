@@ -41,7 +41,7 @@ I need to:
 
 >>> autograd.grad(f)(autograd.numpy.array(2.0))
 Calculating the gradient with 2.0, 1.0
-4.0
+np.float64(4.0)
 
 The above code told autograd how to differentiate the first argument of ``f``.
 
@@ -119,7 +119,6 @@ def autograd_execute(
     **Example:**
 
     >>> from pennylane.workflow.jacobian_products import DeviceDerivatives
-    >>> from pennylane.workflow.autograd import autograd_execute
     >>> execute_fn = qml.device('default.qubit').execute
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
@@ -127,8 +126,8 @@ def autograd_execute(
     ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
     ...     batch = (tape, )
     ...     return autograd_execute(batch, execute_fn, jpc)
-    >>> qml.grad(f)(qml.numpy.array(0.1))
-    -0.09983341664682815
+    >>> print(qml.grad(f)(qml.numpy.array(0.1)))
+    -0.0998...
 
     """
     tapes = tuple(tapes)
@@ -139,8 +138,6 @@ def autograd_execute(
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
@@ -156,8 +153,6 @@ def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     """
     if isinstance(result, dict):
         return result
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-member
     if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
         return tuple(_to_autograd(r) for r in result)
     return autograd.numpy.array(result)

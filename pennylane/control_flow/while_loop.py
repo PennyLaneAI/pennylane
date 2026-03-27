@@ -30,10 +30,22 @@ from ._loop_abstract_axes import (
 )
 
 
+def _to_bool_cond_fn(cond_fn):
+    def _new_cond_fn(*args, **kwargs):
+        from jax import numpy as jnp  # pylint: disable=import-outside-toplevel
+
+        [out] = cond_fn(*args, **kwargs)
+        if getattr(out, "dtype", None) == jnp.bool:
+            return out
+        return jnp.bool(out)
+
+    return _new_cond_fn
+
+
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
-    Python for loop.
+    Python while loop.
 
     This decorator provides a functional version of the traditional while loop,
     similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
@@ -196,11 +208,6 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     """
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
-
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
     def _decorator(body_fn: Callable) -> Callable:
@@ -233,7 +240,7 @@ def _get_while_loop_qfunc_prim():
     register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
     @while_loop_prim.def_impl
-    def _(
+    def _impl(
         *args,
         jaxpr_body_fn,
         jaxpr_cond_fn,
@@ -241,6 +248,9 @@ def _get_while_loop_qfunc_prim():
         cond_slice,
         args_slice,
     ):
+        body_slice = slice(*body_slice)
+        cond_slice = slice(*cond_slice)
+        args_slice = slice(*args_slice)
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
@@ -253,8 +263,8 @@ def _get_while_loop_qfunc_prim():
         return fn_res
 
     @while_loop_prim.def_abstract_eval
-    def _(*args, args_slice, **__):
-        return args[args_slice]
+    def _abstract_eval(*args, args_slice, **__):
+        return args[slice(*args_slice)]
 
     return while_loop_prim
 
@@ -301,8 +311,9 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
         flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+        bool_cond_fn = _to_bool_cond_fn(flat_cond_fn)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_body_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
         else:
@@ -313,14 +324,14 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
-            jaxpr_cond_fn = jax.make_jaxpr(flat_cond_fn, abstracted_axes=abstracted_axes)(
+            jaxpr_cond_fn = jax.make_jaxpr(bool_cond_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
         except ValueError as e:
             handle_jaxpr_error(e, (self.cond_fn, self.body_fn), self.allow_array_resizing)
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(error_msg)
@@ -357,6 +368,13 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.while_loop(
+                self.cond_fn, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

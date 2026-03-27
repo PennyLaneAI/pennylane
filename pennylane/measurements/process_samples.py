@@ -17,26 +17,34 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import EigvalsUndefinedError
-from pennylane.typing import TensorLike
+from pennylane.ops import MeasurementValue
+from pennylane.typing import Sequence, TensorLike
+from pennylane.wires import WiresLike
 
-from .measurement_value import MeasurementValue
 from .measurements import MeasurementProcess
 
 
+# pylint: disable=too-many-arguments
 def process_raw_samples(
-    mp: MeasurementProcess, samples: TensorLike, wire_order, shot_range, bin_size
-):
+    mp: MeasurementProcess,
+    samples: TensorLike,
+    wire_order: WiresLike,
+    shot_range: Sequence[int],
+    bin_size: int,
+    dtype=None,
+) -> TensorLike:
     """Slice the samples for a measurement process.
 
     Args:
         mp (MeasurementProcess): the measurement process containing the wires, observable, and mcms for the processing
         samples (TensorLike): the raw samples
-        wire_order: the wire order for the raw samples
+        wire_order (WiresLike): the wire order for the raw samples
         shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
             to use. If not specified, all samples are used.
         bin_size (int): Divides the shot range into bins of size ``bin_size``, and
             returns the measurement statistic separately over each bin. If not
             provided, the entire shot range is treated as a single bin.
+        dtype: The dtype of the samples returned by this measurement process.
 
     This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
 
@@ -61,6 +69,7 @@ def process_raw_samples(
     # pylint: disable=protected-access
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp._eigvals is None:
         # if no observable was provided then return the raw samples
+        samples = samples.astype(dtype) if dtype is not None else samples
         return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
     # If we're sampling observables
@@ -88,4 +97,5 @@ def process_raw_samples(
         else:
             samples = eigvals[indices]
 
+    samples = samples.astype(dtype) if dtype is not None else samples
     return samples if bin_size is None else samples.reshape((bin_size, -1))

@@ -110,9 +110,7 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 
 .. code-block:: python
 
-    import pennylane as qml
-
-    dev = qml.device("default.qubit", wires=3)
+    dev = qml.device("default.qubit", seed=42, wires=3)
 
     @qml.qnode(dev)
     def circ(x, y):
@@ -123,8 +121,8 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
->>> circ(1.0, 2.0, shots=5)
-(0.6, array([1, 1, 1, 0, 1]))
+>>> qml.set_shots(circ, shots=5)(1.0, 2.0)
+(np.float64(0.2), array([0, 0, 1, 0, 1]))
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
 of :func:`~.pennylane.measure`.
@@ -172,10 +170,9 @@ so that we can verify our results mathematically.
 
 .. code-block:: python
 
-    from functools import partial
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", seed=42, wires=1)
 
-    @partial(qml.set_shots, shots=10000)
+    @qml.set_shots(shots=10_000)
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
@@ -194,8 +191,8 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 :math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`\sin^2(\theta/2) = 0.333`. Using 10000 shots
 we should obtain the excited state 3333 times approximately.
 
->>> circuit(1.23)
-array(3303.)
+>>> print(circuit(1.23)) 
+3264.0
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
@@ -209,8 +206,8 @@ The gradient of the measurement process is
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
->>> qml.grad(circuit)(x)
-4715.000000000001
+>>> print(qml.grad(circuit)(x)) 
+4711.5...
 
 .. note::
 
@@ -272,14 +269,12 @@ from pennylane.exceptions import MeasurementShapeError
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
-from .measurement_value import MeasurementValue
 from .measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
-from .mid_measure import MidMeasureMP, find_post_processed_mcms, get_mcm_predicates, measure
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
@@ -289,3 +284,45 @@ from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
+
+
+# pylint: disable=import-outside-toplevel
+def __getattr__(name):
+    import pennylane.ops.mid_measure as ops_measure
+
+    # from pennylane.exceptions import PennyLaneDeprecationWarning
+    # import warnings
+
+    if name == "MidMeasureMP":
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been renamed and moved to pennylane.ops.MidMeasure",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, "MidMeasure")
+
+    if name in {"measure", "MidMeasureMP", "MeasurementValue"}:
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, name)
+    if name == "find_post_processed_mcms":
+        # warnings.warn(
+        #    "find_post_processed_mcms has been moved from the measurements module to"
+        #    "qml.devices.qubit.simulate._find_post_processed_mcms"
+        #    "if you need this logic, we recommend code duplication, as it is being made private."
+        #    PennyLaneDeprecationWarning,
+        # )
+        from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
+
+        return _find_post_processed_mcms
+    if name == "get_mcm_predicates":
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, name)
+
+    raise AttributeError(f"module 'pennylane.measurements' has no attribute '{name}'")

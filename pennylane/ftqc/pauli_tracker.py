@@ -65,12 +65,10 @@ def pauli_to_xz(op: Operator) -> tuple[int, int]:
     **Example:**
         The following example shows how the Pauli to XZ works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import pauli_to_xz
-            from pennylane import I
-            >>> pauli_to_xz(I(0))
-            (0, 0)
+        >>> from pennylane.ftqc.pauli_tracker import pauli_to_xz
+        >>> from pennylane import I
+        >>> pauli_to_xz(I(0))
+        (0, 0)
 
         A xz tuple representation is returned for a given Pauli operator.
     """
@@ -98,11 +96,9 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     **Example:**
         The following example shows how the XZ to Pauli works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import xz_to_pauli
-            >>> xz_to_pauli(0, 0)(wires=0)
-            I(0)
+        >>> from pennylane.ftqc.pauli_tracker import xz_to_pauli
+        >>> xz_to_pauli(0, 0)(wires=0)
+        I(0)
 
         A Pauli operator class is returned for a given xz tuple.
     """
@@ -125,12 +121,10 @@ def pauli_prod(ops: list[Operator]) -> tuple[int, int]:
     **Example:**
         The following example shows how the `pauli_prod` works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import pauli_prod
-            from pennylane import I, X, Y, Z
-            >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
-            (0, 0)
+        >>> from pennylane.ftqc.pauli_tracker import pauli_prod
+        >>> from pennylane import I, X, Y, Z
+        >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
+        (0, 0)
 
         The result is a new Pauli operator in the xz-encoding representation.
     """
@@ -206,12 +200,10 @@ def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> lis
     **Example:**
         The following example shows how the `commute_clifford_op` works.
 
-        .. code-block:: python3
-
-            from pennylane.ftqc.pauli_tracker import commute_clifford_op
-            from pennylane import I, CNOT
-            >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
-            [(1, 1), (0, 0)]
+        >>> from pennylane.ftqc.pauli_tracker import commute_clifford_op
+        >>> from pennylane import I, CNOT
+        >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
+        [(1, 1), (0, 0)]
 
         A list of Pauli operators in the xz representation is returned.
     """
@@ -390,16 +382,12 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
     **Example:**
 
-        .. code-block:: python3
-
-            import pennylane as qml
+        .. code-block:: python
 
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep
 
             from pennylane.ftqc.pauli_tracker import get_byproduct_corrections
-            import numpy as np
-
 
             def generate_random_state(n):
                 seed_value = 42  # You can use any integer as the seed
@@ -414,8 +402,9 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
 
             num_shots = 1000
-            dev = qml.device("lightning.qubit", shots=num_shots)
+            dev = qml.device("lightning.qubit")
 
+            @qml.set_shots(num_shots)
             @diagonalize_mcms
             @qml.qnode(dev, mcm_method="one-shot")
             def circ(start_state):

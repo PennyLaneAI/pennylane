@@ -39,6 +39,12 @@ class NoMatOp(qml.operation.Operation):
         return [qml.TShift(self.wires), qml.TClock(self.wires)]
 
 
+@qml.register_resources({qml.TShift: 1, qml.TClock: 1})
+def _no_mat_op_decomp(wires):
+    qml.TShift(wires)
+    qml.TClock(wires)
+
+
 # pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qml.operation.Operation):
     """Dummy operation for checking check_validity throws error when
@@ -218,7 +224,10 @@ class TestPreprocessingIntegration:
         ]
 
         program, _ = DefaultQutritMixed().preprocess()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
 
         expected = [qml.THadamard(0), qml.TShift(1), qml.TClock(1), qml.TRZ(0.123, wires=1)]
 
@@ -241,7 +250,11 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
+
         expected_ops = [
             qml.THadamard(0),
             qml.TShift(1),

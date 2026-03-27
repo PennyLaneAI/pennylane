@@ -444,6 +444,27 @@ class TestCommuteControlledInterfaces:
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
+    def test_commute_controlled_abstract_wires(self):
+        """Tests that inverses do not cancel across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript([qml.X(0), qml.CNOT([1, w])])
+            [tape], _ = commute_controlled(tape)
+            return isinstance(tape.operations[1], qml.X)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript([qml.CNOT([w, 1]), qml.X(0), qml.CNOT([1, 0])])
+            [tape], _ = commute_controlled(tape)
+            return isinstance(tape.operations[2], qml.X)
+
+        assert not f(0)
+        assert f2(0)
+
 
 ### Tape
 with qml.queuing.AnnotatedQueue() as q:
@@ -534,8 +555,8 @@ class TestTransformDispatch:
     def test_qnode(self):
         """Test the transform on a qnode directly."""
         transformed_qnode = commute_controlled(qnode_circuit)
-        assert not transformed_qnode.transform_program.is_empty()
-        assert len(transformed_qnode.transform_program) == 1
+        assert transformed_qnode.compile_pipeline
+        assert len(transformed_qnode.compile_pipeline) == 1
         res = transformed_qnode()
         expected = qnode_circuit()
         assert np.allclose(res, expected)

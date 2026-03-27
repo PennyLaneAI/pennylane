@@ -158,7 +158,7 @@ class TestCapabilities:
             pytest.skip("No passthru_interface capability specified by device.")
 
         interface = cap["passthru_interface"]
-        assert interface in ["tf", "autograd", "jax", "torch"]  # for new interface, add test case
+        assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
         qnode = qml.QNode(qfunc, dev, interface=interface)

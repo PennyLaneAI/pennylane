@@ -17,7 +17,9 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 # pylint: disable=protected-access
 
 import contextlib
+import importlib
 import io
+import json
 import re
 
 import pytest
@@ -37,8 +39,60 @@ def test_about():
 
     assert "Version:" in out
     pl_version_match = re.search(r"Version:\s+([\S]+)\n", out).group(1)
-    assert qml.version().replace("-", ".") in pl_version_match
+    # 0.43.0-rc0 -> 0.43.0rc0
+    # 0.43.0-dev0 -> 0.43.0.dev0
+    is_rc_version = "rc" in pl_version_match
+    assert qml.version().replace("-", "" if is_rc_version else ".") in pl_version_match
     assert "Numpy version" in out
     assert "Scipy version" in out
     assert "default.qubit" in out
     assert "default.gaussian" in out
+
+
+def test_about_prints_core_fields(capsys):
+    about = importlib.import_module("pennylane.about")
+    about.about()
+    cap = capsys.readouterr()
+
+    assert cap.err == ""
+    assert re.search(r"Name:\s*pennylane", cap.out, re.I)
+    assert "Version:" in cap.out
+    assert "Summary:" in cap.out
+    assert "Location:" in cap.out
+
+
+def test_about_shows_editable_location(monkeypatch, capsys):
+    about = importlib.import_module("pennylane.about")
+
+    class Dist:  # pylint: disable=too-few-public-methods
+        metadata = {"Name": "PennyLane", "Version": "x"}
+
+        @staticmethod
+        def read_text(name):  # pylint: disable=unused-argument
+            return json.dumps({"dir_info": {"editable": True}, "url": "file:///tmp/pl"})
+
+    im = importlib.import_module("importlib.metadata")
+    monkeypatch.setattr(about, "metadata", im)
+    monkeypatch.setattr(im, "distribution", lambda _name: Dist())
+    monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane")
+
+    about.about()
+    out = capsys.readouterr().out
+    assert "Editable project location: /tmp/pl" in out
+    assert re.search(r"Location:\s*/site-packages/pennylane", out)
+
+
+def test_catalyst_version(monkeypatch):
+    """Tests the catalyst_version function."""
+    about = importlib.import_module("pennylane.about")
+
+    # Test when catalyst is not found
+    monkeypatch.setattr(about, "find_spec", lambda name: None if name == "catalyst" else True)
+    assert about.catalyst_version() is None
+
+    # Test when catalyst is found but version is not available
+    monkeypatch.setattr(about, "find_spec", lambda name: True)
+    monkeypatch.setattr(
+        about, "version", lambda name: "0.1.0" if name == "pennylane_catalyst" else None
+    )
+    assert about.catalyst_version() == "0.1.0"

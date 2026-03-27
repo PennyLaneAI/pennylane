@@ -15,4 +15,4 @@ Overview
     :no-heading:
     :include-all-objects:
     :no-inherited-members:
-    :skip: contextmanager, OrderedDict, RLock, Optional, Union, QueuingError
+    :skip: contextmanager, Optional, OrderedDict, PennyLaneDeprecationWarning, QueuingError, RLock, Union

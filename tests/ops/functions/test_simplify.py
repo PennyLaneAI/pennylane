@@ -143,7 +143,7 @@ class TestSimplifyQNodes:
         assert s_qnode() == qnode()
 
         tape = qml.workflow.construct_tape(s_qnode)()
-        [s_tape], _ = s_qnode.transform_program([tape])
+        [s_tape], _ = s_qnode.compile_pipeline([tape])
         assert len(s_tape) == 2
 
         s_op = s_tape.operations[0]

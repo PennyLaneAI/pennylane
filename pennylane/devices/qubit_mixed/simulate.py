@@ -17,7 +17,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.devices.qubit.sampling import jax_random_split
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -58,8 +58,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)

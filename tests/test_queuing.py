@@ -102,23 +102,6 @@ class TestStopRecording:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "Hadamard"
 
-    def test_stop_recording_qnode_qfunc(self):
-        """A QNode with a stop_recording qfunc will result in no quantum measurements."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        @QueuingManager.stop_recording()
-        def my_circuit():
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = my_circuit()
-        assert len(result) == 0
-
-        tape = qml.workflow.construct_tape(my_circuit)()
-        assert len(tape.operations) == 0
-        assert len(tape.measurements) == 0
-
     def test_stop_recording_qnode(self):
         """A stop_recording QNode is unaffected"""
         dev = qml.device("default.qubit", wires=1)
@@ -416,6 +399,16 @@ class TestApplyOp:
         assert q1.queue == [op2]
         assert q2.queue == [op1]
 
+    def test_apply_plus_dequeuing(self):
+        """Test that operations queued with qml.apply don't get dequeued by subsequent ops."""
+
+        h = qml.H(0)
+        with qml.queuing.AnnotatedQueue() as q1:
+            op1 = qml.apply(h)
+            op2 = qml.adjoint(h)
+
+        assert q1.queue == [op1, op2]
+
 
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
@@ -480,4 +473,19 @@ def test_process_queue_error_if_not_operator_or_measurement():
     q = AnnotatedQueue()
     q.append(1)
     with pytest.raises(QueuingError, match="not an object that can be processed"):
+        qml.queuing.process_queue(q)
+
+
+def test_queue_category_none_deprecation():
+
+    class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        _queue_category = None
+        num_wires = 1
+        num_params = 0
+
+    q = AnnotatedQueue()
+    q.append(DummyOp(wires=[0]))
+    match = "an object to get queued with `_queue_category=None` is deprecated"
+
+    with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning, match=match):
         qml.queuing.process_queue(q)

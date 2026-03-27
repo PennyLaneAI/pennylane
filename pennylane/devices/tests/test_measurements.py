@@ -710,7 +710,7 @@ class TestSample:
 
         res = circuit()
         assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
-        assert qml.math.shape(res) == (dev.shots.total_shots,)
+        assert qml.math.shape(res) == (dev.shots.total_shots, 1)
         assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol):
@@ -1682,6 +1682,12 @@ def _skip_test_for_braket(dev):
         pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
 
 
+def _skip_test_for_ionq(dev):
+    """Skip the specific test because the IonQ plugin does not yet support custom measurement processes."""
+    if "ionq" in getattr(dev, "short_name", dev.name):
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
@@ -1844,6 +1850,7 @@ class TestCustomMeasurement:
         """Test the execution of a custom measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
+        _skip_test_for_ionq(dev)
 
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""

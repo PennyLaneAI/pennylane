@@ -24,6 +24,8 @@ from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.devices import ExecutionConfig
+from pennylane.devices.default_tensor import _operations, stopping_condition
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
@@ -412,6 +414,7 @@ class TestSupportsDerivatives:
             dev.execute_and_compute_vjp(circuits=None, cotangents=None)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("method", ["mps", "tn"])
 @pytest.mark.jax
 class TestJaxSupport:
@@ -450,6 +453,7 @@ class TestJaxSupport:
         assert np.allclose(circuit(), 0.0)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("method", ["mps", "tn"])
 @pytest.mark.parametrize(
     "operation, expected_output, par",
@@ -491,6 +495,7 @@ def test_apply_operation_state_preparation(operation, expected_output, par, meth
 
 
 # At this stage, this test is especially relevant for the MPS method, but we test both methods for consistency.
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("num_orbitals", [2, 4])
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_wire_order_dense_vector(method, num_orbitals):
@@ -528,6 +533,7 @@ def test_wire_order_dense_vector(method, num_orbitals):
     assert len(state) == 2 ** (2 * num_orbitals + 1)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestMCMs:
     """Test that default.tensor can handle mid circuit measurements."""
 
@@ -566,3 +572,137 @@ class TestMCMs:
 
         res = circuit(0.5)
         assert qml.math.allclose(res, np.cos(0.5))
+
+
+class TestPreprocessingTransforms:
+    """Tests for the preprocessing transform pipeline."""
+
+    def test_preprocess_transforms_structure(self):
+        """Test that the preprocessing transforms are set up correctly."""
+        dev = qml.device("default.tensor", wires=3)
+        config = ExecutionConfig()
+
+        program, _ = dev.preprocess(config)
+
+        # Check that we have the expected transforms
+        transform_names = [
+            transform_container.tape_transform.__name__ for transform_container in program
+        ]
+        expected_transforms = [
+            "validate_measurements",
+            "validate_observables",
+            "validate_device_wires",
+            "defer_measurements",
+            "decompose",
+            "broadcast_expand",
+        ]
+
+        for expected_transform in expected_transforms:
+            assert expected_transform in transform_names
+
+    def test_decompose_transform_has_device_wires_and_target_gates(self):
+        """Test that the decompose transform is configured with device_wires and target_gates."""
+        dev = qml.device("default.tensor", wires=[0, 1, 2])
+        config = ExecutionConfig()
+
+        program, _ = dev.preprocess(config)
+
+        # Find the decompose transform
+        decompose_transform = None
+        for transform_container in program:
+            if transform_container.tape_transform.__name__ == "decompose":
+                decompose_transform = transform_container
+                break
+
+        assert decompose_transform is not None
+
+        # Check that device_wires and target_gates are passed correctly
+        assert "device_wires" in decompose_transform.kwargs
+        assert "target_gates" in decompose_transform.kwargs
+        assert decompose_transform.kwargs["device_wires"] == dev.wires
+        assert decompose_transform.kwargs["target_gates"] == _operations
+
+    def test_decompose_with_stopping_condition(self):
+        """Test that decompose transform uses the correct stopping condition."""
+        dev = qml.device("default.tensor", wires=3)
+        config = ExecutionConfig()
+
+        program, _ = dev.preprocess(config)
+
+        # Find the decompose transform
+        decompose_transform = None
+        for transform_container in program:
+            if transform_container.tape_transform.__name__ == "decompose":
+                decompose_transform = transform_container
+                break
+
+        assert decompose_transform is not None
+        assert "stopping_condition" in decompose_transform.kwargs
+        assert decompose_transform.kwargs["stopping_condition"] == stopping_condition
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.integration
+    def test_integration_with_qnode(self):
+        """Test integration with QNode to ensure the device works end-to-end."""
+        dev = qml.device("default.tensor", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            # Use an operation that needs decomposition
+            qml.QFT(wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        # This should work without errors
+        result = circuit()
+        assert isinstance(result, (float, np.floating))
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.integration
+    def test_integration_with_multiple_decomposition_layers(self):
+        """Test that operations requiring multiple layers of decomposition work."""
+        dev = qml.device("default.tensor", wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            # Operations that may require multiple decomposition steps
+            qml.QFT(wires=[0, 1, 2])
+            qml.GroverOperator(wires=[0, 1, 2, 3])
+            return qml.expval(qml.Z(0))
+
+        # This should work without errors
+        result = circuit()
+        assert isinstance(result, (float, np.floating))
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
+    """Tests that only work when graph mode is enabled."""
+
+    @pytest.mark.parametrize(("wires", "expected_program_len"), [(1, 2), (2, 2), (4, 1), (None, 1)])
+    def test_work_wire_constraint_respected(self, wires, expected_program_len):
+        """Test that decompositions requiring more work wires than available are discarded."""
+
+        # Create a mock operation with different decomposition options
+        class MyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        # Fallback decomposition (no work wires needed)
+        @qml.register_resources({qml.Hadamard: 2})
+        def decomp_fallback(wires):
+            qml.Hadamard(wires)
+            qml.Hadamard(wires)
+
+        # Work wire decomposition (needs more wires than available)
+        @qml.register_resources({qml.PauliX: 1}, work_wires={"burnable": 3})
+        def decomp_with_work_wire(wires):
+            qml.PauliX(wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+
+            tape = qml.tape.QuantumScript([MyOp(0)], [qml.expval(qml.Z(0))])
+            dev = qml.device("default.tensor", wires=wires)
+            program = dev.preprocess_transforms()
+            (out_tape,), _ = program([tape])
+
+        assert len(out_tape.operations) == expected_program_len

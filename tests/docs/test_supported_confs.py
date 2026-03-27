@@ -32,14 +32,13 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow")
 torch = pytest.importorskip("torch")
 F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-interfaces = [None, "autograd", "jax", "tf", "torch"]
-diff_interfaces = ["autograd", "jax", "tf", "torch"]
+interfaces = [None, "autograd", "jax", "torch"]
+diff_interfaces = ["autograd", "jax", "torch"]
 shots_list = [None, 100]
 
 # Each of these tuples contain:
@@ -48,8 +47,8 @@ shots_list = [None, 100]
 #   3. The wire to measure in a single-qubit measurement process
 #   4. The wires(s) to measure in a multi-qubit measurement process
 wire_specs_list = [
-    (1, [0], 0, 0),
-    (2, [0, 1], 0, [0, 1]),
+    (2, [0, 1], 0, 0),
+    (3, [0, 1, 2], 0, [0, 1]),
     # (["a"], ["a"], "a", "a"),
     # (["a", "b"], ["a", "b"], "a", ["a", "b"]),
 ]
@@ -89,7 +88,7 @@ grad_return_cases = [
 ]
 
 
-def get_qnode(interface, diff_method, return_type, shots, wire_specs):
+def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_kwargs=None):
     """Return a QNode with the given attributes.
 
     This function includes a general QNode definition that is used to create a
@@ -97,18 +96,20 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
 
     * input interface,
     * differentiation method,
-    * return type and
-    * the number of shots for the device.
+    * return type,
+    * the number of shots for the device
+    * and any parameters for the diff method.
     * the wire specifications, see the comment above
     """
     device_wires, wire_labels, single_meas_wire, multi_meas_wire = wire_specs
 
-    dev = qml.device("default.qubit", wires=device_wires, shots=shots)
+    dev = qml.device("default.qubit", wires=device_wires)
 
     # pylint: disable=too-many-return-statements
-    @qml.qnode(dev, interface=interface, diff_method=diff_method)
+    @qml.set_shots(shots)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
     def circuit(x):
-        for i, wire_label in enumerate(wire_labels):
+        for i, wire_label in enumerate(wire_labels[:-1]):
             qml.Hadamard(wires=wire_label)
             qml.RX(x[i], wires=wire_label)
 
@@ -155,12 +156,6 @@ def get_variable(interface, wire_specs, complex=False):
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
         return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
-    if interface == "tf":
-        # complex dtype is required for TF when the gradients have non-zero
-        # imaginary parts, otherwise they will be ignored
-        return tf.Variable(
-            [0.1] * num_wires, trainable=True, dtype=tf.complex128 if complex else tf.float64
-        )
     if interface == "torch":
         # complex dtype is required for torch when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
@@ -223,13 +218,6 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
         if return_type in grad_return_cases:
             return jax.grad(cost_fn)(x)
         return jax.jacrev(cost_fn, holomorphic=complex)(x)
-    if interface == "tf":
-        with tf.GradientTape(persistent=True) as tape:
-            out = cost_fn(x)
-
-        if return_type in grad_return_cases:
-            return tape.gradient(out, [x])
-        return tape.jacobian(out, [x], experimental_use_pfor=False)
     if interface == "torch":
         if return_type in grad_return_cases:
             res = cost_fn(x)
@@ -347,11 +335,6 @@ class TestSupportedConfs:
 
         if shots is not None:
             with pytest.raises(QuantumFunctionError):
-                compute_gradient(x, interface, circuit, return_type)
-        elif return_type == "Probability" and interface == "tf":
-            with pytest.raises(Exception):
-                # tensorflow.python.framework.errors_impl.InvalidArgumentError
-                # TODO: figure out why [sc-52490]
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)
@@ -515,7 +498,7 @@ class TestSupportedConfs:
             x = get_variable("autograd", wire_specs)
             compute_gradient(x, "autograd", circuit, "StateVector")
 
-    @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_state_backprop(self, interface, wire_specs):
         """Test gradient of state directly succeeds for non-autograd interfaces"""
@@ -526,8 +509,8 @@ class TestSupportedConfs:
         compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
     wire_specs_list = [
-        (2, [0], 0, 0),
-        (3, [0, 1], 0, [0, 1]),
+        (2, [0, 1], 0, 0),
+        (3, [0, 1, 2], 0, [0, 1]),
     ]
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -552,7 +535,9 @@ class TestSupportedConfs:
         """Test diff_method "hadamard" works for all interfaces and
         return_types except State, DensityMatrix and Var"""
         # correctness is already tested in other test files
-        circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
+        circuit = get_qnode(
+            interface, diff_method, return_type, shots, wire_specs, {"aux_wire": wire_specs[1][-1]}
+        )
         x = get_variable(interface, wire_specs)
         if return_type in ("VnEntropy", "MutualInfo"):
             if shots and interface != "jax":

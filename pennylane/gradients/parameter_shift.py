@@ -21,17 +21,13 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import (
-    DecompositionUndefinedError,
-    OperatorPropertyUndefined,
-    ParameterFrequenciesUndefinedError,
-)
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import split_to_single_terms
+from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -397,13 +393,21 @@ def expval_param_shift(
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
-        recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
-        recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
-            recipe, at_least_one_unshifted, f0, gradient_tapes, tape
-        )
-        coeffs, multipliers, op_shifts = recipe.T
+        if op.name in ("GlobalPhase", "Adjoint(GlobalPhase)"):
+            # TODO: there has to be a better way! [sc-109173]
+            coeffs = []
+            g_tapes = []
+            unshifted_coeff = None
+            batch_size = None
 
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+        else:
+            recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+            recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+                recipe, at_least_one_unshifted, f0, gradient_tapes, tape
+            )
+            coeffs, multipliers, op_shifts = recipe.T
+            g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
@@ -785,10 +789,9 @@ def _expand_transform_param_shift(
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = decompose(
         tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
         stopping_condition=_param_shift_stopping_condition,
-        skip_initial_state_prep=False,
-        name="param_shift",
-        error=DecompositionUndefinedError,
+        strict=False,
     )
     if any(math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])):
         try:
@@ -1058,10 +1061,10 @@ def param_shift(
 
         .. code-block:: python
 
-            from functools import partial
             shots = (10, 100, 1000)
             dev = qml.device("default.qubit")
-            @partial(qml.set_shots, shots=shots)
+
+            @qml.set_shots(shots=shots)
             @qml.qnode(dev)
             def circuit(params):
                 qml.RX(params[0], wires=0)

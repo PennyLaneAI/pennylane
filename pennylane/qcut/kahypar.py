@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from networkx import MultiDiGraph
 
 from pennylane import math
 from pennylane.operation import Operation
@@ -30,7 +29,7 @@ from pennylane.operation import Operation
 
 # pylint: disable=too-many-positional-arguments
 def kahypar_cut(
-    graph: MultiDiGraph,
+    graph,
     num_fragments: int,
     imbalance: int = None,
     edge_weights: None | list[int | float] = None,
@@ -166,7 +165,7 @@ def kahypar_cut(
 
 
 def _graph_to_hmetis(
-    graph: MultiDiGraph,
+    graph,
     hyperwire_weight: int = 0,
     edge_weights: Sequence[int] = None,
 ) -> tuple[list[int], list[int], list[int | float]]:

@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.math import choi_matrix
 
-# tf = pytest.importorskip("tensorflow", minversion="2.1")
-# torch = pytest.importorskip("torch")
-# jax = pytest.importorskip("jax")
-# jnp = pytest.importorskip("jax.numpy")
-
 Ks1 = np.array([qml.matrix(qml.CNOT((0, 1)))])  # a simple unitary channel
 Ks2 = np.array(
     [
@@ -44,7 +39,7 @@ Ks3 = np.array([coeffs[j] * Us[j] for j in range(len(Us))])
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", [None, "autograd", "jax", "torch"])
 @pytest.mark.parametrize("Ks", [Ks1, Ks2, Ks3])
 def test_density_matrix(Ks, interface):
     """Test that the resulting choi matrix is valid, i.e. a density matrix"""
