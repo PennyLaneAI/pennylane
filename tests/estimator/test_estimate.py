@@ -335,7 +335,9 @@ class TestEstimateResources:
     def test_estimate_resources_from_resource_operator_no_decomp(self):
         """Test that a ResourcesUndefinedError is raised when obtaining resources for
         a resource operator which has no resource_decomp defined"""
-        with pytest.raises(ResourcesUndefinedError, match=".* does not have a resource decomposition defined"):
+        with pytest.raises(
+            ResourcesUndefinedError, match=".* does not have a resource decomposition defined"
+        ):
             estimate(workflow=DummyT(), gate_set={DummyCNOT})
 
     def test_estimate_resources_from_scaled_resource_operator(self):
