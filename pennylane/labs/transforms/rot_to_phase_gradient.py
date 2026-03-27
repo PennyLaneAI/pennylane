@@ -28,8 +28,8 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-def fanout(wires):
-    """Fanout operator"""
+def ladder(wires):
+    """ladder operator"""
     if len(wires) == 1:
         return qp.I(wires)
     return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[~0:0:-1], wires[~1::-1])][::-1])
@@ -78,7 +78,7 @@ def _pauli_rot_phase_gradient(op, **other_wires):
         if isinstance(sub_op, qp.MultiRZ):
             break
         diagonalizing_gates.append(sub_op)
-    diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
+    diagonalizing_gate = ladder(wires) @ qp.prod(*diagonalizing_gates[::-1])
 
     pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)
     new_op = qp.change_op_basis(diagonalizing_gate, pg_op)
@@ -242,7 +242,7 @@ def rot_to_phase_gradient(
                     uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
                     operations.append(qp.change_op_basis(comp, pg_op, uncomp))
                 case qp.MultiRZ if len(op.wires) > 1:
-                    operations.append(qp.change_op_basis(fanout(op.wires), pg_op))
+                    operations.append(qp.change_op_basis(ladder(op.wires), pg_op))
                 case _:
                     operations.append(pg_op)
 
