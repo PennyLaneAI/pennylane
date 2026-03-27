@@ -32,13 +32,13 @@ class FirstQuantizedHamiltonian:
     The form of this Hamiltonian is described in ``_.
 
     Args:
-        num_pw (int): number of plane waves
+        num_plane_waves (int): number of plane waves
         num_electrons (int): number of electrons
         omega (float): unit-cell volume
         charge (int): total charge of the system
 
     Raises:
-        TypeError: if ``num_pw``, ``num_electrons`` is not a positive integer
+        TypeError: if ``num_plane_waves``, ``num_electrons`` is not a positive integer
         TypeError: if ``omega`` is not a positive float
         TypeError: if ``charge`` is not an integer
 
@@ -47,7 +47,7 @@ class FirstQuantizedHamiltonian:
         :class:`~.estimator.templates.select_op.SelectFirstQuantized`
     """
 
-    num_pw: int
+    num_plane_waves: int
     num_electrons: int
     omega: float
     charge: int
@@ -55,7 +55,7 @@ class FirstQuantizedHamiltonian:
     def __post_init__(self):
         """Checks the types of the inputs."""
 
-        _validate_positive_int("num_pw", self.num_pw)
+        _validate_positive_int("num_plane_waves", self.num_plane_waves)
         _validate_positive_int("num_electrons", self.num_electrons)
         if not isinstance(self.omega, (float, int)) or self.omega <= 0:
             raise TypeError(f"omega must be a positive float, got {self.omega}")
