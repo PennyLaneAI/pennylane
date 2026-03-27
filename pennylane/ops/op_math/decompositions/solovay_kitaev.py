@@ -295,8 +295,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
             a greater number of passes. Default is ``5``.
         basis_set (tuple[str]): Basis set to be used for the decomposition and building an approximate set internally.
-            It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'Adjoint(T)', 'S', 'Adjoint(S)')`` to the
-            gate adjoint. Default value is ``('H', 'S', 'T')``.
+            It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'Adjoint(T)', 'S', 'Adjoint(S)')``. Default value is ``('H', 'S', 'T')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
