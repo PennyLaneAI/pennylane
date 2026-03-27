@@ -357,5 +357,4 @@ class TestPauliRot:
         op = qre.Controlled(
             qre.PauliRot(pauli_string, precision=precision), num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
         )
-        print(qre.estimate(op), expected)
         assert qre.estimate(op) == expected
