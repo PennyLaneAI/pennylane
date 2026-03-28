@@ -457,7 +457,7 @@ The following classes have been ported over:
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
 * Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
-  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in `~labs.estimator_beta`
+  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
   [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
 
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
