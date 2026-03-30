@@ -88,8 +88,8 @@ All operator functions can be used on instantiated operators.
 
 >>> op = qml.RX(0.54, wires=0)
 >>> qml.matrix(op)
-[[0.9637709+0.j         0.       -0.26673144j]
-[0.       -0.26673144j 0.9637709+0.j        ]]
+array([[0.9637709+0.j        , 0.       -0.26673144j],
+       [0.       -0.26673144j, 0.9637709+0.j        ]])
 
 Some operator functions can also be used in a functional form:
 
@@ -112,11 +112,15 @@ quantum functions, QNodes or tapes:
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
 ...     qml.Z(wires=0)
->>> qml.matrix(circuit)(np.pi / 4)
-array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
-[ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
-[ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
-[ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
+>>> qml.matrix(circuit, wire_order=[0,1])(np.pi / 4)
+array([[ 0.92387953+0.j        ,  0.        -0.38268343j,
+         0.        +0.j        ,  0.        +0.j        ],
+       [ 0.        -0.38268343j,  0.92387953+0.j        ,
+         0.        +0.j        ,  0.        +0.j        ],
+       [ 0.        +0.j        ,  0.        +0.j        ,
+        -0.92387953+0.j        ,  0.        +0.38268343j],
+       [ 0.        +0.j        ,  0.        +0.j        ,
+         0.        +0.38268343j, -0.92387953+0.j        ]])
 
 
 Matrix to Operator functions
@@ -133,7 +137,7 @@ For example:
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qml.pauli_decompose(mat)
 >>> type(h)
-pennylane.ops.op_math.linear_combination.LinearCombination
+<class 'pennylane.ops.op_math.linear_combination.LinearCombination'>
 >>> print(h)
 1.0 * X(0) + 1.0 * Z(0)
 
