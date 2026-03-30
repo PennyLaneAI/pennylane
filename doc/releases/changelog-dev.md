@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the 
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
   - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
@@ -157,6 +157,12 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
+  wires elsewhere in PennyLane, and that was not taken into account in the resource functions
+  for the graph-based decomposition system (leading to decompositions not being resolved correctly).
+  Also simplified the resource calculation of one decomposition of `Select`.
+  [(#9222)](https://github.com/PennyLaneAI/pennylane/pull/9222)
+
 * The decomposition of :class:`~.TemporaryAND` is now compatible with traced control values.
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
@@ -166,7 +172,7 @@ The following classes have been ported over:
 * The decomposition of :class:`~.DiagonalQubitUnitary` is now compatible with traced data.
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
-* `Callables` defining quantum operations can now be passed to the 
+* `Callables` defining quantum operations can now be passed to the
   `compute_op`, `target_op` and `uncompute_op` arguments of `qml.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
@@ -183,11 +189,11 @@ The following classes have been ported over:
 * ZX-related transforms are now compatible with `pyzx` v0.10.0.
   [(#9179)](https://github.com/PennyLaneAI/pennylane/pull/9179)
 
-* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations. 
+* The :func:`~.transforms.unitary_to_rot` transform now recursively decomposes `QubitUnitary` operations.
   This fixed a bug where two-qubit unitaries would decompose incorrectly to two single-qubit unitaries rather
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
-  
+
 * `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
@@ -257,7 +263,7 @@ The following classes have been ported over:
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
-  states, as well as with ``jax.jit`` and static input states. Also changed the parametric 
+  states, as well as with ``jax.jit`` and static input states. Also changed the parametric
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
@@ -436,7 +442,7 @@ The following classes have been ported over:
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
-* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter. 
+* Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter.
   [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
@@ -742,7 +748,7 @@ The following classes have been ported over:
 
 * A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
-  
+
 * Fixed a warning of casting complex values to reals within `qml.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
@@ -761,7 +767,7 @@ The following classes have been ported over:
 
 * Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
   [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
-  
+
 * Updated the `diastatic-malt` dependency to version v2.15.3.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
@@ -842,7 +848,7 @@ The following classes have been ported over:
   These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
   states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
-  
+
 * Added a `qml.decomposition.reconstruct` module which implements a method to reconstruct the original
   operator instance from `(*op.data, op.wires, **op.resource_params)`, which enables qjit-compatible
   symbolic decomposition rules that do not need to take an instance of the base operator as input.
@@ -850,11 +856,19 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions 
+* Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+  that an error will be raised if a ``ResourceOperator`` is encountered that does not have
+  a resource decomposition defined and is not in the provided ``gate_set``.
+  [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
+
+* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
+  [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
+
+* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` 
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
@@ -867,6 +881,11 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
+  was being returned as a class type rather than an instance,
+  preventing the intended diagnostic message from being displayed.
+  [(#9229)](https://github.com/PennyLaneAI/pennylane/pull/9229)
 
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
@@ -985,6 +1004,8 @@ Sengthai Heng,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
+Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
