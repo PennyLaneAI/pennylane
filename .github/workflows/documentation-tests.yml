@@ -58,7 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group docs --group dev -e . 
+          pip install --group doctest -e . 
 
       - name: Print Dependencies
         run: |
