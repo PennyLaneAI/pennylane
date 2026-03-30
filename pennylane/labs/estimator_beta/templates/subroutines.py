@@ -22,7 +22,7 @@ from pennylane.estimator import GateCount, resource_rep
 
 def selectpaulirot_controlled_resource_decomp(
     num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
-):
+) -> list[GateCount]:
     r"""Returns a list representing the resources of the controlled version of the :class:`~pennylane.estimator.templates.SelectPauliRot` operator.
     Each object in the list
     represents a gate and the number of times it occurs in the circuit.
