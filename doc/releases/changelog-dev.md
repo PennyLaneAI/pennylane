@@ -696,7 +696,7 @@ The following classes have been ported over:
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
     for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-      ```python
+      ```py
       # Legacy method (deprecated):
       qml.RX(0.5, wires=0, id="x0")
 
