@@ -381,35 +381,41 @@ class TestPauliRotationDecomposition:
     @pytest.mark.parametrize("use_qjit", [False, True])
     def test_integration_single_wire_qnode(self, phi, RGate, use_qjit):
         """Test that the correct transform is applied"""
-        precision = 3
-        wire, angle_wires, phase_grad_wires, work_wires = self.make_wires(precision, use_qjit)
-        wire_order = [wire] + phase_grad_wires + angle_wires + work_wires
+        with qp.decomposition.toggle_graph_ctx(True):
+            precision = 3
+            wire, angle_wires, phase_grad_wires, work_wires = self.make_wires(precision, use_qjit)
+            wire_order = [wire] + phase_grad_wires + angle_wires + work_wires
 
-        @qp.qnode(qp.device("lightning.qubit", wires=wire_order))
-        def node(phi):
-            qp.H(wire)  # prepare some state
-            qp.SX(wire)
-            prepare_phase_gradient(phase_grad_wires)
-            RGate(phi, wires=[wire])
+            @qp.qnode(qp.device("lightning.qubit", wires=wire_order))
+            def node(phi):
+                qp.H(wire)  # prepare some state
+                qp.S(wire)
+                prepare_phase_gradient(phase_grad_wires)
+                RGate(phi, wires=[wire])
 
-            qp.adjoint(qp.SX(wire))  # unprepare some state
-            qp.adjoint(qp.H(wire))
-            return qp.state()
+                qp.adjoint(qp.S(wire))  # unprepare some state
+                qp.adjoint(qp.H(wire))
+                return qp.state()
 
-        new_node = rot_to_phase_gradient(node, angle_wires, phase_grad_wires, work_wires)
-        if use_qjit:
-            new_node = qp.qjit(new_node)
-        output = new_node(phi)
-        output_expected = qp.matrix(
-            qp.adjoint(qp.H(0)) @ qp.adjoint(qp.SX(0)) @ RGate(phi, wires=0) @ qp.SX(0) @ qp.H(0)
-        )[:, 0]
-        B = 2**precision
-        phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
-        # Expected output state: single-qubit rotated state, phase gradient state, |0> on rest
-        output_expected = np.kron(
-            np.kron(output_expected, phase_grad_state), np.eye(2 ** (2 * precision - 1))[0]
-        )
-        assert np.allclose(output_expected, output)
+            new_node = rot_to_phase_gradient(node, angle_wires, phase_grad_wires, work_wires)
+            if use_qjit:
+                new_node = qp.decompose(new_node, gate_set=qp.gate_sets.ALL_OPS)
+                new_node = qp.qjit(new_node)
+            output = new_node(phi)
+            output_expected = qp.matrix(
+                qp.adjoint(qp.H(0))
+                @ qp.adjoint(qp.SX(0))
+                @ RGate(phi, wires=0)
+                @ qp.SX(0)
+                @ qp.H(0)
+            )[:, 0]
+            B = 2**precision
+            phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
+            # Expected output state: single-qubit rotated state, phase gradient state, |0> on rest
+            output_expected = np.kron(
+                np.kron(output_expected, phase_grad_state), np.eye(2 ** (2 * precision - 1))[0]
+            )
+            assert np.allclose(output_expected, output)
 
     @pytest.mark.parametrize(
         "RGate",

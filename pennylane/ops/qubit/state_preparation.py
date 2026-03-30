@@ -241,8 +241,13 @@ def _basis_state_decomp(state, wires, **__):
         if not qml.math.is_abstract(wires):
             wires = jnp.array(wires)
 
+    print(state)
+
     @qml.for_loop(len(state))
     def _loop(i):
+        print(i)
+        print(wires[i])
+        print(state[i])
         qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter

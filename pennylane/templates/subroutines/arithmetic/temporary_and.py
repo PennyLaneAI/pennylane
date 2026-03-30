@@ -223,6 +223,54 @@ def _temporary_and(wires: WiresLike, **kwargs):
 add_decomps(TemporaryAND, _temporary_and)
 
 
+def _generic_adjoint_temporary_and_resources(**_):
+    number_xs = 4  # worst case scenario
+    prod_rep = resource_rep(
+        ops.Prod,
+        resources={
+            resource_rep(ops.Hadamard): 1,
+            resource_rep(ops.T): 1,
+            resource_rep(ops.CNOT): 1,
+            adjoint_resource_rep(ops.T, {}): 1,
+        },
+    )
+    return {
+        resource_rep(ops.X): number_xs,
+        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
+        resource_rep(ops.S): 1,
+    }
+
+
+@register_resources(_generic_adjoint_temporary_and_resources, exact=False)
+def _generic_adjoint_temporary_and(wires: WiresLike, **kwargs):
+
+    print(f"using generic decomp")
+    control_values = kwargs["control_values"]
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+
+    ops.S(wires=wires[2])
+
+    ops.change_op_basis(
+        ops.prod(
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+            ops.H(wires[2]),
+        ),
+        ops.CNOT(wires=[wires[0], wires[2]]),
+        ops.prod(
+            ops.H(wires[2]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+        ),
+    )
+
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+
+
 # pylint: disable=unused-argument
 def _adjoint_temporary_and_resources(base_class=None, base_params=None):
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
@@ -236,7 +284,7 @@ def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):  # pylint: disable=unused
     ops.cond(m_0, ops.CZ)(wires=[wires[0], wires[1]])
 
 
-add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND)
+add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND)  # , _generic_adjoint_temporary_and)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)
