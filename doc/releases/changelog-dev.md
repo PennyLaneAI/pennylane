@@ -466,6 +466,10 @@ The following classes have been ported over:
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
+* Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
+
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
   [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
