@@ -743,8 +743,21 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
             ] += 1
         return dict(resources)
 
-    ell = (K - 1).bit_count() + int(np.floor((K - 1) / 2 ** (c - 1)))
-    num_elbows = c + K - ell - 2
+    # The number of elbows required for non-partial unary iteration is given by
+    # N(c, K) = c + K - 2 - ‖K-1‖_H - int(K>2^{c-1}),
+    # where ‖.‖_H denotes the Hamming weight, or bit count.
+    # To see this, note that adding a control node to a given unary iteration is done by using the
+    # given iteration, and replacing each "slot" (controlled unitary) by a construction that
+    # yields two new "slots" and requires one elbow. Consequently, the addition of a control
+    # node uses the given iteration with ⌈K/2⌉ slots, and ⌈K/2⌉ additional elbows, leading to the
+    # recursion relation
+    # N(c+1, K) = N(c, ⌈K/2⌉) + ⌈K/2⌉
+    # In addition, we know that for two control nodes, just a single elbow is required:
+    # N(2, K) = 1
+    # The formula at the top is the solution to this recursion relation. An alternative expression
+    # for the same is
+    # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
+    num_elbows = c + K - 2 - (K - 1).bit_count() - int(K > 2 ** (c - 1))
 
     resources[resource_rep(TemporaryAND)] += num_elbows
     resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
