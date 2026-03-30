@@ -20,6 +20,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.qchem import number
 from pennylane.wires import WiresLike
 
 # pylint: disable= signature-differs, arguments-differ
@@ -49,6 +50,10 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         The resources are computed based on Figure 6 of Appendix E in
         `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. This decomposition
         is useful when extra auxiliary wires are available and an inverse of the operation is required in the same circuit.
+
+        The resources are as follows: `register_size - 1` ``TemporaryAND`` gates, `register_size - 1` ``CNOT`` gates, and the number of ``X``
+        gates depend on the number of ones in binary representation of the value we are comparing to. There are also `register_size - 1`
+        auxiliary qubits that are allocated in the circuit and are deallocated by its adjoint.
 
     """
 
@@ -132,9 +137,15 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
             `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. This decomposition
             is useful when extra auxiliary wires are available and an inverse of the operation is required in the same circuit.
 
+            The resources are as follows: `register_size - 1` ``TemporaryAND`` gates, `register_size - 1` ``CNOT`` gates, and the number of ``X``
+            gates depend on the number of ones in binary representation of the value we are comparing to. There are also `register_size - 1`
+            auxiliary qubits that are allocated in the circuit and are deallocated by its adjoint.
+
+
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the operator.
         """
+        num_ones = value.bit_count()
         gate_lst = []
         if value == 0:
             if geq:
@@ -150,7 +161,8 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
 
         gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), register_size - 1))
 
-        gate_lst.append(GateCount(resource_rep(qre.CNOT), 2 * (register_size - 1)))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4*num_ones - 1))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -169,12 +181,19 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
             `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. This decomposition
             is useful when extra auxiliary wires are available and an inverse of the operation is required in the same circuit.
 
+            The resources are as follows: `register_size - 1` ``TemporaryAND`` gates, `register_size - 1` ``CNOT`` gates, and the number of ``X``
+            gates depend on the number of ones in binary representation of the value we are comparing to. There are also `register_size - 1`
+            auxiliary qubits that are allocated in the circuit and are deallocated by its adjoint.
+
+
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the adjoint of the operator.
         """
         value = target_resource_params["value"]
         register_size = target_resource_params["register_size"]
         geq = target_resource_params["geq"]
+        num_ones = value.bit_count()
+
         gate_lst = []
         if value == 0:
             if not geq:
@@ -192,7 +211,8 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
                 register_size - 1,
             )
         )
-        gate_lst.append(GateCount(resource_rep(qre.CNOT), 2 * (register_size - 1)))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4*num_ones - 1))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -218,8 +238,9 @@ class RegisterEquality(ResourceOperator):
     Resources:
         The circuit computes the bitwise XOR of the two registers using
         CNOTs, then checks whether all results are zero via a Toffoli
-        cascade (AND reduction), following Lemma 7.2 of
-        `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+        cascade. The circuit is represented as:
+
+
 
     """
 
@@ -301,6 +322,7 @@ class RegisterEquality(ResourceOperator):
         gate_lst.append(qre.Allocate(register_size - 2))
         gate_lst.append(GateCount(resource_rep(qre.Toffoli), register_size - 1))
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
+        gate_lst.append(GateCount(resource_rep(qre.X), register_size))
 
         return gate_lst
 
@@ -333,6 +355,7 @@ class RegisterEquality(ResourceOperator):
 
         gate_lst.append(GateCount(resource_rep(qre.Toffoli), register_size - 1))
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
+        gate_lst.append(GateCount(resource_rep(qre.X), register_size))
         gate_lst.append(qre.Deallocate(register_size - 2))
 
         return gate_lst
