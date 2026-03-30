@@ -58,7 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group docs --group dev -e . 
+          pip install --group doctest -e . 
 
       - name: Print Dependencies
         run: |
@@ -101,6 +101,7 @@ jobs:
           pytest pennylane $IGNORE --ignore-glob='*tests*'
 
       - name: Test 'doc' folder
+        if: always()
         run: |
           WONT_FIX="
           --ignore=doc/code
