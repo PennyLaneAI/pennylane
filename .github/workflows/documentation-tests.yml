@@ -140,4 +140,4 @@ jobs:
 
       - name: Test `changelog-dev.md` file
         run: |
-          pytest doc/releases/changelog-dev.md
+          pytest doc/releases/changelog-dev.md -W error::UserWarning
