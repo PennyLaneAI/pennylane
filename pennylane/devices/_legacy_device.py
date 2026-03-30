@@ -246,17 +246,17 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         **Example**
 
         >>> dev = qml.device("default.mixed", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
-        >>> dev.shots.total_shots
+        >>> dev.shots
         57
-        >>> dev.shots.shot_vector
-        (ShotCopies(3 shots x 1),
+        >>> dev.shot_vector
+        [ShotCopies(3 shots x 1),
          ShotCopies(1 shots x 1),
          ShotCopies(2 shots x 4),
          ShotCopies(6 shots x 1),
          ShotCopies(1 shots x 2),
          ShotCopies(5 shots x 1),
          ShotCopies(12 shots x 1),
-         ShotCopies(10 shots x 2))
+         ShotCopies(10 shots x 2)]
 
         The sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot
@@ -290,7 +290,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = qml.device('my.device', wires=['b', 'a'])
+        >>> dev = device('my.device', wires=['b', 'a'])
         >>> dev.wire_map()
         OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
         """
