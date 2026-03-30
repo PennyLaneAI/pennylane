@@ -14,8 +14,9 @@
 """
 This module contains the qml.classical_shadow measurement.
 """
+
 import copy
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from string import ascii_letters
 
 import numpy as np
@@ -452,7 +453,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def __init__(
         self,
-        H: Operator | Sequence,
+        H: Operator | Sequence[Operator],
         seed: int | None = None,
         k: int = 1,
         id: str | None = None,
@@ -555,7 +556,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if isinstance(self.H, Iterable):
+        if isinstance(self.H, Sequence):
             return Wires.all_wires([h.wires for h in self.H])
 
         return self.H.wires
@@ -563,10 +564,10 @@ class ShadowExpvalMP(MeasurementTransform):
     def queue(self, context=QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
-        # A CompositeOp is also an Iterable, but we should consider it to be a single observable
+        # A CompositeOp is also an Sequence, but we should consider it to be a single observable
         Hs = (
             self.H
-            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
             else [self.H]
         )
         for H in Hs:
@@ -576,10 +577,10 @@ class ShadowExpvalMP(MeasurementTransform):
         return self
 
     def __copy__(self):
-        # A CompositeOp is also an Iterable, we do not want to copy each operand of the op.
+        # A CompositeOp is also an Sequence, we do not want to copy each operand of the op.
         H_copy = (
             [copy.copy(H) for H in self.H]
-            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
             else copy.copy(self.H)
         )
         return self.__class__(
@@ -589,64 +590,112 @@ class ShadowExpvalMP(MeasurementTransform):
         )
 
 
-def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
-    r"""Compute expectation values using classical shadows in a differentiable manner.
+def shadow_expval(
+    H: Operator | Sequence[Operator], k: int = 1, seed: int | None = None
+) -> ShadowExpvalMP:
+    r"""Estimate expectation values using Classical Shadows with full differentiability support.
 
-    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
-    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
+    The Classical Shadows protocol provide a way to estimate a large number of expectation values
+    (even non-commuting ones) using a single set of random Pauli measurements.
+    See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal and theoretical details.
 
     Args:
-        H (Union[Iterable[Operator], Operator]): Observable or
-            iterable of observables to compute the expectation value over.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
-        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
-            classical shadows protocol. If None, a random seed will be generated. If a tape with
-            a ``shadow_expval`` measurement is copied, the seed will also be copied.
-            Different seeds are still generated for different constructed tapes.
+        H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
+            Provide a single observable or a sequence to estimate the expectation values of multiple
+            observables from the same classical shadows data.
+        k (int): Number of equal parts for which to split the shadow's measurements in order to compute the median of means.
+            The default is ``k=1``, which simply computes the mean of all measurements.
+            ``k>1`` provides no expected advantage for Pauli measurements and Pauli observables.
+        seed (int | None): Optional seed for the random Pauli measurement basis in the
+            classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
+            in per shot. If ``None``, a random seed will be generated.
+
+            .. note::
+
+                The ``seed`` argument only controls the measurement basis choice.
+                The ``seed`` of a simulator device separately controls the sampling outcomes.
+                For fully reproducible results, you must seed both the device and the measurement.
+
+                .. code-block:: python
+
+                    dev = qml.device("default.qubit", seed=42, shots=100)
+
+                    @qml.qnode(dev)
+                    def circuit():
+                        qml.H(0)
+                        return qml.shadow_expval(qml.Z(0), seed=99)
 
     Returns:
         ShadowExpvalMP: Measurement process instance
 
-    .. note::
+    .. seealso::
 
-        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and the class :class:`~.pennylane.ClassicalShadow` for post-processing
-        internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
-        you need to use this measurement.
+        This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
+        :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
 
     **Example**
 
+    With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
+    observables requires its own separate circuit execution. However, with ``shadow_expval``
+    we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
+
+    Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
+    (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` state.
+    Theoretically, we would expect that :math:`\langle X \rangle = 1`, :math:`\langle Y \rangle = \langle Z \rangle = 0`.
+
     .. code-block:: python
 
-        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+        device = qml.device("default.qubit", seed=42)
 
-        dev = qml.device("default.qubit", seed=42, wires=range(2))
+        @qml.set_shots(1_000)
+        @qml.qnode(device)
+        def circuit():
+            qml.H(0) # Create |+> state
+            return qml.shadow_expval((qml.X(0), qml.Y(0), qml.Z(0)), seed=99)
 
-        @qml.set_shots(shots=10_000)
-        @qml.qnode(dev)
-        def circuit(x, obs):
-            qml.Hadamard(0)
-            qml.CNOT((0,1))
-            qml.RX(x, wires=0)
-            return qml.shadow_expval(obs, seed=42)
+    >>> print(circuit())
+    [0.984 0.    0.03 ]
 
-        x = pnp.array(0.5, requires_grad=True)
+    This is very close to their expected values!
 
-    We can compute the expectation value of H as well as its gradient in the usual way.
+    .. details::
+        :title: Differentiability
 
-    >>> print(circuit(x, H))
-    1.8936
-    >>> print(qml.grad(circuit)(x, H))
-    -0.4536...
+        Consider the following observable,
 
-    In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
-    to include all observables that you want to estimate from a single measurement in the same execution.
+        >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
-    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
-    >>> print(circuit(x, Hs))
-    [ 1.917   0.0282 -0.0156 -0.0066]
-    >>> print(qml.jacobian(circuit)(x, Hs))
-    [-4.743e-01 -1.140e-02 -4.500e-03  3.000e-04]
+        We can estimate its expectation value with the classical shadows protocol:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", seed=42, wires=range(2))
+
+            @qml.set_shots(shots=10_000)
+            @qml.qnode(dev)
+            def circuit(x, obs):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return qml.shadow_expval(obs, seed=99)
+
+            x = pnp.array(0.5, requires_grad=True)
+
+        >>> print(circuit(x, H))
+        1.8891
+        >>> print(qml.grad(circuit)(x, H))
+        -0.4653...
+
+        In ``shadow_expval``, we can also pass a list of observables to estimate them
+        all from the same shadow data.
+        Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
+
+        >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
+        >>> print(circuit(x, Hs))
+        [ 1.8783  0.0096 -0.0174  0.0138]
+        >>> print(qml.jacobian(circuit)(x, Hs))
+        [-0.4851 -0.0063 -0.0099  0.0006]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
