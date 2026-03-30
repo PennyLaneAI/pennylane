@@ -137,6 +137,6 @@ jobs:
 
           pytest doc ${IGNORE}
 
-        - name: Test `changelog-dev.md` file
-          run: |
-            pytest doc/releases/changelog-dev.md
+      - name: Test `changelog-dev.md` file
+        run: |
+          pytest doc/releases/changelog-dev.md
