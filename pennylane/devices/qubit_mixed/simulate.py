@@ -242,7 +242,7 @@ def simulate(
         # Define a quantum script
         circuit = QuantumScript(
             ops=[qml.RX(1.2, wires=0)],
-            measurements=[expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
+            measurements=[qml.expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
         )
 
     >>> print(simulate(circuit))

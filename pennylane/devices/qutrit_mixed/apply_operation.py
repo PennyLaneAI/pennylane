@@ -140,7 +140,7 @@ def apply_operation(
 
         @apply_operation.register
         def _(op: type_op, state):
-            # custom op application method here
+            pass # custom op application method here
 
     **Example:**
 
@@ -148,12 +148,12 @@ def apply_operation(
     >>> state[0][0] = 1
     >>> state
     tensor([[1., 0., 0.],
-        [0., 0., 0.],
-        [0., 0., 0.]], requires_grad=True)
+            [0., 0., 0.],
+            [0., 0., 0.]], requires_grad=True)
     >>> apply_operation(qml.TShift(0), state)
-    tensor([[0., 0., 0.],
-        [0., 1., 0],
-        [0., 0., 0.],], requires_grad=True)
+    tensor([[0.+0.j, 0.+0.j, 0.+0.j],
+            [0.+0.j, 1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j, 0.+0.j]], requires_grad=True)
 
     """
     return _apply_operation_default(op, state, is_state_batched, debugger)
