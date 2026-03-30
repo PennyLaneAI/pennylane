@@ -271,7 +271,9 @@ class TestPauliRot:
             ),
         ),
     )
-    def test_controlled_resource_decomp_special_cases(self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision):
+    def test_controlled_resource_decomp_special_cases(
+        self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision
+    ):
         """Test that the controlled resources method produces the correct result for all special cases."""
         op = qre.PauliRot(pauli_string, precision=precision)
         assert (
@@ -352,9 +354,13 @@ class TestPauliRot:
             ),
         ),
     )
-    def test_controlled_decomp_estimate(self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision):
+    def test_controlled_decomp_estimate(
+        self, num_ctrl_wires, num_zero_ctrl, pauli_string, expected, precision
+    ):
         """Test that the controlled resources method produces the correct result when estimate is used."""
         op = qre.Controlled(
-            qre.PauliRot(pauli_string, precision=precision), num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
+            qre.PauliRot(pauli_string, precision=precision),
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
         )
         assert qre.estimate(op) == expected

@@ -55,8 +55,8 @@ Alternate Decompositions
 .. autosummary::
     :toctree: api
 
-    ~selectPauliRot_controlled_resource_decomp
-    ~pauliRot_controlled_resource_decomp
+    ~selectpaulirot_controlled_resource_decomp
+    ~paulirot_controlled_resource_decomp
     ~ch_resource_decomp
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
