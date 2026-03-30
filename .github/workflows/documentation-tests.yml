@@ -102,6 +102,7 @@ jobs:
           pytest pennylane $IGNORE --ignore-glob='*tests*'
 
       - name: Test 'doc' folder
+        if: always()
         run: |
           WONT_FIX="
           --ignore=doc/code
