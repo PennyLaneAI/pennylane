@@ -104,9 +104,9 @@ class LabsResourceConfig(ResourceConfig):
         adj_custom_decomps = {}
         ctrl_custom_decomps = {
             qre.PauliRot: paulirot_controlled_resource_decomp,  qre.SelectPauliRot: selectpaulirot_controlled_resource_decomp,
-            Hadamard: hadamard_controlled_resource_decomp}
+            qre.Hadamard: hadamard_controlled_resource_decomp}
 
-        s_custom_decomps = custom_decomps
+        self._custom_decomps = custom_decomps
         self._pow_custom_decomps = pow_custom_decomps
         self._adj_custom_decomps = adj_custom_decomps
         self._ctrl_custom_decomps = ctrl_custom_decomps
