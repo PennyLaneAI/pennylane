@@ -419,6 +419,28 @@ class TestMMDLossAPI:
         )
         assert float(r1) != float(r2)
 
+    def test_mmd_loss_with_custom_init_state(self):
+        """Ensure mmd_loss properly passes down separated init_state_elems and init_state_amps."""
+        jax_state_elems = jnp.array([[0, 0], [1, 1]])
+        jax_state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
+
+        config = CircuitConfig(
+            gates={0: [[0, 1]]},
+            observables=[[3, 3]],
+            n_samples=100,
+            key=jax.random.PRNGKey(42),
+            n_qubits=2,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+        )
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=10)
+        data = jnp.array([[0, 0], [1, 1]])
+        params = jnp.array([0.5])
+
+        # This should execute and return a finite scalar without any JAX tracer/shape errors
+        res = mmd_loss(params, config, mmd_cfg, data)
+        assert res.shape == () and np.isfinite(float(res))
+
 
 class TestMMDLossStatistical:
     """Statistical (Z-test) validation of the phox MMD estimator.
@@ -480,28 +502,38 @@ class TestMMDLossStatistical:
 
         mmd_cfg = MMDConfig(bandwidth=sigma, n_ops=self.N_OPS)
 
-        estimates = []
-        for t in range(self.N_TRIALS):
-            key = jax.random.PRNGKey(t * 17 + 7)
-            config = CircuitConfig(
-                gates=gates,
-                observables=[[0] * n_qubits],
-                n_samples=self.N_SAMPLES,
-                key=key,
-                n_qubits=n_qubits,
-            )
-            idx = rng.choice(n_data, size=batch, replace=False)
+        params_jnp = jnp.array(params)
+        X_jnp = jnp.array(X)
 
-            est = mmd_loss(
-                jnp.array(params),
-                config,
-                mmd_cfg,
-                jnp.array(X[idx]),
-                key=key,
-            )
-            estimates.append(float(est))
+        config = CircuitConfig(
+            gates=gates,
+            observables=[[0] * n_qubits],
+            n_samples=self.N_SAMPLES,
+            key=jax.random.PRNGKey(0),
+            n_qubits=n_qubits,
+        )
 
-        estimates = np.array(estimates)
+        def evaluate_single_trial(key):
+            loss_key, sample_key = jax.random.split(key)
+
+            idx = jax.random.choice(sample_key, n_data, shape=(batch,), replace=False)
+
+            return mmd_loss(
+                params=params_jnp,
+                circuit_config=config,
+                mmd_config=mmd_cfg,
+                target_data=X_jnp[idx],
+                key=loss_key,
+            )
+
+        vmapped_eval = jax.vmap(evaluate_single_trial)
+
+        master_key = jax.random.PRNGKey(42)
+        trial_keys = jax.random.split(master_key, self.N_TRIALS)
+
+        estimates_jnp = vmapped_eval(trial_keys)
+
+        estimates = np.array(estimates_jnp)
         mean_est = np.mean(estimates)
         se = np.std(estimates, ddof=1) / np.sqrt(self.N_TRIALS)
 
@@ -574,5 +606,4 @@ class TestMMDLossStatistical:
             data,
             key=jax.random.PRNGKey(12345),
         )
-        # With different effective keys, the results should differ
         assert float(r_default) != float(r_override)

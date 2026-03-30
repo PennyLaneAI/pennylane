@@ -19,6 +19,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.typing import ArrayLike
 
 from .expval_functions import CircuitConfig, build_expval_func
@@ -49,6 +50,33 @@ class MMDConfig:
     wires: Sequence[int] | None = None
     sqrt_loss: bool = False
     return_per_bandwidth: bool = False
+
+
+def median_heuristic(samples: ArrayLike) -> float:
+    """Compute a robust median-distance heuristic for RBF bandwidth selection.
+
+    Args:
+        samples (ArrayLike): Dataset with shape ``(n_samples, n_features)``.
+
+    Returns:
+        float: Median non-zero pairwise Euclidean distance. Returns ``1.0`` when all
+        pairwise distances are zero.
+
+    Raises:
+        ValueError: If fewer than two samples are provided.
+    """
+    arr = np.asarray(samples, dtype=float)
+    if len(arr) < 2:
+        raise ValueError("median_heuristic requires at least two samples")
+
+    diffs = arr[:, None, :] - arr[None, :, :]
+    dists = np.sqrt(np.sum(diffs * diffs, axis=-1))
+    pairwise = dists[np.triu_indices(len(arr), k=1)]
+    nonzero = pairwise[pairwise > 0]
+
+    if len(nonzero) > 0:
+        return float(np.median(nonzero))
+    return 1.0
 
 
 @jax.jit
@@ -99,7 +127,8 @@ def _compute_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    effective_init_state: tuple | None,
+    effective_init_state_elems: jnp.ndarray | None,
+    effective_init_state_amps: jnp.ndarray | None,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
@@ -126,7 +155,8 @@ def _compute_loss_for_bandwidth(
         observables=pauli_obs,
         key=eval_key,
         n_samples=effective_samples,
-        init_state=effective_init_state,
+        init_state_elems=effective_init_state_elems,
+        init_state_amps=effective_init_state_amps,
     )
 
     return _compute_single_mmd(
@@ -157,7 +187,7 @@ def mmd_loss(
 
     Returns:
         jnp.ndarray | list[jnp.ndarray]: Scalar average across ``sigma`` values by default,
-        or list of per-sigma estimates when ``return_per_sigma=True``.
+        or list of per-sigma estimates when ``return_per_bandwidth=True``.
 
     Raises:
         ValueError: If effective ``n_samples <= 1``.
@@ -190,7 +220,8 @@ def mmd_loss(
             eval_key=eval_key,
             params=params,
             target_data=target_data,
-            effective_init_state=circuit_config.init_state,
+            effective_init_state_elems=circuit_config.init_state_elems,
+            effective_init_state_amps=circuit_config.init_state_amps,
             n_ops=mmd_config.n_ops,
             n_qubits=n_qubits,
             wire_tuple=wire_tuple,
