@@ -49,16 +49,6 @@ def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
     >>> qjitted_circuit(1.1) # doctest: +SKIP
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
 
-
-    .. warning::
-
-        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results or errors,
-        due to potential integer overflow in the solver.
-
-    .. warning::
-
-        Note: Simulating with ``ppr_basis=True`` is currently not supported.
-
     """
     if not isinstance(ppr_basis, bool):
         raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
