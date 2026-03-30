@@ -79,11 +79,11 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
-          --ignore=pennylane/devices
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
+          --ignore=pennylane/io
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
