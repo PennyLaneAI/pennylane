@@ -144,7 +144,7 @@ qcut = [
     "opt_einsum"
 ]
 doctest = [
-    # Test Infrastructure
+    # Tools needed for documentation testing
     "sybil",
     "pytest>=8.4.1",
 
