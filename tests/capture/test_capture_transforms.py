@@ -300,6 +300,149 @@ class TestCaptureTransforms:
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_single_transform_dynamic_shape_output(self):
+        """Test that a single transform wrapping a qnode with dynamic shots and
+        qml.sample() correctly produces a jaxpr with DShapedArray outputs.
+
+        This is the core capture-level regression test for the variable leak bug:
+        when the inner jaxpr's outvars reference shape dimensions from inner variables
+        (e.g., shots), the staging rule must map those inner vars to outer vars via
+        create_initial_env. Without this mapping, the staging rule either crashes with
+        KeyError (missing var in env) or produces corrupted jaxpr.
+        """
+
+        def workflow(shots: int):
+            @qml.transform(pass_name="cancel-inverses")
+            @qml.qnode(qml.device("lightning.qubit", wires=1), shots=shots)
+            def circuit():
+                qml.Hadamard(wires=0)
+                return qml.sample()
+
+            return circuit()
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+
+        # The top-level jaxpr should contain a single transform_prim equation
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == transform_prim
+
+        # The output should be DShapedArray with a dynamic first dimension (shots)
+        out_avals = [v.aval for v in jaxpr.jaxpr.outvars]
+        assert len(out_avals) == 1
+        assert isinstance(out_avals[0], jax.core.DShapedArray)
+
+        # The inner jaxpr should have a qnode_prim
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert any(eqn.primitive == qnode_prim for eqn in inner_jaxpr.eqns)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_nested_transforms_dynamic_shape_output(self):
+        """Test that nested transforms (two @qml.transform decorators) wrapping a qnode
+        with dynamic shots and qml.sample() correctly produces a jaxpr.
+
+        This exercises the full fix: the pjit._infer_params_internal patch (fixing the
+        tuple + list TypeError in nested make_jaxpr calls) and the create_initial_env
+        mapping (fixing the variable leak for dynamic shape dimensions).
+        """
+
+        def workflow(shots: int):
+            @qml.transform(pass_name="my_other_pass_name")
+            @qml.transform(pass_name="cancel-inverses")
+            @qml.qnode(qml.device("lightning.qubit", wires=1), shots=shots)
+            def circuit():
+                qml.Hadamard(wires=0)
+                return qml.sample()
+
+            return circuit()
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+
+        # Top-level: outer transform
+        assert jaxpr.eqns[0].primitive == transform_prim
+        outer_params = jaxpr.eqns[0].params
+        assert outer_params["transform"].pass_name == "my_other_pass_name"
+
+        # Output is DShapedArray
+        out_avals = [v.aval for v in jaxpr.jaxpr.outvars]
+        assert len(out_avals) == 1
+        assert isinstance(out_avals[0], jax.core.DShapedArray)
+
+        # Inner: second transform wrapping qnode
+        inner_jaxpr = outer_params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == transform_prim
+        inner_params = inner_jaxpr.eqns[0].params
+        assert inner_params["transform"].pass_name == "cancel-inverses"
+
+        # Innermost: qnode
+        innermost_jaxpr = inner_params["inner_jaxpr"]
+        assert any(eqn.primitive == qnode_prim for eqn in innermost_jaxpr.eqns)
+
+
+class TestDynamicShapesIntegration:
+    """Integration tests for transforms with dynamic shape outputs.
+
+    These reproduce the exact bug from PennyLane issue #9054:
+    capture + transform + dynamic shots + qml.sample() was crashing with
+    KeyError or TypeError during jaxpr tracing.
+    """
+
+    @pytest.mark.external
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_transform_dynamic_shots_catalyst_e2e(self):
+        """End-to-end test: transform + dynamic shots + sample compiled via Catalyst.
+
+        This is the exact scenario from issue #9054. Previously crashed with:
+        - TypeError: can only concatenate tuple (not "list") to tuple  (pjit bug)
+        - KeyError: Var(id=...)  (variable leak from _add_implicit_outputs)
+
+        Requires Catalyst to be installed.
+        """
+        catalyst = pytest.importorskip("catalyst")
+
+        @catalyst.qjit
+        def workflow(shots: int):
+            @qml.transform(pass_name="cancel-inverses")
+            @qml.qnode(qml.device("lightning.qubit", wires=1), shots=shots)
+            def circuit():
+                qml.Hadamard(wires=0)
+                return qml.sample()
+
+            return circuit()
+
+        result = workflow(10)
+        assert result.shape == (10, 1)
+        result = workflow(5)
+        assert result.shape == (5, 1)
+
+    @pytest.mark.external
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_nested_transforms_dynamic_shots_catalyst_e2e(self):
+        """End-to-end test: nested transforms + dynamic shots + sample via Catalyst.
+
+        Exercises both patches simultaneously: the pjit patch prevents TypeError
+        in the nested make_jaxpr call, and create_initial_env prevents variable leak.
+
+        Requires Catalyst to be installed.
+        """
+        catalyst = pytest.importorskip("catalyst")
+
+        @catalyst.qjit
+        def workflow(shots: int):
+            @qml.transform(pass_name="merge-rotations")
+            @qml.transform(pass_name="cancel-inverses")
+            @qml.qnode(qml.device("lightning.qubit", wires=1), shots=shots)
+            def circuit():
+                qml.Hadamard(wires=0)
+                return qml.sample()
+
+            return circuit()
+
+        result = workflow(10)
+        assert result.shape == (10, 1)
+        result = workflow(3)
+        assert result.shape == (3, 1)
+
 
 class TestTapeTransformFallback:
     """Unit tests for falling back to tape transforms."""

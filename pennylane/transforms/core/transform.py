@@ -38,6 +38,7 @@ def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
         from pennylane.capture.custom_primitives import QmlPrimitive
+        from pennylane.capture.dynamic_shapes import register_custom_staging_rule
     except ImportError:
         return None
 
@@ -55,6 +56,30 @@ def _create_transform_primitive():
     @transform_prim.def_abstract_eval
     def _abstract_eval(*_, inner_jaxpr, **__):
         return [out.aval for out in inner_jaxpr.outvars]
+
+    def _get_outvars(params):
+        return params["inner_jaxpr"].outvars
+
+    def _create_initial_env(params, invars):
+        """Map inner jaxpr variables to outer jaxpr variables.
+
+        This is needed when the inner jaxpr's output has dynamic shape dimensions
+        that reference inner variables (e.g., the shots dimension from qml.sample()).
+        Without this mapping, the staging rule can't resolve those shape variables.
+        """
+        j = params["inner_jaxpr"]
+        args = invars[slice(*params["args_slice"])]
+        consts = invars[slice(*params["consts_slice"])]
+        env = dict(zip(j.invars, args))
+        for branch_const, new_const in zip(j.constvars, consts):
+            env[branch_const] = new_const
+        return env
+
+    register_custom_staging_rule(
+        transform_prim,
+        get_outvars_from_params=_get_outvars,
+        create_initial_env=_create_initial_env,
+    )
 
     return transform_prim
 

@@ -845,6 +845,13 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed transforms crashing when wrapping a QNode that returns dynamically shaped outputs
+  (e.g. `qml.sample()` with dynamic `shots`). Two JAX 0.7.x bugs were addressed: a
+  `TypeError` in `pjit._infer_params_internal` caused by a tuple/list type mismatch during
+  nested `make_jaxpr` calls, and a variable leak where inner jaxpr shape dimensions were not
+  mapped to outer variables in the transform staging rule.
+  [(#9054)](https://github.com/PennyLaneAI/pennylane/issues/9054)
+
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
   environment.
