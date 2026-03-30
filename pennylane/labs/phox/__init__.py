@@ -21,8 +21,11 @@ Phase optimization with JAX (PHOX)
     :toctree: api
 
     ~CircuitConfig
+    ~MMDConfig
     ~build_expval_func
     ~bitflip_expval
+    ~mmd_loss
+    ~median_heuristic
     ~train
     ~training_iterator
     ~TrainingOptions
@@ -118,6 +121,44 @@ compiled ``expval_fn`` from above.
    print("Final loss:", float(result.losses[-1]))
    print("Optimized parameters:", result.final_params)
 
+
+Maximum Mean Discrepancy (MMD) Loss
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To train a circuit to reproduce a target probability distribution (e.g., a dataset
+of bitstrings), you can use the built-in MMD loss utilities. This integrates
+seamlessly with the ``train`` function using the :class:`~pennylane.labs.phox.MMDConfig`
+dataclass.
+
+.. code-block:: python
+
+   import numpy as np
+   from pennylane.labs.phox import MMDConfig, mmd_loss, median_heuristic
+
+   np.random.seed(42)
+   target_data = np.random.binomial(1, 0.5, size=(500, n_qubits))
+
+   bandwidth = median_heuristic(target_data)
+   mmd_config = MMDConfig(bandwidth=bandwidth, n_ops=100)
+
+   loss_kwargs = {
+       "params": params,
+       "circuit_config": config,
+       "mmd_config": mmd_config,
+       "target_data": target_data,
+   }
+
+   mmd_result = train(
+       optimizer="Adam",
+       loss=mmd_loss,
+       stepsize=0.01,
+       n_iters=100,
+       loss_kwargs=loss_kwargs,
+       options=TrainingOptions(unroll_steps=10)
+   )
+
+   print("Final MMD loss:", float(mmd_result.losses[-1]))
+
 """
 
 from .expval_functions import CircuitConfig, bitflip_expval, build_expval_func
@@ -128,10 +169,11 @@ from .utils import (
     create_random_gates,
     generate_pauli_observables,
 )
-from .mmd_loss import mmd_loss, median_heuristic
+from .mmd_loss import MMDConfig, mmd_loss, median_heuristic
 
 __all__ = [
     "CircuitConfig",
+    "MMDConfig",
     "bitflip_expval",
     "build_expval_func",
     "mmd_loss",
