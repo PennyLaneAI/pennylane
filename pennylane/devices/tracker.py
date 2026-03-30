@@ -63,7 +63,7 @@ class Tracker:
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = qml.numpy.array(0.1, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
             qml.grad(circuit)(x)
@@ -120,7 +120,7 @@ class Tracker:
         >>> def shots_info(totals, history, latest):
         ...     if 'shots' in latest:
         ...         print("Total shots: ", totals['shots'])
-        >>> x = np.array(0.1, requires_grad=True)
+        >>> x = qml.numpy.array(0.1, requires_grad=True)
         >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
         ...     qml.grad(circuit)(x)
         Total shots:  100
@@ -132,8 +132,10 @@ class Tracker:
 
         >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
         ...     circuit(0.1)
+        np.float64(0.98)
         >>> with tracker:
         ...     circuit(0.2)
+        np.float64(1.0)
         >>> tracker.totals['executions']
         2
 
@@ -197,7 +199,7 @@ class Tracker:
 
         >>> tracker.update(a=1, b=2, c="c")
         >>> tracker.latest
-        {"a":1, "b":2, "c":"c"}
+        {'a': 1, 'b': 2, 'c': 'c'}
         >>> tracker.history
         {"a": [1], "b": [2], "c": ["c"]}
         >>> tracker.totals

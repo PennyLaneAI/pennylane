@@ -410,11 +410,11 @@ class DefaultQubit(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [-0.0006888975950537501,
-    0.025576307134457577,
-    -0.0038567269892757494,
-    0.1339705146860149,
-    -0.03780669772690448]
+    (tensor(-0.0006889, requires_grad=True),
+    tensor(0.02557631, requires_grad=True),
+    tensor(-0.00385673, requires_grad=True),
+    tensor(0.13397051, requires_grad=True),
+    tensor(-0.0378067, requires_grad=True))
 
     This device currently supports backpropagation derivatives:
 
@@ -437,7 +437,7 @@ class DefaultQubit(Device):
             return post_processing_fn(results)
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    (Array(0.36235775, dtype=float64),)
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
@@ -474,6 +474,11 @@ class DefaultQubit(Device):
         >>> new_batch, post_processing_fn = program(qscripts)
         >>> results = dev.execute(new_batch, execution_config=execution_config)
         >>> post_processing_fn(results)
+        (np.float64(-0.0006888975950538057),
+        np.float64(0.025576307134457466),
+        np.float64(-0.0038567269892758604),
+        np.float64(0.13397051468601484),
+        np.float64(-0.03780669772690465))
 
         If you monitor your CPU usage, you should see 5 new Python processes pop up to
         crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
