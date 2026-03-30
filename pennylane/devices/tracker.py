@@ -71,32 +71,34 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': 0.86, 'shots': 300}
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(0.9), 'shots': 300}
     >>> tracker.latest
-    {'simulations': 1,
-     'executions': 1,
-     'results': 0.16,
-     'shots': 100,
-     'resources': Resources(num_wires=1, num_gates=1,
-                            gate_types=defaultdict(<class 'int'>, {'RX': 1}),
-                            gate_sizes=defaultdict(<class 'int'>, {1: 1}),
-                            depth=1,
-                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),))),
-     'errors': {}
+    {
+        'simulations': 1,
+        'executions': 1,
+        'results': np.float64(0.12),
+        'shots': 100,
+        'resources': SpecsResources(
+            gate_types={'RX': 1},
+            gate_sizes={1: 1},
+            measurements={'expval(PauliZ)': 1},
+            num_allocs=1,
+            depth=1
+        ),
+        'errors': {}
     }
     >>> tracker.history.keys()
     dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
-    [1.0, -0.3, 0.16]
+    [np.float64(0.98), np.float64(-0.2), np.float64(0.12)]
     >>> print(tracker.history['resources'][0])
-    num_wires: 1
-    num_gates: 1
-    depth: 1
-    shots: Shots(total=100)
-    gate_types:
-    {'RX': 1}
-    gate_sizes:
-    {1: 1}
+    Wire allocations: 1
+    Total gates: 1
+    Gate counts:
+    - RX: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: 1
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qml.RX``.
@@ -122,7 +124,7 @@ class Tracker:
         ...         print("Total shots: ", totals['shots'])
         >>> x = qml.numpy.array(0.1, requires_grad=True)
         >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-        ...     qml.grad(circuit)(x)
+        ...     _ = qml.grad(circuit)(x)
         Total shots:  100
         Total shots:  200
         Total shots:  300
@@ -132,12 +134,12 @@ class Tracker:
 
         >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
         ...     circuit(0.1)
-        np.float64(0.98)
+        np.float64(1.0)
         >>> with tracker:
         ...     circuit(0.2)
-        np.float64(1.0)
+        np.float64(0.98)
         >>> tracker.totals['executions']
-        2
+        1
 
         When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
         used in the circuit without execution!
@@ -152,16 +154,16 @@ class Tracker:
         >>> with qml.Tracker(dev) as tracker:
         ...     circuit(0.1)
         ...
+        array(0.)
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        num_wires: 1
-        num_gates: 1
-        depth: 1
-        shots: Shots(total=10)
-        gate_types:
-        {"RX": 1}
-        gate_sizes:
-        {1: 1}
+        Wire allocations: 1
+        Total gates: 1
+        Gate counts:
+        - RX: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: 1
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
@@ -201,9 +203,28 @@ class Tracker:
         >>> tracker.latest
         {'a': 1, 'b': 2, 'c': 'c'}
         >>> tracker.history
-        {"a": [1], "b": [2], "c": ["c"]}
+        {
+            'batches': [1],
+            'simulations': [1],
+            'executions': [1],
+            'results': [array(0.)],
+            'shots': [10],
+            'resources': [
+                SpecsResources(
+                    gate_types={'RX': 1},
+                    gate_sizes={1: 1},
+                    measurements={'expval(PauliZ)': 1},
+                    num_allocs=1,
+                    depth=1
+                )
+            ],
+            'errors': [{}],
+            'a': [1],
+            'b': [2],
+            'c': ['c']
+        }
         >>> tracker.totals
-        {"a": 1, "b": 2}
+        {'batches': 1, 'simulations': 1, 'executions': 1, 'shots': 10, 'a': 1, 'b': 2}
 
         """
         self.latest = kwargs
