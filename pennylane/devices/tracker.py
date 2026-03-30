@@ -74,20 +74,16 @@ class Tracker:
     {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(1.16), 'shots': 300}
     >>> import pprint
     >>> pprint.pprint(tracker.latest)
-    {
-        'simulations': 1,
-        'executions': 1,
-        'results': np.float64(0.12),
-        'shots': 100,
-        'resources': SpecsResources(
-            gate_types={'RX': 1},
-            gate_sizes={1: 1},
-            measurements={'expval(PauliZ)': 1},
-            num_allocs=1,
-            depth=1
-        ),
-        'errors': {}
-    }
+    {'errors': {},
+     'executions': 1,
+     'resources': SpecsResources(gate_types={'RX': 1},
+                                 gate_sizes={1: 1},
+                                 measurements={'expval(PauliZ)': 1},
+                                 num_allocs=1,
+                                 depth=1),
+     'results': np.float64(0.02),
+     'shots': 100,
+     'simulations': 1}
     >>> tracker.history.keys()
     dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
@@ -205,26 +201,20 @@ class Tracker:
         {'a': 1, 'b': 2, 'c': 'c'}
         >>> import pprint
         >>> pprint.pprint(tracker.history)
-        {
-            'batches': [1],
-            'simulations': [1],
-            'executions': [1],
-            'results': [array(0.)],
-            'shots': [10],
-            'resources': [
-                SpecsResources(
-                    gate_types={'RX': 1},
-                    gate_sizes={1: 1},
-                    measurements={'expval(PauliZ)': 1},
-                    num_allocs=1,
-                    depth=1
-                )
-            ],
-            'errors': [{}],
-            'a': [1],
-            'b': [2],
-            'c': ['c']
-        }
+        {'a': [1],
+         'b': [2],
+         'batches': [1],
+         'c': ['c'],
+         'errors': [{}],
+         'executions': [1],
+         'resources': [SpecsResources(gate_types={'RX': 1},
+                                      gate_sizes={1: 1},
+                                      measurements={'expval(PauliZ)': 1},
+                                      num_allocs=1,
+                                      depth=1)],
+         'results': [array(0.)],
+         'shots': [10],
+         'simulations': [1]}
         >>> tracker.totals
         {'batches': 1, 'simulations': 1, 'executions': 1, 'shots': 10, 'a': 1, 'b': 2}
 
