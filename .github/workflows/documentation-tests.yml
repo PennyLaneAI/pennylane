@@ -68,6 +68,7 @@ jobs:
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
       - name: Test 'pennylane' folder
+        if: always()
         run: |
           WONT_FIX="
           --ignore=pennylane/labs
@@ -103,6 +104,7 @@ jobs:
           pytest pennylane $IGNORE --ignore-glob='*tests*'
 
       - name: Test 'doc' folder
+        if: always()
         run: |
           WONT_FIX="
           --ignore=doc/code
@@ -139,5 +141,6 @@ jobs:
           pytest doc ${IGNORE}
 
       - name: Test `changelog-dev.md` file
+        if: always()
         run: |
           pytest doc/releases/changelog-dev.md
