@@ -154,6 +154,7 @@ doctest = [
     "pyzx",
     "jax==0.7.1",
     "jaxlib==0.7.1",
+    "stim",
 ]
 
 [[project.maintainers]]
