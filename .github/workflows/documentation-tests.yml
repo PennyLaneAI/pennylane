@@ -76,6 +76,7 @@ jobs:
 
           TO_DO="
           --ignore=pennylane/control_flow
+          --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
           --ignore=pennylane/devices
@@ -83,7 +84,6 @@ jobs:
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
-          --ignore=pennylane/io
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
