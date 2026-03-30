@@ -14,6 +14,7 @@
 """
 Unit tests for the ``meanfield`` function.
 """
+
 import os
 
 import numpy as np

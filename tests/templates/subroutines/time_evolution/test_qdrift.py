@@ -14,6 +14,7 @@
 """
 Tests for the QDrift template.
 """
+
 import copy
 from functools import reduce
 

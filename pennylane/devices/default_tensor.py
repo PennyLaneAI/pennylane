@@ -14,6 +14,7 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+
 # pylint: disable=protected-access
 import copy
 import warnings

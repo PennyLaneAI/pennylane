@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply operations to a qubit mixed state."""
+
 # pylint: disable=unused-argument
 
 from functools import singledispatch

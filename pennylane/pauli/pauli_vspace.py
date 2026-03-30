@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A class for the linearly independent basis of a vector space in operator space."""
+
 # pylint: disable=too-many-arguments
 from copy import copy
 from functools import reduce

@@ -15,7 +15,6 @@
 Defines methods for calculation different forms of derivatives.
 """
 
-
 from .grad import grad, jacobian
 from .jvp import jvp
 from .vjp import vjp

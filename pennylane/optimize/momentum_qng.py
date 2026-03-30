@@ -13,7 +13,6 @@
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
 
-
 from pennylane import numpy as pnp
 
 from .qng import QNGOptimizer, _flatten_np, _unflatten_np

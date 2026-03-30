@@ -14,6 +14,7 @@
 """
 Tests for the DisplacementEmbedding template.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access

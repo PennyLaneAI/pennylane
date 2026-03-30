@@ -14,6 +14,7 @@
 """
 Tests for the accessibility of the Lightning-Qubit device
 """
+
 import pytest
 from flaky import flaky
 

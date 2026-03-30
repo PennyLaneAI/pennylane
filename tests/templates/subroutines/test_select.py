@@ -14,6 +14,7 @@
 """
 Tests for the Select template.
 """
+
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
 

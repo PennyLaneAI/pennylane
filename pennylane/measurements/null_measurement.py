@@ -15,6 +15,7 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+
 import numpy as np
 
 from .measurements import SampleMeasurement, StateMeasurement

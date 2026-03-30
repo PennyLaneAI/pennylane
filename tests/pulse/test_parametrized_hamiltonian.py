@@ -15,6 +15,7 @@
 """
 Unit tests for the ParametrizedHamiltonian class
 """
+
 # pylint: disable=no-member, import-outside-toplevel
 import pytest
 

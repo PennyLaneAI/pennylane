@@ -14,6 +14,7 @@
 """
 Submodule for sampling a qubit mixed state.
 """
+
 # pylint: disable=too-many-positional-arguments
 from collections.abc import Callable
 

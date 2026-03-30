@@ -15,7 +15,6 @@
 Tests for the 'mark' functionality.
 """
 
-
 import pennylane as qml
 from pennylane.fourier.mark import MarkedOp, mark
 

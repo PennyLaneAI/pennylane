@@ -14,6 +14,7 @@
 """
 This module contains code for the main device construction delegation logic.
 """
+
 from importlib import metadata
 from sys import version_info
 

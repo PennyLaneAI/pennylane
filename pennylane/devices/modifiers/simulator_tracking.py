@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the ``simulator_tracking`` device modifier."""
+
 from functools import wraps
 
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions

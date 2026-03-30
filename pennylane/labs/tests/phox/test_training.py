@@ -14,6 +14,7 @@
 """
 Tests for the Phox training module.
 """
+
 import pytest
 
 from pennylane.labs.phox.expval_functions import CircuitConfig, build_expval_func

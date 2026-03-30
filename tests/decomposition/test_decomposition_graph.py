@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
+
 import copy
 import warnings
 from unittest.mock import patch

@@ -14,6 +14,7 @@
 """
 This module defines the data structure that encapsulates a quantum transform.
 """
+
 from __future__ import annotations
 
 import os

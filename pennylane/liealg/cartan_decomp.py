@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
-
 from pennylane import math
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliVSpace

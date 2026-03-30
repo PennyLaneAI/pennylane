@@ -14,6 +14,7 @@
 """
 This module contains the Clifford simulator using ``stim``.
 """
+
 # pylint: disable=no-member
 
 import concurrent.futures
