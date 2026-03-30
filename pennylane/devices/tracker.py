@@ -71,8 +71,9 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(0.9), 'shots': 300}
-    >>> tracker.latest
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(1.16), 'shots': 300}
+    >>> import pprint
+    >>> pprint.pprint(tracker.latest)
     {
         'simulations': 1,
         'executions': 1,
@@ -90,7 +91,7 @@ class Tracker:
     >>> tracker.history.keys()
     dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
-    [np.float64(0.98), np.float64(-0.2), np.float64(0.12)]
+    [np.float64(1.0), np.float64(-0.04), np.float64(0.2)]
     >>> print(tracker.history['resources'][0])
     Wire allocations: 1
     Total gates: 1
@@ -202,7 +203,8 @@ class Tracker:
         >>> tracker.update(a=1, b=2, c="c")
         >>> tracker.latest
         {'a': 1, 'b': 2, 'c': 'c'}
-        >>> tracker.history
+        >>> import pprint
+        >>> pprint.pprint(tracker.history)
         {
             'batches': [1],
             'simulations': [1],
