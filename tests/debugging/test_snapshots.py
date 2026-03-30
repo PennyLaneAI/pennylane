@@ -775,10 +775,10 @@ class TestSnapshotMCMS:
         assert len(results["tag"]) == 4
         assert qml.math.allclose(results["tag"], [-1, -1, -1, -1])  # postselected into one state
 
-    def test_default_qubit_one_shot(self):
+    def test_default_qubit_one_shot(self, seed):
         """Test that one shot can be used with snapshots."""
 
-        @qml.qnode(qml.device("default.qubit"), mcm_method="one-shot", shots=1000)
+        @qml.qnode(qml.device("default.qubit"), mcm_method="one-shot", shots=1000, seed=seed)
         def c():
             qml.H(0)
             qml.measure(0)
