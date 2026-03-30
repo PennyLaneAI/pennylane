@@ -70,12 +70,12 @@ jobs:
           path: uv.lock
 
   upload-stable-deps:
-    needs: tests
+    needs: [tests, update-lock-files]
     uses: ./.github/workflows/check_in_artifact.yml
     if: github.event_name == 'schedule'
     with:
       artifact_name_pattern: "frozen-lockfile"
-      artifact_save_path: "uv.lock"
+      artifact_save_path: "."
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Dependencies Update
       pull_request_title: Update stable dependency files
