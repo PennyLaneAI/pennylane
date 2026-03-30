@@ -852,6 +852,10 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
+  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
+  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
+
 * Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
   a resource decomposition defined and is not in the provided ``gate_set``.
