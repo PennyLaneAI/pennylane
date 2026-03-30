@@ -68,7 +68,6 @@ jobs:
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
       - name: Test 'pennylane' folder
-        if: always()
         run: |
           WONT_FIX="
           --ignore=pennylane/labs
