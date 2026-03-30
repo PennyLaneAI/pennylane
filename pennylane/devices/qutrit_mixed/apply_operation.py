@@ -138,8 +138,11 @@ def apply_operation(
 
     .. code-block:: python
 
+        class SomeOp(Operator):
+            pass
+
         @apply_operation.register
-        def _(op: type_op, state):
+        def _(op: SomeOp, state):
             pass # custom op application method here
 
     **Example:**

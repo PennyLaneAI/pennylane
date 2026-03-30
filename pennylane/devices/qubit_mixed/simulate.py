@@ -246,7 +246,7 @@ def simulate(
         )
 
     >>> print(simulate(circuit))
-    (0.0, array([0.68117888, 0.0, 0.31882112, 0.0]))
+    (np.float64(0.0), array([0.68117888, 0.        , 0.31882112, 0.        ]))
 
     .. details::
         :title: Usage Details

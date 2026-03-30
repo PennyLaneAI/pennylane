@@ -99,8 +99,8 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         >>> # Apply Pauli-Z (phase_factor=-1)
         >>> z_applied = _phase_shift(plus_state, axis=0)
         >>> print(z_applied)
-        [[0.5, -0.5],
-         [-0.5, 0.5]]
+        [[ 0.5  0.5]
+         [-0.5 -0.5]]
 
         >>> # Two-qubit case: density matrix for |0⟩⟨0| ⊗ |+⟩⟨+|
         >>> two_qubit_state = np.array([
@@ -114,14 +114,13 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         >>> print(z_on_second)
         ... [[[[ 0.5  0.5]
         ...    [ 0.   0. ]]
-
+        <BLANKLINE>
         ...   [[-0.5 -0.5]
         ...    [-0.  -0. ]]]
-
-
+        <BLANKLINE>
         ...  [[[ 0.   0. ]
         ...    [ 0.   0. ]]
-
+        <BLANKLINE>
         ...   [[-0.  -0. ]
         ...    [-0.  -0. ]]]]
 
@@ -130,14 +129,13 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         >>> print(z_on_first)
         ... [[[[ 0.5  0.5]
         ...    [ 0.   0. ]]
-
+        <BLANKLINE>
         ...   [[ 0.5  0.5]
         ...    [ 0.   0. ]]]
-
-
+        <BLANKLINE>
         ...  [[[-0.  -0. ]
         ...    [-0.  -0. ]]
-
+        <BLANKLINE>
         ...   [[-0.  -0. ]
         ...    [-0.  -0. ]]]]
 
