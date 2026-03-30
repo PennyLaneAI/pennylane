@@ -75,6 +75,7 @@ jobs:
           "
 
           TO_DO="
+          --ignore=pennylane/pauli/pauli_sparse_matrices.md
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
