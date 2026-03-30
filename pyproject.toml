@@ -152,6 +152,7 @@ doctest = [
     "stim",
     "matplotlib",
     "torch",
+    "pyzx",
     "jax==0.7.1",
     "jaxlib==0.7.1",
 ]
