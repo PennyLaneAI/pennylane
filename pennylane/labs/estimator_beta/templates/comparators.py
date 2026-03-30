@@ -20,7 +20,6 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.qchem import number
 from pennylane.wires import WiresLike
 
 # pylint: disable= signature-differs, arguments-differ
@@ -162,7 +161,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), register_size - 1))
 
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
-        gate_lst.append(GateCount(resource_rep(qre.X), 4*num_ones - 1))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4 * num_ones - 1))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -212,7 +211,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
             )
         )
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
-        gate_lst.append(GateCount(resource_rep(qre.X), 4*num_ones - 1))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4 * num_ones - 1))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -240,7 +239,14 @@ class RegisterEquality(ResourceOperator):
         CNOTs, then checks whether all results are zero via a Toffoli
         cascade. The circuit is represented as:
 
-
+            0: ─╭●────────────────┤
+            1: ─│──╭●─────────────┤
+            2: ─│──│──╭●──────────┤
+            3: ─╰X─│──│───X─╭●────┤
+            4: ────╰X─│───X─├●────┤
+            5: ───────╰X──X─│──╭●─┤
+            6: ─────────────╰⊕─├●─┤
+            7: ────────────────╰⊕─┤
 
     """
 
@@ -304,8 +310,16 @@ class RegisterEquality(ResourceOperator):
         Resources:
             The circuit computes the bitwise XOR of the two registers using
             CNOTs, then checks whether all results are zero via a Toffoli
-            cascade (AND reduction), following Lemma 7.2 of
-            `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+            cascade. The circuit is represented as:
+
+                0: ─╭●────────────────┤
+                1: ─│──╭●─────────────┤
+                2: ─│──│──╭●──────────┤
+                3: ─╰X─│──│───X─╭●────┤
+                4: ────╰X─│───X─├●────┤
+                5: ───────╰X──X─│──╭●─┤
+                6: ─────────────╰⊕─├●─┤
+                7: ────────────────╰⊕─┤
 
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the operator.
@@ -335,10 +349,17 @@ class RegisterEquality(ResourceOperator):
             target_resource_params (dict): Dictionary containing the resource parameters.
 
         Resources:
-            The circuit computes the bitwise XOR of the two registers using
-            CNOTs, then checks whether all results are zero via a Toffoli
-            cascade (AND reduction), following Lemma 7.2 of
-            `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+            The adjoint of this circuit uncomputes the AND reduction with an ``Adjoint`` of ``TemporaryAND`` cascade, then uncomputes the XOR with ``CNOT`` gates.
+            The circuit is represented as:
+
+                0: ────────────────╭●─┤
+                1: ─────────────╭●─│──┤
+                2: ──────────╭●─│──│──┤
+                3: ────╭●──X─│──│──╰X─┤
+                4: ────├●──X─│──╰X────┤
+                5: ─╭●─│───X─╰X───────┤
+                6: ─├●─╰⊕─────────────┤
+                7: ─╰⊕────────────────┤
 
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the adjoint of the operator.
