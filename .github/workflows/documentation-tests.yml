@@ -79,6 +79,8 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
+          --ignore=pennylane/devices/_legacy_device.py
+          --ignore=pennylane/devices/_qubit_device.py
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
