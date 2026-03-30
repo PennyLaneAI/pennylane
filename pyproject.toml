@@ -149,7 +149,6 @@ doctest = [
     "pytest>=8.4.1",
 
     # Used in docstrings of tested modules
-    "stim",
     "matplotlib",
     "torch",
     "pyzx",
