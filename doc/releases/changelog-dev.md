@@ -42,7 +42,7 @@
 
   ```python
   qml.decomposition.enable_graph()
-  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT", "X"}
 
   @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
   @qml.decompose(gate_set=gate_set, num_work_wires=10)
