@@ -437,9 +437,9 @@ class DefaultQubit(Device):
             return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    Array(0.36235774, dtype=float32)
+    Array(0.362..., dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    Array(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.932..., dtype=float64, weak_type=True)
 
     .. details::
         :title: Tracking

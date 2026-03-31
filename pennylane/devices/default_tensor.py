@@ -317,7 +317,7 @@ class DefaultTensor(Device):
                     ]
 
             >>> circuit(theta, phi, num_qubits)
-            [-0.9953099539220154, np.float64(0.003663102967174834), np.float64(0.9999999876073177)]
+            [-0.9953..., np.float64(0.0036631...), np.float64(0.9999...)]
 
             After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds on a standard laptop.
             Increasing the number of qubits to 500 brings the execution time to approximately 15 seconds, and for 1000 qubits to around 50 seconds.
@@ -359,7 +359,7 @@ class DefaultTensor(Device):
                     return qml.expval(qml.Z(0))
 
             >>> circuit(phi, depth, num_qubits)
-            -0.951149946674546
+            -0.9511499...
 
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 

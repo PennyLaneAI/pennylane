@@ -178,11 +178,7 @@ class DefaultQutritMixed(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.08015701503959313,
-    0.04521414211599359,
-    -0.0215232130089687,
-    0.062120285032425865,
-    -0.0635052317625]
+    (np.float64(0.08015701503959316), np.float64(0.045214142115993505), np.float64(-0.021523213008968645), np.float64(0.06212028503242595), np.float64(-0.0635052317625))
 
     This device currently supports backpropagation derivatives:
 
