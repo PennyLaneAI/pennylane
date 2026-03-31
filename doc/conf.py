@@ -439,6 +439,6 @@ def catalyst_docstring_lookup(app, obj_type, name, obj, options, lines):
 
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect("autodoc-process-docstring", catalyst_docstring_lookup)
+    # app.connect("autodoc-process-docstring", catalyst_docstring_lookup)
     app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
