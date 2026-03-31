@@ -417,7 +417,7 @@ def get_catalyst_docstrings():
     return docs_dict
 
 
-def catalyst_docstring_lookup(app, what, name, obj, options, lines):
+def catalyst_docstring_lookup(app, obj_type, name, obj, options, lines):
     short_name = name.split(".")[-1]
     registry = get_catalyst_docstrings()
 
@@ -427,21 +427,14 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
             lines.clear()
 
             for i, phrase in enumerate(new_lines[1:]):
-                true_idx = i + 1
-
                 if phrase != "":
-                    prev_phrase = new_lines[i]
-
-                    if prev_phrase == "":
-                        new_lines[0] += phrase
-                    else:
-                        new_lines[0] += " " + phrase
+                    new_lines[0] += " " + phrase
+                    new_lines.remove(phrase)
 
                 else:
-                    # next_phrase = new_lines[true_idx + 1]
-                    new_lines[0] += "\n"  # + next_phrase
+                    break
 
-            lines.extend([new_lines[0]])
+            lines.extend(new_lines)
 
 
 def setup(app):
