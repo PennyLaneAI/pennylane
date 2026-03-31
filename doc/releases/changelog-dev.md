@@ -746,6 +746,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* A `qml.measurements.ClassicalConstant` measurement process can now be used to return purely
+  classical values from `QNode`s.
+
 * `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
   program capture.
   [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)

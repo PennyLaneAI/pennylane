@@ -22,6 +22,7 @@ from functools import singledispatch
 import pennylane as qml
 from pennylane import math
 from pennylane.measurements import MeasurementProcess
+from pennylane.measurements.classical_constant import ClassicalConstant
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -49,6 +50,36 @@ from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPre
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
 BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operations because "
+
+
+def _compare_data(
+    data1, data2, check_interface=True, check_trainability=True, rtol=1e-5, atol=1e-9
+):
+    if math.is_abstract(data1) or math.is_abstract(data2):
+        # assume all tracers are independent
+        return "Data contains a tracer. Abstract tracers are assumed to be unique."
+    if not math.allclose(data1, data2, rtol=rtol, atol=atol):
+        return "Data are different.\nGot {op1.data} and {op2.data}"
+
+    if check_trainability:
+        params1_train = math.requires_grad(data1)
+        params2_train = math.requires_grad(data2)
+        if params1_train != params2_train:
+            return (
+                "Data have different trainability.\n "
+                f"{data1} trainability is {params1_train} and {data2} trainability is {params2_train}"
+            )
+
+    if check_interface:
+        params1_interface = math.get_interface(data1)
+        params2_interface = math.get_interface(data2)
+        if params1_interface != params2_interface:
+            return (
+                "Data has different interfaces.\n "
+                f"{data1} interface is {params1_interface} and {data2} interface is {params2_interface}"
+            )
+
+    return True
 
 
 def equal(
@@ -773,6 +804,14 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 @_equal_dispatch.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
+
+
+@_equal_dispatch.register
+def _equal_classical_constants(op1: ClassicalConstant, op2: ClassicalConstant, **kwargs):
+    data_compare = _compare_data(op1.constant, op2.constant, **kwargs)
+    if isinstance(data_compare, str):
+        return f"{op1} and {op2} are not equal because {data_compare}."
+    return data_compare
 
 
 @_equal_dispatch.register
