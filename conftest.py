@@ -17,6 +17,7 @@ from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
 from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
+from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
 
 import numpy as base_numpy
 import scipy as base_scipy
@@ -52,7 +53,8 @@ def reset_pennylane_state(namespace):
     """
     qml.capture.disable()
     qml.decomposition.disable_graph()
-    jax.config.update("jax_dynamic_shapes", False)
+    if jax is not None:
+        jax.config.update("jax_dynamic_shapes", False)
     # jax.config.update("jax_enable_x64", False)
     base_numpy.set_printoptions(precision=8)
 
@@ -62,7 +64,8 @@ pytest_collect_file = Sybil(
     parsers=[
         DocTestParser(optionflags=ELLIPSIS | NORMALIZE_WHITESPACE),
         PythonCodeBlockParser(),
+        MarkDownPythonCodeBlockParser(),
     ],
-    patterns=["*.rst", "*.py"],
+    patterns=["*.rst", "*.py", "*.md"],
     teardown=reset_pennylane_state,
 ).pytest()
