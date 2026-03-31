@@ -61,7 +61,7 @@ def to_ppr_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -71,9 +71,7 @@ def to_ppr_setup_inputs():
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -152,7 +150,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -163,9 +161,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.commute_ppr(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -263,7 +259,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -274,9 +270,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.merge_ppr_ppm(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -368,7 +362,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -380,9 +374,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
         from functools import partial
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.ppr_to_ppm(decompose_method="auto-corrected")
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -493,7 +485,7 @@ def ppm_compilation_setup_inputs(
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -503,9 +495,7 @@ def ppm_compilation_setup_inputs(
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.ppm_compilation(decompose_method="clifford-corrected", max_pauli_size=2)
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -593,7 +583,7 @@ def reduce_t_depth_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -612,9 +602,7 @@ def reduce_t_depth_setup_inputs():
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.reduce_t_depth
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=4))
@@ -691,7 +679,7 @@ def decompose_arbitrary_ppr_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -704,9 +692,7 @@ def decompose_arbitrary_ppr_setup_inputs():
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.decompose_arbitrary_ppr
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=3))
