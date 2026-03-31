@@ -114,12 +114,15 @@ class Device(abc.ABC):
         >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
-        MatrixUndefinedError
+        Traceback (most recent call last):
+        ...
+        pennylane.exceptions.MatrixUndefinedError
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.Z(0))])
         >>> config = ExecutionConfig(gradient_method="adjoint")
-        >>> dev.compute_derivatives(circuit, config)
-        ValueError: Operation Rot is not written in terms of a single parameter
-        >>> new_circuit, postprocessing, new_config = dev.preprocess(circuit, config)
+        >>> dev.compute_derivatives(circuit, config)  # the result will be incorrect
+        (array(0.), array(0.), array(0.))
+        >>> program, new_config = dev.preprocess(config)
+        >>> new_circuit, postprocessing = program([circuit])
         >>> dev.compute_derivatives(new_circuit, new_config)
         ((array(0.), array(-0.74570521), array(0.)),)
 
@@ -303,7 +306,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import TapeBatch
+                from pennylane.tape import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
                 @transform
@@ -336,7 +339,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.interfaces.jax import execute as jax_boundary
+                from pennylane.workflow.interfaces.jax import execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
@@ -469,7 +472,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.interfaces.jax import execute as jax_boundary
+                from pennylane.workflow.interfaces.jax import execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
@@ -662,7 +665,7 @@ class Device(abc.ABC):
             measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-            >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.Z(0))])
+            >>> tape = qml.tape.QuantumScript(measurements=[qml.expval(qml.Z(0))])
             >>> tape.shape(dev)
             ()
             >>> dev.execute(tape)
@@ -681,7 +684,7 @@ class Device(abc.ABC):
             >>> tape.shape(dev)
             ((), (4,))
             >>> dev.execute(tape)
-            (array(1.0), array([1., 0., 0., 0.]))
+            (np.float64(1.0), array([1., 0., 0., 0.]))
 
         """
         raise NotImplementedError
