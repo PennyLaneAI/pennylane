@@ -1063,7 +1063,7 @@ class QasmInterpreter:
     @visit.register(ast.IODeclaration)
     def visit_io_declaration(self, node: ast.IODeclaration, context: Context):
         """
-        Registers an input declaration.
+        Registers an input or output declaration.
 
         Args:
             node (IODeclaration): The IODeclaration QASMNode.
