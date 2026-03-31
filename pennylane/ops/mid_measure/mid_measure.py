@@ -16,12 +16,13 @@ This module contains the qml.measure measurement.
 """
 
 import uuid
+import warnings
 from collections.abc import Hashable
 from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -38,7 +39,7 @@ def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int 
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, meas_uid=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -112,7 +113,8 @@ class MidMeasure(Operator):
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
-        id (str): Custom label given to a measurement instance.
+        id (str | None): *Deprecated* Custom unique id given to a measurement instance.
+        meas_uid (str | None): Custom unique id given to a measurement instance.
     """
 
     def __repr__(self):
@@ -123,15 +125,25 @@ class MidMeasure(Operator):
     batch_size = None
     resource_keys = set()
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None = None,
         reset: bool = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
-        super().__init__(wires=Wires(wires), id=id)
-        self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+            )
+            # Only override if meas_uid wasn't explicitly provided
+            if meas_uid is None:
+                meas_uid = id
+        super().__init__(wires=Wires(wires))
+        self._hyperparameters = {"reset": reset, "postselect": postselect, "meas_uid": meas_uid}
         self._name = "MidMeasureMP"
 
     @property
@@ -143,6 +155,11 @@ class MidMeasure(Operator):
     def postselect(self) -> int | None:
         """Which basis state to postselect after a mid-circuit measurement."""
         return self.hyperparameters["postselect"]
+
+    @property
+    def meas_uid(self) -> str | None:
+        """The custom ID associated with the measurement instance."""
+        return self.hyperparameters["meas_uid"]
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -181,7 +198,7 @@ class MidMeasure(Operator):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.id))
+        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.meas_uid))
 
 
 def measure(

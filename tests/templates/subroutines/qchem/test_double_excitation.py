@@ -314,6 +314,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")

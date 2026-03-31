@@ -32,7 +32,7 @@ jnp = jax.numpy
 
 def test_error_with_non_scalar_function():
     """Test that an error is raised if the differentiated function has non-scalar outputs."""
-    with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
+    with pytest.raises(TypeError, match="only applies to scalar-output functions."):
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
@@ -57,7 +57,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         assert eqn.params["fn"] == fn
 
 
-@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian, qml.value_and_grad))
 class TestGradJacobian:
     """Test for capturing both qml.grad and qml.jacobian."""
 
@@ -106,7 +106,8 @@ class TestGradJacobian:
         assert len(fn_jaxpr.invars) == 2
         assert len(fn_jaxpr.constvars) == 0
 
-        assert len(jaxpr.eqns[0].outvars) == 1  # just derivative of x
+        num_out = 2 if grad_fn == qml.value_and_grad else 1
+        assert len(jaxpr.eqns[0].outvars) == num_out
 
 
 class TestGrad:

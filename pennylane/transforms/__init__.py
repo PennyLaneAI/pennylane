@@ -300,8 +300,8 @@ Alternatively, multiple transforms can be chained together to create a :class:`~
 >>> pipeline = qml.transforms.cancel_inverses(recursive=True) + qml.transforms.merge_rotations
 >>> print(pipeline)
 CompilePipeline(
-  [0] cancel_inverses(recursive=True),
-  [1] merge_rotations()
+  [1] cancel_inverses(recursive=True),
+  [2] merge_rotations()
 )
 
 The :class:`~.CompilePipeline` can also be applied on a ``QNode``, which will transform the
@@ -411,6 +411,8 @@ from .compile import compile
 from .decompositions import (
     clifford_t_decomposition,
     commute_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
     decompose_arbitrary_ppr,
     gridsynth,
     merge_ppr_ppm,

@@ -437,6 +437,7 @@ class TestInputs:
         with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
             qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.QuantumPhaseEstimation(

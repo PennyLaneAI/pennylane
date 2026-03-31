@@ -421,7 +421,7 @@ def test_projector(op, new_params, expected_op):
 )
 def test_conditional_ops(op, new_params, expected_op):
     """Test that Conditional ops are bound correctly."""
-    mp0 = qml.ops.MidMeasure(qml.wires.Wires(0), reset=True, id="foo")
+    mp0 = qml.ops.MidMeasure(qml.wires.Wires(0), reset=True, meas_uid="foo")
     mv0 = qml.ops.MeasurementValue([mp0], lambda v: v)
     cond_op = qml.ops.Conditional(mv0, op)
     new_op = bind_new_parameters(cond_op, new_params)

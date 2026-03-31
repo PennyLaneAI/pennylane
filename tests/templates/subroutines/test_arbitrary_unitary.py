@@ -222,6 +222,7 @@ class TestInputs:
             weights = np.zeros(shape)
             circuit(weights)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.ArbitraryUnitary(np.random.random(size=(63,)), wires=range(3), id="a")
