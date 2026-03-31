@@ -21,8 +21,15 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import resource_rep
+from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
-from pennylane.templates.core import CollectedSubroutine, adjoint_subroutine_resource_rep
+from pennylane.templates.core import (
+    CollectedSubroutine,
+    _make_signature_key,
+    adjoint_subroutine_resource_rep,
+    change_op_basis_subroutine_resource_rep,
+)
 
 
 class TestInitialization:
@@ -709,6 +716,139 @@ class TestGraphDecomposition:
             ("XY", "YZ"),
         )
         assert rp["signature_key"] == key
+
+    # pylint: disable=too-many-statements
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+
+        # use a non-standard order
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+            resource_rep(qml.PauliX),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "SubroutineOp"
+        assert rr.params["compute_op"].op_type == SubroutineOp
+        assert rr.params["compute_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(SubroutineOp)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"].params == {
+            "base_class": SubroutineOp,
+            "base_params": {
+                "subroutine": f,
+                "signature_key": _make_signature_key(
+                    f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                ),
+            },
+        }
+
+    def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+
+        rr = change_op_basis_subroutine_resource_rep(
+            qml.PauliZ(0),
+            resource_rep(qml.PauliX),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "PauliZ"
+        assert rr.params["compute_op"].op_type == PauliZ
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+
+    def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            resource_rep(qml.PauliX),
+            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "PauliX"
+        assert rr.params["compute_op"].op_type == PauliX
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "SubroutineOp"
+        assert rr.params["target_op"].op_type == SubroutineOp
+        assert rr.params["target_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+
+    def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
+        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+
+        @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
+        def f(a, reg1, reg2, x):
+            pass
+
+        x = {"a": AbstractArray((3,), float)}
+        rr = change_op_basis_subroutine_resource_rep(
+            qml.CNOT([0, 1]),
+            qml.PauliX(0),
+            subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+        )
+        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert rr.name == "ChangeOpBasis"
+
+        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "CNOT"
+        assert rr.params["compute_op"].op_type == CNOT
+
+        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "PauliX"
+        assert rr.params["target_op"].op_type == PauliX
+
+        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "SubroutineOp"
+        assert rr.params["uncompute_op"].op_type == SubroutineOp
+        assert rr.params["uncompute_op"].params == {
+            "subroutine": f,
+            "signature_key": _make_signature_key(
+                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            ),
+        }
 
     def test_adjoint_subroutine_resource_rep(self):
         """Test creating a CompressedResourceRep specific to adjoint templates."""

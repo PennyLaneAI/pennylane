@@ -16,10 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
 
-from pennylane.estimator.estimate import (
-    _get_resource_decomposition,
-    _ops_to_compressed_reps,
-)
+from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
@@ -47,7 +44,7 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
+        config (dict | None): additional parameters to estimate the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -83,6 +80,14 @@ def estimate(
 ) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
+    This function improves upon the :func:`~.pennylane.estimator.estimate()` function in two main ways:
+
+    - Firstly, it uses a new system for wire tracking that more accurately estimates the number of auxiliary
+      wires required for any quantum workflow.
+    - Secondly, this function uses the :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`
+      by default. As a result it comes preloaded with experimental and state of the art resource decompositions
+      that lead to more optimal resource estimates.
+
     Args:
         workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | :class:`~.Operator` | QNode):
             The quantum circuit or operator for which to estimate resources.
@@ -108,14 +113,14 @@ def estimate(
 
     .. code-block:: python
 
-        import pennylane.labs.estimator_beta as exp_qre
+        import pennylane.labs.estimator_beta as qre
 
         def circuit():
-            exp_qre.Hadamard()
-            exp_qre.CNOT()
-            exp_qre.QFT(num_wires=4)
+            qre.Hadamard()
+            qre.CNOT()
+            qre.QFT(num_wires=4)
 
-    >>> res = exp_qre.estimate(circuit)()
+    >>> res = qre.estimate(circuit)()
     >>> print(res)
     --- Resources: ---
      Total wires: 4
@@ -130,7 +135,7 @@ def estimate(
 
     The resource estimation can be performed with respect to an alternative gate set:
 
-    >>> res = exp_qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})()
+    >>> res = qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})()
     >>> print(res)
     --- Resources: ---
      Total wires: 4
@@ -154,15 +159,15 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             def circuit():
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(num_wires=3)
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(num_wires=3)
+                qre.CNOT()
+                qre.MultiRZ(num_wires=3)
+                qre.CNOT()
+                qre.MultiRZ(num_wires=3)
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 3
@@ -184,15 +189,15 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             def circuit():
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(wires=[0, 1, 2])
-                exp_qre.CNOT()
-                exp_qre.MultiRZ(wires=[2, 3, 4])
+                qre.CNOT()
+                qre.MultiRZ(wires=[0, 1, 2])
+                qre.CNOT()
+                qre.MultiRZ(wires=[2, 3, 4])
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 7
@@ -204,6 +209,65 @@ def estimate(
            'T': 88,
            'CNOT': 10
 
+        For a detailed explanation of the "allocated wires", see the "Dynamic work wire allocation
+        in decompositions" section below.
+
+    .. details::
+        :title: Dynamic work wire allocation in decompositions
+
+        Some operators require additional auxiliary wires (work wires) to decompose. These wires
+        are not part of the operator's definition, so they will be dynamically allocated when
+        performing the operator's decomposition. The ``estimate`` function also tracks the usage
+        of these dynamically allocated wires.
+
+        .. code-block:: python
+
+            import pennylane.labs.estimator_beta as qre
+
+            def circuit():
+                qre.Hadamard()
+                qre.CNOT()
+                qre.AliasSampling(num_coeffs=3)
+
+        >>> res = qre.estimate(circuit)()
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 123
+           algorithmic wires: 2
+           allocated wires: 121
+             zero state: 58
+             any state: 63
+         Total gates : 1.150E+3
+           'Toffoli': 64,
+           'T': 88,
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
+
+        In the above example, a total of 121 work wires were allocated (in the zeroed state) to
+        perform the decomposition of the ``AliasSampling``, 58 of which were restored to the
+        original zeroed state before deallocation, and the rest were deallocated in an unknown
+        state. You may also pre-allocate work wires:
+
+        >>> res = qre.estimate(circuit, zeroed_wires=150)()
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 152
+           algorithmic wires: 2
+           allocated wires: 150
+             zero state: 87
+             any state: 63
+         Total gates : 1.150E+3
+           'Toffoli': 64,
+           'T': 88,
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
+
+        In this case, you have the option to treat this pre-allocated pool of work wires as the
+        only work wires available, by setting ``tight_wires_budget=True``, then an error is
+        raised if the required number of wires exceeds the number of pre-allocated wires.
+
     .. details::
         :title: Estimate the resources of a standard PennyLane circuit
 
@@ -212,7 +276,7 @@ def estimate(
         .. code-block:: python
 
             import pennylane as qml
-            import pennylane.labs.estimator_beta as exp_qre
+            import pennylane.labs.estimator_beta as qre
 
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
@@ -220,7 +284,7 @@ def estimate(
                 qml.CNOT(wires=[0, 1])
                 qml.QFT(wires=[0, 1, 2, 3])
 
-        >>> res = exp_qre.estimate(circuit)()
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 4
@@ -314,7 +378,7 @@ def _resources_from_resource_operator(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_wires_budget=False,
+        tight_wires_budget=tight_wires_budget,
         config=config,
     )
 
@@ -336,7 +400,7 @@ def _resources_from_pl_ops(
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
-        tight_wires_budget=False,
+        tight_wires_budget=tight_wires_budget,
         config=config,
     )
 

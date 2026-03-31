@@ -18,10 +18,7 @@ import pytest
 import pennylane as qml
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
-from pennylane.estimator import (
-    GateCount,
-    Resources,
-)
+from pennylane.estimator import GateCount, Resources
 from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,
@@ -1050,6 +1047,29 @@ class TestEstimateAuxiliaryWires:
         """Test qubit tracking with Any state allocation WITHOUT nested allocation and deallocation"""
         results = _estimate_auxiliary_wires(
             list_actions=generate_actions(),
+            scalar=scalar,
+            num_available_any_state_aux=num_aux,
+            num_active_qubits=num_active,
+        )
+        assert results == expected_results
+
+    def test_estimator_allocation_and_deallocation(self):
+        """Test that we can accurately track instaces of Allocate and Deallocate
+        defined in the ``pennylane.estimator`` module."""
+
+        list_actions = [  # Allocation and deallocation with scaling
+            qre.Allocate(3),
+            GateCount(qre.resource_rep(qre.CNOT)),
+            qre.Deallocate(2),
+            GateCount(qre.resource_rep(qre.Z), 2),
+        ]
+        scalar = 5  # Scalar
+        num_active = 2  # number of active qubits
+        num_aux = 2  # number of any state auxiliaries,
+        expected_results = (7, 0, 5)  # max alloc, max dealloc, total
+
+        results = _estimate_auxiliary_wires(
+            list_actions=list_actions,
             scalar=scalar,
             num_available_any_state_aux=num_aux,
             num_active_qubits=num_active,

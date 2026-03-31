@@ -21,8 +21,13 @@ resource estimation.
     with no guarantees of stability or backwards compatibility.
 
 
+<<<<<<< HEAD
 Estimate
 ~~~~~~~~
+=======
+Resource Estimation
+~~~~~~~~~~~~~~~~~~~
+>>>>>>> main
 
 .. currentmodule:: pennylane.labs.estimator_beta
 
@@ -30,6 +35,10 @@ Estimate
     :toctree: api
 
     ~estimate
+<<<<<<< HEAD
+=======
+    ~LabsResourceConfig
+>>>>>>> main
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,9 +55,29 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+Alternate Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~selectpaulirot_controlled_resource_decomp
+    ~paulirot_controlled_resource_decomp
+    ~ch_resource_decomp
+    ~ch_toffoli_based_resource_decomp
+    ~hadamard_controlled_resource_decomp
+    ~hadamard_toffoli_based_controlled_decomp
+
 """
+<<<<<<< HEAD
 import pennylane.estimator as qre
 from pennylane.estimator import *
+=======
+from pennylane.estimator import *
+from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+>>>>>>> main
 
 from .estimate import estimate
 from .wires_manager import (
@@ -59,3 +88,31 @@ from .wires_manager import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
+from .resource_config import LabsResourceConfig
+
+from .templates import selectpaulirot_controlled_resource_decomp
+from .ops import (
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+    paulirot_controlled_resource_decomp,
+)
+
+
+@apply_controlled.register
+def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
+    return action
+
+
+@apply_adj.register
+def _(action: Allocate):
+    return Deallocate(allocated_register=action)
+
+
+@apply_adj.register
+def _(action: Deallocate):
+    if action.allocated_register is not None:
+        return action.allocated_register
+
+    return Allocate(action.num_wires, state=action.state, restored=action.restored)

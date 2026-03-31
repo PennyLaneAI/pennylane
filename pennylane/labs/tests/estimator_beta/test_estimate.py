@@ -32,7 +32,7 @@ from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
-# pylint: disable= no-self-use, arguments-differ
+# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -73,6 +73,10 @@ class DummyCNOT(ResourceOperator):
     def resource_decomp(cls, **kwargs):
         raise ResourcesUndefinedError
 
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
+
 
 class DummyHadamard(ResourceOperator):
     """Dummy class for testing"""
@@ -91,6 +95,10 @@ class DummyHadamard(ResourceOperator):
     @classmethod
     def resource_decomp(cls, **kwargs):
         raise ResourcesUndefinedError
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
 
 
 class DummyT(ResourceOperator):
@@ -131,6 +139,10 @@ class DummyZ(ResourceOperator):
         t = resource_rep(DummyT)
         return [GateCount(t, count=4)]
 
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
+
 
 class DummyRZ(ResourceOperator):
     """Dummy class for testing"""
@@ -155,6 +167,10 @@ class DummyRZ(ResourceOperator):
         t = resource_rep(DummyT)
         t_counts = round(1 / precision)
         return [GateCount(t, count=t_counts)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        return [GateCount(cls.resource_rep())]
 
 
 class DummyAlg1(ResourceOperator):
@@ -218,6 +234,37 @@ class DummyAlg2(ResourceOperator):
         ]
 
 
+class DummyAlg3(ResourceOperator):
+    """Dummy class for testing"""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None) -> None:
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_wires):
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_decomp(cls, num_wires):
+        borrowed_qubits = Allocate(3, state="any", restored=True)
+        free_borrowed_qubits = Deallocate(allocated_register=borrowed_qubits)
+
+        return [
+            Allocate(num_wires=2),
+            borrowed_qubits,
+            GateCount(qre.X.resource_rep(), num_wires + 5),
+            free_borrowed_qubits,
+            Deallocate(num_wires=2),
+        ]
+
+
 def mock_rotation_decomp(precision):
     """A mock decomposition for rotation gates returning DummyT gates for testing."""
     t = resource_rep(DummyT)
@@ -236,12 +283,12 @@ class TestEstimateResources:
         qml.RX(1.23, wires=[0])
         qml.CNOT(wires=[0, 1])
 
-    def test_estimate_with_unsupported_dispatch(self):
+    def test_estimate_with_unsupported_dispatch_labs(self):
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
         with pytest.raises(TypeError, match="Could not obtain resources for workflow of type"):
             estimate(({1, 2, 3}))
 
-    def test_estimate_with_tight_budget_qfunc(self):
+    def test_estimate_with_tight_budget_qfunc_labs(self):
         """Test that an error is raised if a user provides `tight_budget=True` and wire allocation
         goes beyond the budget."""
 
@@ -249,7 +296,6 @@ class TestEstimateResources:
             DummyAlg1(num_iter=3)
             DummyCNOT()
             DummyAlg1(num_iter=3)
-            return
 
         with pytest.raises(
             ValueError, match="Allocated more wires than the prescribed wire budget."
@@ -262,7 +308,7 @@ class TestEstimateResources:
                 tight_wires_budget=True,
             )()
 
-    def test_estimate_with_tight_budget_resources(self):
+    def test_estimate_with_tight_budget_resources_labs(self):
         """Test that an error is raised if a user provides `tight_budget=True` and wire allocation
         goes beyond the budget."""
         gates = {DummyAlg1.resource_rep(num_iter=3): 2, DummyCNOT.resource_rep(): 1}
@@ -284,7 +330,7 @@ class TestEstimateResources:
                 tight_wires_budget=True,
             )
 
-    def test_estimate_qnode(self):
+    def test_estimate_qnode_labs(self):
         """Test that a QNode can be estimated."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -304,7 +350,7 @@ class TestEstimateResources:
         assert resources.gate_counts["RX"] == 1
         assert resources.gate_types[qre.RX.resource_rep(precision=1e-3)] == 1
 
-    def test_qfunc_with_num_wires(self):
+    def test_qfunc_with_num_wires_labs(self):
         """Test that the number of wires is correctly inferred from a qfunc
         when the num_wires argument is used."""
 
@@ -320,7 +366,7 @@ class TestEstimateResources:
         )
         assert res == expected
 
-    def test_gate_set_is_none(self):
+    def test_gate_set_is_none_labs(self):
         """Test that the default gate set is used when gate_set is None."""
         op = qre.X()
         res = estimate(op, gate_set=None)
@@ -332,7 +378,7 @@ class TestEstimateResources:
         )
         assert res == expected
 
-    def test_estimate_resources_from_qfunc(self):
+    def test_estimate_resources_from_qfunc_labs(self):
         """Test that we can accurately obtain resources from qfunc"""
 
         def my_circuit():
@@ -365,7 +411,7 @@ class TestEstimateResources:
         computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
         assert computed_resources == expected_resources
 
-    def test_estimate_resources_from_resource_operator(self):
+    def test_estimate_resources_from_resource_operator_labs(self):
         """Test that we can accurately obtain resources from resource operator"""
         op = DummyAlg2(num_wires=4)
         actual_resources = estimate(op, gate_set={"DummyRZ", "DummyAlg1"})
@@ -380,7 +426,7 @@ class TestEstimateResources:
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
-    def test_estimate_resources_from_scaled_resource_operator(self):
+    def test_estimate_resources_from_scaled_resource_operator_labs(self):
         """Test that we can accurately obtain resources from resource operator"""
         op = 2 * DummyAlg2(num_wires=4)
         actual_resources = estimate(op, gate_set={"DummyRZ", "DummyAlg1"})
@@ -395,7 +441,7 @@ class TestEstimateResources:
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
-    def test_estimate_resources_from_resources_obj(self):
+    def test_estimate_resources_from_resources_obj_labs(self):
         """Test that we can accurately obtain resources from resources workflow"""
         gates = defaultdict(
             int,
@@ -424,7 +470,7 @@ class TestEstimateResources:
 
         assert actual_resources == expected_resources
 
-    def test_unsupported_object_in_queue_raises_error(self):
+    def test_unsupported_object_in_queue_raises_error_labs(self):
         """Test that a ValueError is raised for unsupported objects in the queue."""
 
         def my_circuit():
@@ -436,7 +482,7 @@ class TestEstimateResources:
         ):
             estimate(my_circuit)()
 
-    def test_estimate_resources_from_qfunc_with_pl_op(self):
+    def test_estimate_resources_from_qfunc_with_pl_op_labs(self):
         """Test that PennyLane operators are correctly mapped to resource operators
         when processing a qfunc."""
 
@@ -458,7 +504,7 @@ class TestEstimateResources:
         )
         assert actual_resources == expected_resources
 
-    def test_estimate_resources_from_pl_op_dispatch(self):
+    def test_estimate_resources_from_pl_op_dispatch_labs(self):
         """Test that the dispatch for PennyLane operators correctly maps to a
         ResourceOperator without further decomposition."""
         op = qml.PauliX(0)
@@ -508,7 +554,7 @@ class TestEstimateResources:
             ),
         ),
     )
-    def test_varying_gate_sets(self, gate_set, expected_resources):
+    def test_varying_gate_sets_labs(self, gate_set, expected_resources):
         """Test that changing the gate_set correctly updates the resources"""
 
         def my_circ(num_wires):
@@ -520,7 +566,7 @@ class TestEstimateResources:
         assert actual_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
-    def test_varying_config(self, error_val):
+    def test_varying_config_labs(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
         custom_config.resource_op_precisions[DummyRZ] = {"precision": error_val}
@@ -544,12 +590,12 @@ class TestEstimateResources:
     )
 
     @pytest.mark.parametrize("circ_w_measurement", measurement_circuits)
-    def test_estimate_ignores_measurementprocess(self, circ_w_measurement):
+    def test_estimate_ignores_measurementprocess_labs(self, circ_w_measurement):
         """Test that the estimate function ignores measurement processes"""
 
         assert estimate(self.circ)() == estimate(circ_w_measurement)(self.circ)
 
-    def test_custom_adjoint_decomposition(self):
+    def test_custom_adjoint_decomposition_labs(self):
         """Test that a custom adjoint decomposition can be set and used."""
 
         def custom_adj_RZ(target_resource_params):  # pylint: disable=unused-argument
@@ -569,7 +615,7 @@ class TestEstimateResources:
         assert res == expected_resources
         assert pl_res == expected_resources
 
-    def test_custom_pow_decomposition(self):
+    def test_custom_pow_decomposition_labs(self):
         """Test that a custom pow decomposition can be set and used."""
 
         def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
@@ -589,7 +635,7 @@ class TestEstimateResources:
         assert res == expected_resources
         assert pl_res == expected_resources
 
-    def test_custom_controlled_decomposition(self):
+    def test_custom_controlled_decomposition_labs(self):
         """Test that a custom controlled decomposition can be set and used."""
 
         def custom_ctrl_RZ(
@@ -612,3 +658,47 @@ class TestEstimateResources:
 
         assert res == expected_resources
         assert pl_res == expected_resources
+
+    @pytest.mark.parametrize(
+        "op, gate_set, expected_resources",
+        (
+            (
+                qre.Adjoint(DummyAlg3(num_wires=3)),
+                {"X"},
+                Resources(
+                    zeroed_wires=5,
+                    algo_wires=3,
+                    gate_types={qre.X.resource_rep(): 8},
+                ),
+            ),
+            (
+                qre.Adjoint(
+                    qre.Prod(
+                        (DummyAlg1(3), qre.Adjoint(DummyAlg1(3))),
+                    ),
+                ),
+                {"DummyCNOT", "DummyHadamard"},
+                Resources(
+                    zeroed_wires=3,
+                    algo_wires=2,
+                    gate_types={DummyCNOT.resource_rep(): 6, DummyHadamard.resource_rep(): 6},
+                ),
+            ),
+            (
+                qre.Controlled(DummyAlg3(num_wires=3), 3, 2),
+                {"MultiControlledX", "X"},
+                Resources(
+                    zeroed_wires=5,
+                    algo_wires=6,
+                    gate_types={
+                        qre.MultiControlledX.resource_rep(3, 0): 8,
+                        qre.X.resource_rep(): 4,
+                    },
+                ),
+            ),
+        ),
+    )
+    def test_estimator_symbolic_ops_labs(self, op, gate_set, expected_resources):
+        """Test that using symbolic ops works with Allocate and Deallocate"""
+        actual_resources = estimate(op, gate_set)
+        assert actual_resources == expected_resources
