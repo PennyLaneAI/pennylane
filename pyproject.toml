@@ -143,6 +143,18 @@ qcut = [
     "kahypar==1.3.5",
     "opt_einsum"
 ]
+doctest = [
+    # Tools needed for documentation testing
+    "sybil",
+    "pytest>=8.4.1",
+
+    # Used in docstrings of tested modules
+    "matplotlib",
+    "torch",
+    "pyzx",
+    "jax==0.7.1",
+    "jaxlib==0.7.1",
+]
 
 [[project.maintainers]]
 name = "Xanadu Quantum Technologies Inc."
