@@ -70,7 +70,7 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
       - uses: actions/checkout@v6
-      - uses: PennyLaneAI/sphinx-action@master
+      - uses: PennyLaneAI/sphinx-action@sc-114909-rmv-req
         with:
           docs-folder: "doc/"
           pre-build-command: >
