@@ -7,6 +7,33 @@
   arithmetic circuits.
   [(#9240)](https://github.com/PennyLaneAI/pennylane/pull/9240)
 
+  As an example, we compute the sum and the difference of two integers :math:`x=3` and
+  :math:`y=7` in superposition:
+  
+  ```python
+  import pennylane as qml
+  x = 5
+  y = 13
+
+  wires = qml.registers({"control": 1, "x": 3, "y": 4, "work": 3})  
+  dev = qml.device("default.qubit", seed=195)  
+  @qml.set_shots(100)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(wires["control"])
+      qml.BasisEmbedding(x, wires=wires["x"])
+      qml.BasisEmbedding(y, wires=wires["y"])
+      qml.CtrlAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
+      return qml.counts(wires=wires["y"])
+  ```
+  ```pycon
+  >>> output = circuit()
+  >>> print({int(key, 2): count for key, count in output.items()})
+  {2: np.int64(49), 8: np.int64(51)}
+  ```
+  As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
+  the time each.
+
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
