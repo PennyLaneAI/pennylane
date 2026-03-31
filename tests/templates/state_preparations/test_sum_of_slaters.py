@@ -570,7 +570,7 @@ class TestSumOfSlatersPrep:
         return tuple(new_indices)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])  # (9, 12)])#, (10, 17)])
+    @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])
     def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
         """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
 

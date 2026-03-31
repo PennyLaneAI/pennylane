@@ -18,7 +18,7 @@ from itertools import combinations, product
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.decomposition import (
     add_decomps,
@@ -938,11 +938,10 @@ class SumOfSlatersPrep(Operation):
 
 
 def _sos_state_prep_resources(num_entries, num_bits, num_wires):
-    """Compute the resources for _sos_state_prep. These are upper-bounded resources due to
-    the way MultiControlledX gates are accounted for at the moment.
-    We can remedy this once [sc-110068] is completed."""
+    """Compute the resources for _sos_state_prep. It is an upper bound due to
+    conditionally applied CNOT and X gates."""
     if num_entries == 1:
-        return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
+        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 
@@ -951,7 +950,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
+    resources[resource_rep(qp.StatePrep, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
     qrom_params = {
@@ -961,28 +960,28 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
         "num_work_wires": d - 1,
         "clean": True,
     }
-    resources[resource_rep(qml.QROM, **qrom_params)] += 1
+    resources[resource_rep(qp.QROM, **qrom_params)] += 1
 
     if not identity_encoding:
-        ## Step 3 & 4 in paper (p.7)
-        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+        ## Step 3 & 4 in paper (p.7). This is an upper bound
+        resources[resource_rep(qp.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
-    resources[resource_rep(qml.TemporaryAND)] += (num_entries - 1) * (m - 1)
-    resources[adjoint_resource_rep(qml.TemporaryAND)] += (num_entries - 1) * (m - 1)
+    resources[resource_rep(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
+    resources[adjoint_resource_rep(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
     number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
-    resources[resource_rep(qml.CNOT)] += number_of_bits_to_unset
+    resources[resource_rep(qp.CNOT)] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
     # and after the last group. This amounts to `num_entries` layers of bit flips
-    resources[resource_rep(qml.X)] += num_entries * m
+    resources[resource_rep(qp.X)] += num_entries * m
 
-    ## Step 6 in paper (p.7)
     if not identity_encoding:
-        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+        ## Step 6 in paper (p.7). This is an upper bound
+        resources[resource_rep(qp.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     return resources
 
@@ -1019,7 +1018,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     num_entries = len(indices)
     v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
-        qml.BasisState(v_bits[:, 0], wires=wires)
+        qp.BasisState(v_bits[:, 0], wires=wires)
         return
     assert v_bits.shape == (n, num_entries)
 
@@ -1036,10 +1035,10 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         qrom_work_wires = allocated[start : (start := start + sizes["qrom_work_wires"])]
         mcx_cache_wires = allocated[start : (start := start + sizes["mcx_cache_wires"])]
         # Step 1 in paper (p.7): Dense state preparation in enumeration register
-        qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+        qp.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
         # Step 2 in paper (p.7): QROM to load v_bits into system register
-        qml.QROM(
+        qp.QROM(
             v_bits.T,
             control_wires=enumeration_wires,
             target_wires=wires,
@@ -1056,7 +1055,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
                 @for_loop(r)
                 def inner_loop(j):
-                    qml.cond(u[j], qml.CNOT)([selected_target_wires[j], identification_wires[i]])
+                    qp.cond(u[j], qp.CNOT)([selected_target_wires[j], identification_wires[i]])
 
                 inner_loop()
 
@@ -1074,21 +1073,21 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
         @for_loop(m - 1)
         def left_elbow_ladder(i):
-            qml.TemporaryAND(elbow_triples[i])
+            qp.TemporaryAND(elbow_triples[i])
 
         @for_loop(d)
         def cnot_loop(j, k):
             bit_is_set = (k >> (d - 1 - j)) & 1
-            qml.cond(bit_is_set, qml.CNOT)([cnot_control_wire, enumeration_wires[j]])
+            qp.cond(bit_is_set, qp.CNOT)([cnot_control_wire, enumeration_wires[j]])
             return k
 
         @for_loop(m - 2, -1, -1)
         def right_elbow_ladder(i):
-            qml.adjoint(qml.TemporaryAND(elbow_triples[i]))
+            qp.adjoint(qp.TemporaryAND(elbow_triples[i]))
 
         @for_loop(m)
         def flip(i, bits_to_flip):
-            qml.cond(bits_to_flip[i], qml.X)(mcx_ctrl_wires[i])
+            qp.cond(bits_to_flip[i], qp.X)(mcx_ctrl_wires[i])
             return bits_to_flip
 
         # Start the for loop at 1 because we don't need to do anything for 0 anyway
