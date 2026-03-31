@@ -126,17 +126,17 @@ class Tracker:
         Total shots:  200
         Total shots:  300
 
-        By specifying ``persistent=False``, you can reuse the same tracker across
+        By specifying ``persistent=True``, you can reuse the same tracker across
         multiple contexts.
 
-        >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
+        >>> with qml.Tracker(circuit.device, persistent=True) as tracker:
         ...     circuit(0.1)
         np.float64(1.0)
         >>> with tracker:
         ...     circuit(0.2)
         np.float64(0.98)
         >>> tracker.totals['executions']
-        1
+        2
 
         When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
         used in the circuit without execution!
