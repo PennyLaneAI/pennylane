@@ -323,11 +323,7 @@ def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,
     gate_set: set = DefaultGateSet,
-<<<<<<< HEAD
-    config: LabsResourceConfig = LabsResourceConfig(),
-=======
     config: LabsResourceConfig | None = None,
->>>>>>> main
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
 ):  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
