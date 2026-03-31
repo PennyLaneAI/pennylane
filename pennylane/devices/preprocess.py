@@ -352,7 +352,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     >>> decompose(tape, lambda obj: obj.name == "S")
     Traceback (most recent call last):
     ...
-    DeviceError: Operator CNOT(wires=[0, 1]) not supported with device and does not provide a decomposition.
+    pennylane.exceptions.DeviceError: Operator CNOT(wires=[0, 1]) not supported with device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
@@ -464,7 +464,9 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable Z(0) + Y(0) not supported on device
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Observable Z(0) + Y(0) not supported on device
 
     """
     if bool(tape.shots) and stopping_condition_shots is not None:
@@ -505,10 +507,14 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.CountsMP)
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
 
     """
     if analytic_measurements is None:
@@ -601,7 +607,7 @@ def measurements_from_samples(tape):
 
     Executing the tape returns samples that can be post-processed to get the originally requested measurements:
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qml.device("default.qubit", seed=42)
     >>> res = dev.execute(new_tape)
     >>> res
     array([[1, 0],
@@ -698,7 +704,7 @@ def measurements_from_counts(tape):
     The tape is now compatible with a device backend that only supports counts. Executing the
     tape returns the raw counts:
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qml.device("default.qubit", seed=42)
     >>> res = dev.execute(new_tape)
     >>> res
     {'00': 4, '01': 2, '10': 2, '11': 2}
