@@ -432,9 +432,8 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
                 if phrase != "":
                     new_lines[0] += " " + phrase
                     new_lines.remove(phrase)
-
                 else:
-                    new_lines[true_idx] = "\n"
+                    new_lines.insert(i, "")
                     break
 
             lines.extend(new_lines)
