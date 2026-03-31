@@ -162,6 +162,8 @@ class DefaultQutritMixed(Device):
 
     .. code-block:: python
 
+        import scipy
+
         n_wires = 5
         num_qscripts = 5
         qscripts = []
@@ -203,9 +205,9 @@ class DefaultQutritMixed(Device):
             return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.36235775, dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.93203909, dtype=float64, weak_type=True)
 
     .. details::
         :title: Readout Error

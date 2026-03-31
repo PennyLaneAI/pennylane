@@ -111,6 +111,7 @@ class Device(abc.ABC):
 
         >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
+        >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
