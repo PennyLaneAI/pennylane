@@ -426,11 +426,15 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
         if lines != new_lines:
             lines.clear()
 
-            for phrase in new_lines[1:]:
+            for i, phrase in enumerate(new_lines[1:]):
+                true_idx = i + 1
+
                 if phrase != "":
                     new_lines[0] += " " + phrase
                     new_lines.remove(phrase)
+
                 else:
+                    new_lines[true_idx] = "\n"
                     break
 
             lines.extend(new_lines)
