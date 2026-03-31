@@ -195,6 +195,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         with qml.QueuingManager.stop_recording():
             pg_op = _select_pauli_rot_phase_gradient(
                 angles,
+                rot_axis,
                 control_wires=control_wires,
                 target_wire=target_wire,
                 angle_wires=angle_wires,
@@ -202,15 +203,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 work_wires=work_wires,
             )
 
-        match rot_axis:
-            case "X":
-                comp = uncomp = qml.Hadamard(target_wire)
-                qml.change_op_basis(comp, pg_op, uncomp)
-            case "Y":
-                comp = qml.Hadamard(target_wire) @ qml.adjoint(qml.S(target_wire))
-                uncomp = qml.S(target_wire) @ qml.Hadamard(target_wire)
-                qml.change_op_basis(comp, pg_op, uncomp)
-            case "Z":
-                qml.apply(pg_op)
+        qml.apply(pg_op)
 
     return _decomp_fn

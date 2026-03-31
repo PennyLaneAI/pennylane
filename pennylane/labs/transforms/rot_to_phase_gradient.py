@@ -94,9 +94,10 @@ def _pauli_rot_phase_gradient(op, **other_wires):
         diagonalizing_gates.append(sub_op)
 
     diagonalizing_gate = ladder(wires) @ qp.prod(*diagonalizing_gates[::-1])
+    diagonalizing_gate_inv = qp.prod(*diagonalizing_gates) @ ladder(wires)
 
     pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)
-    new_op = qp.change_op_basis(diagonalizing_gate, pg_op)
+    new_op = qp.change_op_basis(diagonalizing_gate, pg_op, diagonalizing_gate_inv)
 
     return new_op, phi / 2  # op to be appended, global phase
 

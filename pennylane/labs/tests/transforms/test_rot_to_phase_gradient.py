@@ -86,7 +86,7 @@ class TestSelectPauliRotDecompositions:
         assert op.name == "ChangeOpBasis"
 
         # It iterates the ops in reverse order
-        for g, exp_name in zip(op, ["Adjoint(Prod)", "SemiAdder", "Prod"], strict=True):
+        for g, exp_name in zip(op, ["Prod", "SemiAdder", "Prod"], strict=True):
             assert g.name == exp_name
 
         for g, exp_name in zip(
