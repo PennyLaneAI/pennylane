@@ -15,6 +15,7 @@
 Tests for the CAddSub template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -35,17 +36,26 @@ def test_standard_validity_c_add_sub():
 def validate_c_add_sub(output, x, y, ctrl_state, mod):
     """Validate that a circuit output matches the expected when encoding x, y and ctrl_state
     and applying ``CAddSub``."""
+    if not isinstance(output[0], dict):
+        # Output from QJIT
+        output = tuple(
+            {int(key): val for key, val in zip(out[0][np.where(out[1])], out[1][np.where(out[1])])}
+            for out in output
+        )
+    else:
+        output = tuple({int(key, 2): val for key, val in out.items()} for out in output)
+
     assert all(len(counts) == 1 for counts in output)  # Output should be deterministic
-    x_val = int(list(output[0].keys())[0], 2)
+    x_val = list(output[0].keys())[0]
     assert x_val == x
-    y_val = int(list(output[1].keys())[0], 2)
+    y_val = list(output[1].keys())[0]
     if ctrl_state == 0:
         assert y_val == (y - x) % mod
     else:
         assert y_val == (y + x) % mod
 
     if len(output) > 2:
-        work_val = int(list(output[2].keys())[0], 2)
+        work_val = list(output[2].keys())[0]
         assert work_val == 0
 
 
@@ -164,6 +174,7 @@ class TestCAddSub:
         with pytest.raises(ValueError, match=msg_match):
             qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit_compatible(self):
@@ -178,6 +189,7 @@ class TestCAddSub:
 
         @qp.qjit
         @qp.set_shots(100)
+        @qp.decompose(max_expansion=3)
         @qp.qnode(dev)
         def circuit(x_wires, y, ctrl_state):
             qp.BasisEmbedding(ctrl_state, wires=control_wire)
