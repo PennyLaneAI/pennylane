@@ -608,6 +608,7 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+        return self
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.

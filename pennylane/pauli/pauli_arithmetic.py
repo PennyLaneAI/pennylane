@@ -1031,6 +1031,7 @@ class PauliSentence(dict):
                 del self[pw]
         if len(self) == 0:
             self = PauliSentence({})  # pylint: disable=self-cls-assignment
+        return self
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""
