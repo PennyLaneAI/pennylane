@@ -425,6 +425,14 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
         new_lines = registry[short_name]
         if lines != new_lines:
             lines.clear()
+
+            for phrase in new_lines[1:]:
+                if phrase != "":
+                    new_lines[0] += " " + phrase
+                    new_lines.remove(phrase)
+                else:
+                    break
+
             lines.extend(new_lines)
 
 
