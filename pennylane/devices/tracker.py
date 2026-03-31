@@ -55,7 +55,7 @@ class Tracker:
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device('default.qubit', wires=1, seed=42)
 
         @qml.set_shots(shots=100)
         @qml.qnode(dev, diff_method="parameter-shift")
