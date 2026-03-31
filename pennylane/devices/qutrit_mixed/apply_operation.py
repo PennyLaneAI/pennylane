@@ -139,8 +139,8 @@ def apply_operation(
     .. code-block:: py
 
         @apply_operation.register
-        def _(op: SomeOp, state):
-            pass # custom op application method here
+        def _(op: type_op, state):
+            # custom op application method here
 
     **Example:**
 
