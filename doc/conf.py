@@ -430,28 +430,18 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
                 true_idx = i + 1
 
                 if phrase != "":
-                    new_lines[0] += " " + phrase
-                    new_lines.remove(phrase)
+                    prev_phrase = new_lines[i]
+
+                    if prev_phrase == "":
+                        new_lines[0] += phrase
+                    else:
+                        new_lines[0] += " " + phrase
+
                 else:
-                    break
+                    # next_phrase = new_lines[true_idx + 1]
+                    new_lines[0] += "\n"  # + next_phrase
 
-            for i, phrase in enumerate(new_lines[1:]):
-                true_idx = i + 1
-
-                if ".." in phrase and "::" in phrase:
-                    next_phrase = new_lines[true_idx + 1]
-                    if next_phrase == "":
-                        new_lines.pop(true_idx + 1)
-
-                    end_of_block = true_idx + 1
-                    while "  " in new_lines[end_of_block]:
-                        end_of_block += 1
-
-                    if new_lines[end_of_block] == "":
-                        new_lines.insert(end_of_block + 1, "..")
-                        new_lines.insert(end_of_block + 2, "")
-
-            lines.extend(new_lines)
+            lines.extend(new_lines[0])
 
 
 def setup(app):
