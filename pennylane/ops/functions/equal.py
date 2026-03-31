@@ -677,7 +677,7 @@ def _equal_measurements(
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        return equal(
+        obs_equal = equal(
             op1.obs,
             op2.obs,
             check_interface=check_interface,
@@ -685,6 +685,11 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+        if isinstance(obs_equal, str):
+            return obs_equal
+        if not obs_equal:
+            return f"{op1} and {op2} are not equal because their observables are not equal."
+        return True
 
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
