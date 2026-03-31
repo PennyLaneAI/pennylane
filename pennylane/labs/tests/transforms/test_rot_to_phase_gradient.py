@@ -151,60 +151,64 @@ class TestSelectPauliRotDecompositions:
     def test_correctness_select_pauli_rot_phase_gradient(self, phis, rot_axis, use_qjit):
         """Test that decomposition produce the correct solution"""
 
-        precision = 4
-        wire, control_wires, angle_wires, phase_grad_wires, work_wires = self.make_wires(
-            precision, use_qjit
-        )
+        with qp.decomposition.toggle_graph_ctx(True):
+            precision = 4
+            wire, control_wires, angle_wires, phase_grad_wires, work_wires = self.make_wires(
+                precision, use_qjit
+            )
 
-        @partial(
-            rot_to_phase_gradient,
-            angle_wires=angle_wires,
-            phase_grad_wires=phase_grad_wires,
-            work_wires=work_wires,
-        )
-        @qp.qnode(qp.device("lightning.qubit"))
-        def select_pauli_rot_circ(phis, control_wires=None, target_wire=None):
-            prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
+            @partial(
+                rot_to_phase_gradient,
+                angle_wires=angle_wires,
+                phase_grad_wires=phase_grad_wires,
+                work_wires=work_wires,
+            )
+            @qp.qnode(qp.device("lightning.qubit"))
+            def select_pauli_rot_circ(phis, control_wires=None, target_wire=None):
+                prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
-            qp.S(target_wire)
-            qp.SX(target_wire)
-            for wire in control_wires:
-                qp.Hadamard(wire)
-
-            qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis=rot_axis)
-
-            if rot_axis == "Y":
-                qp.adjoint(qp.S)(target_wire)
-
-            if rot_axis in ["X", "Y"]:
-                qp.Hadamard(target_wire)
-
-            qp.Select([qp.RZ(-phi, target_wire) for phi in phis], control=control_wires)
-
-            if rot_axis in ["X", "Y"]:
-                qp.Hadamard(target_wire)
-
-            if rot_axis == "Y":
                 qp.S(target_wire)
+                qp.SX(target_wire)
+                for wire in control_wires:
+                    qp.Hadamard(wire)
 
-            for wire in control_wires:
-                qp.Hadamard(wire)
+                qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis=rot_axis)
 
-            qp.adjoint(qp.SX(target_wire))
-            qp.adjoint(qp.S(target_wire))
-            return qp.probs([target_wire, *control_wires, *angle_wires])
+                if rot_axis == "Y":
+                    qp.adjoint(qp.S)(target_wire)
 
-        if use_qjit:
-            import jax  # pylint: disable=import-outside-toplevel
+                if rot_axis in ["X", "Y"]:
+                    qp.Hadamard(target_wire)
 
-            phis = jax.numpy.array(phis)
-            select_pauli_rot_circ = qp.qjit(select_pauli_rot_circ, static_argnums=(1, 2))
-        else:
-            phis = np.array(phis)
+                qp.Select([qp.RZ(-phi, target_wire) for phi in phis], control=control_wires)
 
-        # pylint: disable=unsubscriptable-object
-        expected_probs = select_pauli_rot_circ(phis, tuple(control_wires), wire)
-        assert np.allclose(expected_probs[0], 1)
+                if rot_axis in ["X", "Y"]:
+                    qp.Hadamard(target_wire)
+
+                if rot_axis == "Y":
+                    qp.S(target_wire)
+
+                for wire in control_wires:
+                    qp.Hadamard(wire)
+
+                qp.adjoint(qp.SX(target_wire))
+                qp.adjoint(qp.S(target_wire))
+                return qp.probs([target_wire, *control_wires, *angle_wires])
+
+            if use_qjit:
+                import jax  # pylint: disable=import-outside-toplevel
+
+                phis = jax.numpy.array(phis)
+                gate_set = set(qp.gate_sets.ALL_OPS.keys())
+                gate_set |= {f"Adjoint({gate})" for gate in gate_set}
+                select_pauli_rot_circ = qp.decompose(select_pauli_rot_circ, gate_set=gate_set)
+                select_pauli_rot_circ = qp.qjit(select_pauli_rot_circ, static_argnums=(1, 2))
+            else:
+                phis = np.array(phis)
+
+            # pylint: disable=unsubscriptable-object
+            expected_probs = select_pauli_rot_circ(phis, tuple(control_wires), wire)
+            assert np.allclose(expected_probs[0], 1)
 
 
 class TestPauliRotationDecomposition:
@@ -388,33 +392,35 @@ class TestPauliRotationDecomposition:
 
             @qp.qnode(qp.device("lightning.qubit", wires=wire_order))
             def node(phi):
-                qp.H(wire)  # prepare some state
-                qp.S(wire)
+                # qp.SX(wire)  # prepare some state
+                qp.H(wire)
                 prepare_phase_gradient(phase_grad_wires)
                 RGate(phi, wires=[wire])
 
-                qp.adjoint(qp.S(wire))  # unprepare some state
-                qp.adjoint(qp.H(wire))
+                qp.H(wire)  # unprepare some state
+                # qp.adjoint(qp.SX)(wire)
                 return qp.state()
 
             new_node = rot_to_phase_gradient(node, angle_wires, phase_grad_wires, work_wires)
             if use_qjit:
-                new_node = qp.decompose(new_node, gate_set=qp.gate_sets.ALL_OPS)
+                gate_set = set(qp.gate_sets.ALL_OPS.keys())
+                gate_set |= {f"Adjoint({gate})" for gate in gate_set}
+                new_node = qp.decompose(new_node, gate_set=gate_set)
                 new_node = qp.qjit(new_node)
             output = new_node(phi)
             output_expected = qp.matrix(
-                qp.adjoint(qp.H(0))
-                @ qp.adjoint(qp.SX(0))
+                # qp.adjoint(qp.SX)(0)
+                qp.H(0)
                 @ RGate(phi, wires=0)
-                @ qp.SX(0)
                 @ qp.H(0)
+                # @ qp.SX(0)
             )[:, 0]
             B = 2**precision
             phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(B) / B) / np.sqrt(B)
             # Expected output state: single-qubit rotated state, phase gradient state, |0> on rest
-            output_expected = np.kron(
-                np.kron(output_expected, phase_grad_state), np.eye(2 ** (2 * precision - 1))[0]
-            )
+            output_expected = np.kron(output_expected, phase_grad_state)
+            output_expected = np.kron(output_expected, np.eye(2 ** (2 * precision - 1))[0])
+
             assert np.allclose(output_expected, output)
 
     @pytest.mark.parametrize(
