@@ -15,7 +15,6 @@ r"""
 Contains the ``rot_to_phase_gradient`` transform.
 """
 # pylint: disable=too-many-branches
-# TODO: make function neat, e.g. using dispatching
 import numpy as np
 
 import pennylane as qp
@@ -32,12 +31,13 @@ def ladder(wires):
     """ladder operator"""
     if len(wires) == 1:
         return qp.I(wires)
-    return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[~0:0:-1], wires[~1::-1])][::-1])
+    return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[1:], wires[:-1])])
 
 
 # pylint: disable=too-many-arguments
 def _select_pauli_rot_phase_gradient(
     phis: np.ndarray,
+    rot_axis: str,
     control_wires: Wires,
     target_wire: Wires,
     angle_wires: Wires,
@@ -59,11 +59,22 @@ def _select_pauli_rot_phase_gradient(
     # The uncomputation does not need any adjoints because both QROM and C(X) are self-adjoint.
     adj_ops = ops[::-1]
 
-    return qp.change_op_basis(
+    pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
         qp.prod(*adj_ops[::-1]),
     )
+
+    match rot_axis:
+        case "X":
+            comp = uncomp = qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+        case "Y":
+            comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
+            uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+
+    return pg_op
 
 
 def _pauli_rot_phase_gradient(op, **other_wires):
@@ -81,6 +92,7 @@ def _pauli_rot_phase_gradient(op, **other_wires):
         if isinstance(sub_op, qp.MultiRZ):
             break
         diagonalizing_gates.append(sub_op)
+
     diagonalizing_gate = ladder(wires) @ qp.prod(*diagonalizing_gates[::-1])
 
     pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)
@@ -209,21 +221,13 @@ def rot_to_phase_gradient(
 
             pg_op = _select_pauli_rot_phase_gradient(
                 op.data[0],
+                op.hyperparameters["rot_axis"],
                 control_wires=control_wires,
                 target_wire=target_wire,
                 **kwargs,
             )
 
-            match op.hyperparameters["rot_axis"]:
-                case "X":
-                    comp = uncomp = qp.Hadamard(target_wire)
-                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
-                case "Y":
-                    comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
-                    uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
-                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
-                case "Z":
-                    operations.append(pg_op)
+            operations.append(pg_op)
 
         elif isinstance(op, (qp.RX, qp.RY, qp.RZ, qp.PhaseShift)) or (
             isinstance(op, qp.MultiRZ) and len(op.wires) == 1

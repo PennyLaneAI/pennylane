@@ -157,6 +157,12 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
+  wires elsewhere in PennyLane, and that was not taken into account in the resource functions
+  for the graph-based decomposition system (leading to decompositions not being resolved correctly).
+  Also simplified the resource calculation of one decomposition of `Select`.
+  [(#9222)](https://github.com/PennyLaneAI/pennylane/pull/9222)
+
 * The decomposition of :class:`~.TemporaryAND` is now compatible with traced control values.
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
@@ -439,6 +445,10 @@ The following classes have been ported over:
 * Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter.
   [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
 
+* The :func:`~pennylane.ops.sk_decomposition` now accepts `"Adjoint(T)"` and `"Adjoint(S)"` in the `basis_set` as a
+  now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
+  [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -455,6 +465,10 @@ The following classes have been ported over:
 * Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
+
+* Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
 
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
@@ -776,9 +790,10 @@ The following classes have been ported over:
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows.
+* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
+  [(#9218)](https://github.com/PennyLaneAI/pennylane/pull/9218)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -800,6 +815,7 @@ The following classes have been ported over:
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
+  [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -844,6 +860,22 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
+  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
+  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
+
+* Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+  that an error will be raised if a ``ResourceOperator`` is encountered that does not have
+  a resource decomposition defined and is not in the provided ``gate_set``.
+  [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
+
+* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
+  [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
+
+* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
+  for achieving reproducible results with the seed keyword argument.
+  [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
+
 * The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
   was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
@@ -857,6 +889,11 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
+  was being returned as a class type rather than an instance,
+  preventing the intended diagnostic message from being displayed.
+  [(#9229)](https://github.com/PennyLaneAI/pennylane/pull/9229)
 
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qml.transforms.sign_expand` in a production
@@ -975,6 +1012,8 @@ Sengthai Heng,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
+Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,

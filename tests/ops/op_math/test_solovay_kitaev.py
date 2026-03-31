@@ -83,7 +83,7 @@ def test_contains_SU2():
     op = qml.prod(qml.T(0), qml.T(0), qml.T(0), qml.T(0), qml.T(0))
     target = _SU2_transform(op.matrix())[0]
 
-    approx_ids, _, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
+    approx_ids, _, _, approx_vec = _approximate_set(("T", "Adjoint(T)", "H"), max_length=3)
 
     exists, quaternion, _ = _contains_SU2(target, approx_vec)
     assert exists
@@ -106,8 +106,8 @@ def test_approximate_sets():
     assert len(approx_set2) == 2
 
     # Verify exist-check reduce redundancy via GP-like summation
-    approx_set3, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
-    approx_set4, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
+    approx_set3, _, _, _ = _approximate_set(("t", "adjoint(t)", "h"), max_length=3)
+    approx_set4, _, _, _ = _approximate_set(("t", "adjoint(t)", "h"), max_length=5)
     assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
     assert len(approx_set4) == 84  # should be < 263 = 3 + ... + 3x3x3x3x3
 
@@ -154,7 +154,12 @@ def test_solovay_kitaev(op, max_depth):
     """Test Solovay-Kitaev decomposition method with specified max-depth"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates = sk_decomposition(op, epsilon=1e-4, max_depth=max_depth, basis_set=("T", "T*", "H"))
+        gates = sk_decomposition(
+            op,
+            epsilon=1e-4,
+            max_depth=max_depth,
+            basis_set=("T", "Adjoint(T)", "H"),
+        )
     assert q.queue == gates
 
     matrix_sk = qml.matrix(qml.tape.QuantumScript(gates))
@@ -165,7 +170,12 @@ def test_solovay_kitaev(op, max_depth):
 
 @pytest.mark.parametrize(
     ("basis_length", "basis_set"),
-    [(10, ("T*", "T", "H")), (8, ("H", "T")), (10, ("H", "S", "T"))],
+    [
+        (10, ("Adjoint(T)", "T", "H")),
+        (8, ("H", "T")),
+        (10, ("H", "S", "T")),
+        (10, ("T*", "T", "H")),  # keep for backwards compatibility
+    ],
 )
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method with additional basis information provided."""
@@ -189,7 +199,7 @@ def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
 )
 def test_close_approximations_do_not_go_deep(op, query_count, mocker):
     """Test that the recursive solver is only used when necessary."""
-    basis_set = ("H", "T", "T*")
+    basis_set = ("H", "T", "Adjoint(T)")
     basis_length = 10
     _ = _approximate_set(basis_set, max_length=basis_length)  # pre-compute so spy is accurate
 
