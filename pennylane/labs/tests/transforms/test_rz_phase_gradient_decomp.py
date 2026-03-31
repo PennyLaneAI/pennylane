@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.transforms.rz_phase_gradient_decomp import make_rz_to_phase_gradient_decomp
+from pennylane.labs.transforms.decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 
 
 # @pytest.mark.usefixtures("enable_graph_decomposition") # fixture doesnt exist in labs tests

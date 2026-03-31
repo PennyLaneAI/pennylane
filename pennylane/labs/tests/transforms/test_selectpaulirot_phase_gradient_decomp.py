@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.transforms.selectpaulirot_phase_gradient_decomp import (
+from pennylane.labs.transforms.decomp_selectpaulirot_phase_gradient import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
