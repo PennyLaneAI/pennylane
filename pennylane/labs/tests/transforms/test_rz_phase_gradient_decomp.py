@@ -125,7 +125,14 @@ def test_integration_multi_wire(seed):
         custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
         @qp.transforms.decompose(
-            gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},
+            gate_set={
+                "StatePrep",
+                "Adjoint(StatePrep)",
+                "C(BasisEmbedding)",
+                "SemiAdder",
+                "CNOT",
+                "GlobalPhase",
+            },
             fixed_decomps={qp.RZ: custom_decomp},
         )
         @qp.qnode(qp.device("default.qubit", wires=all_wires))
