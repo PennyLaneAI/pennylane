@@ -434,12 +434,12 @@ class DefaultQubit(Device):
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
-            return post_processing_fn(results)
+            return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    (Array(0.36235775, dtype=float64),)
+    Array(0.36235774, dtype=float32)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.93203914, dtype=float32, weak_type=True)
 
     .. details::
         :title: Tracking
@@ -508,7 +508,7 @@ class DefaultQubit(Device):
             if multiprocessing fails on macOS in your Jupyter notebook environment, try
             restarting the session and adding the following at the beginning of the file:
 
-            .. code-block:: python
+            .. code-block:: python3
 
                 import multiprocessing
                 multiprocessing.set_start_method("fork")
