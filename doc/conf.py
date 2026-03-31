@@ -444,7 +444,7 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
                         new_lines.pop(true_idx + 1)
 
                     end_of_block = true_idx + 1
-                    while "  " not in new_lines[end_of_block]:
+                    while "  " in new_lines[end_of_block]:
                         end_of_block += 1
 
                     if new_lines[end_of_block] == "":
