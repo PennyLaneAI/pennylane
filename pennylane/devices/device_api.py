@@ -117,14 +117,15 @@ class Device(abc.ABC):
         Traceback (most recent call last):
         ...
         pennylane.exceptions.MatrixUndefinedError
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.Z(0))])
+        >>> angles = qml.numpy.array([1.2, 2.3, 3.4])
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(*angles, 0)], [qml.expval(qml.Z(0))])
         >>> config = ExecutionConfig(gradient_method="adjoint")
         >>> dev.compute_derivatives(circuit, config)  # the result will be incorrect
         (array(0.), array(0.), array(0.))
         >>> program, new_config = dev.preprocess(config)
         >>> new_circuit, postprocessing = program([circuit])
         >>> dev.compute_derivatives(new_circuit, new_config)
-        ((array(0.), array(-0.74570521), array(0.)),)
+        ((array(-1.6682...e-18), array(-0.7457...), array(5.28326...e-17)),)
 
         Any validation checks or error messages should occur in :meth:`~.preprocess` to avoid failures after expending
         computation resources.
@@ -309,7 +310,7 @@ class Device(abc.ABC):
                 from pennylane.tape import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
-                @transform
+                @qml.transform
                 def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
@@ -339,7 +340,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.workflow.interfaces.jax import execute as jax_boundary
+                from pennylane.workflow.interfaces.jax import jax_jvp_execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
@@ -472,7 +473,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.workflow.interfaces.jax import execute as jax_boundary
+                from pennylane.workflow.interfaces.jax import jax_jvp_execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
