@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the CtrlAddSub template for performing out of place addition or subtraction,
+"""Contains the CAddSub template for performing out of place addition or subtraction,
 controlled by a control qubit."""
 
 from pennylane.decomposition import (
@@ -28,14 +28,14 @@ from pennylane.wires import Wires, WiresLike
 from .semi_adder import SemiAdder
 
 
-class CtrlAddSub(Operation):
+class CAddSub(Operation):
     r"""This operator performs modular addition or subtraction of two integers :math:`x` and
     :math:`y`, with the decision controlled by a control qubit:
 
     .. math::
 
-        \text{CtrlAddSub} |0\rangle |x \rangle | y \rangle = |x \rangle | y - x \!\mod\! N \rangle,\\
-        \text{CtrlAddSub} |1\rangle |x \rangle | y \rangle = |x \rangle | y + x \!\mod\! N \rangle.
+        \text{CAddSub} |0\rangle |x \rangle | y \rangle = |x \rangle | y - x \!\mod\! N \rangle,\\
+        \text{CAddSub} |1\rangle |x \rangle | y \rangle = |x \rangle | y + x \!\mod\! N \rangle.
 
     Here, :math:`N` is the modulus of the arithmetic operation, given by the size of the
     input register that holds :math:`y`.
@@ -70,7 +70,7 @@ class CtrlAddSub(Operation):
             qml.H(wires["control"])
             qml.BasisEmbedding(x, wires=wires["x"])
             qml.BasisEmbedding(y, wires=wires["y"])
-            qml.CtrlAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
+            qml.CAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
             return qml.counts(wires=wires["y"])
 
     .. code-block:: pycon
@@ -144,13 +144,13 @@ class CtrlAddSub(Operation):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
-    def map_wires(self, wire_map: dict) -> "CtrlAddSub":
+    def map_wires(self, wire_map: dict) -> "CAddSub":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["control_wire", "x_wires", "y_wires", "work_wires"]
         }
 
-        return CtrlAddSub(**new_dict)
+        return CAddSub(**new_dict)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -181,7 +181,7 @@ class CtrlAddSub(Operation):
         """
 
         with AnnotatedQueue() as q:
-            _ctrl_add_sub(control_wire, x_wires, y_wires, work_wires)
+            _c_add_sub(control_wire, x_wires, y_wires, work_wires)
 
         if QueuingManager.recording():
             for op in q.queue:
@@ -190,7 +190,7 @@ class CtrlAddSub(Operation):
         return q.queue
 
 
-def _ctrl_add_sub_resources(num_y_wires):
+def _c_add_sub_resources(num_y_wires):
     return {
         controlled_resource_rep(
             BasisState,
@@ -202,11 +202,11 @@ def _ctrl_add_sub_resources(num_y_wires):
     }
 
 
-@register_resources(_ctrl_add_sub_resources, exact=True)
-def _ctrl_add_sub(control_wire, x_wires, y_wires, work_wires, **_):
+@register_resources(_c_add_sub_resources, exact=True)
+def _c_add_sub(control_wire, x_wires, y_wires, work_wires, **_):
     ctrl(BasisState([1] * len(y_wires), y_wires), control=control_wire, control_values=[0])
     SemiAdder(x_wires, y_wires, work_wires)
     ctrl(BasisState([1] * len(y_wires), y_wires), control=control_wire, control_values=[0])
 
 
-add_decomps(CtrlAddSub, _ctrl_add_sub)
+add_decomps(CAddSub, _c_add_sub)

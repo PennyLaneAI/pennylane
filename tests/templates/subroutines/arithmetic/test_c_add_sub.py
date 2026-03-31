@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the CtrlAddSub template.
+Tests for the CAddSub template.
 """
 
 import pytest
@@ -22,19 +22,19 @@ from pennylane.ops.functions.assert_valid import assert_valid
 
 
 @pytest.mark.jax
-def test_standard_validity_ctrl_add_sub():
+def test_standard_validity_c_add_sub():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
     control_wire = 8
-    op = qp.CtrlAddSub(control_wire, x_wires, y_wires, work_wires)
+    op = qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
     assert_valid(op)
 
 
-def validate_ctrl_add_sub(output, x, y, ctrl_state, mod):
+def validate_c_add_sub(output, x, y, ctrl_state, mod):
     """Validate that a circuit output matches the expected when encoding x, y and ctrl_state
-    and applying ``CtrlAddSub``."""
+    and applying ``CAddSub``."""
     assert all(len(counts) == 1 for counts in output)  # Output should be deterministic
     x_val = int(list(output[0].keys())[0], 2)
     assert x_val == x
@@ -49,8 +49,8 @@ def validate_ctrl_add_sub(output, x, y, ctrl_state, mod):
         assert work_val == 0
 
 
-class TestCtrlAddSub:
-    """Test the qp.CtrlAddSub template."""
+class TestCAddSub:
+    """Test the qp.CAddSub template."""
 
     @pytest.mark.usefixture("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
@@ -79,7 +79,7 @@ class TestCtrlAddSub:
     def test_operation_result(
         self, x_wires, y_wires, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the CtrlAddSub template output."""
+        """Test the correctness of the CAddSub template output."""
         dev = qp.device("default.qubit")
         control_wire = "control"
 
@@ -90,7 +90,7 @@ class TestCtrlAddSub:
             qp.BasisEmbedding(ctrl_state, wires=control_wire)
             qp.BasisEmbedding(x, wires=x_wires)
             qp.BasisEmbedding(y, wires=y_wires)
-            qp.CtrlAddSub(control_wire, x_wires, y_wires, work_wires)
+            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
             if not work_wires:
                 return qp.counts(wires=x_wires), qp.counts(wires=y_wires)
             return qp.counts(wires=x_wires), qp.counts(wires=y_wires), qp.counts(wires=work_wires)
@@ -98,7 +98,7 @@ class TestCtrlAddSub:
         mod = 2 ** len(y_wires)
         for ctrl_state in [0, 1]:
             output = circuit(x, y, ctrl_state)
-            validate_ctrl_add_sub(output, x, y, ctrl_state, mod)
+            validate_c_add_sub(output, x, y, ctrl_state, mod)
 
         gates = qp.specs(circuit, level=1)(x, y, 1)["resources"].gate_types
         assert gates == {"BasisEmbedding": 3, "C(BasisState)": 2, "SemiAdder": 1}
@@ -162,7 +162,7 @@ class TestCtrlAddSub:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qp.CtrlAddSub(control_wire, x_wires, y_wires, work_wires)
+            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
 
     @pytest.mark.catalyst
     @pytest.mark.external
@@ -183,10 +183,10 @@ class TestCtrlAddSub:
             qp.BasisEmbedding(ctrl_state, wires=control_wire)
             qp.BasisEmbedding(x, wires=x_wires)
             qp.BasisEmbedding(y, wires=y_wires)
-            qp.CtrlAddSub(control_wire, x_wires, y_wires, work_wires)
+            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
             return qp.counts(wires=x_wires), qp.counts(wires=y_wires), qp.counts(wires=work_wires)
 
         mod = 2 ** len(y_wires)
         for ctrl_state in [0, 1]:
             output = circuit(x_wires, y, ctrl_state)
-            validate_ctrl_add_sub(output, x, y, ctrl_state, mod)
+            validate_c_add_sub(output, x, y, ctrl_state, mod)
