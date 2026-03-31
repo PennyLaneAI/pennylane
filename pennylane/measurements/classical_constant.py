@@ -59,7 +59,8 @@ class ClassicalConstant(SampleMeasurement, StateMeasurement):
     measurement process promises that the value is strictly independent of the quantum
     component and does not depend on any mid circuit or terminal measurements.
 
-    This is currently a developer tool for testing and debugging.
+    .. note::
+        This is currently a developer tool for testing and debugging.
 
     Args:
         constant (TensorLike): The value that should be returned from the ``QNode``.
