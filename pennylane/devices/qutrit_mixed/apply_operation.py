@@ -136,10 +136,7 @@ def apply_operation(
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
 
-    .. code-block:: python
-
-        class SomeOp(Operator):
-            pass
+    .. code-block:: py
 
         @apply_operation.register
         def _(op: SomeOp, state):

@@ -112,32 +112,32 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         >>> # Apply phase shift on second qubit (axis=1)
         >>> z_on_second = _phase_shift(two_qubit_state, axis=1)
         >>> print(z_on_second)
-        ... [[[[ 0.5  0.5]
-        ...    [ 0.   0. ]]
+        [[[[ 0.5  0.5]
+           [ 0.   0. ]]
         <BLANKLINE>
-        ...   [[-0.5 -0.5]
-        ...    [-0.  -0. ]]]
+          [[-0.5 -0.5]
+           [-0.  -0. ]]]
         <BLANKLINE>
-        ...  [[[ 0.   0. ]
-        ...    [ 0.   0. ]]
+         [[[ 0.   0. ]
+           [ 0.   0. ]]
         <BLANKLINE>
-        ...   [[-0.  -0. ]
-        ...    [-0.  -0. ]]]]
+          [[-0.  -0. ]
+           [-0.  -0. ]]]]
 
         >>> # Apply phase shift on first qubit (axis=1)
         >>> z_on_first = _phase_shift(two_qubit_state, axis=0)
         >>> print(z_on_first)
-        ... [[[[ 0.5  0.5]
-        ...    [ 0.   0. ]]
+        [[[[ 0.5  0.5]
+           [ 0.   0. ]]
         <BLANKLINE>
-        ...   [[ 0.5  0.5]
-        ...    [ 0.   0. ]]]
+          [[ 0.5  0.5]
+           [ 0.   0. ]]]
         <BLANKLINE>
-        ...  [[[-0.  -0. ]
-        ...    [-0.  -0. ]]
+         [[[-0.  -0. ]
+           [-0.  -0. ]]
         <BLANKLINE>
-        ...   [[-0.  -0. ]
-        ...    [-0.  -0. ]]]]
+          [[-0.  -0. ]
+           [-0.  -0. ]]]]
 
     Notes:
         - The operation is performed in-place for computational efficiency

@@ -174,8 +174,7 @@ def simulate(  # pylint: disable=too-many-arguments
 
     >>> qs = qml.tape.QuantumScript([qml.TRX(1.2, wires=0)], [qml.expval(qml.GellMann(0, 3)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
-    (0.36235775447667357,
-    tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
+    (np.float64(0.36235775447667357), array([0.68117888, 0., 0., 0.31882112, 0., 0., 0., 0., 0.]))
 
     """
     state, is_state_batched = get_final_state(
