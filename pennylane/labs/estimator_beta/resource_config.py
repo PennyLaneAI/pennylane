@@ -11,12 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-<<<<<<< HEAD
-r"""Updated ResourceConfig."""
-
-from pennylane.estimator.resource_config import ResourceConfig
-
-=======
 r"""This module contains the LabsResourceConfig class, which tracks the configuration for resource estimation"""
 
 import pennylane.labs.estimator_beta as qre
@@ -29,7 +23,6 @@ from .ops import (
 )
 from .templates import selectpaulirot_controlled_resource_decomp
 
->>>>>>> main
 
 class LabsResourceConfig(ResourceConfig):
     """Sets the values of precisions and custom decompositions when estimating resources for a
@@ -54,14 +47,8 @@ class LabsResourceConfig(ResourceConfig):
 
     .. code-block:: pycon
 
-<<<<<<< HEAD
-        >>> import pennylane.estimator as qre
-        >>> import pennylane.labs.estimator_betas as exp_qre
-        >>> my_config = exp_qre.LabsResourceConfig()
-=======
         >>> import pennylane.labs.estimator_beta as qre
         >>> my_config = qre.LabsResourceConfig()
->>>>>>> main
         >>> my_config.set_precision(qre.RX, precision=1e-5)
         >>> res = qre.estimate(
         ...     qre.RX(),
@@ -88,11 +75,7 @@ class LabsResourceConfig(ResourceConfig):
         ...     rz = qre.RZ.resource_rep(precision)
         ...     return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
         >>>
-<<<<<<< HEAD
-        >>> my_config = exp_qre.LabsResourceConfig()
-=======
         >>> my_config = qre.LabsResourceConfig()
->>>>>>> main
         >>> my_config.set_decomp(qre.RX, custom_RX_decomp)
         >>> res = qre.estimate(
         ...     qre.RX(precision=None),
@@ -116,12 +99,6 @@ class LabsResourceConfig(ResourceConfig):
         super().__init__()
 
         # Add modified decomps here:
-<<<<<<< HEAD
-        custom_decomps = {}
-        pow_custom_decomps = {}
-        adj_custom_decomps = {}
-        ctrl_custom_decomps = {}
-=======
         custom_decomps = {qre.CH: ch_resource_decomp}
         pow_custom_decomps = {}
         adj_custom_decomps = {}
@@ -130,7 +107,6 @@ class LabsResourceConfig(ResourceConfig):
             qre.SelectPauliRot: selectpaulirot_controlled_resource_decomp,
             qre.Hadamard: hadamard_controlled_resource_decomp,
         }
->>>>>>> main
 
         self._custom_decomps = custom_decomps
         self._pow_custom_decomps = pow_custom_decomps
