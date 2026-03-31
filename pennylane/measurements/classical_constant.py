@@ -61,6 +61,7 @@ class ClassicalConstant(SampleMeasurement, StateMeasurement):
 
     .. note::
         This is currently a developer tool for testing and debugging.
+        This is currently a developer tool for testing and debugging.
 
     Args:
         constant (TensorLike): The value that should be returned from the ``QNode``.
