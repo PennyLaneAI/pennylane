@@ -148,7 +148,7 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device('default.qubit', wires=1, seed=42)
 
         @qml.set_shots(10)
         @qml.qnode(dev)

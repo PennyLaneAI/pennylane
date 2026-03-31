@@ -204,6 +204,8 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+
         @simulator_tracking
         @single_tape_support
         class MyDevice(qml.devices.Device):

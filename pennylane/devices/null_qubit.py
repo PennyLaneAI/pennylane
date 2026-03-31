@@ -193,7 +193,7 @@ class NullQubit(Device):
         with qml.Tracker(dev) as tracker:
             circuit(params)
 
-    >>> tracker.history["resources"][0]
+    >>> print(tracker.history["resources"][0])
     num_wires: 100
     num_gates: 10000
     depth: 502

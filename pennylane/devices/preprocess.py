@@ -350,7 +350,9 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
     >>> decompose(tape, lambda obj: obj.name == "S")
-    DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
+    Traceback (most recent call last):
+    ...
+    DeviceError: Operator CNOT(wires=[0, 1]) not supported with device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
@@ -358,18 +360,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     >>> tape = qml.tape.QuantumScript([qml.BasisState([1], wires=0), qml.BasisState([1], wires=1)])
     >>> batch, fn = decompose(tape, stopping_condition)
     >>> batch[0].circuit
-    [BasisState(array([1]), wires=[0]),
-    RZ(1.5707963267948966, wires=[1]),
-    RX(3.141592653589793, wires=[1]),
-    RZ(1.5707963267948966, wires=[1])]
+    [BasisState(array([1]), wires=[0]), RX(3.141592653589793, wires=[1])]
     >>> batch, fn = decompose(tape, stopping_condition, skip_initial_state_prep=False)
     >>> batch[0].circuit
-    [RZ(1.5707963267948966, wires=[0]),
-    RX(3.141592653589793, wires=[0]),
-    RZ(1.5707963267948966, wires=[0]),
-    RZ(1.5707963267948966, wires=[1]),
-    RX(3.141592653589793, wires=[1]),
-    RZ(1.5707963267948966, wires=[1])]
+    [RX(3.141592653589793, wires=[0]), RX(3.141592653589793, wires=[1])]
 
     """
 
