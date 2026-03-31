@@ -15,7 +15,6 @@ r"""
 Contains the ``rot_to_phase_gradient`` transform.
 """
 # pylint: disable=too-many-branches
-# TODO: make function neat, e.g. using dispatching
 import numpy as np
 
 import pennylane as qp
