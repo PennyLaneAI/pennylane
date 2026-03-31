@@ -142,8 +142,15 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
+def _default_eqn_inputs_to_jaxpr_inputs(inputs):
+    return inputs
+
+
 def register_custom_staging_rule(
-    primitive, get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]]
+    primitive,
+    get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]],
+    get_invars_from_params: None | Callable[[dict], list["jax.extend.core.Var"]] = None,
+    eqn_inputs_to_jaxpr_inputs: Callable = _default_eqn_inputs_to_jaxpr_inputs,
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
     ``get_outvars_from_params``.
@@ -177,7 +184,8 @@ def register_custom_staging_rule(
     def _tracer_and_outvar(
         jaxpr_trace,
         outvar: jax.extend.core.Var,
-        env: dict[jax.extend.core.Var, jax.extend.core.Var],
+        var_env: dict[jax.extend.core.Var, jax.extend.core.Var],
+        tracer_env: dict[jax.extend.core.Var, jax.interpreters.partial_eval.DynamicJaxprTracer],
     ):
         """
         Create a new tracer and return var from the true branch outvar.
@@ -190,19 +198,28 @@ def register_custom_staging_rule(
                 jaxpr_trace, outvar.aval, new_var
             )
             return out_tracer, new_var
-        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
+        new_var_shape = [s if isinstance(s, int) else var_env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
-            new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
+            new_var_aval = jax.core.ShapedArray(tuple(new_var_shape), outvar.aval.dtype)
+            new_tracer_aval = new_var_aval
         else:  # pragma: no cover
-            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+            new_var_aval = jax.core.DShapedArray(tuple(new_var_shape), outvar.aval.dtype)
+            new_tracer_shape = tuple(
+                s if isinstance(s, int) else tracer_env[s] for s in outvar.aval.shape
+            )
+            new_tracer_aval = jax.core.DShapedArray(new_tracer_shape, outvar.aval.dtype)
         # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
-        new_var = jaxpr_trace.frame.newvar(new_aval)
+        new_var = jaxpr_trace.frame.newvar(new_var_aval)
         out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
-            jaxpr_trace, new_aval, new_var
+            jaxpr_trace, new_tracer_aval, new_var
         )
 
         if not isinstance(outvar, jax.extend.core.Literal):
-            env[outvar] = new_var
+            if outvar not in var_env:
+                var_env[outvar] = new_var
+
+            if outvar not in tracer_env:
+                tracer_env[outvar] = out_tracer
         return out_tracer, new_var
 
     def custom_staging_rule(jaxpr_trace, source_info, *tracers, **params):
@@ -216,16 +233,31 @@ def register_custom_staging_rule(
             )
         outvars = get_outvars_from_params(params)
 
-        env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
+        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
+        invars = [t.val for t in tracers]
+
+        if get_invars_from_params:
+            inner_invars = get_invars_from_params(params)
+            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers)))
+            var_env = {
+                k: v
+                for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars))
+                if not isinstance(v, jax.extend.core.Literal)
+            }
+        else:
+            var_env = {}
+            tracer_env = {}
+
         if outvars:
             out_tracers, returned_vars = tuple(
-                zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
+                zip(
+                    *(_tracer_and_outvar(jaxpr_trace, var, var_env, tracer_env) for var in outvars),
+                    strict=True,
+                )
             )
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
-        invars = [t.val for t in tracers]
         eqn = jax.core.new_jaxpr_eqn(
             invars,
             returned_vars,
