@@ -441,7 +441,7 @@ def catalyst_docstring_lookup(app, what, name, obj, options, lines):
                     # next_phrase = new_lines[true_idx + 1]
                     new_lines[0] += "\n"  # + next_phrase
 
-            lines.extend(new_lines[0])
+            lines.extend([new_lines[0]])
 
 
 def setup(app):
