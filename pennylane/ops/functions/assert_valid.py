@@ -26,11 +26,7 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.reconstruct import (
-    get_decomp_kwargs,
-    has_reconstructor,
-    reconstruct,
-)
+from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 
