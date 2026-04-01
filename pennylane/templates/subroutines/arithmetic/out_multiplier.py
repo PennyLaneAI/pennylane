@@ -26,7 +26,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import change_op_basis, ctrl
-from pennylane.templates.subroutines.arithmetic import SemiAdder
+from pennylane.templates.subroutines.arithmetic import CAddSub, SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -395,5 +395,49 @@ def _out_multiplier_with_adders(
         # Add y wires to shifted output, controlled by current x_wire
         ctrl(SemiAdder(y_wires, output, work_wires=work_wires), control=x_wire)
 
+def _out_multiplier_with_caddsub_resources(
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
+) -> dict:
+    # pylint: disable=unused-argument
 
-add_decomps(OutMultiplier, _out_multiplier_decomposition, _out_multiplier_with_adders)
+    resources = defaultdict(int)
+    for i in range(min(num_output_wires, num_x_wires)):
+        size = num_output_wires - i - max(0, num_output_wires - (num_y_wires + 1 + i))
+        resources[resource_rep(CAddSub, num_y_wires=size)] += 1
+    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
+    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
+    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
+    resources[resource_rep(DIVBY2, num_wires=num_output_wires)] += 1
+    return dict(resources)
+
+
+def _out_multiplier_with_caddsub_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
+    return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
+
+
+@register_condition(_out_multiplier_with_caddsub_condition)
+@register_resources(_out_multiplier_with_caddsub_resources)
+def _out_multiplier_with_caddsub(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    **__,
+):  # pylint: disable=unused-argument
+    """We add the y register to the output register, controlled by one bit in the x register,
+    and shifted onto the output register by the same shift as the control qubit."""
+    n = len(y_wires)
+    m = len(output_wires)
+    for i, x_wire in enumerate(x_wires[::-1][:m]):
+        # Slice the output wires according to the shift in control, and bounded by its own size,
+        # and the size of the y_wires
+        output = output_wires[max(0, m - (n + 1 + i)) : m - i]
+        # Add y wires to shifted output, controlled by current x_wire
+        CAddSub(x_wire, y_wires, output, work_wires)
+    SemiAdder(x_wires, output_wires[SLICE] + [work_wires[0]], work_wires[1:]) # TODO: Slice; Add 1!!
+    SemiAdder(y_wires, output_wires[SLICE] + [work_wires[0]], [output_wires[0]] + work_wires[1:]) # TODO: FIGURE OUT THIS STEP
+    SemiAdder(y_wires, output_wires[SLICE] + [work_wires[0]], [output_wires[0]] + work_wires[1:]) # TODO: Slice
+    DIVBY2 # TODO: implement
+
+add_decomps(OutMultiplier, _out_multiplier_decomposition, _out_multiplier_with_caddsub)
