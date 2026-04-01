@@ -331,36 +331,6 @@ class Device(abc.ABC):
 
         .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
 
-        .. details::
-            :title: Post processing function and derivatives
-
-            Derivatives and jacobian products will be bound to the machine learning library before the postprocessing
-            function is called on results. Therefore the machine learning library will be responsible for combining the
-            device provided derivatives and post processing derivatives.
-
-            .. code-block:: python
-
-                from pennylane.interfaces.jax import execute as jax_boundary
-
-                def f(x):
-                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
-                    config = ExecutionConfig(gradient_method="adjoint")
-                    program, config = dev.preprocess(config)
-                    circuit_batch, postprocessing = program((circuit, ))
-
-                    def execute_fn(tapes):
-                        return dev.execute_and_compute_derivatives(tapes, config)
-
-                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
-                    return postprocessing(results)
-
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
-
-
-            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary`` function.
-            Only then is the classical postprocessing called on the result object.
-
         """
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -462,37 +432,6 @@ class Device(abc.ABC):
                 return program
 
         .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
-
-        .. details::
-            :title: Post processing function and derivatives
-
-            Derivatives and Jacobian products will be bound to the machine learning library before
-            the postprocessing function is called on the results. Therefore, the machine learning
-            library will be responsible for combining and post-processing derivatives returned from
-            the device.
-
-            .. code-block:: python
-
-                from pennylane.interfaces.jax import execute as jax_boundary
-
-                def f(x):
-                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
-                    config = ExecutionConfig(gradient_method="adjoint")
-                    config = dev.setup_execution_config(config)
-                    program = dev.preprocess_transforms(config)
-                    circuit_batch, postprocessing = program((circuit, ))
-
-                    def execute_fn(tapes):
-                        return dev.execute_and_compute_derivatives(tapes, config)
-
-                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
-                    return postprocessing(results)
-
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
-
-            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary``
-            function. Only then is the classical postprocessing called on the result object.
 
         """
 
@@ -738,7 +677,7 @@ class Device(abc.ABC):
         If a circuit is provided and it cannot be converted to a form supported by differentiation method by
         :meth:`~.Device.preprocess`, then ``supports_derivatives`` should return False.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
         >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         False
