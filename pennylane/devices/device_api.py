@@ -340,7 +340,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.workflow.interfaces.jax import jax_jvp_execute as jax_boundary
+                from pennylane.interfaces.jax import execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
@@ -473,7 +473,7 @@ class Device(abc.ABC):
 
             .. code-block:: python
 
-                from pennylane.workflow.interfaces.jax import jax_jvp_execute as jax_boundary
+                from pennylane.interfaces.jax import execute as jax_boundary
 
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])

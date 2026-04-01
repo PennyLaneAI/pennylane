@@ -508,7 +508,7 @@ class DefaultQubit(Device):
             if multiprocessing fails on macOS in your Jupyter notebook environment, try
             restarting the session and adding the following at the beginning of the file:
 
-            .. code-block:: python3
+            .. code-block:: py
 
                 import multiprocessing
                 multiprocessing.set_start_method("fork")
