@@ -89,6 +89,7 @@ except (ImportError, NameError) as e:  # pragma: no cover
     pass
 
 import pennylane as qml
+from pennylane import math
 from pennylane.capture import FlatFn, QmlPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
@@ -206,7 +207,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         temp_all_args = []
         for a, d in zip(args, batch_dims, strict=True):
             if d is not None:
-                slices = [slice(None)] * qml.math.ndim(a)
+                slices = [slice(None)] * math.ndim(a)
                 slices[d] = 0
                 temp_all_args.append(a[tuple(slices)])
             else:
@@ -534,6 +535,11 @@ def _bind_qnode(qnode, *args, **kwargs):
     if qnode.device.wires is None:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."
+        )
+
+    if any(math.is_abstract(w) for w in qnode.device.wires):
+        raise NotImplementedError(
+            "Dynamic device wires are not currently supported with program capture."
         )
 
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
