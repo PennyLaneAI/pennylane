@@ -86,7 +86,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         array-like: The state with the phase applied along the given axis.
 
     Example:
-        Applying a full Pauli-Z to |+⟩⟨+| requires two calls::
+        Applying a full Pauli-Z to |+⟩⟨+| requires two calls:
 
             >>> import numpy as np
             >>> rho = np.array([[0.5, 0.5],
