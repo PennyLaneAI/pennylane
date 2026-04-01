@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new template :class:`~.CtrlAddSub` has been added. It performs addition or subtraction,
+* A new template :class:`~.CAddSub` has been added. It performs addition or subtraction,
   depending on the state of a control qubit. This is a useful building block for larger 
   arithmetic circuits.
   [(#9240)](https://github.com/PennyLaneAI/pennylane/pull/9240)
@@ -23,7 +23,7 @@
       qml.H(wires["control"])
       qml.BasisEmbedding(x, wires=wires["x"])
       qml.BasisEmbedding(y, wires=wires["y"])
-      qml.CtrlAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
+      qml.CAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
       return qml.counts(wires=wires["y"])
   ```
   ```pycon
