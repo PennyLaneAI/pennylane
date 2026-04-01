@@ -215,6 +215,7 @@ def register_custom_staging_rule(
                 jaxpr_trace, outvar.aval, new_var
             )
             return out_tracer, new_var
+
         new_var_shape = [s if isinstance(s, int) else var_env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
             new_var_aval = jax.core.ShapedArray(tuple(new_var_shape), outvar.aval.dtype)
@@ -257,11 +258,7 @@ def register_custom_staging_rule(
         if eqn_inputs_to_jaxpr_inputs:
             inner_invars = jaxpr.invars
             tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params)))
-            var_env = {
-                k: v
-                for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params))
-                if not isinstance(v, jax.extend.core.Literal)
-            }
+            var_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params)))
         else:
             tracer_env, var_env = {}, {}
 
