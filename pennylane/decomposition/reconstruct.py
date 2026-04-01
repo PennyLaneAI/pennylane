@@ -27,8 +27,7 @@ _reconstructors = {}
 def decomps_use_reconstructor(op_type, op_params):
     """Checks for special cases that has_reconstructor is not yet prepared to handle."""
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
-    if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
+    if op_type is qml.ops.Controlled:
         return False
     if issubclass(op_type, qml.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]

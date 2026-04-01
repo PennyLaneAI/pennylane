@@ -22,10 +22,10 @@ import pennylane as qml
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
     pow_involutory,
+    qjit_compatible_adjoint_rotation,
     qjit_compatible_pow_rotation,
-    self_adjoint,
+    qjit_compatible_self_adjoint,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
@@ -161,10 +161,10 @@ decompositions["CRot"] = [_crot]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Adjoint(Hadamard)"] = [qjit_compatible_self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
-decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Adjoint(RX)"] = [qjit_compatible_adjoint_rotation]
 decompositions["Pow(RX)"] = [qjit_compatible_pow_rotation]
-decompositions["Adjoint(CNOT)"] = [self_adjoint]
-decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
-decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]
+decompositions["Adjoint(CNOT)"] = [qjit_compatible_self_adjoint]
+decompositions["Adjoint(PhaseShift)"] = [qjit_compatible_adjoint_rotation]
+decompositions["Adjoint(ControlledPhaseShift)"] = [qjit_compatible_adjoint_rotation]
