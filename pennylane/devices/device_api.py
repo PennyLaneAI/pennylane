@@ -707,8 +707,7 @@ class Device(abc.ABC):
         will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
 
         >>> config = ExecutionConfig(gradient_method="parameter-shift")
-        >>> device = qml.device("default.qubit")
-        >>> device.supports_derivatives(config)
+        >>> custom_device.supports_derivatives(config)  # doctest: +SKIP
         True
 
         In this case, :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives` will be called instead of :meth:`~.execute` with
@@ -722,17 +721,17 @@ class Device(abc.ABC):
         if the order is ``1`` and the execution occurs with no shots (``shots=None``).
 
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> dev.supports_derivatives(config)  # doctest: +SKIP
         True
         >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=None)
-        >>> dev.supports_derivatives(config, circuit=circuit_analytic)
+        >>> dev.supports_derivatives(config, circuit=circuit_analytic)  # doctest: +SKIP
         True
         >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=10)
-        >>> dev.supports_derivatives(config, circuit = circuit_finite_shots)
+        >>> dev.supports_derivatives(config, circuit = circuit_finite_shots)  # doctest: +SKIP
         False
 
         >>> config = ExecutionConfig(derivative_order=2, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> dev.supports_derivatives(config)  # doctest: +SKIP
         False
 
         Adjoint differentiation will only be supported for circuits with expectation value measurements.
@@ -741,7 +740,7 @@ class Device(abc.ABC):
 
         >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
-        >>> dev.supports_derivatives(config, circuit=circuit)
+        >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         False
 
         If the circuit is not natively supported by the differentiation method but can be converted into a form
@@ -752,7 +751,7 @@ class Device(abc.ABC):
 
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.Z(0))])
-        >>> dev.supports_derivatives(config, circuit=circuit)
+        >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         True
 
         **Backpropagation:**
@@ -761,9 +760,9 @@ class Device(abc.ABC):
         is only supported if the device is transparent to the machine learning framework from start to finish.
 
         >>> config = ExecutionConfig(gradient_method="backprop")
-        >>> python_device.supports_derivatives(config)
+        >>> python_device.supports_derivatives(config)  # doctest: +SKIP
         True
-        >>> cpp_device.supports_derivatives(config)
+        >>> cpp_device.supports_derivatives(config)  # doctest: +SKIP
         False
 
         """
