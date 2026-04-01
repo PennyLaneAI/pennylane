@@ -164,7 +164,7 @@ def register_custom_staging_rule(
 
         register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0])
 
-    If cannot support ``eqn_inputs_to_jaxpr_inputs``, becaause different branches may have different dynamic shapes.
+    If cannot support ``eqn_inputs_to_jaxpr_inputs``, because different branches may have different dynamic shapes.
 
     Compare this to ``for_loop_prim``:
 
