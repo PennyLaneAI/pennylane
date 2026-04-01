@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* To support the `qjit` compatibility of decomposition rules of `SymbolicOps`, `Operators` have had
+  `reconstructors` registered which allow the `Operators` to be reconstructed from information available
+  in the decomposition rules.
+  [(#9224)](https://github.com/PennyLaneAI/pennylane/pull/9224)
+
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
