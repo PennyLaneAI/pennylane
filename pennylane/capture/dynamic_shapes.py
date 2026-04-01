@@ -148,8 +148,7 @@ def _default_eqn_inputs_to_jaxpr_inputs(inputs):
 
 def register_custom_staging_rule(
     primitive,
-    get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]],
-    get_invars_from_params: None | Callable[[dict], list["jax.extend.core.Var"]] = None,
+    get_jaxpr_from_params: Callable[[dict], "jax.extend.core.Jaxpr"],
     eqn_inputs_to_jaxpr_inputs: Callable = _default_eqn_inputs_to_jaxpr_inputs,
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
@@ -157,14 +156,20 @@ def register_custom_staging_rule(
 
     Args:
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
-        get_outvars_from_params (Callable[[dict], list[jax.extend.core.Var]]): A function that takes in the equation's ``params``
-            and returns ``jax.extend.core.Var`` we need to mimic for the primitives return.
+        get_jaxpr_from_params (Callable[[dict], "jax.extend.core.Jaxpr"]): A function that takes in the equation's ``params``
+            and returns a target jaxpr
+        eqn_inputs_to_jaxpr_inputs (Callable[[Sequence, dict], Sequence]]): A function that takes the inputs to the primitives equations
+            and the ``params`` and returns just the inputs to the jaxpr. These inputs will be either tracers or ``jax.extend.core.Var``.
+            For example, the first three inputs to the for loop are ``start, stop, step``, so the return is just ``inputs[3:]``.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
     .. code-block:: python
 
-        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0].outvars)
+        def eqn_inputs_to_jaxpr_inputs(inputs, params):
+            return inputs[params['args_slice]]
+
+        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0],  eqn_inputs_to_jaxpr_inputs)
 
     The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
 
@@ -231,22 +236,19 @@ def register_custom_staging_rule(
             return jaxpr_trace.default_process_primitive(
                 primitive, tracers, params, source_info=source_info
             )
-        outvars = get_outvars_from_params(params)
+        jaxpr = get_jaxpr_from_params(params)
+        outvars = jaxpr.outvars
 
         # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
         invars = [t.val for t in tracers]
 
-        if get_invars_from_params:
-            inner_invars = get_invars_from_params(params)
-            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers)))
-            var_env = {
-                k: v
-                for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars))
-                if not isinstance(v, jax.extend.core.Literal)
-            }
-        else:
-            var_env = {}
-            tracer_env = {}
+        inner_invars = jaxpr.invars
+        tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params)))
+        var_env = {
+            k: v
+            for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params))
+            if not isinstance(v, jax.extend.core.Literal)
+        }
 
         if outvars:
             out_tracers, returned_vars = tuple(

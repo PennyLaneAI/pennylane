@@ -279,19 +279,15 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
 
-    def get_outvars_from_params(params):
-        return params["jaxpr_body_fn"].outvars
-
-    def get_invars_from_params(params):
-        return params["jaxpr_body_fn"].invars
-
-    def eqn_inputs_to_jaxpr_inputs(inputs):
-        return inputs[3:]  # slice out the start, stop, step
+    def eqn_inputs_to_jaxpr_inputs(inputs, params):  # pylint: disable=unused-argument
+        inputs = inputs[3:]
+        abstract_shapes = inputs[slice(*params["abstract_shapes_slice"])]
+        args = inputs[slice(*params["args_slice"])]
+        return abstract_shapes + args
 
     register_custom_staging_rule(
         for_loop_prim,
-        get_outvars_from_params=get_outvars_from_params,
-        get_invars_from_params=get_invars_from_params,
+        get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
         eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
     )
 
