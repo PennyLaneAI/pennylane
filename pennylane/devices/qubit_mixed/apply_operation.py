@@ -99,6 +99,14 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
             [[ 0.5 -0.5]
              [-0.5  0.5]]
 
+    Notes:
+        - The operation is performed in-place for computational efficiency
+        - The function assumes the density matrix is in the computational basis
+        - For an n-qubit system, the axis should be in range [0, n-1]
+        - The phase shift operator U for single-qubit case is:
+          U = [[1, 0],
+               [0, phase_factor]]
+
     """
     n_dim = math.ndim(state)
     sl_0 = _get_slice(0, axis, n_dim)
