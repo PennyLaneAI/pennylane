@@ -160,7 +160,7 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* Minor improvements were made to the documentation of the QASM interpreter.
+* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
   [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
 * Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
