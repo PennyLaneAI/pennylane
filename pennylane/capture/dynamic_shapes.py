@@ -142,14 +142,10 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
-def _default_eqn_inputs_to_jaxpr_inputs(inputs):
-    return inputs
-
-
 def register_custom_staging_rule(
     primitive,
     get_jaxpr_from_params: Callable[[dict], "jax.extend.core.Jaxpr"],
-    eqn_inputs_to_jaxpr_inputs: Callable = _default_eqn_inputs_to_jaxpr_inputs,
+    eqn_inputs_to_jaxpr_inputs: Callable | None = None,
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
     ``get_outvars_from_params``.
@@ -158,18 +154,34 @@ def register_custom_staging_rule(
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
         get_jaxpr_from_params (Callable[[dict], "jax.extend.core.Jaxpr"]): A function that takes in the equation's ``params``
             and returns a target jaxpr
-        eqn_inputs_to_jaxpr_inputs (Callable[[Sequence, dict], Sequence]]): A function that takes the inputs to the primitives equations
+        eqn_inputs_to_jaxpr_inputs (None | Callable[[Sequence, dict], Sequence]]): A function that takes the inputs to the primitives equations
             and the ``params`` and returns just the inputs to the jaxpr. These inputs will be either tracers or ``jax.extend.core.Var``.
             For example, the first three inputs to the for loop are ``start, stop, step``, so the return is just ``inputs[3:]``.
+            If not provided, dynamic shapes will always be new variables, instead of reusing variables that occur in the inputs.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
     .. code-block:: python
 
-        def eqn_inputs_to_jaxpr_inputs(inputs, params):
-            return inputs[params['args_slice]]
+        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0])
 
-        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0],  eqn_inputs_to_jaxpr_inputs)
+    If cannot support ``eqn_inputs_to_jaxpr_inputs``, becaause different branches may have different dynamic shapes.
+
+    Compare this to ``for_loop_prim``:
+
+    .. code-block:: python
+
+        def eqn_inputs_to_jaxpr_inputs(inputs, params):
+            inputs = inputs[3:] # slice out start, stop, step
+            abstract_shapes = inputs[slice(*params["abstract_shapes_slice"])]
+            args = inputs[slice(*params["args_slice"])]
+            return abstract_shapes + args
+
+        register_custom_staging_rule(
+            for_loop_prim,
+            get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
+            eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
+        )
 
     The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
 
@@ -242,13 +254,16 @@ def register_custom_staging_rule(
         # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
         invars = [t.val for t in tracers]
 
-        inner_invars = jaxpr.invars
-        tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params)))
-        var_env = {
-            k: v
-            for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params))
-            if not isinstance(v, jax.extend.core.Literal)
-        }
+        if eqn_inputs_to_jaxpr_inputs:
+            inner_invars = jaxpr.invars
+            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params)))
+            var_env = {
+                k: v
+                for k, v in zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params))
+                if not isinstance(v, jax.extend.core.Literal)
+            }
+        else:
+            tracer_env, var_env = {}, {}
 
         if outvars:
             out_tracers, returned_vars = tuple(

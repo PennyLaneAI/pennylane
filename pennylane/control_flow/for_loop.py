@@ -279,7 +279,7 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
 
-    def eqn_inputs_to_jaxpr_inputs(inputs, params):  # pylint: disable=unused-argument
+    def eqn_inputs_to_jaxpr_inputs(inputs, params):
         inputs = inputs[3:]
         abstract_shapes = inputs[slice(*params["abstract_shapes_slice"])]
         args = inputs[slice(*params["args_slice"])]

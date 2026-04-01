@@ -152,7 +152,7 @@ class TestDyanmicShapes:
 def test_custom_staging_rule(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
     my_prim = jax.extend.core.Primitive("my_prim")
-    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
+    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"])
 
     def f(i):
         return i, jax.numpy.ones(i)

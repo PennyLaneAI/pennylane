@@ -237,7 +237,15 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim = QmlPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"])
+
+    def eqn_inputs_to_jaxpr_inputs(inputs, params):
+        return inputs[slice(*params["args_slice"])]
+
+    register_custom_staging_rule(
+        while_loop_prim,
+        lambda params: params["jaxpr_body_fn"],
+        eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
+    )
 
     @while_loop_prim.def_impl
     def _impl(

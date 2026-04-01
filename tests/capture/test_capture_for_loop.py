@@ -274,10 +274,9 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
 
-        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        [output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
-        assert qml.math.allclose(shape, 3)
 
     # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
@@ -345,8 +344,7 @@ class TestDynamicShapes:
             return f(i0, jnp.ones(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [a_size, final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(a_size, 2)  # what it was initialized with
+        [final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(final_j, 5)  # 2 +3
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
 
@@ -384,8 +382,7 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(dynamic_shape, 2)  # the initial size
+        [a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
         assert qml.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
 
@@ -422,12 +419,33 @@ class TestDynamicShapes:
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        # shape of b present in inputs, shape of a is not
+        [shape1, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
-        assert jnp.allclose(shape2, 3)
         expected = jnp.ones(15)
         assert jnp.allclose(a, expected)
         assert jnp.allclose(b, jnp.array([4, 4, 4]))
+
+    def test_recombine_after_loop(self):
+        """Test that arrays with the same dynamic shape can be recombined after a loop."""
+
+        @qml.for_loop(2)
+        def f(i, a, b):
+            return 2 * a, b
+
+        def w(i0):
+            a = jnp.ones(i0)
+            a_new, b_new = f(a, jnp.ones(i0))
+            assert a_new.shape[0] is i0
+            assert b_new.shape[0] is i0
+            c = a_new + b_new
+            d = a_new + a
+            return c, d
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [c, d] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(c, jnp.array([5, 5, 5]))  # 2*2 + 1
+        assert jnp.allclose(d, jnp.array([5, 5, 5]))
 
 
 class TestCaptureCircuitsForLoop:

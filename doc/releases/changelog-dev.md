@@ -752,6 +752,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
+  after the loop.
+
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
