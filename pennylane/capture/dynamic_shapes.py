@@ -156,7 +156,6 @@ def register_custom_staging_rule(
             and returns a target jaxpr
         eqn_inputs_to_jaxpr_inputs (None | Callable[[Sequence, dict], Sequence]]): A function that takes the inputs to the primitives equations
             and the ``params`` and returns just the inputs to the jaxpr. These inputs will be either tracers or ``jax.extend.core.Var``.
-            For example, the first three inputs to the for loop are ``start, stop, step``, so the return is just ``inputs[3:]``.
             If not provided, dynamic shapes will always be new variables, instead of reusing variables that occur in the inputs.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
