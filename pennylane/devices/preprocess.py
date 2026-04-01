@@ -785,7 +785,7 @@ def device_resolve_dynamic_wires(
     ...     with qml.allocation.allocate(1) as wires:
     ...         qml.X(wires)
 
-    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0, "a", "b")))
+    >>> transformed = device_resolve_dynamic_wires(f, wires=(0, "a", "b"))
     >>> print(qml.draw(transformed)())
     0: ──H─┤
     b: ──X─┤
@@ -803,7 +803,7 @@ def device_resolve_dynamic_wires(
 
     """
     if wires:
-        zeroed = reversed(list(set(wires) - set(tape.wires)))
+        zeroed = reversed([w for w in wires if w not in tape.wires])
         min_int = None
     else:
         zeroed = ()
