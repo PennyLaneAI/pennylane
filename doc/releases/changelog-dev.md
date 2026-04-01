@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
+
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
