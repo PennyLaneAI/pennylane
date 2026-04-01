@@ -125,7 +125,7 @@ class Device(abc.ABC):
         >>> program, new_config = dev.preprocess(config)
         >>> new_circuit, postprocessing = program([circuit])
         >>> dev.compute_derivatives(new_circuit, new_config)
-        ((array(-1.6682...e-18), array(-0.7457...), array(5.28326...e-17)),)
+        ((array(-1.6682...e-18), array(-0.7457...), array(-2.6785...e-18)),)
 
         Any validation checks or error messages should occur in :meth:`~.preprocess` to avoid failures after expending
         computation resources.
@@ -667,23 +667,19 @@ class Device(abc.ABC):
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
             >>> tape = qml.tape.QuantumScript(measurements=[qml.expval(qml.Z(0))])
-            >>> tape.shape(dev)
-            ()
             >>> dev.execute(tape)
-            array(1.0)
+            np.float64(1.0)
 
             If execute recieves a batch of scripts, then it should return a tuple of results:
 
             >>> dev.execute([tape, tape])
-            (array(1.0), array(1.0))
+            (np.float64(1.0), np.float64(1.0))
             >>> dev.execute([tape])
-            (array(1.0),)
+            (np.float64(1.0),)
 
             If the script has multiple measurements, then the device should return a tuple of measurements.
 
             >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
-            >>> tape.shape(dev)
-            ((), (4,))
             >>> dev.execute(tape)
             (np.float64(1.0), array([1., 0., 0., 0.]))
 
@@ -711,7 +707,8 @@ class Device(abc.ABC):
         will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
 
         >>> config = ExecutionConfig(gradient_method="parameter-shift")
-        >>> custom_device.supports_derivatives(config)
+        >>> device = qml.device("default.qubit")
+        >>> device.supports_derivatives(config)
         True
 
         In this case, :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives` will be called instead of :meth:`~.execute` with
@@ -731,7 +728,7 @@ class Device(abc.ABC):
         >>> dev.supports_derivatives(config, circuit=circuit_analytic)
         True
         >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=10)
-        >>> dev.supports_derivatives(config, circuit = circuit_fintite_shots)
+        >>> dev.supports_derivatives(config, circuit = circuit_finite_shots)
         False
 
         >>> config = ExecutionConfig(derivative_order=2, gradient_method="adjoint")
@@ -753,7 +750,7 @@ class Device(abc.ABC):
         operations supported by adjoint differentiation. Therefore this method may reproduce compilation
         and validation steps performed by :meth:`~.Device.preprocess`.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.Z(0))])
         >>> dev.supports_derivatives(config, circuit=circuit)
         True
@@ -1062,9 +1059,9 @@ class Device(abc.ABC):
         >>> dev = qml.device('default.qubit', wires=2)
         >>> res, jvps = dev.jaxpr_jvp(jaxpr.jaxpr, args, tangents, execution_config=config)
         >>> res
-        [Array(0.87758255, dtype=float32), Array(0.36235774, dtype=float32)]
+        [Array(0.87758256, dtype=float64), Array(0.36235775, dtype=float64)]
         >>> jvps
-        [Array(0., dtype=float32), Array(-0.932039, dtype=float32)]
+        [Array(0., dtype=float64), Array(-0.93203909, dtype=float64)]
 
         """
         raise NotImplementedError(f"device {self} does not yet support PLXPR jvps.")

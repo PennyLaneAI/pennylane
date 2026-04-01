@@ -611,18 +611,17 @@ def measurements_from_samples(tape):
     >>> res = dev.execute(new_tape)
     >>> res
     array([[1, 0],
-           [0, 0],
            [0, 1],
            [1, 1],
-           [0, 1],
            [1, 0],
-           [0, 1],
+           [0, 0],
+           [1, 1],
            [1, 0],
            [1, 0],
-           [1, 0]])
-
+           [0, 0],
+           [0, 1]])
     >>> fn((res,))
-    [-0.2, array([0.6, 0.4])]
+    [np.float64(-0.2), array([0.6, 0.4])]
     """
     if not tape.shots:
         return (tape,), null_postprocessing
@@ -707,12 +706,12 @@ def measurements_from_counts(tape):
     >>> dev = qml.device("default.qubit", seed=42)
     >>> res = dev.execute(new_tape)
     >>> res
-    {'00': 4, '01': 2, '10': 2, '11': 2}
+    {np.str_('00'): np.int64(2), np.str_('01'): np.int64(2), np.str_('10'): np.int64(4), np.str_('11'): np.int64(2)}
 
     And these can be post-processed to get the originally requested measurements:
 
     >>> fn((res,))
-    [-0.19999999999999996, array([0.7, 0.3])]
+    [np.float64(-0.19999999999999996), array([0.6, 0.4])]
     """
     if tape.shots.total_shots is None:
         return (tape,), null_postprocessing
