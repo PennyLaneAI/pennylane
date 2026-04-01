@@ -65,6 +65,7 @@ from .arithmetic import (
     ModExp,
     OutPoly,
     SemiAdder,
+    CAddSub,
     Elbow,
     TemporaryAND,
 )
@@ -119,6 +120,7 @@ __all__ = [
     "ModExp",
     "OutPoly",
     "SemiAdder",
+    "CAddSub",
     "Elbow",
     "TemporaryAND",
 ]

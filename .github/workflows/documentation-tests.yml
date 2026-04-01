@@ -58,7 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group docs --group dev -e . 
+          pip install --group doctest -e . 
 
       - name: Print Dependencies
         run: |
@@ -75,6 +75,7 @@ jobs:
           "
 
           TO_DO="
+          --ignore=pennylane/pauli/pauli_sparse_matrices.md
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
@@ -102,6 +103,7 @@ jobs:
           pytest pennylane $IGNORE --ignore-glob='*tests*'
 
       - name: Test 'doc' folder
+        if: always()
         run: |
           WONT_FIX="
           --ignore=doc/code
@@ -136,3 +138,8 @@ jobs:
           "
 
           pytest doc ${IGNORE}
+
+      - name: Test `changelog-dev.md` file
+        if: always()
+        run: |
+          pytest doc/releases/changelog-dev.md

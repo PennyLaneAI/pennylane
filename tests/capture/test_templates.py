@@ -316,6 +316,7 @@ tested_modified_templates = [
     qml.PhaseAdder,
     qml.Adder,
     qml.SemiAdder,
+    qml.CAddSub,
     qml.Multiplier,
     qml.OutMultiplier,
     qml.OutAdder,
@@ -1214,6 +1215,40 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.SemiAdder(**kwargs))
+
+    def test_c_add_sub(self):
+        """Test the primitive bind call of CAddSub."""
+
+        kwargs = {
+            "control_wire": 8,
+            "x_wires": [0, 1, 2],
+            "y_wires": [3, 4, 5],
+            "work_wires": [6, 7],
+        }
+
+        def qfunc():
+            qml.CAddSub(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.CAddSub._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.CAddSub(**kwargs))
 
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
