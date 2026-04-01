@@ -30,7 +30,9 @@
   >>> output = circuit()
   >>> print({int(key, 2): count for key, count in output.items()})
   {2: np.int64(49), 8: np.int64(51)}
+
   ```
+
   As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
   the time each.
 
