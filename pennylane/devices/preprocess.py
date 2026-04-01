@@ -788,8 +788,8 @@ def device_resolve_dynamic_wires(
     >>> transformed = device_resolve_dynamic_wires(f, wires=(0, "a", "b"))
     >>> print(qml.draw(transformed)())
     0: ──H─┤
-    b: ──X─┤
     a: ──X─┤
+    b: ──X─┤
 
     If the device has no wires, then wires are allocated starting at the smallest
     integer that is larger than all integer wires present in the ``tape``.
