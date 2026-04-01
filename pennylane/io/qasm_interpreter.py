@@ -1313,6 +1313,25 @@ class QasmInterpreter:
                     )
                 )
 
+    @visit.register(ast.QuantumPhase)
+    def visit_quantum_phase(self, node: ast.QuantumPhase, context: Context):
+        """
+        Registers a global phase application.
+
+        Args:
+            node (QuantumPhase): The QuantumPhase QASMNode.
+            context (Context): The current context.
+        """
+        gate, arg, wires = self._phase_setup_helper(node, context)
+
+        num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+        control_wires = wires[:num_control]
+
+        op = gate(arg)
+
+        for mod in reversed(node.modifiers):
+            op, control_wires = self.apply_modifier(mod, op, context, control_wires)
+
     @visit.register(ast.QuantumGate)
     def visit_quantum_gate(self, node: ast.QuantumGate, context: Context):
         """
@@ -1372,6 +1391,25 @@ class QasmInterpreter:
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
+        wires = self._setup_wires(node, context)
+
+        return gate, args, wires
+
+    def _setup_wires(self, node: ast.QuantumPhase | ast.QuantumGate, context: Context):
+        """
+        Sets up wires for a QuantumGate or QuantumPhase application.
+
+        Args:
+            node (QuantumPhase | QuantumGate): The QuantumGate or QuantumPhase QASMNode.
+            context (Context): The current context.
+
+        Returns:
+            list: The wires.
+
+        Raises:
+            IndexError: if the index is out of bounds.
+            NotImplementedError: if the index is not a single range or literal.
+        """
         wires = []
         require_wires = []
         for qubit in node.qubits:
@@ -1408,7 +1446,31 @@ class QasmInterpreter:
 
         context.require_wires(require_wires)
 
-        return gate, args, wires
+        return wires
+
+    def _phase_setup_helper(self, node: ast.QuantumPhase, context: Context):
+        """
+        Helper to setup the global phase call, also resolving arguments and wires.
+
+        Args:
+            node (QuantumPhase): The QuantumPhase QASMNode.
+            context (Context): the current context.
+
+        Returns:
+            QuantumPhase: The gate to execute.
+            Any: The argument to the QuantumPhase.
+            list: The wires the gate applies to.
+        """
+        # setup arguments
+        arg = self.visit(node.argument, context)
+
+        # gate method
+        gate = ops.GlobalPhase
+
+        # setup wires
+        wires = self._setup_wires(node, context)
+
+        return gate, arg, wires
 
     def apply_modifier(
         self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list

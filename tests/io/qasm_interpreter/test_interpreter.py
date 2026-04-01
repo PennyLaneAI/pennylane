@@ -27,6 +27,7 @@ from pennylane import (
     U1,
     U2,
     U3,
+    GlobalPhase,
     Hadamard,
     Identity,
     PauliX,
@@ -1475,6 +1476,8 @@ class TestGates:
             float theta = 0.5;
             x q0;
             cx q0, q1;
+            ctrl @ gphase(2.0) q0;
+            gphase(3.0);
             rx(theta) q0;
             ry(0.2) q0;
             inv @ rx(theta) q0;
@@ -1491,6 +1494,8 @@ class TestGates:
         assert q.queue == [
             PauliX("q0"),
             CNOT(wires=["q0", "q1"]),
+            Controlled(GlobalPhase(2.0), control_wires=["q0"]),
+            GlobalPhase(3.0),
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
