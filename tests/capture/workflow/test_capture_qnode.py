@@ -69,23 +69,17 @@ def test_error_if_dynamic_device_wires():
     """Test that a NotImplementedError is raised if the device has dynamic wires."""
 
     def f(num_wires):
-        dev = qml.device("default.qubit", wires=num_wires)
-
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("lightning.qubit", wires=num_wires))
         def circuit():
-            return qml.sample()
+            return qml.expval(qml.Z(0))
 
         return circuit
 
+    f_qjit = qml.qjit(f, capture=True)
     with pytest.raises(
         NotImplementedError, match="Dynamic device wires are not currently supported"
     ):
-        jax.make_jaxpr(f)(3)
-
-    with pytest.raises(
-        NotImplementedError, match="Dynamic device wires are not currently supported"
-    ):
-        f(3)
+        f_qjit(3)
 
 
 def test_error_if_no_device_wires():
