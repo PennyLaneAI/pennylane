@@ -14,8 +14,8 @@
 """
 Pure function implementations for the expectation value functions.
 """
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -24,18 +24,19 @@ from jax.typing import ArrayLike
 
 
 @dataclass
-class CircuitConfig:
+class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
     Configuration data for an IQP circuit simulation.
 
     Args:
         gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
         observables (ArrayLike): List of Pauli observables mapped to integers (I=0, X=1, Y=2, Z=3).
-        n_samples (int): Number of stochastic samples.
+        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
         key (ArrayLike): Random key for JAX.
         n_qubits (int): Number of qubits.
-        init_state (tuple[ArrayLike, ArrayLike] | None): Initial state configuration (X, P).
-        phase_layer (Callable | None): Optional phase layer function.
+        init_state_elems (ArrayLike | None): Elements of the initial state (X) - fixed binary matrix.
+        init_state_amps (ArrayLike | None): Amplitudes of the initial state (P) - continuous trainable params.
+        phase_fn (Callable | None): Optional phase layer function.
     """
 
     gates: dict[int, list[list[int]]]
@@ -43,8 +44,9 @@ class CircuitConfig:
     n_samples: int
     key: ArrayLike
     n_qubits: int
-    init_state: tuple[ArrayLike, ArrayLike] | None = None
-    phase_layer: Callable | None = None
+    init_state_elems: ArrayLike | None = None
+    init_state_amps: ArrayLike | None = None
+    phase_fn: Callable | None = None
 
 
 def bitflip_expval(
@@ -132,12 +134,14 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     return bitflips, mask_XY, y_phase
 
 
-def _core_expval_execution(  # pylint: disable=too-many-arguments
-    params: ArrayLike,
-    phase_params: ArrayLike | None,
+# pylint: disable=too-many-arguments
+def _core_expval_execution(
+    gates_params: ArrayLike,
+    phase_fn_params: ArrayLike | None,
     samples: jnp.ndarray,
     obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
-    init_state: tuple[ArrayLike, ArrayLike] | None,
+    init_state_elems: ArrayLike | None,
+    init_state_amps: ArrayLike | None,
     generators: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
@@ -145,22 +149,28 @@ def _core_expval_execution(  # pylint: disable=too-many-arguments
     """The pure mathematical core of the expectation value computation."""
     bitflips, mask_XY, y_phase = obs_data
 
-    sign_flip = 1 - 2 * ((mask_XY @ samples.T) % 2)
+    s_f = samples.astype(jnp.float32)
+    m_f = mask_XY.astype(jnp.float32)
+    g_f = generators.astype(jnp.float32)
+    b_f = bitflips.astype(jnp.float32)
+
+    sign_flip = 1 - 2 * ((m_f @ s_f.T) % 2)
     phases = sign_flip * y_phase
 
-    B = 1 - 2 * ((samples @ generators.T) % 2)
-    C = 2 * ((bitflips @ generators.T) % 2)
-
-    expanded_params = jnp.asarray(params)[param_map]
+    B = 1 - 2 * ((s_f @ g_f.T) % 2)
+    C = 2 * ((b_f @ g_f.T) % 2)
+    expanded_params = jnp.asarray(gates_params)[param_map]
     E = (C * expanded_params) @ B.T
-    if vmapped_phase_func is not None:
-        E += vmapped_phase_func(phase_params, samples, bitflips)
 
-    if init_state is None:
+    if vmapped_phase_func is not None:
+        E += vmapped_phase_func(phase_fn_params, samples, bitflips)
+
+    if init_state_elems is None or init_state_amps is None:
         expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
     else:
         M = phases * jnp.exp(1j * E)
-        X, P = init_state
+        X = init_state_elems
+        P = init_state_amps
         F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
         H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
         col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
@@ -183,10 +193,10 @@ def build_expval_func(
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
-    if config.phase_layer is not None:
+    if config.phase_fn is not None:
 
         def compute_phase(p_params, sample, b_flips):
-            return config.phase_layer(p_params, sample) - config.phase_layer(
+            return config.phase_fn(p_params, sample) - config.phase_fn(
                 p_params, (sample + b_flips) % 2
             )
 
@@ -197,14 +207,43 @@ def build_expval_func(
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
     default_obs_data = _prep_observables(config.observables)
 
-    def expval_execution(  # pylint: disable=too-many-arguments
-        params: ArrayLike,
-        phase_params: ArrayLike | None = None,
+    # pylint: disable=too-many-arguments
+    def expval_execution(
+        gates_params: ArrayLike,
+        phase_fn_params: ArrayLike | None = None,
         observables: ArrayLike | None = None,
         key: ArrayLike | None = None,
         n_samples: int | None = None,
-        init_state: tuple[ArrayLike, ArrayLike] | None = None,
-    ):
+        init_state_elems: ArrayLike | None = None,
+        init_state_amps: ArrayLike | None = None,
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Executes the expectation value computation with optional runtime overrides.
+
+        This closure captures the precomputed matrices and defaults from the
+        CircuitConfig, while allowing dynamic injection of new parameters,
+        observables, or sampling configurations at execution time.
+
+        Args:
+            gates_params (ArrayLike): Trainable parameters $\\theta$ for the circuit gates.
+            phase_fn_params (ArrayLike | None, optional): Trainable parameters for the
+                custom phase function. Defaults to None.
+            observables (ArrayLike | None, optional): Runtime override for the Pauli
+                observables (I=0, X=1, Y=2, Z=3). Defaults to None.
+            key (ArrayLike | None, optional): Runtime override for the JAX PRNG key
+                used for sampling. Defaults to None.
+            n_samples (int | None, optional): Runtime override for the number of
+                Monte Carlo samples. Defaults to None.
+            init_state_elems (ArrayLike | None, optional): Runtime override for the
+                discrete elements of the initial state (X). Defaults to None.
+            init_state_amps (ArrayLike | None, optional): Runtime override for the
+                continuous amplitudes of the initial state (P). Defaults to None.
+
+        Returns:
+            tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
+                - Array of estimated expectation values.
+                - Array of standard errors for the estimates.
+        """
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
             _n = n_samples if n_samples is not None else config.n_samples
@@ -213,14 +252,17 @@ def build_expval_func(
             samples = default_samples
 
         obs_data = default_obs_data if observables is None else _prep_observables(observables)
-        state = config.init_state if init_state is None else init_state
+
+        state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
+        state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
         return _core_expval_execution(
-            params,
-            phase_params,
+            gates_params,
+            phase_fn_params,
             samples,
             obs_data,
-            state,
+            state_elems,
+            state_amps,
             generators,
             param_map,
             vmapped_phase_func,
