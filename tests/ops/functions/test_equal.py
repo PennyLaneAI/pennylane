@@ -2897,7 +2897,7 @@ class TestBasisRotation:
 
         with pytest.raises(
             AssertionError,
-            match=re.escape("op1 has value Wires([0, 1]) and op2 has value Wires([2, 3])"),
+            match=re.escape("op1 has value (0, 1) and op2 has value (2, 3)"),
         ):
             assert_equal(op, other_op)
 
@@ -3166,11 +3166,11 @@ class TestCompareSubroutines:
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine1(wires):
             qml.X(wires)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def Subroutine2(wires):
             qml.Y(wires)
 
@@ -3184,7 +3184,7 @@ class TestCompareSubroutines:
     def test_different_static_args(self):
         """Test they are different if they have different static args."""
 
-        @partial(qml.templates.Subroutine, static_argnames=("a",))
+        @partial(qml.templates.core.Subroutine, static_argnames=("a",))
         def f(a, wires):
             pass
 
@@ -3198,20 +3198,20 @@ class TestCompareSubroutines:
     def test_different_wires(self):
         """Test they are different if their wires are different."""
 
-        @partial(qml.templates.Subroutine, wire_argnames=("reg1", "reg2"))
+        @partial(qml.templates.core.Subroutine, wire_argnames=("reg1", "reg2"))
         def f(reg1, reg2):
             pass
 
         op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
         op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
         assert not qml.equal(op1, op2)
-        with pytest.raises(AssertionError, match=r"has value Wires\(\[1\]\) for register reg1"):
+        with pytest.raises(AssertionError, match=r"has value \(1,\) for register reg1"):
             qml.assert_equal(op1, op2)
 
     def test_different_pytree_inputs(self):
         """Test that if the pytrees for an input are different, the ops are different."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 
@@ -3225,7 +3225,7 @@ class TestCompareSubroutines:
     def test_different_data(self):
         """Test that if there is different data, they are different operators."""
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             pass
 

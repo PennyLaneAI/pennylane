@@ -21,6 +21,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.exceptions import WireError
+from pennylane.templates.core import AbstractArray, subroutine_resource_rep
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
@@ -197,13 +198,17 @@ class TestDecomposition:
         resource_obj = decomp.compute_resources(num_wires=2)
         assert resource_obj.num_gates == 1
         assert resource_obj.gate_counts == {
-            qml.resource_rep(qml.MottonenStatePreparation, num_wires=2): 1
+            subroutine_resource_rep(
+                qml.MottonenStatePreparation, AbstractArray((4,)), AbstractArray((2,))
+            ): 1
         }
 
         with qml.queuing.AnnotatedQueue() as q:
             decomp(np.array([0, 0, 0, 1]), wires=(0, 1))
 
-        qml.assert_equal(q.queue[0], qml.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
+        qml.assert_equal(
+            q.queue[0], qml.MottonenStatePreparation.operator(np.array([0, 0, 0, 1]), (0, 1))
+        )
 
 
 class TestStatePrepIntegration:

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates import AbstractArray
+from pennylane.templates.core import AbstractArray
 
 
 @pytest.mark.jax
@@ -69,8 +69,8 @@ class TestResources:
     def test_resources_real(self, matrix, wires):
         """Test that the resources can be calculated for AbstractArray with a real datatype."""
 
-        wires = qml.templates.AbstractArray((3,))
-        matrix = qml.templates.AbstractArray((4, 2), float)
+        wires = qml.templates.core.AbstractArray((3,))
+        matrix = qml.templates.core.AbstractArray((4, 2), float)
 
         resources = qml.BasisRotation.compute_resources(wires, matrix)
         assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 4 * 3 // 2}

@@ -383,7 +383,7 @@ def test_multi_qubit_gates(theta, phi, method):
         qml.Hadamard(wires=[4]),
         qml.CCZ(wires=[0, 1, 2]),
         qml.CSWAP(wires=[2, 3, 4]),
-        qml.QFT(wires=[0, 1, 2]),
+        qml.QFT.operator(wires=[0, 1, 2]),
         qml.CNOT(wires=[2, 4]),
         qml.Toffoli(wires=[0, 1, 2]),
         qml.DoubleExcitation(phi, wires=[0, 1, 3, 4]),

@@ -21,12 +21,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.core import CollectedSubroutine
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
     compute_theta,
     gray_code,
-    mottonen_decomp,
 )
 
 
@@ -37,9 +37,9 @@ def test_standard_validity():
     state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
     state = state / np.linalg.norm(state)
 
-    op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
+    op = qml.MottonenStatePreparation.operator(state_vector=state, wires=range(3))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 def compute_theta_reference(alpha):
@@ -306,40 +306,31 @@ class TestDecomposition:
         """Test that the decomposition includes the correct global phase."""
         state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
         state = state / np.linalg.norm(state)
-        decomp = qml.MottonenStatePreparation(state, [0, 1, 2]).decomposition()
-        gphase = decomp[-1]
+        gphase = qml.MottonenStatePreparation.operator(state, [0, 1, 2]).decomposition()[-1]
         assert isinstance(gphase, qml.GlobalPhase)
         assert qml.math.allclose(gphase.data[0], qml.math.mean(-1 * qml.math.angle(state)))
-
-    def test_mottonen_resources(self):
-        """Test the resources for MottonenStatePreparataion."""
-
-        assert qml.MottonenStatePreparation.resource_keys == frozenset({"num_wires"})
-
-        op = qml.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
-        assert op.resource_params == {"num_wires": 2}
 
     def test_decomposition_rule(self):
         """Test that MottonenStatePreparation has a correct decomposition rule registered."""
 
-        decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
+        decomp = qml.MottonenStatePreparation.operator(
+            np.array([0, 0, 0, 1j]), wires=(0, 1)
+        ).decomposition()
 
-        resource_obj = decomp.compute_resources(num_wires=3)
+        resource_obj = qml.MottonenStatePreparation.compute_resources(
+            np.array([0, 0, 0, 0, 0, 0, 0, 1j]), wires=(0, 1, 2)
+        )
 
         n = 1 + 2 + 4  # 7
 
-        assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
-        assert resource_obj.gate_counts == {
-            qml.resource_rep(qml.GlobalPhase): 1,
-            qml.resource_rep(qml.RY): n,
-            qml.resource_rep(qml.RZ): n,
-            qml.resource_rep(qml.CNOT): 2 * (n - 1),
+        assert resource_obj == {
+            qml.GlobalPhase: 1,
+            qml.RY: n,
+            qml.RZ: n,
+            qml.CNOT: 2 * (n - 1),
         }
 
-        with qml.queuing.AnnotatedQueue() as q:
-            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
-
-        q = q.queue
+        q = decomp
 
         qml.assert_equal(q[0], qml.RY(np.pi, 0))
         qml.assert_equal(q[1], qml.RY(np.pi / 2, 1))
@@ -364,26 +355,14 @@ class TestDecomposition:
         state = jnp.array([0, 0, 0, 1j])
 
         def circuit(state):
-            mottonen_decomp(state, (0, 1))
+            qml.MottonenStatePreparation(state, (0, 1))
 
         plxpr = qml.capture.make_plxpr(circuit)(state)
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts, state)
         q = collector.state["ops"]
-        assert len(q) == 11
-
-        pi = jnp.array(jnp.pi)
-        qml.assert_equal(q[0], qml.RY(pi, 0))
-        qml.assert_equal(q[1], qml.RY(pi / 2, 1))
-        qml.assert_equal(q[2], qml.CNOT((0, 1)))
-        qml.assert_equal(q[3], qml.RY(-pi / 2, 1))
-        qml.assert_equal(q[4], qml.CNOT((0, 1)))
-        qml.assert_equal(q[5], qml.RZ(pi / 4, 0))
-        qml.assert_equal(q[6], qml.RZ(pi / 4, 1))
-        qml.assert_equal(q[7], qml.CNOT((0, 1)))
-        qml.assert_equal(q[8], qml.RZ(-pi / 4, 1))
-        qml.assert_equal(q[9], qml.CNOT((0, 1)))
-        qml.assert_equal(q[10], qml.GlobalPhase(-pi / 8, wires=(0, 1)))
+        assert isinstance(q[0], CollectedSubroutine)
+        assert q[0].name == "MottonenStatePreparation"
 
 
 class TestInputs:
@@ -433,8 +412,8 @@ class TestInputs:
     @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")
-        assert template.id == "a"
+        op = qml.MottonenStatePreparation.operator(np.array([0, 1]), wires=[0], id="a")
+        assert op.id == "a"
 
 
 class TestGradient:
@@ -549,14 +528,13 @@ class TestCasting:
         assert np.allclose(res.detach().numpy(), expected, atol=1e-6, rtol=0)
 
 
-@pytest.mark.parametrize("adj_base_op", [qml.StatePrep, qml.MottonenStatePreparation])
-def test_adjoint_brings_back_to_zero(adj_base_op):
+def test_adjoint_brings_back_to_zero():
     """Test that a StatePrep then its adjoint returns the device to the zero state."""
 
     @qml.qnode(qml.device("default.qubit", wires=3))
     def circuit(state):
-        qml.StatePrep(state, wires=[0, 1, 2])
-        qml.adjoint(adj_base_op(state, wires=[0, 1, 2]))
+        qml.MottonenStatePreparation(state, wires=[0, 1, 2])
+        qml.adjoint(qml.MottonenStatePreparation)(state, wires=[0, 1, 2])
         return qml.state()
 
     state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])

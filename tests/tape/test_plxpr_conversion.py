@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.condition import Conditional
+from pennylane.templates.core import CollectedSubroutine
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -28,6 +29,22 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+QFT_DECOMP = [
+    qml.H(0),
+    qml.ControlledPhaseShift(
+        qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+    ),
+    qml.ControlledPhaseShift(
+        qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+    ),
+    qml.H(1),
+    qml.ControlledPhaseShift(
+        qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+    ),
+    qml.H(2),
+    qml.SWAP(wires=[0, 2]),
+]
 
 
 class TestCollectOpsandMeas:
@@ -46,7 +63,8 @@ class TestCollectOpsandMeas:
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        qml.assert_equal(obj.state["ops"][2], qml.QFT((0, 1, 2)))
+        assert isinstance(obj.state["ops"][2], CollectedSubroutine)
+        assert obj.state["ops"][2].name == "QFT"
         assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
@@ -54,7 +72,7 @@ class TestCollectOpsandMeas:
     def test_subroutine(self):
         """Test that CollectOpsandMeas collects a subroutine into a placeholder op."""
 
-        @partial(qml.templates.Subroutine, static_argnames="pauli_word")
+        @partial(qml.templates.core.Subroutine, static_argnames="pauli_word")
         def MyFunc(x, wires, pauli_word):
             qml.PauliRot(x, pauli_word, wires)
 
@@ -377,7 +395,8 @@ class TestCollectOpsandMeas:
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        qml.assert_equal(obj.state["ops"][2], qml.QFT((0, 1, 2)))
+        assert isinstance(obj.state["ops"][2], CollectedSubroutine)
+        assert obj.state["ops"][2].name == "QFT"
         assert len(obj.state["ops"]) == 3
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
@@ -399,7 +418,8 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        qml.assert_equal(tape[2], qml.QFT((0, 1, 2)))
+        assert isinstance(tape[2], CollectedSubroutine)
+        assert tape[2].name == "QFT"
         assert len(tape.operations) == 3
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
@@ -420,7 +440,8 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        qml.assert_equal(tape[2], qml.QFT((0, 1, 2)))
+        assert isinstance(tape[2], CollectedSubroutine)
+        assert tape[2].name == "QFT"
         assert len(tape.operations) == 3
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))

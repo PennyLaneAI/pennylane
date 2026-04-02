@@ -461,7 +461,7 @@ class TestQubitUnitary:
         import jax
         from jax import numpy as jnp
 
-        matrix = jnp.array(qml.matrix(qml.QFT(wires=[0, 1, 2])))
+        matrix = jnp.array(qml.matrix(qml.MultiControlledX(wires=[0, 1, 2])))
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -544,8 +544,8 @@ class TestQubitUnitary:
                 qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))
             ),  # 2 cnots
             (qml.matrix(qml.CRY(1, wires=[0, 1]))),  # 2 cnots
-            (qml.matrix(qml.QFT(wires=[0, 1]))),  # 3 cnots
-            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.QFT(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1])),  # 3 cnots
+            (qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1]) * np.exp(-12j)),  # 3 cnots
             (qml.matrix(qml.RZ(1, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.CRY(-1, wires=[0, 1]))),  # 2 cnots
@@ -554,8 +554,8 @@ class TestQubitUnitary:
             (qml.matrix(qml.Hadamard(wires=[0]) @ qml.RX(2, wires=1))),  # 0 cnots
             (qml.matrix(qml.RX(-1, wires=[0]) @ qml.RZ(-5, wires=1))),  # 0 cnots
             (
-                qml.matrix(
-                    qml.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
+                qml.matrix(qml.MottonenStatePreparation, wire_order=[0, 1])(
+                    np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1]
                 )
             ),  # 2 cnots
         ],
@@ -574,7 +574,7 @@ class TestQubitUnitary:
 
         dev = qml.device("default.qubit")
 
-        matrix = qml.matrix(qml.QFT(wires=[0, 1]))
+        matrix = qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1])
         ops_decompostion = qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
 
         @qml.qnode(dev)
@@ -599,7 +599,7 @@ class TestQubitUnitary:
         "U, wires",
         [
             (qml.matrix(qml.CRX(2, wires=[1, 0])), [0, 1]),
-            (qml.matrix(qml.QFT(wires=[0, 1, 2, 3, 4])), [0, 1, 2, 3, 4]),
+            (qml.matrix(qml.QFT, wire_order=range(5))(range(5)), list(range(5))),
             (qml.matrix(qml.CRX(1, [0, 2]) @ qml.CRY(2, [1, 3])), [0, 1, 2, 3]),
             (qml.matrix(qml.GroverOperator([0, 1, 2, 3, 4, 5])), [0, 1, 2, 3, 4, 5]),
         ],
@@ -618,7 +618,11 @@ class TestQubitUnitary:
         [
             (qml.matrix(qml.RY(1, 0) @ qml.RY(2, 1)), qml.matrix(qml.RX(2, 0) @ qml.RZ(4, 1)), 4),
             (qml.matrix(qml.RY(1, 0)), qml.matrix(qml.RX(2, 0)), 2),
-            (qml.matrix(qml.GroverOperator([0, 1, 2])), qml.matrix(qml.QFT([0, 1, 2])), 8),
+            (
+                qml.matrix(qml.GroverOperator([0, 1, 2])),
+                qml.matrix(qml.MultiControlledX([0, 1, 2])),
+                8,
+            ),
         ],
     )
     def test_compute_udv(self, a, b, size):

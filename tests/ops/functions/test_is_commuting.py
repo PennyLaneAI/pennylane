@@ -861,5 +861,5 @@ class TestCommutingFunction:
     def test_non_commuting(self):
         """Test the function with an operator from the non-commuting list."""
 
-        res = qml.is_commuting(qml.PauliX(wires=0), qml.QFT(wires=[1, 0]))
+        res = qml.is_commuting(qml.PauliX(wires=0), qml.QFT.operator(wires=[1, 0]))
         assert res is False

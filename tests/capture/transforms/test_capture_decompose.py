@@ -142,7 +142,7 @@ class TestDecomposeInterpreter:
         """Test that decompose works when there is a subroutine in the circuit."""
         interpreter = DecomposeInterpreter(gate_set=qml.gate_sets.ROTATIONS_PLUS_CNOT)
 
-        @qml.templates.Subroutine
+        @qml.templates.core.Subroutine
         def f(x, wires):
             qml.IsingXX(x, wires)
 

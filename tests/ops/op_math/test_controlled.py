@@ -1639,14 +1639,12 @@ class TestControlledSupportsBroadcasting:
         op = Controlled(base, "wire1")
 
         assert op.batch_size == 1
-        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
         state = pnp.array([state_] * 3)
         base = qml.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 3
-        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(

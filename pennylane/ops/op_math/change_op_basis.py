@@ -59,7 +59,7 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if isinstance(op_or_func, Callable):
         try:
-            return prod(op_or_func)()
+            return prod.prod(op_or_func)()  # pylint: disable=no-member
         except TypeError as e:
             raise TypeError(
                 "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
@@ -110,7 +110,7 @@ def change_op_basis(
             qml.H(0)
             qml.CNOT([1,2])
             qml.ctrl(
-                qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+                qml.change_op_basis(qml.SWAP([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
                 control=0
             )
             return qml.state()
@@ -121,9 +121,10 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qml.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H───────╭●─────────────────┤  State
+    1: ─╭●─╭SWAP─├PhaseAdder─╭SWAP†─┤  State
+    2: ─╰X─╰SWAP─╰PhaseAdder─╰SWAP†─┤  State
+
 
     A ``Callable`` can also be provided as an argument to ``ChangeOpBasis``. This can be a function that applies a series
     of ``Operation`` s. Since ``ChangeOpBasis`` requires this ``Callable`` to have no input arguments, ``functools.partial``

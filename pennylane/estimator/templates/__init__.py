@@ -46,6 +46,7 @@ from .trotter import (
 )
 
 from .stateprep import (
+    MottonenStatePreparation,
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
