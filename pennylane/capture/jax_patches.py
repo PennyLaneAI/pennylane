@@ -209,6 +209,7 @@ def _patch_pjit_infer_params():
     Returns:
         list: List of patch tuples.
     """
+
     def patched_infer_params_internal(fun, ji, args, kwargs):
         """Patched version: re-implement the dynamic_shapes path with list coercion."""
 
