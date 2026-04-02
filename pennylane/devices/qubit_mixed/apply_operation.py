@@ -85,27 +85,31 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     Returns:
         array-like: The state with the phase applied along the given axis.
 
-    Example:
-        Applying a full Pauli-Z to |+⟩⟨+| requires two calls:
+    **Example**
 
-            >>> import numpy as np
-            >>> rho = np.array([[0.5, 0.5],
-            ...                 [0.5, 0.5]])
-            >>> # bra side (axis 0)
-            >>> rho = _phase_shift(rho, axis=0)
-            >>> # ket side (axis 1, conjugate phase — same for Z since conj(-1) = -1)
-            >>> rho = _phase_shift(rho, axis=1)
-            >>> print(rho)
-            [[ 0.5 -0.5]
-             [-0.5  0.5]]
+    Applying a full Pauli-Z to |+⟩⟨+| requires two calls:
 
-    Notes:
+    >>> import numpy as np
+    >>> rho = np.array([[0.5, 0.5],
+    ...                 [0.5, 0.5]])
+    >>> # bra side (axis 0)
+    >>> rho = _phase_shift(rho, axis=0)
+    >>> # ket side (axis 1, conjugate phase — same for Z since conj(-1) = -1)
+    >>> rho = _phase_shift(rho, axis=1)
+    >>> print(rho)
+    [[ 0.5 -0.5]
+     [-0.5  0.5]]
+
+    .. note::
+
         - The operation is performed in-place for computational efficiency
         - The function assumes the density matrix is in the computational basis
         - For an n-qubit system, the axis should be in range [0, n-1]
         - The phase shift operator U for single-qubit case is:
-          U = [[1, 0],
-               [0, phase_factor]]
+
+          .. code-block:: py
+              U = [[1, 0],
+                   [0, phase_factor]]
 
     """
     n_dim = math.ndim(state)
@@ -295,7 +299,7 @@ def apply_operation(
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
 
-    .. code-block:: python
+    .. code-block:: py
 
         @apply_operation.register
         def _(op: type_op, state, is_state_batched=False, **kwargs):
