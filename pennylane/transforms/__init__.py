@@ -63,6 +63,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
     ~transforms.remove_barrier
+    ~transforms.disentangle_cnot
+    ~transforms.disentangle_swap
     ~transforms.match_relative_phase_toffoli
     ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
@@ -414,16 +416,7 @@ from .disentangle_cnot_swap import disentangle_cnot, disentangle_swap
 
 from .decompositions import (
     clifford_t_decomposition,
-    # commute_ppr,
-    # decompose_clifford_ppr,
-    # decompose_non_clifford_ppr,
-    # decompose_arbitrary_ppr,
     gridsynth,
-    # merge_ppr_ppm,
-    # ppm_compilation,
-    # ppr_to_ppm,
-    # reduce_t_depth,
-    # to_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
