@@ -905,6 +905,7 @@ The following classes have been ported over:
 
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
+  [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
 
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,
