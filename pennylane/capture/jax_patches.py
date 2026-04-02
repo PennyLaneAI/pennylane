@@ -213,8 +213,6 @@ def _patch_pjit_infer_params():
 
     def patched_infer_params_internal(fun, ji, args, kwargs):
         """Patched version: re-implement the dynamic_shapes path with list coercion."""
-        if not jax_config.dynamic_shapes.value:
-            return original(fun, ji, args, kwargs)
 
         # Dynamic shapes path — replicate the original but fix the type mismatch
         ctx_mesh = pjit.mesh_lib.get_concrete_mesh()
