@@ -17,12 +17,12 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import re
 import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pennylane as qml
@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
+# Used for MLIR analysis pass resource tracking
+_RESOURCE_ANALYSIS_PREFIX = "__qml_specs_analysis_pass_level_"
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
@@ -114,15 +116,21 @@ def _specs_qjit_device_level_tracking(
     new_qnode = qjit.original_function.update(device=spoofed_dev)
     new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
-    if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-        # TODO: Warn that something has gone wrong here
-        os.remove(_RESOURCE_TRACKING_FILEPATH)
+    filepath = Path(_RESOURCE_TRACKING_FILEPATH)
+
+    if filepath.exists():
+        warnings.warn(
+            "While running, specs encountered past result data that had not been cleaned up. "
+            "This may indicate that a previous call to specs was interrupted or failed to run.",
+            UserWarning,
+        )
+        filepath.unlink()
 
     try:
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
-        with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
+        with filepath.open("r", encoding="utf-8") as f:
             resource_data = json.load(f)
 
         return SpecsResources(
@@ -134,8 +142,8 @@ def _specs_qjit_device_level_tracking(
         )
     finally:
         # Ensure we clean up the resource tracking file
-        if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-            os.remove(_RESOURCE_TRACKING_FILEPATH)
+        if filepath.exists():
+            filepath.unlink()
 
 
 def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
@@ -219,32 +227,108 @@ def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: 
     # This is function is covered by integration tests within the Catalyst frontend
     """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
 
-    gate_types = {}
+    gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
 
-    for res_name, sizes in resources.operations.items():
-        for size, count in sizes.items():
-            gate_sizes[size] += count
+    for res_name, count in resources["operations"].items():
+        match = re.match(r"(.+)\((\d+)\)", res_name)
+        gate_name, gate_size = match.groups() if match else (res_name, 0)
 
-        if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
             # Separate out PPMs and PPRs by weight
-            for size, count in sizes.items():
-                gate_types[f"{res_name}-w{size}"] = count
-        else:
-            gate_types[res_name] = sum(sizes.values())
+            gate_name += f"-w{gate_size}"
+
+        gate_types[gate_name] += count
+        gate_sizes[int(gate_size)] += count
 
     return SpecsResources(
-        gate_types=gate_types,
+        gate_types=dict(gate_types),
         gate_sizes=dict(gate_sizes),
-        measurements=dict(resources.measurements),
-        num_allocs=resources.num_allocs,
+        measurements=resources["measurements"],
+        num_allocs=resources["num_qubits"],
         depth=None,  # Can't get depth from MLIR pass results
     )
 
 
+def _specs_from_analysis_pass(
+    qjit,
+    original_qnode,
+    level: int | tuple[int] | list[int],
+    num_tape_levels: int,
+    level_to_markers: dict[int, list[str]],
+    level_to_name: dict[int, str],
+    *args,
+    **kwargs,
+) -> dict[str, SpecsResources | list[SpecsResources]]:
+    from catalyst import QJIT
+
+    new_qnode = copy.deepcopy(original_qnode)
+    iter_pipeline = new_qnode._compile_pipeline
+    max_level = max(level) if isinstance(level, (list, tuple)) else level
+
+    fname_to_level = {}
+
+    new_compile_pipeline = qml.CompilePipeline()
+    if num_tape_levels > 0:
+        new_compile_pipeline += iter_pipeline[
+            : num_tape_levels - 1
+        ]  # Add all tape transforms first, which come before any MLIR passes
+        iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
+
+    if num_tape_levels in level:
+        fname = f"{_RESOURCE_ANALYSIS_PREFIX}_before.json"
+        fname_to_level[fname] = num_tape_levels  # num_tape_levels == the level of the lowering pass
+        level_to_name[num_tape_levels] = (
+            ", ".join(level_to_markers[num_tape_levels])
+            if num_tape_levels in level_to_markers
+            else "Before MLIR Passes"
+        )
+        new_compile_pipeline += qml.transform(pass_name="resource-tracker")(
+            output_json=True, output_fname=fname
+        )
+
+    for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
+        if i > max_level:
+            break
+        new_compile_pipeline += comp_pass
+        if i in level:
+            fname = f"{_RESOURCE_ANALYSIS_PREFIX}{i}.json"
+            level_name = (
+                ", ".join(level_to_markers[i])
+                if i in level_to_markers
+                else comp_pass.pass_name or f"Level {i}"
+            )
+            level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
+            fname_to_level[fname] = i
+            level_to_name[i] = level_name
+            new_compile_pipeline += qml.transform(pass_name="resource-tracker")(
+                output_json=True, output_fname=fname
+            )
+
+    new_qnode._compile_pipeline = new_compile_pipeline
+    compile_options = copy.deepcopy(qjit.compile_options)
+    compile_options.target = "mlir"
+    compile_options.pipeline = [("pipe", ["quantum-compilation-stage"])]
+    new_qjit = QJIT(new_qnode, compile_options=compile_options)
+
+    # Force a compilation, which will output the necessary JSON files
+    new_qjit.jit_compile(args, **kwargs)
+
+    results = {}
+
+    for res_file, curr_level in fname_to_level.items():
+        with Path(res_file).open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        results[level_to_name[curr_level]] = _mlir_resources_to_specs_resources(
+            next(iter(data.values()))
+        )
+
+    return results
+
+
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
-    SpecsResources | list[SpecsResources] | dict[int, SpecsResources | list[SpecsResources]],
-    dict[int, str],
+    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
+    str | dict[int, str],
 ]:  # pragma: no cover
     # pylint: disable=import-outside-toplevel,too-many-branches,too-many-statements
     from catalyst.python_interface.inspection import mlir_specs
@@ -273,19 +357,14 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     level_to_markers = defaultdict(list)
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
-    mlir_level_to_markers = {
-        lvl - num_tape_levels: markers
-        for lvl, markers in level_to_markers.items()
-        if lvl >= num_tape_levels
-    }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    output_level: dict[int, str] = {}  # This will be a map of level to its name
+    level_to_name: dict[int, str] = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
-    mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
+    mlir_levels = [lvl for lvl in level if lvl >= num_tape_levels]
 
     resources = {}
 
@@ -308,44 +387,56 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            trans_name = _make_level_name_unique(trans_name, set(output_level.values()))
+            trans_name = _make_level_name_unique(trans_name, set(level_to_name.values()))
             resources[trans_name] = res
-            output_level[tape_level] = trans_name
+            level_to_name[tape_level] = trans_name
 
     # Handle MLIR passes
     if len(mlir_levels) > 0:
-        try:
-            results = mlir_specs(
+        resources.update(
+            _specs_from_analysis_pass(
                 qjit,
+                original_qnode,
                 mlir_levels,
+                num_tape_levels,
+                level_to_markers,
+                level_to_name,
                 *args,
                 **kwargs,
-                level_to_markers=mlir_level_to_markers,
-                existing_level_names=set(output_level.values()),
             )
-        except ValueError as ve:
-            levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
-            bad_levels = [str(int(lvl) + num_tape_levels) for lvl in levels[1].split(", ")]
-            raise ValueError(
-                f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
-            ) from ve
+        )
+        # try:
+        #     results = mlir_specs(
+        #         qjit,
+        #         mlir_levels,
+        #         *args,
+        #         **kwargs,
+        #         level_to_markers=mlir_level_to_markers,
+        #         existing_level_names=set(level_to_name.values()),
+        #     )
+        # except ValueError as ve:
+        #     levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
+        #     bad_levels = [str(int(lvl) + num_tape_levels) for lvl in levels[1].split(", ")]
+        #     raise ValueError(
+        #         f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
+        #     ) from ve
 
-        for lvl, (level_name, result) in zip(mlir_levels, results.items()):
-            output_level[lvl + num_tape_levels] = level_name
+        # for lvl, (level_name, result) in zip(mlir_levels, results.items()):
+        #     level_to_name[lvl + num_tape_levels] = level_name
 
-            if isinstance(result, list):
-                result = [_mlir_resources_to_specs_resources(res) for res in result]
-            else:
-                result = _mlir_resources_to_specs_resources(result)
+        #     if isinstance(result, list):
+        #         result = [_mlir_resources_to_specs_resources(res) for res in result]
+        #     else:
+        #         result = _mlir_resources_to_specs_resources(result)
 
-            resources[level_name] = result
+        #     resources[level_name] = result
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
         resources = next(iter(resources.values()))
-        output_level = next(iter(output_level.values()))
+        level_to_name = next(iter(level_to_name.values()))
 
-    return resources, output_level
+    return resources, level_to_name
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
