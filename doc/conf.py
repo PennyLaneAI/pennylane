@@ -391,50 +391,86 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
             )
 
 
-import importlib.metadata
+# import importlib.metadata
 
 
-def get_catalyst_docstrings():
-    """
-    Finds docstrings for Catalyst functionality. This can be extended in the future to other entry-point
-    groups if needed. Current entry-point groups:
+# def get_catalyst_docstrings():
+#     """
+#     Finds docstrings for Catalyst functionality. This can be extended in the future to other entry-point
+#     groups if needed. Current entry-point groups:
 
-    - pennylane.transforms
-    - pennylane.drawer
-    """
+#     - pennylane.transforms
+#     - pennylane.drawer **
 
-    # add to this list as more entry-point groups are added
-    groups = ["pennylane.transforms", "pennylane.drawer"]
+#     ** The entry point in drawer is for the draw_graph function. Since it has no footprint at all in
+#     PennyLane, it does not need special processing.
+#     """
 
-    docs_dict = {}
-    for group in groups:
-        eps = importlib.metadata.entry_points(group=group)
+#     # add to this list as more entry-point groups are added
+#     groups = ["pennylane.transforms"]
 
-        for ep in eps:
-            target_obj = ep.load()
-            docs_dict[ep.name] = target_obj.__doc__.splitlines()
+#     docs_dict = {}
+#     for group in groups:
+#         eps = importlib.metadata.entry_points(group=group)
 
-    return docs_dict
+#         for ep in eps:
+#             target_obj = ep.load()
+#             lines = target_obj.__doc__.splitlines()
+#             for i, line in enumerate(lines):
+#                 line.replace("\xa0", " ")
+
+#                 if "::" in line:  # and "  " in lines[i + 2]:
+#                     j = 0
+#                     line_list = line.split(" ")
+
+#                     while line_list[j] == "":
+#                         j += 1
+
+#                     indent = j
+
+#                     if indent != 0:
+#                         # .. directive:: stuff
+#                         # do nothing
+#                         cond = lines[i + 1] == "" and not lines[i + 2].startswith(" " * indent)
+#                     elif potato:
+#                         """
+#                         .. directive::
+#                         # just an empty line, no indent
+#                             stuff
+#                         """
+#                     else:
+#                         """
+#                         .. directive::
+#                             stuff
+#                         """
+#                         cond = lines[i + 1] == ""
+
+#                     if cond:
+#                         lines[i + 1] = " " * (indent + 4)
+
+#                     # a directive proceeded by a blank line then a tabbed line
+#                     del lines[i + 1]
+
+#                 if "BLANKLINE" in line:
+#                     lines[i] = ""
+
+#             print(lines)
+#             docs_dict[ep.name] = lines
+
+#     return docs_dict
 
 
-def catalyst_docstring_lookup(app, obj_type, name, obj, options, lines):
-    short_name = name.split(".")[-1]
-    registry = get_catalyst_docstrings()
+# catalyst_registry = get_catalyst_docstrings()
 
-    if short_name in registry:
-        new_lines = registry[short_name]
-        if lines != new_lines:
-            lines.clear()
 
-            for i, phrase in enumerate(new_lines[1:]):
-                if phrase != "":
-                    new_lines[0] += " " + phrase
-                    new_lines.remove(phrase)
+# def catalyst_docstring_lookup(app, obj_type, name, obj, options, lines):
+#     short_name = name.split(".")[-1]
 
-                else:
-                    break
-
-            lines.extend(new_lines)
+#     if short_name in catalyst_registry:
+#         new_lines = catalyst_registry[short_name]
+#         if lines != new_lines:
+#             lines.clear()
+#             lines.extend(new_lines)
 
 
 def setup(app):
