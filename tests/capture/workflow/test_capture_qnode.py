@@ -77,7 +77,7 @@ def test_error_if_dynamic_device_wires():
         def circuit():
             return qml.probs()
 
-        return circuit
+        return circuit()
 
     f_qjit = qml.qjit(f, capture=True)
     with pytest.raises(
