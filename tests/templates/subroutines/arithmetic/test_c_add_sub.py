@@ -189,7 +189,7 @@ class TestCAddSub:
 
         @qp.qjit
         @qp.set_shots(100)
-        @qp.decompose(max_expansion=3)
+        @qp.decompose(max_expansion=4)
         @qp.qnode(dev)
         def circuit(x_wires, y, ctrl_state):
             qp.BasisEmbedding(ctrl_state, wires=control_wire)

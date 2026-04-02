@@ -16,12 +16,13 @@ controlled by a control qubit."""
 
 from pennylane.decomposition import (
     add_decomps,
+    change_op_basis_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import BasisState, ctrl
+from pennylane.ops import BasisState, change_op_basis, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
@@ -80,7 +81,8 @@ class CAddSub(Operation):
         {2: np.int64(49), 8: np.int64(51)}
 
     As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
-    the time each.
+    the time each, where the modulus is given by :math:`2^n`, with :math:`n` the number of bits
+    storing :math:`y`.
     """
 
     grad_method = None
@@ -191,22 +193,20 @@ class CAddSub(Operation):
 
 
 def _c_add_sub_resources(num_y_wires):
-    return {
-        controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": num_y_wires},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        ): 2,
-        resource_rep(SemiAdder, num_y_wires=num_y_wires): 1,
-    }
+    comp_rep = controlled_resource_rep(
+        BasisState,
+        base_params={"num_wires": num_y_wires},
+        num_control_wires=1,
+        num_zero_control_values=1,
+    )
+    add_rep = resource_rep(SemiAdder, num_y_wires=num_y_wires)
+    return {change_op_basis_resource_rep(comp_rep, add_rep, comp_rep): 1}
 
 
 @register_resources(_c_add_sub_resources, exact=True)
 def _c_add_sub(control_wire, x_wires, y_wires, work_wires, **_):
-    ctrl(BasisState([1] * len(y_wires), y_wires), control=control_wire, control_values=[0])
-    SemiAdder(x_wires, y_wires, work_wires)
-    ctrl(BasisState([1] * len(y_wires), y_wires), control=control_wire, control_values=[0])
+    cflip = ctrl(BasisState([1] * len(y_wires), y_wires), control=control_wire, control_values=[0])
+    change_op_basis(cflip, SemiAdder(x_wires, y_wires, work_wires), cflip)
 
 
 add_decomps(CAddSub, _c_add_sub)

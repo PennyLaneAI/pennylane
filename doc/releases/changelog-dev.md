@@ -34,7 +34,8 @@
   ```
 
   As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
-  the time each, where the modulus is given by :math:`2^n`, where :math:`n` is the number of bits storing :math:`y`.
+  the time each, where the modulus is given by :math:`2^n`, with :math:`n` the number of 
+  bits storing :math:`y`.
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
