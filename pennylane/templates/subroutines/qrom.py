@@ -15,8 +15,8 @@
 This submodule contains the template for QROM.
 """
 from collections import Counter
+from collections.abc import Sequence
 from functools import reduce
-from typing import Sequence
 
 import numpy as np
 
