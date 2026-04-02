@@ -110,29 +110,34 @@ to handle a single circuit. See the documentation for each modifier for more det
 
 .. code-block:: python
 
+    from pennylane.devices import Device
+    from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+
     @simulator_tracking
     @single_tape_support
-    class MyDevice(qml.devices.Device):
+    class MyDevice(Device):
 
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
 0.0
->>> dev.tracker.history
+>>> import pprint
+>>> pprint.pprint(dev.tracker.history)
 {'batches': [1],
- 'simulations': [1],
+ 'errors': [{}],
  'executions': [1],
+ 'resources': [SpecsResources(gate_types={'S': 1},
+                              gate_sizes={1: 1},
+                              measurements={'expval(PauliX)': 1},
+                              num_allocs=1,
+                              depth=1)],
  'results': [0.0],
- 'resources': [Resources(num_wires=1, num_gates=1,
- gate_types=defaultdict(<class 'int'>, {'S': 1}),
- gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
- shots=Shots(total_shots=None, shot_vector=()))]}
-
+ 'simulations': [1]}
 
 Qubit Simulation Tools
 ----------------------

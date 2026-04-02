@@ -349,7 +349,9 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
     >>> decompose(tape, lambda obj: obj.name == "S")
-    DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Operator CNOT(wires=[0, 1]) not supported with device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
@@ -357,18 +359,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     >>> tape = qml.tape.QuantumScript([qml.BasisState([1], wires=0), qml.BasisState([1], wires=1)])
     >>> batch, fn = decompose(tape, stopping_condition)
     >>> batch[0].circuit
-    [BasisState(array([1]), wires=[0]),
-    RZ(1.5707963267948966, wires=[1]),
-    RX(3.141592653589793, wires=[1]),
-    RZ(1.5707963267948966, wires=[1])]
+    [BasisState(array([1]), wires=[0]), RX(3.141592653589793, wires=[1])]
     >>> batch, fn = decompose(tape, stopping_condition, skip_initial_state_prep=False)
     >>> batch[0].circuit
-    [RZ(1.5707963267948966, wires=[0]),
-    RX(3.141592653589793, wires=[0]),
-    RZ(1.5707963267948966, wires=[0]),
-    RZ(1.5707963267948966, wires=[1]),
-    RX(3.141592653589793, wires=[1]),
-    RZ(1.5707963267948966, wires=[1])]
+    [RX(3.141592653589793, wires=[0]), RX(3.141592653589793, wires=[1])]
 
     """
 
@@ -469,7 +463,9 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable Z(0) + Y(0) not supported on device
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Observable Z(0) + Y(0) not supported on device
 
     """
     if bool(tape.shots) and stopping_condition_shots is not None:
@@ -510,10 +506,14 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.CountsMP)
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
+    Traceback (most recent call last):
+    ...
+    pennylane.exceptions.DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
 
     """
     if analytic_measurements is None:
@@ -606,22 +606,21 @@ def measurements_from_samples(tape):
 
     Executing the tape returns samples that can be post-processed to get the originally requested measurements:
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qml.device("default.qubit", seed=42)
     >>> res = dev.execute(new_tape)
     >>> res
     array([[1, 0],
-           [0, 0],
            [0, 1],
            [1, 1],
-           [0, 1],
            [1, 0],
-           [0, 1],
+           [0, 0],
+           [1, 1],
            [1, 0],
            [1, 0],
-           [1, 0]])
-
+           [0, 0],
+           [0, 1]])
     >>> fn((res,))
-    [-0.2, array([0.6, 0.4])]
+    [np.float64(-0.2), array([0.6, 0.4])]
     """
     if not tape.shots:
         return (tape,), null_postprocessing
@@ -703,15 +702,15 @@ def measurements_from_counts(tape):
     The tape is now compatible with a device backend that only supports counts. Executing the
     tape returns the raw counts:
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qml.device("default.qubit", seed=42)
     >>> res = dev.execute(new_tape)
     >>> res
-    {'00': 4, '01': 2, '10': 2, '11': 2}
+    {np.str_('00'): np.int64(2), np.str_('01'): np.int64(2), np.str_('10'): np.int64(4), np.str_('11'): np.int64(2)}
 
     And these can be post-processed to get the originally requested measurements:
 
     >>> fn((res,))
-    [-0.19999999999999996, array([0.7, 0.3])]
+    [np.float64(-0.19999999999999996), array([0.6, 0.4])]
     """
     if tape.shots.total_shots is None:
         return (tape,), null_postprocessing
@@ -785,11 +784,11 @@ def device_resolve_dynamic_wires(
     ...     with qml.allocation.allocate(1) as wires:
     ...         qml.X(wires)
 
-    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0, "a", "b")))
+    >>> transformed = device_resolve_dynamic_wires(f, wires=(0, "a", "b"))
     >>> print(qml.draw(transformed)())
     0: ──H─┤
-    b: ──X─┤
     a: ──X─┤
+    b: ──X─┤
 
     If the device has no wires, then wires are allocated starting at the smallest
     integer that is larger than all integer wires present in the ``tape``.
@@ -803,7 +802,7 @@ def device_resolve_dynamic_wires(
 
     """
     if wires:
-        zeroed = reversed(list(set(wires) - set(tape.wires)))
+        zeroed = reversed([w for w in wires if w not in tape.wires])
         min_int = None
     else:
         zeroed = ()

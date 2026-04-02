@@ -303,7 +303,7 @@ def apply_operation(
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
 
-    .. code-block:: python
+    .. code-block:: py
 
         @apply_operation.register
         def _(op: type_op, state):
@@ -314,11 +314,11 @@ def apply_operation(
     >>> state = np.zeros((2,2))
     >>> state[0][0] = 1
     >>> state
-    tensor([[1., 0.],
-        [0., 0.]], requires_grad=True)
+    array([[1., 0.],
+           [0., 0.]])
     >>> apply_operation(qml.X(0), state)
-    tensor([[0., 0.],
-        [1., 0.]], requires_grad=True)
+    array([[0., 0.],
+           [1., 0.]])
 
     """
     return _apply_operation_default(op, state, is_state_batched, debugger)

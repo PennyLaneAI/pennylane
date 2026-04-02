@@ -149,7 +149,7 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device('default.qubit', wires=1, seed=42)
 
         @qml.set_shots(10)
         @qml.qnode(dev)
@@ -158,10 +158,10 @@ def device(name, *args, **kwargs):
             return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
-    array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
+    array([ 1.,  1., -1.,  1.,  1., -1.,  1.,  1.,  1.,  1.])
     >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
-    (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
+    (array([ 1., -1.,  1.]), array([1., 1., 1., 1.]), array([1., 1., 1., 1.]))
     """
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
