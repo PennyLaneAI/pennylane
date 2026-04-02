@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply operations to a qubit mixed state."""
+
 # pylint: disable=unused-argument
 
 from functools import singledispatch
@@ -64,80 +65,39 @@ def _get_slice(index, axis, num_axes):
 
 def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     """
-    Applies a phase shift operation to a density matrix along a specified axis.
+    Applies a phase factor to the ``|1⟩`` component along a single axis of a density matrix.
 
-    This function implements a phase shift operation on a mixed quantum state (density matrix).
-    For a given axis, it applies the phase shift by conjugating the density matrix with the
-    phase shift operator: ρ -> U ρ U†, where U is the phase shift operator. This implementation
-    is specific to single-qubit operations without broadcasting.
+    This is a low-level helper that multiplies the ``|1⟩`` slice of ``state`` along
+    ``axis`` by ``phase_factor``.  It does **not** perform the full unitary conjugation
+    ρ → U ρ U†.  Callers that need the complete transformation must invoke this
+    function twice: once on the bra axis with ``phase_factor`` and once on the
+    corresponding ket axis (offset by ``num_wires``) with ``conj(phase_factor)``.
 
     Args:
-        state (array-like): The density matrix to transform, with shape (2^n, 2^n) where n is
-            the number of qubits.
-        axis (int): The target qubit axis (0-based indexing) where the phase shift is applied.
-        phase_factor (complex, optional): The complex phase to apply. Common values include:
-            * -1 for Pauli-Z gate
-            * 1j for S gate (π/2 phase)
-            * exp(1j * π/4) for T gate (π/4 phase)
-        debugger (callable, optional): A debug function for operation verification.
-            Defaults to None.
+        state (array-like): The density matrix in tensor form, e.g. shape ``(2,) * 2n``
+            for an ``n``-qubit system (with an optional leading batch dimension).
+        axis (int): The axis along which the phase is applied.
+        phase_factor (complex, optional): The phase to multiply onto the ``|1⟩`` slice.
+            Defaults to ``-1``.
+        debugger: Unused.
         **_: Additional unused keyword arguments.
 
     Returns:
-        array-like: The transformed density matrix with the same shape as the input.
-
-    Raises:
-        ValueError: If axis is invalid for the given density matrix dimension.
-        ValueError: If the input state is not a valid density matrix (not square or
-            incorrect dimensions).
+        array-like: The state with the phase applied along the given axis.
 
     Example:
-        >>> import numpy as np
-        >>> # Single-qubit case: density matrix for |+⟩⟨+|
-        >>> plus_state = np.array([[0.5, 0.5],
-        ...                       [0.5, 0.5]])
-        >>> # Apply Pauli-Z (phase_factor=-1)
-        >>> z_applied = _phase_shift(plus_state, axis=0)
-        >>> print(z_applied)
-        [[ 0.5  0.5]
-         [-0.5 -0.5]]
+        Applying a full Pauli-Z to |+⟩⟨+| requires two calls:
 
-        >>> # Two-qubit case: density matrix for |0⟩⟨0| ⊗ |+⟩⟨+|
-        >>> two_qubit_state = np.array([
-        ...     [0.5, 0.5, 0, 0],
-        ...     [0.5, 0.5, 0, 0],
-        ...     [0, 0, 0, 0],
-        ...     [0, 0, 0, 0]
-        ... ]).reshape(2,2,2,2)
-        >>> # Apply phase shift on second qubit (axis=1)
-        >>> z_on_second = _phase_shift(two_qubit_state, axis=1)
-        >>> print(z_on_second)
-        [[[[ 0.5  0.5]
-           [ 0.   0. ]]
-        <BLANKLINE>
-          [[-0.5 -0.5]
-           [-0.  -0. ]]]
-        <BLANKLINE>
-         [[[ 0.   0. ]
-           [ 0.   0. ]]
-        <BLANKLINE>
-          [[-0.  -0. ]
-           [-0.  -0. ]]]]
-
-        >>> # Apply phase shift on first qubit (axis=1)
-        >>> z_on_first = _phase_shift(two_qubit_state, axis=0)
-        >>> print(z_on_first)
-        [[[[ 0.5  0.5]
-           [ 0.   0. ]]
-        <BLANKLINE>
-          [[ 0.5  0.5]
-           [ 0.   0. ]]]
-        <BLANKLINE>
-         [[[-0.  -0. ]
-           [-0.  -0. ]]
-        <BLANKLINE>
-          [[-0.  -0. ]
-           [-0.  -0. ]]]]
+            >>> import numpy as np
+            >>> rho = np.array([[0.5, 0.5],
+            ...                 [0.5, 0.5]])
+            >>> # bra side (axis 0)
+            >>> rho = _phase_shift(rho, axis=0)
+            >>> # ket side (axis 1, conjugate phase — same for Z since conj(-1) = -1)
+            >>> rho = _phase_shift(rho, axis=1)
+            >>> print(rho)
+            [[ 0.5 -0.5]
+             [-0.5  0.5]]
 
     Notes:
         - The operation is performed in-place for computational efficiency
