@@ -7,8 +7,8 @@
   arithmetic circuits.
   [(#9240)](https://github.com/PennyLaneAI/pennylane/pull/9240)
 
-  As an example, we compute the sum and the difference of two integers :math:`x=3` and
-  :math:`y=7` in superposition:
+  As an example, we compute the sum and the difference of two integers :math:`x=5` and
+  :math:`y=13` in superposition:
   
   ```python
   import pennylane as qml
@@ -34,7 +34,7 @@
   ```
 
   As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
-  the time each.
+  the time each, where the modulus is given by :math:`2^n`, where :math:`n` is the number of bits storing :math:`y`.
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
