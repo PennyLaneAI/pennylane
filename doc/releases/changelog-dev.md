@@ -903,6 +903,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
+  rather than providing incorrect results.
+  [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
+
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,
   preventing the intended diagnostic message from being displayed.
