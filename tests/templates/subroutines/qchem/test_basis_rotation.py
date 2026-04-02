@@ -14,12 +14,12 @@
 """
 Tests for the BasisRotation template.
 """
-# pylint: disable=missing-function-docstring, import-outside-toplevel
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates import AbstractArray
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -51,64 +51,14 @@ from pennylane.templates import AbstractArray
 )
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
-    op = qml.BasisRotation.operator(wires=range(len(rotation)), unitary_matrix=rotation)
-    qml.ops.functions.assert_valid(op, skip_pickle=True)
+    op = qml.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
+    qml.ops.functions.assert_valid(op)
 
 
-class TestResources:
-    """Tests for calculating the resources of a BasisRotation."""
-
-    @pytest.mark.parametrize(
-        "matrix, wires",
-        (
-            (AbstractArray((4, 2), float), AbstractArray((3,))),
-            (np.zeros((4, 2), float), (0, 1, 2)),
-            (qml.numpy.zeros((4, 2), float), ("a", "b", "c")),
-        ),
-    )
-    def test_resources_real(self, matrix, wires):
-        """Test that the resources can be calculated for AbstractArray with a real datatype."""
-
-        wires = qml.templates.AbstractArray((3,))
-        matrix = qml.templates.AbstractArray((4, 2), float)
-
-        resources = qml.BasisRotation.compute_resources(wires, matrix)
-        assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 4 * 3 // 2}
-
-    @pytest.mark.parametrize(
-        "matrix, wires",
-        (
-            (AbstractArray((4, 2), complex), AbstractArray((3,))),
-            (np.ones((4, 2), complex) * 1j, (0, 1, 2)),
-        ),
-    )
-    def test_resources_abstract_array_complex(self, matrix, wires):
-        """Test that the resources can be calculated for AbstractArray with a complex datatype."""
-
-        resources = qml.BasisRotation.compute_resources(wires, matrix)
-        se_count = 4 * 3 // 2
-        assert resources == {qml.PhaseShift: 4 + se_count, qml.SingleExcitation: se_count}
-
-    def test_resources_close_to_real(self):
-        """Test that the resources are calculated as real if the matrix is sufficiently close to real."""
-        matrix = np.ones((5,), complex) + 1e-8j
-        wires = (0,)
-
-        resources = qml.BasisRotation.compute_resources(wires, matrix)
-        assert resources == {qml.PhaseShift: 1, qml.SingleExcitation: 5 * 4 // 2}
-
-
-# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize(
-        "use_capture",
-        (
-            pytest.param(True, marks=pytest.mark.capture, id="capture"),
-            pytest.param(False, id="no_capture"),
-        ),
-    )
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         ("num_wires", "unitary_matrix", "givens", "diags"),
         [
@@ -144,30 +94,21 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_basis_rotation_operations_complex(
-        self, use_capture, num_wires, unitary_matrix, givens, diags
-    ):
+    def test_basis_rotation_operations_complex(self, num_wires, unitary_matrix, givens, diags):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
+
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in diags + givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(np.array(angle))
+            gate_angles.append(qml.numpy.array(angle))
             gate_wires.append(list(indices))
 
-        if use_capture:
-            jax = pytest.importorskip("jax")
-            wires = jax.numpy.arange(num_wires)
-            jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, unitary_matrix)
-            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, unitary_matrix)
-            assert tape[0].name == "BasisRotation"
-            queue = tape[0].decomposition()
-        else:
-            op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=unitary_matrix)
-            queue = op.decomposition()
+        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
+        queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
 
@@ -176,13 +117,11 @@ class TestDecomposition:
             assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
-    @pytest.mark.parametrize(
-        "use_capture",
-        (
-            pytest.param(True, marks=pytest.mark.capture, id="capture"),
-            pytest.param(False, id="no_capture"),
-        ),
-    )
+        # Tests the decomposition rule defined with the new system
+        for rule in qml.list_decomps(qml.BasisRotation):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix", "givens"),
         [
@@ -224,7 +163,7 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_basis_rotation_operations_real(self, use_capture, num_wires, ortho_matrix, givens):
+    def test_basis_rotation_operations_real(self, num_wires, ortho_matrix, givens):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
@@ -234,31 +173,48 @@ class TestDecomposition:
         for indices, angle in givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(np.array(angle))
+            gate_angles.append(qml.numpy.array(angle))
             gate_wires.append(list(indices))
 
-        if use_capture:
-            jax = pytest.importorskip("jax")
-            wires = jax.numpy.arange(num_wires)
-            jaxpr = jax.make_jaxpr(qml.BasisRotation)(wires, ortho_matrix)
-            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, wires, ortho_matrix)
-            assert tape[0].name == "BasisRotation"
-            queue = tape[0].decomposition()
-        else:
-            op = qml.BasisRotation.operator(wires=range(num_wires), unitary_matrix=ortho_matrix)
-            queue = op.decomposition()
+        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
+        queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
         assert [type(op) for op in queue].count(qml.PhaseShift) <= 1  # at most one phase shift
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
-            # some reason program capture chooses chooses a rotation offset by 2*pi, but is
-            # still essentially the same angle.
-            assert np.allclose(
-                _op.parameters[0] % (2 * np.pi), (gate_angles[idx]) % (2 * np.pi)
-            )  # gate parameter
+            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
+
+        # Tests the decomposition rule defined with the new system
+        for rule in qml.list_decomps(qml.BasisRotation):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("num_wires", "ortho_matrix"),
+        [
+            (
+                2,
+                np.array(
+                    [
+                        [-0.618452, -0.68369054 - 0.38740723j],
+                        [-0.78582258, 0.53807284 + 0.30489424j],
+                    ]
+                ),  # unitary matrix
+            ),
+        ],
+    )
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
+        """Test the correctness of the BasisRotation template including the gate count
+        and their order, the wires the operation acts on and the correct use of parameters
+        in the circuit."""
+        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
+
+        # Tests the decomposition rule defined with the new system
+        for rule in qml.list_decomps(qml.BasisRotation):
+            _test_decomposition_rule(op, rule)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
@@ -297,7 +253,6 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
@@ -423,7 +378,7 @@ class TestDecomposition:
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation)(wires=wires, unitary_matrix=unitary_matrix)
+            qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix))
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
@@ -469,13 +424,25 @@ class TestInputs:
     def test_basis_rotation_exceptions(self, wires, unitary_matrix, msg_match):
         """Test that BasisRotation template throws an exception if the parameters have illegal
         shapes, types or values."""
-        with pytest.raises(ValueError, match=msg_match):
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
+
+        with pytest.raises(ValueError, match=msg_match):
+            qml.BasisRotation.compute_decomposition(
+                wires=wires, unitary_matrix=unitary_matrix, check=True
+            )
+
     def test_id(self):
         """Test that the id attribute can be set."""
-        template = qml.BasisRotation.operator(
+        template = qml.BasisRotation(
             wires=range(2),
             unitary_matrix=qml.math.array(
                 [
@@ -513,7 +480,6 @@ def circuit_decomposed(weights):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""
@@ -557,34 +523,21 @@ class TestInterfaces:
 
         assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "unitary",
-        [
-            np.array(
-                [
-                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-                ]
-            ),  # complex unitary
-            np.array(
-                [
-                    [-0.22081075, -0.29306608, -0.93024453],
-                    [-0.67705210, -0.64047179, 0.36248634],
-                    [-0.70202783, 0.70986489, -0.05699795],
-                ]
-            ),  # real unitary
-        ],
-    )
     @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     @pytest.mark.jax
-    def test_jax_jit(self, unitary, device_name, tol):
+    def test_jax_jit(self, device_name, tol):
         """Test the jax interface."""
 
         import jax
         import jax.numpy as jnp
 
-        unitary_matrix = jnp.array(unitary)
+        unitary_matrix = jnp.array(
+            [
+                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+            ]
+        )
 
         dev = qml.device(device_name, wires=3)
 
@@ -605,55 +558,6 @@ class TestInterfaces:
         grads2 = grad_fn2(unitary_matrix)
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize(
-        "unitary",
-        [
-            np.array(
-                [
-                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-                ]
-            ),  # complex unitary
-            np.array(
-                [
-                    [-0.22081075, -0.29306608, -0.93024453],
-                    [-0.67705210, -0.64047179, 0.36248634],
-                    [-0.70202783, 0.70986489, -0.05699795],
-                ]
-            ),  # real unitary
-        ],
-    )
-    @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
-    @pytest.mark.catalyst
-    @pytest.mark.external
-    def test_qjit(self, unitary, device_name, tol):
-        """Test with qjit interface."""
-        catalyst = pytest.importorskip("catalyst")
-
-        unitary_matrix = qml.math.array(unitary, like="jax")
-
-        dev = qml.device(device_name, wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-
-        # We compute these results with `null.qubit` even though we won't compare them. This
-        # is to test error-free "execution".
-        res = catalyst.qjit(circuit)(unitary_matrix)
-        res2 = circuit(unitary_matrix)
-        res3 = circuit(qml.math.toarray(unitary_matrix))
-
-        if device_name == "lightning.qubit":
-            assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-            assert qml.math.allclose(res, res3, atol=tol, rtol=0)
-
-        gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
-        circuit_dec = qml.decompose(circuit, gate_set=gate_set)
-        specs = qml.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
-        specs2 = qml.specs(circuit_dec, level="device")(unitary_matrix)
-        assert specs["resources"].gate_types == specs2["resources"].gate_types
-        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
 
     @pytest.mark.slow
     @pytest.mark.tf
