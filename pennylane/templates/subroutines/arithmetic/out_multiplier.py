@@ -25,8 +25,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import change_op_basis, ctrl
-from pennylane.templates.subroutines.arithmetic import CAddSub, SemiAdder
+from pennylane.ops import SWAP, change_op_basis, ctrl
+from pennylane.templates.subroutines.arithmetic import SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -395,6 +395,8 @@ def _out_multiplier_with_adders(
         # Add y wires to shifted output, controlled by current x_wire
         ctrl(SemiAdder(y_wires, output, work_wires=work_wires), control=x_wire)
 
+
+'''
 def _out_multiplier_with_caddsub_resources(
     num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
 ) -> dict:
@@ -407,13 +409,15 @@ def _out_multiplier_with_caddsub_resources(
     resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
     resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
     resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
-    resources[resource_rep(DIVBY2, num_wires=num_output_wires)] += 1
+    resources[resource_rep(SWAP)] += num_output_wires
     return dict(resources)
 
 
 def _out_multiplier_with_caddsub_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
     return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
 
+def _div_by_two(wires):
+    [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
 
 @register_condition(_out_multiplier_with_caddsub_condition)
 @register_resources(_out_multiplier_with_caddsub_resources)
@@ -435,9 +439,11 @@ def _out_multiplier_with_caddsub(
         output = output_wires[max(0, m - (n + 1 + i)) : m - i]
         # Add y wires to shifted output, controlled by current x_wire
         CAddSub(x_wire, y_wires, output, work_wires)
-    SemiAdder(x_wires, output_wires[SLICE] + [work_wires[0]], work_wires[1:]) # TODO: Slice; Add 1!!
-    SemiAdder(y_wires, output_wires[SLICE] + [work_wires[0]], [output_wires[0]] + work_wires[1:]) # TODO: FIGURE OUT THIS STEP
-    SemiAdder(y_wires, output_wires[SLICE] + [work_wires[0]], [output_wires[0]] + work_wires[1:]) # TODO: Slice
-    DIVBY2 # TODO: implement
+    output_with_cache = output_wires + [work_wires[0]]
+    SemiAdder(x_wires, output_with_cache[SLICE], work_wires[1:]) # TODO: Slice; Add 1!!
+    SemiAdder(y_wires, output_with_cache, [output_wires[0]] + work_wires[1:]) # TODO: FIGURE OUT THIS STEP to do -(2^(len(out))+y)
+    SemiAdder(y_wires, output_with_cache[SLICE], [output_wires[0]] + work_wires[1:]) # TODO: Slice
+    _div_by_two(output_with_cache)
 
-add_decomps(OutMultiplier, _out_multiplier_decomposition, _out_multiplier_with_caddsub)
+'''
+add_decomps(OutMultiplier, _out_multiplier_decomposition)  # , _out_multiplier_with_caddsub)
