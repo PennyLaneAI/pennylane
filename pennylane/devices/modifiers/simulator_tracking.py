@@ -204,6 +204,8 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+
         @simulator_tracking
         @single_tape_support
         class MyDevice(qml.devices.Device):
@@ -217,16 +219,21 @@ def simulator_tracking(cls: type) -> type:
     >>> t = qml.tape.QuantumScript(ops, measurements,shots=50)
     >>> with dev.tracker:
     ...     dev.execute((t, ) )
-    >>> dev.tracker.history
+    (0.0,)
+    >>> import pprint
+    >>> pprint.pprint(dev.tracker.history)
     {'batches': [1],
-    'simulations': [1],
-    'executions': [2],
-    'results': [0.0],
-    'shots': [100],
-    'resources': [Resources(num_wires=1, num_gates=1, gate_types=defaultdict(<class 'int'>, {'S': 1}),
-    gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1, shots=Shots(total_shots=50,
-    shot_vector=(ShotCopies(50 shots x 1),)))],
-    'errors': {}}
+     'errors': [{}],
+     'executions': [2],
+     'resources': [SpecsResources(gate_types={'S': 1},
+                                  gate_sizes={1: 1},
+                                  measurements={'expval(PauliX)': 1,
+                                                'expval(PauliZ)': 1},
+                                  num_allocs=1,
+                                  depth=1)],
+     'results': [0.0],
+     'shots': [100],
+     'simulations': [1]}
 
     """
     if not issubclass(cls, Device):

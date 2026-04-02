@@ -828,6 +828,7 @@ The following classes have been ported over:
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
   [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
+  [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
