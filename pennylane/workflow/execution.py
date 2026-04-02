@@ -15,6 +15,7 @@
 Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
+
 from __future__ import annotations
 
 import inspect
@@ -69,7 +70,7 @@ def execute(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
+        device (pennylane.devices.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         diff_method (Optional[str | Transform]): The gradient transform function to use

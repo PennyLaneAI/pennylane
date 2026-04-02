@@ -19,7 +19,7 @@ Pauli Tracker
 
 This module contains functions for tracking, commuting Pauli operations in a Clifford circuit as well as getting measurement corrections.
 
-.. currentmodule:: pennylane.ftqc.pauli_tracker
+.. currentmodule:: pennylane.ftqc
 
 .. autosummary::
     :toctree: api

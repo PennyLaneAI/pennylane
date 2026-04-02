@@ -574,7 +574,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             [qml.expval(qml.PauliZ(0))],
         )
         dev = mock_device_supporting_paulis(wires=1)
-        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
+        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=2)
         qml.assert_equal(expanded_tape, expected_tape)
 
     def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):

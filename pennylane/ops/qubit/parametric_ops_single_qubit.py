@@ -33,9 +33,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
     flip_zero_control,
-    pow_rotation,
+    qjit_compatible_adjoint_rotation,
+    qjit_compatible_pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
@@ -224,8 +224,8 @@ def _rx_to_ppr(phi, wires, **_):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
-add_decomps("Adjoint(RX)", adjoint_rotation)
-add_decomps("Pow(RX)", pow_rotation)
+add_decomps("Adjoint(RX)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(RX)", qjit_compatible_pow_rotation)
 
 
 def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -443,8 +443,8 @@ def _ry_to_ppr(phi, wires, **_):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
-add_decomps("Adjoint(RY)", adjoint_rotation)
-add_decomps("Pow(RY)", pow_rotation)
+add_decomps("Adjoint(RY)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(RY)", qjit_compatible_pow_rotation)
 
 
 def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -710,8 +710,8 @@ def _rz_to_ppr(phi, wires, **_):
 
 
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
-add_decomps("Adjoint(RZ)", adjoint_rotation)
-add_decomps("Pow(RZ)", pow_rotation)
+add_decomps("Adjoint(RZ)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(RZ)", qjit_compatible_pow_rotation)
 
 
 def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -954,8 +954,8 @@ def _cphase_to_ppr(theta, wires, **_):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
-add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
-add_decomps("Pow(PhaseShift)", pow_rotation)
+add_decomps("Adjoint(PhaseShift)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(PhaseShift)", qjit_compatible_pow_rotation)
 add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
@@ -1347,8 +1347,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
-add_decomps("Adjoint(U1)", adjoint_rotation)
-add_decomps("Pow(U1)", pow_rotation)
+add_decomps("Adjoint(U1)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(U1)", qjit_compatible_pow_rotation)
 
 
 class U2(Operation):

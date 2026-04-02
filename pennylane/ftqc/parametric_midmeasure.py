@@ -325,7 +325,7 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
+    mp = measurement_class(wires=wires, meas_uid=measurement_id, **kwargs)
     return MeasurementValue([mp])
 
 
@@ -369,10 +369,15 @@ class ParametricMidMeasure(MidMeasure):
         plane: str | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
         self.batch_size = None
-        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
+        super().__init__(
+            wires=Wires(wires), reset=reset, postselect=postselect, id=id, meas_uid=meas_uid
+        )
         self.hyperparameters["plane"] = plane
         self.hyperparameters["angle"] = angle
 
@@ -404,7 +409,7 @@ class ParametricMidMeasure(MidMeasure):
             self.plane,
             param_hash,
             tuple(self.wires.tolist()),
-            self.id,
+            self.meas_uid,
         )
 
         return hash(fingerprint)
@@ -412,11 +417,11 @@ class ParametricMidMeasure(MidMeasure):
     # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
     def _primitive_bind_call(
-        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
+        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
         wires = () if wires is None else wires
         return cls._primitive.bind(
-            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
+            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, meas_uid=meas_uid
         )
 
     def __repr__(self):
@@ -474,18 +479,33 @@ class XMidMeasure(ParametricMidMeasure):
     _shortname = "measure_x"
 
     def _flatten(self):
-        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        metadata = (
+            ("reset", self.reset),
+            ("postselect", self.postselect),
+            ("meas_uid", self.meas_uid),
+            ("id", self._id),
+        )
         return (), (self.wires, metadata)
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
-            wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
+            wires=Wires(wires),
+            angle=0,
+            plane="XY",
+            reset=reset,
+            postselect=postselect,
+            id=id,
+            meas_uid=meas_uid,
         )
 
     def __repr__(self):
@@ -528,16 +548,25 @@ class YMidMeasure(ParametricMidMeasure):
     _shortname = "measure_y"
 
     def _flatten(self):
-        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        metadata = (
+            ("reset", self.reset),
+            ("postselect", self.postselect),
+            ("meas_uid", self.meas_uid),
+            ("id", self._id),
+        )
         return (), (self.wires, metadata)
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
+        meas_uid: str | None = None,
         id: str | None = None,
     ):
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=np.pi / 2,
@@ -545,6 +574,7 @@ class YMidMeasure(ParametricMidMeasure):
             reset=reset,
             postselect=postselect,
             id=id,
+            meas_uid=meas_uid,
         )
 
     def __repr__(self):
@@ -703,26 +733,25 @@ def diagonalize_mcms(tape):
     curr_idx = 0
 
     for i, op in enumerate(tape.operations):
-
         if i != curr_idx:
             continue
 
         if isinstance(op, ParametricMidMeasure):
-
             # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
             new_operations.extend(diag_gates)
 
             # add computational basis MCM to tape
             with QueuingManager.stop_recording():
-                new_mp = MidMeasure(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
+                new_mp = MidMeasure(
+                    op.wires, reset=op.reset, postselect=op.postselect, meas_uid=op.meas_uid
+                )
             new_operations.append(new_mp)
 
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
 
         elif isinstance(op, Conditional):
-
             # from MCM mapping, map any MCMs in the condition if needed
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
 
@@ -758,7 +787,10 @@ def diagonalize_mcms(tape):
                     ]
 
                     new_mp = MidMeasure(
-                        op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+                        op.wires,
+                        reset=op.base.reset,
+                        postselect=op.base.postselect,
+                        meas_uid=op.base.meas_uid,
                     )
 
                 new_operations.extend(diag_gates_true)

@@ -63,7 +63,7 @@ class AQFT(Operation):
             return qml.state()
 
 
-    >>> circuit_aqft()
+    >>> np.round(circuit_aqft(), 8)
     array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
         -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 

@@ -24,7 +24,7 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.decomposition import gate_sets
+from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
@@ -594,7 +594,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         if expand_state_prep:  # expand mid-circuit StatePrepBase operations
             [circuit], _ = decompose(
                 circuit,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+                gate_set=GateSet(self.operations),
                 stopping_condition=lambda op: not isinstance(op, StatePrepBase),
             )
 
@@ -607,7 +607,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         )
         [circuit], _ = decompose(
             circuit,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            gate_set=GateSet(self.operations),
             max_expansion=max_expansion,
             stopping_condition=self.stopping_condition,
         )

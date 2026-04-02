@@ -63,7 +63,7 @@ def draw(
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -432,7 +432,7 @@ def draw_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:

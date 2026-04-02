@@ -61,7 +61,7 @@ def to_ppr_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -71,9 +71,7 @@ def to_ppr_setup_inputs():
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -86,26 +84,23 @@ def to_ppr_setup_inputs():
     To inspect programs compiled with ``to_ppr`` via :func:`~.specs`, ensure that ``target="mlir"``
     is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 2
+    Level: to-ppr
     <BLANKLINE>
-    Resource specifications:
-        Total wire allocations: 2
-        Total gates: 11
-        Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        GlobalPhase: 3
-        PPR-pi/4-w1: 5
-        PPR-pi/4-w2: 1
-        PPM-w1: 1
-        PPR-pi/8-w1: 1
-    <BLANKLINE>
+    Wire allocations: 2
+    Total gates: 11
+    Gate counts:
+    - GlobalPhase: 3
+    - PPR-pi/4-w1: 5
+    - PPR-pi/4-w2: 1
+    - PPM-w1: 1
+    - PPR-pi/8-w1: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -155,7 +150,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -166,9 +161,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.commute_ppr(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -192,24 +185,21 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``commute_ppr`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: commute-ppr
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 2
+    Wire allocations: 2
     Total gates: 7
-    Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        PPR-pi/8-w1: 1
-        PPR-pi/4-w1: 5
-        PPR-pi/4-w2: 1
-    <BLANKLINE>
+    Gate counts:
+    - PPR-pi/8-w1: 1
+    - PPR-pi/4-w1: 5
+    - PPR-pi/4-w2: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
     of :math:`\tfrac{\pi}{2}`) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
@@ -269,7 +259,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -280,9 +270,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.merge_ppr_ppm(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -297,22 +285,19 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: merge-ppr-ppm
     <BLANKLINE>
-    Resource specifications:
-        Total wire allocations: 2
-        Total gates: 1
-        Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        PPM-w2: 1
-    <BLANKLINE>
+    Wire allocations: 2
+    Total gates: 1
+    Gate counts:
+    - PPM-w2: 1
     Measurements:
-        No measurements.
+    - No measurements.
+    Depth: Not computed
 
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped. In the above output, ``PPM-w<int>`` denotes the PPM weight (the
@@ -377,7 +362,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -389,9 +374,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
         from functools import partial
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.ppr_to_ppm(decompose_method="auto-corrected")
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
@@ -414,27 +397,24 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: ppr-to-ppm
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 9
+    Wire allocations: 9
     Total gates: 24
-    Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        PPM-w2: 7
-        PPM-w1: 8
-        PPM-w3: 1
-        PPR-pi/2-w1: 6
-        PPR-pi/2-w2: 1
-        qec.fabricate: 1
-    <BLANKLINE>
+    Gate counts:
+    - PPM-w2: 7
+    - PPM-w1: 8
+    - PPM-w3: 1
+    - PPR-pi/2-w1: 6
+    - PPR-pi/2-w2: 1
+    - pbc.fabricate: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -505,7 +485,7 @@ def ppm_compilation_setup_inputs(
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -515,9 +495,7 @@ def ppm_compilation_setup_inputs(
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.ppm_compilation(decompose_method="clifford-corrected", max_pauli_size=2)
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -529,28 +507,25 @@ def ppm_compilation_setup_inputs(
     To inspect programs compiled with ``ppm_compilation`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qml.specs(circuit, level=1)())
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 2
+    Level: ppm-compilation
     <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 8
+    Wire allocations: 8
     Total gates: 25
-    Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        GlobalPhase: 3
-        qec.fabricate: 1
-        PPM-w2: 6
-        PPM-w1: 7
-        PPM-w3: 1
-        PPR-pi/2-w1: 6
-        PPR-pi/2-w2: 1
-    <BLANKLINE>
+    Gate counts:
+    - GlobalPhase: 3
+    - pbc.fabricate: 1
+    - PPM-w2: 6
+    - PPM-w1: 7
+    - PPM-w3: 1
+    - PPR-pi/2-w1: 6
+    - PPR-pi/2-w2: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -608,7 +583,7 @@ def reduce_t_depth_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -627,9 +602,7 @@ def reduce_t_depth_setup_inputs():
         import pennylane as qml
         import jax.numpy as jnp
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.reduce_t_depth
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=4))
@@ -706,7 +679,7 @@ def decompose_arbitrary_ppr_setup_inputs():
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
-        capture is enabled with :func:`pennylane.capture.enable`.
+        capture is enabled with `@qjit(capture=True)`.
 
     **Example**
 
@@ -719,9 +692,7 @@ def decompose_arbitrary_ppr_setup_inputs():
 
         import pennylane as qml
 
-        qml.capture.enable()
-
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", capture=True)
         @qml.transforms.decompose_arbitrary_ppr
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=3))
@@ -729,27 +700,24 @@ def decompose_arbitrary_ppr_setup_inputs():
             qml.PauliRot(0.1, pauli_word="XY", wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.specs(circuit, level=3)())
+    >>> print(qml.specs(circuit, level=2)())
     Device: null.qubit
     Device wires: 3
     Shots: Shots(total=None)
-    Level: 3
+    Level: decompose-arbitrary-ppr
     <BLANKLINE>
-    Resource specifications:
-      Total wire allocations: 4
-      Total gates: 6
-      Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-      qec.prepare: 1
-      PPM-w3: 1
-      PPM-w1: 1
-      PPR-pi/2-w1: 1
-      PPR-pi/2-w2: 1
-      PPR-Phi-w1: 1
-    <BLANKLINE>
+    Wire allocations: 3
+    Total gates: 6
+    Gate counts:
+    - pbc.prepare: 1
+    - PPM-w3: 1
+    - PPM-w1: 1
+    - PPR-pi/2-w1: 1
+    - PPR-pi/2-w2: 1
+    - PPR-Phi-w1: 1
     Measurements:
-        expval(PauliZ): 1
+    - expval(PauliZ): 1
+    Depth: Not computed
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
@@ -762,4 +730,30 @@ def decompose_arbitrary_ppr_setup_inputs():
 
 decompose_arbitrary_ppr = transform(
     pass_name="decompose-arbitrary-ppr", setup_inputs=decompose_arbitrary_ppr_setup_inputs
+)
+
+
+def decompose_clifford_ppr_setup_inputs():
+    """
+    Decompose the PPR (pi/4) into PPR and PPM operations via flattening method
+    as described in Figure 11(b) in the paper: `arXiv:1808.02892 <https://arxiv.org/abs/1808.02892>`_.
+    """
+    return (), {}
+
+
+decompose_clifford_ppr = transform(
+    pass_name="decompose-clifford-ppr", setup_inputs=decompose_clifford_ppr_setup_inputs
+)
+
+
+def decompose_non_clifford_ppr_setup_inputs():
+    """
+    Decompose the Non-Clifford (pi/8) PPR into PPR and PPM operations via Pauli-corrected method
+    as described in Figure 13(a) in the paper: `arXiv:2211.15465 <https://arxiv.org/pdf/2211.15465>`_.
+    """
+    return (), {}
+
+
+decompose_non_clifford_ppr = transform(
+    pass_name="decompose-non-clifford-ppr", setup_inputs=decompose_non_clifford_ppr_setup_inputs
 )

@@ -200,6 +200,7 @@ class TestInputs:
             weights = np.random.randn(2, 1, 2)
             circuit(initial_layer, weights)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         weights = np.random.random(size=(1, 2, 2))

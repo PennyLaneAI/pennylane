@@ -80,3 +80,19 @@ def test_about_shows_editable_location(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Editable project location: /tmp/pl" in out
     assert re.search(r"Location:\s*/site-packages/pennylane", out)
+
+
+def test_catalyst_version(monkeypatch):
+    """Tests the catalyst_version function."""
+    about = importlib.import_module("pennylane.about")
+
+    # Test when catalyst is not found
+    monkeypatch.setattr(about, "find_spec", lambda name: None if name == "catalyst" else True)
+    assert about.catalyst_version() is None
+
+    # Test when catalyst is found but version is not available
+    monkeypatch.setattr(about, "find_spec", lambda name: True)
+    monkeypatch.setattr(
+        about, "version", lambda name: "0.1.0" if name == "pennylane_catalyst" else None
+    )
+    assert about.catalyst_version() == "0.1.0"

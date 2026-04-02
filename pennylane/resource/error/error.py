@@ -202,7 +202,7 @@ def algo_error(
         qnode (.QNode): the QNode to calculate the algorithmic errors for.
 
         level (str | int | slice | iter[int]): An indication of which transforms to apply before computing the errors.
-            See :func:`~pennylane.workflow.get_transform_program` for more information about allowable levels.
+            See :func:`~pennylane.workflow.get_compile_pipeline` for more information about allowable levels.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,

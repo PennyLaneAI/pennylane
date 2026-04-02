@@ -44,9 +44,15 @@ def zyz_rotation_angles(U, return_global_phase=False):
     """
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
-    # assume U = [[a, b], [c, d]], then here we take U[0, 1] as b
+
+    # The matrix is [[a, b],[c, d]], where a = cos(theta)*exp(i...)
+    # and b = sin(theta)*exp(i...). Taking the magnitude of a and b
+    # we get |b| = sin(theta) and |a| = cos(theta). We can use either
+    # one to find theta, but the most numerically robust approach
+    # is to use arctan2 so that both matrix elements are used.
+    abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = 2 * math.arcsin(abs_b)
+    theta = 2 * math.arctan2(abs_b, abs_a)
 
     EPS = math.finfo(U.dtype).eps
     half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
@@ -55,7 +61,8 @@ def zyz_rotation_angles(U, return_global_phase=False):
     phi = half_phi_plus_omega - half_omega_minus_phi
     omega = half_phi_plus_omega + half_omega_minus_phi
 
-    # Normalize the angles
+    # Normalize the angles. The convention that we take in PennyLane is that the
+    # rotation angles are in the range [0, 4pi)
     phi = math.squeeze(phi % (4 * np.pi))
     theta = math.squeeze(theta % (4 * np.pi))
     omega = math.squeeze(omega % (4 * np.pi))
@@ -80,22 +87,15 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
-    EPS = math.finfo(U.dtype).eps
-    half_lam_plus_phi = math.arctan2(-math.imag(U[..., 0, 1]), math.real(U[..., 0, 0]) + EPS)
-    half_lam_minus_phi = math.arctan2(math.imag(U[..., 0, 0]), -math.real(U[..., 0, 1]) + EPS)
-    lam = half_lam_plus_phi + half_lam_minus_phi
-    phi = half_lam_plus_phi - half_lam_minus_phi
+    # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
+    # and C^T @ RY @ C = RY. Therefore, consider U = RX @ RY @ RX, we find that
+    # C^T U C = C^T RX C C^T RY C C^T RX C = RZ RY RZ. Therefore, we can apply this
+    # basis transform to the original U, and obtain the ZYZ decomposition of the
+    # transformed matrix, we get the same rotation angles for the XYX matrix.
+    C = math.cast_like(math.array([[1, -1], [1, 1]]) / np.sqrt(2), U)
+    U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    theta = math.where(
-        math.isclose(math.sin(half_lam_plus_phi), math.zeros_like(half_lam_plus_phi)),
-        2 * math.arccos(math.clip(math.real(U[..., 1, 1]) / math.cos(half_lam_plus_phi), -1, 1)),
-        2 * math.arccos(math.clip(-math.imag(U[..., 0, 1]) / math.sin(half_lam_plus_phi), -1, 1)),
-    )
-
-    phi = math.squeeze(phi % (4 * np.pi))
-    theta = math.squeeze(theta % (4 * np.pi))
-    lam = math.squeeze(lam % (4 * np.pi))
-
+    lam, theta, phi = zyz_rotation_angles(U)
     return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
 
 
@@ -115,36 +115,16 @@ def xzx_rotation_angles(U, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-    EPS = math.finfo(U.dtype).eps
 
-    # Compute \phi, \theta and \lambda after analytically solving for them from
-    # U = RX(\phi) RZ(\theta) RX(\lambda)
-    sum_diagonal_real = math.real(U[..., 0, 0] + U[..., 1, 1])
-    sum_off_diagonal_imag = math.imag(U[..., 0, 1] + U[..., 1, 0])
-    half_phi_plus_lambdas = math.arctan2(-sum_off_diagonal_imag, sum_diagonal_real + EPS)
-    diff_diagonal_imag = math.imag(U[..., 0, 0] - U[..., 1, 1])
-    diff_off_diagonal_real = math.real(U[..., 0, 1] - U[..., 1, 0])
-    half_phi_minus_lambdas = math.arctan2(diff_off_diagonal_real, -diff_diagonal_imag + EPS)
-    lam = half_phi_plus_lambdas - half_phi_minus_lambdas
-    phi = half_phi_plus_lambdas + half_phi_minus_lambdas
+    # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
+    # and C^T @ RZ @ C = RY. Therefore, consider U = RX @ RZ @ RX, we find that
+    # C^T U C = C^T RX C C^T RZ C C^T RX C = RZ RY RZ. Therefore, we can apply this
+    # basis transform to the original U, and obtain the ZYZ decomposition of the
+    # transformed matrix, we get the same rotation angles for the XYX matrix.
+    C = math.cast_like(math.array([[1, -1j], [1, 1j]]) / np.sqrt(2), U)
+    U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    # Compute \theta
-    theta = math.where(
-        math.isclose(math.sin(half_phi_plus_lambdas), math.zeros_like(half_phi_plus_lambdas)),
-        2
-        * math.arccos(
-            math.clip(sum_diagonal_real / (2 * math.cos(half_phi_plus_lambdas) + EPS), -1, 1)
-        ),
-        2
-        * math.arccos(
-            math.clip(-sum_off_diagonal_imag / (2 * math.sin(half_phi_plus_lambdas) + EPS), -1, 1)
-        ),
-    )
-
-    phi = math.squeeze(phi % (4 * np.pi))
-    theta = math.squeeze(theta % (4 * np.pi))
-    lam = math.squeeze(lam % (4 * np.pi))
-
+    lam, theta, phi = zyz_rotation_angles(U)
     return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
 
 
@@ -164,12 +144,12 @@ def zxz_rotation_angles(U, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-    EPS = math.finfo(U.dtype).eps
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = math.where(abs_a < abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
+    theta = 2 * math.arctan2(abs_b, abs_a)
 
+    EPS = math.finfo(U.dtype).eps
     half_phi_plus_lam = math.angle(U[..., 1, 1] + EPS)
     half_phi_minus_lam = math.angle(1j * U[..., 1, 0] + EPS)
 
@@ -278,8 +258,9 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     return R
 
 
-def _set_unitary_matrix(unitary_matrix, index, value, like=None):
-    """Set the values in the ``unitary_matrix`` at the specified index.
+def _set_unitary_matrix(unitary_matrix, index, value, like=None, real_valued=False):
+    """Set the values in the ``unitary_matrix`` at the specified index. Modifies the input matrix
+    in place if no compiler is active, but not if ``qjit`` or ``jax.jit`` is used.
 
     Args:
         unitary_matrix (tensor_like): unitary being modified
@@ -298,11 +279,16 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     """
     if like is None:
         like = math.get_interface(unitary_matrix)
+    if real_valued:
+        value = math.real(value, like=like)
 
     if like == "jax":
-        return unitary_matrix.at[index[0], index[1]].set(
-            value, indices_are_sorted=True, unique_indices=True
+        z = math.zeros_like(unitary_matrix, like=like)
+        z = z.at[index[0], index[1]].set(
+            value - unitary_matrix[index[0], index[1]], indices_are_sorted=True, unique_indices=True
         )
+        unitary_matrix = unitary_matrix + z
+        return unitary_matrix
 
     unitary_matrix[index[0], index[1]] = value
     return unitary_matrix
@@ -450,8 +436,12 @@ def _absorb_phases_so(left_givens, right_givens, phases):
         grot_mat, (i, j) = last_rotations[k]
 
         ph0 = math.sign(phases[j, j]) if mod else math.sign(phases[i, i])
-        phases = _set_unitary_matrix(phases, (i, i), ph0 * phases[i, i], like=interface)
-        phases = _set_unitary_matrix(phases, (j, j), ph0 * phases[j, j], like=interface)
+        phases = _set_unitary_matrix(
+            phases, (i, i), ph0 * phases[i, i], like=interface, real_valued=True
+        )
+        phases = _set_unitary_matrix(
+            phases, (j, j), ph0 * phases[j, j], like=interface, real_valued=True
+        )
         grot_mat = ph0 * grot_mat
         ph1 = phases[i, i] if mod else phases[j, j]
         if interface == "jax":
@@ -508,7 +498,9 @@ def _commute_phases_u(left_givens, right_givens, phases):
             grot_mat[1, 1] / abs_c * phases[j, j],
         ]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
-            phases = _set_unitary_matrix(phases, diag_idx, diag_val, like=interface)
+            phases = _set_unitary_matrix(
+                phases, diag_idx, diag_val, like=interface, real_valued=False
+            )
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
 
@@ -538,7 +530,11 @@ def _right_givens_core(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True, real_valued=real_valued)
     unitary = _set_unitary_matrix(
-        unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+        unitary,
+        (Ellipsis, indices),
+        unitary[:, indices] @ grot_mat.T,
+        like=interface,
+        real_valued=real_valued,
     )
     return unitary, math.conj(grot_mat)
 
@@ -564,7 +560,11 @@ def _left_givens_core(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=real_valued)
     unitary = _set_unitary_matrix(
-        unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+        unitary,
+        (indices, Ellipsis),
+        grot_mat @ unitary[indices, :],
+        like=interface,
+        real_valued=real_valued,
     )
     return unitary, grot_mat
 

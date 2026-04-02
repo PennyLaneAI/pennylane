@@ -342,6 +342,7 @@ class TestInputs:
                 doubles=doubles,
             )
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AllSinglesDoubles(

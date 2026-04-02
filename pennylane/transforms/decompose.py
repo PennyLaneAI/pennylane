@@ -24,8 +24,14 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
+from pennylane.decomposition import (
+    DecompositionGraph,
+    GateSet,
+    enabled_graph,
+    gate_sets,
+)
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
@@ -119,6 +125,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._gate_set = gate_set
             self.stopping_condition = stopping_condition
             self._strict = strict
+            self.subroutine_cache = {}
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -191,7 +198,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             args = (*op.parameters, *op.wires)
 
-            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
+            kwargs = get_decomp_kwargs(op)
+            decomp_fn = partial(compute_qfunc_decomposition, **kwargs)
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
             self._current_depth += 1
@@ -227,6 +235,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                     operations = collector.state["ops"]
 
                 if operations:
+                    operations = [op for op in operations if not self.stopping_condition(op)]
                     self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
@@ -752,8 +761,9 @@ def decompose(
     decomp_graph_solution = None
 
     if enabled_graph():
+        unsupported_ops = [op for op in tape.operations if not stopping_condition(op)]
         decomp_graph_solution = _construct_and_solve_decomp_graph(
-            tape.operations,
+            unsupported_ops,
             gate_set,
             num_work_wires=num_work_wires,
             minimize_work_wires=minimize_work_wires,
@@ -850,8 +860,9 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
+        kwargs = get_decomp_kwargs(op)
         with queuing.AnnotatedQueue() as decomposed_ops:
-            op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            op_rule(*op.parameters, wires=op.wires, **kwargs)
         decomp = decomposed_ops.queue
         if num_work_wires is not None:
             num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total

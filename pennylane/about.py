@@ -46,6 +46,13 @@ def _pkg_location():
         return "(unknown)"
 
 
+def catalyst_version() -> str | None:
+    """Get the version of the installed Catalyst package, if available."""
+    if find_spec("catalyst"):
+        return version("pennylane_catalyst")
+    return None
+
+
 def about():
     """
     Prints the information for pennylane installation.
@@ -104,6 +111,10 @@ def about():
     print(f"Scipy version:           {scipy.__version__}")
     print(f"JAX version:             {jax_version}")
 
+    # Compiler information
+    print(f"Catalyst version:        {catalyst_version()}")
+
+    # Plugin devices
     print("Installed devices:")
 
     for d in plugin_devices:

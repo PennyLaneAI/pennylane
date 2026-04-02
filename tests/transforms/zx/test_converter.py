@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import DecompositionWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
@@ -380,7 +380,11 @@ class TestConvertersZX:
             QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            qml.transforms.to_zx(qs)
+            if qml.decomposition.enabled_graph():
+                with pytest.warns(DecompositionWarning):
+                    qml.transforms.to_zx(qs)
+            else:
+                qml.transforms.to_zx(qs)
 
     def test_same_type_nodes_simple_edge(self):
         """Test that a Green-Green nodes with simple edge has no corresponding circuit."""

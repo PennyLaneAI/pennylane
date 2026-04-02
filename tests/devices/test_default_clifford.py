@@ -22,7 +22,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
 
@@ -668,7 +668,11 @@ def test_clifford_error(check):
         DeviceError,
         match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
-        circuit()
+        if qml.decomposition.enabled_graph() and check:
+            with pytest.warns(DecompositionWarning):
+                circuit()
+        else:
+            circuit()
 
 
 def test_meas_error_noisy():
@@ -739,3 +743,36 @@ def test_fail_import_stim(monkeypatch):
         m.setattr(qml.devices.default_clifford, "has_stim", False)
         with pytest.raises(ImportError, match="This feature requires stim"):
             qml.device("default.clifford")
+
+
+def test_basis_state_large_wires():
+    """Test that BasisState works with a large number of wires without crashing.
+
+    This ensures that BasisState uses the efficient Clifford decomposition
+    instead of expanding the full state vector (which would cause OOM for 64 wires).
+    """
+    # 64 wires would usually crash without the fix(usually more than 30)
+    dev = qml.device("default.clifford", wires=64, tableau=True)
+
+    @qml.qnode(dev)
+    def circuit():
+        # This should now use the efficient decomposition
+        qml.BasisState(np.zeros(64), wires=range(64))
+        return qml.expval(qml.Z(0))
+
+    res = circuit()
+    assert qml.math.isclose(res, 1.0)
+
+
+def test_state_prep_coverage():
+    """Test that StatePrep falls back to Tableau.from_state_vector."""
+    dev = qml.device("default.clifford", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        # Prepare the |1> state using a dense state vector
+        qml.StatePrep(np.array([0.0, 1.0]), wires=[0])
+        return qml.expval(qml.Z(0))
+
+    res = circuit()
+    assert qml.math.isclose(res, -1.0)

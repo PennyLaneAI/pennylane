@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
+    _get_alpha_z,
     compute_theta,
     gray_code,
     mottonen_decomp,
@@ -105,6 +106,40 @@ class TestHelpers:
         res = _get_alpha_y(state, 3, current_qubit)
         assert np.allclose(res, expected, atol=tol)
 
+    @pytest.mark.parametrize("current_qubit", [1, 2, 3, 4])
+    def test_get_alpha_y_batch(self, current_qubit, seed):
+        """Test that _get_alpha_y returns the same results with and without batching."""
+
+        rng = np.random.default_rng(seed)
+        state = rng.random((7, 2**5))
+        state /= np.linalg.norm(state, axis=-1)[:, None]
+        res_batched = _get_alpha_y(state, 5, current_qubit)
+        res_single = [_get_alpha_y(s, 5, current_qubit) for s in state]
+        assert np.allclose(res_batched, res_single)
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_get_alpha_z(self, n, seed, tol):
+        """Test the _get_alpha_z helper function."""
+        np.random.seed(seed)
+        omega = np.random.random(2**n)
+        running_omega = omega.copy()
+        for k in range(1, n + 1):
+            res = _get_alpha_z(omega, n, k)
+            expected = running_omega[1::2] - running_omega[::2]
+            assert np.allclose(res, expected, atol=tol)
+            running_omega = (running_omega[1::2] + running_omega[::2]) / 2
+
+    @pytest.mark.parametrize("current_qubit", [1, 2, 3, 4])
+    def test_get_alpha_z_batch(self, current_qubit, seed):
+        """Test that _get_alpha_z returns the same results with and without batching."""
+
+        rng = np.random.default_rng(seed)
+        state = rng.random((7, 2**5))
+        state /= np.linalg.norm(state, axis=-1)[:, None]
+        res_batched = _get_alpha_z(state, 5, current_qubit)
+        res_single = [_get_alpha_z(s, 5, current_qubit) for s in state]
+        assert np.allclose(res_batched, res_single)
+
     @pytest.mark.parametrize("batch_dim", [None, 1, 5, 10])
     @pytest.mark.parametrize("n", list(range(1, 11)))
     def test_compute_theta(self, n, batch_dim):
@@ -142,9 +177,9 @@ fixed_states = (
         5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j,
     ],
 )
+
 # fmt: on
 decomposition_test_cases = [
-    ([1, 0], 0, np.eye(8)[0]),
     ([1, 0], [0], np.eye(8)[0]),
     ([1, 0], [1], np.eye(8)[0]),
     ([1, 0], [2], np.eye(8)[0]),
@@ -154,7 +189,9 @@ decomposition_test_cases = [
     ([0, 1, 0, 0], [0, 1], np.eye(8)[2]),
     ([0, 0, 0, 1], [0, 2], np.eye(8)[5]),
     ([0, 0, 0, 1], [1, 2], np.eye(8)[3]),
+    ([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0]], [0, 1], np.eye(8)[np.array([2, 6, 0])]),
     (np.eye(8)[0], [0, 1, 2], np.eye(8)[0]),
+    (np.eye(8), [0, 1, 2], np.eye(8)),
     (1j * np.eye(8)[4], [0, 1, 2], 1j * np.eye(8)[4]),
     (x := np.array([1, 0, 0, 0, 1, 1j, -1, 0]) / 2, [0, 1, 2], x),
     (x := np.array([1, 0, 0, 0, 2j, 2j, 0, 0]) / 3, [0, 1, 2], x),
@@ -166,6 +203,12 @@ decomposition_test_cases = [
     (fixed_states[3], [0, 1, 2], fixed_states[3]),
     (x := np.array([1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]), [0, 1, 2], x),
     (np.array([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)]), [0, 1], x),
+    (np.array(fixed_states), [0, 1, 2], fixed_states),
+    (
+        D := np.diag(np.exp(1j * np.array([0.2, 0.5, -0.27, 0.73, 0.7, 0.2, -3.1, 0.1]))),
+        [0, 1, 2],
+        D,
+    ),
 ]
 
 
@@ -194,17 +237,9 @@ class TestDecomposition:
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return (
-                qml.expval(qml.PauliZ(0)),
-                qml.expval(qml.PauliZ(1)),
-                qml.expval(qml.PauliZ(2)),
-                qml.probs(),
-            )
+            return qml.probs()
 
-        results = circuit()
-
-        probabilities = results[-1].ravel()
-
+        probabilities = circuit()
         target_probabilities = np.abs(target_state) ** 2
 
         assert np.allclose(probabilities, target_probabilities, atol=tol, rtol=0)
@@ -222,6 +257,7 @@ class TestDecomposition:
             ([1 / 2, 0, 0, 0, 1 / 2, 1 / 2, 1 / 2, 0], 3),
             ([1 / 3, 0, 0, 0, 2 / 3, 2 / 3, 0, 0], 3),
             ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
+            ([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]], 3),
         ],
     )
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
@@ -265,18 +301,6 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
-
-    def test_batched_decomposition_fails(self):
-        """Test that attempting to decompose a MottonenStatePreparation operation with
-        broadcasting raises an error."""
-        state = np.array([[1 / 2, 1 / 2, 1 / 2, 1 / 2], [0.0, 0.0, 0.0, 1.0]])
-
-        op = qml.MottonenStatePreparation(state, wires=[0, 1])
-        with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
-            _ = op.decomposition()
-
-        with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
-            _ = qml.MottonenStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
 
     def test_decomposition_includes_global_phase(self):
         """Test that the decomposition includes the correct global phase."""
@@ -375,7 +399,7 @@ class TestInputs:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(ValueError, match="State vectors have to be of norm"):
+        with pytest.raises(ValueError, match="state_vector has to be of norm"):
             qml.MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -389,7 +413,7 @@ class TestInputs:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(ValueError, match="State vectors must be of (length|shape)"):
+        with pytest.raises(ValueError, match="state_vector must have a last axis"):
             qml.MottonenStatePreparation(state_vector, wires)
 
     @pytest.mark.parametrize(
@@ -403,9 +427,10 @@ class TestInputs:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
 
-        with pytest.raises(ValueError, match="State vectors must be one-dimensional"):
+        with pytest.raises(ValueError, match="state_vector must be one-dimensional"):
             qml.MottonenStatePreparation(state_vector, 2)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")

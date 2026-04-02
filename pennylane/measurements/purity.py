@@ -79,7 +79,7 @@ def purity(wires) -> PurityMP:
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.mixed", wires=2)
 
@@ -91,8 +91,8 @@ def purity(wires) -> PurityMP:
             qml.BitFlip(p, wires=1)
             return qml.purity(wires=[0,1])
 
-    >>> circuit_purity(0.1)
-    array(0.7048)
+    >>> print(circuit_purity(0.1))
+    0.7048...
 
     .. seealso:: :func:`pennylane.math.purity`
     """
