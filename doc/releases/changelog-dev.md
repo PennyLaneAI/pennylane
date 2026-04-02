@@ -7,8 +7,8 @@
   arithmetic circuits.
   [(#9240)](https://github.com/PennyLaneAI/pennylane/pull/9240)
 
-  As an example, we compute the sum and the difference of two integers :math:`x=3` and
-  :math:`y=7` in superposition:
+  As an example, we compute the sum and the difference of two integers :math:`x=5` and
+  :math:`y=13` in superposition:
   
   ```python
   import pennylane as qml
@@ -34,7 +34,8 @@
   ```
 
   As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
-  the time each.
+  the time each, where the modulus is given by :math:`2^n`, with :math:`n` the number of 
+  bits storing :math:`y`.
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
@@ -197,6 +198,9 @@ The following classes have been ported over:
 * Added a decomposition of :class:`~.OutMultiplier` that is significantly cheaper when
   auxiliary wires are available.
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
+* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
+  [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
 * Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
   wires elsewhere in PennyLane, and that was not taken into account in the resource functions
