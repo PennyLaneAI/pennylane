@@ -16,7 +16,6 @@ The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
 
-
 import inspect
 import logging
 from dataclasses import replace

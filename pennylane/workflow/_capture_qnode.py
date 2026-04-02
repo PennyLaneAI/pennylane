@@ -74,6 +74,7 @@ not even started thinking about how it might be possible to do so.
 features is non-exhaustive.
 
 """
+
 import logging
 from collections.abc import Sequence
 from functools import partial

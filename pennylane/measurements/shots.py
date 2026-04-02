@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
+
 from collections.abc import Sequence
 from typing import NamedTuple
 

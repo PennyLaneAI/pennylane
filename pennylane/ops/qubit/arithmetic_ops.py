@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
+
 from collections import Counter
 
 # pylint: disable=arguments-differ

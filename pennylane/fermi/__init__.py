@@ -14,6 +14,5 @@
 """A module containing utility functions and reduced representation classes for working with
 fermionic operators."""
 
-
 from .conversion import bravyi_kitaev, jordan_wigner, parity_transform
 from .fermionic import FermiA, FermiC, FermiSentence, FermiWord, from_string

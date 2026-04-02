@@ -14,6 +14,7 @@
 r"""
 Contains the ``layer`` template constructor.
 """
+
 from pennylane import math
 
 

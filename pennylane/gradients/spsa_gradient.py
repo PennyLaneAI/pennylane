@@ -15,6 +15,7 @@
 This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
+
 from functools import partial
 
 import numpy as np

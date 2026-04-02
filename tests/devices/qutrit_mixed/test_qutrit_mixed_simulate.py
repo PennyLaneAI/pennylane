@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for simulate in devices/qutrit_mixed."""
+
 import numpy as np
 import pytest
 from dummy_debugger import Debugger

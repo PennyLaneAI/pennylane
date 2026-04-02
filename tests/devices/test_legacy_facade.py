@@ -312,15 +312,13 @@ def test_mcm_resolution_when_supported():
 @pytest.mark.usefixtures("create_temporary_toml_file")
 @pytest.mark.parametrize(
     "create_temporary_toml_file",
-    [
-        """
+    ["""
         schema = 3
 
         [compilation]
 
         supported_mcm_methods = ["one-shot"]
-        """
-    ],
+        """],
     indirect=True,
 )
 def test_mcm_resolution_toml_present(request):

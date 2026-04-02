@@ -14,6 +14,7 @@
 """
 Pure function implementations for the expectation value functions.
 """
+
 from collections.abc import Callable
 from dataclasses import dataclass
 

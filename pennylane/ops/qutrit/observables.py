@@ -14,6 +14,7 @@
 """
 This submodule contains the qutrit quantum observables.
 """
+
 import numpy as np
 
 import pennylane as qml

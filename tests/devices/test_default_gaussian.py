@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
+
 # pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
 import numpy as np

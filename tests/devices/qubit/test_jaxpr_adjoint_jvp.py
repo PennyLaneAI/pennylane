@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test for default.qubits adjoint execute_and_jvp method."""
+
 from functools import partial
 
 import pytest

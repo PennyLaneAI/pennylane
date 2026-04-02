@@ -14,6 +14,7 @@
 """
 Utility functions for generating gates, observables, and analyzing circuits for the Phox simulator.
 """
+
 from itertools import combinations
 
 import networkx as nx

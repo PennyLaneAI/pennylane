@@ -14,6 +14,7 @@
 """
 Unit tests for the SpecialUnitary operation and its utility functions.
 """
+
 # pylint:disable=import-outside-toplevel
 from functools import partial
 

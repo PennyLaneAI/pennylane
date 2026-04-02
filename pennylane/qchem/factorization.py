@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
+
 from functools import partial
 
 import numpy as np

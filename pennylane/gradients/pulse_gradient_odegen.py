@@ -15,6 +15,7 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+
 from functools import partial
 
 import numpy as np

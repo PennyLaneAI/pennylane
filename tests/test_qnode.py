@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
+
 import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member

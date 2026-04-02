@@ -14,6 +14,7 @@
 """
 Tests for capturing vjp into jaxpr.
 """
+
 from functools import partial
 
 import pytest

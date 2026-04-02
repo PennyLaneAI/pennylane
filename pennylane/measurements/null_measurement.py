@@ -15,6 +15,7 @@
 """
 This module contains the NullMeasurement class.
 """
+
 import numpy as np
 
 from .measurements import SampleMeasurement, StateMeasurement

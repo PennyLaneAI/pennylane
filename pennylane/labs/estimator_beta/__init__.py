@@ -63,6 +63,7 @@ Alternate Decompositions
     ~hadamard_toffoli_based_controlled_decomp
 
 """
+
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 

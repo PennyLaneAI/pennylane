@@ -14,6 +14,7 @@
 """
 This module contains the commands for allocating and deallocating wires dynamically.
 """
+
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal

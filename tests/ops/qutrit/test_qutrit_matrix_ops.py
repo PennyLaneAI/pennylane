@@ -14,6 +14,7 @@
 """
 Unit tests for the qutrit matrix-based operations.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access
