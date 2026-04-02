@@ -65,14 +65,17 @@ def test_warning_about_execution_pipeline_unmaintained():
         c()
 
 
+@pytest.mark.catalyst
 @pytest.mark.external
 def test_error_if_dynamic_device_wires():
     """Test that a NotImplementedError is raised if the device has dynamic wires."""
 
+    pytest.importorskip("catalyst")
+
     def f(num_wires):
         @qml.qnode(qml.device("lightning.qubit", wires=num_wires))
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qml.probs()
 
         return circuit
 
