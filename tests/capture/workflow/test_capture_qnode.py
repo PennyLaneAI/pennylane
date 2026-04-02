@@ -65,6 +65,7 @@ def test_warning_about_execution_pipeline_unmaintained():
         c()
 
 
+@pytest.mark.external
 def test_error_if_dynamic_device_wires():
     """Test that a NotImplementedError is raised if the device has dynamic wires."""
 
