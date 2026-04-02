@@ -63,8 +63,6 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
     ~transforms.remove_barrier
-    ~transforms.disentangle_cnot
-    ~transforms.disentangle_swap
     ~transforms.match_relative_phase_toffoli
     ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
@@ -412,7 +410,6 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .disentangle_cnot_swap import disentangle_cnot, disentangle_swap
 
 from .decompositions import (
     clifford_t_decomposition,
