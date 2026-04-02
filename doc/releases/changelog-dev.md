@@ -903,7 +903,7 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-* Workflows with program capture that involve dynamic device wires will not raise a `NotImplementedError`
+* Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
   rather than providing incorrect results.
   [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
 
