@@ -25,7 +25,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, MultiControlledX, X, Z, adjoint, change_op_basis, ctrl
+from pennylane.ops import SWAP, MultiControlledX, X, Z, change_op_basis, ctrl
 from pennylane.templates.subroutines.arithmetic import CAddSub, SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
@@ -58,7 +58,7 @@ class OutMultiplier(Operation):
         output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-            work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
+            work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise at least two work wires
             should be provided. Defaults to empty tuple.
 
     **Example**
@@ -172,10 +172,12 @@ class OutMultiplier(Operation):
 
         if mod is None:
             mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires) and num_work_wires != 2:
-            raise ValueError(
-                f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
-            )
+        if mod != 2 ** len(output_wires):
+            if num_work_wires < 2:
+                raise ValueError(
+                    f"If mod is not 2^{len(output_wires)}, at least two work wires should be provided."
+                )
+            work_wires = work_wires[:2]
         if mod > 2 ** (len(output_wires)):
             raise ValueError(
                 "OutMultiplier must have enough wires to represent mod. The maximum mod "
@@ -299,7 +301,7 @@ class OutMultiplier(Operation):
         return op_list
 
 
-def _out_multiplier_decomposition_resources(
+def _out_multiplier_with_qft_resources(
     num_output_wires, num_x_wires, num_y_wires, mod, num_work_wires
 ) -> dict:
     # pylint: disable=unused-argument
@@ -321,13 +323,13 @@ def _out_multiplier_decomposition_resources(
     }
 
 
-def _out_multiplier_decomposition_condition(num_output_wires, mod, num_work_wires, **_):
+def _out_multiplier_with_qft_condition(num_output_wires, mod, num_work_wires, **_):
     return mod in (None, 2**num_output_wires) or num_work_wires >= 1
 
 
-@register_condition(_out_multiplier_decomposition_condition)
-@register_resources(_out_multiplier_decomposition_resources)
-def _out_multiplier_decomposition(
+@register_condition(_out_multiplier_with_qft_condition)
+@register_resources(_out_multiplier_with_qft_resources)
+def _out_multiplier_with_qft(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -351,7 +353,7 @@ def _out_multiplier_decomposition(
     )
 
 
-def _out_multiplier_with_adders_resources(
+def _out_multiplier_with_adder_resources(
     num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
 ) -> dict:
     # pylint: disable=unused-argument
@@ -374,7 +376,7 @@ def _out_multiplier_with_adders_resources(
     return dict(resources)
 
 
-def _out_multiplier_with_adders_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
+def _out_multiplier_with_adder_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
     k = num_output_wires
     m = num_y_wires
     # Controlled adder takes as many work wires as the output register size. The largest controlled
@@ -383,9 +385,9 @@ def _out_multiplier_with_adders_condition(num_output_wires, num_y_wires, mod, nu
     return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
-@register_condition(_out_multiplier_with_adders_condition)
-@register_resources(_out_multiplier_with_adders_resources)
-def _out_multiplier_with_adders(
+@register_condition(_out_multiplier_with_adder_condition)
+@register_resources(_out_multiplier_with_adder_resources)
+def _out_multiplier_with_adder(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -426,7 +428,8 @@ def _out_multiplier_with_caddsub_resources(
     # Add 2^m(x+1)
     size = k + 1 - m - max(0, k + 1 - (m + n + 1))
     resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
-    resources[resource_rep(X)] += 5
+    resources[resource_rep(X)] += 4
+    resources[resource_rep(X)] += int(size > 1)
     resources[resource_rep(Z)] += 2
 
     # Subtract y+2^(n+m)
@@ -476,8 +479,16 @@ def _div_by_two(wires):
     _ = [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
 
 
-def _increment(wires):
-    _ = [MultiControlledX(wires[::-1][:i]) for i in range(len(wires), 1, -1)]
+def _mul_with_two(wires):
+    wires = wires[::-1]
+    _ = [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
+
+
+def _increment(wires, work_wires):
+    _ = [
+        MultiControlledX(wires[::-1][:i], work_wires=work_wires, work_wire_type="zeroed")
+        for i in range(len(wires), 1, -1)
+    ]
     X(wires[-1])
 
 
@@ -488,10 +499,12 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     when using the decomposition into unitary operations. We need to resolve this somehow.
     """
     work_wires = work_wires[: len(y_wires) - 1]
+    print(y_wires)
     X(x_wires[-1])
     Z(x_wires[-1])
     X(y_wires[-1])
-    X(work_wires[-1])
+    if work_wires:
+        X(work_wires[-1])
     SemiAdder(x_wires, y_wires, work_wires)
     Z(x_wires[-1])
     X(x_wires[-1])
@@ -517,7 +530,7 @@ def _out_multiplier_with_caddsub(
     work_wires = work_wires[1:]
 
     # Multiply by two
-    adjoint(_div_by_two)(output_with_cache)
+    _mul_with_two(output_with_cache)
     # Controlled add-subtract loop
     for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
@@ -531,7 +544,7 @@ def _out_multiplier_with_caddsub(
     _ = [X(w) for w in output_with_cache]
     SemiAdder(y_wires, output_with_cache, work_wires)
     increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
-    _increment(increment_wires)
+    _increment(increment_wires, work_wires)
     _ = [X(w) for w in output_with_cache]
     # Add 2^n y
     SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
@@ -541,7 +554,7 @@ def _out_multiplier_with_caddsub(
 
 add_decomps(
     OutMultiplier,
-    _out_multiplier_decomposition,
+    _out_multiplier_with_qft,
+    _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
-    _out_multiplier_with_adders,
 )

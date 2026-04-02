@@ -186,9 +186,9 @@ class TestOutMultiplier:
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
 
-    @pytest.mark.parametrize("work_wires", [None, [9], [9, 10, 11]])
+    @pytest.mark.parametrize("work_wires", [None, [9]])
     def test_validation_of_num_work_wires(self, work_wires):
-        """Test that when mod is not 2**len(output_wires), validation confirms two
+        """Test that when mod is not 2**len(output_wires), validation confirms at least two
         work wires are present, while any work wires are accepted for mod=2**len(output_wires)"""
 
         # if mod=2**len(output_wires), anything goes
@@ -246,23 +246,36 @@ class TestOutMultiplier:
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         [
-            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10]),
-            ([0], [3, 6], [5, 8], 4, [9, 10]),
-            ([0, 1, 2], [3], [5, 8], None, [9]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10]),
+            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+            ([0], [3, 6], [5, 8], 4, [9], [0]),
+            ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+            ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
+            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
+            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1]),
+            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
+            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
+            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
+            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0, 1]),
+            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
     def test_decomposition_new(
-        self, x_wires, y_wires, output_wires, mod, work_wires
+        self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-        for rule in qml.list_decomps(qml.OutMultiplier):
+        for j, rule in enumerate(qml.list_decomps(qml.OutMultiplier)):
+            applicable = rule.is_applicable(**op.resource_params)
+            assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
