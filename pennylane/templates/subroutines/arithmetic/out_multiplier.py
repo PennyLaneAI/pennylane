@@ -25,8 +25,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, change_op_basis, ctrl
-from pennylane.templates.subroutines.arithmetic import SemiAdder
+from pennylane.ops import SWAP, MultiControlledX, X, Z, adjoint, change_op_basis, ctrl
+from pennylane.templates.subroutines.arithmetic import CAddSub, SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -356,9 +356,13 @@ def _out_multiplier_with_adders_resources(
 ) -> dict:
     # pylint: disable=unused-argument
 
+    n = num_x_wires
+    m = num_y_wires
+    k = num_output_wires
+
     resources = defaultdict(int)
-    for i in range(min(num_output_wires, num_x_wires)):
-        size = num_output_wires - i - max(0, num_output_wires - (num_y_wires + 1 + i))
+    for i in range(min(k, n)):
+        size = k - i - max(0, k - (m + 1 + i))
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
@@ -371,7 +375,12 @@ def _out_multiplier_with_adders_resources(
 
 
 def _out_multiplier_with_adders_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
-    return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
+    k = num_output_wires
+    m = num_y_wires
+    # Controlled adder takes as many work wires as the output register size. The largest controlled
+    # adder is the first one in the loop, with size k - max(0, k-(m+1))
+    min_num_work_wires = k - max(0, k - (m + 1))
+    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
 @register_condition(_out_multiplier_with_adders_condition)
@@ -396,28 +405,98 @@ def _out_multiplier_with_adders(
         ctrl(SemiAdder(y_wires, output, work_wires=work_wires), control=x_wire)
 
 
-'''
 def _out_multiplier_with_caddsub_resources(
     num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
 ) -> dict:
     # pylint: disable=unused-argument
+    n = num_x_wires
+    m = num_y_wires
+    k = num_output_wires
 
     resources = defaultdict(int)
-    for i in range(min(num_output_wires, num_x_wires)):
-        size = num_output_wires - i - max(0, num_output_wires - (num_y_wires + 1 + i))
+
+    # multiply with 2 on register of size k+1 takes k SWAPs
+    resources[resource_rep(SWAP)] += k
+
+    # Controlled add-subtract loop
+    for i in range(min(k, n)):
+        size = k + 1 - i - max(0, k + 1 - (m + 1 + i))
         resources[resource_rep(CAddSub, num_y_wires=size)] += 1
-    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
-    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
-    resources[resource_rep(SemiAdder, num_y_wires=?)] += 1
-    resources[resource_rep(SWAP)] += num_output_wires
+
+    # Add 2^m(x+1)
+    size = k + 1 - m - max(0, k + 1 - (m + n + 1))
+    resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
+    resources[resource_rep(X)] += 5
+    resources[resource_rep(Z)] += 2
+
+    # Subtract y+2^(n+m)
+    # First negation
+    resources[resource_rep(X)] += k + 1
+    # Add y
+    resources[resource_rep(SemiAdder, num_y_wires=k + 1)] += 1
+    # increment 2^(n+m) bit
+    size = k + 1 - max(0, k + 1 - n - m)
+    for i in range(1, size):
+        resources[
+            resource_rep(
+                MultiControlledX,
+                num_control_wires=i,
+                num_zero_control_values=0,
+                num_work_wires=num_work_wires - 1,
+                work_wire_type="zeroed",
+            )
+        ] += 1
+    resources[resource_rep(X)] += 1
+
+    # Second negation
+    resources[resource_rep(X)] += k + 1
+
+    # Add 2^n y
+    size = k + 1 - n - max(0, k + 1 - (m + n + 1))
+    resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
+
+    # divide by two on register of size k+1 takes k SWAPs
+    resources[resource_rep(SWAP)] += k
     return dict(resources)
 
 
-def _out_multiplier_with_caddsub_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
-    return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
+def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires, **_):
+    # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires):
+    # - k+1 - max(0, k+1-(m+1+0)), # Largest size occurring in CAddSub loop
+    # - k+1-m - max(0, k+1-(m+n+1)), # Add 2^m(x+1)
+    # - k+1, # Add y during subtracting 2^(n+m)+y     <-- Largest one
+    # - k+1-n - max(0, k+1-(m+n+1)), # Add 2^n y
+    largest_adder_size = num_output_wires + 1
+    # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
+    min_num_work_wires = 1 + (largest_adder_size - 1)
+    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
+
 
 def _div_by_two(wires):
-    [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
+    _ = [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
+
+
+def _increment(wires):
+    _ = [MultiControlledX(wires[::-1][:i]) for i in range(len(wires), 1, -1)]
+    X(wires[-1])
+
+
+def _add_plus_one(x_wires, y_wires, work_wires):
+    """This qfunc implements ``(x, y, 0) -> (x, (x+y+1) % 2**m, 0)`` for ``m`` the number of
+    bits in ``y``. Note that it will produce the right behaviour in a circuit when decomposing
+    the right elbows into measurement + CZ, but it will not yield the correct behaviour
+    when using the decomposition into unitary operations. We need to resolve this somehow.
+    """
+    work_wires = work_wires[: len(y_wires) - 1]
+    X(x_wires[-1])
+    Z(x_wires[-1])
+    X(y_wires[-1])
+    X(work_wires[-1])
+    SemiAdder(x_wires, y_wires, work_wires)
+    Z(x_wires[-1])
+    X(x_wires[-1])
+    X(y_wires[-1])
+
 
 @register_condition(_out_multiplier_with_caddsub_condition)
 @register_resources(_out_multiplier_with_caddsub_resources)
@@ -431,19 +510,38 @@ def _out_multiplier_with_caddsub(
 ):  # pylint: disable=unused-argument
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
-    n = len(y_wires)
-    m = len(output_wires)
-    for i, x_wire in enumerate(x_wires[::-1][:m]):
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires)
+    output_with_cache = output_wires + [work_wires[0]]
+    work_wires = work_wires[1:]
+
+    # Multiply by two
+    adjoint(_div_by_two)(output_with_cache)
+    # Controlled add-subtract loop
+    for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
-        # and the size of the y_wires
-        output = output_wires[max(0, m - (n + 1 + i)) : m - i]
+        # and the size of the y_wires.
+        output = output_with_cache[max(0, k + 1 - (m + 1 + i)) : k + 1 - i]
         # Add y wires to shifted output, controlled by current x_wire
         CAddSub(x_wire, y_wires, output, work_wires)
-    output_with_cache = output_wires + [work_wires[0]]
-    SemiAdder(x_wires, output_with_cache[SLICE], work_wires[1:]) # TODO: Slice; Add 1!!
-    SemiAdder(y_wires, output_with_cache, [output_wires[0]] + work_wires[1:]) # TODO: FIGURE OUT THIS STEP to do -(2^(len(out))+y)
-    SemiAdder(y_wires, output_with_cache[SLICE], [output_wires[0]] + work_wires[1:]) # TODO: Slice
+    # Add 2^m(x+1)
+    _add_plus_one(x_wires, output_with_cache[max(0, k + 1 - (m + n + 1)) : k + 1 - m], work_wires)
+    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y
+    _ = [X(w) for w in output_with_cache]
+    SemiAdder(y_wires, output_with_cache, work_wires)
+    increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
+    _increment(increment_wires)
+    _ = [X(w) for w in output_with_cache]
+    # Add 2^n y
+    SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
+    # Divide by two
     _div_by_two(output_with_cache)
 
-'''
-add_decomps(OutMultiplier, _out_multiplier_decomposition)  # , _out_multiplier_with_caddsub)
+
+add_decomps(
+    OutMultiplier,
+    _out_multiplier_decomposition,
+    _out_multiplier_with_caddsub,
+    _out_multiplier_with_adders,
+)
