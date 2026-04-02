@@ -276,7 +276,7 @@ def _specs_from_analysis_pass(
         iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
 
     if num_tape_levels in level:
-        fname = f"{_RESOURCE_ANALYSIS_PREFIX}_before.json"
+        fname = f"{_RESOURCE_ANALYSIS_PREFIX}before.json"
         fname_to_level[fname] = num_tape_levels  # num_tape_levels == the level of the lowering pass
         level_to_name[num_tape_levels] = (
             ", ".join(level_to_markers[num_tape_levels])
@@ -317,8 +317,13 @@ def _specs_from_analysis_pass(
     results = {}
 
     for res_file, curr_level in fname_to_level.items():
-        with Path(res_file).open("r", encoding="utf-8") as f:
+        res_file = Path(res_file)
+        with res_file.open("r", encoding="utf-8") as f:
             data = json.load(f)
+
+        # TODO: Make sure this file gets removed even on failure
+        res_file.unlink()  # Clean up the resource tracking file
+
         results[level_to_name[curr_level]] = _mlir_resources_to_specs_resources(
             next(iter(data.values()))
         )
