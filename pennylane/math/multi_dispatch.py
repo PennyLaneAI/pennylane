@@ -15,6 +15,7 @@
 
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import functools
+import inspect
 from collections.abc import Sequence
 from operator import attrgetter
 
@@ -127,6 +128,8 @@ def multi_dispatch(argnum=None, tensor_list=None):
     """
 
     def decorator(fn):
+        params = list(inspect.signature(fn).parameters.keys())
+
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             argnums = argnum if argnum is not None else list(range(len(args)))
@@ -140,12 +143,20 @@ def multi_dispatch(argnum=None, tensor_list=None):
             dispatch_args = []
 
             for a in argnums:
+                # Get the argument value - may be positional or keyword
+                if a < len(args):
+                    arg_val = args[a]
+                elif a < len(params) and params[a] in kwargs:
+                    arg_val = kwargs[params[a]]
+                else:
+                    continue
+
                 # Only use extend if the marked argument really
                 # is a (native) python Sequence
-                if a in tensor_lists and isinstance(args[a], (list, tuple)):
-                    dispatch_args.extend(args[a])
+                if a in tensor_lists and isinstance(arg_val, (list, tuple)):
+                    dispatch_args.extend(arg_val)
                 else:
-                    dispatch_args.append(args[a])
+                    dispatch_args.append(arg_val)
 
             interface = kwargs.pop("like", None)
             interface = interface or get_interface(*dispatch_args)

@@ -62,6 +62,14 @@ def test_multi_dispatch_stack(x):
     assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
 
 
+def test_multi_dispatch_stack_keyword_arg():
+    """Test that multi_dispatch handles tensor list passed as keyword argument (GH-9140)"""
+    tensor1 = onp.array([[1, 2], [3, 4]])
+    tensor2 = onp.array([[5, 6], [7, 8]])
+    result = fn.stack(values=[tensor1, tensor2], axis=0)
+    assert fn.allequal(result, onp.stack([tensor1, tensor2], axis=0))
+
+
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_decorate(x):
     """Test decorating a standard numpy function for PennyLane"""
