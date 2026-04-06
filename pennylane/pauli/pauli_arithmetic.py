@@ -221,8 +221,12 @@ class PauliWord(dict):
         raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
         if self._hashval is None:
             self._hashval = hash(frozenset(self.items()))
+
+        # Warning: This relies on the object being immutable.
+        # If a user modifies the underlying data, this hash is no longer accurate
         return self._hashval
 
     def _matmul(self, other):
