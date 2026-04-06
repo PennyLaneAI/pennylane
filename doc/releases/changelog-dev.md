@@ -876,6 +876,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
+  [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
+  
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
@@ -908,6 +911,10 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
+  to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
+  [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
 
 * Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
   rather than providing incorrect results.
