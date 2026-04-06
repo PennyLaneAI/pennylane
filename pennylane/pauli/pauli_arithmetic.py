@@ -189,6 +189,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+        self._hashval = None
 
     @property
     def pauli_rep(self):
@@ -220,7 +221,9 @@ class PauliWord(dict):
         raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
-        return hash(frozenset(self.items()))
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+        return self._hashval
 
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
