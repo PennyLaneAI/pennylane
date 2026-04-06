@@ -401,9 +401,7 @@ class DecompositionRule:
             # OSError is raised if the source code cannot be retrieved
             self._source = ""  # pragma: no cover
 
-        self.name = name
-        if not name:
-            self.name = func.__name__
+        self.name = name or func.__name__
 
         if isinstance(resources, dict):
 
