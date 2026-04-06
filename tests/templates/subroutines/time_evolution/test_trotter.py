@@ -2113,6 +2113,7 @@ class TestTrotterizedQfuncIntegration:
         assert allclose(measured_arg2_grad, reference_arg2_grad)
 
     def test_trotter_simplification():
+        """Test that the TrotterProduct simplifies correctly when given a simple sum of operators."""
         op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=3, order=2)
         print("Decomposition:")
         for i, d in enumerate(op.decomposition(), start=1):

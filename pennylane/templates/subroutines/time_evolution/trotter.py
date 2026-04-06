@@ -78,6 +78,14 @@ def _recursive_expression(x, order, ops):
 
 @QueuingManager.stop_recording()
 def _simplify(decomp):
+    """Simplify a list of operations by merging consecutive evolutions with the same base.
+    
+    Args :
+        decomp (list): A list of operations to simplify.
+
+    Returns:
+        list: The simplified list of operations.
+    """
     if not decomp:
         return []
 
