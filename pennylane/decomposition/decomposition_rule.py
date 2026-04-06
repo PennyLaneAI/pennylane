@@ -176,6 +176,8 @@ def register_resources(
         exact (bool): whether the resources are computed exactly (``True``, default) or
             estimated heuristically (``False``). This information is only relevant for testing
             and validation purposes.
+        name (str): a custom name for this decomposition rule. If not provided, the name of the
+            decomposition rule is set to the name of the function.
 
     Returns:
         DecompositionRule:

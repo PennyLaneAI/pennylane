@@ -158,6 +158,9 @@ The following classes have been ported over:
   This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
+* A ``name`` attribute is added to ``DecompositionRule``, which can optionally be provided via a ``name`` argument to ``qml.register_resources``
+  [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
+
 <h3>Improvements 🛠</h3>
 
 * The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
