@@ -276,11 +276,8 @@ class RegisterEquality(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * register_size (int): size of the registers for basis state
-
         """
-        return {
-            "register_size": self.register_size,
-        }
+        return {"register_size": self.register_size}
 
     @classmethod
     def resource_rep(cls, register_size: int) -> CompressedResourceOp:
