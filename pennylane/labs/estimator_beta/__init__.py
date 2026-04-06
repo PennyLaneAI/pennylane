@@ -89,7 +89,11 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import OutOfPlaceIntegerComparator, RegisterEquality, selectpaulirot_controlled_resource_decomp
+from .templates import (
+    OutOfPlaceIntegerComparator,
+    RegisterEquality,
+    selectpaulirot_controlled_resource_decomp,
+)
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
