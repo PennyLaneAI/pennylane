@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+
 from __future__ import annotations
 
 import contextlib

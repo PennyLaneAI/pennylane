@@ -14,6 +14,7 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+
 import itertools as it
 
 import numpy as np

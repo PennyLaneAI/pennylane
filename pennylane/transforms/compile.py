@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
+
 from collections.abc import Sequence
 from functools import partial
 

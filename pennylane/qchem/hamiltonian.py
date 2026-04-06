@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
+
 from functools import singledispatch
 
 from scipy.constants import angstrom, physical_constants

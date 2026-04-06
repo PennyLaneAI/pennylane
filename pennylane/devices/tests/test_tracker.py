@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the device uses a tracker properly if it is supported."""
+
 # pylint: disable=no-self-use
 import pytest
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit testing of conversion functions for Fermi operators."""
+
 import pytest
 
 import pennylane as qml

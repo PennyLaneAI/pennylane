@@ -15,7 +15,6 @@
 Support functions for cut_circuit and cut_circuit_mc.
 """
 
-
 import warnings
 from collections.abc import Callable, Sequence
 from typing import Any

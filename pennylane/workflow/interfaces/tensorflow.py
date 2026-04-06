@@ -98,6 +98,7 @@ As you can see, we got 2 calls to ``vjp`` instead of 1, and the calls have ident
 to have to perform this extra call.
 
 """
+
 # pylint: disable=unused-argument
 import inspect
 import logging

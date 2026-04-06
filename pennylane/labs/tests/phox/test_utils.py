@@ -14,6 +14,7 @@
 """
 Tests for the Phox simulator utility functions.
 """
+
 from pennylane.labs.phox.utils import (
     create_lattice_gates,
     create_local_gates,

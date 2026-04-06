@@ -14,6 +14,7 @@
 """
 This module contains the qml.sample measurement.
 """
+
 from collections.abc import Sequence
 
 import numpy as np

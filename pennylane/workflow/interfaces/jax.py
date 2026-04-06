@@ -137,6 +137,7 @@ time and can store tangents in place of the variables, we can use a batch of tap
 must be a non-pytree non-differentiable argument that accompanies the tree leaves.
 
 """
+
 import dataclasses
 
 # pylint: disable=unused-argument

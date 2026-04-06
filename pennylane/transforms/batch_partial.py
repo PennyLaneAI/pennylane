@@ -14,6 +14,7 @@
 """
 Contains the batch dimension transform for partial use of QNodes.
 """
+
 import functools
 import inspect
 

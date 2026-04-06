@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
+
 import itertools as it
 import warnings
 from functools import partial
