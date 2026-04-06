@@ -170,18 +170,13 @@ class TestDecompositionRule:
             qml.CNOT(wires=wires)
             qml.H(wires[0])
 
-        assert (
-            str(my_cz)
-            == dedent(
-                """
+        assert str(my_cz) == dedent("""
                 @register_resources({qml.H: 2, qml.CNOT: 1}, exact=exact_resources)
                 def my_cz(wires):
                     qml.H(wires[0])
                     qml.CNOT(wires=wires)
                     qml.H(wires[0])
-                """
-            ).strip()
-        )
+                """).strip()
 
     @pytest.mark.parametrize("use_custom_name", [True, False])
     def test_decomposition_rule_name(self, use_custom_name):
