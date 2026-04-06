@@ -15,6 +15,7 @@
 """
 This module contains the qml.var measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math

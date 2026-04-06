@@ -14,6 +14,7 @@
 """
 Unit tests for the QuantumMonteCarlo subroutine template.
 """
+
 import numpy as np
 import pytest
 from scipy.stats import norm

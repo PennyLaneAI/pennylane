@@ -14,6 +14,7 @@
 r"""
 Contains the RandomLayers template.
 """
+
 # pylint: disable=too-many-arguments
 
 import numpy as np

@@ -873,6 +873,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
+  [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
+
 * Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
   only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
   [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
@@ -906,6 +909,10 @@ The following classes have been ported over:
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
+
+* Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
+  rather than providing incorrect results.
+  [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
 
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for measuring states in devices/qubit_mixed."""
+
 # pylint: disable=too-few-public-methods
 
 from functools import reduce

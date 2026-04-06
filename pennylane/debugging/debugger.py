@@ -15,6 +15,7 @@
 This module contains functionality for the PennyLane Debugger (PLDB) to support
 interactive debugging of quantum circuits.
 """
+
 import copy
 import pdb
 import sys

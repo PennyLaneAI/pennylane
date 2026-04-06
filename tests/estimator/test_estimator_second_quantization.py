@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
+
 # pylint: disable=too-many-arguments
 import pytest
 

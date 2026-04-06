@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
+
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
 import numpy as np

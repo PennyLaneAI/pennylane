@@ -16,6 +16,7 @@
 Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
 """
+
 import functools
 
 

@@ -14,6 +14,7 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep

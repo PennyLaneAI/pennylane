@@ -14,6 +14,7 @@
 """
 Unit tests for the comm function
 """
+
 # pylint: disable=too-many-arguments, unused-variable
 import pytest
 

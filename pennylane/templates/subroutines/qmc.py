@@ -14,6 +14,7 @@
 """
 Contains the QuantumMonteCarlo template and utility functions.
 """
+
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 import copy
 
