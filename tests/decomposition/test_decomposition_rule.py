@@ -170,13 +170,48 @@ class TestDecompositionRule:
             qml.CNOT(wires=wires)
             qml.H(wires[0])
 
-        assert str(my_cz) == dedent("""
-        @register_resources({qml.H: 2, qml.CNOT: 1}, exact=exact_resources)
+        assert (
+            str(my_cz)
+            == dedent(
+                """
+                @register_resources({qml.H: 2, qml.CNOT: 1}, exact=exact_resources)
+                def my_cz(wires):
+                    qml.H(wires[0])
+                    qml.CNOT(wires=wires)
+                    qml.H(wires[0])
+                """
+            ).strip()
+        )
+
+    @pytest.mark.parametrize("use_custom_name", [True, False])
+    def test_decomposition_rule_name(self, use_custom_name):
+        """Tests the name attribute of a decomposition rule."""
+
+        name = "custom_cz" if use_custom_name else ""
+
+        # Test that the name is correctly set when creating a fresh rule.
+
+        @register_resources({qml.H: 2, qml.CNOT: 1}, name=name)
         def my_cz(wires):
             qml.H(wires[0])
             qml.CNOT(wires=wires)
             qml.H(wires[0])
-        """).strip()
+
+        expected_name = name or "my_cz"
+        assert my_cz.name == expected_name
+
+        # Test that the name is correctly set when decorating an existing
+        # rule that was previously created by `register_condition`
+
+        @register_resources({qml.H: 2, qml.CNOT: 1}, name=name)
+        @register_condition(lambda **_: True)
+        def my_cz_second(wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires)
+            qml.H(wires[0])
+
+        expected_name = name or "my_cz_second"
+        assert my_cz_second.name == expected_name
 
     def test_error_raised_with_no_resource_fn(self):
         """Tests that an error is raised when no resource fn is provided."""

@@ -126,7 +126,11 @@ def register_condition(
 
 @overload
 def register_resources(
-    ops: Callable | dict, *, work_wires: Callable | dict | None = None, exact: bool = True
+    ops: Callable | dict,
+    *,
+    work_wires: Callable | dict | None = None,
+    exact: bool = True,
+    name: str = "",
 ) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(
@@ -135,6 +139,7 @@ def register_resources(
     *,
     work_wires: Callable | dict | None = None,
     exact: bool = True,
+    name: str = "",
 ) -> DecompositionRule: ...
 def register_resources(
     ops: Callable | dict,
@@ -142,6 +147,7 @@ def register_resources(
     *,
     work_wires: Callable | dict | None = None,
     exact: bool = True,
+    name: str = "",
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
@@ -359,9 +365,15 @@ def register_resources(
             _qfunc.set_resources(ops, exact_resources=exact)
             if work_wires:
                 _qfunc.set_work_wire_spec(work_wires)
+            if name:
+                _qfunc.name = name
             return _qfunc
         return DecompositionRule(
-            _qfunc, resources=ops, work_wires=work_wires, exact_resources=exact
+            _qfunc,
+            resources=ops,
+            work_wires=work_wires,
+            exact_resources=exact,
+            name=name,
         )
 
     return _decorator(qfunc) if qfunc else _decorator
@@ -370,12 +382,13 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         func: Callable,
         resources: Callable | dict | None = None,
         work_wires: Callable | dict | None = None,
         exact_resources: bool = True,
+        name: str = "",
     ):
 
         self._impl = func
@@ -385,6 +398,10 @@ class DecompositionRule:
         except OSError:  # pragma: no cover
             # OSError is raised if the source code cannot be retrieved
             self._source = ""  # pragma: no cover
+
+        self.name = name
+        if not name:
+            self.name = func.__name__
 
         if isinstance(resources, dict):
 
@@ -404,6 +421,9 @@ class DecompositionRule:
 
     def __str__(self):
         return dedent(self._source).strip()
+
+    def __repr__(self):
+        return self.name
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
