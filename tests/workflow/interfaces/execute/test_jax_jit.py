@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-JIT interface"""
+
 import numpy as np
 
 # pylint: disable=protected-access,too-few-public-methods,unnecessary-lambda

@@ -15,6 +15,7 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+
 import warnings
 from functools import partial
 from itertools import islice

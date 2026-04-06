@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Shot adaptive optimizer"""
+
 # pylint: disable=too-many-instance-attributes,too-many-arguments
 
 

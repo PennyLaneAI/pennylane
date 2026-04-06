@@ -14,6 +14,7 @@
 """
 Unit tests for the new return types with QNode.
 """
+
 import numpy as np
 import pytest
 

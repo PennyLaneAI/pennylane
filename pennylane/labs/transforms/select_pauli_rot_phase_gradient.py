@@ -14,6 +14,7 @@
 r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
+
 import numpy as np
 
 import pennylane as qml

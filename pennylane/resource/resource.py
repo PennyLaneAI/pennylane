@@ -14,6 +14,7 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+
 from __future__ import annotations
 
 import copy

@@ -14,6 +14,7 @@
 """
 Tests for the GQSP template.
 """
+
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 
 import pytest

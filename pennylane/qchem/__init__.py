@@ -14,6 +14,7 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
+
 from pennylane.math.decomposition import givens_decomposition
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data

@@ -14,6 +14,7 @@
 """
 Contains the ModExp template.
 """
+
 import numpy as np
 
 from pennylane.decomposition import add_decomps, register_resources, resource_rep

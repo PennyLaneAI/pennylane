@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for the `_resolve_execution_config` helper function in PennyLane."""
+
 # pylint: disable=redefined-outer-name
 import pytest
 

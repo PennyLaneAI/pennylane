@@ -14,6 +14,7 @@
 """
 Pytest configuration file for PennyLane quantum chemistry open fermion test suite.
 """
+
 import shutil
 
 import pytest

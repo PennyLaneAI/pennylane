@@ -14,6 +14,7 @@
 """
 This module contains the qml.probs measurement.
 """
+
 import warnings
 from collections.abc import Sequence
 

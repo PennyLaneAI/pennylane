@@ -20,6 +20,7 @@ Here, we integrate AutoGraph into PennyLane to improve the UX and allow programm
 Python control flow and other imperative expressions rather than the functional equivalents provided
 by PennyLane.
 """
+
 import copy
 import inspect
 import warnings

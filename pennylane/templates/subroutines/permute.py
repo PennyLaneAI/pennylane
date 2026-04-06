@@ -14,6 +14,7 @@
 r"""
 Contains the Permute template.
 """
+
 import copy
 from collections import Counter
 
