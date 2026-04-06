@@ -14,6 +14,7 @@
 """
 This file contains the implementation of the commutator function in PennyLane
 """
+
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
 

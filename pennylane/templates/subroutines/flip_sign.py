@@ -14,6 +14,7 @@
 r"""
 Contains the FlipSign template.
 """
+
 from functools import reduce
 
 from pennylane.decomposition import (

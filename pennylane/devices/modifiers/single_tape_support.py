@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the ``single_tape_support`` device modifier."""
+
 from functools import wraps
 
 from pennylane.tape import QuantumScript

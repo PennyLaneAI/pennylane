@@ -14,6 +14,7 @@
 """
 Tests for the FermionicDoubleExcitation template.
 """
+
 import numpy as np
 import pytest
 

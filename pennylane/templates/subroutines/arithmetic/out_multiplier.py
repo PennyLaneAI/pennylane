@@ -14,6 +14,7 @@
 """
 Contains the OutMultiplier template.
 """
+
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,

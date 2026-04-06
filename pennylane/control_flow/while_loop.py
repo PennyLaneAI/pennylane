@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """While loop."""
+
 import functools
 from collections.abc import Callable
 from typing import Literal
@@ -28,6 +29,18 @@ from ._loop_abstract_axes import (
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
+
+
+def _to_bool_cond_fn(cond_fn):
+    def _new_cond_fn(*args, **kwargs):
+        from jax import numpy as jnp  # pylint: disable=import-outside-toplevel
+
+        [out] = cond_fn(*args, **kwargs)
+        if getattr(out, "dtype", None) == jnp.bool:
+            return out
+        return jnp.bool(out)
+
+    return _new_cond_fn
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
@@ -299,6 +312,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
         flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+        bool_cond_fn = _to_bool_cond_fn(flat_cond_fn)
 
         if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_body_fn, shape_locations)
@@ -311,7 +325,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
-            jaxpr_cond_fn = jax.make_jaxpr(flat_cond_fn, abstracted_axes=abstracted_axes)(
+            jaxpr_cond_fn = jax.make_jaxpr(bool_cond_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
         except ValueError as e:

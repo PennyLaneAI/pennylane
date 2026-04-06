@@ -16,7 +16,6 @@ Contains tests for `construct_batch`.
 
 """
 
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy

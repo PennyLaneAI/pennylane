@@ -14,6 +14,7 @@
 """
 This module contains tests for functions needed to compute PES object.
 """
+
 import sys
 from pathlib import Path
 

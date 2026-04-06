@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
-# pylint: disable=protected-access,no-name-in-module
 
 import warnings
 from unittest.mock import patch
@@ -22,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from conftest import decompositions, to_resources
+from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -30,6 +29,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
@@ -736,8 +736,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [qml.RX(0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
@@ -753,8 +754,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [qml.RX(-0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
@@ -785,8 +787,9 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 19
 
         solution = graph.solve()
+        kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
         assert q.queue == [
             qml.adjoint(qml.T(2)),
@@ -813,16 +816,20 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
+        rule_params = get_decomp_kwargs(op)
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
         assert solution.resource_estimate(op) == to_resources({})
 
         op2 = qml.pow(qml.H(0), 6)
+
+        rule_params = get_decomp_kwargs(op2)
+
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
 
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
@@ -836,8 +843,9 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
+        rule_params = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
         assert q.queue == expected
 
@@ -864,12 +872,17 @@ class TestSymbolicDecompositions:
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
         op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+        rule3_params = get_decomp_kwargs(op3)
+        rule4_params = get_decomp_kwargs(op4)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
+            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **rule3_params)
+            solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **rule4_params)
 
         assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0]), qml.RX(-0.5, wires=0)]
         assert solution.resource_estimate(op1) == to_resources({qml.H: 1})
@@ -895,10 +908,13 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 0)
         op2 = qml.pow(CustomOp(1), 1)
 
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [CustomOp(1)]
         assert solution.resource_estimate(op1) == to_resources({})
@@ -922,10 +938,13 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 2)
         op2 = qml.pow(qml.adjoint(CustomOp(1)), 2)
 
+        rule1_params = get_decomp_kwargs(op1)
+        rule2_params = get_decomp_kwargs(op2)
+
         solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
         assert q.queue == [
             CustomOp(0),

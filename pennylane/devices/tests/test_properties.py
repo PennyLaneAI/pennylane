@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
+
 # pylint: disable=no-self-use
 import pytest
 

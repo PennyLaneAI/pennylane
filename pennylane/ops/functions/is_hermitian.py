@@ -14,6 +14,7 @@
 """
 This module contains the qml.is_hermitian function.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

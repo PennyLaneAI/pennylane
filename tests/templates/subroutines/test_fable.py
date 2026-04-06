@@ -14,6 +14,7 @@
 """
 Unit tests for the FABLE template.
 """
+
 import numpy as np
 import pytest
 

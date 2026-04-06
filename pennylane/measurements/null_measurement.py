@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """
-This module contains the qml.mutual_info measurement.
+This module contains the NullMeasurement class.
 """
+
 import numpy as np
 
 from .measurements import SampleMeasurement, StateMeasurement

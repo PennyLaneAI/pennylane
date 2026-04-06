@@ -14,7 +14,6 @@
 """Contains a class for mapping HDF5 groups to Dataset Attributes, and a mixin
 class that provides the mapper class."""
 
-
 from collections.abc import Iterator, Mapping, MutableMapping
 from types import MappingProxyType
 from typing import Any

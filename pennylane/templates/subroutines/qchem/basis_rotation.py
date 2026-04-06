@@ -14,6 +14,7 @@
 """
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
+
 from functools import partial
 
 import numpy as np
@@ -26,8 +27,12 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
 
+def _qjit_or_capture():
+    return compiler.active() or capture.enabled()
+
+
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not compiler.active() and not capture.enabled()
+    return math.is_abstract(U) and not _qjit_or_capture()
 
 
 def _adjust_determinant(matrix):
@@ -80,14 +85,15 @@ def _real_unitary(unitary, wires):
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(givens_list))
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
-        (i, j) = givens_ids[idx]
+        i, j = givens_ids[idx]
         theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
@@ -98,10 +104,11 @@ def _complex_unitary(unitary, wires):
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list)
 
-    if capture.enabled():
+    if _qjit_or_capture():
         phase_list = math.array(phase_list, like="jax")
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(phase_list))
     def phase_loop(idx):
@@ -113,7 +120,7 @@ def _complex_unitary(unitary, wires):
     @for_loop(len(givens_matrices))
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
-        (i, j) = givens_ids[idx]
+        i, j = givens_ids[idx]
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
