@@ -906,6 +906,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
+  to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
+  [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
+
 * Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
   rather than providing incorrect results.
   [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
