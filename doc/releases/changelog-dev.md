@@ -154,6 +154,9 @@ The following classes have been ported over:
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+* Simplified Trotter Product and added test for trotter simplification.
+  [(#9262)](https://github.com/PennyLaneAI/pennylane/pull/9262)
+
 * A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
   This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
