@@ -19,8 +19,8 @@ from pennylane.estimator.resource_config import ResourceConfig
 from .ops import (
     ch_resource_decomp,
     hadamard_controlled_resource_decomp,
-    paulirot_controlled_resource_decomp,
     mcx_one_clean_aux_resource_decomp,
+    paulirot_controlled_resource_decomp,
 )
 from .templates import selectpaulirot_controlled_resource_decomp
 

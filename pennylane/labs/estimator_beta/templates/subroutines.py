@@ -18,7 +18,7 @@ from typing import Union
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
-from pennylane.labs.estimator_beta.wires_manager import Allocate, AllocateState, Deallocate
+from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import WiresLike
 
