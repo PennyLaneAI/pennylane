@@ -101,3 +101,178 @@ def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.De
     gate_lst.append(qre.Deallocate(1))
 
     return gate_lst
+
+
+def mcx_many_clean_aux_resource_decomp(num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
+        Resources:
+            The resources are obtained based on the unary iteration technique described in
+            `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+            resources are defined as the following rules:
+
+            * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+
+            * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+
+            * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+
+            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_lst = []
+
+        x = resource_rep(qre.X)
+        if num_ctrl_wires == 0:
+            if num_zero_ctrl:
+                return []
+
+            return [GateCount(x)]
+
+        if num_zero_ctrl:
+            gate_lst.append(GateCount(x, num_zero_ctrl * 2))
+
+        cnot = resource_rep(qre.CNOT)
+        if num_ctrl_wires == 1:
+            gate_lst.append(GateCount(cnot))
+            return gate_lst
+
+        toffoli = resource_rep(qre.Toffoli)
+        if num_ctrl_wires == 2:
+            gate_lst.append(GateCount(toffoli))
+            return gate_lst
+
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        res = [
+            qre.Allocate(num_ctrl_wires - 2),
+            GateCount(l_elbow, num_ctrl_wires - 2),
+            GateCount(r_elbow, num_ctrl_wires - 2),
+            GateCount(toffoli, 1),
+            qre.Deallocate(num_ctrl_wires - 2),
+        ]
+        gate_lst.extend(res)
+        return gate_lst
+
+
+def mcx_one_clean_aux_resource_decomp(num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
+        Resources:
+            The resources are obtained based on the unary iteration technique described in
+            `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+            resources are defined as the following rules:
+
+            * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+
+            * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+
+            * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+
+            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_lst = []
+
+        x = resource_rep(qre.X)
+        if num_ctrl_wires == 0:
+            if num_zero_ctrl:
+                return []
+
+            return [GateCount(x)]
+
+        if num_zero_ctrl:
+            gate_lst.append(GateCount(x, num_zero_ctrl * 2))
+
+        cnot = resource_rep(qre.CNOT)
+        if num_ctrl_wires == 1:
+            gate_lst.append(GateCount(cnot))
+            return gate_lst
+
+        toffoli = resource_rep(qre.Toffoli)
+        if num_ctrl_wires == 2:
+            gate_lst.append(GateCount(toffoli))
+            return gate_lst
+
+        aux_reg = qre.Allocate(1, state="zero", restored=True)
+        res = [
+            aux_reg,
+            GateCount(toffoli, 2*num_ctrl_wires - 3),
+            qre.Deallocate(allocated_register=aux_reg),
+        ]
+        gate_lst.extend(res)
+        return gate_lst
+
+
+def mcx_one_dirty_aux_resource_decomp(num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
+        Resources:
+            The resources are obtained based on the unary iteration technique described in
+            `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+            resources are defined as the following rules:
+
+            * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+
+            * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+
+            * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+
+            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_lst = []
+
+        x = resource_rep(qre.X)
+        if num_ctrl_wires == 0:
+            if num_zero_ctrl:
+                return []
+
+            return [GateCount(x)]
+
+        if num_zero_ctrl:
+            gate_lst.append(GateCount(x, num_zero_ctrl * 2))
+
+        cnot = resource_rep(qre.CNOT)
+        if num_ctrl_wires == 1:
+            gate_lst.append(GateCount(cnot))
+            return gate_lst
+
+        toffoli = resource_rep(qre.Toffoli)
+        if num_ctrl_wires == 2:
+            gate_lst.append(GateCount(toffoli))
+            return gate_lst
+
+        aux_reg = qre.Allocate(1, state="any", restored=True)
+        res = [
+            aux_reg,
+            GateCount(toffoli, 4*num_ctrl_wires - 8),
+            qre.Deallocate(allocated_register=aux_reg),
+        ]
+        gate_lst.extend(res)
+        return gate_lst

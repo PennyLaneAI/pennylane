@@ -20,6 +20,7 @@ from .ops import (
     ch_resource_decomp,
     hadamard_controlled_resource_decomp,
     paulirot_controlled_resource_decomp,
+    mcx_one_clean_aux_resource_decomp,
 )
 from .templates import selectpaulirot_controlled_resource_decomp
 
@@ -99,7 +100,10 @@ class LabsResourceConfig(ResourceConfig):
         super().__init__()
 
         # Add modified decomps here:
-        custom_decomps = {qre.CH: ch_resource_decomp}
+        custom_decomps = {
+            qre.CH: ch_resource_decomp,
+            qre.MultiControlledX: mcx_one_clean_aux_resource_decomp,
+        }
         pow_custom_decomps = {}
         adj_custom_decomps = {}
         ctrl_custom_decomps = {
