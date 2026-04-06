@@ -323,7 +323,7 @@ The following classes have been ported over:
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
 
-* Catalyst's :func:`~.draw_graph` function is now accessible from PennyLane.
+* Catalyst's ``draw_graph`` function is now accessible from PennyLane as :func:`pennylane.draw_graph`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 * Raises a more informative error if something that is not a measurement process is returned from a
@@ -909,12 +909,11 @@ The following classes have been ported over:
 
   In addition to the added infrastructure to make the above happen, the follow changes were made:
 
-  * Documentation for Pauli-based computation passes was removed as part of migrating documentation in
-    PennyLane to where its source code lives (in Catalyst). The reason for the removal is for there to
+  * The source code in PennyLane for Pauli-based computation passes was removed, as it is now redundant. However, all Pauli-based computation passes can still be accessed from the :mod:`pennylane.transforms` module as before (if Catalyst is installed). The reason for the removal is for there to
     be one single source of truth for documentation of a feature if it is desired to be accessible
-    from both PennyLane and Catalyst.
+    from both PennyLane and Catalyst. 
 
-  * Images were added to ``doc/_static`` in order for the docstring for :func:`~.draw_graph` to
+  * Images were added to ``doc/_static`` in order for the docstring for :func:`pennylane.draw_graph` to
     render in PennyLane's documentation.
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
