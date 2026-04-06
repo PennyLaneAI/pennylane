@@ -160,8 +160,8 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
 
         gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), register_size - 1))
 
-        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
-        gate_lst.append(GateCount(resource_rep(qre.X), 4 * num_ones - 1))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4 * (num_ones - 1) + 2 ))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
