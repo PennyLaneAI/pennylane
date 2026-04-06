@@ -795,7 +795,6 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
 
-
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
@@ -2112,3 +2111,11 @@ class TestTrotterizedQfuncIntegration:
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_arg1_grad, reference_arg1_grad)
         assert allclose(measured_arg2_grad, reference_arg2_grad)
+
+    def test_trotter_simplification():
+        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=3, order=2)
+        print("Decomposition:")
+        for i, d in enumerate(op.decomposition(), start=1):
+            print(i, d)
+        print("\nResources:")
+        print(op.resources())
