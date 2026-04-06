@@ -89,4 +89,5 @@ class GateSet(Mapping):
 
     def __repr__(self) -> str:
         gate_set_str = ", ".join(list(self._gate_set))
-        return f"GateSet({{{gate_set_str}}}, name={self.name})"
+        name_str = f", name='{self.name}'" if self.name else ""
+        return f"GateSet({{{gate_set_str}}}{name_str})"
