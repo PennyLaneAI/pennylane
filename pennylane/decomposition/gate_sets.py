@@ -14,7 +14,7 @@
 
 """This module contains definitions of common gate sets.
 
-.. currentmodule:: pennylane.gate_sets
+.. currentmodule:: pennylane.decomposition.gate_sets
 
 .. autosummary::
    :toctree: api
