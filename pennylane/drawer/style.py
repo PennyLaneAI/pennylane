@@ -25,7 +25,6 @@ Use the decorator ``_needs_mpl`` on style functions to raise appropriate
 errors if ``matplotlib`` is not installed.
 """
 
-
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.font_manager as fm

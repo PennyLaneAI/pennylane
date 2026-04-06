@@ -14,6 +14,7 @@
 """
 Unit tests for the backbone of the :mod:`pennylane.capture` module.
 """
+
 import pytest
 
 import pennylane as qml

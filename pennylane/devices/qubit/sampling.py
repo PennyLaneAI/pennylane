@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functions to sample a state."""
 
-
 import numpy as np
 
 import pennylane as qml

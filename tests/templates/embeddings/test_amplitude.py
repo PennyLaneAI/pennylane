@@ -14,6 +14,7 @@
 """
 Tests for the AmplitudeEmbedding template.
 """
+
 import numpy as np
 import pytest
 

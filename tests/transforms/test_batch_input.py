@@ -14,6 +14,7 @@
 """
 Unit tests for the ``batch_inputs`` transform.
 """
+
 # pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
 
 import pytest

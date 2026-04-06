@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests trainable circuits using the Autograd interface."""
+
 import numpy as np
 
 # pylint:disable=no-self-use

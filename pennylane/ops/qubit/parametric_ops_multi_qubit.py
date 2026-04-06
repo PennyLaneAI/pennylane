@@ -16,6 +16,7 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
+
 # pylint: disable=arguments-differ
 import functools
 from collections import Counter

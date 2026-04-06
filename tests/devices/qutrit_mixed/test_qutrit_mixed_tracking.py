@@ -14,6 +14,7 @@
 """
 Tests for the tracking capabilities of default qutrit mixed.
 """
+
 import numpy as np
 import pytest
 

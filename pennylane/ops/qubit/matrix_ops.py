@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
+
 # pylint:disable=arguments-differ
 import warnings
 

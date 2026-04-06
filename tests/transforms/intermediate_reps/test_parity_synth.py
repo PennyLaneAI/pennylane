@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for parity_synth (not implemented with tape)."""
 
-
 import pytest
 
 import pennylane as qml

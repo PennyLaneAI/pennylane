@@ -14,6 +14,7 @@
 """
 This module contains tests for classes needed to track auxilliary wires.
 """
+
 import copy
 
 import pytest

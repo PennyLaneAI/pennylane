@@ -14,6 +14,7 @@
 """
 Test the core resource estimation functionality.
 """
+
 from collections import defaultdict
 
 import pytest

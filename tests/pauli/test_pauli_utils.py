@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
+
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import functools
 import itertools

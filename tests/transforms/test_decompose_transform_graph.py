@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
+
 from collections import defaultdict
 
 import numpy as np

@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
+
 # pylint: disable=arguments-differ
 import functools
 

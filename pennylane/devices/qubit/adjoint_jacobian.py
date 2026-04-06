@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
+
 import logging
 from numbers import Number
 

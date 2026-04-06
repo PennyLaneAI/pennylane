@@ -361,7 +361,7 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
     def apply_layers(layer):
         @for_loop(len(d_wires))
         def double_excitation(i):
-            (w1, w2) = d_wires[i]
+            w1, w2 = d_wires[i]
             FermionicDoubleExcitation(weights[layer][len(s_wires) + i], wires1=w1, wires2=w2)
 
         @for_loop(len(s_wires))

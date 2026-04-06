@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
+
 # pylint: disable=arguments-differ
 import numpy as np
 

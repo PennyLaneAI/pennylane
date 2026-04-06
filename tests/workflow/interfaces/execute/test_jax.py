@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice

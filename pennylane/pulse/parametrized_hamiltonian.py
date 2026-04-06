@@ -15,6 +15,7 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
+
 from copy import copy
 
 from pennylane import math
