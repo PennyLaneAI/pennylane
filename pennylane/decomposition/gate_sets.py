@@ -12,7 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains definitions of common gate sets."""
+"""This module contains definitions of common gate sets.
+
+.. currentmodule:: pennylane.gate_sets
+
+.. autosummary::
+   :toctree: api
+
+   ~IDENTITY
+   ~CLIFFORD_T
+   ~CLIFFORD_T_PLUS_RZ
+   ~ROTATIONS_PLUS_CNOT
+   ~MBQC_GATES
+   ~ALL_QUBIT_OPS
+   ~ALL_OPS
+
+"""
 
 from pennylane import ops
 
