@@ -25,6 +25,7 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import json
 import math
 import warnings
 from collections import defaultdict
@@ -577,6 +578,36 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
         )
+
+    def serialize(self) -> str:
+        """Return a JSON object that serializes the graph."""
+
+        op_nodes = []
+        decomp_nodes = []
+        edges = []
+
+        for i in self._graph.node_indices():
+            node = self._graph.get_node_data(i)
+            if isinstance(node, _OperatorNode):
+                op_nodes.append({"id": i, "op": str(node.op)})
+            elif isinstance(node, _DecompositionNode):
+                decomp_nodes.append(
+                    {
+                        "id": i,
+                        "rule": node.rule.name,
+                        "resource": str(node.decomp_resource),
+                    }
+                )
+
+        for s, t in self._graph.edge_list():
+            edges.append({"source": s, "target": t})
+
+        json_dict = {
+            "op_nodes": op_nodes,
+            "decomp_nodes": decomp_nodes,
+            "edges": edges,
+        }
+        return json.dumps(json_dict, indent=2)
 
 
 class DecompGraphSolution:
