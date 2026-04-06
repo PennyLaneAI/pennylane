@@ -574,8 +574,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     **Example**
 
     >>> import pennylane as qml
-    >>> from pprint import pprint
-    >>> pprint(qml.list_decomps(qml.CRX))
+    >>> qml.list_decomps(qml.CRX)
     [_crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr]
 
     Each decomposition rule can be inspected:
