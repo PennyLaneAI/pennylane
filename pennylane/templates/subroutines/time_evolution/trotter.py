@@ -486,7 +486,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
-    
+
     @staticmethod
     def compute_decomposition(*args, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
@@ -580,7 +580,6 @@ def _trotter_product_decomposition(*args, **kwargs):
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
-
 
 class TrotterizedQfunc(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation applied to a set of
