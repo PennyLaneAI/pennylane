@@ -471,8 +471,8 @@ class DecompositionRule:
         self._work_wire_spec = work_wires
 
 
-_decompositions_private = defaultdict(list)
-"""dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
+_decompositions_private = defaultdict(dict)
+"""dict[str, dict[str, DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
 
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
@@ -550,7 +550,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    _decompositions_var.get()[to_name(op_type)].extend(decomps)
+    new_rules = {rule.name: rule for rule in decomps}
+    all_rules = _decompositions_var.get()[to_name(op_type)]
+    if dup_rule := next((rule for rule in new_rules if rule in all_rules), None):
+        raise ValueError(f"There is already a decomposition rule with the same name {dup_rule}.")
+    all_rules.update(new_rules)
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
@@ -591,8 +595,44 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
+    .. seealso::
+
+        Use :func:`~pennylane.decomposition.get_decomp` to get a decomposition rule by its name.
+
     """
-    return _decompositions_var.get()[to_name(op)][:]
+    return list(_decompositions_var.get()[to_name(op)].values())
+
+
+def get_decomp(op: type[Operator] | Operator | str, name: str):
+    """Get a decomposition rule for an operator by its name.
+
+    Args:
+        op (type or Operator or str): the operator or operator type to retrieve decomposition
+            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
+            ``"C(RX)"``, etc.
+        name (str): the name of the decomposition rule to retrieve.
+
+    Returns:
+        DecompositionRule: a decomposition rule of the given name reigstered for the operator.
+
+    **Example**
+
+    >>> import pennylane as qml
+    >>> print(qml.list_decomps(qml.CRX))
+    [_crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr]
+
+    To retrieve a decomposition rule by its name:
+
+    >>> print(qml.get_decomp(qml.CRX, "_crx_to_rx_cz"))
+    @register_resources(_crx_to_rx_cz_resources)
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+
+    """
+    return _decompositions_var.get()[to_name(op)][name]
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -626,8 +666,8 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    _new_decompositions = defaultdict(list, {k: v[:] for k, v in _decompositions_private.items()})
-    token = _decompositions_var.set(_new_decompositions)
+    _new_decomps = defaultdict(dict, {k: v.copy() for k, v in _decompositions_private.items()})
+    token = _decompositions_var.set(_new_decomps)
     try:
         yield
     finally:

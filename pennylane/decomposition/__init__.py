@@ -90,6 +90,7 @@ Inspecting and Managing Decomposition Rules
 
     ~add_decomps
     ~list_decomps
+    ~get_decomp
     ~has_decomp
     ~local_decomps
 
@@ -259,6 +260,7 @@ from .decomposition_rule import (
     DecompositionRule,
     null_decomp,
     add_decomps,
+    get_decomp,
     list_decomps,
     has_decomp,
     local_decomps,

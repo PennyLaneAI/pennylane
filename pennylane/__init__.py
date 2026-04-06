@@ -38,6 +38,7 @@ from pennylane.decomposition import (
     register_resources,
     register_condition,
     add_decomps,
+    get_decomp,
     list_decomps,
     resource_rep,
 )
