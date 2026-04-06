@@ -355,7 +355,7 @@ class TestCatalystControlFlow:
         assert qml.math.allclose(result, expected)
 
     def test_while_loop_dynamic_shapes(self):
-        """Test that while loops work with defualt args."""
+        """Test that while loops work with default args."""
 
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=4))
