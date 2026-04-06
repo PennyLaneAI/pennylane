@@ -15,6 +15,7 @@
 This module contains the functions needed for estimating the number of measurements and the error
 for computing expectation values.
 """
+
 import numpy as np
 
 

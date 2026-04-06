@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RiemannianGradientOptimizer``.
 """
+
 import numpy as np
 import pytest
 from scipy.sparse.linalg import expm

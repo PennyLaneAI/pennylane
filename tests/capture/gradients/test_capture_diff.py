@@ -14,6 +14,7 @@
 """
 Tests for capturing differentiation into jaxpr.
 """
+
 import pytest
 
 import pennylane as qml

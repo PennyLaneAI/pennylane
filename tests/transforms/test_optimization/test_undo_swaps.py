@@ -14,6 +14,7 @@
 """
 Unit tests for the optimization transform ``undo_swaps``.
 """
+
 import pytest
 from utils import compare_operation_lists
 

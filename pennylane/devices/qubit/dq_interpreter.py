@@ -60,7 +60,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
     Array(0.54030231, dtype=float64)
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
     >>> dq.eval(jaxpr.jaxpr, jaxpr.consts, 0.5)
-    Array(0.54030231, dtype=float64)
+    [Array(0.54030231, dtype=float64)]
 
     This execution can be differentiated via backprop and jitted as normal. Note that finite shot executions
     still cannot be differentiated with backprop.

@@ -14,6 +14,7 @@
 """
 Unit tests for the StronglyEntanglingLayers template.
 """
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods

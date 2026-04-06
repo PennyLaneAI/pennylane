@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource estimation logic."""
+
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps

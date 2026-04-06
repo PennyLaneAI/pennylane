@@ -13,6 +13,7 @@
 # limitations under the License.
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
+
 import logging
 import warnings
 from collections.abc import Callable, Sequence
@@ -162,6 +163,8 @@ class DefaultQutritMixed(Device):
 
     .. code-block:: python
 
+        import scipy
+
         n_wires = 5
         num_qscripts = 5
         qscripts = []
@@ -176,11 +179,7 @@ class DefaultQutritMixed(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.08015701503959313,
-    0.04521414211599359,
-    -0.0215232130089687,
-    0.062120285032425865,
-    -0.0635052317625]
+    (np.float64(0.08015701503959316), np.float64(0.045214142115993505), np.float64(-0.021523213008968645), np.float64(0.06212028503242595), np.float64(-0.0635052317625))
 
     This device currently supports backpropagation derivatives:
 
@@ -203,9 +202,9 @@ class DefaultQutritMixed(Device):
             return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.36235775, dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.93203909, dtype=float64, weak_type=True)
 
     .. details::
         :title: Readout Error

@@ -14,6 +14,7 @@
 """
 This module contains a helper function to sort operations into layers.
 """
+
 from functools import singledispatch
 
 from pennylane.measurements import MeasurementProcess

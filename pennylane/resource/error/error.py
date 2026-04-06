@@ -14,6 +14,7 @@
 """
 Stores classes and logic to define and track algorithmic error in a quantum workflow.
 """
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import partial

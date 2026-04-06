@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
+
 import copy
 from typing import Union
 

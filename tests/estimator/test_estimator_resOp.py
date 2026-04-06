@@ -14,6 +14,7 @@
 """
 This submodule tests the base classes for resource operators.
 """
+
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass

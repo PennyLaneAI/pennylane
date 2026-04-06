@@ -14,6 +14,7 @@
 """
 Test the Resource classes for Qubitization
 """
+
 import pytest
 
 import pennylane.estimator as qre

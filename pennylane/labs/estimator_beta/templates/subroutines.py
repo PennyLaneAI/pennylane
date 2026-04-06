@@ -14,7 +14,6 @@
 r"""Resource operators for PennyLane subroutine templates."""
 
 import math
-from typing import Union
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep

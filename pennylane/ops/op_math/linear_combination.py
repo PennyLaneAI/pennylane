@@ -14,6 +14,7 @@
 """
 LinearCombination class
 """
+
 import itertools
 import numbers
 

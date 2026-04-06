@@ -14,6 +14,7 @@
 """
 This submodule defines a class for compute-uncompute patterns.
 """
+
 from collections import Counter, defaultdict
 from functools import reduce
 from typing import Callable

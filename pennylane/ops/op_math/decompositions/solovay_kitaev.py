@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Solovay-Kitaev implementation for approximate single-qubit unitary decomposition."""
+
 import math
 import warnings
 from functools import lru_cache

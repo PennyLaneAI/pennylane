@@ -14,6 +14,7 @@
 """
 Tests for the FlipSign template.
 """
+
 import re
 
 import pytest

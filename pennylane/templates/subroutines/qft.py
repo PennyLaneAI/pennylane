@@ -15,7 +15,6 @@
 This submodule contains the template for QFT.
 """
 
-
 import functools
 
 import numpy as np
