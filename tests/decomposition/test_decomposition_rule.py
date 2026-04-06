@@ -194,6 +194,7 @@ class TestDecompositionRule:
 
         expected_name = name or "my_cz"
         assert my_cz.name == expected_name
+        assert repr(my_cz) == expected_name
 
         # Test that the name is correctly set when decorating an existing
         # rule that was previously created by `register_condition`
@@ -207,6 +208,7 @@ class TestDecompositionRule:
 
         expected_name = name or "my_cz_second"
         assert my_cz_second.name == expected_name
+        assert repr(my_cz_second) == expected_name
 
     def test_error_raised_with_no_resource_fn(self):
         """Tests that an error is raised when no resource fn is provided."""
