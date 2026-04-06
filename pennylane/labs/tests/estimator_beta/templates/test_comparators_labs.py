@@ -270,19 +270,27 @@ class TestRegisterEquality:
             (
                 3,
                 [
-                    Allocate(1),
-                    GateCount(resource_rep(qre.Toffoli), 2),
-                    GateCount(resource_rep(qre.CNOT), 3),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0}
+                        ),
+                        1,
+                    ),
                     GateCount(resource_rep(qre.X), 3),
+                    GateCount(resource_rep(qre.CNOT), 3),
                 ],
             ),
             (
                 6,
                 [
-                    Allocate(4),
-                    GateCount(resource_rep(qre.Toffoli), 5),
-                    GateCount(resource_rep(qre.CNOT), 6),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 6, "num_zero_ctrl": 0}
+                        ),
+                        1,
+                    ),
                     GateCount(resource_rep(qre.X), 6),
+                    GateCount(resource_rep(qre.CNOT), 6),
                 ],
             ),
         ),
@@ -290,40 +298,6 @@ class TestRegisterEquality:
     def test_resources(self, register_size, expected_res):
         """Test that the resources are correct."""
         result = qre.RegisterEquality.resource_decomp(register_size)
-        for r, e in zip(result, expected_res):
-            if hasattr(r, "equal"):
-                assert r.equal(e)
-            else:
-                assert r == e
-
-    @pytest.mark.parametrize(
-        "register_size, expected_res",
-        (
-            (0, []),
-            (1, [GateCount(resource_rep(qre.X)), GateCount(resource_rep(qre.CNOT), 2)]),
-            (
-                3,
-                [
-                    GateCount(resource_rep(qre.Toffoli), 2),
-                    GateCount(resource_rep(qre.CNOT), 3),
-                    GateCount(resource_rep(qre.X), 3),
-                    Deallocate(1),
-                ],
-            ),
-            (
-                6,
-                [
-                    GateCount(resource_rep(qre.Toffoli), 5),
-                    GateCount(resource_rep(qre.CNOT), 6),
-                    GateCount(resource_rep(qre.X), 6),
-                    Deallocate(4),
-                ],
-            ),
-        ),
-    )
-    def test_adjoint_resources(self, register_size, expected_res):
-        """Test that the resources are correct for the adjoint of the operator."""
-        result = qre.RegisterEquality.adjoint_resource_decomp({"register_size": register_size})
         for r, e in zip(result, expected_res):
             if hasattr(r, "equal"):
                 assert r.equal(e)

@@ -333,50 +333,11 @@ class RegisterEquality(ResourceOperator):
             gate_lst.append(GateCount(resource_rep(qre.CNOT), 2))
             return gate_lst
 
-        gate_lst.append(qre.Allocate(register_size - 2))
-        gate_lst.append(GateCount(resource_rep(qre.Toffoli), register_size - 1))
-        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
+        mcx = resource_rep(
+            qre.MultiControlledX, {"num_ctrl_wires": register_size, "num_zero_ctrl": 0}
+        )
+        gate_lst.append(GateCount(mcx, 1))
         gate_lst.append(GateCount(resource_rep(qre.X), register_size))
-
-        return gate_lst
-
-    @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
-        r"""Returns a list representing the resources of the adjoint of the operator. Each object in the list represents a gate and the
-        number of times it occurs in the circuit.
-
-        Args:
-            target_resource_params (dict): Dictionary containing the resource parameters.
-
-        Resources:
-            The adjoint of this circuit uncomputes the AND reduction with an ``Adjoint`` of ``TemporaryAND`` cascade, then uncomputes the XOR with ``CNOT`` gates.
-            The circuit is represented as:
-
-                0: ────────────────╭●─┤
-                1: ─────────────╭●─│──┤
-                2: ──────────╭●─│──│──┤
-                3: ────╭●──X─│──│──╰X─┤
-                4: ────├●──X─│──╰X────┤
-                5: ─╭●─│───X─╰X───────┤
-                6: ─├●─╰⊕─────────────┤
-                7: ─╰⊕────────────────┤
-
-        Returns:
-            list[GateCount]: A list of gate counts representing the resources of the adjoint of the operator.
-        """
-        register_size = target_resource_params["register_size"]
-        gate_lst = []
-        if register_size == 0:
-            return gate_lst
-
-        if register_size == 1:
-            gate_lst.append(GateCount(resource_rep(qre.X), 1))
-            gate_lst.append(GateCount(resource_rep(qre.CNOT), 2))
-            return gate_lst
-
-        gate_lst.append(GateCount(resource_rep(qre.Toffoli), register_size - 1))
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
-        gate_lst.append(GateCount(resource_rep(qre.X), register_size))
-        gate_lst.append(qre.Deallocate(register_size - 2))
 
         return gate_lst
