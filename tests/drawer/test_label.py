@@ -15,7 +15,6 @@
 Tests for the 'label' functionality.
 """
 
-
 import pennylane as qml
 from pennylane.drawer.label import LabelledOp, label
 

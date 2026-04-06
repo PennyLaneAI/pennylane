@@ -14,6 +14,7 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
+
 from collections.abc import Callable, Sequence
 from types import FunctionType
 

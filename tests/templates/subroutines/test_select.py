@@ -14,6 +14,7 @@
 """
 Tests for the Select template.
 """
+
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
 
@@ -43,12 +44,15 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
     if parametrized:
         ops = [qml.RX(0.2, 0) for _ in range(num_ops)]
     else:
-        ops = [qml.PauliX(0) for _ in range(num_ops)]
+        ops = [qml.MultiControlledX([0, 10, 11, 12]) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
     op = qml.Select(ops, control, work_wires, partial=partial)
     if num_ops > 0:
-        assert op.target_wires == qml.wires.Wires(0)
+        if parametrized:
+            assert op.target_wires == qml.wires.Wires(0)
+        else:
+            assert op.target_wires == qml.wires.Wires([0, 10, 11, 12])
     else:
         assert op.target_wires == qml.wires.Wires([])
     qml.ops.functions.assert_valid(op)
@@ -629,7 +633,7 @@ class TestUnaryIterator:
                     qml.CY(["w0", 1]),
                     qml.CNOT(["c0", "w0"]),
                     qml.CNOT(["c1", "w0"]),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1]),
                     qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 0))),
                 ],
                 [
@@ -651,7 +655,7 @@ class TestUnaryIterator:
                     qml.CY(["w0", 1]),
                     qml.CNOT(["c0", "w0"]),
                     qml.CNOT(["c1", "w0"]),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1]),
                     qml.CNOT(["c0", "w0"]),
                     qml.CNOT(["w0", 0]),
                     qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
@@ -670,7 +674,7 @@ class TestUnaryIterator:
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
                     qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
                     qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"]),
                     qml.CNOT(["w0", "w1"]),
                     qml.CNOT(["w1", 0]),
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
@@ -679,7 +683,7 @@ class TestUnaryIterator:
                     qml.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qml.CZ(["w1", 1]),
                     qml.CNOT(["w0", "w1"]),
-                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"]),
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
                     qml.CNOT(["c0", "w0"]),
                     qml.Elbow(["w0", "c2", "w1"], (1, 0)),
@@ -696,7 +700,7 @@ class TestUnaryIterator:
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
                     qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
                     qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"]),
                     qml.CNOT(["w0", "w1"]),
                     qml.CNOT(["w1", 0]),
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
@@ -705,7 +709,7 @@ class TestUnaryIterator:
                     qml.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qml.CZ(["w1", 1]),
                     qml.CNOT(["w0", "w1"]),
-                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"]),
                     qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
                     qml.CNOT(["c0", "w0"]),
                     qml.CH(["w0", 1]),

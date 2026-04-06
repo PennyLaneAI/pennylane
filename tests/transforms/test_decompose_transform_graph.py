@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
+
 from collections import defaultdict
 
 import numpy as np
@@ -426,6 +427,33 @@ class TestDecomposeGraphEnabled:
             # Decomposition of C(CNOT)
             qml.Toffoli(wires=[2, 1, 0]),
         ]
+
+    @pytest.mark.integration
+    def test_controlled_change_op_basis(self):
+        """Tests that a controlled ChangeOpBasis is correctly decomposed."""
+
+        op = qml.ctrl(
+            qml.change_op_basis(qml.SWAP([1, 2]), qml.PhaseAdder(1, x_wires=[1, 2])), control=0
+        )
+        tape = qml.tape.QuantumScript([op])
+        [new_tape], _ = qml.transforms.decompose(
+            tape, gate_set=qml.gate_sets.ALL_OPS, max_expansion=1
+        )
+
+        assert new_tape.operations == [
+            qml.SWAP([1, 2]),
+            qml.ctrl(qml.PhaseAdder(1, x_wires=[1, 2]), control=0),
+            qml.adjoint(qml.SWAP([1, 2])),
+        ]
+
+    @pytest.mark.integration
+    def test_controlled_pow(self):
+        """Tests that a controlled Pow is correctly decomposed."""
+
+        op = qml.ctrl(qml.pow(qml.QubitUnitary([[0, 1], [1, 0]], wires=0), 1), control=1)
+        tape = qml.tape.QuantumScript([op])
+        [new_tape], _ = qml.decompose(tape, gate_set={qml.ControlledQubitUnitary})
+        assert new_tape.operations == [qml.ControlledQubitUnitary([[0, 1], [1, 0]], wires=[1, 0])]
 
     @pytest.mark.integration
     def test_adjoint_decomp(self):

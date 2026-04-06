@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+
 import pytest
 
 import pennylane as qml

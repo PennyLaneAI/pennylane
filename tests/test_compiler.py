@@ -571,6 +571,18 @@ class TestCatalystGrad:
         assert qml.math.allclose(g, 1.0)
         assert qml.math.get_interface(g) == "jax"
 
+    @pytest.mark.parametrize("argnums", (None, 0))
+    def test_lazy_dispatch_value_and_grad(self, argnums):
+        """Test that value_and_grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        r, g = qml.qjit(qml.value_and_grad(f, argnums=argnums))(0.5)
+        assert qml.math.allclose(r, 0.25)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 

@@ -18,6 +18,7 @@ It implements the necessary :class:`~pennylane.devices._legacy_device.Device` me
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
+
 import functools
 import itertools
 from string import ascii_letters

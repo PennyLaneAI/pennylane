@@ -32,9 +32,11 @@ The following frameworks are currently supported:
 * JAX
 
 """
+
 import autoray as ar
 
 from .binary_linalg import (
+    binary_decimals,
     binary_finite_reduced_row_echelon,
     binary_is_independent,
     binary_matrix_rank,
@@ -175,7 +177,11 @@ def is_real_obj_or_close(obj):
     ``qml.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if not is_abstract(obj) and allclose(ar.imag(obj), 0.0):
+    if (
+        type(obj).__name__ != "AbstractArray"
+        and not is_abstract(obj)
+        and allclose(ar.imag(obj), 0.0)
+    ):
         obj = ar.real(obj)
     return not get_dtype_name(obj).startswith("complex")
 
@@ -211,6 +217,7 @@ __all__ = [
     "binary_finite_reduced_row_echelon",
     "binary_is_independent",
     "binary_matrix_rank",
+    "binary_decimals",
     "binary_select_basis",
     "binary_solve_linear_system",
     "block_diag",

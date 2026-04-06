@@ -14,6 +14,7 @@
 """
 Contains the condition transform.
 """
+
 from collections.abc import Callable
 
 from pennylane import capture

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
+
 from collections.abc import Sequence
 from functools import partial
 
@@ -59,6 +60,10 @@ def compile(
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         pipeline (Sequence[transform]): A list of
             tape and/or quantum function transforms to apply.
+            The default ``pipeline`` applies the following transforms:
+            :func:`~.transforms.commute_controlled`,
+            :func:`~.cancel_inverses`, and
+            :func:`~.transforms.merge_rotations`.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of

@@ -14,6 +14,7 @@
 """
 Contains templates for Quantum Signal Processing (QSP) based subroutines.
 """
+
 import scipy.special as sps
 
 import pennylane.numpy as qnp

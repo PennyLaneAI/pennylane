@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """PennyLane ZX calculus module"""
+
 from .converter import to_zx, from_zx
 
 from .push_hadamards import push_hadamards

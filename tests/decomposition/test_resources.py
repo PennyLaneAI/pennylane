@@ -224,6 +224,14 @@ class TestCompressedResourceOp:
         op2 = CompressedResourceOp(qml.MultiRZ, {"num_wires": 6})
         assert op1 != op2
 
+        op1 = CompressedResourceOp(
+            qml.ops.Prod, {"resources": {CompressedResourceOp(DummyOp, {"foo": 1, "bar": 2}): 1}}
+        )
+        op2 = CompressedResourceOp(
+            qml.ops.Prod, {"resources": {CompressedResourceOp(DummyOp, {"bar": 2, "foo": 1}): 1}}
+        )
+        assert op1 == op2
+
     def test_repr(self):
         """Tests the repr defined for debugging purposes."""
 
@@ -233,8 +241,11 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
         assert repr(op) == "MultiRZ(num_wires=5)"
 
+        op = CompressedResourceOp(DummyOp, {"bar": 1, "foo": 2})
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
+
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
-        assert repr(op) == "DummyOp(foo=2, bar=1)"
+        assert repr(op) == "DummyOp(bar=1, foo=2)"
 
     @pytest.mark.parametrize(
         "op, expected_name",

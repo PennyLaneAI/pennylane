@@ -14,6 +14,7 @@
 """
 Tests for the allocation module.
 """
+
 import uuid
 
 import pytest

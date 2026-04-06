@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the spin observables.
 """
+
 import pytest
 
 import pennylane as qml

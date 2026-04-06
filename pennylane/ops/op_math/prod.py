@@ -15,6 +15,7 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+
 import itertools
 from collections import Counter
 from copy import copy
@@ -492,7 +493,7 @@ def _prod_resources(resources):
 
 # pylint: disable=unused-argument
 @qml.register_resources(_prod_resources)
-def _prod_decomp(*_, wires=None, operands):
+def _prod_decomp(*_, wires=None, operands, **__):
     for op in reversed(operands):
         qml.pytrees.unflatten(*qml.pytrees.flatten(op))
 

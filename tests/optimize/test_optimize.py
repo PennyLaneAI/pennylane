@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` optimizers.
 """
+
 # pylint: disable=redefined-outer-name,too-few-public-methods
 import pytest
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for QubitUnitary operation."""
+
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -36,16 +37,20 @@ class QubitUnitary(ResourceOperator):
 
     Resources:
         The resources are defined by combining the two equalities in `Möttönen and Vartiainen
-        (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , we can express an :math:`n`
+        (2005), Fig 14 <https://arxiv.org/abs/quant-ph/0504100>`_ , we can express an :math:`n`
         qubit unitary as four :math:`n - 1` qubit unitaries and three multiplexed rotations
         via (:class:`~.pennylane.estimator.templates.subroutines.SelectPauliRot`). Specifically, the cost
         is given by:
 
-        * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
+        * 1-qubit unitary, can be implemented up to a global phase by composing RX, RY, and RZ gates.
+          The cost is given by two :code:`RZ` rotations and one :code:`RY` rotation (``"RZ RY RZ"``).
 
-        * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
+        * 2-qubit unitary, the cost is described by Figure 2 in `Shende, Markov and Bullock (2004)
+          <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
+          two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
 
-        * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
+        * 3-qubit unitary or more, the cost is given according to Figure 14 in `Möttönen and Vartiainen
+          (2005), Fig 14 <https://arxiv.org/abs/quant-ph/0504100>`_ , recursively.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QubitUnitary`.
 
@@ -63,9 +68,9 @@ class QubitUnitary(ResourceOperator):
         allocated wires: 0
              zero state: 0
              any state: 0
-     Total gates : 52
-      'RZ': 24,
-      'RY': 4,
+     Total gates : 96
+      'RZ': 44,
+      'RY': 28,
       'CNOT': 24
     """
 
@@ -122,16 +127,20 @@ class QubitUnitary(ResourceOperator):
 
         Resources:
             The resources are defined by combining the two equalities in `Möttönen and Vartiainen
-            (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_, we can express an :math:`n`-
+            (2005), Fig 14 <https://arxiv.org/abs/quant-ph/0504100>`_, we can express an :math:`n`-
             qubit unitary as four :math:`n - 1`-qubit unitaries and three multiplexed rotations
             via (:class:`~.pennylane.estimator.templates.subroutines.SelectPauliRot`). Specifically, the cost
             is given by:
 
-            * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
+            * 1-qubit unitary, can be implemented up to a global phase by composing RX, RY, and RZ gates.
+              The cost is given by two :code:`RZ` rotations and one :code:`RY` rotation (``"RZ RY RZ"``).
 
-            * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
+            * 2-qubit unitary, the cost is described by Figure 2 in `Shende, Markov and Bullock (2004)
+              <https://arxiv.org/abs/quant-ph/0308033>`_. The cost is four general single qubit unitaries,
+              two :code:`RY` rotations, one :code:`RZ` rotation and three :code:`CNOT` gates.
 
-            * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
+            * 3-qubit unitary or more, the cost is given according to Figure 14 in `Möttönen and Vartiainen
+              (2005), Fig 14 <https://arxiv.org/abs/quant-ph/0504100>`_ , recursively.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -140,9 +149,14 @@ class QubitUnitary(ResourceOperator):
         """
         gate_lst = []
 
-        one_qubit_decomp_cost = [GateCount(resource_rep(qre.RZ, {"precision": precision}))]
+        one_qubit_decomp_cost = [
+            GateCount(resource_rep(qre.RY, {"precision": precision})),
+            GateCount(resource_rep(qre.RZ, {"precision": precision}), 2),
+        ]
         two_qubit_decomp_cost = [
-            GateCount(resource_rep(qre.RZ, {"precision": precision}), 4),
+            GateCount(resource_rep(qre.RZ, {"precision": precision})),
+            GateCount(resource_rep(qre.RY, {"precision": precision}), 2),
+            GateCount(cls.resource_rep(num_wires=1, precision=precision), 4),
             GateCount(resource_rep(qre.CNOT), 3),
         ]
 

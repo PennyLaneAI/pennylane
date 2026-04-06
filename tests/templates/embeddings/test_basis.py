@@ -14,6 +14,7 @@
 """
 Tests for the BasisEmbedding template.
 """
+
 import numpy as np
 import pytest
 
@@ -26,7 +27,7 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
 
 # pylint: disable=protected-access

@@ -14,6 +14,7 @@
 """
 This module contains the qml.simplify function.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

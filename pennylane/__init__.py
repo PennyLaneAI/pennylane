@@ -15,6 +15,7 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+
 import warnings
 
 from pennylane import exceptions
@@ -71,7 +72,7 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._grad import grad, jacobian, vjp, jvp
+from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph

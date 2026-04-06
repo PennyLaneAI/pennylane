@@ -14,6 +14,7 @@
 """
 Integration tests for the qnode for all interfaces.
 """
+
 import pytest
 
 import pennylane as qml
