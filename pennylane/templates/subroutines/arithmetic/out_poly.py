@@ -14,6 +14,7 @@
 """
 Contains the OutPoly template.
 """
+
 from collections import Counter
 
 from pennylane import math
@@ -446,7 +447,7 @@ class OutPoly(Operation):
 
         for item, coeff in coeffs_dic.items():
 
-            if not 1 in item:
+            if 1 not in item:
                 # Add the constant term
                 list_ops.append(PhaseAdder(int(coeff), output_adder_mod))
             else:
@@ -531,7 +532,7 @@ def _out_poly_decomposition(
 
     for item, coeff in coeffs_dic.items():
 
-        if not 1 in item:
+        if 1 not in item:
             # Add the constant term
             PhaseAdder(int(coeff), output_adder_mod)
         else:

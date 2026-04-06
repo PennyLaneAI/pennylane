@@ -16,7 +16,6 @@ Contains the ReferenceQubit device, a minimal device that can be used for testin
 and plugin development purposes.
 """
 
-
 import numpy as np
 
 from pennylane import math
@@ -28,7 +27,7 @@ from pennylane.transforms import (
     diagonalize_measurements,
     split_non_commuting,
 )
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result
 
 from .device_api import Device
@@ -154,7 +153,7 @@ class ReferenceQubit(Device):
             execution_config = ExecutionConfig()
 
         # Here we convert an arbitrary tape into one natively supported by the device
-        program = TransformProgram()
+        program = CompilePipeline()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(defer_measurements, allow_postselect=False)
         program.add_transform(split_non_commuting)
@@ -162,6 +161,7 @@ class ReferenceQubit(Device):
         program.add_transform(measurements_from_samples)
         program.add_transform(
             decompose,
+            target_gates=operations,
             stopping_condition=supports_operation,
             skip_initial_state_prep=False,
             name="reference.qubit",

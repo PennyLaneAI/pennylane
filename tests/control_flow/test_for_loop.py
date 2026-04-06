@@ -14,6 +14,7 @@
 """
 Tests for the for_loop
 """
+
 import pytest
 
 import pennylane as qml
@@ -33,6 +34,17 @@ def test_early_exit():
     jaxpr = jax.make_jaxpr(inner_loop)(0)
     assert len(jaxpr.eqns) == 0
     assert inner_loop(4) == 4
+
+
+def test_error_if_outputs_when_no_inputs():
+    """Test an error is raised if there is an output when there is no additional input."""
+
+    @qml.for_loop(3)
+    def f(i):  # pylint: disable=unused-argument
+        return 2
+
+    with pytest.raises(ValueError, match="should not return anything "):
+        f()
 
 
 def test_for_loop_python_fallback():

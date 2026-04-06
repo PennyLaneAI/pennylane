@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
+
 # pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
@@ -1314,6 +1315,7 @@ class TestParameterShiftRule:
             assert gradF.shape == ()
             assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
+    @pytest.mark.local_salt(1)
     def test_non_involutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
         shot_vec = many_shots_shot_vector

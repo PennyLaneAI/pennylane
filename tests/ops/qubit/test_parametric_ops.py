@@ -14,9 +14,10 @@
 """
 Unit tests for the available built-in parametric qubit operations.
 """
+
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import copy
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 import pytest
@@ -151,7 +152,24 @@ class TestSparseOperators:
         )
 
 
+SKIP_ASSERT_VALID = {
+    qml.GlobalPhase: True,
+    qml.QubitUnitary: {"skip_differentiation": True},
+    qml.DiagonalQubitUnitary: {"skip_differentiation": True},
+    qml.ControlledQubitUnitary: {"skip_differentiation": True},
+}
+
+
 class TestOperations:
+
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
+    def test_assert_valid(self, op):
+        kwargs = SKIP_ASSERT_VALID.get(type(op), {})
+        if kwargs is True:
+            pytest.skip()
+
+        qml.ops.functions.assert_valid(op, **kwargs)
+
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
@@ -262,6 +280,15 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
+
+    @pytest.mark.parametrize("op_class", (qml.RX, qml.RY, qml.RZ))
+    def test_decompositions_undefined(self, op_class):
+        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
+        have graph decomps."""
+
+        with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+            op_class(0.5, wires=0).decomposition()
+
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""
@@ -866,6 +893,18 @@ class TestMatrix:
         # test identity for theta=pi
         assert np.allclose(qml.RZ.compute_matrix(np.pi), -1j * Z, atol=tol, rtol=0)
         assert np.allclose(qml.RZ(np.pi, wires=0).matrix(), -1j * Z, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_rz_matrix_vmap_broadcasting_bug(self):
+        """Test for an error when torch.vmap + parameter broadcasting used with RZ."""
+
+        import torch
+
+        x = torch.tensor([[0.1, 0.2, 0.3]])
+        res = torch.vmap(qml.RZ.compute_matrix, in_dims=0)(x)
+
+        for xi, resi in zip(x[0], res[0]):
+            assert qml.math.allclose(resi, qml.RZ.compute_matrix(xi))
 
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
@@ -1834,7 +1873,9 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
+
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
@@ -3267,6 +3308,38 @@ class TestMultiRZ:
 
         op = qml.MultiRZ(0.123, wires=[0, 1, 2, 3])
         qml.ops.functions.assert_valid(op)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_MultiRZ_decomposition_qjit_old(self, n):
+        """Test that the decomposition with qjit with the old decomposition system
+        produces the correct matrix."""
+        wires = tuple(range(n))
+        theta = 0.8362
+        mat_fn = qml.qjit(qml.matrix(qml.MultiRZ.compute_decomposition, wires), static_argnums=[1])
+        mat = mat_fn(theta, wires)
+        exp_mat = qml.MultiRZ.compute_matrix(theta, n)
+        assert np.allclose(mat, exp_mat)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_MultiRZ_decomposition_qjit_new(self, n):
+        """Test that the decomposition with qjit with the new decomposition system
+        produces the correct matrix."""
+        wires = tuple(range(n))
+        theta = 0.8362
+        exp_state = np.diag(qml.MultiRZ.compute_matrix(theta, n)) / 2 ** (n / 2)
+        for rule in qml.list_decomps(qml.MultiRZ):
+
+            @partial(qml.qjit, static_argnums=[1])
+            @qml.qnode(qml.device("lightning.qubit", wires=n))
+            def node(theta, rule):
+                _ = [qml.H(w) for w in range(n)]
+                rule(theta, wires)
+                return qml.state()
+
+            state = node(theta, rule)
+            assert np.allclose(state, exp_state)
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):

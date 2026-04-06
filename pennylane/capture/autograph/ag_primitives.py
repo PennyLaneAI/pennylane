@@ -16,6 +16,7 @@
 This module provides the implementation of AutoGraph primitives in terms of traceable PennyLane
 functions. The purpose is to convert imperative style code to functional or graph-style code.
 """
+
 import copy
 import functools
 import operator
@@ -77,7 +78,7 @@ def update_item_with_op(
 ):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
 
-    gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    ast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
     inplace_operation_map = {
         "mult": "mul",
         "div": "truediv",
@@ -90,9 +91,9 @@ def update_item_with_op(
 
     if qml.math.is_abstract(target):
         if isinstance(index, slice):
-            target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
+            target = getattr(target.at[index.start : index.stop : index.step], ast_op_map[op])(x)
         else:
-            target = getattr(target.at[index], gast_op_map[op])(x)
+            target = getattr(target.at[index], ast_op_map[op])(x)
     else:
         # Use Python's in-place operator
         target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)

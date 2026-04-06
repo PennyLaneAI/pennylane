@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Shot adaptive optimizer"""
+
 # pylint: disable=too-many-instance-attributes,too-many-arguments
 
 
@@ -83,8 +84,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @partial(qml.set_shots, shots=100)
-
+    >>> @qml.set_shots(shots=100)
     ... @qml.qnode(dev)
     ... def cost(weights):
     ...     qml.StronglyEntanglingLayers(weights, wires=range(2))

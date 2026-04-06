@@ -204,7 +204,7 @@ but is not limited to, executing on a different quantum device, using a new diff
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
 way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
-used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
+used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the compile pipeline cannot be updated 
 using this method.
 
 For instance, to use a different quantum device, the configuration can be updated with,
@@ -256,11 +256,9 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 .. code-block:: python
 
-    from functools import partial
-
     dev = qml.device('default.qubit', wires=2)
 
-    @partial(qml.set_shots, shots=10)
+    @qml.set_shots(shots=10)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.CNOT([0, 1])
@@ -282,7 +280,7 @@ Consider
 
 .. code-block:: python
 
-    @partial(qml.set_shots, shots=[5, 10, 1000])
+    @qml.set_shots(shots=[5, 10, 1000])
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)

@@ -14,6 +14,7 @@
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+
 # pylint: disable=import-outside-toplevel
 import inspect
 from functools import reduce
@@ -213,7 +214,8 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = reduce(lambda x, y: y @ x, generator(params))
+            with qml.QueuingManager.stop_recording():
+                true_mat = reduce(lambda x, y: y @ x, generator(params))
             qml.QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 

@@ -16,7 +16,6 @@ The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
 
-
 import inspect
 import logging
 from dataclasses import replace
@@ -39,7 +38,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops import MeasurementValue
 from pennylane.tape import QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
@@ -193,15 +192,15 @@ class NullQubit(Device):
         with qml.Tracker(dev) as tracker:
             circuit(params)
 
-    >>> tracker.history["resources"][0]
-    num_wires: 100
-    num_gates: 10000
-    depth: 502
-    shots: Shots(total=None)
-    gate_types:
-    {'Rot': 5000, 'CNOT': 5000}
-    gate_sizes:
-    {1: 5000, 2: 5000}
+    >>> print(tracker.history["resources"][0])
+    Wire allocations: 100
+    Total gates: 10000
+    Gate counts:
+    - Rot: 5000
+    - CNOT: 5000
+    Measurements:
+    - expval(PauliZ): 100
+    Depth: 502
 
 
     .. details::
@@ -310,7 +309,7 @@ class NullQubit(Device):
     # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -322,13 +321,14 @@ class NullQubit(Device):
         program, _ = target.preprocess(execution_config)
 
         for t in program:
-            if t.transform == decompose.transform:
+            if t.tape_transform == decompose.tape_transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
                     return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
+                t.kwargs["strict"] = False
 
                 original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
                 if original_shots_stopping_condition:

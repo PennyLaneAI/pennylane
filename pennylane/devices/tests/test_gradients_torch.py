@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests trainable circuits using the Torch interface."""
+
 import numpy as np
 
 # pylint:disable=no-self-use,no-member
@@ -32,10 +33,12 @@ class TestGradients:
         wires = 2 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
         tol = tol(dev.shots)
+        gradient_kwargs = {}
         if diff_method == "hadamard":
             tol += 0.01
+            gradient_kwargs["aux_wire"] = 1
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -111,7 +114,11 @@ class TestGradients:
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
+        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -150,7 +157,11 @@ class TestGradients:
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
+        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -186,7 +197,11 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
-        @qml.qnode(dev, diff_method=diff_method, max_diff=2)
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
+        @qml.qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)

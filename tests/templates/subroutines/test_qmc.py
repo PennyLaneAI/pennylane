@@ -14,11 +14,14 @@
 """
 Unit tests for the QuantumMonteCarlo subroutine template.
 """
+
 import numpy as np
 import pytest
 from scipy.stats import norm
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
     QuantumMonteCarlo,
     _make_V,
@@ -268,6 +271,18 @@ class TestQuantumMonteCarlo:
         # Skip capture test because the _unflatten method of QMC is not compatible with capture
         qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
+    DECOMP_PARAMS = [
+        (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),
+        (np.ones(2) / 2, Wires(range(2)), Wires(range(2, 4))),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
+    def test_decomposition_new(self, p, target_wires, estimation_wires):
+        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+        for rule in qml.list_decomps(QuantumMonteCarlo):
+            _test_decomposition_rule(op, rule)
+
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
         p = np.ones((4, 1)) / 4
@@ -305,7 +320,10 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        queue_after_qpe = qml.tape.QuantumScript(tape.operations[2:]).expand().operations
+        [tape], _ = qml.transforms.decompose(
+            qml.tape.QuantumScript(tape.operations[2:]), gate_set=gate_sets.ROTATIONS_PLUS_CNOT
+        )
+        queue_after_qpe = tape.operations
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -324,7 +342,7 @@ class TestQuantumMonteCarlo:
             qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
-        qpe_tape = qpe_tape.expand()
+        [qpe_tape], _ = qml.transforms.decompose(qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)
         assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
@@ -469,6 +487,7 @@ class TestQuantumMonteCarlo:
         exact = 0.432332358381693654
         assert np.allclose(mu_estimated, exact, rtol=1e-3)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         xs = np.linspace(-np.pi, np.pi, 2**5)

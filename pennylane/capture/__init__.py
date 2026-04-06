@@ -19,7 +19,9 @@ quantum-classical programs.
 
 .. warning::
 
-    This module is experimental and will change significantly in the future.
+    This module is experimental and will change significantly in the future. In addition,
+    features herein are intended to be used with Catalyst (specifically, with the
+    :func:`~.qjit` decorator).
 
 .. currentmodule:: pennylane.capture
 
@@ -39,6 +41,7 @@ quantum-classical programs.
     ~FlatFn
     ~make_plxpr
     ~register_custom_staging_rule
+    ~subroutine
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -86,6 +89,11 @@ By default, the mechanism is disabled:
     >>> qml.capture.disable()
     >>> qml.capture.enabled()
     False
+
+.. note::
+    To activate program capture when using :func:`~.qjit`, please set `capture=True`
+    instead of using `qml.capture.enable`. By default, `capture=False`.
+
 
 **Custom Operator Behaviour**
 
@@ -159,6 +167,7 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
+
 from typing import Type
 from collections.abc import Callable
 
@@ -168,6 +177,11 @@ from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
+
+# Import Patcher for contextual patching (preferred over global patches)
+from .patching import Patcher
+from .jax_patches import get_jax_patches
+from .subroutine import subroutine
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -238,4 +252,6 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "get_jax_patches",
 )

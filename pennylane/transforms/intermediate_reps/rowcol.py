@@ -18,11 +18,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-import networkx as nx
 import numpy as np
-from networkx.algorithms.approximation import steiner_tree
 
-import pennylane as qml
+from pennylane.math import binary_solve_linear_system
+from pennylane.ops import CNOT
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -32,18 +31,8 @@ from .parity_matrix import parity_matrix
 if TYPE_CHECKING:
     from pennylane.typing import TensorLike
 
-try:
-    import galois
 
-    # Create the Galois number field F_2, in which we can create arrays in _get_S.
-    F_2 = galois.GF(2)  # pragma: no cover
-    has_galois = True  # pragma: no cover
-
-except ModuleNotFoundError:
-    has_galois = False
-
-
-def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def postorder_traverse(tree, source: int, source_parent: int | None = None):
     """Post-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
@@ -128,7 +117,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     return out
 
 
-def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def preorder_traverse(tree, source: int, source_parent: int = None):
     """Pre-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
@@ -226,10 +215,9 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     if mode == "column":
         b = P[:, idx]
     else:
-        P = F_2(P)
-        e_i = F_2.Zeros(len(P))
+        e_i = np.zeros(len(P), dtype=int)
         e_i[idx] = 1
-        b = np.linalg.solve(P.T, e_i)  # This solve step is over F_2!
+        b = binary_solve_linear_system(P.T, e_i)
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)
@@ -238,7 +226,7 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     return S
 
 
-def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
+def _eliminate(P: TensorLike, connectivity, idx: int, mode: str):
     """Eliminate the column or row with index ``idx`` of the parity matrix P,
     respecting the connectivity constraints given by ``connectivity``.
 
@@ -261,6 +249,9 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
 
     cnots = []
     # i.1.1/i.2.1 Find Steiner tree within S (S').
+    # pylint: disable=import-outside-toplevel
+    from networkx.algorithms.approximation import steiner_tree
+
     T = steiner_tree(connectivity, list(S))
 
     # Need post-order nodes in any case
@@ -293,9 +284,7 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
 
 
 @transform
-def rowcol(
-    tape: QuantumScript, connectivity: nx.Graph = None
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""CNOT routing algorithm `RowCol <https://pennylane.ai/compilation/rowcol-algorithm>`__.
 
     This transform maps a CNOT circuit to a new CNOT circuit under constrained connectivity.
@@ -312,14 +301,7 @@ def rowcol(
         the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ImportError: if the required ``galois`` package is not installed (``pip install galois``).
         TypeError: if the input quantum circuit is not a CNOT circuit.
-
-    .. note::
-
-        This function requires the package ``galois`` to be installed. It can be installed via
-        ``pip install galois``, for details see
-        `its documentation <https://mhostetter.github.io/galois/latest/>`__.
 
     **Example**
 
@@ -380,21 +362,16 @@ def rowcol(
     Please see `the compilation page on RowCol <https://pennylane.ai/compilation/rowcol-algorithm>`__ for more details and step-by-step explanations of the algorithm.
 
     """
-    if not has_galois:  # pragma: no cover
-        raise ImportError(
-            "rowcol requires the package galois. You can install it with pip install galois."
-        )  # pragma: no cover
-
     wire_order = tape.wires
     P = parity_matrix(tape, wire_order=wire_order)
 
     cnots = _rowcol_parity_matrix(P, connectivity)
     circ = QuantumScript(
-        [qml.CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
+        [CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
     )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]
@@ -402,13 +379,9 @@ def rowcol(
     return [circ], null_postprocessing
 
 
-def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[tuple[int]]:
+def _rowcol_parity_matrix(P: np.ndarray, connectivity) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
-
-    if not has_galois:  # pragma: no cover
-        raise ImportError(
-            "rowcol requires the package galois. You can install it with pip install galois."
-        )  # pragma: no cover
+    import networkx as nx  # pylint: disable=import-outside-toplevel
 
     P = P.copy()
     n = len(P)

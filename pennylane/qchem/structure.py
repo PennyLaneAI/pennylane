@@ -14,6 +14,7 @@
 """This module contains functions to read the structure of molecules, build a Hartree-Fock state,
 build an active space and generate single and double excitations.
 """
+
 # pylint: disable=too-many-locals
 import os
 import re
@@ -312,7 +313,7 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    bin_range = int(np.ceil(np.log2(orbitals)))
+    bin_range = qml.math.ceil_log2(orbitals)
 
     beta = np.array([[1]])
 

@@ -14,6 +14,7 @@
 """
 Tests for qchem resource operators.
 """
+
 import pytest
 
 import pennylane.estimator as qre
@@ -33,7 +34,7 @@ class TestResourceQubitUnitary:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.QubitUnitary()
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
@@ -59,14 +60,19 @@ class TestResourceQubitUnitary:
                 1,
                 None,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-9})),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-9})),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-9}), 2),
                 ],
             ),
             (
                 2,
                 1e-3,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-3}), 4),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-3})),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-3}), 2),
+                    GateCount(
+                        resource_rep(qre.QubitUnitary, {"num_wires": 1, "precision": 1e-3}), 4
+                    ),
                     GateCount(resource_rep(qre.CNOT), 3),
                 ],
             ),
@@ -74,7 +80,12 @@ class TestResourceQubitUnitary:
                 5,
                 1e-5,
                 [
-                    GateCount(resource_rep(qre.RZ, {"precision": 1e-5}), (4**3) * 4),
+                    GateCount(resource_rep(qre.RZ, {"precision": 1e-5}), 4**3),
+                    GateCount(resource_rep(qre.RY, {"precision": 1e-5}), (4**3) * 2),
+                    GateCount(
+                        resource_rep(qre.QubitUnitary, {"num_wires": 1, "precision": 1e-5}),
+                        (4**3) * 4,
+                    ),
                     GateCount(resource_rep(qre.CNOT), (4**3) * 3),
                     GateCount(
                         resource_rep(

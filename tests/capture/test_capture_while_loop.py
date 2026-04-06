@@ -92,6 +92,17 @@ class TestCaptureWhileLoop:
         with pytest.raises(ValueError, match="my random error"):
             _ = jax.make_jaxpr(w)(0)
 
+    def test_condition_converted_to_bool(self):
+        """Test that the cond condition output is converted to bool"""
+
+        @qml.while_loop(lambda i: 5)
+        def f(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(f)(0.0)
+        cond = jaxpr.eqns[0].params["jaxpr_cond_fn"]
+        assert cond.outvars[0].aval.dtype == jnp.bool
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
@@ -298,7 +309,7 @@ class TestCaptureCircuitsWhileLoop:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 

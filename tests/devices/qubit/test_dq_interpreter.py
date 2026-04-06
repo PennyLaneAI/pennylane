@@ -14,6 +14,7 @@
 """
 This module tests the default qubit interpreter.
 """
+
 import pytest
 
 jax = pytest.importorskip("jax")

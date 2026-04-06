@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.vqe` submodule.
 """
+
 import copy
 
 import numpy as np
@@ -973,7 +974,13 @@ class TestNewVQE:
 
         res = qml.specs(circuit)()
 
-        assert res["num_observables"] == 1
+        assert res["resources"] == qml.resource.SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(Hamiltonian(num_wires=2, num_terms=2))": 1},
+            depth=2,
+        )
 
 
 class TestInterfaces:

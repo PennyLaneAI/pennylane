@@ -14,7 +14,6 @@
 """Unit tests for preprocess in devices/qubit."""
 
 import warnings
-from functools import partial
 
 import numpy as np
 import pytest
@@ -26,7 +25,6 @@ from pennylane.devices.preprocess import (
     device_resolve_dynamic_wires,
     measurements_from_counts,
     measurements_from_samples,
-    mid_circuit_measurements,
     no_analytic,
     no_sampling,
     null_postprocessing,
@@ -36,7 +34,7 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
@@ -390,10 +388,32 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
+@qml.register_resources({qml.H: 6, qml.RX: 1})
+def dummy_rz_decomp_0(theta, wires):
+    qml.H(wires)
+    qml.H(wires)
+    qml.H(wires)
+    qml.RX(theta, wires)
+    qml.H(wires)
+    qml.H(wires)
+    qml.H(wires)
+
+
+@qml.register_resources({qml.RX: 1})
+def dummy_rz_decomp_1(theta, wires):
+    qml.RX(theta, wires)
+
+
+@qml.register_resources({qml.H: 1}, work_wires={"zeroed": 1})
+def dummy_rz_decomp_2(theta, wires):
+    # pylint: disable=unused-argument
+    qml.H(wires)
+
+
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("shots", [None, 100])
     def test_decompose_expand_unsupported_op(self, shots):
         """Test that decompose expands the tape when unsupported operators are present"""
@@ -410,7 +430,6 @@ class TestDecomposeTransformations:
 
         assert tape.shots == expanded_tape.shots
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_no_expansion(self):
         """Test that expand_fn does nothing to a fully supported quantum script."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
@@ -422,7 +441,6 @@ class TestDecomposeTransformations:
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             qml.assert_equal(op, exp)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
         """Test that validate_measurements and validate_observables works when non commuting measurements exist in the circuit."""
@@ -433,7 +451,6 @@ class TestDecomposeTransformations:
         new_qs = new_qs[0]
         assert new_qs.measurements == qs.measurements
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -473,7 +490,6 @@ class TestDecomposeTransformations:
 
         assert expanded_tape.circuit == expected + measurements
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -491,7 +507,6 @@ class TestDecomposeTransformations:
 
         assert new_tape[0] != prep_op
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_with_device_wires_and_target_gates(self):
         """Test that decompose works correctly with device_wires and target_gates parameters."""
         # Mock a simple target gate set
@@ -522,7 +537,101 @@ class TestDecomposeTransformations:
         assert len(legacy_tape.operations) > len(tape.operations)
         assert all(op.name in target_gates for op in legacy_tape.operations)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.parametrize(
+        "num_work_wires, fixed_decomps, alt_decomps, exp_types",
+        [
+            (
+                0,
+                {qml.RZ: dummy_rz_decomp_0},
+                {qml.RZ: [dummy_rz_decomp_1, dummy_rz_decomp_2]},
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),
+            (
+                1,
+                {qml.RZ: dummy_rz_decomp_0},
+                {qml.RZ: [dummy_rz_decomp_1, dummy_rz_decomp_2]},
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),
+            (
+                0,
+                {qml.RZ: dummy_rz_decomp_0},
+                None,
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),  # fixed decomp HHH RX HHH
+            (
+                1,
+                {qml.RZ: dummy_rz_decomp_0},
+                None,
+                [qml.H, qml.H, qml.H, qml.RX, qml.H, qml.H, qml.H],
+            ),  # fixed decomp HHH RX HHH
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0]},
+                [qml.PhaseShift, qml.GlobalPhase],
+            ),  # standard PhaseShift-GlobalPhase decomposition
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.PhaseShift, qml.GlobalPhase],
+            ),  # standard PhaseShift-GlobalPhase decomposition
+            (
+                1,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.H],
+            ),  # fake single-Hadamard decomposition "using" a work wire
+            (
+                None,
+                None,
+                {qml.RZ: [dummy_rz_decomp_0, dummy_rz_decomp_2]},
+                [qml.H],
+            ),  # fake single-Hadamard decomposition "using" a work wire
+            (
+                0,
+                None,
+                {qml.RZ: [dummy_rz_decomp_1]},
+                [qml.RX],
+            ),  # use fake extra cheap RX decomposition
+            (
+                1,
+                None,
+                {qml.RZ: [dummy_rz_decomp_1]},
+                [qml.RX],
+            ),  # use fake extra cheap RX decomposition
+        ],
+    )
+    def test_decompose_with_pass_through_kwargs(
+        self, num_work_wires, fixed_decomps, alt_decomps, exp_types
+    ):
+        """Test that decompose works correctly when passing through ``fixed_decomps``
+        and/or ``alt_decomps`` with the graph-based decomposer."""
+        # pylint: disable=too-many-arguments
+        if not qml.decomposition.enabled_graph():
+            pytest.skip("This test only is expected to work with the graph-based system.")
+
+        # Mock a simple target gate set
+        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+
+        # Create a tape with an operation that needs decomposition
+        tape = qml.tape.QuantumScript([qml.RZ(0.2, 0)])
+
+        batch, _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=None,
+            num_work_wires=num_work_wires,
+            target_gates=target_gates,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
+        )
+        new_tape = batch[0]
+
+        for op, exp_t in zip(new_tape.operations, exp_types, strict=True):
+            assert isinstance(op, exp_t)
+        assert all(op.name in target_gates for op in new_tape.operations)
+
     @pytest.mark.parametrize(
         "device_wires_list,tape_wires_list,expected_work_wires",
         [
@@ -577,28 +686,19 @@ class TestDecomposeTransformations:
             found_correct_call = False
             for call in spy.call_args_list:
                 call_kwargs = call[1]  # Get keyword arguments
-                if "max_work_wires" in call_kwargs:
-                    if call_kwargs["max_work_wires"] == expected_work_wires:
+                if "num_work_wires" in call_kwargs:
+                    if call_kwargs["num_work_wires"] == expected_work_wires:
                         found_correct_call = True
                         break
 
             assert (
                 found_correct_call
-            ), f"Expected max_work_wires={expected_work_wires} not found in calls"
+            ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
-    """Tests that only work when graph mode is enabled.
-
-    NOTE: All tests in this suite will auto-enable graph mode via fixture.
-    """
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
+    """Tests that only work when graph mode is enabled."""
 
     def test_work_wire_unavailability_causes_fallback(self):
         """Test that decompositions requiring more work wires than available are discarded.
@@ -621,83 +721,23 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyOp(0)])
-        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-        target_gates = {"Hadamard", "PauliX"}
+            tape = qml.tape.QuantumScript([MyOp(0)])
+            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+            target_gates = {"Hadamard", "PauliX"}
 
-        (out_tape,), _ = decompose(
-            tape,
-            lambda obj: obj.name in target_gates,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
+            (out_tape,), _ = decompose(
+                tape,
+                lambda obj: obj.name in target_gates,
+                device_wires=device_wires,
+                target_gates=target_gates,
+            )
 
         # Should use fallback decomposition (2 Hadamards)
         assert len(out_tape.operations) == 2
         assert all(op.name == "Hadamard" for op in out_tape.operations)
-
-
-@pytest.fixture()
-def check_deprecated():
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="The mid_circuit_measurements transform is deprecated",
-    ):
-        yield
-
-
-@pytest.mark.usefixtures("check_deprecated")
-class TestMidCircuitMeasurements:
-    """Unit tests for the mid_circuit_measurements preprocessing transform"""
-
-    @pytest.mark.parametrize(
-        "mcm_method, shots, expected_transform",
-        [
-            ("deferred", 10, qml.defer_measurements),
-            ("deferred", None, qml.defer_measurements),
-            (None, None, qml.defer_measurements),
-            (None, 10, qml.dynamic_one_shot),
-            ("one-shot", 10, qml.dynamic_one_shot),
-        ],
-    )
-    def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
-        """Test that the preprocessing transform adheres to the specified transform"""
-        dev = qml.device("default.qubit")
-        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-        spy = mocker.spy(expected_transform, "_transform")
-
-        _, _ = mid_circuit_measurements(tape, dev, mcm_config)
-        spy.assert_called_once()
-
-    @pytest.mark.parametrize("mcm_method", ["device", "tree-traversal"])
-    @pytest.mark.parametrize("shots", [10, None])
-    def test_device_mcm_method(self, mcm_method, shots):
-        """Test that no transform is applied by mid_circuit_measurements when the
-        mcm method is handled by the device"""
-        dev = qml.device("default.qubit")
-        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-
-        (new_tape,), post_processing_fn = mid_circuit_measurements(tape, dev, mcm_config)
-
-        assert qml.equal(tape, new_tape)
-        assert post_processing_fn == null_postprocessing
-
-    def test_error_incompatible_mcm_method(self):
-        """Test that an error is raised if requesting the one-shot transform without shots"""
-        dev = qml.device("default.qubit")
-        shots = None
-        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-
-        with pytest.raises(
-            QuantumFunctionError,
-            match="dynamic_one_shot is only supported with finite shots.",
-        ):
-            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 class TestMeasurementsFromCountsOrSamples:
@@ -799,7 +839,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
@@ -839,7 +879,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4, seed=seed)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
@@ -878,7 +918,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit():

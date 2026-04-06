@@ -256,6 +256,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
     def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``cancel_inverses`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 
@@ -318,7 +319,11 @@ def _try_to_cancel_with_next(current_gate, list_copy):
     return list_copy, cancelled
 
 
-@partial(transform, plxpr_transform=cancel_inverses_plxpr_to_plxpr)
+@partial(
+    transform,
+    plxpr_transform=cancel_inverses_plxpr_to_plxpr,
+    pass_name="cancel-inverses",
+)
 def cancel_inverses(
     tape: QuantumScript, recursive: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -423,7 +428,7 @@ def cancel_inverses(
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

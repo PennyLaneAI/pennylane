@@ -15,6 +15,7 @@
 This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
+
 # pylint: disable=too-many-arguments,too-many-statements
 from functools import reduce
 
@@ -250,7 +251,7 @@ def execute(
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
-                if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+                if isinstance(gradient_fn, qml.transforms.core.Transform):
                     # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes

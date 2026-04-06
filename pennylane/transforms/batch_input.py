@@ -13,6 +13,7 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
+
 from collections.abc import Sequence
 
 import numpy as np
@@ -60,10 +61,9 @@ def batch_input(
 
     .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.batch_input, argnum=1)
+        @qml.batch_input(argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(inputs, weights):
             qml.RY(weights[0], wires=0)

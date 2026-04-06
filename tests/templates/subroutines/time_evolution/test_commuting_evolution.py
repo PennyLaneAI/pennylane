@@ -14,12 +14,14 @@
 """
 Tests for the CommutingEvolution template.
 """
+
 # pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -61,8 +63,8 @@ def test_adjoint():
     res1, state1 = evolution_circuit(0.13)
     res2, state2 = adjoint_evolution_circuit(-0.13)
 
-    assert res1 == res2
-    assert all(np.isclose(state1, state2))
+    assert qml.math.allclose(res1, res2)
+    assert qml.math.allclose(state1, state2)
 
 
 def test_queuing():
@@ -93,6 +95,26 @@ def test_decomposition_expand():
     tape = op.decomposition()
     assert len(tape) == 1
     assert isinstance(tape[0], qml.ApproxTimeEvolution)
+
+
+DECOMP_PARAMS = [
+    (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)]), 0.5),
+    (
+        qml.Hamiltonian(
+            [1, 1],
+            [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0)],
+        ),
+        2,
+    ),
+]
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(("hamiltonian", "time"), DECOMP_PARAMS)
+def test_decomposition_new(hamiltonian, time):
+    op = qml.CommutingEvolution(hamiltonian, time)
+    for rule in qml.list_decomps(qml.CommutingEvolution):
+        _test_decomposition_rule(op, rule)
 
 
 def test_matrix():

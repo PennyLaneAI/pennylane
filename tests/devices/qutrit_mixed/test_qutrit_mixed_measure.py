@@ -123,7 +123,7 @@ class TestMeasurements:
     @pytest.mark.parametrize(
         "measurement, get_expected",
         [
-            (qml.state(), lambda x: math.reshape(x, newshape=(9, 9))),
+            (qml.state(), lambda x: math.reshape(x, (9, 9))),
             (qml.density_matrix(wires=0), lambda x: math.trace(x, axis1=1, axis2=3)),
             (
                 qml.probs(wires=[0]),
@@ -277,10 +277,10 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "measurement, get_expected",
         [
-            (qml.state(), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9))),
+            (qml.state(), lambda x: math.reshape(x, (BATCH_SIZE, 9, 9))),
             (
                 qml.density_matrix(wires=[0, 1]),
-                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9)),
+                lambda x: math.reshape(x, (BATCH_SIZE, 9, 9)),
             ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],

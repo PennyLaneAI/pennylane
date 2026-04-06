@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
+
 import itertools
 
 import networkx as nx
@@ -354,7 +355,7 @@ class TestMixerHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph, got list"
         ):
             qaoa.xy_mixer(graph)
 
@@ -368,9 +369,7 @@ class TestMixerHamiltonians:
         """Tests that the bit-flip mixer throws the correct errors"""
 
         graph = [(0, 1), (1, 2)]
-        with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"
-        ):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
             qaoa.bit_flip_mixer(graph, 0)
 
         n = 2
@@ -952,7 +951,7 @@ class TestCostHamiltonians:
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
 
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+            ValueError, match=r"Input graph must be a nx.Graph, rx.PyGraph, or rx.PyDiGraph"
         ):
             qaoa.max_weight_cycle([(0, 1), (1, 2)])
 

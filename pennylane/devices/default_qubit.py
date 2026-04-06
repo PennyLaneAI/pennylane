@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -53,7 +54,7 @@ from pennylane.transforms import (
     defer_measurements,
     dynamic_one_shot,
 )
-from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
@@ -122,17 +123,22 @@ _BASE_DQ_GATE_SET = {
 
 
 # Complete gate set including controlled and adjoint variants
-ALL_DQ_GATE_SET = (
+ALL_DQ_GATES = GateSet(
     _BASE_DQ_GATE_SET
     | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
     | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
+    | {"Projector"},
+    name="All DefaultQubit Gates",
 )
 
+ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
+ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
     "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
+    "IQP": lambda op: len(op.wires) < 6,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
     "Deallocate": lambda _: True,
@@ -305,9 +311,9 @@ def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
-    program = TransformProgram()
+    program = CompilePipeline()
     program.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(program, device_wires=device_wires)
+    _add_adjoint_transforms(program, device_wires=device_wires, target_gates=ALL_DQ_GATES_PLUS_MCM)
 
     try:
         program((circuit,))
@@ -320,14 +326,20 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_wires=None) -> None:
+def _add_adjoint_transforms(
+    program: CompilePipeline,
+    device_vjp=False,
+    device_wires=None,
+    target_gates=ALL_DQ_GATES,
+) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
     Args:
-        program (TransformProgram): where we will add the adjoint differentiation transforms
+        program (CompilePipeline): where we will add the adjoint differentiation transforms
         device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
         device_wires (Wires): the device wires, used to calculate available work wires
+        target_gates (GateSet): the set of gates to target in the decomposition
 
     Side Effects:
         Adds transforms to the input program.
@@ -340,15 +352,12 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_
         decompose,
         stopping_condition=adjoint_ops,
         device_wires=device_wires,
-        target_gates=ALL_DQ_GATE_SET,
+        target_gates=target_gates,
         name=name,
         skip_initial_state_prep=False,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
-    program.add_transform(
-        validate_measurements,
-        name=name,
-    )
+    program.add_transform(validate_measurements, name=name)
     program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
@@ -401,11 +410,11 @@ class DefaultQubit(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [-0.0006888975950537501,
-    0.025576307134457577,
-    -0.0038567269892757494,
-    0.1339705146860149,
-    -0.03780669772690448]
+    (tensor(-0.0006889, requires_grad=True),
+    tensor(0.02557631, requires_grad=True),
+    tensor(-0.00385673, requires_grad=True),
+    tensor(0.13397051, requires_grad=True),
+    tensor(-0.0378067, requires_grad=True))
 
     This device currently supports backpropagation derivatives:
 
@@ -425,12 +434,12 @@ class DefaultQubit(Device):
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
-            return post_processing_fn(results)
+            return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.362..., dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.932..., dtype=float64, weak_type=True)
 
     .. details::
         :title: Tracking
@@ -465,6 +474,11 @@ class DefaultQubit(Device):
         >>> new_batch, post_processing_fn = program(qscripts)
         >>> results = dev.execute(new_batch, execution_config=execution_config)
         >>> post_processing_fn(results)
+        (np.float64(-0.0006888975950538057),
+        np.float64(0.025576307134457466),
+        np.float64(-0.0038567269892758604),
+        np.float64(0.13397051468601484),
+        np.float64(-0.03780669772690465))
 
         If you monitor your CPU usage, you should see 5 new Python processes pop up to
         crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
@@ -494,7 +508,7 @@ class DefaultQubit(Device):
             if multiprocessing fails on macOS in your Jupyter notebook environment, try
             restarting the session and adding the following at the beginning of the file:
 
-            .. code-block:: python
+            .. code-block:: py
 
                 import multiprocessing
                 multiprocessing.set_start_method("fork")
@@ -605,26 +619,33 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
-    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> TransformProgram:
-        transform_program = TransformProgram()
+    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> CompilePipeline:
+        compile_pileline = CompilePipeline()
+        target_gate_set = ALL_DQ_GATES
         if config.mcm_config.mcm_method == "deferred":
-            transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-        transform_program.add_transform(transforms_decompose, stopping_condition=stopping_condition)
+            compile_pileline.add_transform(defer_measurements, num_wires=len(self.wires))
+        else:
+            target_gate_set = ALL_DQ_GATES_PLUS_MCM
+        compile_pileline.add_transform(
+            transforms_decompose,
+            gate_set=target_gate_set,
+            stopping_condition=stopping_condition,
+        )
 
-        return transform_program
+        return compile_pileline
 
     @debug_logger
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> TransformProgram:
-        """This function defines the device transform program to be applied and an updated device configuration.
+    ) -> CompilePipeline:
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (ExecutionConfig | None): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram:
+            CompilePipeline:
 
         """
         config = execution_config or ExecutionConfig()
@@ -632,57 +653,61 @@ class DefaultQubit(Device):
         if capture.enabled():
             return self._capture_preprocess_transforms(config)
 
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
+        target_gate_set = ALL_DQ_GATES
 
         if config.interface == math.Interface.JAX_JIT:
-            transform_program.add_transform(no_counts)
+            compile_pileline.add_transform(no_counts)
 
         if config.mcm_config.mcm_method == "deferred":
-            transform_program.add_transform(defer_measurements, allow_postselect=True)
+            compile_pileline.add_transform(defer_measurements, allow_postselect=True)
             _stopping_condition = no_mcms_stopping_condition
         else:
             _stopping_condition = allow_mcms_stopping_condition
-        transform_program.add_transform(
+            target_gate_set = ALL_DQ_GATES_PLUS_MCM
+
+        compile_pileline.add_transform(
             decompose,
             stopping_condition=_stopping_condition,
             device_wires=self.wires,
-            target_gates=ALL_DQ_GATE_SET,
+            target_gates=target_gate_set,
             name=self.name,
         )
         _allow_resets = config.mcm_config.mcm_method != "deferred"
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             device_resolve_dynamic_wires, wires=self.wires, allow_resets=_allow_resets
         )
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             validate_measurements,
             analytic_measurements=accepted_analytic_measurement,
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
-        transform_program.add_transform(_conditional_broadcast_expand)
+        compile_pileline.add_transform(_conditional_broadcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
-            transform_program.add_transform(broadcast_expand)
+            compile_pileline.add_transform(broadcast_expand)
 
         if config.mcm_config.mcm_method == "one-shot":
-            transform_program.add_transform(
+            compile_pileline.add_transform(
                 dynamic_one_shot, postselect_mode=config.mcm_config.postselect_mode
             )
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
             _add_adjoint_transforms(
-                transform_program,
+                compile_pileline,
                 device_vjp=config.use_device_jacobian_product,
                 device_wires=self.wires,
+                target_gates=target_gate_set,
             )
-        return transform_program
+        return compile_pileline
 
     @debug_logger
     def setup_execution_config(

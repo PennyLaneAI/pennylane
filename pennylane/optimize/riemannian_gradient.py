@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Riemannian gradient optimizer"""
+
 import warnings
 
 import numpy as np
@@ -28,7 +29,7 @@ from pennylane.workflow import QNode
 
 
 def null_postprocessing(results):
-    """A postprocesing function returned by a transform that only converts the batch of results
+    """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
     """
     return results[0]

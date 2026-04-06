@@ -16,6 +16,7 @@ This submodule offers custom primitives for the PennyLane capture module.
 """
 
 from enum import Enum
+from typing import Any
 
 from jax.extend.core import Primitive
 
@@ -30,10 +31,32 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
+def _make_hashable(obj: Any) -> Any:
+    """Convert potentially unhashable objects to hashable equivalents for JAX 0.7.0+.
+
+    JAX 0.7.0 requires all primitive parameters to be hashable. This helper converts
+    common unhashable types (list, dict, slice) to hashable tuples.
+
+    Args:
+        obj: Object to potentially convert to hashable form
+
+    Returns:
+        Hashable version of the object
+    """
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
+    if isinstance(obj, list):
+        return tuple(_make_hashable(item) for item in obj)
+    if isinstance(obj, dict):
+        return tuple((k, _make_hashable(v)) for k, v in obj.items())
+
+    return obj
+
+
 # pylint: disable=abstract-method,too-few-public-methods
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
-    classes of primitives."""
+    classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""
 
     _prim_type: PrimitiveType = PrimitiveType.DEFAULT
 
@@ -47,3 +70,13 @@ class QmlPrimitive(Primitive):
     def prim_type(self, value: str | PrimitiveType):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
+
+    def bind(self, *args, **params):
+        """Bind with automatic parameter hashability conversion for JAX 0.7.0+.
+
+        Overrides the parent bind method to automatically convert unhashable parameters
+        (like lists, dicts, and slices) to hashable tuples, which is required by JAX 0.7.0+.
+        """
+        # Convert all parameters to hashable forms
+        hashable_params = {k: _make_hashable(v) for k, v in params.items()}
+        return super().bind(*args, **hashable_params)

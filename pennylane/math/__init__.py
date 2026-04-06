@@ -32,8 +32,18 @@ The following frameworks are currently supported:
 * JAX
 
 """
+
 import autoray as ar
 
+from .binary_linalg import (
+    binary_decimals,
+    binary_finite_reduced_row_echelon,
+    binary_is_independent,
+    binary_matrix_rank,
+    binary_select_basis,
+    binary_solve_linear_system,
+    int_to_binary,
+)
 from .is_independent import is_independent
 from .matrix_manipulation import (
     expand_matrix,
@@ -98,11 +108,11 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    ceil_log2,
     convert_like,
     in_backprop,
-    requires_grad,
     is_abstract,
-    binary_finite_reduced_row_echelon,
+    requires_grad,
 )
 from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
@@ -167,7 +177,11 @@ def is_real_obj_or_close(obj):
     ``qml.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if not is_abstract(obj) and allclose(ar.imag(obj), 0.0):
+    if (
+        type(obj).__name__ != "AbstractArray"
+        and not is_abstract(obj)
+        and allclose(ar.imag(obj), 0.0)
+    ):
         obj = ar.real(obj)
     return not get_dtype_name(obj).startswith("complex")
 
@@ -200,9 +214,16 @@ __all__ = [
     "allclose",
     "allequal",
     "array",
+    "binary_finite_reduced_row_echelon",
+    "binary_is_independent",
+    "binary_matrix_rank",
+    "binary_decimals",
+    "binary_select_basis",
+    "binary_solve_linear_system",
     "block_diag",
     "cast",
     "cast_like",
+    "ceil_log2",
     "concatenate",
     "convert_like",
     "convert_to_su2",
@@ -228,6 +249,7 @@ __all__ = [
     "get_deep_interface",
     "get_trainable_indices",
     "grad",
+    "int_to_binary",
     "in_backprop",
     "is_abstract",
     "is_independent",
@@ -249,7 +271,6 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
-    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",

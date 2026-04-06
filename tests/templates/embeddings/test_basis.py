@@ -14,6 +14,7 @@
 """
 Tests for the BasisEmbedding template.
 """
+
 import numpy as np
 import pytest
 
@@ -26,7 +27,7 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
 
 # pylint: disable=protected-access
@@ -160,6 +161,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="State must be one-dimensional"):
             circuit(x=[[1], [0]])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.BasisEmbedding([0, 1], wires=[0, 1], id="a")

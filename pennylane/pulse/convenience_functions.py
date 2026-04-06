@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
+
 from collections.abc import Callable
 
 import numpy as np
@@ -173,7 +174,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
+            "You can install jax via: pip install jax"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
@@ -288,7 +289,7 @@ def pwc(timespan):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
+            "You can install jax via: pip install jax"
         )
 
     if isinstance(timespan, (tuple, list)):
@@ -362,7 +363,7 @@ def pwc_from_function(timespan, num_bins):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
+            "You can install jax via: pip install jax"
         )
 
     if isinstance(timespan, tuple):

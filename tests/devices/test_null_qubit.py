@@ -13,13 +13,11 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-from collections import defaultdict as dd
-
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices import ExecutionConfig, NullQubit
+from pennylane.devices import ExecutionConfig, NullQubit, preprocess
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -101,12 +99,18 @@ def test_set_device_target():
 
     assert len(program1) == len(program2)
     for t1, t2 in zip(program1, program2):
-        assert t1.transform == t2.transform
+        assert t1.tape_transform == t2.tape_transform
 
         assert len(t1.args) == len(t2.args)
         for i, arg in enumerate(t1.args):
             if not callable(arg):
                 assert arg == t2.args[i]
+
+        if t1.tape_transform == preprocess.decompose.tape_transform:
+            assert t1.kwargs.pop("strict") is False, (
+                "null.qubit should add strict=False to the decompose transform to allow "
+                "pass-through of ops that do not define a decomposition."
+            )
 
         assert len(t1.kwargs) == len(t2.kwargs)
         for k in t1.kwargs:
@@ -175,11 +179,11 @@ def test_tracking():
         "vjp_batches": [1],
         "execute_and_vjp_batches": [1],
         "resources": [
-            qml.resource.Resources(
-                num_wires=2,
-                num_gates=2,
-                gate_types=dd(int, {"Hadamard": 1, "FlipSign": 1}),
-                gate_sizes=dd(int, {1: 1, 2: 1}),
+            qml.resource.SpecsResources(
+                num_allocs=2,
+                gate_types={"Hadamard": 1, "FlipSign": 1},
+                gate_sizes={1: 1, 2: 1},
+                measurements={"expval(PauliZ)": 1},
                 depth=2,
             )
         ]
@@ -829,8 +833,8 @@ class TestDeviceDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        transform_program = dev.preprocess_transforms(config)
-        [qs], _ = transform_program((qs,))
+        compile_pipeline = dev.preprocess_transforms(config)
+        [qs], _ = compile_pipeline((qs,))
         actual_grad = dev.compute_derivatives([qs], config)
         assert actual_grad == (np.array(0.0),)
 
@@ -1394,12 +1398,13 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
-        dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-        program = dev.preprocess_transforms()
-        (out_tape,), _ = program([tape])
+            tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
+            dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+            program = dev.preprocess_transforms()
+            (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"

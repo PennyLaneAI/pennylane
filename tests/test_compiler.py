@@ -316,6 +316,26 @@ class TestCatalyst:
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
+    def test_while_loop_defined_outside_qjit(self):
+        """Test that the while loop can be defined outside the qjit."""
+
+        @qml.while_loop(lambda n: n < 4)
+        def w(n):
+            return n + 1
+
+        res = qml.qjit(w)(0)
+        assert qml.math.allclose(res, 4)
+
+    def test_for_loop_defined_outside_qjit(self):
+        """Test that a for_loop can be defined outside the qjit."""
+
+        @qml.for_loop(5)
+        def f(i, x):
+            return x + i
+
+        res = qml.qjit(f)(0)
+        assert qml.math.allclose(res, 10)
+
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -551,6 +571,18 @@ class TestCatalystGrad:
         assert qml.math.allclose(g, 1.0)
         assert qml.math.get_interface(g) == "jax"
 
+    @pytest.mark.parametrize("argnums", (None, 0))
+    def test_lazy_dispatch_value_and_grad(self, argnums):
+        """Test that value_and_grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        r, g = qml.qjit(qml.value_and_grad(f, argnums=argnums))(0.5)
+        assert qml.math.allclose(r, 0.25)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -697,8 +729,7 @@ class TestCatalystGrad:
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
         assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
 
-    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
-    def test_jvp_argnums(self, argnum_name):
+    def test_jvp_argnums(self):
         """Test that res."""
 
         def f(x, y):
@@ -706,24 +737,17 @@ class TestCatalystGrad:
 
         @qml.qjit
         def w(x, y):
-            return qml.jvp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qml.jvp(f, [x, y], [1.0], argnums=[1])
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
-        if argnum_name == "argnum":
-            with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.jvp"
-            ):
-                res, dres = w(x, y)
-        else:
-            res, dres = w(x, y)
+        res, dres = w(x, y)
 
         assert qml.math.allclose(res, f(x, y))
         assert qml.math.allclose(dres, x**2)
 
-    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
-    def test_vjp_argnums(self, argnum_name):
+    def test_vjp_argnums(self):
         """Test that res."""
 
         def f(x, y):
@@ -731,18 +755,12 @@ class TestCatalystGrad:
 
         @qml.qjit
         def w(x, y):
-            return qml.vjp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qml.vjp(f, [x, y], [1.0], argnums=[1])
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
-        if argnum_name == "argnum":
-            with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.vjp"
-            ):
-                res, dres = w(x, y)
-        else:
-            res, dres = w(x, y)
+        res, dres = w(x, y)
 
         assert qml.math.allclose(res, f(x, y))
         assert qml.math.allclose(dres, x**2)
@@ -761,7 +779,7 @@ class TestCatalystGrad:
         tangent = jnp.array([0.3, 0.6])
 
         with pytest.raises(
-            CompileError, match="Pennylane does not support the JVP function without QJIT."
+            CompileError, match="PennyLane does not support the JVP function without QJIT."
         ):
             jvp(x, tangent)
 
@@ -782,25 +800,7 @@ class TestCatalystGrad:
         res = vjp(x, dy)
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1][0], jnp.array([-0.43750208, 0.07000001]))
-
-    def test_vjp_without_qjit(self):
-        """Test that an error is raised when using VJP without QJIT."""
-
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
-
-            return qml.vjp(f, [params], [cotangent])
-
-        x = jnp.array([0.1, 0.2])
-        dy = jnp.array([-0.5, 0.1, 0.3])
-
-        with pytest.raises(
-            CompileError, match="Pennylane does not support the VJP function without QJIT."
-        ):
-            vjp(x, dy)
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
 class TestCatalystSample:

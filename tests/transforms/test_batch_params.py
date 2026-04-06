@@ -14,9 +14,8 @@
 """
 Unit tests for the batch params transform.
 """
-# pylint:disable=comparison-with-callable
-import functools
 
+# pylint:disable=comparison-with-callable
 import pytest
 
 import pennylane as qml
@@ -527,7 +526,7 @@ class TestDiffMulti:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=2)
 
-        @functools.partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -577,7 +576,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @functools.partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -759,7 +758,7 @@ def test_all_operations(mocker):
     """Test that a batch dimension can be added to all operations"""
     dev = qml.device("default.qubit", wires=3)
 
-    @functools.partial(qml.batch_params, all_operations=True)
+    @qml.batch_params(all_operations=True)
     @qml.qnode(dev, interface="autograd")
     def circuit(x, weights):
         qml.RX(x, wires=0)

@@ -184,7 +184,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
 
@@ -207,7 +207,7 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.math import expand_matrix, is_abstract
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -419,11 +419,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     to know about wire labels) or ``(*parameters, wires, **hyperparameters)``, where ``parameters``, ``wires``, and
     ``hyperparameters`` are the respective attributes of the operator class.
 
+    .. warning::
+
+        The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
     **Example**
@@ -446,7 +450,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # we request parameter-shift (or "analytic") differentiation.
             grad_method = "A"
 
-            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
+            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
 
                 # checking the inputs --------------
 
@@ -468,7 +472,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 # The parent class expects all trainable parameters to be fed as positional
                 # arguments, and all wires acted on fed as a keyword argument.
                 # The id keyword argument allows users to give their instance a custom name.
-                super().__init__(angle, wires=all_wires, id=id)
+                super().__init__(angle, wires=all_wires)
 
             @property
             def num_params(self):
@@ -682,7 +686,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
-    resource_keys: ClassVar[set | frozenset] = set()
+    resource_keys: ClassVar[Set] = set()
     """The set of parameters that affects the resource requirement of the operator.
 
     All decomposition rules for this operator class are expected to have a resource function
@@ -698,18 +702,21 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     """
 
     def __init_subclass__(cls, **_):
+        # turn has_decomposition into a class property if possible
+
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        # if class overrides has_decomposition property, we do not want to
+        # override it here
+
+        if (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        ) and (cls.has_decomposition == Operator.has_decomposition):
+            cls.has_decomposition = True
+
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
-
-        if cls.is_hermitian != Operator.is_hermitian:
-            warnings.warn(
-                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
-                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
-                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
-                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
-                "with a higher computational cost. ",
-                PennyLaneDeprecationWarning,
-            )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1011,7 +1018,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def id(self) -> str:
-        """Custom string to label a specific operator instance."""
+        """Custom string to label a specific operator instance.
+
+        .. warning::
+
+            The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
+        """
+        warnings.warn(
+            "The 'id' argument is deprecated and will be removed in v0.46.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
         return self._id
 
     @name.setter
@@ -1043,15 +1061,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'RX'
         >>> op.label(base_label="my_label")
         'my_label'
-        >>> op = qml.RX(1.23456, wires=0, id="test_data")
+        >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
-        'RX\n("test_data")'
+        'RX'
         >>> op.label(decimals=2)
-        'RX\n(1.23,"test_data")'
+        'RX\n(1.23)'
         >>> op.label(base_label="my_label")
-        'my_label\n("test_data")'
+        'my_label'
         >>> op.label(decimals=2, base_label="my_label")
-        'my_label\n(1.23,"test_data")'
+        'my_label\n(1.23)'
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1078,7 +1096,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         op_label = base_label or self.__class__.__name__
 
-        if self.num_params == 0:
+        if self._id is not None:
+            warnings.warn(
+                "Using 'id' to add a custom label to your operator is deprecated. "
+                "Please use 'pennylane.drawer.label' to add a custom label to "
+                "your operator instead. ",
+                PennyLaneDeprecationWarning,
+            )
+
+        if len(self.data) == 0:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         def _format(x):
@@ -1121,6 +1147,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
+
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
+
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
@@ -1307,57 +1341,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self._pauli_rep
 
     @property
-    def is_hermitian(self) -> bool:
-        """This property determines if an operator is verified to be Hermitian.
-
-        .. warning::
-
-            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
-            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
-            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
-            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
-            with a higher computational cost.
-
-        .. note::
-
-            This property provides a fast, non-exhaustive check used for internal
-            optimizations. It relies on quick, provable shortcuts (e.g., operator
-            properties) rather than a full, computationally expensive check.
-
-            For a definitive check, use the :func:`pennylane.is_hermitian` function.
-            Please note that this comes with increased computational cost.
-
-        Returns:
-            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
-            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
-
-        Consider this operator,
-
-        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-
-        In this case, Hermicity cannot be verified and leads to an inconclusive result:
-
-        >>> op.is_verified_hermitian # inconclusive
-        False
-
-        However, using :func:`pennylane.is_hermitian` will give the correct answer:
-
-        >>> qml.is_hermitian(op) # definitive
-        True
-
-        """
-        warnings.warn(
-            "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
-            "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
-            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
-            "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
-            "with a higher computational cost. ",
-            PennyLaneDeprecationWarning,
-        )
-
-        return self.is_verified_hermitian
-
-    @property
     def is_verified_hermitian(self) -> bool:
         """This property determines if an operator is verified to be Hermitian.
 
@@ -1392,19 +1375,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         return False
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls) -> bool:
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
-        # Currently, those are mostly classes from the operator arithmetic module.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        )
+    @property
+    def has_decomposition(self) -> bool:
+        r"""Bool: Whether or not the Operator returns a defined decomposition."""
+        # if compute_decomposition or decomposition overwritten and property
+        # not overwritten, set as class property during __init_subclass__
+        return any(rule.is_applicable(**self.resource_params) for rule in qml.list_decomps(self))
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -1418,9 +1394,20 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+        if type(self).compute_decomposition != Operator.compute_decomposition:
+            return self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self.hyperparameters
+            )
+
+        for decomp in qml.list_decomps(self):
+            if decomp.is_applicable(**self.resource_params):
+                with AnnotatedQueue() as q:
+                    decomp(*self.data, wires=self.wires, **self.hyperparameters)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(
@@ -1447,38 +1434,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
-
-    @classproperty
-    def has_qfunc_decomposition(cls) -> bool:
-        """Whether or not the Operator returns a defined plxpr decomposition."""
-        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
-
-    @staticmethod
-    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
-        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
-
-        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
-        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
-
-        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
-        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
-        (even if this method is defined), and not with this method.
-
-        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
-        (specifying the decomposition of the operator) are recorded in the JAX representation.
-
-        .. note::
-          This method is experimental and subject to change.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Args:
-            *args (list): positional arguments passed to the operator, including trainable parameters and wires
-            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        """
-
         raise DecompositionUndefinedError
 
     @property
@@ -1655,7 +1610,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None`
+            * `None` (deprecated)
         """
         return "_ops"
 
@@ -1878,11 +1833,15 @@ class Operation(Operator):
     please see the documentation for :class:`~.gradients.param_shift`,
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
+    .. warning::
+
+        The ``id`` argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 

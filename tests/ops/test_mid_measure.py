@@ -19,11 +19,47 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
+
+
+def test_id_is_deprecated():
+    """Tests that the 'id' argument is deprecated and renamed."""
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
+    ):
+        op = MidMeasure(0, id="blah")
+    assert op.meas_uid == "blah"
+
+
+@pytest.mark.external
+@pytest.mark.catalyst
+def test_measure_catalyst_dispatch():
+    """Test that qml.measure can be used with qjit and capture disabled."""
+
+    pytest.importorskip("catalyst")
+
+    @qml.qjit
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def c():
+        qml.X(0)
+        m = qml.measure(0, reset=True, postselect=True)
+
+        def f():
+            qml.X(1)
+
+        qml.cond(m, f)()
+
+        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+    z0, z1 = c()
+
+    assert qml.math.allclose(z0, 1)
+    assert qml.math.allclose(z1, -1)
 
 
 class TestMeasure:
@@ -40,10 +76,10 @@ class TestMeasure:
 
     def test_hash(self):
         """Test that the hash for `MidMeasure` is defined correctly."""
-        m1 = MidMeasure(Wires(0), id="m1")
-        m2 = MidMeasure(Wires(0), id="m2")
-        m3 = MidMeasure(Wires(1), id="m1")
-        m4 = MidMeasure(Wires(0), id="m1")
+        m1 = MidMeasure(Wires(0), meas_uid="m1")
+        m2 = MidMeasure(Wires(0), meas_uid="m2")
+        m3 = MidMeasure(Wires(1), meas_uid="m1")
+        m4 = MidMeasure(Wires(0), meas_uid="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
@@ -76,10 +112,18 @@ class TestMidMeasure:
         op = MidMeasure(wires="a", postselect=1, reset=True)
         assert repr(op) == "MidMeasure(wires=['a'], postselect=1, reset=True)"
 
+    def test_properties(self):
+        """Tests the properties of the MidMeasure class."""
 
-mp1 = MidMeasure(Wires(0), id="m0")
-mp2 = MidMeasure(Wires(1), id="m1")
-mp3 = MidMeasure(Wires(2), id="m2")
+        op = MidMeasure(wires="a", postselect=1, reset=True, meas_uid="blah")
+        assert op.postselect == 1
+        assert op.reset is True
+        assert op.meas_uid == "blah"
+
+
+mp1 = MidMeasure(Wires(0), meas_uid="m0")
+mp2 = MidMeasure(Wires(1), meas_uid="m1")
+mp3 = MidMeasure(Wires(2), meas_uid="m2")
 
 
 class TestMeasurementValueManipulation:
@@ -422,7 +466,7 @@ class TestMeasurementValueManipulation:
         b = a.map_wires({0: "b"})
         [new_meas] = b.measurements
         assert new_meas.wires == Wires(["b"])
-        assert new_meas.id == mp1.id
+        assert new_meas.meas_uid == mp1.meas_uid
 
     def test_mod(self):
         """Test the __mod__ dunder method between two measurement values"""

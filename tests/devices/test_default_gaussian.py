@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
+
 # pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
 import numpy as np
@@ -385,7 +386,7 @@ class TestDefaultGaussianDevice:
             "Kerr",
         }
 
-        cv_ops = set(qml.ops._cv__ops__) | {"Identity"}  # we also support identity operation
+        cv_ops = set(qml.ops._cv__ops__) | {"Identity", "Snapshot"}
         assert cv_ops - non_supported == set(gaussian_dev._operation_map)
 
     def test_observable_map(self, gaussian_dev):

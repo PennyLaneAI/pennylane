@@ -14,7 +14,9 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+
 import inspect
+from itertools import combinations
 
 # pylint: disable=protected-access
 from typing import Any
@@ -23,12 +25,34 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import math
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
+
+
+def normalize_for_comparison(obj):
+    """Normalize objects for comparison by converting tuples to lists recursively.
+
+    In JAX 0.7.0, _make_hashable converts lists to tuples for hashability.
+    This function reverses that for test comparisons.
+    """
+    # Don't normalize callables (functions, operators, etc.)
+    if callable(obj):
+        return obj
+
+    # Recursively normalize dictionaries
+    if isinstance(obj, dict):
+        return {k: normalize_for_comparison(v) for k, v in obj.items()}
+
+    # Convert tuples and lists to lists with normalized contents
+    if isinstance(obj, (tuple, list)):
+        return [normalize_for_comparison(item) for item in obj]
+
+    return obj
 
 
 unmodified_templates_cases = [
@@ -38,10 +62,6 @@ unmodified_templates_cases = [
     (qml.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qml.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qml.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
-    (qml.BasisEmbedding, (jnp.array([1, 0]), [2, 3]), {}),
-    (qml.BasisEmbedding, (), {"features": jnp.array([1, 0]), "wires": [2, 3]}),
-    (qml.BasisEmbedding, (6, [0, 5, 2]), {"id": "my_id"}),
-    (qml.BasisEmbedding, (jnp.array([1, 0, 1]),), {"wires": [0, 2, 3]}),
     (qml.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.1]), [0, 10]), {"n_repeats": 3, "pattern": None}),
@@ -53,7 +73,7 @@ unmodified_templates_cases = [
         {"local_field": "Z", "wires": [0, 2, 3]},
     ),
     (qml.BasicEntanglerLayers, (jnp.ones((5, 2)), [2, 3]), {}),
-    (qml.BasicEntanglerLayers, (jnp.ones((2, 1)), [0]), {"rotation": "X", "id": "my_id"}),
+    (qml.BasicEntanglerLayers, (jnp.ones((2, 1)), [0]), {"rotation": "X"}),
     (
         qml.BasicEntanglerLayers,
         (jnp.array([[0.3, 0.1, 0.2]]),),
@@ -62,41 +82,67 @@ unmodified_templates_cases = [
     # Need to fix GateFabric positional args: Currently have to pass init_state as kwarg if we want to pass wires as kwarg
     # https://github.com/PennyLaneAI/pennylane/issues/5521
     (qml.GateFabric, (jnp.ones((3, 1, 2)), [2, 3, 0, 1]), {"init_state": [0, 1, 1, 0]}),
-    (
+    pytest.param(
         qml.GateFabric,
         (jnp.zeros((2, 3, 2)),),
         {"include_pi": False, "wires": list(range(8)), "init_state": jnp.ones(8)},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     # (qml.GateFabric, (jnp.zeros((2, 3, 2)), jnp.ones(8)), {"include_pi": False, "wires": list(range(8))}), # Can't even init
-    # (qml.GateFabric, (jnp.ones((5, 2, 2)), list(range(6)), jnp.array([0, 0, 1, 1, 0, 1])), {"include_pi": True, "id": "my_id"}), # Can't trace
+    # (qml.GateFabric, (jnp.ones((5, 2, 2)), list(range(6)), jnp.array([0, 0, 1, 1, 0, 1])), {"include_pi": True}), # Can't trace
     # https://github.com/PennyLaneAI/pennylane/issues/5522
     # (qml.ParticleConservingU1, (jnp.ones((3, 1, 2)), [2, 3]), {}),
     (qml.ParticleConservingU1, (jnp.ones((3, 1, 2)), [2, 3]), {"init_state": [0, 1]}),
-    (
+    pytest.param(
         qml.ParticleConservingU1,
         (jnp.zeros((5, 3, 2)),),
         {"wires": [0, 1, 2, 3], "init_state": jnp.ones(4)},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     # https://github.com/PennyLaneAI/pennylane/issues/5522
     # (qml.ParticleConservingU2, (jnp.ones((3, 3)), [2, 3]), {}),
     (qml.ParticleConservingU2, (jnp.ones((3, 3)), [2, 3]), {"init_state": [0, 1]}),
-    (
+    pytest.param(
         qml.ParticleConservingU2,
         (jnp.zeros((5, 7)),),
         {"wires": [0, 1, 2, 3], "init_state": jnp.ones(4)},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.RandomLayers, (jnp.ones((3, 3)), [2, 3]), {}),
     (qml.RandomLayers, (jnp.ones((3, 3)),), {"wires": [3, 2, 1], "ratio_imprim": 0.5}),
-    (qml.RandomLayers, (), {"weights": jnp.ones((3, 3)), "wires": [3, 2, 1]}),
+    pytest.param(
+        qml.RandomLayers,
+        (),
+        {"weights": jnp.ones((3, 3)), "wires": [3, 2, 1]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
     (qml.RandomLayers, (jnp.ones((3, 3)),), {"wires": [3, 2, 1], "rotations": (qml.RX, qml.RZ)}),
     (qml.RandomLayers, (jnp.ones((3, 3)), [0, 1]), {"rotations": (qml.RX, qml.RZ), "seed": 41}),
     (qml.SimplifiedTwoDesign, (jnp.ones(2), jnp.zeros((3, 1, 2)), [2, 3]), {}),
     (qml.SimplifiedTwoDesign, (jnp.ones(3), jnp.zeros((3, 2, 2))), {"wires": [0, 1, 2]}),
-    (qml.SimplifiedTwoDesign, (jnp.ones(2),), {"weights": jnp.zeros((3, 1, 2)), "wires": [0, 2]}),
-    (
+    pytest.param(
+        qml.SimplifiedTwoDesign,
+        (jnp.ones(2),),
+        {"weights": jnp.zeros((3, 1, 2)), "wires": [0, 2]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
+    pytest.param(
         qml.SimplifiedTwoDesign,
         (),
         {"initial_layer_weights": jnp.ones(2), "weights": jnp.zeros((3, 1, 2)), "wires": [0, 2]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.StronglyEntanglingLayers, (jnp.ones((3, 2, 3)), [2, 3]), {"ranges": [1, 1, 1]}),
     (
@@ -104,19 +150,40 @@ unmodified_templates_cases = [
         (jnp.ones((1, 3, 3)),),
         {"wires": [3, 2, 1], "imprimitive": qml.CZ},
     ),
-    (qml.StronglyEntanglingLayers, (), {"weights": jnp.ones((3, 3, 3)), "wires": [3, 2, 1]}),
+    pytest.param(
+        qml.StronglyEntanglingLayers,
+        (),
+        {"weights": jnp.ones((3, 3, 3)), "wires": [3, 2, 1]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
     (qml.ArbitraryStatePreparation, (jnp.ones(6), [2, 3]), {}),
     (qml.ArbitraryStatePreparation, (jnp.zeros(14),), {"wires": [3, 2, 0]}),
-    (qml.ArbitraryStatePreparation, (), {"weights": jnp.ones(2), "wires": [1]}),
+    pytest.param(
+        qml.ArbitraryStatePreparation,
+        (),
+        {"weights": jnp.ones(2), "wires": [1]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
     (qml.CosineWindow, ([2, 3],), {}),
     (qml.CosineWindow, (), {"wires": [2, 0, 1]}),
     (qml.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
     (
         qml.MottonenStatePreparation,
         (jnp.ones(8) / jnp.sqrt(8),),
-        {"wires": [3, 2, 0], "id": "your_id"},
+        {"wires": [3, 2, 0]},
     ),
-    (qml.MottonenStatePreparation, (), {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]}),
+    pytest.param(
+        qml.MottonenStatePreparation,
+        (),
+        {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
@@ -124,13 +191,23 @@ unmodified_templates_cases = [
     (qml.QFT, (), {"wires": [0, 1]}),
     (qml.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qml.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
-    (qml.ArbitraryUnitary, (), {"weights": jnp.ones(3), "wires": [1]}),
+    pytest.param(
+        qml.ArbitraryUnitary,
+        (),
+        {"weights": jnp.ones(3), "wires": [1]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
+    ),
     (qml.FABLE, (jnp.eye(4), [2, 3, 0, 1, 5]), {}),
     (qml.FABLE, (jnp.ones((4, 4)),), {"wires": [0, 3, 2, 1, 9]}),
-    (
+    pytest.param(
         qml.FABLE,
         (),
         {"input_matrix": jnp.array([[1, 1], [1, -1]]) / np.sqrt(2), "wires": [1, 10, 17]},
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.FermionicSingleExcitation, (0.421,), {"wires": [0, 3, 2]}),
     (qml.FlipSign, (7,), {"wires": [0, 3, 2]}),
@@ -154,8 +231,13 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
-    (qml.TemporaryAND, (), ({"wires": [0, 1, 2], "control_values": [0, 1]})),
-    (qml.TemporaryAND, ([0, 1, 2],), ({"control_values": [0, 1]})),
+    (qml.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
+    (qml.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (
+        qml.SumOfSlatersPrep,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+    ),
 ]
 
 
@@ -200,21 +282,25 @@ def test_unmodified_templates(template, args, kwargs):
         wires = (wires,)
     assert eqn.params.pop("n_wires") == len(wires)
     # Check that remaining kwargs are passed properly to the eqn
-    assert eqn.params == kwargs
+    # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
+    assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
 
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
 tested_modified_templates = [
+    qml.BasisEmbedding,
     qml.TrotterProduct,
     qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
-    qml.BasisRotation,
+    qml.BBQRAM,
     qml.CommutingEvolution,
     qml.ControlledSequence,
     qml.FermionicDoubleExcitation,
     qml.HilbertSchmidt,
+    qml.HybridQRAM,
+    qml.IQP,
     qml.LocalHilbertSchmidt,
     qml.QDrift,
     qml.QSVT,
@@ -223,6 +309,7 @@ tested_modified_templates = [
     qml.Qubitization,
     qml.Reflection,
     qml.Select,
+    qml.SelectOnlyQRAM,
     qml.MERA,
     qml.MPS,
     qml.TTN,
@@ -239,6 +326,7 @@ tested_modified_templates = [
     qml.MPSPrep,
     qml.GQSP,
     qml.QROMStatePreparation,
+    qml.MultiplexerStatePreparation,
     qml.SelectPauliRot,
 ]
 
@@ -246,6 +334,17 @@ tested_modified_templates = [
 # pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
+
+    def test_basis_embedding_is_basis_state(self):
+        """Test that basis embedding is just BasisState."""
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
     @pytest.mark.parametrize(
         "template, kwargs",
@@ -286,7 +385,7 @@ class TestModifiedTemplates:
         assert eqn.invars[0] == jaxpr.eqns[4].outvars[0]  # the sum op
         assert eqn.invars[1].val == 2.4
 
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -325,7 +424,7 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.AmplitudeAmplification._primitive
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # Hadamard
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]  # FlipSign
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -334,36 +433,6 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
-
-    def test_basis_rotation(self):
-        """Test the primitive bind call of BasisRotation."""
-
-        mat = np.eye(4)
-        wires = [0, 5]
-
-        def qfunc(wires, mat):
-            qml.BasisRotation(wires, mat, check=True)
-
-        # Validate inputs
-        qfunc(wires, mat)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
-
-        assert len(jaxpr.eqns) == 1
-
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.BasisRotation._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"check": True, "id": None}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
@@ -391,7 +460,10 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qml.ControlledSequence._primitive
         assert eqn.invars == jaxpr.eqns[0].outvars
-        assert eqn.params == {"control": control}
+        # JAX 0.7.0 converts lists to tuples for hashability
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(
+            {"control": control}
+        )
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -422,7 +494,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.FermionicDoubleExcitation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -504,6 +576,46 @@ class TestModifiedTemplates:
         V = [qml.RZ(v_params[0], wires=2), qml.RX(v_params[1], wires=3)]
         assert qml.equal(q.queue[0], template(V, U)) is True
 
+    def test_iqp(self):
+        """Test the primitive bind call of IQP."""
+
+        pattern = []
+        for weight in math.arange(1, 2):
+            for gate in combinations(math.arange(4), weight):
+                pattern.append(tuple(tuple(gate)))
+        pattern = tuple(pattern)
+
+        kwargs = {
+            "num_wires": 4,
+            "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
+            "pattern": pattern,
+            "spin_sym": True,
+        }
+
+        def qfunc():
+            qml.IQP(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.IQP._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.IQP(**kwargs))
+
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):
         """Test the primitive bind call of MERA, MPS, and TTN."""
@@ -546,12 +658,13 @@ class TestModifiedTemplates:
             "block": block,
             "n_params_block": 2,
             "template_weights": kwargs["template_weights"],
-            "id": None,
             "n_wires": 4,
         }
         if template is qml.MPS:
             expected_params["offset"] = None
-        assert eqn.params == expected_params
+        # JAX 0.7.0 converts lists to tuples for hashability
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(expected_params)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -634,12 +747,13 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.MPSPrep._primitive
         assert eqn.invars[:4] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        assert eqn.params == {
-            "id": None,
+        expected_params = {
             "n_wires": 3,
             "work_wires": None,
             "right_canonicalize": False,
         }
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert actual_params == expected_params
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -697,31 +811,33 @@ class TestModifiedTemplates:
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
 
-        kwargs = {"func": func, "target_wires": target_wires, "estimation_wires": estimation_wires}
+        kwargs = {"func": func, "num_target_wires": 6}
 
-        def qfunc(probs):
-            qml.QuantumMonteCarlo(probs, **kwargs)
+        def qfunc(probs, target_wires, estimation_wires):
+            qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
 
         # Validate inputs
-        qfunc(probs)
+        qfunc(probs, target_wires, estimation_wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(probs)
+        jaxpr = jax.make_jaxpr(qfunc)(probs, list(target_wires), list(estimation_wires))
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QuantumMonteCarlo._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        relevant_keys = {"func", "num_target_wires"}
+        actual_params = {k: v for k, v in eqn.params.items() if k in relevant_keys}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs, *target_wires, *estimation_wires)
 
         assert len(q) == 1
-        assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
+        assert q.queue[0] == qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
 
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
@@ -743,7 +859,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Qubitization._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -753,11 +869,124 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
 
+    def test_bbqram(self):
+        """Test the primitve bind call of BBQRAM."""
+
+        kwargs = {
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "control_wires": (0, 1),
+            "target_wires": (2, 3, 4),
+            "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
+        }
+
+        def qfunc():
+            qml.BBQRAM(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.BBQRAM._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.BBQRAM(**kwargs))
+
+    def test_select_only_qram(self):
+        """Test the primitve bind call of SelectOnlyQRAM."""
+
+        kwargs = {
+            "data": (
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+            ),
+            "control_wires": (0, 1),
+            "target_wires": (2, 3, 4),
+            "select_wires": (12),
+            "select_value": 1,
+        }
+
+        def qfunc():
+            qml.SelectOnlyQRAM(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.SelectOnlyQRAM._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.SelectOnlyQRAM(**kwargs))
+
+    def test_hybrid_qram(self):
+        """Test the primitve bind call of HybridQRAM."""
+
+        kwargs = {
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "control_wires": (0, 1),
+            "target_wires": (2, 3, 4),
+            "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
+            "k": 0,
+        }
+
+        def qfunc():
+            qml.HybridQRAM(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.HybridQRAM._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.HybridQRAM(**kwargs))
+
     def test_qrom(self):
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "bitstrings": ["0", "1"],
+            "data": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
@@ -777,7 +1006,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QROM._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -787,6 +1016,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
 
+    @pytest.mark.xfail(reason="QROMStatePreparation uses array in metadata, [sc-104808]")
     def test_qrom_state_prep(self):
         """Test the primitive bind call of QROMStatePreparation."""
 
@@ -811,7 +1041,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QROMStatePreparation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -820,6 +1050,35 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
+
+    def test_multiplexer_state_prep(self):
+        """Test the primitive bind call of MultiplexerStatePreparation."""
+
+        state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
+        kwargs = {
+            "wires": (8, 9),
+        }
+
+        def qfunc(state_vector):
+            qml.MultiplexerStatePreparation(state_vector, **kwargs)
+
+        qfunc(state_vector)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.MultiplexerStatePreparation._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""
@@ -880,7 +1139,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.PhaseAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -914,7 +1173,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Adder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -947,7 +1206,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.SemiAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -981,7 +1240,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Multiplier._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1016,7 +1275,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.OutMultiplier._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1051,7 +1310,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.OutAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1086,7 +1345,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.ModExp._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1125,7 +1384,7 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.OutPoly._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
 
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -1159,7 +1418,7 @@ class TestModifiedTemplates:
         assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
         assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
         assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params == {"n_wires": 1, "id": None}
+        assert gqps_eqn.params["n_wires"] == 1
         assert len(gqps_eqn.outvars) == 1
         assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
 
@@ -1231,7 +1490,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[3]
         assert eqn.primitive == qml.QuantumPhaseEstimation._primitive
         assert eqn.invars == jaxpr.eqns[2].outvars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1300,7 +1559,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Superposition._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1314,7 +1573,11 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qml.templates."""
-    return inspect.isclass(member) and member.__module__.startswith("pennylane.templates")
+    return (
+        inspect.isclass(member)
+        and member.__module__.startswith("pennylane.templates")
+        and issubclass(member, qml.operation.Operator)
+    )
 
 
 _, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn))
@@ -1328,6 +1591,8 @@ unsupported_templates = [
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
+    qml.templates.SubroutineOp,
+    qml.templates.Subroutine,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
@@ -1339,6 +1604,8 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
+    if template == qml.templates.SubroutineOp:
+        return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
 

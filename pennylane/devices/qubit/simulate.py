@@ -345,8 +345,7 @@ def simulate(
 
     >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
-    (0.36235775447667357,
-    tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+    (np.float64(0.36235775447667357), array([0.68117888, 0.        , 0.31882112, 0.        ]))
 
     """
     circuit = circuit.copy()
@@ -940,7 +939,7 @@ def _(original_measurement: ProbabilityMP, measures):
 def _(original_measurement: SampleMP, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
-        math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+        math.atleast_1d(m[1]) for m in measures.values() if m[0] and m[1] is not tuple()
     )
     return math.concatenate(new_sample)
 

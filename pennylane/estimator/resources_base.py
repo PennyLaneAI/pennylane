@@ -67,12 +67,12 @@ class Resources:
        allocated wires: 121
          zero state: 58
          any state: 63
-     Total gates : 2.248E+3
+     Total gates : 2.112E+3
        'RX': 2,
-       'Toffoli': 65,
-       'T': 868,
-       'CNOT': 639,
-       'Hadamard': 674
+       'Toffoli': 64,
+       'T': 856,
+       'CNOT': 589,
+       'Hadamard': 601
 
     You can also access a more detailed breakdown of resources using the
     :meth:`~.estimator.resources_base.Resources.gate_breakdown` method
@@ -81,12 +81,12 @@ class Resources:
     RX total: 2
         RX {'precision': 1e-08}: 1
         RX {'precision': 1e-06}: 1
-    Toffoli total: 65
+    Toffoli total: 64
         Toffoli {'elbow': None}: 4
-        Toffoli {'elbow': 'left'}: 61
-    T total: 868
-    CNOT total: 639
-    Hadamard total: 674
+        Toffoli {'elbow': 'left'}: 60
+    T total: 856
+    CNOT total: 589
+    Hadamard total: 601
 
     """
 
@@ -332,14 +332,36 @@ class Resources:
 
         return gate_counts
 
+    @property
+    def total_wires(self) -> int:
+        """The total number of wires counted.
+
+        Returns:
+            int: The total number of wires tracked. This is the sum of ``zeroed_wires``,
+                ``any_state_wires`` and ``algo_wires``.
+        """
+        return self.zeroed_wires + self.any_state_wires + self.algo_wires
+
+    @property
+    def total_gates(self) -> int:
+        """The total number of gates.
+
+        Returns:
+            int: The total number of gates. This is the sum of all of the counts of gates
+                tracked in the ``gate_counts`` dictionary.
+        """
+        return sum(self.gate_counts.values())
+
     def __str__(self):
         """Generates a string representation of the Resources object."""
-
-        total_wires = self.algo_wires + self.zeroed_wires + self.any_state_wires
-        total_gates = sum(self.gate_counts.values())
-
-        total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
-        total_wires_str = str(total_wires) if total_wires <= 9999 else f"{Decimal(total_wires):.3E}"
+        total_gates_str = (
+            str(self.total_gates) if self.total_gates <= 999 else f"{Decimal(self.total_gates):.3E}"
+        )
+        total_wires_str = (
+            str(self.total_wires)
+            if self.total_wires <= 9999
+            else f"{Decimal(self.total_wires):.3E}"
+        )
 
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
@@ -464,3 +486,7 @@ class Resources:
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return f"Resources(zeroed={self.zeroed_wires}, any_state={self.any_state_wires}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"
+
+    def _ipython_display_(self):
+        """Displays the object in IPython/Jupyter."""
+        print(str(self))

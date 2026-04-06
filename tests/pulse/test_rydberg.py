@@ -14,6 +14,7 @@
 """
 Tests for everything related to rydberg system specific functionality.
 """
+
 # pylint: disable=too-few-public-methods, import-outside-toplevel, redefined-outer-name
 # pylint: disable=reimported, wrong-import-position
 import numpy as np

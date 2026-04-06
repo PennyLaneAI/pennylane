@@ -14,6 +14,7 @@
 r"""
 Contains the Permute template.
 """
+
 import copy
 from collections import Counter
 
@@ -94,7 +95,7 @@ class Permute(Operation):
             op = qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
             tape = qml.tape.QuantumTape([op])
 
-        >>> [tape_expanded], _ = qml.transforms.decompose(tape, gate_set={qml.SWAP})
+        >>> [tape_expanded], _ = qml.decompose(tape, gate_set={qml.SWAP})
         >>> print(qml.drawer.tape_text(tape_expanded, wire_order=range(5)))
         0: ─╭SWAP───────────────────┤
         1: ─│─────╭SWAP─────────────┤

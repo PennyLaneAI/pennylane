@@ -14,6 +14,7 @@
 """
 Tests for the Grover Diffusion Operator template
 """
+
 import functools
 import itertools
 
@@ -21,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.autograph import run_autograph
+from pennylane.capture import run_autograph
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
@@ -75,6 +76,7 @@ def test_single_wire_error(bad_wires):
         qml.GroverOperator(wires=bad_wires)
 
 
+@pytest.mark.usefixtures("ignore_id_deprecation")
 def test_id():
     """Assert id keyword works"""
 
@@ -318,6 +320,8 @@ def test_jax_jit():
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.xfail(reason="arrays should never be in metadata")
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax
@@ -393,8 +397,6 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that Grover gives correct result after dynamic decomposition."""
 
-        from functools import partial
-
         import jax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
@@ -412,7 +414,7 @@ class TestDynamicDecomposition:
 
         with qml.capture.pause():
 
-            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=5))
             def circuit_comparison():
                 qml.GroverOperator(wires=wires, work_wires=work_wires)

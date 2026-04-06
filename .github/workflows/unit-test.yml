@@ -26,7 +26,7 @@ on:
         description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
         required: false
         type: string
-        default: 0.6.5
+        default: 0.9.12
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -77,11 +77,6 @@ on:
         required: false
         type: string
         default: ''
-      requirements_file:
-        description: File name to store stable version of requirements for a test group
-        required: false
-        type: string
-        default: ''
       additional_os_packages:
         description: Additional packages to install. Values will be passed to apt-get install {value}
         required: false
@@ -104,21 +99,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
-          cache-dependency-glob: 'requirements-*.txt'
+          cache-dependency-glob: 'pyproject.toml'
       
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '${{ inputs.python_version }}'
 
@@ -138,11 +133,12 @@ jobs:
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
       - name: Upgrade PIP and install wheel
-        run: uv pip install --upgrade pip wheel setuptools>=75.8.1
+        run: |
+          uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
+          uv pip install --group dev --group ci --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
@@ -204,21 +200,9 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Freeze dependencies
-        shell: bash
-        if: inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
-
-      - name: Upload frozen requirements
-        if: inputs.requirements_file != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: frozen-${{ inputs.requirements_file }}
-          path: ${{ inputs.requirements_file }}
-
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: durations-${{ inputs.job_name }}
           path: ${{ inputs.pytest_durations_file_path }}
@@ -226,7 +210,7 @@ jobs:
 
       - name: Upload Test Report Failures as artifact
         if: (failure() || cancelled()) && inputs.pytest_xml_file_path != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-report-${{ inputs.job_name }}
           path: ${{ env.TEST_REPORTS_DIR }}/${{ inputs.pytest_xml_file_path }}
@@ -236,7 +220,7 @@ jobs:
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml

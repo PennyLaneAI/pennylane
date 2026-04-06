@@ -20,8 +20,6 @@ from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
 from typing import Any, ClassVar
 
-from networkx import MultiDiGraph
-
 from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut
 
@@ -156,7 +154,7 @@ class CutStrategy:
 
     def get_cut_kwargs(
         self,
-        tape_dag: MultiDiGraph,
+        tape_dag,
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
         exhaustive: bool = True,

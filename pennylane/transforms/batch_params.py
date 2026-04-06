@@ -15,7 +15,6 @@
 Contains the batch dimension transform.
 """
 
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -155,9 +154,7 @@ def batch_params(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)

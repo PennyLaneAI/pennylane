@@ -10,7 +10,7 @@ JAX interface
     
     .. code-block:: bash
 
-        pip install jax~=0.6.0 jaxlib~=0.6.0
+        pip install jax==0.7.1 jaxlib==0.7.1
     
     You can then import PennyLane and JAX as follows:
 
@@ -173,7 +173,6 @@ Example:
 .. code-block:: python
 
     import jax
-    from functools import partial
     import pennylane as qml
 
 
@@ -184,7 +183,7 @@ Example:
         # method when using a PRNGKey.
         dev = qml.device('default.qubit', wires=2, seed=key)
 
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, interface='jax', diff_method=None)
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
@@ -223,14 +222,13 @@ used to optimize a QNode that is transformed by ``jax.jit``:
     import pennylane as qml
     import jax
     import jaxopt
-    from functools import partial
 
     jax.config.update("jax_enable_x64", True)
 
     dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
-    @partial(qml.set_shots, shots=None)
+    @qml.set_shots(shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)
@@ -253,14 +251,13 @@ QNode:
     from jax import numpy as jnp
     import jax
     import optax
-    from functools import partial
 
     learning_rate = 0.15
 
     dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
-    @partial(qml.set_shots, shots=None)
+    @qml.set_shots(shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)

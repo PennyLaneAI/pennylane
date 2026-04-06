@@ -14,24 +14,26 @@
 """
 Test the core resource estimation functionality.
 """
+
 from collections import defaultdict
 
 import pytest
 
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX
+from pennylane.estimator.ops.op_math.symbolic import Adjoint
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesUndefinedError,
     resource_rep,
 )
 from pennylane.estimator.resources_base import Resources
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable= no-self-use, arguments-differ
 
@@ -72,7 +74,7 @@ class DummyCNOT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyHadamard(ResourceOperator):
@@ -91,7 +93,7 @@ class DummyHadamard(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyT(ResourceOperator):
@@ -110,7 +112,7 @@ class DummyT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesUndefinedError
+        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
 
 
 class DummyZ(ResourceOperator):
@@ -330,6 +332,14 @@ class TestEstimateResources:
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
+    def test_estimate_resources_from_resource_operator_no_decomp(self):
+        """Test that a ResourcesUndefinedError is raised when obtaining resources for
+        a resource operator which has no resource_decomp defined"""
+        with pytest.raises(
+            ResourcesUndefinedError, match=".* does not have a resource decomposition defined"
+        ):
+            estimate(workflow=DummyT(), gate_set={DummyCNOT})
+
     def test_estimate_resources_from_scaled_resource_operator(self):
         """Test that we can accurately obtain resources from resource operator"""
         op = 2 * DummyAlg2(num_wires=4)
@@ -504,3 +514,67 @@ class TestEstimateResources:
             qml.CNOT(wires=[0, 1])
 
         assert estimate(circ)() == estimate(circ_w_measurement)(circ)
+
+    def test_custom_adjoint_decomposition(self):
+        """Test that a custom adjoint decomposition can be set and used."""
+
+        def custom_adj_RZ(target_resource_params):  # pylint: disable=unused-argument
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_adj_RZ, decomp_type="adj")
+
+        res = estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
+        pl_res = estimate(qml.adjoint(qml.RZ(0.1, wires=0)), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(Z): 1})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+        assert pl_res == expected_resources
+
+    def test_custom_pow_decomposition(self):
+        """Test that a custom pow decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Pow
+
+        def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
+            return [GateCount(resource_rep(Hadamard), count=2)]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
+
+        res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc)
+        pl_res = estimate(qml.pow(qml.RZ(0.1, wires=0)), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(Hadamard): 2})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+        assert pl_res == expected_resources
+
+    def test_custom_controlled_decomposition(self):
+        """Test that a custom controlled decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Controlled
+
+        def custom_ctrl_RZ(
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
+        ):  # pylint: disable=unused-argument
+            return [GateCount(resource_rep(X), count=3)]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_ctrl_RZ, decomp_type="ctrl")
+
+        res = estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
+        pl_res = estimate(qml.ctrl(qml.RZ(0.1, wires=0), control=1, control_values=0), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(X): 3})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+        assert pl_res == expected_resources

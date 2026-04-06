@@ -14,6 +14,7 @@
 """
 This file contains the snapshots function which extracts measurements from the qnode.
 """
+
 import warnings
 from functools import partial
 
@@ -123,10 +124,9 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=200)
+        @qml.set_shots(shots=200)
         @qml.snapshots
         @qml.qnode(dev, interface=None)
         def circuit():
@@ -146,7 +146,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
         dev = qml.device("lightning.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=200)
+        @qml.set_shots(shots=200)
         @qml.snapshots
         @qml.qnode(dev)
         def circuit():

@@ -13,6 +13,7 @@
 # limitations under the License.
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
+
 import logging
 import warnings
 from collections.abc import Callable, Sequence
@@ -26,7 +27,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -47,10 +48,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-observables = {
-    "THermitian",
-    "GellMann",
-}
+observables = {"THermitian", "GellMann"}
+
+
+ALL_DQT_MIXED_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
@@ -67,8 +68,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
-    return op.name in expected_set
+    return op.name in ALL_DQT_MIXED_GATES
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -163,6 +163,8 @@ class DefaultQutritMixed(Device):
 
     .. code-block:: python
 
+        import scipy
+
         n_wires = 5
         num_qscripts = 5
         qscripts = []
@@ -177,11 +179,7 @@ class DefaultQutritMixed(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.08015701503959313,
-    0.04521414211599359,
-    -0.0215232130089687,
-    0.062120285032425865,
-    -0.0635052317625]
+    (np.float64(0.08015701503959316), np.float64(0.045214142115993505), np.float64(-0.021523213008968645), np.float64(0.06212028503242595), np.float64(-0.0635052317625))
 
     This device currently supports backpropagation derivatives:
 
@@ -204,9 +202,9 @@ class DefaultQutritMixed(Device):
             return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.36235775, dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.93203909, dtype=float64, weak_type=True)
 
     .. details::
         :title: Readout Error
@@ -330,8 +328,8 @@ class DefaultQutritMixed(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device
         configuration.
 
         Args:
@@ -339,7 +337,7 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -353,28 +351,29 @@ class DefaultQutritMixed(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             decompose,
+            target_gates=ALL_DQT_MIXED_GATES,
             stopping_condition=stopping_condition,
             name=self.name,
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.qutrit")
 
         if self.readout_errors is not None:
-            transform_program.add_transform(warn_readout_error_state)
+            compile_pileline.add_transform(warn_readout_error_state)
 
-        return transform_program, config
+        return compile_pileline, config
 
     @debug_logger
     def execute(

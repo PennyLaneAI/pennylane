@@ -14,16 +14,15 @@
 """
 Unit tests for conversion and helper methods used in `pennylane.transforms.zx`
 """
+
 import sys
-from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import DecompositionWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript
-from pennylane.transforms import TransformError
 
 pyzx = pytest.importorskip("pyzx")
 pytestmark = pytest.mark.external
@@ -68,16 +67,9 @@ def test_import_pyzx_error(monkeypatch):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
-
-    def test_invalid_argument(self):
-        """Assert error raised when input is neither a tape, QNode, nor quantum function"""
-        with pytest.raises(
-            TransformError,
-            match="Input is not an Operator, tape, QNode, or quantum function",
-        ):
-            _ = qml.transforms.to_zx(None)
 
     @pytest.mark.parametrize("script", qscript)
     @pytest.mark.parametrize("operation", supported_operations)
@@ -266,7 +258,7 @@ class TestConvertersZX:
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         # Add rotation Hadamard because of PauliX
-        operations.append(qml.Hadamard(wires=[1]))
+        operations.append(qml.RY(-np.pi / 2, wires=1))
         operations_with_rotations = operations
         qscript_with_rot = QuantumScript(operations_with_rotations, [])
         matrix_qscript = qml.matrix(qscript_with_rot, wire_order=[0, 1])
@@ -389,7 +381,11 @@ class TestConvertersZX:
             QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            qml.transforms.to_zx(qs)
+            if qml.decomposition.enabled_graph():
+                with pytest.warns(DecompositionWarning):
+                    qml.transforms.to_zx(qs)
+            else:
+                qml.transforms.to_zx(qs)
 
     def test_same_type_nodes_simple_edge(self):
         """Test that a Green-Green nodes with simple edge has no corresponding circuit."""
@@ -553,7 +549,7 @@ class TestConvertersZX:
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.transforms.to_zx(expand_measurements=True)
         @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1)
@@ -576,7 +572,7 @@ class TestConvertersZX:
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.transforms.to_zx(expand_measurements=True)
         @qml.qnode(device=dev)
         def circuit():
             qml.PauliZ(wires=0)

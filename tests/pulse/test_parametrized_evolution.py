@@ -14,6 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
+
 # pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access,possibly-unused-variable
 from functools import reduce
 
@@ -103,9 +104,11 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(ev, skip_pickle=True)
 
 
+static_ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+
+
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
-    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
         return params  # constant
@@ -115,7 +118,7 @@ def time_independent_hamiltonian():
 
     coeffs = [f1, f2, 4, 9]
 
-    return ParametrizedHamiltonian(coeffs, ops)
+    return ParametrizedHamiltonian(coeffs, static_ops)
 
 
 def time_dependent_hamiltonian():
@@ -153,7 +156,6 @@ class TestInitialization:
         assert ev.wires == H.wires
         assert ev.num_wires is None
         assert ev.name == "ParametrizedEvolution"
-        assert ev.id is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)

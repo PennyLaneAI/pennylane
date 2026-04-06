@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
+
 # pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
@@ -64,9 +65,9 @@ class ClassicalShadow:
 
     .. code-block:: python3
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=range(2))
-        @partial(qml.set_shots, shots=1000)
+
+        @qml.set_shots(shots=1000)
         @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
@@ -195,9 +196,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=range(2))
-            @partial(qml.set_shots, shots=1000)
+
+            @qml.set_shots(shots=1000)
             @qml.qnode(dev)
             def qnode():
                 qml.Hadamard(0)
@@ -300,9 +301,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=range(2))
-            @partial(qml.set_shots, shots=1000)
+
+            @qml.set_shots(shots=1000)
             @qml.qnode(dev)
             def qnode(x):
                 qml.Hadamard(0)
@@ -388,11 +389,10 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            from functools import partial
             wires = 4
             dev = qml.device("default.qubit", wires=range(wires))
 
-            @partial(qml.set_shots, shots=1000)
+            @qml.set_shots(shots=1000)
             @qml.qnode(dev)
             def max_entangled_circuit():
                 qml.Hadamard(wires=0)
@@ -405,8 +405,8 @@ class ClassicalShadow:
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
-        >>> np.isclose(entropies, entropies[0], atol=1e-2)
-        [ True,  True,  True]
+        >>> print(np.isclose(entropies, entropies[0], atol=5e-2))
+        [ True  True  True]
 
         For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
 

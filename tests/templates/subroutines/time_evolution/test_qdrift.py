@@ -14,6 +14,7 @@
 """
 Tests for the QDrift template.
 """
+
 import copy
 from functools import reduce
 
@@ -181,7 +182,6 @@ class TestDecomposition:
 class TestIntegration:
     """Test that the QDrift template integrates well with the rest of PennyLane"""
 
-    @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -472,8 +472,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
                 qml.apply(op)
@@ -506,8 +505,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
                 qml.apply(op)
@@ -544,8 +542,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
                 qml.apply(op)
@@ -583,8 +580,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
                 qml.apply(op)

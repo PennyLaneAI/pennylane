@@ -55,17 +55,15 @@ class Tracker:
 
     .. code-block:: python
 
-        from functools import partial
+        dev = qml.device('default.qubit', wires=1, seed=42)
 
-        dev = qml.device('default.qubit', wires=1)
-
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = qml.numpy.array(0.1, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
             qml.grad(circuit)(x)
@@ -73,32 +71,31 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': 0.86, 'shots': 300}
-    >>> tracker.latest
-    {'simulations': 1,
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(1.02), 'shots': 300}
+    >>> import pprint
+    >>> pprint.pprint(tracker.latest)
+    {'errors': {},
      'executions': 1,
-     'results': 0.16,
+     'resources': SpecsResources(gate_types={'RX': 1},
+                                 gate_sizes={1: 1},
+                                 measurements={'expval(PauliZ)': 1},
+                                 num_allocs=1,
+                                 depth=1),
+     'results': np.float64(0.12),
      'shots': 100,
-     'resources': Resources(num_wires=1, num_gates=1,
-                            gate_types=defaultdict(<class 'int'>, {'RX': 1}),
-                            gate_sizes=defaultdict(<class 'int'>, {1: 1}),
-                            depth=1,
-                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),))),
-     'errors': {}
-    }
+     'simulations': 1}
     >>> tracker.history.keys()
     dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
-    [1.0, -0.3, 0.16]
+    [np.float64(1.0), np.float64(-0.1), np.float64(0.12)]
     >>> print(tracker.history['resources'][0])
-    num_wires: 1
-    num_gates: 1
-    depth: 1
-    shots: Shots(total=100)
-    gate_types:
-    {'RX': 1}
-    gate_sizes:
-    {1: 1}
+    Wire allocations: 1
+    Total gates: 1
+    Gate counts:
+    - RX: 1
+    Measurements:
+    - expval(PauliZ): 1
+    Depth: 1
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qml.RX``.
@@ -122,29 +119,30 @@ class Tracker:
         >>> def shots_info(totals, history, latest):
         ...     if 'shots' in latest:
         ...         print("Total shots: ", totals['shots'])
-        >>> x = np.array(0.1, requires_grad=True)
+        >>> x = qml.numpy.array(0.1, requires_grad=True)
         >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-        ...     qml.grad(circuit)(x)
+        ...     _ = qml.grad(circuit)(x)
         Total shots:  100
         Total shots:  200
         Total shots:  300
 
-        By specifying ``persistent=False``, you can reuse the same tracker across
+        By specifying ``persistent=True``, you can reuse the same tracker across
         multiple contexts.
 
-        >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
+        >>> with qml.Tracker(circuit.device, persistent=True) as tracker:
         ...     circuit(0.1)
+        np.float64(0.96)
         >>> with tracker:
         ...     circuit(0.2)
+        np.float64(0.98)
         >>> tracker.totals['executions']
         2
 
         When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
         used in the circuit without execution!
 
-        >>> from functools import partial
         >>> dev = qml.device("null.qubit", wires=[0])
-        >>> @partial(qml.set_shots, shots=10)
+        >>> @qml.set_shots(shots=10)
         ... @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)
@@ -153,16 +151,16 @@ class Tracker:
         >>> with qml.Tracker(dev) as tracker:
         ...     circuit(0.1)
         ...
+        array(0.)
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        num_wires: 1
-        num_gates: 1
-        depth: 1
-        shots: Shots(total=10)
-        gate_types:
-        {"RX": 1}
-        gate_sizes:
-        {1: 1}
+        Wire allocations: 1
+        Total gates: 1
+        Gate counts:
+        - RX: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: 1
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
@@ -200,11 +198,25 @@ class Tracker:
 
         >>> tracker.update(a=1, b=2, c="c")
         >>> tracker.latest
-        {"a":1, "b":2, "c":"c"}
-        >>> tracker.history
-        {"a": [1], "b": [2], "c": ["c"]}
+        {'a': 1, 'b': 2, 'c': 'c'}
+        >>> import pprint
+        >>> pprint.pprint(tracker.history)
+        {'a': [1],
+         'b': [2],
+         'batches': [1],
+         'c': ['c'],
+         'errors': [{}],
+         'executions': [1],
+         'resources': [SpecsResources(gate_types={'RX': 1},
+                                      gate_sizes={1: 1},
+                                      measurements={'expval(PauliZ)': 1},
+                                      num_allocs=1,
+                                      depth=1)],
+         'results': [array(0.)],
+         'shots': [10],
+         'simulations': [1]}
         >>> tracker.totals
-        {"a": 1, "b": 2}
+        {'batches': 1, 'simulations': 1, 'executions': 1, 'shots': 10, 'a': 1, 'b': 2}
 
         """
         self.latest = kwargs

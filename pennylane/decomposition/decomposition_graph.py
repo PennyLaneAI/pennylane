@@ -25,20 +25,22 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import math
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Set
 from dataclasses import dataclass, replace
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
-from pennylane.exceptions import DecompositionError
+from pennylane.decomposition.gate_set import GateSet
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
+from .reconstruct import decomps_use_reconstructor
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
@@ -50,15 +52,20 @@ from .symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_involutory,
-    pow_rotation,
+    qjit_compatible_adjoint_rotation,
+    qjit_compatible_cancel_adjoint,
+    qjit_compatible_decompose_to_base,
+    qjit_compatible_flip_pow_adjoint,
+    qjit_compatible_merge_powers,
+    qjit_compatible_repeat_pow_base,
+    qjit_compatible_self_adjoint,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-from .utils import translate_op_alias
+from .utils import to_name
 
-IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
+IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
 @dataclass(frozen=True)
@@ -86,6 +93,9 @@ class _OperatorNode:
     if any of the operators produced down the line has decomposition rules that use work wires.
 
     """
+
+    min_work_wires: int = 0
+    """The minimum number of additional work wires required to decompose this operator."""
 
     def __hash__(self) -> int:
         # If the decomposition of an operator does not depend on the availability of work wires
@@ -119,6 +129,10 @@ class _DecompositionNode:
     work_wire_spec: WorkWireSpec
     num_work_wire_not_available: int
     work_wire_dependent: bool = False
+    min_work_wires: int = 0
+
+    def __post_init__(self):
+        self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
 
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
@@ -126,6 +140,8 @@ class _DecompositionNode:
 
     def is_feasible(self, num_work_wires: int | None):
         """Checks whether this decomposition is feasible under a work wire constraint"""
+        if not self.work_wire_dependent:
+            return True
         if num_work_wires is None:
             return True
         return num_work_wires - self.num_work_wire_not_available >= self.work_wire_spec.total
@@ -178,10 +194,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary
+        gate_set (Set | Mapping | GateSet): A set of gates in the target gate set or a dictionary
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
+        strict (bool): If ``False``, treat operators that do not define a decomposition as supported.
+            Defaults to ``True``.
 
     **Example**
 
@@ -210,20 +228,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[type | str] | dict[type | str, float],
+        gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
+        strict: bool = True,
     ):
-        self._gate_set_weights: dict[str, float]
-        if isinstance(gate_set, dict):
-            # the gate_set is a dict
-            self._gate_set_weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
-        else:
-            # The names of the gates in the target gate set.
-            self._gate_set_weights = {_to_name(gate): 1.0 for gate in gate_set}
+
+        if not isinstance(gate_set, GateSet):
+            gate_set = GateSet(gate_set)
+
+        self._gate_set_weights = gate_set
+        self._strict = strict
 
         # The list of operator indices for every op in the original list of operators that the
         # graph is initialized with. This is used to check whether we have found a decomposition
@@ -244,23 +262,27 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
-        self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
+        self._fixed_decomps = {to_name(k): v for k, v in fixed_decomps.items()}
+        self._alt_decomps = {to_name(k): v for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
 
         # Construct the decomposition graph
+        self._min_work_wires = 0
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
+            if isinstance(op, qml.ops.Conditional):
+                op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
+            self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
     def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -291,33 +313,56 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
 
-        if op.name in self._gate_set_weights:
-            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
+        if op in self._gate_set_weights:
+            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
-        update_op_to_work_wire_dependent = False
-        for decomposition in self._get_decompositions(op):
+        use_reconstructor = decomps_use_reconstructor(op.op_type, op.params)
+
+        rules = [
+            rule
+            for rule in self._get_decompositions(op, use_reconstructor)
+            if rule.is_applicable(**op.params)
+        ]
+
+        # Treat ops that do not have a decomposition as supported if strict=False
+        if not rules and not self._strict:
+            # Assign a prohibitively high cost to this operator so that nothing decomposes to
+            # this op unless there is no other choice.
+            self._gate_set_weights |= GateSet({to_name(op): math.inf})
+            self._graph.add_edge(self._start, op_node_idx, math.inf)
+            return op_node_idx
+
+        work_wire_dependent = known_work_wire_dependent
+        min_work_wires = -1  # use -1 to represent undetermined work wire requirement
+        for decomposition in rules:
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
             # If any of the operator's decompositions depend on work wires, this operator
             # should also depend on work wires.
-            if d_node and d_node.work_wire_dependent and not known_work_wire_dependent:
-                update_op_to_work_wire_dependent = True
+            if d_node and d_node.work_wire_dependent:
+                work_wire_dependent = True
+            if d_node and (min_work_wires == -1 or d_node.min_work_wires < min_work_wires):
+                min_work_wires = d_node.min_work_wires
 
         # If we found that this operator depends on work wires, but it's currently recorded
         # as independent of work wires, we must replace every record of this operator node
         # with a new node with `work_wire_dependent` set to `True`.
-        if update_op_to_work_wire_dependent:
-            new_op_node = replace(op_node, work_wire_dependent=True)
-            self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
-            self._graph[op_node_idx] = new_op_node
-            self._op_to_op_nodes[op].remove(op_node)
-            self._op_to_op_nodes[op].add(new_op_node)
+        if not known_work_wire_dependent and work_wire_dependent:
+            new_op_node = replace(op_node, work_wire_dependent=True, min_work_wires=min_work_wires)
+            self._replace_node(op_node_idx, new_op_node)
             # Also record that this operator type depends on work wires, so in the future
             # when we encounter other instances of the same operator type, we correctly
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
         return op_node_idx
+
+    def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
+        original_node = self._graph[idx]
+        self._all_op_indices[new_node] = self._all_op_indices.pop(original_node)
+        self._graph[idx] = new_node
+        self._op_to_op_nodes[new_node.op].remove(original_node)
+        self._op_to_op_nodes[new_node.op].add(new_node)
 
     def _add_decomp(
         self,
@@ -345,22 +390,31 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if work_wire_spec.total:
             d_node.work_wire_dependent = True
 
+        # For a decomposition rule, the minimum required number of work wires of this decomposition
+        # rule is determined by operator that uses the MOST number of work wires.
+        max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
             # any work wires.
-            if self._graph[op_node_idx].work_wire_dependent:
+            op_node = self._graph[op_node_idx]
+            if op_node.work_wire_dependent:
                 d_node.work_wire_dependent = True
+            max_op_min_work_wires = max(op_node.min_work_wires, max_op_min_work_wires)
+
+        d_node.min_work_wires += max_op_min_work_wires
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
 
-    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_decompositions(
+        self, op: CompressedResourceOp, use_reconstructor: bool = False
+    ) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = _to_name(op)
+        op_name = to_name(op)
 
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
@@ -370,7 +424,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qml.ops.Adjoint)
             and self_adjoint not in decomps
+            and qjit_compatible_self_adjoint not in decomps
             and adjoint_rotation not in decomps
+            and qjit_compatible_adjoint_rotation not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
@@ -378,64 +434,64 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
             # would've already been retrieved as a potential decomposition rule for this
             # operator, so there is no need to consider the general case.
-            decomps.extend(self._get_adjoint_decompositions(op))
+            decomps.extend(self._get_adjoint_decompositions(op, use_reconstructor))
 
-        elif (
-            issubclass(op.op_type, qml.ops.Pow)
-            and pow_rotation not in decomps
-            and pow_involutory not in decomps
-        ):
+        elif issubclass(op.op_type, qml.ops.Pow):
             # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-            # the general case.
-            decomps.extend(self._get_pow_decompositions(op))
+            # approach we take to decompose powers of operators.
+            decomps.extend(self._get_pow_decompositions(op, use_reconstructor))
 
         elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            decomps.extend(self._get_controlled_decompositions(op))
+            decomps.extend(self._get_controlled_decompositions(op, use_reconstructor))
 
         return decomps
 
-    def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_adjoint_decompositions(
+        self, op: CompressedResourceOp, use_reconstructor: bool = False
+    ) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
+        use_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qml.ops.Adjoint):
-            return [cancel_adjoint]
+            return [qjit_compatible_cancel_adjoint if use_reconstructor else cancel_adjoint]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
-        return [make_adjoint_decomp(base_decomp) for base_decomp in self._get_decompositions(base)]
+        return [
+            make_adjoint_decomp(base_decomp, use_reconstructor)
+            for base_decomp in self._get_decompositions(base, use_reconstructor)
+        ]
 
     @staticmethod
-    def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_pow_decompositions(
+        op: CompressedResourceOp, use_reconstructor: bool = False
+    ) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
-
-        base_class = op.params["base_class"]
 
         # Special case: power of zero
         if op.params["z"] == 0:
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [decompose_to_base]
+            return [qjit_compatible_decompose_to_base if use_reconstructor else decompose_to_base]
 
         # Special case: power of a power
-        if issubclass(base_class, qml.ops.Pow):
-            return [merge_powers]
+        if issubclass(op.params["base_class"], qml.ops.Pow):
+            return [qjit_compatible_merge_powers if use_reconstructor else merge_powers]
 
         # Special case: power of an adjoint
-        if issubclass(base_class, qml.ops.Adjoint):
-            return [flip_pow_adjoint]
+        if issubclass(op.params["base_class"], qml.ops.Adjoint):
+            return [qjit_compatible_flip_pow_adjoint if use_reconstructor else flip_pow_adjoint]
 
         # General case: repeat the operator z times
-        return [repeat_pow_base]
+        return [qjit_compatible_repeat_pow_base if use_reconstructor else repeat_pow_base]
 
-    def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_controlled_decompositions(
+        self, op: CompressedResourceOp, use_reconstructor: bool = False
+    ) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
@@ -445,13 +501,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [flip_control_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
-        # generated decomposition rules apply.
-        if base_class is qml.GlobalPhase:
+        # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
+        # own decomposition, which applies the control on the middle op only. This should
+        # always be applied.
+        if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
             return []
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
-        rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+        rules = [
+            make_controlled_decomp(decomp)
+            for decomp in self._get_decompositions(base, use_reconstructor)
+        ]
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
@@ -462,7 +523,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         return rules
 
-    def solve(self, num_work_wires: int | None = 0, lazy=True) -> DecompGraphSolution:
+    def solve(
+        self, num_work_wires: int | None = 0, lazy=True, minimize_work_wires=False
+    ) -> DecompGraphSolution:
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
@@ -471,11 +534,22 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             lazy (bool): If True, the Dijkstra search will stop once optimal decompositions are
                 found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
+            minimize_work_wires (bool): If True, minimize the number of additional work wires used.
 
         Returns:
             DecompGraphSolution
 
         """
+
+        if num_work_wires is not None and num_work_wires < self._min_work_wires:
+            raise DecompositionError(
+                f"The circuit requires at least {self._min_work_wires} work wires to decompose, "
+                f"the graph cannot be solved with {num_work_wires} available work wires."
+            )
+
+        if minimize_work_wires:
+            num_work_wires = self._min_work_wires
+
         visitor = DecompositionSearchVisitor(
             self._graph,
             self._gate_set_weights,
@@ -492,15 +566,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
+            op_names = {to_name(op) for op in unsolved_ops} - IGNORED_UNSOLVED_OPS
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
                     f"The graph-based decomposition system is unable to find a decomposition for "
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
-                    UserWarning,
+                    DecompositionWarning,
                 )
-        return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
+        return DecompGraphSolution(
+            visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
+        )
 
 
 class DecompGraphSolution:
@@ -540,11 +616,13 @@ class DecompGraphSolution:
         visitor: DecompositionSearchVisitor,
         all_op_indices: dict[_OperatorNode, int],
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
+        num_work_wires: int | None,
     ) -> None:
         self._visitor = visitor
         self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
+        self.num_work_wires = num_work_wires
 
     def _all_solutions(
         self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
@@ -633,7 +711,7 @@ class DecompGraphSolution:
          RY(-0.25, wires=[1]),
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
-        >>> graph.resource_estimate(op)
+        >>> solution.resource_estimate(op)
         <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
@@ -668,10 +746,7 @@ class DecompGraphSolution:
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [RY(0.1, wires=[2]),
-         CNOT(wires=[0, 2]),
-         RY(-0.1, wires=[2]),
-         CNOT(wires=[0, 2])]
+        [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
@@ -685,7 +760,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
     def __init__(  # pylint: disable=too-many-arguments
         self,
         graph: rx.PyDiGraph,
-        gate_set: dict,
+        gate_set: GateSet,
         original_op_indices: set[int],
         num_available_work_wires: int | None = None,
         lazy: bool = True,
@@ -711,7 +786,8 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
+        cost = self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
+        return math.inf if math.isnan(cost) else cost
 
     def discover_vertex(self, v, score):  # pylint: disable=unused-argument
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
@@ -761,7 +837,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and isinstance(target_node, _OperatorNode):
             # This branch applies to operators in the target gate set.
-            weight = self._gate_weights[_to_name(target_node.op)]
+            weight = self._gate_weights[target_node.op]
             self.distances[target_idx] = Resources({target_node.op: 1}, weight)
             self.num_work_wires_used[target_idx] = 0
         elif isinstance(target_node, _DecompositionNode):
@@ -770,12 +846,3 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]
             self.num_work_wires_used[target_idx] = self.num_work_wires_used[src_idx]
-
-
-def _to_name(op):
-    if isinstance(op, type):
-        return op.__name__
-    if isinstance(op, CompressedResourceOp):
-        return op.name
-    assert isinstance(op, str)
-    return translate_op_alias(op)

@@ -90,8 +90,8 @@ class TestPreprocess:
         config = qml.device("default.qubit").setup_execution_config()
         assert config.mcm_config.mcm_method == "deferred"
 
-    def test_transform_program(self):
-        """Test that the transform program returned by preprocess has the correct transforms."""
+    def test_compile_pipeline(self):
+        """Test that the compile pipeline returned by preprocess has the correct transforms."""
         dev = qml.device("default.qubit", wires=1)
 
         # Default config
@@ -99,23 +99,23 @@ class TestPreprocess:
         program, _ = dev.preprocess(execution_config=config)
         assert len(program) == 2
         # pylint: disable=protected-access
-        assert program[0].transform == qml.defer_measurements._transform
-        assert program[1].transform == qml.transforms.decompose._transform
+        assert program[0].tape_transform == qml.defer_measurements._tape_transform
+        assert program[1].tape_transform == qml.transforms.decompose._tape_transform
 
         # mcm_method="deferred"
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
         program, _ = dev.preprocess(execution_config=config)
         assert len(program) == 2
         # pylint: disable=protected-access
-        assert program[0].transform == qml.defer_measurements._transform
-        assert program[1].transform == qml.transforms.decompose._transform
+        assert program[0].tape_transform == qml.defer_measurements._tape_transform
+        assert program[1].tape_transform == qml.transforms.decompose._tape_transform
 
         # mcm_method="single-branch-statistics"
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="single-branch-statistics"))
         program, _ = dev.preprocess(execution_config=config)
         assert len(program) == 1
         # pylint: disable=protected-access
-        assert program[0].transform == qml.transforms.decompose._transform
+        assert program[0].tape_transform == qml.transforms.decompose._tape_transform
 
 
 class TestExecution:

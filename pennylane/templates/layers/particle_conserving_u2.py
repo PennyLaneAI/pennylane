@@ -14,6 +14,7 @@
 r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -306,7 +307,7 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
         def nm_loop(i):
             wires_ = nm_wires[i]
             CNOT(wires=wires_)
-            CRX(2 * weights[l, len(wires_) + i], wires=wires_[::-1])
+            CRX(2 * weights[l, len(wires) + i], wires=wires_[::-1])
             CNOT(wires=wires_)
 
         nm_loop()  # pylint: disable=no-value-for-parameter

@@ -15,6 +15,7 @@
 This module contains tests for class needed to map PennyLane operations to their associated resource
 operator.
 """
+
 import numpy as np
 import pytest
 
@@ -23,7 +24,7 @@ import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.estimator.resource_mapping import _map_to_resource_op
+from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 from pennylane.operation import Operation
 
 # pylint: disable= no-self-use,too-few-public-methods
@@ -44,6 +45,24 @@ class TestMapToResourceOp:
             NotImplementedError, match="Operation doesn't have a resource equivalent"
         ):
             _map_to_resource_op(operation)
+
+    def test_unknown_subroutine_decomposition(self):
+        """Test that if an unknown subroutine is provided, it just uses the decomposition."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            qml.X(wires)
+
+        r_op = _map_to_resource_op(f.operator(0))
+        assert r_op == re_ops.X()
+
+        @qml.templates.Subroutine
+        def g(wires):
+            qml.X(wires)
+            qml.Y(wires)
+
+        r_op_g = _map_to_resource_op(g.operator(0))
+        assert r_op_g == re_ops.Prod([re_ops.X(), re_ops.Y()])
 
     @pytest.mark.parametrize(
         "operator, expected_res_op",
@@ -87,6 +106,12 @@ class TestMapToResourceOp:
             ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.TemporaryAND()),
+            (
+                qtemps.Reflection(U=qml.Hadamard(0), alpha=0.1, reflection_wires=[0]),
+                re_temps.Reflection(
+                    num_wires=1, U=re_ops.Hadamard(wires=[0]), alpha=0.1, wires=[0]
+                ),
+            ),
         ],
     )
     def test_map_to_resource_op(self, operator, expected_res_op):
@@ -110,7 +135,7 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
@@ -118,8 +143,96 @@ class TestMapToResourceOp:
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
+                qtemps.HybridQRAM(
+                    data=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9],
+                    k=1,
+                ),
+                re_temps.HybridQRAM(
+                    data=["010", "111", "110", "000"],
+                    num_wires=10,
+                    num_select_wires=1,
+                    num_control_wires=2,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+            ),
+            (
+                qtemps.SelectOnlyQRAM(
+                    data=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0,
+                ),
+                re_temps.SelectOnlyQRAM(
+                    data=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
+                    num_wires=7,
+                    num_control_wires=2,
+                    num_select_wires=2,
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0,
+                ),
+            ),
+            (
+                qtemps.BBQRAM(
+                    data=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+                re_temps.BBQRAM(
+                    num_bitstrings=4,
+                    size_bitstring=3,
+                    num_bit_flips=6,
+                    num_wires=15,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+            ),
+            (
                 qtemps.QROM(
-                    bitstrings=["01", "11", "10"],
+                    data=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],
@@ -162,8 +275,19 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
-                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2, wires=[2, 0, 1]),
+                qtemps.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                re_temps.QPE(base=re_ops.Z(2), num_estimation_wires=2, wires=[0, 1]),
+            ),
+            (
+                qtemps.QuantumPhaseEstimation(
+                    qops.MultiControlledX(wires=[0, 1, 2, 3], work_wires=["w0", "w1"]),
+                    estimation_wires=[4, 5],
+                ),
+                re_temps.QPE(
+                    base=re_ops.MultiControlledX(3, 0, wires=[0, 1, 2, 3]),
+                    num_estimation_wires=2,
+                    wires=[4, 5],
+                ),
             ),
             (
                 qml.TrotterProduct(
@@ -180,6 +304,43 @@ class TestMapToResourceOp:
                         re_ops.RX(wires=[0]),
                         re_ops.RZ(wires=[1]),
                         re_ops.PauliRot("YYY", wires=[0, 2, 1]),
+                    ],
+                    num_steps=10,
+                    order=2,
+                ),
+            ),
+            (  # Nested sums in the TrotterProduct
+                qml.TrotterProduct(
+                    qml.dot(
+                        [0.25, 0.75],
+                        [
+                            qml.prod(qml.Z(0), qml.Z(1)),
+                            qml.dot([0.1, -2.3], [qml.X(0), qml.prod(qml.X(0), qml.X(1))]),
+                        ],
+                    ),
+                    time=1.0,
+                    n=10,
+                    order=2,
+                ),
+                re_temps.TrotterProduct(
+                    first_order_expansion=[
+                        re_ops.Prod(
+                            res_ops=(
+                                re_ops.CNOT([0, 1]),
+                                re_ops.RZ(wires=[1]),
+                                re_ops.CNOT([0, 1]),
+                            ),
+                        ),
+                        re_temps.TrotterProduct(
+                            first_order_expansion=[
+                                re_ops.RX(wires=[0]),
+                                re_ops.Prod(
+                                    (re_ops.CNOT([0, 1]), re_ops.RX(wires=[1]), re_ops.CNOT([0, 1]))
+                                ),
+                            ],
+                            num_steps=1,
+                            order=1,
+                        ),
                     ],
                     num_steps=10,
                     order=2,
@@ -363,3 +524,66 @@ class TestMapToResourceOp:
             re_ops.CNOT(wires=[0, 1])
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        (
+            (qops.Barrier(wires=[1, 2, 3]), re_ops.Identity()),
+            (qops.Snapshot(measurement=qml.state()), re_ops.Identity()),
+        ),
+    )
+    def test_map_to_identity(self, operator, expected_res_op):
+        """Test that these special operators map to the identity"""
+        assert _map_to_resource_op(operator) == expected_res_op
+
+
+@pytest.mark.parametrize(
+    "op, mapped_op",
+    (
+        (
+            qml.X(0),
+            qops.Evolution(qml.X(0)),
+        ),
+        (
+            0.5 * qml.X(0),
+            qops.Evolution(qops.op_math.SProd(0.5, qml.X(0))),
+        ),
+        (
+            qops.op_math.SProd(3.4, 0.5 * qml.X(0)),
+            qops.Evolution(qops.op_math.SProd(1.7, qml.X(0))),
+        ),
+        (
+            1.23 * (qml.X(0) @ qml.Y(1)),
+            qops.Evolution(qops.op_math.SProd(1.23, (qml.X(0) @ qml.Y(1)))),
+        ),
+        (
+            qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(1.23, qml.Z(0)),
+                    qops.op_math.SProd(-4.5, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+        (
+            2 * qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(2.46, qml.Z(0)),
+                    qops.op_math.SProd(-9.0, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+    ),
+)
+def test_map_term_trotter(op, mapped_op):
+    """Test the private _map_term_trotter function"""
+    assert _map_term_trotter(op) == mapped_op

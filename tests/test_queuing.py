@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
+
 from multiprocessing.dummy import Pool as ThreadPool
 
 import numpy as np
@@ -473,4 +474,19 @@ def test_process_queue_error_if_not_operator_or_measurement():
     q = AnnotatedQueue()
     q.append(1)
     with pytest.raises(QueuingError, match="not an object that can be processed"):
+        qml.queuing.process_queue(q)
+
+
+def test_queue_category_none_deprecation():
+
+    class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        _queue_category = None
+        num_wires = 1
+        num_params = 0
+
+    q = AnnotatedQueue()
+    q.append(DummyOp(wires=[0]))
+    match = "an object to get queued with `_queue_category=None` is deprecated"
+
+    with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning, match=match):
         qml.queuing.process_queue(q)

@@ -38,7 +38,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
-    self_adjoint,
+    qjit_compatible_self_adjoint,
 )
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
@@ -65,7 +65,6 @@ class Hadamard(Operation):
     """
 
     is_verified_hermitian = True
-    _queue_category = "_ops"
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -263,7 +262,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-add_decomps("Adjoint(Hadamard)", self_adjoint)
+add_decomps("Adjoint(Hadamard)", qjit_compatible_self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -334,7 +333,6 @@ class PauliX(Operation):
 
     batch_size = None
 
-    _queue_category = "_ops"
     is_verified_hermitian = True
 
     @property
@@ -516,7 +514,7 @@ def _paulix_to_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 2, 0.5))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda **_: {qml.SX: 1})
 def _pow_x_to_sx(wires, **_):
     qml.SX(wires=wires)
@@ -524,13 +522,13 @@ def _pow_x_to_sx(wires, **_):
 
 @register_resources(lambda **_: {qml.RX: 1, qml.GlobalPhase: 1})
 def _pow_x_to_rx(wires, z, **_):
-    z_mod2 = z % 2
+    z_mod2 = qml.math.array(z) % 2
     qml.RX(np.pi * z_mod2, wires=wires)
     qml.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
 
 
 add_decomps(PauliX, _paulix_to_rx)
-add_decomps("Adjoint(PauliX)", self_adjoint)
+add_decomps("Adjoint(PauliX)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
@@ -617,8 +615,6 @@ class PauliY(Operation):
     basis = "Y"
 
     batch_size = None
-
-    _queue_category = "_ops"
 
     @property
     def pauli_rep(self):
@@ -800,13 +796,13 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 
 @register_resources(lambda **_: {qml.RY: 1, qml.GlobalPhase: 1})
 def _pow_y(wires, z, **_):
-    z_mod2 = z % 2
+    z_mod2 = qml.math.array(z) % 2
     qml.RY(np.pi * z_mod2, wires=wires)
     qml.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
-add_decomps("Adjoint(PauliY)", self_adjoint)
+add_decomps("Adjoint(PauliY)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
@@ -861,7 +857,6 @@ class PauliZ(Operation):
     """
 
     is_verified_hermitian = True
-    _queue_category = "_ops"
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1060,13 +1055,13 @@ def _pauliz_to_ps(wires: WiresLike, **__):
     qml.PhaseShift(np.pi, wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 2, 0.5))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda **_: {qml.S: 1})
 def _pow_z_to_s(wires, **_):
     qml.S(wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 2, 0.25))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.25))
 @register_resources(lambda **_: {qml.T: 1})
 def _pow_z_to_t(wires, **_):
     qml.T(wires=wires)
@@ -1074,12 +1069,12 @@ def _pow_z_to_t(wires, **_):
 
 @register_resources(lambda **_: {qml.PhaseShift: 1})
 def _pow_z(wires, z, **_):
-    z_mod2 = z % 2
+    z_mod2 = qml.math.array(z) % 2
     qml.PhaseShift(np.pi * z_mod2, wires=wires)
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
-add_decomps("Adjoint(PauliZ)", self_adjoint)
+add_decomps("Adjoint(PauliZ)", qjit_compatible_self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
@@ -1266,13 +1261,13 @@ def _s_phaseshift(wires, **__):
 add_decomps(S, _s_phaseshift)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 4, 0.5))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
 @register_resources(lambda **_: {qml.T: 1})
 def _pow_s_to_t(wires, **_):
     qml.T(wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 4, 2))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
 @register_resources(lambda **_: {qml.Z: 1})
 def _pow_s_to_z(wires, **_):
     qml.Z(wires=wires)
@@ -1280,11 +1275,11 @@ def _pow_s_to_z(wires, **_):
 
 @register_resources(lambda **_: {qml.PhaseShift: 1})
 def _pow_s(wires, z, **_):
-    z_mod4 = z % 4
+    z_mod4 = qml.math.array(z) % 4
     qml.PhaseShift(np.pi * z_mod4 / 2, wires=wires)
 
 
-add_decomps("Pow(S)", make_pow_decomp_with_period(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
+add_decomps("Pow(S)", make_pow_decomp_with_period(4, True), _pow_s, _pow_s_to_t, _pow_s_to_z)
 
 
 class T(Operation):
@@ -1437,11 +1432,11 @@ add_decomps(T, _t_phaseshift)
 
 @register_resources(lambda **_: {qml.PhaseShift: 1})
 def _pow_t(wires, z, **_):
-    z_mod8 = z % 8
+    z_mod8 = qml.math.array(z) % 8
     qml.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
 
 
-add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
+add_decomps("Pow(T)", make_pow_decomp_with_period(8, True), _pow_t)
 
 
 class SX(Operation):
@@ -1594,7 +1589,7 @@ def _sx_to_rx(wires: WiresLike, **__):
 add_decomps(SX, _sx_to_rx)
 
 
-@register_condition(lambda z, **_: z % 4 == 2)
+@register_condition(lambda z, **_: math.shape(z) == () and z % 4 == 2)
 @register_resources(lambda **_: {qml.X: 1})
 def _pow_sx_to_x(wires, **__):
     qml.X(wires)
@@ -1602,12 +1597,12 @@ def _pow_sx_to_x(wires, **__):
 
 @register_resources(lambda **_: {qml.RX: 1, qml.GlobalPhase: 1})
 def _pow_sx(wires, z, **_):
-    z_mod4 = z % 4
+    z_mod4 = qml.math.array(z) % 4
     qml.RX(np.pi / 2 * z_mod4, wires=wires)
     qml.GlobalPhase(-np.pi / 4 * z_mod4, wires=wires)
 
 
-add_decomps("Pow(SX)", make_pow_decomp_with_period(4), _pow_sx_to_x, _pow_sx)
+add_decomps("Pow(SX)", make_pow_decomp_with_period(4, True), _pow_sx_to_x, _pow_sx)
 
 
 class SWAP(Operation):
@@ -1758,8 +1753,25 @@ def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-add_decomps(SWAP, _swap_to_cnot)
-add_decomps("Adjoint(SWAP)", self_adjoint)
+def _swap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
+    }
+
+
+@register_resources(_swap_to_ppr_resource)
+def _swap_to_ppr(wires, **_):
+    qml.PauliRot(np.pi / 2, "YY", wires=wires)
+    qml.PauliRot(np.pi / 2, "XX", wires=wires)
+    qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
+    qml.GlobalPhase(-np.pi / 4)
+
+
+add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
+add_decomps("Adjoint(SWAP)", qjit_compatible_self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -1961,7 +1973,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
-add_decomps("Adjoint(ECR)", self_adjoint)
+add_decomps("Adjoint(ECR)", qjit_compatible_self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
@@ -2116,23 +2128,38 @@ def _iswap_decomp(wires, **__):
     Hadamard(wires=wires[1])
 
 
-add_decomps(ISWAP, _iswap_decomp)
+def _iswap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+    }
 
 
-@register_condition(lambda z, **_: math.allclose(z % 4, 0.5))
+@register_resources(_iswap_to_ppr_resource)
+def _iswap_to_ppr(wires, **_):
+    qml.PauliRot(-np.pi / 2, "YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, "XX", wires=wires)
+
+
+add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
+
+
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
 @register_resources(lambda **_: {qml.SISWAP: 1})
 def _pow_iswap_to_siswap(wires, **__):
     qml.SISWAP(wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 4, 2))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
 @register_resources(lambda **_: {qml.Z: 2})
 def _pow_iswap_to_zz(wires, **__):
     qml.Z(wires=wires[0])
     qml.Z(wires=wires[1])
 
 
-add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
+add_decomps(
+    "Pow(ISWAP)", make_pow_decomp_with_period(4, True), _pow_iswap_to_zz, _pow_iswap_to_siswap
+)
 
 
 class SISWAP(Operation):
@@ -2319,23 +2346,38 @@ def _siswap_decomp(wires, **__):
     SX(wires=wires[1])
 
 
-add_decomps(SISWAP, _siswap_decomp)
+def _siswap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+    }
 
 
-@register_condition(lambda z, **_: math.allclose(z % 8, 2))
+@register_resources(_siswap_to_ppr_resource)
+def _siswap_to_ppr(wires, **_):
+    qml.PauliRot(-np.pi / 4, "YY", wires=wires)
+    qml.PauliRot(-np.pi / 4, "XX", wires=wires)
+
+
+add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
+
+
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 2))
 @register_resources(lambda **_: {qml.ISWAP: 1})
 def _pow_siswap_to_iswap(wires, **_):
     qml.ISWAP(wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 8, 4))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 4))
 @register_resources(lambda **_: {qml.Z: 2})
 def _pow_siswap_to_zz(wires, **_):
     qml.Z(wires=wires[0])
     qml.Z(wires=wires[1])
 
 
-add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
+add_decomps(
+    "Pow(SISWAP)", make_pow_decomp_with_period(8, True), _pow_siswap_to_zz, _pow_siswap_to_iswap
+)
 
 
 SQISW = SISWAP

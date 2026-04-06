@@ -20,7 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -28,6 +28,7 @@ from pennylane.measurements import (
     SampleMP,
 )
 from pennylane.ops import MeasurementValue, MidMeasure
+from pennylane.transforms import dynamic_one_shot
 from pennylane.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
@@ -37,6 +38,12 @@ from pennylane.transforms.dynamic_one_shot import (
 )
 
 # pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_pass_name():
+    """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""
+
+    assert dynamic_one_shot.pass_name == "dynamic-one-shot"
 
 
 def test_gather_non_mcm_unsupported_measurement():
@@ -81,20 +88,16 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
         parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
 
 
-def test_postselection_error_with_wrong_device():
-    """Test that an error is raised when a device does not support native execution."""
-    dev = qml.device("default.mixed", wires=2)
+def test_qnode_transform_error():
+    """Tests that an error is raised when applying dynamic_one_shot on a qnode."""
 
-    with pytest.raises(
-        TypeError,
-        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
-    ):
+    with pytest.raises(TransformError, match="cannot be applied directly on a QNode"):
 
         @qml.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def _():
-            qml.measure(0, postselect=1)
-            return qml.probs(wires=[0])
+            qml.X(0)
+            qml.expval(qml.Z(0))
 
 
 def test_postselect_mode():
@@ -329,7 +332,7 @@ class TestInterfaces:
         param = qml.math.array(np.pi / 2, like=interface)
 
         mv = qml.measure(0)
-        mcms = [mv.measurements[0]] + [MidMeasure(0, id=str(i)) for i in range(n_mcms - 1)]
+        mcms = [mv.measurements[0]] + [MidMeasure(0, meas_uid=str(i)) for i in range(n_mcms - 1)]
 
         tape = qml.tape.QuantumScript(
             [qml.RX(param, 0)] + mcms,

@@ -15,6 +15,7 @@
 This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
+
 from collections.abc import Sequence
 from functools import lru_cache
 
@@ -23,7 +24,10 @@ from scipy import sparse
 import pennylane as qml
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane.decomposition.symbolic_decomposition import (
+    qjit_compatible_adjoint_rotation,
+    qjit_compatible_pow_rotation,
+)
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
@@ -301,7 +305,7 @@ class GlobalPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = None
+    grad_method = "A"
 
     resource_keys = set()
 
@@ -475,8 +479,8 @@ class GlobalPhase(Operation):
         return qml.s_prod(-1, qml.I(self.wires))
 
 
-add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
-add_decomps("Pow(GlobalPhase)", pow_rotation)
+add_decomps("Adjoint(GlobalPhase)", qjit_compatible_adjoint_rotation)
+add_decomps("Pow(GlobalPhase)", qjit_compatible_pow_rotation)
 
 
 def _controlled_g_phase_resource(

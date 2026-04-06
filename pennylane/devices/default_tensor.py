@@ -14,6 +14,7 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+
 # pylint: disable=protected-access
 import copy
 import warnings
@@ -46,7 +47,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch, TensorLike
 
 has_quimb = True
@@ -256,7 +257,7 @@ class DefaultTensor(Device):
             return qml.expval(qml.Z(0))
 
     >>> circuit(num_qubits)
-    tensor(-1., requires_grad=True)
+    -1.0
 
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
@@ -317,7 +318,7 @@ class DefaultTensor(Device):
                     ]
 
             >>> circuit(theta, phi, num_qubits)
-            [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
+            [-0.9953..., np.float64(0.0036631...), np.float64(0.9999...)]
 
             After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds on a standard laptop.
             Increasing the number of qubits to 500 brings the execution time to approximately 15 seconds, and for 1000 qubits to around 50 seconds.
@@ -359,7 +360,7 @@ class DefaultTensor(Device):
                     return qml.expval(qml.Z(0))
 
             >>> circuit(phi, depth, num_qubits)
-            -0.9511499466743283
+            -0.9511499...
 
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
@@ -609,14 +610,14 @@ class DefaultTensor(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ):
-        """This function defines the device transform program to be applied and an updated device configuration.
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns :class:`~.QuantumTape`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -631,7 +632,7 @@ class DefaultTensor(Device):
 
         config = self._setup_execution_config(execution_config)
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)

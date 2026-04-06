@@ -25,7 +25,6 @@ Usage:
 The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 
-
 from functools import singledispatch
 
 from pennylane.measurements import (
@@ -39,8 +38,19 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, Conditional, Controlled, GlobalPhase, Identity, MidMeasure
+from pennylane.ops import (
+    Adjoint,
+    Conditional,
+    Controlled,
+    GlobalPhase,
+    Identity,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
+from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
+from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import TemporaryAND
 
 
@@ -102,8 +112,7 @@ def _add_grouping_symbols(op_wires, layer_str, config, closing=False):
 
 
 def _add_mid_measure_grouping_symbols(op, layer_str, config):
-    """Adds symbols indicating the extent of a given object for mid-measure
-    operators"""
+    """Adds symbols indicating the extent of a given object for mid-measure operators"""
     if op not in config.bit_map:
         return layer_str
 
@@ -118,6 +127,32 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
     for b in range(n_wires, bit):
         filler = " " if layer_str[b][-1] == " " else "═"
         layer_str[b] += f"{filler}║"
+
+    return layer_str
+
+
+def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-measure operators"""
+    mcms = []
+    for mv in flatten(op.output)[0]:
+        if isinstance(mv, MeasurementValue):
+            mcms += mv.measurements
+
+    if not any(mcm in config.bit_map for mcm in mcms):
+        return layer_str
+
+    n_wires = len(config.wire_map)
+    mapped_wire = max(config.wire_map[w] for w in op.wires)
+    bits = [config.bit_map[mcm] + n_wires for mcm in mcms if mcm in config.bit_map]
+    for bit in bits:
+        layer_str[bit] += "╚" if bit == max(bits) else "╠"
+
+    for w in range(mapped_wire + 1, n_wires):
+        layer_str[w] += "║"
+
+    for b in range(n_wires, max(bits)):
+        if b not in bits:
+            layer_str[b] += "║"
 
     return layer_str
 
@@ -224,6 +259,15 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
     return layer_str
 
 
+@_add_obj.register
+def _add_subroutine(
+    obj: SubroutineOp, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation."""
+    layer_str = _add_subroutine_mcm_grouping_symbols(obj, layer_str, config)
+    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
+
+
 @_add_obj.register(Identity)
 @_add_obj.register(GlobalPhase)
 def _add_global_op(
@@ -246,23 +290,25 @@ def _add_global_op(
 
 @_add_obj.register
 def _add_mid_measure_op(
-    op: MidMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.MidMeasure``."""
+    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
-    label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-
+    layer_str = _add_grouping_symbols(op.wires, layer_str, config)
+    label_kwargs = {"decimals": config.decimals, "cache": config.cache}
     for w in op.wires:
+        if isinstance(op, PauliMeasure):
+            label_kwargs["wire"] = w
+        label = op.label(**label_kwargs).replace("\n", "")
         layer_str[config.wire_map[w]] += label
-
     return layer_str
 
 
 @_add_obj.register
 def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_symbols=False):
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    label = f"Tape:{config.cache['tape_offset']+len(tape_cache)}"
+    label = f"Tape:{config.cache['tape_offset'] + len(tape_cache)}"
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
     tape_cache.append(obj)
@@ -303,7 +349,7 @@ def _add_cwire_measurement(m, layer_str, config):
     mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
-    mv_label = "MCM"
+    mv_label = "PPM" if isinstance(mcms[0], PauliMeasure) else "MCM"
     meas_label = measurement_label_map[type(m)](mv_label)
 
     n_wires = len(config.wire_map)

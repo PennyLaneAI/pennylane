@@ -14,12 +14,16 @@
 """
 Unit tests for the Hilbert-Schmidt templates.
 """
+
 import copy
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 
 # pylint: disable=expression-not-assigned
 
@@ -331,6 +335,7 @@ class TestHilbertSchmidt:
         copy_V = copy_op.hyperparameters["V"]
         assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("U", "V", "results"),
         [
@@ -355,7 +360,8 @@ class TestHilbertSchmidt:
         with qml.tape.QuantumTape() as tape:
             qml.HilbertSchmidt(V, U)
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ALL_QUBIT_OPS)
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.wires == results[idx].wires
             assert qml.math.allclose(val.parameters, results[idx].parameters)
@@ -421,6 +427,22 @@ class TestHilbertSchmidt:
 
         jit_circuit = jax.jit(circuit)
         assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
+
+    DECOMP_PARAMS = [
+        (qml.SWAP(wires=[0, 1]), [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]),
+        ([qml.RY(0.1, wires=2), qml.SWAP(wires=[2, 3])], qml.CNOT(wires=[0, 1])),
+        (
+            [qml.RX(0.1, wires=0), qml.SWAP(wires=[1, 2])],
+            [qml.RZ(0.1, wires=3), qml.CNOT(wires=[5, 4])],
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
+    def test_decomposition_new(self, U, V):
+        op = qml.HilbertSchmidt(V, U)
+        for rule in qml.list_decomps(qml.HilbertSchmidt):
+            _test_decomposition_rule(op, rule)
 
 
 class TestLocalHilbertSchmidt:
@@ -572,6 +594,22 @@ class TestLocalHilbertSchmidt:
             qml.Hadamard(wires=[0]),
         ]
         assert tape_dec.operations == expected_operations
+
+    DECOMP_PARAMS = [
+        (qml.SWAP(wires=[0, 1]), [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]),
+        ([qml.RY(0.1, wires=2), qml.SWAP(wires=[2, 3])], qml.CNOT(wires=[0, 1])),
+        (
+            [qml.RX(0.1, wires=0), qml.SWAP(wires=[1, 2])],
+            [qml.RZ(0.1, wires=3), qml.CNOT(wires=[5, 4])],
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
+    def test_local_decomposition_new(self, U, V):
+        op = qml.LocalHilbertSchmidt(V, U)
+        for rule in qml.list_decomps(qml.LocalHilbertSchmidt):
+            _test_decomposition_rule(op, rule)
 
     def test_qnode_integration(self):
         """Test that the local hilbert schmidt template can be used inside a qnode."""

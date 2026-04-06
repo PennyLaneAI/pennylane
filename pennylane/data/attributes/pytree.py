@@ -13,11 +13,11 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for PyTree types."""
 
-
 from typing import TypeVar
 
 import numpy as np
 
+from pennylane import queuing
 from pennylane.data.attributes import DatasetArray, DatasetList, serialization
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
@@ -36,10 +36,11 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
     type_id = "pytree"
 
     def hdf5_to_value(self, bind: HDF5Group) -> T:
-        return unflatten(
-            AttributeTypeMapper(bind)["leaves"].get_value(),
-            serialization.pytree_structure_load(bind["treedef"][()].tobytes()),
-        )
+        with queuing.QueuingManager.stop_recording():
+            return unflatten(
+                AttributeTypeMapper(bind)["leaves"].get_value(),
+                serialization.pytree_structure_load(bind["treedef"][()].tobytes()),
+            )
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: T) -> HDF5Group:
         bind = bind_parent.create_group(key)

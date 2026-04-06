@@ -27,6 +27,8 @@ from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.ops import CompositeOp, SymbolicOp
 
+from .execution_config import MCM_METHOD
+
 ALL_SUPPORTED_SCHEMAS = [3]
 
 
@@ -132,6 +134,14 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
     supported_mcm_methods: list[str] = field(default_factory=list)
     """List of supported methods of mid-circuit measurements."""
+
+    def __post_init__(self):
+        """Validate the device's capabilities."""
+        _valid_mcm_methods = {item.value for item in MCM_METHOD}
+        if not set(self.supported_mcm_methods).issubset(_valid_mcm_methods):
+            raise ValueError(
+                f"The device's supported mcm methods must be a subset of the following supported mid-circuit measurement methods available: {_valid_mcm_methods}"
+            )
 
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":
         """Returns the device capabilities conditioned on the given program features."""
@@ -439,7 +449,6 @@ def observable_stopping_condition_factory(
     """
 
     def observable_stopping_condition(obs: Operator) -> bool:
-
         if not capabilities.supports_observable(obs.name):
             return False
 
@@ -454,9 +463,10 @@ def observable_stopping_condition_factory(
     return observable_stopping_condition
 
 
-def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
+def validate_mcm_method(
+    capabilities: DeviceCapabilities | None, mcm_method: str | None, shots_present: bool
+):
     """Validates an MCM method against the device's capabilities."""
-
     if mcm_method is None or mcm_method == "deferred":
         return  # no need to validate if requested deferred or if no method is requested.
 

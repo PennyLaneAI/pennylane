@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that various templates work correctly on a device."""
+
 # pylint: disable=no-self-use
 
 # Can generate a list of all templates using the following code:
@@ -29,7 +30,10 @@ import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import DeviceError
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [
+    pytest.mark.skip_unsupported,
+    pytest.mark.usefixtures("enable_and_disable_graph_decomp"),
+]
 
 
 def check_op_supported(op, dev):
@@ -216,7 +220,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix))
+            qml.adjoint(qml.BasisRotation)(wires=[0, 1], unitary_matrix=unitary_matrix)
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
             qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix)

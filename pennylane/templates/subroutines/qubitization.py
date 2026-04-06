@@ -20,6 +20,7 @@ import copy
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import I, Prod, prod
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -172,6 +173,11 @@ class Qubitization(Operation):
         decomp_ops.append(PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops
+
+    def queue(self, context=QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
 
 
 def _qubitization_resources(num_control_wires, hamiltonian):

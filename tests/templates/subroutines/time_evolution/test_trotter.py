@@ -14,6 +14,7 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
+
 # pylint: disable=private-access, protected-access, too-many-arguments
 import copy
 from collections import defaultdict
@@ -25,7 +26,7 @@ import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.resource import Resources
+from pennylane.resource import Resources, SpecsResources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
@@ -311,6 +312,7 @@ test_resources_data = {
 }
 
 
+@qml.QueuingManager.stop_recording()
 def _generate_simple_decomp(coeffs, ops, time, order, n):
     """Given coeffs, ops and a time argument in a given framework, generate the
     Trotter product for order and number of trotter steps."""
@@ -717,11 +719,11 @@ class TestResources:
             qml.TrotterProduct(hamiltonian, time, n=5, order=2)
             return qml.expval(qml.Z(0))
 
-        expected_resources = Resources(
-            num_wires=2,
-            num_gates=30,
-            gate_types=defaultdict(int, {"Evolution": 30}),
-            gate_sizes=defaultdict(int, {1: 30}),
+        expected_resources = SpecsResources(
+            num_allocs=2,
+            gate_types={"Evolution": 30},
+            gate_sizes={1: 30},
+            measurements={"expval(PauliZ)": 1},
             depth=20,
         )
 
@@ -733,38 +735,6 @@ class TestResources:
 
         assert expected_resources == spec_resources
         assert expected_resources == tracker_resources
-
-    def test_resources_and_error(self):
-        """Test that we can compute the resources and error together"""
-        time = 0.1
-        coeffs = qml.math.array([1.0, 0.5])
-        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circ():
-            qml.TrotterProduct(hamiltonian, time, n=2, order=2)
-            return qml.expval(qml.Z(0))
-
-        specs = qml.specs(circ)()
-
-        computed_error = (specs["errors"])["SpectralNormError"]
-        computed_resources = specs["resources"]
-
-        # Expected resources and errors (computed by hand)
-        expected_resources = Resources(
-            num_wires=1,
-            num_gates=8,
-            gate_types=defaultdict(int, {"Evolution": 8}),
-            gate_sizes=defaultdict(int, {1: 8}),
-            depth=8,
-        )
-        expected_error = 0.001
-
-        assert computed_resources == expected_resources
-        assert isinstance(computed_error, SpectralNormError)
-        assert qnp.isclose(computed_error.error, qml.math.array(expected_error))
 
 
 class TestDecomposition:
@@ -827,6 +797,7 @@ class TestDecomposition:
             qml.assert_equal(op1, op2)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
     through all interfaces."""
@@ -1096,8 +1067,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1131,8 +1101,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1175,8 +1144,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1216,8 +1184,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1739,6 +1706,7 @@ class TestTrotterizedQfuncIntegration:
         expected_decomp = expected_decomp * n
         assert op.decomposition() == expected_decomp
 
+    @qml.QueuingManager.stop_recording()
     def _generate_simple_decomp_trotterize(self, time, order, reverse, args, wires):
         arg1, arg2 = args
 
@@ -2050,12 +2018,11 @@ class TestTrotterizedQfuncIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
-            with qml.QueuingManager.stop_recording():
-                expected_t = time / n
-                expected_decomp = self._generate_simple_decomp_trotterize(
-                    expected_t, order, reverse, (alpha, beta), wires
-                )
-                expected_decomp = expected_decomp * n
+            expected_t = time / n
+            expected_decomp = self._generate_simple_decomp_trotterize(
+                expected_t, order, reverse, (alpha, beta), wires
+            )
+            expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
                 qml.apply(op)
@@ -2126,12 +2093,11 @@ class TestTrotterizedQfuncIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
-            with qml.QueuingManager.stop_recording():
-                expected_t = time / n
-                expected_decomp = self._generate_simple_decomp_trotterize(
-                    expected_t, order, reverse, (alpha, beta), wires
-                )
-                expected_decomp = expected_decomp * n
+            expected_t = time / n
+            expected_decomp = self._generate_simple_decomp_trotterize(
+                expected_t, order, reverse, (alpha, beta), wires
+            )
+            expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
                 qml.apply(op)

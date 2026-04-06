@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 import warnings
 from datetime import datetime
@@ -222,7 +223,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak_adj. You can install them with pip install jax~=0.6.0 jaxlib~=0.6.0 optax."
+            "jax and optax are required for variational_kak_adj. You can install them with pip install jax optax."
         )  # pragma: no cover
     if verbose >= 1 and not has_plt:  # pragma: no cover
         print(
@@ -392,7 +393,7 @@ def run_opt(
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for run_opt. You can install them with pip install jax~=0.6.0 jaxlib~=0.6.0 optax."
+            "jax and optax are required for run_opt. You can install them with pip install jax optax."
         )  # pragma: no cover
 
     if optimizer is None:

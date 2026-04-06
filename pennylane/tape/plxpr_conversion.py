@@ -19,7 +19,7 @@ from copy import copy
 
 import numpy as np
 
-from pennylane import ops
+from pennylane import ops, queuing
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -28,9 +28,13 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     jacobian_prim,
+    jvp_prim,
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    quantum_subroutine_prim,
+    value_and_grad_prim,
+    vjp_prim,
 )
 from pennylane.operation import Operator
 from pennylane.ops.mid_measure import (
@@ -41,6 +45,7 @@ from pennylane.ops.mid_measure import (
     measure,
     pauli_measure,
 )
+from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
@@ -143,7 +148,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
-    args = all_args[args_slice]
+    args = all_args[slice(*args_slice)]
 
     # Find predicates that use mid-circuit measurements. We don't check the last
     # condition as that is always `True`.
@@ -157,7 +162,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
         conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = all_args[const_slice]
+        consts = all_args[slice(*const_slice)]
         if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
@@ -189,8 +194,23 @@ def _(self, *wires, pauli_word="", postselect=None):
 
 
 @CollectOpsandMeas.register_primitive(jacobian_prim)
-def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
+def _jacobian_primitive(self, *invals, jaxpr, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(value_and_grad_prim)
+def _value_and_grad_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the value_and_grad primitive")
+
+
+@CollectOpsandMeas.register_primitive(vjp_prim)
+def _vjp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the vjp primitive")
+
+
+@CollectOpsandMeas.register_primitive(jvp_prim)
+def _jvp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jvp primitive")
 
 
 # pylint: disable=unused-argument
@@ -223,6 +243,18 @@ def _allocate_primitive(self, *, num_wires, state, restored):
 def _deallocate_primitive(self, *wires):
     self.state["ops"].append(Deallocate(wires))
     return []
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
+    child = CollectOpsandMeas()
+    with queuing.QueuingManager.stop_recording():
+        out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+    name = name.split("_")[0]
+    with pause():
+        self.state["ops"].append(CollectedSubroutine(name, child.state["ops"]))
+    return out
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

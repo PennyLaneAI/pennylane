@@ -14,6 +14,7 @@
 """
 Tests for the variance calculation on the DefaultTensor device.
 """
+
 import numpy as np
 import pytest
 

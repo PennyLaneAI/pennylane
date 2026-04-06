@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Ross-Selinger (arXiv:1403.2975v3) implementation for approximate Pauli-Z rotation gate decomposition."""
+
 import math
 
 import pennylane as qml
-from pennylane.compiler.compiler import AvailableCompilers
+from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine
 from pennylane.ops.op_math.decompositions.normal_forms import (
@@ -151,10 +152,14 @@ def _jit_rs_decomposition(wire, decomposition_info):
     leading_t_cond(wire)
     ops.append(leading_t_cond.operation)
 
+    active_jit = active_compiler()
+    compilers = AvailableCompilers.names_entrypoints
+    ops_loader = compilers[active_jit]["ops"].load()
+
     # Middle sequence of HT or SHT syllables.
     if syllable_sequence.shape[0] > 0:
 
-        @qml.for_loop(start=0, stop=syllable_sequence.shape[0])
+        @ops_loader.for_loop(0, syllable_sequence.shape[0], 1)
         def syllable_sequence_loop(i):
             is_HT = syllable_sequence[i]
 
@@ -280,7 +285,9 @@ def rs_decomposition(
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
-            decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
+            unwrapped_angle = qml.math.unwrap(angle)
+            decomposed_gates, g_phase, phase = eval_ross_algorithm(unwrapped_angle)
+            g_phase = qml.math.array(g_phase, like=angle)
         else:
             if not is_jax:
                 raise ImportError(

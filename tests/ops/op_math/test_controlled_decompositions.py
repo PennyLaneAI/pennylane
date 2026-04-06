@@ -24,6 +24,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
@@ -343,7 +344,7 @@ class TestControlledDecompBisect:
         qml.assert_equal(mcx1, op_seq[0])
         qml.assert_equal(mcx1, op_seq[4])
 
-        mcx2 = qml.Toffoli(wires=[4, 5, 0])
+        mcx2 = qml.MultiControlledX(wires=Wires([4, 5, 0]), work_wires=Wires([1, 2, 3]))
         qml.assert_equal(mcx2, op_seq[2])
         qml.assert_equal(mcx2, op_seq[6])
 
@@ -861,7 +862,9 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        [tape], _ = qml.transforms.decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1
+        )
 
         @qml.qnode(dev)
         def f(bitstring):

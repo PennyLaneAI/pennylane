@@ -240,11 +240,15 @@ def test_preprocessing_program():
     config = facade.setup_execution_config(circuit=tape)
     program = facade.preprocess_transforms(config)
 
-    assert program[0].transform == qml.defer_measurements.transform  # pylint: disable=no-member
     assert (
-        program[1].transform == legacy_device_batch_transform.transform
+        program[0].tape_transform == qml.defer_measurements.tape_transform
     )  # pylint: disable=no-member
-    assert program[2].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
+    assert (
+        program[1].tape_transform == legacy_device_batch_transform.tape_transform
+    )  # pylint: disable=no-member
+    assert (
+        program[2].tape_transform == legacy_device_expand_fn.tape_transform
+    )  # pylint: disable=no-member
 
     m0 = qml.measure(0)
     tape = qml.tape.QuantumScript(
@@ -279,10 +283,6 @@ def test_mcm_validation():
         facade.setup_execution_config(config, tape)
 
     with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="hello"))
-        facade.setup_execution_config(config, tape)
-
-    with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="tree-traversal"))
         facade.setup_execution_config(config, tape)
 
@@ -312,15 +312,13 @@ def test_mcm_resolution_when_supported():
 @pytest.mark.usefixtures("create_temporary_toml_file")
 @pytest.mark.parametrize(
     "create_temporary_toml_file",
-    [
-        """
+    ["""
         schema = 3
 
         [compilation]
 
         supported_mcm_methods = ["one-shot"]
-        """
-    ],
+        """],
     indirect=True,
 )
 def test_mcm_resolution_toml_present(request):

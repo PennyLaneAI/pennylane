@@ -16,7 +16,6 @@ This file contains the implementation of the SProd class which contains logic fo
 computing the scalar product of operations.
 """
 
-
 import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
@@ -281,16 +280,6 @@ class SProd(ScalarSymbolicOp):
     @handle_recursion_error
     def _matrix(scalar, mat):
         return scalar * mat
-
-    @property
-    def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns: None
-        """
-        return None
 
     def pow(self, z):
         """Returns the operator raised to a given power."""

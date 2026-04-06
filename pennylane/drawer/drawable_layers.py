@@ -15,8 +15,19 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from functools import singledispatch
+
 from pennylane.measurements import MeasurementProcess
-from pennylane.ops import Conditional, GlobalPhase, Identity, MidMeasure
+from pennylane.ops import (
+    Conditional,
+    GlobalPhase,
+    Identity,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
 
 from .utils import default_wire_map, unwrap_controls
 
@@ -78,24 +89,10 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
     )
 
 
+# pylint: disable=unused-argument
+@singledispatch
 def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
-    if isinstance(op, MidMeasure):
-        mapped_wire = wire_map[op.wires[0]]
-
-        if op in bit_map:
-            min_wire = mapped_wire
-            max_wire = max(wire_map.values())
-            return set(range(min_wire, max_wire + 1))
-
-        return {mapped_wire}
-
-    if isinstance(op, Conditional):
-        mapped_wires = [wire_map[wire] for wire in op.base.wires]
-        min_wire = min(mapped_wires)
-        max_wire = max(wire_map.values())
-        return set(range(min_wire, max_wire + 1))
-
     *_, base = unwrap_controls(op)
 
     if len(op.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
@@ -109,6 +106,44 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
     min_wire = min(mapped_wires)
     max_wire = max(mapped_wires)
 
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _occupied_subroutine_op_wires(op: SubroutineOp, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    mvs = (v for v in flatten(op.output)[0] if isinstance(v, MeasurementValue))
+    if any(m in bit_map for mv in mvs for m in mv.measurements):
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register(MidMeasure)
+@_get_op_occupied_wires.register(PauliMeasure)
+def _handle_mid_measure(op: MidMeasure | PauliMeasure, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    if op in bit_map:
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _handle_cond(op: Conditional, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.base.wires]
+    min_wire = min(mapped_wires)
+    max_wire = max(wire_map.values())
     return set(range(min_wire, max_wire + 1))
 
 
@@ -160,7 +195,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-
         if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have
             # op.mv != None.

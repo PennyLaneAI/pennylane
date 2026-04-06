@@ -13,13 +13,12 @@
 # limitations under the License.
 
 """Tests for the transform ``qml.transform.rz_phase_gradient``"""
-from itertools import product
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.rz_phase_gradient import _binary_repr_int, _rz_phase_gradient
+from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
 
 def prepare_phase_gradient(wires):
@@ -30,27 +29,11 @@ def prepare_phase_gradient(wires):
     return ops
 
 
-@pytest.mark.parametrize("string", list(product([0, 1], repeat=4)))
-@pytest.mark.parametrize("p", [2, 3, 4])
-def test_binary_repr_int(string, p):
-    """Test that the binary representation or approximation of the angle is correct
-
-    In particular, this tests that phi = (c1 2^-1 + c2 2^-2 + .. + cp 2^-p + ... + 2^-N) 2pi
-    is correctly represented as (c1, c2, .., cp) for precision p
-    """
-    phi = np.sum([c * 2 ** (-i - 1) for i, c in enumerate(string)]) * 2 * np.pi
-    string_str = "".join([str(i) for i in string])
-    binary_rep_re = np.binary_repr(_binary_repr_int(phi, precision=p), width=p)
-    assert (
-        binary_rep_re == string_str[:p]
-    ), f"Wrong binary representation:\n{binary_rep_re}\n{string_str[:p]}, {p}"
-
-
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_units_rz_phase_gradient(p):
     """Test the outputs of _rz_phase_gradient"""
 
-    phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) * 2 * np.pi
+    phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32) * 2 * np.pi
 
     wire = "targ"
     angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
@@ -70,14 +53,14 @@ def test_units_rz_phase_gradient(p):
     operands = op.operands
 
     assert isinstance(operands[0], qml.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(operands[0].base.parameters, [1] * p)
+    assert np.allclose(operands[0].base.parameters, [0] * p)
     assert operands[0].base.wires == angle_wires
 
     assert isinstance(operands[1], qml.SemiAdder)
     assert operands[1].wires == angle_wires + phase_grad_wires + work_wires
 
     assert isinstance(operands[2], qml.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(operands[2].base.parameters, [1] * p)
+    assert np.allclose(operands[2].base.parameters, [0] * p)
     assert operands[2].base.wires == angle_wires
 
 

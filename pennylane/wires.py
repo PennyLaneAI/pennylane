@@ -76,7 +76,8 @@ def _process(wires):
             hash(wires)
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
-            if str(e).startswith("unhashable"):
+            # Check for unhashable type error - format changed in Python 3.14
+            if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
@@ -85,7 +86,10 @@ def _process(wires):
         # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
-        if str(e).startswith("unhashable"):
+        # Check for unhashable type error - format changed in Python 3.14
+        # Python 3.13: "unhashable type: 'list'"
+        # Python 3.14: "cannot use 'list' as a set element (unhashable type: 'list')"
+        if "unhashable" in str(e):
             raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):
@@ -209,13 +213,20 @@ class Wires(Sequence):
         other = Wires(other)
         return Wires.all_wires([other, self])
 
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         """Defines a numpy array representation of the Wires object.
+
+        Args:
+            dtype: The desired data-type for the array. Default is ``None``.
+            copy: If ``True``, then force a copy. If ``False``, then ensure that a copy
+                is not made. If ``None`` (default), a copy will only be made if
+                necessary.
 
         Returns:
             ndarray: array representing Wires object
         """
-        return np.array(self._labels)
+        arr = np.array(self._labels, dtype=dtype)
+        return arr.copy() if copy else arr
 
     def __jax_array__(self):
         """Defines a JAX numpy array representation of the Wires object.

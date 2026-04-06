@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the CNOT routing algorithm ROWCOL."""
+
 # pylint: disable=no-self-use
 import networkx as nx
 import numpy as np
@@ -140,6 +141,21 @@ class TestTreeTraversal:
         assert pre == expected
 
 
+def _make_random_regular_matrix(n, random_ops, rs: np.random.RandomState):
+    """Create a random regular (=non-singular) binary matrix.
+    This is done by performing random row additions on the identity matrix, preserving
+    the regularity of the identity matrix itself.
+
+    In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
+    circuit.
+    """
+    P = np.eye(n, dtype=int)
+    for _ in range(random_ops):
+        i, j = rs.choice(n, size=2, replace=False)  # Random pair of rows
+        P[i] += P[j]  # Add second sampled row to first sampled row
+    return P % 2  # Make into binary matrix
+
+
 def assert_reproduces_parity_matrix(cnots, expected_P):
     """Helper function that compares a CNOT circuit to a given parity matrix."""
     tape = QuantumScript([CNOT(wires) for wires in cnots])
@@ -222,14 +238,11 @@ class TestRowCol:
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
     @pytest.mark.parametrize("input_depth", [(lambda n: n), (lambda n: n**3)])
-    def test_random_circuit(self, n, connectivity_fn, input_depth):
+    def test_random_circuit(self, n, connectivity_fn, input_depth, seed):
         """Test with a random CNOT circuit."""
 
-        P = np.eye(n, dtype=int)
-        for _ in range(input_depth(n)):
-            i, j = np.random.choice(n, size=2, replace=False)
-            P[i] += P[j]
-        P %= 2
+        rs = np.random.RandomState(seed)
+        P = _make_random_regular_matrix(n, input_depth(n), rs)
         input_P = P.copy()
 
         connectivity = connectivity_fn(n)

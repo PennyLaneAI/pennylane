@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for measuring states in devices/qubit_mixed."""
+
 # pylint: disable=too-few-public-methods
 
 from functools import reduce
@@ -411,7 +412,7 @@ class TestBroadcasting:
         [
             (
                 qml.density_matrix(wires=[0, 1]),
-                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 4, 4)),
+                lambda x: math.reshape(x, (BATCH_SIZE, 4, 4)),
             ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],

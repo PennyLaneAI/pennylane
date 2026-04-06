@@ -128,6 +128,7 @@ def test_standard_validity():
 class TestSuperposition:
     """Test the Superposition template."""
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("probs, bases", PROBS_BASES)
     def test_correct_output(self, probs, bases):
         """Test the correct output of the Superposition template."""

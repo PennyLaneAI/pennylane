@@ -14,17 +14,12 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, cond
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class BasicEntanglerLayers(Operation):
@@ -58,7 +53,7 @@ class BasicEntanglerLayers(Operation):
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
             for the rotation.
         wires (Iterable): wires that the template acts on
-        rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
+        rotation (Type[pennylane.operation.Operation]): one-parameter single-qubit gate to use,
             if ``None``, :class:`~pennylane.ops.RX` is used as default
 
     Raises:
@@ -173,15 +168,13 @@ class BasicEntanglerLayers(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
         Args:
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                 for the rotation.
             wires (Any or Iterable[Any]): wires that the operator acts on
-            rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
+            rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -245,30 +238,22 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
 def _basic_entangler_decomposition(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 
-    if has_jax and capture.enabled():
-        weights, wires = jnp.array(weights), jnp.array(wires)
+    if capture.enabled():
+        weights, wires = math.array(weights, like="jax"), math.array(wires, like="jax")
 
     @for_loop(repeat)
     def repeat_loop(layer):
 
         @for_loop(len(wires))
         def wires_loop(i):
-
-            def recurse(depth, lst, layer, i):
-                if jnp.ndim(weights) - depth == 2:
-                    return lst[layer][i]
-                return [recurse(depth + 1, l, layer, i) for l in lst]  # pragma: no cover
-
-            rotation(recurse(0, weights, layer, i), wires=wires[i])
+            rotation(weights[..., layer, i], wires=wires[i])
 
         wires_loop()  # pylint: disable=no-value-for-parameter
 
         def elif_body():
-            for i in range(len(wires)):
-                j = i + 1
-                if j >= len(wires):
-                    j = 0
-                CNOT(wires=[i, j])
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                j = (i + 1) % len(wires)
+                CNOT(wires=[wires[i], wires[j]])
 
         def true_body():
             CNOT(wires=wires)

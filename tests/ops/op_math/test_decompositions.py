@@ -14,6 +14,7 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+
 # pylint: disable=unused-variable,unused-argument
 
 from functools import reduce
@@ -61,7 +62,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
             qml.math.unwrap(gate.parameters),
             expected_params[i],
             atol=1e-7,
-        ), "Incorrect gate parameters"
+        ), f"Incorrect gate parameters\n{qml.math.unwrap(gate.parameters)}\n{expected_params[i]}"
 
     obtained_mat = reduce(
         qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
@@ -982,6 +983,28 @@ samples_su2_su2 = [
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
 
+    @pytest.mark.unit
+    @pytest.mark.parametrize("U", samples_2_cnots)
+    def test_compute_num_cnots_identifies_2_cnots(self, U):
+        """Test that the new Shende–Bullock–Markov criterion correctly
+        classifies 2-CNOT unitaries."""
+        U = qml.math.convert_to_su4(np.array(U))
+        assert _compute_num_cnots(U) == 2
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("U", samples_2_cnots)
+    def test_two_qubit_decomposition_2_cnots_gate_count(self, U):
+        """Test that the dispatcher selects the new 2-CNOT decomposition
+        and that the resulting circuit actually contains exactly 2 CNOTs."""
+        U = qml.math.convert_to_su4(np.array(U))
+
+        ops = two_qubit_decomposition(U, wires=[0, 1])
+
+        # Extract only CNOTs
+        cnot_ops = [op for op in ops if isinstance(op, qml.CNOT)]
+
+        assert len(cnot_ops) == 2, "The 2-CNOT decomposition must emit exactly 2 CNOT gates."
+
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
@@ -1013,14 +1036,13 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
-        # NOTE: Currently, we defer to the 3-CNOTs function for the 2-CNOTs case.
 
         U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 11  # 8 # 8 would be the count with 2-CNOT circuit
+        assert len(obtained_decomposition) == 8
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
@@ -1571,6 +1593,8 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
+            (qml.QFT.compute_matrix(2), 2),
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [2, 0])), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
             (qml.QFT.compute_matrix(5), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),

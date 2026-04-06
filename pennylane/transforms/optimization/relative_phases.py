@@ -154,10 +154,9 @@ def match_controlled_iX_gate(
 
     .. code-block:: python
 
-        from functools import partial
         import pennylane as qml
 
-        @partial(qml.transforms.match_controlled_iX_gate, num_controls=2)
+        @qml.transforms.match_controlled_iX_gate(num_controls=2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=0)

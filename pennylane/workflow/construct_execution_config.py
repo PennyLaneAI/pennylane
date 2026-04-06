@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, ParamSpec
 
 import pennylane as qml
 from pennylane.math import Interface
 
 from .resolution import _resolve_execution_config
+
+P = ParamSpec("P")
 
 if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
@@ -28,7 +32,9 @@ if TYPE_CHECKING:
     from .qnode import QNode
 
 
-def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> ExecutionConfig:
+def construct_execution_config(
+    qnode: QNode, resolve: bool | None = True
+) -> Callable[P, ExecutionConfig]:
     """Constructs the execution configuration of a QNode instance.
 
     Args:
@@ -82,14 +88,13 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
                     device_options={'max_workers': None, 'rng': ..., 'prng_key': None},
                     interface=<Interface.NUMPY: 'numpy'>,
                     derivative_order=1,
-                    mcm_config=MCMConfig(mcm_method='deferred',
-                                         postselect_mode=None),
+                    mcm_config=MCMConfig(mcm_method='deferred', postselect_mode=None),
                     convert_to_numpy=True,
                     executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
     """
 
     @functools.wraps(qnode)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> ExecutionConfig:
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
@@ -119,7 +124,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
                 }
             shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
             tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-            batch, _ = qnode.transform_program((tape,))
+            batch, _ = qnode.compile_pipeline((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)
 
         return config

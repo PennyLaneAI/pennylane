@@ -14,6 +14,7 @@
 """
 Integration tests for the qnode for all interfaces.
 """
+
 import pytest
 
 import pennylane as qml
@@ -35,7 +36,7 @@ class TestHadamardGradients:
 
         dev = qml.device("default.qubit", wires=("a", "b"))
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs={"aux_wire": "b"})
         def circuit(x):
             qml.RX(x, "a")
             return qml.expval(qml.Z("a"))
@@ -57,7 +58,7 @@ class TestHadamardGradients:
         """Check that we perform the expected number of executions when having a hamiltonian generator."""
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs={"aux_wire": 2})
         def c(x):
             qml.evolve(qml.X(0) + qml.X(1), x)
             return qml.expval(qml.Z(0))

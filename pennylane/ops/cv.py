@@ -33,6 +33,7 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
+
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 
@@ -41,9 +42,6 @@ from scipy.linalg import block_diag
 
 from pennylane import math
 from pennylane.operation import CVObservable, CVOperation
-
-from .identity import I, Identity  # pylint: disable=unused-import
-from .meta import Snapshot  # pylint: disable=unused-import
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
@@ -1412,8 +1410,6 @@ class FockStateProjector(CVObservable):
 
 
 __ops__ = {
-    "Identity",
-    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",

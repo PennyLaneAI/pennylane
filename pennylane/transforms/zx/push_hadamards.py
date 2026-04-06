@@ -109,7 +109,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumScript``.
         """
         return results[0]

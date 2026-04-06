@@ -16,16 +16,19 @@
 
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 
 import pennylane as qml
-from pennylane import allocation
+from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
+from .reconstruct import reconstruct
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
-def make_adjoint_decomp(base_decomposition: DecompositionRule):
+def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor=False):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
     def _condition_fn(base_class, base_params):  # pylint: disable=unused-argument
@@ -38,6 +41,21 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
+    if not use_reconstructor:
+
+        # pylint: disable=protected-access
+        @register_condition(_condition_fn)
+        @register_resources(
+            _resource_fn,
+            work_wires=base_decomposition._work_wire_spec,
+            exact=base_decomposition.exact_resources,
+        )
+        def _impl(*params, wires, base):
+            # pylint: disable=protected-access
+            qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+
+        return _impl
+
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
@@ -45,14 +63,14 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
     )
-    def _impl(*params, wires, base, **__):
+    def _impl_using_reconstructor(*params, wires, base_params, **_):
         # pylint: disable=protected-access
-        qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+        qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
 
-    return _impl
+    return _impl_using_reconstructor
 
 
-def _cancel_adjoint_resource(*_, base_params, **__):
+def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-argument
     # The base of a nested adjoint is an adjoint, so the base of the base is the original operator,
     # and the "base_params" of base_params are the resource params of the original operator.
     base_class, base_params = base_params["base_class"], base_params["base_params"]
@@ -63,19 +81,38 @@ def _cancel_adjoint_resource(*_, base_params, **__):
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    base.base._unflatten(*base.base._flatten())
+    qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
 
 
-def _adjoint_rotation(base_class, base_params, **__):
+@register_resources(_cancel_adjoint_resource)
+def qjit_compatible_cancel_adjoint(*params, wires, base_class, base_params):
+    """A catalyst-compatible decomposition rule that cancels nested adjoints.
+
+    Precondition
+    - has_reconstructor(base_class, base_params)
+
+    """
+    base_class, base_params = base_params["base_class"], base_params["base_params"]
+    reconstruct(params, wires, base_class, base_params)
+
+
+def _adjoint_rotation_resource(base_class, base_params):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_adjoint_rotation)
-def adjoint_rotation(phi, wires, base, **__):
+@register_resources(_adjoint_rotation_resource)
+def adjoint_rotation(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    _, struct = base._flatten()
-    base._unflatten((-phi,), struct)
+    _, struct = qml.pytrees.flatten(base)
+    qml.pytrees.unflatten((-phi,), struct)
+
+
+# pylint: disable=protected-access,unused-argument
+@register_resources(_adjoint_rotation_resource)
+def qjit_compatible_adjoint_rotation(phi, wires, base_class, base_params):
+    """A catalyst-compatible decomposition rule for single-angle rotations."""
+    reconstruct((-phi,), wires, base_class, base_params)
 
 
 def is_integer(x):
@@ -92,7 +129,20 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qml.for_loop(0, z)
     def _loop(i):
-        base._unflatten(*base._flatten())
+        qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+
+    _loop()  # pylint: disable=no-value-for-parameter
+
+
+# pylint: disable=protected-access,unused-argument
+@register_condition(lambda z, **__: is_integer(z) and z >= 0)
+@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
+def qjit_compatible_repeat_pow_base(*params, wires, base_class, base_params, z, **__):
+    """Decompose the power of an operator by repeating the base operator, in a qjit compatible way."""
+
+    @qml.for_loop(0, z)
+    def _loop(i):
+        reconstruct(params, wires, base_class, base_params)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -111,8 +161,16 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    base_op = base.base._unflatten(*base.base._flatten())
+    base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
     qml.pow(base_op, z * base.z)
+
+
+@register_resources(_merge_powers_resource)
+def qjit_compatible_merge_powers(*params, wires, base_class, base_params, z, **__):
+    """Decompose nested powers by combining them in a qjit compatible way."""
+    new_params = copy.copy(base_params)
+    new_params["z"] = z * base_params["z"]
+    return reconstruct(params, wires, base_class, new_params)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -130,15 +188,22 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    base_op = base.base._unflatten(*base.base._flatten())
+    base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
     qml.adjoint(qml.pow(base_op, z))
 
 
-def make_pow_decomp_with_period(period) -> DecompositionRule:
+@register_resources(_flip_pow_adjoint_resource)
+def qjit_compatible_flip_pow_adjoint(*params, wires, base_class, base_params, z, **__):
+    """Decompose the power of an adjoint in a qjit compatible way."""
+    base = reconstruct(params, wires, base_params["base_class"], base_params["base_params"])
+    qml.adjoint(qml.pow(base, z))
+
+
+def make_pow_decomp_with_period(period, use_reconstructor=False) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
-        return z % period != z
+        return math.shape(z) == () and z % period != z
 
     def _resource_fn(base_class, base_params, z):
         z_mod_period = z % period
@@ -148,19 +213,35 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
+    if not use_reconstructor:
+
+        @register_condition(_condition_fn)
+        @register_resources(_resource_fn)
+        def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+            z_mod_period = z % period
+            if z_mod_period == 1:
+                qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+            elif z_mod_period > 0 and z_mod_period != period:
+                qml.pow(base, z_mod_period)
+
+        return _impl
+
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+    def _impl_using_reconstructor(
+        *params, wires, base_class, base_params, z, **__
+    ):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
-            base._unflatten(*base._flatten())
+            reconstruct(params, wires, base_class, base_params)
         elif z_mod_period > 0 and z_mod_period != period:
-            qml.pow(base, z_mod_period)
+            qml.pow(reconstruct(params, wires, base_class, base_params), z_mod_period)
 
-    return _impl
+    return _impl_using_reconstructor
 
 
-pow_involutory = make_pow_decomp_with_period(2)
+pow_involutory = make_pow_decomp_with_period(2, True)
+pow_involutory_no_reconstructor = make_pow_decomp_with_period(2, False)
 
 
 def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -175,6 +256,12 @@ def pow_rotation(phi, wires, base, z, **__):
     base._unflatten((phi * z,), struct)
 
 
+@register_resources(_pow_rotation_resource)
+def qjit_compatible_pow_rotation(phi, wires, base_class, base_params, z, **__):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle in a qjit compatible way."""
+    reconstruct([phi * z], wires, base_class, base_params)
+
+
 def _decompose_to_base_resource(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
@@ -183,10 +270,17 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    base._unflatten(*base._flatten())
+    qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+
+
+@register_resources(_decompose_to_base_resource)
+def qjit_compatible_decompose_to_base(*params, wires, base_class, base_params, **__):
+    """Decompose a symbolic operator to its base in a qjit compatible way."""
+    reconstruct(params, wires, base_class, base_params)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
+qjit_compatible_self_adjoint: DecompositionRule = qjit_compatible_decompose_to_base
 
 
 def make_controlled_decomp(base_decomposition: DecompositionRule):
@@ -311,7 +405,7 @@ def flip_control_adjoint(
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    base_op = base.base._unflatten(*base.base._flatten())
+    base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
     qml.adjoint(
         qml.ctrl(
             base_op,
@@ -335,7 +429,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
-    base_op = base._unflatten(*base._flatten())
+    base_op = qml.pytrees.unflatten(*qml.pytrees.flatten(base))
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)
         qml.ctrl(base_op, control=work_wires[0])

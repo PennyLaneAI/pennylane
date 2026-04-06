@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Tests for the transform ``qml.transforms.split_non_commuting``"""
-from functools import partial
+
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -611,7 +611,7 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @split_non_commuting(grouping_strategy=grouping_strategy)
         @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(angles):
@@ -641,7 +641,7 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @split_non_commuting(grouping_strategy=grouping_strategy)
         @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(angles):
@@ -699,7 +699,7 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @split_non_commuting(grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
         def circuit():
             return tuple(qml.expval(ob) for ob in obs)
@@ -738,7 +738,7 @@ expected_grad_param_1 = [
 def circuit_to_test(device, grouping_strategy):
     """The test circuit used in differentiation tests."""
 
-    @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+    @split_non_commuting(grouping_strategy=grouping_strategy)
     @qml.qnode(device)
     def circuit(theta, phi):
         qml.RX(theta, wires=0)
@@ -753,7 +753,7 @@ def circuit_to_test(device, grouping_strategy):
 def circuit_with_trainable_H(device, grouping_strategy):
     """Test circuit with trainable Hamiltonian."""
 
-    @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+    @split_non_commuting(grouping_strategy=grouping_strategy)
     @qml.qnode(device)
     def circuit(coeff1, coeff2):
         qml.RX(np.pi / 4, wires=0)
@@ -811,7 +811,7 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit")
 
-        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @split_non_commuting(grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
         def circuit(param):
             qml.RX(param, 0)

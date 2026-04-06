@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -81,7 +81,7 @@ def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> Postprocessi
     return new_fn
 
 
-@partial(transform, expand_transform=_expand_fn)
+@partial(transform, expand_transform=_expand_fn, pass_name="dynamic-one-shot")
 def dynamic_one_shot(
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -95,6 +95,11 @@ def dynamic_one_shot(
     and several-mid-circuit-measurements limit, whereas ``qml.defer_measurements`` is favourable in
     the opposite limit.
 
+    .. warning::
+
+        This transform should not be directly applied on a QNode. It is automatically added to the
+        compile pipeline when a QNode is constructed with `mcm_method='one-shot'`.
+
     Args:
         tape (QNode or QuantumScript or Callable): a quantum circuit.
 
@@ -107,8 +112,7 @@ def dynamic_one_shot(
     **Example**
 
     Most devices that support mid-circuit measurements will include this transform in its
-    preprocessing automatically when applicable. When this is the case, any user-applied
-    ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
+    preprocessing automatically when applicable. The recommended way to use dynamic one
     shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
 
     .. code-block:: python
@@ -123,6 +127,30 @@ def dynamic_one_shot(
             m0 = qml.measure(0)
             qml.cond(m0, qml.RY)(y, wires=1)
             return qml.expval(op=m0)
+
+    ..details::
+        :title: Usage with Catalyst (qjit)
+
+        This transform is compatible with ``qjit``, where it will be applied as an MLIR pass
+        rather than a tape-level transform.
+        That being said, there are a few differences to be aware of when using the MLIR pass:
+
+        - Shot vectors or broadcasting are not supported
+        - Workflows involving gradients are not supported
+        - ``qml.var()`` on observables (non-MCM) are unsupported
+
+        To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
+
+        .. code-block:: python
+
+            @qml.qjit
+            @qml.set_shots(10)
+            @qml.qnode(qml.device("lightning.qubit", wires=2), mcm_method="one-shot")
+            def circ():
+                return qml.expval(qml.X(0)+2*qml.Y(1))
+
+        >>> circ() # doctest: +SKIP
+        Array(0.4, dtype=float64)
 
     """
     if not any(is_mcm(o) for o in tape.operations):
@@ -177,21 +205,10 @@ def _supports_one_shot(dev: "qml.devices.Device"):
 @dynamic_one_shot.custom_qnode_transform
 def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``dynamic_one_shot``."""
-    if tkwargs.get("device", None):
-        raise ValueError(
-            "Cannot provide a 'device' value directly to the dynamic_one_shot decorator "
-            "when transforming a QNode."
-        )
-    if qnode.device is not None:
-        if not _supports_one_shot(qnode.device):
-            raise TypeError(
-                f"Device {qnode.device.name} does not support mid-circuit measurements and/or "
-                "one-shot execution mode natively, and hence it does not support the "
-                "dynamic_one_shot transform. 'default.qubit' and 'lightning.qubit' currently "
-                "support mid-circuit measurements and the dynamic_one_shot transform."
-            )
-    tkwargs.setdefault("device", qnode.device)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    raise TransformError(
+        "The dynamic_one_shot transform cannot be applied directly on a QNode. "
+        "Use mcm_method='one-shot' instead."
+    )
 
 
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
@@ -331,6 +348,8 @@ def _handle_measurement_qjit(
         )
         return res, m_count + 1
     result = math.squeeze(result)
+    if isinstance(m, SampleMP) and result.ndim == 1:
+        result = math.expand_dims(result, axis=1)  # pragma: no cover
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 

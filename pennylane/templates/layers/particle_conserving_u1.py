@@ -14,6 +14,7 @@
 r"""
 Contains the hardware-efficient ParticleConservingU1 template.
 """
+
 import numpy as np
 
 from pennylane import capture, math
@@ -232,8 +233,11 @@ class ParticleConservingU1(Operation):
             # Compute the expectation value of 'h'
             layers = 2
             shape = qml.ParticleConservingU1.shape(layers, qubits)
-            params = np.random.random(shape)
-            print(cost_fn(params))
+            rng = np.random.default_rng(seed=1234)
+            params = rng.random(shape)
+        
+        >>> print(cost_fn(params))
+        -0.9686...
 
         **Parameter shape**
 
