@@ -257,14 +257,12 @@ class RegisterEquality(ResourceOperator):
         register_size: int | None = None,
         wires: WiresLike | None = None,
     ):
-
         if register_size is None:
             if wires is None:
                 raise ValueError("Must provide at least one of `register_size` and `wires`.")
             register_size = (len(wires) - 1) // 2
 
         self.register_size = register_size
-
         self.num_wires = 2 * self.register_size + 1
 
         if wires and len(wires) != self.num_wires:
