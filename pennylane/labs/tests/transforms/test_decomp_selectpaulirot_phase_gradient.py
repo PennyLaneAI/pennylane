@@ -25,6 +25,35 @@ from pennylane.labs.transforms.decomp_selectpaulirot_phase_gradient import (
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.parametrize("prec", [2, 3, 5])
+@pytest.mark.parametrize("num_controls", [1, 2])
+def test_valid_decomp(prec, num_controls):
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
+    as a fixed decomposition and yields the correct resources"""
+
+    angles = (
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
+        @ np.array([1 / 2, 1 / 4, 1 / 8])
+        * 4
+        * np.pi
+    )[: 2**num_controls]
+
+    # If precision is very low, the number of control wires of the multiplexer dictate the
+    # required number of work wires.
+    num_work_wires = max(prec, num_controls + 1) - 1
+
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires
+    )
+
+    op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
+    _test_decomposition_rule(op, custom_decomp)
+
+
 # @pytest.mark.usefixtures("enable_graph_decomposition") # fixture doesnt exist in labs tests
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
@@ -80,27 +109,12 @@ def test_as_fixed_decomps(prec, num_controls):
         }
         assert expected_specs == specs
 
-    op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
-    _test_decomposition_rule(op, custom_decomp)
-
 
 def test_integration_multi_wire(seed):
     """
     Tests that the decomposition correctly realizes the phase gradient decomposition of SelectPauliRot as described in
     https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations
     """
-    # This test compares the exact output state after applying the operator to a random input state
-    # In particular, in confirms the following circuit identity
-    #
-    # |ψ>   ╭: ─╭◻──────────────────────────╭◻──────────┤ ╮ ≈MUX-R_Z(θ_j)|ψ>
-    #       │: ─├◻──────────────────────────├◻──────────┤ │
-    #       ╰: ─│──────────╭○────────────╭○─│───────────┤ ╯
-    # |0>    : ─├load(θ_j)─│──╭SemiAdder─│──├load†(θ_j)─┤   |0>
-    # |0>    : ─├load(θ_j)─│──├SemiAdder─│──├load†(θ_j)─┤   |0>
-    # |0>    : ─╰load(θ_j)─├──├SemiAdder─├──╰load†(θ_j)─┤   |0>
-    #       ╭: ────────────├X─├SemiAdder─├X─────────────┤ ╮
-    # |∇_b> ┤: ────────────├X─├SemiAdder─├X─────────────┤ ├ |∇_b>
-    #       ╰: ────────────╰X─╰SemiAdder─╰X─────────────┤ ╯
 
     with qp.decomposition.toggle_graph_ctx(
         True
