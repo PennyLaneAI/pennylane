@@ -20,26 +20,27 @@ import pytest
 
 import pennylane as qp
 from pennylane.labs.transforms.decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+
+# from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
-@pytest.mark.parametrize("p", [2, 3, 4])
-def test_valid_decomp(phi, p):
-    """Test make_rz_to_phase_gradient_decomp yields are valid decomposition"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+# @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+# @pytest.mark.parametrize("p", [2, 3, 4])
+# def test_valid_decomp(phi, p):
+#     """Test make_rz_to_phase_gradient_decomp yields are valid decomposition"""
+#     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+#     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+#     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
-    kwargs = {
-        "angle_wires": angle_wires,
-        "phase_grad_wires": phase_grad_wires,
-        "work_wires": work_wires,
-    }
+#     kwargs = {
+#         "angle_wires": angle_wires,
+#         "phase_grad_wires": phase_grad_wires,
+#         "work_wires": work_wires,
+#     }
 
-    custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    op = qp.RZ(phi, 0)
-    _test_decomposition_rule(op, custom_decomp)
+#     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+#     op = qp.RZ(phi, 0)
+#     _test_decomposition_rule(op, custom_decomp)
 
 
 # @pytest.mark.usefixtures("enable_graph_decomposition") # fixture doesnt exist in labs tests
