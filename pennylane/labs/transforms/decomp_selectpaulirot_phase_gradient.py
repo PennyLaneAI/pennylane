@@ -30,10 +30,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     r"""
     Custom decomposition rule for :class:`~.SelectPauliRot` gates
 
-    This is a temporary workaround as long as capture does not work, which blocks usage of dynamic allocation.
+    This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
     Here, we explicitly provide the necessary wires for the `phase gradient decomposition of SelectPauliRot <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__.
     This way, this function can be used in a workflow context that explicitly uses those wires to generate this decomposition rule, which can then be used
-    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~decompose`.
+    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~.decompose`.
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
@@ -43,11 +43,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     Returns:
         func: decomposition rule to be used within :func:`~decompose`.
 
-    .. seealso:: :func:`~make_rz_to_phase_gradient_decomp`
+    .. seealso:: :func:`~.make_rz_to_phase_gradient_decomp`
 
     **Example**
 
-    In this example we decompose a circuit containing only a single :class:`~RZ` gate using the custom decomposition rule
+    In this example we decompose a circuit containing only a single :class:`~.SelectPauliRot` gate using the custom decomposition rule
     that we generate from within the context of the example, where all auxiliary wires exist.
 
     .. code-block:: python
@@ -59,15 +59,18 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         qp.decomposition.enable_graph()
 
         prec = 3
+        np.random.seed(35)
         angles = np.random.rand(2**3)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
-        custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+        custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires
+        )
 
-        @qp.transforms.decompose(
+        @qp.decompose(
             gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "CNOT", "X", "Adjoint(X)", "GlobalPhase"},
             fixed_decomps={qp.SelectPauliRot: custom_decomp}
         )
@@ -78,7 +81,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
 
-    The resulting circuit corresponds to the `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__ of RZ,
+    The resulting circuit corresponds to the `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__ of ``SelectPauliRot``,
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs

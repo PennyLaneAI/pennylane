@@ -22,26 +22,26 @@ from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
 def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     r"""
-    Custom decomposition rule for :class:`~RZ` gates
+    Custom decomposition rule for :class:`~.RZ` gates
 
-    This is a temporary workaround as long as capture does not work, which blocks usage of dynamic allocation.
+    This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
     Here, we explicitly provide the necessary wires for the `phase gradient decomposition of RZ <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
     This way, this function can be used in a workflow context that explicitly uses those wires to generate this decomposition rule, which can then be used
-    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~decompose`.
+    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~decompose` (when using the graph-based decomposition system).
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state
-        work_wires (Wires): additional work wires for :class:`~SemiAdder` decomposition
+        work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
 
     Returns:
-        func: decomposition rule to be used within :func:`~decompose`.
+        qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.decompose`.
 
-    .. seealso:: :func:`~make_selectpaulirot_to_phase_gradient_decomp`
+    .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
 
     **Example**
 
-    In this example we decompose a circuit containing only a single :class:`~RZ` gate using the custom decomposition rule
+    In this example we decompose a circuit containing only a single :class:`~.RZ` gate using the custom decomposition rule
     that we generate from within the context of the example, where all auxiliary wires exist.
 
     .. code-block:: python
@@ -49,8 +49,6 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         import pennylane as qp
         from pennylane.labs.transforms import make_rz_to_phase_gradient_decomp
         import numpy as np
-
-        seed = 0
 
         qp.decomposition.enable_graph()
 
@@ -61,7 +59,9 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
-        custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+        custom_decomp = make_rz_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires
+        )
 
         @qp.transforms.decompose(
                 gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},

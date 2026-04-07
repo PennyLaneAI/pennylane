@@ -22,7 +22,6 @@ Transforms
 .. autosummary::
     :toctree: api
 
-    ~rot_to_phase_gradient
     ~select_pauli_rot_phase_gradient
 
 Custom decomposition rules
