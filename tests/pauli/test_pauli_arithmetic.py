@@ -139,7 +139,7 @@ class TestPauliWord:
         assert pw_1.__hash__() != pw_4.__hash__()
 
     # pylint: disable=unnecessary-dunder-call
-    def test_hash_caches(self, mocker):
+    def test_hash_caches(self):
         """Test that hashes are cached correctly and not recomputed."""
         pw = PauliWord({0: I, 1: X, 2: Y})
 
