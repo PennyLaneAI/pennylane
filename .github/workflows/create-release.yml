@@ -27,11 +27,14 @@ jobs:
   bump_rc_branch:
     name: Update catalyst and lightning in RC branch
     runs-on: ubuntu-latest
+    outputs:
+      pennylane-dev-version: ${{ steps.bump_catalyst_lightning.outputs.pennylane_dev_version }}
     steps:
       - name: Checkout PennyLane repo
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
+          ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
@@ -49,14 +52,17 @@ jobs:
           uv pip install setuptools wheel twine
 
       - name: Create PR to bump Catalyst and Lightning versions
+        id: bump_catalyst_lightning
         if: ${{ inputs.bump_catalyst_lightning == true }}
-        env:
-          GH_TOKEN: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
+        # env:
+        #   GH_TOKEN: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
         run: |
-          bump_branch="bump-lightning-catalyst-$(date +'%Y-%m-%d-%H-%M-%S')"
-          git checkout -b $bump_branch 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"    
+          # bump_branch="bump-lightning-catalyst-$(date +'%Y-%m-%d-%H-%M-%S')"
+          # git checkout -b $bump_branch 
+          git config --global user.name "ringo-but-quantum"
+          git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
+
+          echo "pennylane_dev_version="$(python setup.py --version)"" >> $GITHUB_OUTPUT
 
           lightning_version=$(python -m pip index versions pennylane-lightning 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
           catalyst_version=$(python -m pip index versions pennylane-catalyst 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
@@ -75,9 +81,9 @@ jobs:
           git add pyproject.toml pennylane/compiler/compiler.py pennylane/_version.py
           git commit -m "Bump minimum Lightning, Catalyst, and Pennylane versions to ${lightning_version}, ${catalyst_version}, and ${{ inputs.release_version }}"
         
-          git push origin $bump_branch
-          gh pr create --base ${{ inputs.release_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
-          gh pr merge --squash
+          git push #origin $bump_branch
+          # gh pr create --base ${{ inputs.release_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
+          # gh pr merge --squash
 
   create_release:
     name: Create the release
@@ -106,7 +112,8 @@ jobs:
   merge-rc-pr:
     name: Create PR to merge RC branch into main
     runs-on: ubuntu-latest
-    needs: [create_release]
+    needs: [create_release,bump_rc_branch]
+    if: always()
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -125,4 +132,9 @@ jobs:
 
       - name: Merge RC branch into main
         run: |
-          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head ${{ inputs.release_branch }}
+          git checkout -b merge-${{ inputs.release_branch }}-to-main
+          sed -i -E "s/[0-9]+\.[0-9]+\.[0-9]/${{ needs.bump_rc_branch.outputs.pennylane_dev_version }}/" pennylane/_version.py
+          git add pennylane/_version.py
+          git commit -am "[no ci] Bump version in in rc after release"
+          git push origin merge-${{ inputs.release_branch }}-to-main
+          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head merge-${{ inputs.release_branch }}-to-main
