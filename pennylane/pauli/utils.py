@@ -453,23 +453,15 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     >>> string_to_pauli_word('XIY', wire_map=wire_map)
     X('a') @ Y('c')
     """
-    character_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     if not isinstance(pauli_string, str):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
-
-    # String can only consist of I, X, Y, Z
-    if any(char not in character_map for char in pauli_string):
-        raise ValueError(
-            "Invalid characters encountered in string_to_pauli_word "
-            f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
-        )
 
     # If no wire map is provided, construct one using integers based on the length of the string
     if wire_map is None:
         wire_map = {x: x for x in range(len(pauli_string))}
 
-    if len(pauli_string) != len(wire_map):
+    elif len(pauli_string) != len(wire_map):
         raise ValueError(
             "Wire map and pauli_string must have the same length to convert "
             "from string to Pauli word."
@@ -480,21 +472,30 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
-    pauli_word = None
+    pauli_word = []
 
     for wire_name, wire_idx in wire_map.items():
         pauli_char = pauli_string[wire_idx]
 
-        # Don't care about the identity
-        if pauli_char == "I":
-            continue
+        match pauli_char:
+            case "X":
+                pauli_word.append(qml.PauliX(wire_name))
+            case "Y":
+                pauli_word.append(qml.PauliY(wire_name))
+            case "Z":
+                pauli_word.append(qml.PauliZ(wire_name))
+            case "I":
+                # Don't care about the identity
+                continue
+            case _:
+                raise ValueError(
+                    "Invalid characters encountered in string_to_pauli_word "
+                    f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
+                )
 
-        if pauli_word is not None:
-            pauli_word = pauli_word @ character_map[pauli_char](wire_name)
-        else:
-            pauli_word = character_map[pauli_char](wire_name)
-
-    return pauli_word
+    if len(pauli_word) == 1:
+        return pauli_word[0]
+    return qml.ops.op_math.Prod(*pauli_word)
 
 
 def pauli_word_to_matrix(pauli_word, wire_map=None):
