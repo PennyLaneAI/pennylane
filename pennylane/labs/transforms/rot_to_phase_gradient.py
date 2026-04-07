@@ -19,8 +19,6 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
-from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import Wires
 
 
@@ -72,28 +70,3 @@ def _select_pauli_rot_phase_gradient(
             pg_op = qp.change_op_basis(comp, pg_op, uncomp)
 
     return pg_op
-
-
-def _pauli_rot_phase_gradient(op, **other_wires):
-    wires = op.wires
-    phi = op.parameters[0]
-    if isinstance(op, (qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
-        with QueuingManager.stop_recording():
-            pauli_word = op.name[-2:]
-            op = qp.PauliRot(phi, pauli_word=pauli_word, wires=wires)
-
-    # collect diagonalizing gates of each wire
-    # this turns any rotation to MultiRZ
-    diagonalizing_gates = []
-    for sub_op in op.decomposition():
-        if isinstance(sub_op, qp.MultiRZ):
-            break
-        diagonalizing_gates.append(sub_op)
-
-    diagonalizing_gate = ladder(wires) @ qp.prod(*diagonalizing_gates[::-1])
-    diagonalizing_gate_inv = qp.prod(*diagonalizing_gates) @ ladder(wires)
-
-    pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)
-    new_op = qp.change_op_basis(diagonalizing_gate, pg_op, diagonalizing_gate_inv)
-
-    return new_op, phi / 2  # op to be appended, global phase
