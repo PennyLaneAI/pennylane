@@ -32,7 +32,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
-          ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+        env:
+          GH_TOKEN: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
