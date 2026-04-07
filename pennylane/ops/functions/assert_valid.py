@@ -15,6 +15,7 @@
 This module contains the qml.ops.functions.check_validity function for determining whether or not an
 Operator class is correctly defined.
 """
+
 import copy
 import itertools
 import pickle
@@ -26,11 +27,7 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.reconstruct import (
-    get_decomp_kwargs,
-    has_reconstructor,
-    reconstruct,
-)
+from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 

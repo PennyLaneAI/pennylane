@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test autograph support for standard Python item array updates with operations."""
+
 import pytest
 
 pytestmark = pytest.mark.capture

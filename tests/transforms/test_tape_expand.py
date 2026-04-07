@@ -14,6 +14,7 @@
 """
 Unit tests for tape expansion stopping criteria and expansion functions.
 """
+
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 

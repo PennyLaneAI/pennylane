@@ -13,7 +13,6 @@
 # limitations under the License.
 """Private helper functions for converting RealspaceOperator objects to matrices"""
 
-
 from functools import reduce
 
 import numpy as np

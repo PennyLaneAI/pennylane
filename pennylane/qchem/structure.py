@@ -14,6 +14,7 @@
 """This module contains functions to read the structure of molecules, build a Hartree-Fock state,
 build an active space and generate single and double excitations.
 """
+
 # pylint: disable=too-many-locals
 import os
 import re

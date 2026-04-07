@@ -14,6 +14,7 @@
 """
 Integration tests to ensure that tensor observables return the correct result.
 """
+
 import functools
 
 import numpy as np

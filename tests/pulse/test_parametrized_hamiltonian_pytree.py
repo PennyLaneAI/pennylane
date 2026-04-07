@@ -14,6 +14,7 @@
 """
 Unit tests for the ParametrizedHamiltonianPytree class
 """
+
 # pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest

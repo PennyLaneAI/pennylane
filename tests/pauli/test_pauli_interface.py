@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.py``.
 """
+
 import pytest
 
 import pennylane as qml

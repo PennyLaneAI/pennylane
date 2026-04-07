@@ -14,6 +14,7 @@
 """
 Sanity checks for classical automatic gradient formulas (without QNodes).
 """
+
 import autograd
 import pytest
 

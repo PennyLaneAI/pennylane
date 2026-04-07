@@ -109,7 +109,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year} | Xanadu | All rights reserved"
 author = "Xanadu Inc."
 
 add_module_names = False

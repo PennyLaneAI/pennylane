@@ -14,6 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
+
 # pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import warnings

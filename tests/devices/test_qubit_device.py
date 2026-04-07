@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
+
 import copy
 from random import random
 

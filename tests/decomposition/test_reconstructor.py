@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the internal reconstruct module."""
 
-
 import pytest
 
 import pennylane as qml
