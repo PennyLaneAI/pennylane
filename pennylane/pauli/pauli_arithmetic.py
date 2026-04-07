@@ -227,8 +227,6 @@ class PauliWord(dict):
         if self._hashval is None:
             self._hashval = hash(frozenset(self.items()))
 
-        # Warning: This relies on the object being immutable.
-        # If a user modifies the underlying data, this hash is no longer accurate
         return self._hashval
 
     def _matmul(self, other):
