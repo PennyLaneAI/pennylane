@@ -187,10 +187,7 @@ class PauliWord(dict):
 
     def __init__(self, mapping):
         """Strip identities from PauliWord on init!"""
-        for wire, op in mapping.copy().items():
-            if op == I:
-                del mapping[wire]
-        super().__init__(mapping)
+        super().__init__({wire: op for wire, op in mapping.items() if op != I})
         self._hashval = None
 
     @property
