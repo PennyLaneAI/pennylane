@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
+          token: ${{ secrets.PENNYLANE_MASTER_MAIN_WRITE }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
@@ -49,9 +50,7 @@ jobs:
           uv pip install setuptools wheel twine
 
       - name: Create PR to bump Catalyst and Lightning versions
-        if: ${{ inputs.bump_catalyst_lightning == true }} 
-        env:
-          GH_TOKEN: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}        
+        if: ${{ inputs.bump_catalyst_lightning == true }}      
         run: |
           bump_branch="bump-lightning-catalyst-$(date +'%Y-%m-%d-%H-%M-%S')"
           git checkout -b $bump_branch 
