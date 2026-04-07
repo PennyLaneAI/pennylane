@@ -21,7 +21,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-from .rot_to_phase_gradient import _select_pauli_rot_phase_gradient
+from .decomp_selectpaulirot_phase_gradient import _select_pauli_rot_phase_gradient
 
 
 @transform

@@ -14,16 +14,62 @@
 r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
-import pennylane as qml
+# pylint: disable=too-many-branches
+import numpy as np
+
+import pennylane as qp
 from pennylane.decomposition import (
     adjoint_resource_rep,
     change_op_basis_resource_rep,
     controlled_resource_rep,
     resource_rep,
 )
+from pennylane.operation import Operator
 from pennylane.ops import Prod
+from pennylane.wires import Wires
 
-from .rot_to_phase_gradient import _select_pauli_rot_phase_gradient
+
+# pylint: disable=too-many-arguments
+def _select_pauli_rot_phase_gradient(
+    phis: np.ndarray,
+    rot_axis: str,
+    control_wires: Wires,
+    target_wire: Wires,
+    angle_wires: Wires,
+    phase_grad_wires: Wires,
+    work_wires: Wires,
+) -> Operator:
+    """Function that transforms the SelectPauliRot gate to the phase gradient circuit
+    The precision is implicitly defined by the length of ``angle_wires``
+    """
+
+    precision = len(angle_wires)
+    binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
+
+    ops = [
+        qp.QROM(
+            binary_int, control_wires, angle_wires, work_wires=work_wires[: len(control_wires) - 1]
+        )
+    ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
+    # The uncomputation does not need any adjoints because both QROM and C(X) are self-adjoint.
+    adj_ops = ops[::-1]
+
+    pg_op = qp.change_op_basis(
+        qp.prod(*ops[::-1]),
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
+        qp.prod(*adj_ops[::-1]),
+    )
+
+    match rot_axis:
+        case "X":
+            comp = uncomp = qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+        case "Y":
+            comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
+            uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
+            pg_op = qp.change_op_basis(comp, pg_op, uncomp)
+
+    return pg_op
 
 
 def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
@@ -109,15 +155,15 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         if num_control_wires == 0:
             match rot_axis:
                 case "X":
-                    return {resource_rep(qml.RX): 1}
+                    return {resource_rep(qp.RX): 1}
                 case "Y":
-                    return {resource_rep(qml.RY): 1}
+                    return {resource_rep(qp.RY): 1}
                 case "Z":
-                    return {resource_rep(qml.RZ): 1}
+                    return {resource_rep(qp.RZ): 1}
 
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
-            qml.QROM,
+            qp.QROM,
             clean=True,
             num_bitstrings=2**num_control_wires,
             num_control_wires=num_control_wires,
@@ -128,7 +174,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         # 2. ctrl(X, control=target_wire, control_values=[0])
         #    -> Controlled X with 1 control, 1 zero-ctrl
         ctrl_x_rep = controlled_resource_rep(
-            qml.X, base_params={}, num_control_wires=1, num_zero_control_values=1
+            qp.X, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
 
         # 3. Prod: MUST be a dict {CompressedResourceOp: count}
@@ -139,7 +185,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
-        semi_adder_rep = resource_rep(qml.SemiAdder, num_y_wires=len(phase_grad_wires))
+        semi_adder_rep = resource_rep(qp.SemiAdder, num_y_wires=len(phase_grad_wires))
 
         # 5. change_op_basis(compute_op, target_op)
         #    compute_op = prod (the QROM + ctrl-X product)
@@ -154,23 +200,23 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
-                    resource_rep(qml.Hadamard),
+                    resource_rep(qp.Hadamard),
                     change_basis_rep,
-                    resource_rep(qml.Hadamard),
+                    resource_rep(qp.Hadamard),
                 )
             case "Y":
                 comp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qml.Hadamard): 1,
-                        adjoint_resource_rep(qml.S): 1,
+                        resource_rep(qp.Hadamard): 1,
+                        adjoint_resource_rep(qp.S): 1,
                     },
                 )
                 uncomp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qml.S): 1,
-                        resource_rep(qml.Hadamard): 1,
+                        resource_rep(qp.S): 1,
+                        resource_rep(qp.Hadamard): 1,
                     },
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
@@ -181,20 +227,21 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         return {change_basis_rep_basis_adapted: 1}
 
-    @qml.register_resources(_resource_fn)
+    @qp.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
 
         if len(control_wires) == 0:
+
             match rot_axis:
                 case "X":
-                    qml.RX(angles[0], target_wire)
+                    qp.RX(angles[0], target_wire)
                 case "Y":
-                    qml.RY(angles[0], target_wire)
+                    qp.RY(angles[0], target_wire)
                 case "Z":
-                    qml.RZ(angles[0], target_wire)
+                    qp.RZ(angles[0], target_wire)
             return
 
-        with qml.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording():
             pg_op = _select_pauli_rot_phase_gradient(
                 angles,
                 rot_axis,
@@ -205,6 +252,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 work_wires=work_wires,
             )
 
-        qml.apply(pg_op)
+        qp.apply(pg_op)
 
     return _decomp_fn
