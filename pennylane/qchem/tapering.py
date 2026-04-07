@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
+
 import functools
 import itertools
 

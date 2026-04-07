@@ -14,6 +14,7 @@
 """
 Unit tests for the debugging module.
 """
+
 from unittest.mock import patch
 
 import numpy as np

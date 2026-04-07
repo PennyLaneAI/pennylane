@@ -14,6 +14,7 @@
 """
 Tests for the jacobian product calculator classes.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access

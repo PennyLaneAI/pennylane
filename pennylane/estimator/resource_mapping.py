@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Mapping PL operations to their associated ResourceOperator."""
+
 from __future__ import annotations
 
 import math

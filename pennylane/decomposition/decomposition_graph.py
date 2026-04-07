@@ -52,10 +52,13 @@ from .symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
+    qjit_compatible_adjoint_rotation,
+    qjit_compatible_cancel_adjoint,
     qjit_compatible_decompose_to_base,
     qjit_compatible_flip_pow_adjoint,
     qjit_compatible_merge_powers,
     qjit_compatible_repeat_pow_base,
+    qjit_compatible_self_adjoint,
     repeat_pow_base,
     self_adjoint,
     to_controlled_qubit_unitary,
@@ -421,7 +424,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qml.ops.Adjoint)
             and self_adjoint not in decomps
+            and qjit_compatible_self_adjoint not in decomps
             and adjoint_rotation not in decomps
+            and qjit_compatible_adjoint_rotation not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
@@ -447,15 +452,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Gets the decomposition rules for the adjoint of an operator."""
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
+        use_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qml.ops.Adjoint):
-            return [cancel_adjoint]
+            return [qjit_compatible_cancel_adjoint if use_reconstructor else cancel_adjoint]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         return [
-            make_adjoint_decomp(base_decomp)
+            make_adjoint_decomp(base_decomp, use_reconstructor)
             for base_decomp in self._get_decompositions(base, use_reconstructor)
         ]
 

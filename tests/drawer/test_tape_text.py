@@ -14,6 +14,7 @@
 """
 Unit tests for the `pennylane.draw_text` function.
 """
+
 # pylint: disable=import-outside-toplevel
 
 from copy import copy

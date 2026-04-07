@@ -14,6 +14,7 @@
 """
 Tests for capturing measurements.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access

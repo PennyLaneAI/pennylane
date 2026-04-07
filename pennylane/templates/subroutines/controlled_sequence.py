@@ -14,6 +14,7 @@
 r"""
 Contains the ControlledSequence template.
 """
+
 from copy import copy
 
 from pennylane.control_flow import for_loop

@@ -65,6 +65,23 @@ def test_warning_about_execution_pipeline_unmaintained():
         c()
 
 
+@pytest.mark.capture
+def test_error_if_dynamic_device_wires():
+    """Test that a NotImplementedError is raised if the device has dynamic wires."""
+
+    def f(num_wires):
+        @qml.qnode(qml.device("lightning.qubit", wires=num_wires))
+        def circuit():
+            return qml.probs()
+
+        return circuit()
+
+    with pytest.raises(
+        NotImplementedError, match="Dynamic device wires are not currently supported"
+    ):
+        jax.make_jaxpr(f)(3)
+
+
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 

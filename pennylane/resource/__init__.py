@@ -132,6 +132,7 @@ We can examine the resources by accessing the :code:`resources` key:
     - expval(PauliZ): 1
     Depth: 5
 """
+
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,

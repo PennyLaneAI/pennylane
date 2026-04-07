@@ -14,6 +14,7 @@
 """
 Contains the 'label' function for customizing operator labels.
 """
+
 # pylint: disable=unused-argument
 
 from pennylane.decomposition import add_decomps, register_resources, resource_rep

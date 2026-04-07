@@ -14,6 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
+
 # pylint: disable=eval-used, unused-argument
 
 
@@ -100,7 +101,7 @@ def compare_and_expand_mat(mat1, mat2):
     if mat1.size == mat2.size:
         return mat1, mat2
 
-    (smaller_mat, larger_mat, flip_order) = (
+    smaller_mat, larger_mat, flip_order = (
         (mat1, mat2, 0) if mat1.size < mat2.size else (mat2, mat1, 1)
     )
 

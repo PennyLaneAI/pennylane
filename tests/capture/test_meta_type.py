@@ -14,6 +14,7 @@
 """
 Unit tests for the CaptureMeta metaclass.
 """
+
 from inspect import signature
 
 # pylint: disable=protected-access, undefined-variable

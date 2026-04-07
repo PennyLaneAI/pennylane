@@ -14,6 +14,7 @@
 r"""
 Contains the FermionicDoubleExcitation template.
 """
+
 # pylint: disable=too-many-arguments,protected-access
 import copy
 

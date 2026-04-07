@@ -14,6 +14,7 @@
 """
 Tests for the gradients.spsa_gradient module.
 """
+
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy

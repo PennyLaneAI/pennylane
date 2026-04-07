@@ -446,12 +446,12 @@ class Controlled(SymbolicOp):
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
+    .. seealso:: The :func:`~.ctrl` function is recommended for use over ``Controlled``.
+
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
-
-    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
 
@@ -1055,10 +1055,7 @@ class ControlledOp(Controlled, Operation):
     class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
     specific methods and properties.
 
-    When we no longer rely on certain functionality through ``Operation``, we can get rid of this
-    class.
-
-    .. seealso:: :class:`~.Controlled`
+    .. seealso:: This class is mostly for internal use. Please see :class:`~.Controlled` instead.
     """
 
     def __new__(cls, *_, **__):

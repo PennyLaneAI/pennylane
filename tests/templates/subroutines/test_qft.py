@@ -14,6 +14,7 @@
 """
 Unit tests for the qft template.
 """
+
 import numpy as np
 import pytest
 from gate_data import QFT
