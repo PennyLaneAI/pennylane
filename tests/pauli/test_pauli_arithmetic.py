@@ -138,6 +138,22 @@ class TestPauliWord:
         assert pw_1.__hash__() == pw_3.__hash__()
         assert pw_1.__hash__() != pw_4.__hash__()
 
+    # pylint: disable=unnecessary-dunder-call
+    def test_hash_caches(self, mocker):
+        """Test that hashes are cached correctly and not recomputed."""
+        pw = PauliWord({0: I, 1: X, 2: Y})
+
+        assert pw._hashval is None  # hash should not be computed until __hash__ is called
+        h = pw.__hash__()
+
+        assert pw._hashval is not None
+        assert h == pw._hashval
+        assert h is pw._hashval  # Ensure the same exact value is returned
+
+        h2 = pw.__hash__()  # should not recompute hash
+        assert h == h2
+        assert h is h2  # Ensure the same exact value is returned
+
     @pytest.mark.parametrize("pw", (pw1, pw2, pw3, pw4))
     def test_copy(self, pw):
         """Test that the copy is identical to the original."""
