@@ -493,6 +493,12 @@ The following classes have been ported over:
   ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
+  for :class:`RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`SelectPauliRot`.
+  These can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
+  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+
+
 <h3>Breaking changes 💔</h3>
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
@@ -878,7 +884,7 @@ The following classes have been ported over:
 
 * A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
   [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
-  
+
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
