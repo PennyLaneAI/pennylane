@@ -185,7 +185,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
 
         if len(control_wires) == 0:
-            assert len(angles) == 1
             match rot_axis:
                 case "X":
                     qml.RX(angles[0], target_wire)
