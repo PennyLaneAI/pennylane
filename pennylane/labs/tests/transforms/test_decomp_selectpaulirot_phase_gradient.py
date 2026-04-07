@@ -160,7 +160,7 @@ def test_integration_multi_wire(seed):
         out_state = circuit(angles, in_state)
 
         # expected output state
-        zeros = np.eye(2 ** (prec * 3 - 1))[0]  # |000> on allthe aux wires
+        zeros = np.eye(2 ** (prec * 3 - 1))[0]  # |000> on all the aux wires
         out_state_expected = (
             qp.matrix(qp.SelectPauliRot(angles, control_wires=wires[:2], target_wire=wires[2]))
             @ in_state
