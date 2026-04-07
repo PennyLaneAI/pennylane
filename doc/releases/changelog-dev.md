@@ -160,6 +160,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
+  [(#9261)](https://github.com/PennyLaneAI/pennylane/pull/9261)
+
 * The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
   [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
@@ -754,6 +757,9 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Remove requirements file from docs folder.
+  [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
