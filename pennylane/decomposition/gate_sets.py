@@ -75,7 +75,7 @@ CLIFFORD_T_PLUS_RZ = CLIFFORD_T | GateSet({ops.RZ: 100})
 
 This gate set is used to decompose all non-parametrized operators to the standard Clifford+T
 gate set, and all parametrized operators to the Clifford+T gate set and an ``RZ``. This
-is typically useful when preparing for a discretization step such as the gridsynth which
+is typically useful when preparing for a discretization step such as ``gridsynth`` which
 completes the Clifford+T decomposition of a circuit.
 
 """
