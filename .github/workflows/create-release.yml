@@ -91,12 +91,12 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"        
-          # git tag -a "v${{ inputs.release_version }}" -m "Release version v${{ inputs.release_version }}"
-          # git push origin "v${{ inputs.release_version }}"
+          git tag -a "v${{ inputs.release_version }}" -m "Release version v${{ inputs.release_version }}"
+          git push origin "v${{ inputs.release_version }}"
 
       - name: Create Release
         run: |
-          # gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "$RELEASE_NOTES" --draft
+          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "$RELEASE_NOTES" --draft
 
   merge-rc-pr:
     name: Create PR to merge RC branch into main
@@ -116,16 +116,14 @@ jobs:
           git checkout -b merge-rc-into-main-$(date +'%Y-%m-%d')
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          # git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
-          # git push origin "refs/tags/${{ inputs.release_branch }}"
+          git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
+          git push origin "refs/tags/${{ inputs.release_branch }}"
 
       - name: Merge RC branch into main
         run: |
           git checkout -b merge-${{ inputs.release_branch }}-to-main
-          git fetch origin
+          git fetch origin --quiet
           git checkout origin/main -- pennylane/_version.py
-          cat pennylane/_version.py
-          git status
-          # git commit -am "[no ci] Bump version in in rc after release"
-          # git push origin merge-${{ inputs.release_branch }}-to-main
-          # gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head merge-${{ inputs.release_branch }}-to-main
+          git commit -am "[no ci] Bump version in in rc after release"
+          git push origin merge-${{ inputs.release_branch }}-to-main
+          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head merge-${{ inputs.release_branch }}-to-main
