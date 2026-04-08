@@ -68,7 +68,7 @@ jobs:
           sed -i -E "s/PL_CATALYST_MIN_VERSION = Version\(\"[0-9.]*\"\)/PL_CATALYST_MIN_VERSION = Version(\"${catalyst_version}\")/" "pennylane/compiler/compiler.py" 
           sed -i -E "s/[0-9]+\.[0-9]+\.[0-9]+[-A-Za-z0-9]+/${{ inputs.release_version }}/" pennylane/_version.py
 
-          echo "Pushing changes and creating PR..."
+          echo "Pushing changes..."
           git add pyproject.toml pennylane/compiler/compiler.py pennylane/_version.py
           git commit -m "Bump minimum Lightning, Catalyst, and Pennylane versions to ${lightning_version}, ${catalyst_version}, and ${{ inputs.release_version }}"
         
