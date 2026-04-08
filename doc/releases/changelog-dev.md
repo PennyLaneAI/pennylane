@@ -760,7 +760,7 @@ The following classes have been ported over:
 
 * With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
   after the loop.
-  [#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
+  [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
 
 * Remove requirements file from docs folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)

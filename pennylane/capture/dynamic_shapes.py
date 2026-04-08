@@ -256,8 +256,8 @@ def register_custom_staging_rule(
 
         if eqn_inputs_to_jaxpr_inputs:
             inner_invars = jaxpr.invars
-            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params)))
-            var_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params)))
+            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params), strict=True))
+            var_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params), strict=True))
         else:
             tracer_env, var_env = {}, {}
 
