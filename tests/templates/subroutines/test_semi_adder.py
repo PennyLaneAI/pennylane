@@ -196,7 +196,6 @@ class TestSemiAdder:
             (x + y) % 2 ** len(y_wires),
         )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         (
             "x_wires",
