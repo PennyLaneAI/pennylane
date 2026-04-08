@@ -765,6 +765,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed docker files and workflow.
+  [(#9273)](https://github.com/PennyLaneAI/pennylane/pull/9273)
+
 * Remove requirements file from docs folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
