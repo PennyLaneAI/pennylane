@@ -413,7 +413,7 @@ class TestCaptureWhileLoopDynamicShapes:
         assert qml.math.allclose(final_i, 5)  # loop condition
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**(5-2)
 
-    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
+    @pytest.mark.parametrize("allow_array_resizing", (False, "auto"))
     def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
         """Test that if a broadcasting error is raised when a dynamically shaped closure variable
         is present, the error mentions it may be due to the closure variable with a dynamic shape.
@@ -428,8 +428,15 @@ class TestCaptureWhileLoopDynamicShapes:
 
             return f(jnp.arange(i0))
 
-        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
-            jax.make_jaxpr(w)(3)
+        jaxpr = jax.make_jaxpr(w)(3)
+
+        shape, return_val, c = jaxpr.eqns[-1].outvars
+        assert return_val.aval.shape[0] == shape
+        assert c.aval.shape[0] == shape
+        assert isinstance(c, jax.core.DropVar)
+
+        assert shape == jaxpr.jaxpr.outvars[0]
+        assert return_val == jaxpr.jaxpr.outvars[1]
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):

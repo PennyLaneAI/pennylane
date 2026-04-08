@@ -22,11 +22,39 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 
 from collections import namedtuple
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any
 
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
+
+
+def promote_consts_to_inputs(f):
+    """This function extracts any closure variables with dynamic shapes from f.__closure__
+    and promotes them to being normal arguments. This produces a new function that
+    takes the original args and the new consts as explicit inputs. It also returns
+    the extracted consts.
+    """
+    indices = []
+    consts = []
+
+    if getattr(f, "__closure__", None) is not None:
+        for ind, cell in enumerate(f.__closure__):
+            val = cell.cell_contents
+            if hasattr(val, "shape") and not all(isinstance(s, int) for s in val.shape):
+                indices.append(ind)
+                consts.append(val)
+
+    def new_f(args, new_consts):
+        f_copy = deepcopy(f)
+
+        for ind, c in zip(indices, new_consts):
+            f_copy.__closure__[ind].cell_contents = c
+
+        return f_copy(*args), new_consts
+
+    return new_f, consts
 
 
 def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):  # pragma: no cover
