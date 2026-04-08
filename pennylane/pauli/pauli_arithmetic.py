@@ -174,6 +174,8 @@ class PauliWord(dict):
 
     """
 
+    __slots__ = ("_hashval",)
+
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * pw1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
@@ -189,6 +191,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+        self._hashval = None
 
     @property
     def pauli_rep(self):
@@ -220,7 +223,11 @@ class PauliWord(dict):
         raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
-        return hash(frozenset(self.items()))
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+
+        return self._hashval
 
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
