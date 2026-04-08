@@ -186,14 +186,14 @@ class QFT(Operation):
         for i, wire in enumerate(wires):
             decomp_ops.append(Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :], strict=True):
                 op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
         first_half_wires = wires[: num_wires // 2]
         last_half_wires = wires[-(num_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires), strict=True):
             swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 
