@@ -764,7 +764,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Patched `pjit._infer_params_internal` for dynamic shapes to correctly handles the concatenation of `p.consts` and `args_flat` before return.
+* Patched `jax._src.pjit._infer_params_internal` for dynamic shapes to correctly handle the concatenation of closure variables and arguments before return.
   [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
 
 * Remove requirements file from docs folder.
