@@ -71,7 +71,7 @@ def _partial_select(K, control):
         ]
         for j in range(K)
     ]
-    return (list(zip(*ctrl_, strict=True)) for ctrl_ in controls)
+    return (list(zip(*ctrl_, strict=False)) for ctrl_ in controls)
 
 
 class Select(Operation):
@@ -513,7 +513,9 @@ class Select(Operation):
                 return list(ops)
             decomp_ops = [
                 ctrl(op, ctrl_, control_values=values, work_wires=work_wires)
-                for (ctrl_, values), op in zip(_partial_select(len(ops), control), ops, strict=True)
+                for (ctrl_, values), op in zip(
+                    _partial_select(len(ops), control), ops, strict=False
+                )
             ]
             return decomp_ops
 
@@ -575,7 +577,7 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
         else:
             # Use dummy control values, we will only care about the length of the outputs
             ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=True):
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=False):
                 resources[_multi_controlled_rep(rep, len(ctrl_), ctrl_state, num_work_wires)] += 1
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
@@ -593,7 +595,7 @@ def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
             apply(ops[0])
         else:
             for (ctrl_, ctrl_state), op in zip(
-                _partial_select(len(ops), control), ops, strict=True
+                _partial_select(len(ops), control), ops, strict=False
             ):
                 ctrl(op, ctrl_, control_values=ctrl_state, work_wires=work_wires)
     else:
@@ -1002,7 +1004,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
             for val, triple in zip(
-                closing_ctrl_bits[2:], reversed(unary_triples[: c - 1]), strict=True
+                closing_ctrl_bits[2:], reversed(unary_triples[: c - 1]), strict=False
             )
         ]
     )
@@ -1095,7 +1097,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
         else:
             # Use dummy control values, we will only care about the length of the outputs
             ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=True):
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=False):
                 resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
                 resources[
                     _multi_controlled_rep(
@@ -1150,7 +1152,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
             return []
 
         ctrls_and_ctrl_states = _partial_select(len(ops), control)
-        for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+        for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=False):
             ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
             ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
             ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
