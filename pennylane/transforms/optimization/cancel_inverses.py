@@ -332,9 +332,12 @@ def cancel_inverses(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        recursive (bool): Whether or not to recursively cancel inverses after a first pair
-            of mutual inverses has been cancelled. Enabled by default. Note: this argument is
-            ignored when used within a ``qjit`` workflow.
+        recursive (bool):
+            Whether or not to recursively cancel inverses after a first pair of mutual inverses has
+            been cancelled. Enabled by default.
+
+            .. note::
+                This argument is not supported within a :func:`~.qjit` workflow.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -410,18 +413,22 @@ def cancel_inverses(
     .. details::
         :title: Usage with qjit
 
-        When used with ``qjit``, only the following gates can be optimized by the ``cancel_inverses``
-        transform:
+        There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
 
-        - :class:`qml.Hadamard <pennylane.Hadamard>`,
-        - :class:`qml.PauliX <pennylane.PauliX>`,
-        - :class:`qml.PauliY <pennylane.PauliY>`,
-        - :class:`qml.PauliZ <pennylane.PauliZ>`
-        - :class:`qml.CNOT <pennylane.CNOT>`,
-        - :class:`qml.CY <pennylane.CY>`,
-        - :class:`qml.CZ <pennylane.CZ>`,
-        - :class:`qml.SWAP <pennylane.SWAP>`
-        - :class:`qml.Toffoli <pennylane.Toffoli>`
+        * The ``recursive`` argument is not available with ``cancel_inverses`` when used with
+          ``qjit``, and an error will be raised if a value for ``recursive`` is specified.
+
+        * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
+
+          - :class:`qml.Hadamard <pennylane.Hadamard>`,
+          - :class:`qml.PauliX <pennylane.PauliX>`,
+          - :class:`qml.PauliY <pennylane.PauliY>`,
+          - :class:`qml.PauliZ <pennylane.PauliZ>`
+          - :class:`qml.CNOT <pennylane.CNOT>`,
+          - :class:`qml.CY <pennylane.CY>`,
+          - :class:`qml.CZ <pennylane.CZ>`,
+          - :class:`qml.SWAP <pennylane.SWAP>`
+          - :class:`qml.Toffoli <pennylane.Toffoli>`
 
         .. code-block:: python
 
@@ -450,7 +457,7 @@ def cancel_inverses(
         - expval(PauliZ): 1
         Depth: Not computed
 
-        Additionally, the ``cancel_inverses`` transform supports
+        Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
 
         For more technical information on how this transform behaves, consult the Catalyst
