@@ -466,7 +466,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
-    if set(pauli_string) - _PAULI_STRING_SET:
+    if any(char not in _PAULI_STRING_SET for char in pauli_string):
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
