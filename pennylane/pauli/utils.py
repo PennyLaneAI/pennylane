@@ -30,8 +30,10 @@ import pennylane as qml
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.wires import Wires
 
-# To make this quicker later on
+# Define constants that are used often within the functions in this module
 ID_MAT = np.eye(2)
+_PAULI_MAP = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+_BINARY_PAULI_MAP = {(1, 0): PauliX, (1, 1): PauliY, (0, 1): PauliZ}
 
 
 def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
@@ -336,28 +338,19 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
             )
         label_map = {explicit_index: wire_label for wire_label, explicit_index in wire_map.items()}
 
-    pauli_word = None
-    for i in range(n_qubits):
-        operation = None
-        if binary_vector[i] == 1 and binary_vector[n_qubits + i] == 0:
-            operation = PauliX(wires=Wires([label_map[i]]))
+    pauli_word = tuple(
+        _BINARY_PAULI_MAP[(binary_vector[i], binary_vector[n_qubits + i])](label_map[i])
+        for i in range(n_qubits)
+        if (binary_vector[i], binary_vector[n_qubits + i]) != (0, 0)
+    )
 
-        elif binary_vector[i] == 1 and binary_vector[n_qubits + i] == 1:
-            operation = PauliY(wires=Wires([label_map[i]]))
-
-        elif binary_vector[i] == 0 and binary_vector[n_qubits + i] == 1:
-            operation = PauliZ(wires=Wires([label_map[i]]))
-
-        if operation is not None:
-            if pauli_word is None:
-                pauli_word = operation
-            else:
-                pauli_word @= operation
-
-    if pauli_word is None:
+    if len(pauli_word) == 0:
         return Identity(wires=list(label_map.values())[0])
 
-    return pauli_word
+    if len(pauli_word) == 1:
+        return pauli_word[0]
+
+    return qml.ops.op_math.Prod(*pauli_word)
 
 
 def pauli_word_to_string(pauli_word, wire_map=None):
@@ -472,26 +465,17 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
-    pauli_word = []
+    if set(pauli_string) - set("IXYZ"):
+        raise ValueError(
+            "Invalid characters encountered in string_to_pauli_word "
+            f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
+        )
 
-    for wire_name, wire_idx in wire_map.items():
-        pauli_char = pauli_string[wire_idx]
-
-        match pauli_char:
-            case "X":
-                pauli_word.append(PauliX(wire_name))
-            case "Y":
-                pauli_word.append(PauliY(wire_name))
-            case "Z":
-                pauli_word.append(PauliZ(wire_name))
-            case "I":
-                # Don't care about the identity
-                continue
-            case _:
-                raise ValueError(
-                    "Invalid characters encountered in string_to_pauli_word "
-                    f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
-                )
+    pauli_word = tuple(
+        _PAULI_MAP[pauli_string[wire_idx]](wire_name)
+        for wire_name, wire_idx in wire_map.items()
+        if pauli_string[wire_idx] != "I"
+    )
 
     if len(pauli_word) == 1:
         return pauli_word[0]
