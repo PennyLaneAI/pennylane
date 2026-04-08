@@ -34,6 +34,7 @@ from pennylane.wires import Wires
 ID_MAT = np.eye(2)
 _PAULI_MAP = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 _BINARY_PAULI_MAP = {(1, 0): PauliX, (1, 1): PauliY, (0, 1): PauliZ}
+_PAULI_STRING_SET = frozenset(("I", "X", "Y", "Z"))
 
 
 def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
@@ -465,7 +466,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
-    if set(pauli_string) - set("IXYZ"):
+    if set(pauli_string) - _PAULI_STRING_SET:
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
