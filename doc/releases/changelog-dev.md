@@ -1027,10 +1027,14 @@ The following classes have been ported over:
     - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
     - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
 
+* Fixes a bug where the `C(SemiAdder)` decomposition was producing wrong results in some instances.
+  [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
