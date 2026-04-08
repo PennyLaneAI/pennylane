@@ -768,6 +768,9 @@ The following classes have been ported over:
   after the loop.
   [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
 
+* Patched `pjit._infer_params_internal` for dynamic shapes to correctly handles the concatenation of `p.consts` and `args_flat` before return.
+  [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
+
 * Remove requirements file from docs folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
