@@ -217,6 +217,24 @@ def register_resources(
 
     >>> my_cnot = qml.register_resources({qml.H: 2, qml.CZ: 1}, my_cnot)
 
+    By default, the name of the decorated function is taken as the name of the decomposition rule.
+
+    >>> my_cnot.name
+    'my_cnot'
+
+    Optionally, a custom name can be assigned using the ``name`` argument:
+
+    .. code-block:: python
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1}, name="to-cz")
+        def my_cnot(wires, **_):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+    >>> my_cnot.name
+    'to-cz'
+
     .. details::
         :title: Quantum Functions as Decomposition Rules
 
