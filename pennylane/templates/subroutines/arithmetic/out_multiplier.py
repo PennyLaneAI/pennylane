@@ -460,9 +460,8 @@ def _out_multiplier_with_caddsub_resources(
     # Add 2^m(x+1)
     size = min(k + 1 - m, n + 1)
     resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
-    resources[resource_rep(X)] += 3
+    resources[resource_rep(X)] += 4
     resources[resource_rep(X)] += int(size > 1)
-    resources[resource_rep(Z)] += 2
 
     # Subtract y+2^(n+m)
     # First negation
@@ -488,7 +487,8 @@ def _out_multiplier_with_caddsub_resources(
 
     # Add 2^n y
     size = min(k + 1 - n, m + 1)
-    resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
+    if size > 0:
+        resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
 
     # divide by two on register of size k+1 takes k SWAPs
     resources[resource_rep(SWAP)] += k
@@ -531,13 +531,11 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     when using the decomposition into unitary operations. We need to resolve this somehow.
     """
     work_wires = work_wires[: len(y_wires) - 1]
-    # X(x_wires[-1])
-    Z(x_wires[-1])
+    X(x_wires[-1])
     X(y_wires[-1])
     if work_wires:
         X(work_wires[-1])
     SemiAdder(x_wires, y_wires, work_wires)
-    Z(x_wires[-1])
     X(x_wires[-1])
     X(y_wires[-1])
 
@@ -578,7 +576,8 @@ def _out_multiplier_with_caddsub(
     _increment(increment_wires, work_wires)
     _ = [X(w) for w in output_with_cache]
     # Add 2^n y
-    SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
+    if min(k + 1 - n, m + 1) > 0:  # Only need to add if there will be target qubits
+        SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
     # Divide by two
     _div_by_two(output_with_cache)
 
