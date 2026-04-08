@@ -40,7 +40,7 @@ from .select import Select
 
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2, strict=True):
+    for wire1, wire2 in zip(wires1, wires2, strict=False):
         qml_ops.SWAP(wires=[wire1, wire2])
 
 
