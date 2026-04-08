@@ -951,7 +951,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     unary_work_wires = work_wires[: c - 1]
     new_work_wires = work_wires[c - 1 :]
     aux_control = [control[0]]
-    for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=True):
+    for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=False):
         aux_control.append(ctrl_wire)
         aux_control.append(work_wire)
     # Create triples of wires to which elbows are applied
@@ -1156,7 +1156,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
             ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
         return []
 
-    for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=True):
+    for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
         ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
         ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
