@@ -148,8 +148,7 @@ def register_custom_staging_rule(
     get_jaxpr_from_params: Callable[[dict], "jax.extend.core.Jaxpr"],
     eqn_inputs_to_jaxpr_inputs: Callable | None = None,
 ) -> None:
-    """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
-    ``get_outvars_from_params``.
+    """Register a custom staging rule for a higher order primitive that can handle dynamic shapes.
 
     Args:
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
