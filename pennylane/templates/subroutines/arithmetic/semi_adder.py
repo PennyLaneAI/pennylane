@@ -382,7 +382,6 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.
     """
-
     y_wires = base.hyperparameters["y_wires"]
     x_wires = base.hyperparameters["x_wires"]
     work_wires = base.hyperparameters["work_wires"][: len(y_wires) - 1]
@@ -390,7 +389,6 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
 
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
-
     if num_y_wires == 1:
         ctrl(
             CNOT([x_wires[-1], y_wires[0]]),
@@ -419,7 +417,12 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
     )
 
     if num_x_wires >= num_y_wires:
-        CNOT([x_wires_pl[-1], y_wires_pl[-1]])
+        ctrl(
+            CNOT([x_wires_pl[-1], y_wires_pl[-1]]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=extra_work_wires,
+        )
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
 
