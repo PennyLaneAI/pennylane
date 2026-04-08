@@ -14,6 +14,7 @@
 """
 This module contains the qml.eigvals function.
 """
+
 import warnings
 from functools import partial, reduce
 

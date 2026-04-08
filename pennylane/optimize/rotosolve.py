@@ -13,7 +13,6 @@
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
 
-
 from inspect import signature
 
 import numpy as np

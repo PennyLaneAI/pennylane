@@ -118,7 +118,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
     for l in range(modes):
         for k_l in range(modals[l]):
             for h_l in range(modals[l]):
-                (i0, i1) = ((l, k_l), (l, h_l))
+                i0, i1 = ((l, k_l), (l, h_l))
                 w = BoseWord({(0, idx[i0]): "+", (1, idx[i1]): "-"})
                 obs[w] = one[l, k_l, h_l]
 
@@ -134,7 +134,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                     for h_l in range(modals[l]):
                         for k_m in range(modals[m]):
                             for h_m in range(modals[m]):
-                                (i0, i1, i2, i3) = (
+                                i0, i1, i2, i3 = (
                                     (l, k_l),
                                     (m, k_m),
                                     (l, h_l),
@@ -169,7 +169,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                                 for h_m in range(modals[m]):
                                     for k_n in range(modals[n]):
                                         for h_n in range(modals[n]):
-                                            (i0, i1, i2, i3, i4, i5) = (
+                                            i0, i1, i2, i3, i4, i5 = (
                                                 (l, k_l),
                                                 (m, k_m),
                                                 (n, k_n),

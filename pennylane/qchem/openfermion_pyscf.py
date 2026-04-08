@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
+
 # pylint: disable=too-many-arguments,unused-variable
 # pylint: disable=consider-using-generator
 import os

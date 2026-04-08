@@ -14,6 +14,7 @@
 """
 Contains the OutPoly template.
 """
+
 from collections import Counter
 
 from pennylane import math

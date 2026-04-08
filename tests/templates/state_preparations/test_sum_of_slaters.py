@@ -14,6 +14,7 @@
 """
 Unit tests for the SumOfSlatersPrep template.
 """
+
 from itertools import combinations, product
 
 import numpy as np

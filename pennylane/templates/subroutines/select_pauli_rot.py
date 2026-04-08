@@ -14,6 +14,7 @@
 r"""
 Contains the SelectPauliRot template.
 """
+
 from collections import defaultdict
 
 from pennylane import math

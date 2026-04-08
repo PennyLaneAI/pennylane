@@ -14,6 +14,7 @@
 """
 This module contains the base quantum tape.
 """
+
 # pylint: disable=protected-access
 import copy
 from collections.abc import Sequence

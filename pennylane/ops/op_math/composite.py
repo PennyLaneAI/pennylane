@@ -14,6 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
+
 # pylint: disable=invalid-sequence-index
 import abc
 import copy

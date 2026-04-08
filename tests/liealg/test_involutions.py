@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/involutions.py functionality"""
+
 from functools import partial
 
 import numpy as np

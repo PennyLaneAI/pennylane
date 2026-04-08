@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+
 from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import overload

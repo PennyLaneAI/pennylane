@@ -15,6 +15,7 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
+
 from collections import defaultdict
 from collections.abc import Callable
 from importlib import metadata

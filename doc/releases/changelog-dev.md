@@ -6,6 +6,7 @@
   following `SymbolicOps` have been re-written.
 
   - :class:`qml.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
+  - :class:`qml.ops.Adjoint` [(#9190)](https://github.com/PennyLaneAI/pennylane/pull/9190)
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qml.qsvt` and
@@ -31,13 +32,13 @@
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
-  ```pycon
-  >>> import numpy as np
-  >>> import pennylane as qml
-  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]                   
-  >>> coefficients = np.array(coefficients)                                                            
-  >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)                                                  
-  >>> wires = list(range(5))                                                            
+  ```python
+  import numpy as np
+  import pennylane as qml
+  coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
+  coefficients = np.array(coefficients)
+  indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  wires = range(5)
   ```
 
   And this is all the information we require to create the state
@@ -59,7 +60,8 @@
   >>> where = np.where(np.abs(prepared_state) > 1e-12)
   >>> print(where)
   (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
-  >>> print(prepared_state[where])
+  >>> with np.printoptions(precision=2, suppress=True): # doctest: +SKIP
+  ...   print(prepared_state[where])
   [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
     0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
   ```
@@ -128,6 +130,7 @@
   ```pycon
   >>> print(qml.draw(c)())
   0: ──MyTemplate(0.10,0.20)─┤  State
+
   ```
 
 The following classes have been ported over:
@@ -159,6 +162,12 @@ The following classes have been ported over:
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
 <h3>Improvements 🛠</h3>
+
+* Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
+  [(#9261)](https://github.com/PennyLaneAI/pennylane/pull/9261)
+
+* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
+  [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
 * Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
   wires elsewhere in PennyLane, and that was not taken into account in the resource functions
@@ -252,6 +261,7 @@ The following classes have been ported over:
   - Hadamard         |  2 |  0 |  0
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
+
   ```
 
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
@@ -306,16 +316,18 @@ The following classes have been ported over:
     [1] cancel_inverses()
      └─▶ after-cancel-inverses
   )
+
   ```
 
   As usual, marker labels can be used as an argument to `level` in `draw`
   and `specs`, showing the cumulative result of applying transforms up to said marker:
 
   ```pycon
-  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
+  >>> print(qml.draw(circuit, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
-  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
+  >>> print(qml.draw(circuit, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
+
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -341,7 +353,6 @@ The following classes have been ported over:
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
-
   @qml.qjit(target="mlir")
   @qml.transforms.to_ppr
   @qml.qnode(qml.device("null.qubit", wires=2))
@@ -354,26 +365,24 @@ The following classes have been ported over:
   ```
 
   ```pycon
-  >>> print(qml.specs(circuit, level=2)())
+  >>> print(qml.specs(circuit, level=1)())
   Device: null.qubit
   Device wires: 2
   Shots: Shots(total=None)
-  Level: 2
-
-  Resource specifications:
-      Total wire allocations: 2
-      Total gates: 11
-      Circuit depth: Not computed
-
-  Gate types:
-      GlobalPhase: 3
-      PPR-pi/4-w1: 5
-      PPR-pi/4-w2: 1
-      PPM-w1: 1
-      PPR-pi/8-w1: 1
-
+  Level: to-ppr
+  <BLANKLINE>
+  Wire allocations: 2
+  Total gates: 11
+  Gate counts:
+  - GlobalPhase: 3
+  - PPR-pi/4-w1: 5
+  - PPR-pi/4-w2: 1
+  - PPM-w1: 1
+  - PPR-pi/8-w1: 1
   Measurements:
-      expval(PauliZ): 1
+  - expval(PauliZ): 1
+  Depth: Not computed
+
   ```
 
 * :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept
@@ -527,6 +536,7 @@ The following classes have been ported over:
   0: ───────────┤ ╭<𝓗(0.20,0.10)>
   1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
   2: ───────────┤ ╰<𝓗(0.20,0.10)>
+
   ```
 
   However, if we convert an operator ``A`` to numerical data, from which a new
@@ -546,10 +556,11 @@ The following classes have been ported over:
   ```
 
   ```pycon
-  >>> print(qp.draw(expval)(0.4))
+  >>> print(qml.draw(expval, show_matrices=False)(0.4))
   0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
   1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │
   2: ─────────────────────────┤ ╰<𝓗(M0)>
+
   ```
 
   As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
@@ -590,7 +601,7 @@ The following classes have been ported over:
 
   Instead of defining the ``CNOT`` decomposition as:
 
-  ```python
+  ```py
   def custom_cnot(wires):
     return [
       qml.Hadamard(wires=wires[1]),
@@ -632,6 +643,7 @@ The following classes have been ported over:
   >>> print(qml.draw(qnode, level="device")())
   0: ────╭●────┤
   1: ──H─╰Z──H─┤  <X>
+
   ```
 
 * The `pennylane.operation.Operator.is_hermitian` property has been removed and replaced
@@ -702,7 +714,7 @@ The following classes have been ported over:
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
     for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-      ```python
+      ```py
       # Legacy method (deprecated):
       qml.RX(0.5, wires=0, id="x0")
 
@@ -748,6 +760,12 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Remove requirements file from docs folder.
+  [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
+
+* Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
+  [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
 * `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
   program capture.
@@ -819,6 +837,7 @@ The following classes have been ported over:
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
   [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
+  [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -863,6 +882,12 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
+  [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
+  
+* A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
+  [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
+
 * Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
   only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
   [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
@@ -892,6 +917,14 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
+  to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
+  [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
+
+* Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
+  rather than providing incorrect results.
+  [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
 
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,

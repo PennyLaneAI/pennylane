@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
+
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass

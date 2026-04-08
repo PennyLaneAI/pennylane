@@ -14,6 +14,7 @@
 """
 Tests for the TTN template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods

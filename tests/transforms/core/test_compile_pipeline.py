@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
+
 # pylint: disable=no-member, protected-access
 
 from copy import copy

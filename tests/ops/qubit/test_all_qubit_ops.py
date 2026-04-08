@@ -16,6 +16,7 @@ Unit tests for the available built-in discrete-variable quantum operations. Only
 multiple types of operations should exist in this file. Type-specific tests should go in
 the more specific file.
 """
+
 # pylint: disable=too-few-public-methods
 import pytest
 from gate_data import I

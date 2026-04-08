@@ -14,6 +14,7 @@
 """
 Unittests for is_commuting
 """
+
 # pylint: disable=too-many-public-methods
 import pytest
 

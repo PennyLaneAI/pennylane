@@ -15,6 +15,7 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
+
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
