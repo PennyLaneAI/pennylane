@@ -16,6 +16,7 @@ r"""
 This module contains utility data-structures and algorithms supporting functionality in the
 ftqc module.
 """
+
 from threading import RLock
 
 from pennylane import math

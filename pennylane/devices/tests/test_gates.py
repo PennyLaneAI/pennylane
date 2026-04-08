@@ -15,6 +15,7 @@
 Tests that application of gates and state preparations
 works correctly an a device.
 """
+
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 

@@ -14,6 +14,7 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
+
 import functools
 import itertools
 from collections.abc import Iterable

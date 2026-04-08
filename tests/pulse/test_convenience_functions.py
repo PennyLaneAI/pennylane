@@ -14,6 +14,7 @@
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+
 # pylint: disable=import-outside-toplevel
 import inspect
 from functools import reduce

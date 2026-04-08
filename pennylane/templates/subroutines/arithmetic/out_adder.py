@@ -14,6 +14,7 @@
 """
 Contains the OutAdder template.
 """
+
 from collections import defaultdict
 
 from pennylane.decomposition import (

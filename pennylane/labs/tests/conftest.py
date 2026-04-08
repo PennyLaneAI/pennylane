@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+
 import argparse
 import os
 

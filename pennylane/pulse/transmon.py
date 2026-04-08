@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
+
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass

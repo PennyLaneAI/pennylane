@@ -14,6 +14,7 @@
 """
 This module contains the qml.counts measurement.
 """
+
 import warnings
 from collections.abc import Sequence
 

@@ -14,6 +14,7 @@
 """
 Unit tests for the quantum phase estimation subroutine.
 """
+
 import numpy as np
 import pytest
 from scipy.stats import unitary_group

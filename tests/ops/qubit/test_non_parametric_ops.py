@@ -14,6 +14,7 @@
 """
 Unit tests for the available non-parametric qubit operations
 """
+
 # pylint: disable=too-few-public-methods
 import copy
 import itertools

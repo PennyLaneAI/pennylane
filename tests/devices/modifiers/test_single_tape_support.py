@@ -15,6 +15,7 @@
 Tests the `single_tape_support` device modifier.
 
 """
+
 from typing import Optional
 
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring

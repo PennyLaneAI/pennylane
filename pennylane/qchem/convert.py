@@ -15,7 +15,6 @@
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
 
-
 import warnings
 from itertools import product
 
