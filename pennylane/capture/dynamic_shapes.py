@@ -143,10 +143,15 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
+# pylint: disable=unused-argument
+def _default_setup_env(tracers, params):
+    return {}
+
+
 def register_custom_staging_rule(
     primitive,
     get_jaxpr_from_params: Callable[[dict], "jax.extend.core.Jaxpr"],
-    eqn_inputs_to_jaxpr_inputs: Callable | None = None,
+    setup_env: Callable = _default_setup_env,
 ) -> None:
     """Register a custom staging rule for a higher order primitive that can handle dynamic shapes.
 
@@ -154,9 +159,9 @@ def register_custom_staging_rule(
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
         get_jaxpr_from_params (Callable[[dict], "jax.extend.core.Jaxpr"]): A function that takes in the equation's ``params``
             and returns a target jaxpr
-        eqn_inputs_to_jaxpr_inputs (None | Callable[[Sequence, dict], Sequence]]): A function that takes the inputs to the primitives equations
-            and the ``params`` and returns just the inputs to the jaxpr. These inputs will be either tracers or ``jax.extend.core.Var``.
-            If not provided, dynamic shapes will always be new variables, instead of reusing variables that occur in the inputs.
+        setup_env (Callable): A function that setups a dictionary for mapping from the inner jaxpr variables to the tracers
+            that are inputs to the equation.  The inputs are the tracers that are inputs to the equation
+            and the params for the equation. By default, returns an empty dictionary.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
@@ -164,25 +169,25 @@ def register_custom_staging_rule(
 
         register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0])
 
-    ``cond`` cannot support ``eqn_inputs_to_jaxpr_inputs``, because different branches may have different dynamic shapes.
+    ``cond`` cannot support ``setup_env``, because different branches may have different dynamic shapes.
 
-    Compare this to ``for_loop_prim``:
+    Compare this to ``while_loop_prim``:
 
     .. code-block:: python
 
-        def eqn_inputs_to_jaxpr_inputs(inputs, params):
-            inputs = inputs[3:] # slice out start, stop, step
-            abstract_shapes = inputs[slice(*params["abstract_shapes_slice"])]
-            args = inputs[slice(*params["args_slice"])]
-            return abstract_shapes + args
+        def setup_env(tracers, params):
+            tracers = tracers[slice(*params['args_slice'])] + tracers[slice(*params['consts_slice'])]
+            vars = params['jaxpr_body_fn'].invars + params['jaxpr_body_fn'].constvars
+            return dict(zip(vars, tracers), strict=True)
 
         register_custom_staging_rule(
-            for_loop_prim,
+            while_loop_prim,
             get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
-            eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
+            matching_eqn_inputs=matching_eqn_inputs,
         )
 
-    The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
+    ``for_loop_prim`` gets more complicated, as we have to slice out the ``start``, ``stop``, ``step`` from the ``tracers``,
+    and the loop index for the ``jaxpr_invars``.
 
     """
     # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
@@ -200,8 +205,7 @@ def register_custom_staging_rule(
     def _tracer_and_outvar(
         jaxpr_trace,
         outvar: jax.extend.core.Var,
-        var_env: dict[jax.extend.core.Var, jax.extend.core.Var],
-        tracer_env: dict[jax.extend.core.Var, jax.interpreters.partial_eval.DynamicJaxprTracer],
+        env: dict[jax.extend.core.Var, jax.interpreters.partial_eval.DynamicJaxprTracer],
     ):
         """
         Create a new tracer and return var from the true branch outvar.
@@ -215,28 +219,24 @@ def register_custom_staging_rule(
             )
             return out_tracer, new_var
 
-        new_var_shape = [s if isinstance(s, int) else var_env[s] for s in outvar.aval.shape]
+        new_tracer_shape = tuple(s if isinstance(s, int) else env[s] for s in outvar.aval.shape)
+
         if all(isinstance(s, int) for s in outvar.aval.shape):
-            new_var_aval = jax.core.ShapedArray(tuple(new_var_shape), outvar.aval.dtype)
+            new_var_aval = jax.core.ShapedArray(new_tracer_shape, outvar.aval.dtype)
             new_tracer_aval = new_var_aval
-        else:  # pragma: no cover
-            new_var_aval = jax.core.DShapedArray(tuple(new_var_shape), outvar.aval.dtype)
-            new_tracer_shape = tuple(
-                s if isinstance(s, int) else tracer_env[s] for s in outvar.aval.shape
-            )
+        else:
             new_tracer_aval = jax.core.DShapedArray(new_tracer_shape, outvar.aval.dtype)
+            new_var_shape = tuple(s if isinstance(s, int) else s.val for s in new_tracer_shape)
+            new_var_aval = jax.core.DShapedArray(new_var_shape, outvar.aval.dtype)
+
         # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
         new_var = jaxpr_trace.frame.newvar(new_var_aval)
         out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
             jaxpr_trace, new_tracer_aval, new_var
         )
 
-        if not isinstance(outvar, jax.extend.core.Literal):
-            if outvar not in var_env:
-                var_env[outvar] = new_var
-
-            if outvar not in tracer_env:
-                tracer_env[outvar] = out_tracer
+        if not isinstance(outvar, jax.extend.core.Literal) and outvar not in env:
+            env[outvar] = out_tracer
         return out_tracer, new_var
 
     def custom_staging_rule(jaxpr_trace, source_info, *tracers, **params):
@@ -254,17 +254,13 @@ def register_custom_staging_rule(
         # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
         invars = [t.val for t in tracers]
 
-        if eqn_inputs_to_jaxpr_inputs:
-            inner_invars = jaxpr.invars
-            tracer_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(tracers, params), strict=True))
-            var_env = dict(zip(inner_invars, eqn_inputs_to_jaxpr_inputs(invars, params), strict=True))
-        else:
-            tracer_env, var_env = {}, {}
+        # map from inner jaxpr var to outer tracer
+        env = setup_env(tracers, params)
 
         if outvars:
             out_tracers, returned_vars = tuple(
                 zip(
-                    *(_tracer_and_outvar(jaxpr_trace, var, var_env, tracer_env) for var in outvars),
+                    *(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars),
                     strict=True,
                 )
             )

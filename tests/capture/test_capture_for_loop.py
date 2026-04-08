@@ -447,6 +447,22 @@ class TestDynamicShapes:
         assert jnp.allclose(c, jnp.array([5, 5, 5]))  # 2*2 + 1
         assert jnp.allclose(d, jnp.array([5, 5, 5]))
 
+    def test_closure_var_as_dynamic_shape(self):
+        """Test that a closure var can be used to produce something with a dynamic shape."""
+
+        def f(sz):
+
+            @qml.for_loop(0, 3, 1)
+            def loop(i, a):
+                return jnp.ones([sz])
+
+            a2 = loop(jnp.ones(sz))
+            return a2
+
+        jaxpr = jax.make_jaxpr(f)(3)
+        _, a2 = jaxpr.eqns[-1].outvars
+        assert a2.aval.shape[0] is jaxpr.jaxpr.invars[0]  # sz
+
 
 class TestCaptureCircuitsForLoop:
     """Tests for capturing for loops into jaxpr in the context of quantum circuits."""

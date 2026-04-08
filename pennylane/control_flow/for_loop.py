@@ -280,16 +280,33 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
 
-    def eqn_inputs_to_jaxpr_inputs(inputs, params):
-        inputs = inputs[3:]
-        abstract_shapes = inputs[slice(*params["abstract_shapes_slice"])]
-        args = inputs[slice(*params["args_slice"])]
-        return abstract_shapes + args
+    def setup_env(tracers, params):
+        # slice out start, stop, step
+        tracers = tracers[3:]
+        # tracers now (*consts, *abstract_shapes, *args)
+        tracer_consts = tracers[slice(*params["consts_slice"])]
+        abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
+        tracer_abstract_shapes = tracers[abstract_shapes_slice]
+        args_slice = slice(*params["args_slice"])
+        tracer_args = tracers[args_slice]
+
+        # invars now (*abstract_shapes, i, *args)
+        var_consts = params["jaxpr_body_fn"].constvars
+        jaxpr_invars = params["jaxpr_body_fn"].invars
+        invars_abstract_shapes = jaxpr_invars[abstract_shapes_slice]
+
+        num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+        invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
+
+        env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
+        env.update(dict(zip(invars_args, tracer_args, strict=True)))
+        env.update(dict(zip(var_consts, tracer_consts, strict=True)))
+        return env
 
     register_custom_staging_rule(
         for_loop_prim,
         get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
-        eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
+        setup_env=setup_env,
     )
 
     # pylint: disable=too-many-arguments

@@ -239,13 +239,18 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
 
-    def eqn_inputs_to_jaxpr_inputs(inputs, params):
-        return inputs[slice(*params["args_slice"])]
+    def setup_env(tracers, params):
+        tracer_args = tracers[slice(*params["args_slice"])]
+        env = dict(zip(params["jaxpr_body_fn"].invars, tracer_args, strict=True))
+
+        body_consts = tracers[slice(*params["body_slice"])]
+        env.update(dict(zip(params["jaxpr_body_fn"].constvars, body_consts, strict=True)))
+        return env
 
     register_custom_staging_rule(
         while_loop_prim,
         lambda params: params["jaxpr_body_fn"],
-        eqn_inputs_to_jaxpr_inputs=eqn_inputs_to_jaxpr_inputs,
+        setup_env=setup_env,
     )
 
     @while_loop_prim.def_impl

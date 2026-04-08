@@ -180,25 +180,24 @@ def test_custom_staging_rule_outer_dimension(enable_disable_dynamic_shapes):
 
     my_prim = jax.extend.core.Primitive("my_prim")
 
-    def eqn_inputs_to_jaxpr_inputs(inputs, params):
-        return [inputs[params["index"]]]
+    def setup_env(tracers, params):
+        return {params["jaxpr"].invars[0]: tracers[params["index"]]}
 
-    register_custom_staging_rule(
-        my_prim, lambda params: params["jaxpr"], eqn_inputs_to_jaxpr_inputs
-    )
+    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"], setup_env)
 
     def f(i):
         return i, jax.numpy.ones(i)
 
-    jaxpr = jax.make_jaxpr(f)(2)
+    inner_jaxpr = jax.make_jaxpr(f)(2)
 
     def workflow(a, b, index):
-        return my_prim.bind(a, b, jaxpr=jaxpr.jaxpr, index=index)
+        return my_prim.bind(a, b, jaxpr=inner_jaxpr.jaxpr, index=index)
 
     # based on index param, a different input is treated as the input
     # to the sub-jaxpr
     jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 0)
     assert jaxpr.jaxpr.invars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]
 
+    print("refresh")
     jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 1)
     assert jaxpr.jaxpr.invars[1] is jaxpr.eqns[0].outvars[1].aval.shape[0]

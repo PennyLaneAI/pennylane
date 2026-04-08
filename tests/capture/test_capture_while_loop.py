@@ -509,3 +509,20 @@ class TestCaptureWhileLoopDynamicShapes:
         [c, d] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(c, jnp.array([9, 9, 9]))  # 2*2*2 + 1
         assert jnp.allclose(d, jnp.array([9, 9, 9]))
+
+    def test_dynamic_size_closure_var(self):
+        """Test that a dynamic size can be created from a closure variable."""
+
+        def f(sz):
+
+            # pylint: disable=unused-argument
+            @qml.while_loop(lambda i, a: i < 5)
+            def loop(i, a):
+                return i + 1, jnp.ones([sz])
+
+            _, a2 = loop(0, jnp.ones([sz]))
+            return a2
+
+        jaxpr = jax.make_jaxpr(f)(3)
+        _, _, a = jaxpr.eqns[-1].outvars
+        assert a.aval.shape[0] is jaxpr.jaxpr.invars[0]  # sz
