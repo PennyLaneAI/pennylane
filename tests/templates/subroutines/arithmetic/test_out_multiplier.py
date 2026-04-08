@@ -328,7 +328,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qml.list_decomps(qml.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
-            # _test_decomposition_rule(op, rule)
+            _test_decomposition_rule(op, rule)
             if applicable:
                 _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed)
 
