@@ -27,11 +27,14 @@
   reversible bit encodings.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
+  [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
 
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
   ```python
+  import numpy as np
+  import pennylane as qml
   coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
   coefficients = np.array(coefficients)
   indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
@@ -43,24 +46,24 @@
 
   ```python
   qml.decomposition.enable_graph()
-  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT", "X"}
+  gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "StatePrep", "CNOT", "X"}
 
   @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-  @qml.decompose(gate_set=gate_set, num_work_wires=10)
-  @qml.qnode(qml.device("lightning.qubit", wires=13))
+  @qml.decompose(gate_set=gate_set, num_work_wires=11)
+  @qml.qnode(qml.device("lightning.qubit", wires=16))
   def circuit():
       qml.SumOfSlatersPrep(coefficients, wires, indices)
       return qml.state()
   ```
   ```pycon
-  >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
-  >>> where = np.where(prepared_state)
+  >>> prepared_state = circuit()[::2**11] # Slice the state, as there are eleven work wires
+  >>> where = np.where(np.abs(prepared_state) > 1e-12)
   >>> print(where)
   (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
   >>> with np.printoptions(precision=2, suppress=True): # doctest: +SKIP
   ...   print(prepared_state[where])
   [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
-   -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+    0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
   ```
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
@@ -157,6 +160,9 @@ The following classes have been ported over:
 * A new :func:`~binary_decimals` function was added to enable easy translation of rotation angles to the binary representation of their decimals.
   This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
+
+* Decomposition rules can now be assigned custom names using the ``name`` argument in :func:`qml.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
+  [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
 <h3>Improvements 🛠</h3>
 
@@ -1034,10 +1040,15 @@ The following classes have been ported over:
     - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
     - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
 
+* Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were 
+  produced for a specific wire configuration.
+  [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
