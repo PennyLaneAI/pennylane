@@ -14,6 +14,7 @@
 """
 Contains the MPS template.
 """
+
 # pylint: disable=too-many-arguments
 import warnings
 

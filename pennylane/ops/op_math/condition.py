@@ -14,6 +14,7 @@
 """
 Contains the condition transform.
 """
+
 import functools
 from collections.abc import Callable, Sequence
 from typing import Union

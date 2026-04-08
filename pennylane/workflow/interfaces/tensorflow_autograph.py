@@ -15,6 +15,7 @@
 This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
+
 # pylint: disable=too-many-arguments,too-many-statements
 from functools import reduce
 

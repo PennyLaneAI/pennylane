@@ -14,6 +14,7 @@
 """
 This submodule contains a transform for resolving dynamic wires into real wires.
 """
+
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState

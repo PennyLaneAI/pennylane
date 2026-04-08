@@ -14,6 +14,7 @@
 r"""
 Contains the QAOAEmbedding template.
 """
+
 from collections import defaultdict
 
 from pennylane import capture, math

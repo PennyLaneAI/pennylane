@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """While loop."""
+
 import functools
 from collections.abc import Callable
 from typing import Literal
@@ -378,11 +379,14 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
-            return ops_loader.while_loop(
-                self.cond_fn, allow_array_resizing=self.allow_array_resizing
-            )(self.body_fn)(*init_state)
+            return ops_loader.while_loop(self.cond_fn, allow_array_resizing=allow_array_resizing)(
+                self.body_fn
+            )(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

@@ -14,6 +14,7 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
+
 # pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 

@@ -72,6 +72,9 @@ jobs:
           WONT_FIX="
           --ignore=pennylane/labs
           --ignore=pennylane/workflow/interfaces/tensorflow.py
+          --ignore=pennylane/devices/_legacy_device.py
+          --ignore=pennylane/devices/_qubit_device.py
+          --ignore=pennylane/devices/_qutrit_device.py
           "
 
           TO_DO="
@@ -80,7 +83,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
-          --ignore=pennylane/devices
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize

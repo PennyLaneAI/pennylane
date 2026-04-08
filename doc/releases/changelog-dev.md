@@ -160,6 +160,12 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
+  [(#9261)](https://github.com/PennyLaneAI/pennylane/pull/9261)
+
+* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
+  [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
+
 * Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
   wires elsewhere in PennyLane, and that was not taken into account in the resource functions
   for the graph-based decomposition system (leading to decompositions not being resolved correctly).
@@ -756,6 +762,9 @@ The following classes have been ported over:
   after the loop.
   [#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
 
+* Remove requirements file from docs folder.
+  [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
+
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
@@ -829,6 +838,7 @@ The following classes have been ported over:
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
   [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
+  [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -873,6 +883,12 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
+  [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
+  
+* A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
+  [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
+
 * Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
   only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
   [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
@@ -902,6 +918,14 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
+  to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
+  [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
+
+* Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
+  rather than providing incorrect results.
+  [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
 
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,

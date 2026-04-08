@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotoselectOptimizer``.
 """
+
 import itertools as it
 
 import numpy as onp

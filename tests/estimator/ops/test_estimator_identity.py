@@ -14,6 +14,7 @@
 """
 Tests for identity resource operators
 """
+
 import pytest
 
 import pennylane.estimator as qre

@@ -14,6 +14,7 @@
 """
 Tests for mitigation transforms.
 """
+
 # pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
 import pytest
 from packaging import version

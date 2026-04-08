@@ -14,6 +14,7 @@
 """
 This submodule defines methods for estimating the expectations of Pauli-Z operators following an IQP circuit.
 """
+
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
 

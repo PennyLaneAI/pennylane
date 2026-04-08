@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """For loop."""
+
 import functools
 import logging
 import warnings
@@ -469,10 +470,13 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
             return ops_loader.for_loop(
-                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+                self.start, self.stop, self.step, allow_array_resizing=allow_array_resizing
             )(self.body_fn)(*init_state)
 
         start_equals_stop = (

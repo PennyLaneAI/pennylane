@@ -13,7 +13,6 @@
 # limitations under the License.
 """Test for gridsynth (not implemented in tape)."""
 
-
 import pytest
 
 import pennylane as qml
