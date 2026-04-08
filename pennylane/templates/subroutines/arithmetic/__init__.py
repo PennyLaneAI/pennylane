@@ -23,4 +23,5 @@ from .out_multiplier import OutMultiplier
 from .out_poly import OutPoly
 from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder
+from .c_add_sub import CAddSub
 from .temporary_and import TemporaryAND, Elbow

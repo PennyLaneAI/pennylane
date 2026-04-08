@@ -224,9 +224,7 @@ class SemiAdder(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-        }
+        return {"num_y_wires": len(self.hyperparameters["y_wires"])}
 
     @property
     def num_params(self):
@@ -247,11 +245,7 @@ class SemiAdder(Operation):
             for key in ["x_wires", "y_wires", "work_wires"]
         }
 
-        return SemiAdder(
-            new_dict["x_wires"],
-            new_dict["y_wires"],
-            new_dict["work_wires"],
-        )
+        return SemiAdder(new_dict["x_wires"], new_dict["y_wires"], new_dict["work_wires"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
