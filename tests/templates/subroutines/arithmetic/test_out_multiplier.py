@@ -15,6 +15,8 @@
 Tests for the OutMultiplier template.
 """
 
+from itertools import product
+
 import pytest
 
 import pennylane as qml
@@ -33,6 +35,55 @@ def test_standard_validity_OutMultiplier():
     work_wires = [5, 10]
     op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
     qml.ops.functions.assert_valid(op)
+
+
+def _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed, clean=True):
+    """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.set_shots(10)
+    @qml.qnode(dev)
+    def circuit(x, y, z):
+        qml.BasisEmbedding(x, wires=x_wires)
+        qml.BasisEmbedding(y, wires=y_wires)
+        qml.BasisEmbedding(z, wires=output_wires)
+        rule(x_wires, y_wires, output_wires, mod, work_wires)
+        return (
+            qml.counts(wires=x_wires),
+            qml.counts(wires=y_wires),
+            qml.counts(wires=output_wires),
+            qml.counts(wires=work_wires),
+        )
+
+    if mod is None:
+        mod = 2 ** len(output_wires)
+
+    rng = np.random.default_rng(seed)
+    num_x = 2 ** len(x_wires)
+    xs = rng.choice(num_x, size=min(num_x, 3))
+    num_y = 2 ** len(y_wires)
+    ys = rng.choice(num_y, size=min(num_y, 3))
+
+    print(rule)
+    for x, y in product(xs, ys):
+        for z in [0, 1, mod // 2 + 1, mod - 1]:
+            # pylint: disable=bad-reversed-sequence
+            output = circuit(x, y, z)
+            assert len(output) == 4 and all(len(out) == 1 for out in output)
+            out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
+            print(qml.draw(qml.decompose(circuit, max_expansion=0))(x, y, z))
+            print(qml.draw(qml.decompose(circuit, max_expansion=1))(x, y, z))
+            # print(qml.draw(qml.decompose(circuit, max_expansion=2))(x, y, z))
+            print(f"{mod=}")
+            print(f"{z=}")
+            print((x, y, (z + x * y) % mod, 0))
+            print(f"{out_ints=}")
+            if clean:
+                assert out_ints == (x, y, (z + x * y) % mod, 0)
+            else:
+                # Skip work wire check
+                assert out_ints[:-1] == (x, y, (z + x * y) % mod)
 
 
 class TestOutMultiplier:
@@ -98,25 +149,19 @@ class TestOutMultiplier:
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y
+        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, seed
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
-        dev = qml.device("default.qubit")
-
-        @qml.set_shots(1)
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
-
-        if mod is None:
-            mod = 2 ** len(output_wires)
-
-        # pylint: disable=bad-reversed-sequence
-        out = circuit(x, y)[0, :]
-        assert np.allclose(sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod)
+        _test_mult_correctness(
+            x_wires,
+            y_wires,
+            output_wires,
+            mod,
+            work_wires,
+            OutMultiplier.compute_decomposition,
+            seed,
+            clean=False,
+        )
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -245,6 +290,7 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         [
@@ -269,7 +315,7 @@ class TestOutMultiplier:
         ],
     )
     def test_decomposition_new(
-        self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules
+        self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -277,6 +323,8 @@ class TestOutMultiplier:
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+            if applicable:
+                _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

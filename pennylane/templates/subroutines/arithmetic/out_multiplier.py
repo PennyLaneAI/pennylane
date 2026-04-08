@@ -43,8 +43,9 @@ class OutMultiplier(Operation):
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; mod \rangle,
 
-    The implementation is based on the quantum Fourier transform method presented in
-    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+    There are three implementations available, which differ in the auxiliary wires
+    and in the gate counts they require, and in whether or not they support arbitrary values for
+    the modulus ``mod``. See the usage details for more information.
 
     .. note::
 
@@ -60,6 +61,8 @@ class OutMultiplier(Operation):
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
             work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise at least two work wires
             should be provided. Defaults to empty tuple.
+        zeroed_output_wires (bool): Whether the ``output_wires`` are guaranteed to be in state
+            :math:`|0\rangle` initially.
 
     **Example**
 
@@ -147,6 +150,34 @@ class OutMultiplier(Operation):
 
         Note that the ``OutMultiplier`` template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
         standard multiplication (with no modulo), that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.
+
+        **Different decompositions**
+
+        There are three decompositions, which differ in the required number of work wires and
+        gates, and in whether they support ``mod!=2**len(output_wires)``.
+
+        - The first implementation is based on the quantum Fourier transform (QFT) method presented in
+          `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. It requires zero (two) auxiliary
+          wires for ``mod=2**len(output_wires)`` (for other values of ``mod``), and it uses a doubly
+          controlled sequence (a nested :class:`~.ControlledSequence`) and two QFTs. Any value
+          for ``mod`` is supported, subject to the description above.
+
+        - The second implementation uses controlled :class:`~.SemiAdder`\ s to realize the
+          multiplication. For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
+          ``output_wires``, we need :math:`L = \min(k, n)` adders with usually varying sizes
+          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The concrete :class:`~.Toffoli` count
+          resulting from this is a bit verbose in general.
+
+        - The third implementation uses :class:`~.CAddSub`\ s to replace the controllled
+          ``SemiAdder``\ s from the previous implementation, based on
+          `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
+          For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
+          ``output_wires``, we need :math:`L=\min(k, n)` controlled add/subtract operations
+          of usually varying size :math:`\min(k + 1 - i, m + 1)` for :math:`0\leq i<L,
+          three ``SemiAdder``\ s of sizes :math:`\min(k + 1 - m, n + 1)`,
+          :math:`\min(k + 1 - n, m + 1)` and :math:`k+1`, as well as an incrementer on
+          :math:`\min(k + 1, n + m)` qubits and Pauli gates.
+
     """
 
     grad_method = None
@@ -199,7 +230,6 @@ class OutMultiplier(Operation):
 
         wires_list = [x_wires, y_wires, output_wires]
         wires_name = ["x_wires", "y_wires", "output_wires"]
-        self.hyperparameters["work_wires"] = work_wires
 
         if len(work_wires) != 0:
             wires_list.append(work_wires)
@@ -364,7 +394,7 @@ def _out_multiplier_with_adder_resources(
 
     resources = defaultdict(int)
     for i in range(min(k, n)):
-        size = k - i - max(0, k - (m + 1 + i))
+        size = min(k - i, m + 1)
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
@@ -380,8 +410,8 @@ def _out_multiplier_with_adder_condition(num_output_wires, num_y_wires, mod, num
     k = num_output_wires
     m = num_y_wires
     # Controlled adder takes as many work wires as the output register size. The largest controlled
-    # adder is the first one in the loop, with size k - max(0, k-(m+1))
-    min_num_work_wires = k - max(0, k - (m + 1))
+    # adder is the first one in the loop, with size min(k, m+1)
+    min_num_work_wires = min(k, m + 1)
     return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
@@ -397,14 +427,16 @@ def _out_multiplier_with_adder(
 ):  # pylint: disable=unused-argument
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
-    n = len(y_wires)
-    m = len(output_wires)
-    for i, x_wire in enumerate(x_wires[::-1][:m]):
+    m = len(y_wires)
+    k = len(output_wires)
+    for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
         # and the size of the y_wires
-        output = output_wires[max(0, m - (n + 1 + i)) : m - i]
+        out_wires = output_wires[max(0, k - (m + 1 + i)) : k - i]
         # Add y wires to shifted output, controlled by current x_wire
-        ctrl(SemiAdder(y_wires, output, work_wires=work_wires), control=x_wire)
+        print(f"{y_wires=}")
+        print(f"{out_wires =}")
+        ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
 def _out_multiplier_with_caddsub_resources(
@@ -422,13 +454,13 @@ def _out_multiplier_with_caddsub_resources(
 
     # Controlled add-subtract loop
     for i in range(min(k, n)):
-        size = k + 1 - i - max(0, k + 1 - (m + 1 + i))
+        size = min(k + 1 - i, m + 1)
         resources[resource_rep(CAddSub, num_y_wires=size)] += 1
 
     # Add 2^m(x+1)
-    size = k + 1 - m - max(0, k + 1 - (m + n + 1))
+    size = min(k + 1 - m, n + 1)
     resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
-    resources[resource_rep(X)] += 4
+    resources[resource_rep(X)] += 3
     resources[resource_rep(X)] += int(size > 1)
     resources[resource_rep(Z)] += 2
 
@@ -438,7 +470,7 @@ def _out_multiplier_with_caddsub_resources(
     # Add y
     resources[resource_rep(SemiAdder, num_y_wires=k + 1)] += 1
     # increment 2^(n+m) bit
-    size = k + 1 - max(0, k + 1 - n - m)
+    size = min(k + 1, n + m)
     for i in range(1, size):
         resources[
             resource_rep(
@@ -455,7 +487,7 @@ def _out_multiplier_with_caddsub_resources(
     resources[resource_rep(X)] += k + 1
 
     # Add 2^n y
-    size = k + 1 - n - max(0, k + 1 - (m + n + 1))
+    size = min(k + 1 - n, m + 1)
     resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
 
     # divide by two on register of size k+1 takes k SWAPs
@@ -499,8 +531,7 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     when using the decomposition into unitary operations. We need to resolve this somehow.
     """
     work_wires = work_wires[: len(y_wires) - 1]
-    print(y_wires)
-    X(x_wires[-1])
+    # X(x_wires[-1])
     Z(x_wires[-1])
     X(y_wires[-1])
     if work_wires:
