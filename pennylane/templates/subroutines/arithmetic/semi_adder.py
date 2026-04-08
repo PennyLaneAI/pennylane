@@ -371,14 +371,14 @@ def _controlled_semi_adder_resource(
     return {
         TemporaryAND: num_y_wires - 1,
         adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
-        CNOT: 6 * (num_y_wires - 2) + 1,
+        CNOT: 6 * (num_y_wires - 2),
         controlled_resource_rep(
             CNOT,
             {},
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             work_wire_type="borrowed",
-        ): num_y_wires,
+        ): num_y_wires + 1,
     }
 
 
