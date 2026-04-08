@@ -14,6 +14,7 @@
 """
 Tests for the Grover Diffusion Operator template
 """
+
 import functools
 import itertools
 

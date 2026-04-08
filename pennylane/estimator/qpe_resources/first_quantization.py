@@ -15,6 +15,7 @@
 This module contains the functions needed for estimating the number of logical qubits and
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
+
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy as np
 import scipy as sp

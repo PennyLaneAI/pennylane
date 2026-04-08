@@ -14,6 +14,7 @@
 """
 This submodule tests mathematical decomposition functions, for example of matrices or integers.
 """
+
 import warnings
 
 import pytest

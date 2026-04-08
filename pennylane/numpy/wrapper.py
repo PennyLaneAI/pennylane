@@ -15,6 +15,7 @@
 This module provides the PennyLane wrapper functions for modifying NumPy,
 such that it accepts the PennyLane :class:`~.tensor` class.
 """
+
 import functools
 from collections.abc import Sequence
 

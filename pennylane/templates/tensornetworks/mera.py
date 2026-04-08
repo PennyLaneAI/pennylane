@@ -14,6 +14,7 @@
 """
 Contains the MERA template.
 """
+
 # pylint: disable=too-many-arguments
 
 import warnings

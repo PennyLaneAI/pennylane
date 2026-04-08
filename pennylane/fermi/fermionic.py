@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The fermionic representation classes and functions."""
+
 import re
 from copy import copy
 

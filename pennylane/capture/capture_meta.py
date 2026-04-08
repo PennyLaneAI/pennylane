@@ -16,6 +16,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
+
 from abc import ABCMeta
 from inspect import Signature, signature
 

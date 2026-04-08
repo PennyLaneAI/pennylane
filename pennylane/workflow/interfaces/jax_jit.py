@@ -41,6 +41,7 @@ Array(1., dtype=float64)
 Note that we must provide the expected output shape for the function to use pure callbacks.
 
 """
+
 # pylint: disable=unused-argument,too-many-arguments
 from functools import partial
 

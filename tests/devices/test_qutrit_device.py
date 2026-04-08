@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
+
 # pylint: disable=protected-access, redefined-outer-name, too-many-arguments, too-few-public-methods, unused-variable, unused-argument
 from random import random
 

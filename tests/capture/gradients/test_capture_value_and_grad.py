@@ -16,6 +16,7 @@ Tests for capturing value_and_grad into jaxpr.
 
 Note some tests on the errors exist in test_capture_diff.py
 """
+
 import pytest
 
 import pennylane as qml

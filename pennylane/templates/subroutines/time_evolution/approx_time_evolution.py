@@ -14,6 +14,7 @@
 r"""
 Contains the ApproxTimeEvolution template.
 """
+
 # pylint: disable=protected-access
 import copy
 from collections import defaultdict

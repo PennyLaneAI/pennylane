@@ -16,7 +16,6 @@ This file contains the implementation of the SProd class which contains logic fo
 computing the scalar product of operations.
 """
 
-
 import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
+
 import os
 
 import pytest

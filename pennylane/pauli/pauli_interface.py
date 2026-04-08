@@ -14,6 +14,7 @@
 """
 Utility functions to interact with and extract information from Pauli words and Pauli sentences.
 """
+
 from functools import singledispatch
 
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd

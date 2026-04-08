@@ -14,6 +14,7 @@
 """
 Unit tests for the Pow arithmetic class of qubit operations
 """
+
 from copy import copy
 
 import pytest

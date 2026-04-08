@@ -15,6 +15,7 @@
 This module contains tests for class needed to map PennyLane operations to their associated resource
 operator.
 """
+
 import numpy as np
 import pytest
 

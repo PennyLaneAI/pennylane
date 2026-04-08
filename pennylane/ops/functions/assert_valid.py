@@ -15,6 +15,7 @@
 This module contains the qml.ops.functions.check_validity function for determining whether or not an
 Operator class is correctly defined.
 """
+
 import copy
 import itertools
 import pickle
