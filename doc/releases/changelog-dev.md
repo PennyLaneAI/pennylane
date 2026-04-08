@@ -92,6 +92,7 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
+  [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
 
 * Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
@@ -766,6 +767,12 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Patched `jax._src.pjit._infer_params_internal` for dynamic shapes to correctly handle the concatenation of closure variables and arguments before return.
+  [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
+
+* Removed docker files and workflow.
+  [(#9273)](https://github.com/PennyLaneAI/pennylane/pull/9273)
 
 * Remove requirements file from docs folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
