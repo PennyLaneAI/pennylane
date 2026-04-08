@@ -368,20 +368,24 @@ def merge_rotations(
     .. details::
         :title: Usage with qjit
 
-        When used with ``qjit``, only the following gates can be optimized by the ``merge_rotations``
-        transform:
+        There are two key differences to note when using ``merge_rotations`` with ``qjit``:
 
-        - :class:`qml.RX <pennylane.RX>`,
-        - :class:`qml.CRX <pennylane.CRX>`,
-        - :class:`qml.RY <pennylane.RY>`,
-        - :class:`qml.CRY <pennylane.CRY>`,
-        - :class:`qml.RZ <pennylane.RZ>`,
-        - :class:`qml.CRZ <pennylane.CRZ>`,
-        - :class:`qml.PhaseShift <pennylane.PhaseShift>`,
-        - :class:`qml.ControlledPhaseShift <pennylane.ControlledPhaseShift>`,
-        - :class:`qml.Rot <pennylane.Rot>`,
-        - :class:`qml.CRot <pennylane.CRot>`,
-        - :class:`qml.MultiRZ <pennylane.MultiRZ>`.
+        * The ``atol`` and ``include_gates`` arguments are not available with ``merge_rotations``
+          when used with ``qjit``, and an error will be raised if either arguments are specified.
+
+        * Only the following gates can be optimized by ``merge_rotations`` with ``qjit``:
+
+          - :class:`qml.RX <pennylane.RX>`,
+          - :class:`qml.CRX <pennylane.CRX>`,
+          - :class:`qml.RY <pennylane.RY>`,
+          - :class:`qml.CRY <pennylane.CRY>`,
+          - :class:`qml.RZ <pennylane.RZ>`,
+          - :class:`qml.CRZ <pennylane.CRZ>`,
+          - :class:`qml.PhaseShift <pennylane.PhaseShift>`,
+          - :class:`qml.ControlledPhaseShift <pennylane.ControlledPhaseShift>`,
+          - :class:`qml.Rot <pennylane.Rot>`,
+          - :class:`qml.CRot <pennylane.CRot>`,
+          - :class:`qml.MultiRZ <pennylane.MultiRZ>`.
 
         .. code-block:: python
 
