@@ -348,10 +348,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     if len(pauli_word) == 0:
         return Identity(wires=list(label_map.values())[0])
 
-    if len(pauli_word) == 1:
-        return pauli_word[0]
-
-    return qml.ops.op_math.Prod(*pauli_word)
+    return qml.prod(*pauli_word)
 
 
 def pauli_word_to_string(pauli_word, wire_map=None):
@@ -478,9 +475,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         if pauli_string[wire_idx] != "I"
     )
 
-    if len(pauli_word) == 1:
-        return pauli_word[0]
-    return qml.ops.op_math.Prod(*pauli_word)
+    return qml.prod(*pauli_word)
 
 
 def pauli_word_to_matrix(pauli_word, wire_map=None):
