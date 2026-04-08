@@ -931,7 +931,7 @@ The following classes have been ported over:
 
   In addition to the added infrastructure to make the above happen, the follow changes were made:
 
-  * The source code in PennyLane for Pauli-based computation passes was removed, as it is now redundant. However, all Pauli-based computation passes can still be accessed from the :mod:`pennylane.transforms` module as before (if Catalyst is installed). The reason for the removal is for there to
+  * The source code in PennyLane for Pauli-based computation passes was removed, as it is now redundant. However, all Pauli-based computation passes can still be accessed from the :mod:`pennylane.transforms` module as before (if Catalyst is installed: ``pip install pennylane-catalyst``). The reason for the removal is for there to
     be one single source of truth for documentation of a feature if it is desired to be accessible
     from both PennyLane and Catalyst. 
 
