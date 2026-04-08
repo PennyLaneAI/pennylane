@@ -479,11 +479,11 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
         match pauli_char:
             case "X":
-                pauli_word.append(qml.PauliX(wire_name))
+                pauli_word.append(PauliX(wire_name))
             case "Y":
-                pauli_word.append(qml.PauliY(wire_name))
+                pauli_word.append(PauliY(wire_name))
             case "Z":
-                pauli_word.append(qml.PauliZ(wire_name))
+                pauli_word.append(PauliZ(wire_name))
             case "I":
                 # Don't care about the identity
                 continue
