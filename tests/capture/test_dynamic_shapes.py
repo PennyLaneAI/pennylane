@@ -198,6 +198,5 @@ def test_custom_staging_rule_outer_dimension(enable_disable_dynamic_shapes):
     jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 0)
     assert jaxpr.jaxpr.invars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]
 
-    print("refresh")
     jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 1)
     assert jaxpr.jaxpr.invars[1] is jaxpr.eqns[0].outvars[1].aval.shape[0]
