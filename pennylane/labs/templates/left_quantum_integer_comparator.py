@@ -11,18 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the CAddSub template for performing out of place addition or subtraction,
-controlled by a control qubit."""
+"""Contains the LeftQuantumIntegerComparator template for performing inequality test of two quantum registers."""
 
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
-    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import BasisState, change_op_basis, ctrl, CNOT, X
+from pennylane.ops import CNOT, X
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 from pennylane.templates.subroutines import Elbow
@@ -30,59 +27,63 @@ from pennylane import cond, for_loop
 from pennylane import compiler, math, capture
 
 class LeftQuantumIntegerComparator(Operation):
-    r"""This operator performs modular addition or subtraction of two integers :math:`x` and
-    :math:`y`, with the decision controlled by a control qubit:
+    r"""This operator performs an inequality test between two quantum registeres :math:`x` and
+    :math:`y`, storing the result in a target qubit. Depending on the value of the
+    ``op`` argument, the operator evaluates one of four possible relations:
 
     .. math::
 
-        \text{CAddSub} |0\rangle |x \rangle | y \rangle = |0\rangle |x \rangle | y - x \!\mod\! N \rangle,\\
-        \text{CAddSub} |1\rangle |x \rangle | y \rangle = |1\rangle |x \rangle | y + x \!\mod\! N \rangle.
+        \text{LeftQuantumIntegerComparator}(op) |x\rangle |y\rangle |0\rangle =
+        \begin{cases}
+        |x\rangle |y\rangle |x < y\rangle & \text{if } op = 0 \\
+        |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = 1 \\
+        |x\rangle |y\rangle |x \geq y\rangle & \text{if } op = 2 \\
+        |x\rangle |y\rangle |x > y\rangle & \text{if } op = 3
+        \end{cases}
 
-    Here, :math:`N` is the modulus of the arithmetic operation, given by the size of the
-    input register that holds :math:`y`.
+    The decomposition is defined as the left block on Figure 6 of Appendix E
+    in `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition used auxiliary wires
+    and in order to clean them, we must apply the adjoint of this operator after using the target qubit.
 
     Args:
-        control_wire (WiresLike): The wire controlling between addition (:math:`|1\rangle`) and subtraction (:math:`|0\rangle`).
-        x_wires (WiresLike): The wires that store the integer :math:`x`.
-        y_wires (WiresLike): The wires that store the integer :math:`y` as well as the
-            output of the operation, which is computed modulo :math:`N=2^{n}` where :math:`n`
-            is the length of ``y_wires``.
-        work_wires (WiresLike): The auxiliary wires to use for the operation.
-            At least ``len(y_wires) - 1`` work wires should be provided.
+            x_wires (WiresLike): The wires that store the integer :math:`x`.
+            y_wires (WiresLike): The wires that store the integer :math:`y`.
+            target_wire (WiresLike): The wire that stores the value of the inequality test.
+            work_wires (WiresLike): The auxiliary wires to use for the addition.
+                At least ``len(y_wires) - 1`` work wires should be provided.
+            op (int): The operator used in the inequality. The value could be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
+                representing '<', '<=', '>=' and '>' respectively.
 
     **Example**
 
-    This example computes the sum and difference of two integers :math:`x=5` and :math:`y=13` in
-    superposition:
 
     .. code-block:: python
 
         import pennylane as qml
-        x = 5
-        y = 13
+        from pennylane.labs.templates import LeftQuantumIntegerComparator
 
-        wires = qml.registers({"control": 1, "x": 3, "y": 4, "work": 3})
+        dev = qml.device("lightning.qubit")
 
-        dev = qml.device("default.qubit", seed=195)
+        @qml.qjit
+        @qml.qnode(dev, shots=1)
+        def circuit(a, b):
 
-        @qml.set_shots(100)
-        @qml.qnode(dev)
-        def circuit():
-            qml.H(wires["control"])
-            qml.BasisEmbedding(x, wires=wires["x"])
-            qml.BasisEmbedding(y, wires=wires["y"])
-            qml.CAddSub(wires["control"], wires["x"], wires["y"], wires["work"])
-            return qml.counts(wires=wires["y"])
+            op = 2
+            qml.BasisState(a, wires=[0, 3, 6, 9])
+            qml.BasisState(b, wires=[1, 4, 7, 10])
+            LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
+            qml.CNOT([11, 12])
+            qml.adjoint(
+                lambda: LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
+            )()
+            return qml.sample(wires=[12])
 
     .. code-block:: pycon
 
-        >>> output = circuit()
-        >>> print({int(key, 2): count for key, count in output.items()})
-        {2: np.int64(49), 8: np.int64(51)}
+        >>> output = circuit(3, 2)
+        >>> print(bool(output)) # 3 >= 2
+        True
 
-    As we can see, we compute :math:`(x+y)\mod 2^4=2` and :math:`(y-x)\mod 2^4=8` about half of
-    the time each, where the modulus is given by :math:`2^n`, with :math:`n` the number of bits
-    storing :math:`y`.
     """
 
     grad_method = None
@@ -103,23 +104,23 @@ class LeftQuantumIntegerComparator(Operation):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-        '''
+
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
                 raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
-            if work_wires.intersection(control_wire):
-                raise ValueError("None of the wires in work_wires should be the control wire.")
+            if work_wires.intersection(target_wire):
+                raise ValueError("None of the wires in work_wires should be the target wire.")
             if work_wires.intersection(x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if work_wires.intersection(y_wires):
                 raise ValueError("None of the wires in work_wires should be included in y_wires.")
-        if x_wires.intersection(control_wire):
-            raise ValueError("None of the wires in x_wires should be the control wire.")
+        if x_wires.intersection(target_wire):
+            raise ValueError("None of the wires in x_wires should be the target wire.")
         if x_wires.intersection(y_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if y_wires.intersection(control_wire):
-            raise ValueError("None of the wires in y_wires should be the control wire.")
-        '''
+        if y_wires.intersection(target_wire):
+            raise ValueError("None of the wires in y_wires should be the target wire.")
+
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["y_wires"] = y_wires
@@ -173,14 +174,13 @@ class LeftQuantumIntegerComparator(Operation):
         r"""Representation of the operator as a product of other operators.
 
         Args:
-            control_wire (WiresLike): The wire controlling between addition (:math:`|1\rangle`)
-                and subtraction (:math:`|0\rangle`).
             x_wires (WiresLike): The wires that store the integer :math:`x`.
-            y_wires (WiresLike): The wires that store the integer :math:`y` and the resulting
-                integer :math:`x+y` or :math:`y-x` after the computation, which is computed modulo
-                :math:`2^{\text{len(y_wires)}}`.
+            y_wires (WiresLike): The wires that store the integer :math:`y`.
+            target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` work wires should be provided.
+            op (int): The operator used in the inequality. The value could be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
+                representing '<', '<=', '>=' and '>' respectively.
 
         Returns:
             list[.Operator]: Decomposition of the operator
@@ -196,19 +196,20 @@ class LeftQuantumIntegerComparator(Operation):
         return q.queue
 
 
-def _c_add_sub_resources(num_y_wires ,op):
-    1/0
-    comp_rep = controlled_resource_rep(
-        BasisState,
-        base_params={"num_wires": num_y_wires},
-        num_control_wires=1,
-        num_zero_control_values=1,
-    )
-    add_rep = resource_rep(SemiAdder, num_y_wires=num_y_wires)
-    return {change_op_basis_resource_rep(comp_rep, add_rep, comp_rep): 1}
+def _left_quantum_integer_comparator_resources(num_y_wires ,op):
+
+    resources = {
+        Elbow: num_y_wires,
+        CNOT: 2 + 5 * num_y_wires,
+    }
+
+    if op in [1,2]:
+        resources[X] = 1
+
+    return resources
 
 
-@register_resources(_c_add_sub_resources, exact=True)
+@register_resources(_left_quantum_integer_comparator_resources, exact=True)
 def _left_quantum_integer_comparator(x_wires, y_wires, target_wire, work_wires, op, **_):
     # op = ['<', '<=', '>=', '>']
 

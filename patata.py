@@ -18,8 +18,9 @@ def circuit(a, b):
     qml.BasisState(b, wires=[1, 4, 7, 10])
     LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
     qml.CNOT([11, 12])
-    qml.adjoint(LeftQuantumIntegerComparator)([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-
+    qml.adjoint(
+        lambda: LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
+    )()
     return qml.sample(wires=[12])
 
 
