@@ -266,6 +266,15 @@ def _specs_from_analysis_pass(
     iter_pipeline = new_qnode._compile_pipeline
     max_level = max(level) if isinstance(level, (list, tuple)) else level
 
+    max_legal_level = len(iter_pipeline)
+    if num_tape_levels > 0:
+        # Account for the inserted lowering pass which comes after all tape transforms
+        max_legal_level += 1
+
+    if max_level > max_legal_level:
+        bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
+        raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
+
     fname_to_level = {}
 
     new_compile_pipeline = qml.CompilePipeline()
