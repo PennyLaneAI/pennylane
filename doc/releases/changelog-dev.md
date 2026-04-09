@@ -167,6 +167,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
+  [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
+
 * Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
   [(#9261)](https://github.com/PennyLaneAI/pennylane/pull/9261)
 
