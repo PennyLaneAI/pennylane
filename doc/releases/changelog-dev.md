@@ -942,7 +942,7 @@ The following classes have been ported over:
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
-  In addition to the added infrastructure to make the above happen, the follow changes were made:
+  In addition to the added infrastructure to make the above happen, the following changes were made:
 
   * The source code in PennyLane for Pauli-based computation passes was removed, as it is now redundant. However, all Pauli-based computation passes can still be accessed from the :mod:`pennylane.transforms` module as before (if Catalyst is installed: ``pip install pennylane-catalyst``). The reason for the removal is for there to
     be one single source of truth for documentation of a feature if it is desired to be accessible

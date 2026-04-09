@@ -452,7 +452,7 @@ shown above. If the desired group name does exist, simply add the entry-point to
 the specific feature(s) to the list.
 
 Additionally, features within a particular entry-point group can be made
-top-level accessible by adding the group name to the ``_entry_point_groups``
+top-level accessible (i.e., ``pennylane.<feature>``) by adding the group name to the ``_entry_point_groups``
 variable in ``pennylane/__init__.py``.
 
 .. code-block:: python3

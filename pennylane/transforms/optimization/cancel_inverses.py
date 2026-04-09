@@ -332,9 +332,7 @@ def cancel_inverses(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        recursive (bool):
-            Whether or not to recursively cancel inverses after a first pair of mutual inverses has
-            been cancelled. Enabled by default.
+        recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
 
             .. note::
                 This argument is not supported within a :func:`~.qjit` workflow.
@@ -415,8 +413,7 @@ def cancel_inverses(
 
         There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
 
-        * The ``recursive`` argument is not available with ``cancel_inverses`` when used with
-          ``qjit``, and an error will be raised if a value for ``recursive`` is specified.
+        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
 
         * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
 
