@@ -794,6 +794,16 @@ class TestDecomposition:
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
+    
+    @pytest.mark.parameterize("order", (2, 4, 6))
+    @pytest.mark.parametrize("n", (1, 2, 4))
+    def test_trotter_simplification(self, order, n):
+        """Test that the TrotterProduct simplifies correctly when given a simple sum of operators."""
+        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=n, order=order)
+        for i, d in enumerate(op.decomposition(), start=1):
+            assert (i, d)
+        assert op.resources()
+
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
@@ -2111,12 +2121,3 @@ class TestTrotterizedQfuncIntegration:
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_arg1_grad, reference_arg1_grad)
         assert allclose(measured_arg2_grad, reference_arg2_grad)
-
-    def test_trotter_simplification():
-        """Test that the TrotterProduct simplifies correctly when given a simple sum of operators."""
-        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=3, order=2)
-        print("Decomposition:")
-        for i, d in enumerate(op.decomposition(), start=1):
-            print(i, d)
-        print("\nResources:")
-        print(op.resources())
