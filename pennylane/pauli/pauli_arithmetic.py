@@ -1032,16 +1032,14 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def prune(self, tol=1e-8):
-        """Remove any PauliWords with coefficients less than the threshold tolerance."""
+        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
-        if len(self) == 0:
-            self = PauliSentence({})  # pylint: disable=self-cls-assignment
 
-    def simplify(self, tol=1e-8):
-        """Remove any PauliWords with coefficients less than the threshold tolerance.
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance.
 
         This method mutates the ``PauliSentence`` in place, and does not return anything.
 

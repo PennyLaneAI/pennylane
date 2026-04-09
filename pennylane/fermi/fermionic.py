@@ -602,14 +602,14 @@ class FermiSentence(dict):
 
         return operator
 
-    def prune(self, tol=1e-8):
+    def prune(self, tol=1e-8) -> None:
         """Remove any FermiWord with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
 
-    def simplify(self, tol=1e-8):
+    def simplify(self, tol=1e-8) -> None:
         """Remove any FermiWord with coefficients less than the threshold tolerance.
 
         This method mutates the ``FermiSentence`` in place, and does not return anything.
