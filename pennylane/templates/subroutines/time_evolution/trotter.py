@@ -79,7 +79,7 @@ def _recursive_expression(x, order, ops):
 def _simplify(decomp):
     """Simplify a list of operations by merging consecutive evolutions with the same base.
     
-    Args :
+    Args:
         decomp (list): A list of operations to simplify.
 
     Returns:
