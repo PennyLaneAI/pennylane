@@ -52,7 +52,7 @@ def _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule
         return (
             qml.counts(wires=x_wires),
             qml.counts(wires=y_wires),
-            qml.counts(wires=output_wires + work_wires[:1]),
+            qml.counts(wires=output_wires),
             qml.counts(wires=work_wires),
         )
 

@@ -576,8 +576,8 @@ def _out_multiplier_with_caddsub(
     # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y
     _ = [X(w) for w in output_with_cache]
     SemiAdder(y_wires, output_with_cache, work_wires)
-    if n + m < K:
-        increment_wires = output_with_cache[: K - n - m]
+    if n + m < k:
+        increment_wires = output_with_cache[: k - n - m]
         _increment(increment_wires, work_wires)
     # increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
     # _increment(increment_wires, work_wires)
@@ -592,7 +592,7 @@ def _out_multiplier_with_caddsub(
 
 add_decomps(
     OutMultiplier,
-    # _out_multiplier_with_qft,
+    _out_multiplier_with_qft,
     _out_multiplier_with_adder,
-    # _out_multiplier_with_caddsub,
+    _out_multiplier_with_caddsub,
 )
