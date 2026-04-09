@@ -318,7 +318,10 @@ def _specs_from_analysis_pass(
     compile_options = copy.deepcopy(qjit.compile_options)
     compile_options.target = "mlir"
     compile_options.lower_to_llvm = False
-    # compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+    if compile_options.pipelines is None:
+        # If the user has not explicitly chosen a pipeline, prevent unnecessary work
+        # by limiting which passes are applied to just the necessary ones
+        compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
 
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
 
