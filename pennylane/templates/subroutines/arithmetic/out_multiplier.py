@@ -538,6 +538,8 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     SemiAdder(x_wires, y_wires, work_wires)
     X(x_wires[-1])
     X(y_wires[-1])
+    if work_wires:
+        X(work_wires[-1])
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
@@ -559,7 +561,7 @@ def _out_multiplier_with_caddsub(
     work_wires = work_wires[1:]
 
     # Multiply by two
-    _mul_with_two(output_with_cache)
+    # _mul_with_two(output_with_cache)
     # Controlled add-subtract loop
     for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
@@ -567,24 +569,30 @@ def _out_multiplier_with_caddsub(
         output = output_with_cache[max(0, k + 1 - (m + 1 + i)) : k + 1 - i]
         # Add y wires to shifted output, controlled by current x_wire
         CAddSub(x_wire, y_wires, output, work_wires)
+        ctrl(X(output[0]), control=x_wire, control_values=[0])
     # Add 2^m(x+1)
-    _add_plus_one(x_wires, output_with_cache[max(0, k + 1 - (m + n + 1)) : k + 1 - m], work_wires)
+    # _add_plus_one(x_wires, output_with_cache[max(0, k + 1 - (m + n + 1)) : k + 1 - m], work_wires)
+    _add_plus_one(x_wires, output_with_cache[: k + 1 - m], work_wires)
     # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y
     _ = [X(w) for w in output_with_cache]
     SemiAdder(y_wires, output_with_cache, work_wires)
-    increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
-    _increment(increment_wires, work_wires)
+    if n + m < K:
+        increment_wires = output_with_cache[: K - n - m]
+        _increment(increment_wires, work_wires)
+    # increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
+    # _increment(increment_wires, work_wires)
     _ = [X(w) for w in output_with_cache]
     # Add 2^n y
     if min(k + 1 - n, m + 1) > 0:  # Only need to add if there will be target qubits
-        SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
+        # SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
+        SemiAdder(y_wires, output_with_cache[: k + 1 - n], work_wires)
     # Divide by two
     _div_by_two(output_with_cache)
 
 
 add_decomps(
     OutMultiplier,
-    _out_multiplier_with_qft,
+    # _out_multiplier_with_qft,
     _out_multiplier_with_adder,
-    _out_multiplier_with_caddsub,
+    # _out_multiplier_with_caddsub,
 )

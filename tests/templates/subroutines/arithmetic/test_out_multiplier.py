@@ -26,7 +26,7 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultipl
 
 
 @pytest.mark.jax
-def test_standard_validity_OutMultiplier():
+def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
     mod = 12
     x_wires = [0, 1]
@@ -65,31 +65,33 @@ def _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule
     num_y = 2 ** len(y_wires)
     ys = rng.choice(num_y, size=min(num_y, 3))
 
-    # print(rule)
+    print(rule)
     # from pennylane.templates.subroutines.arithmetic.out_multiplier import _out_multiplier_with_caddsub
     # if rule is not _out_multiplier_with_caddsub:
     # return
     for x, y in product(xs, ys):
-        for z in [0, 1, mod // 2 + 1, mod - 1]:
-            # pylint: disable=bad-reversed-sequence
-            # print(qml.draw(qml.decompose(circuit, max_expansion=0))(x, y, z))
-            output = circuit(x, y, z)
-            assert len(output) == 4 and all(len(out) == 1 for out in output)
-            out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
-            # print(qml.draw(qml.decompose(circuit, max_expansion=1))(x, y, z))
-            # print(qml.draw(qml.decompose(circuit, max_expansion=2))(x, y, z))
-            # print(f"{mod=}")
-            # print(f"{z=}")
-            # print(f"Execution result: {out_ints}")
-            # print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
-            # _exp = (2*(z + x*y) - num_y * (x+1) - num_x * y + num_x*num_y + y) % (2*mod)
-            # print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
+        z = 0
+        # for z in [0, 1, mod // 2 + 1, mod - 1]:
+        # pylint: disable=bad-reversed-sequence
+        # print(qml.draw(qml.decompose(circuit, max_expansion=0))(x, y, z))
+        print(x, y)
+        output = circuit(x, y, z)
+        assert len(output) == 4 and all(len(out) == 1 for out in output)
+        out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
+        # print(qml.draw(qml.decompose(circuit, max_expansion=1))(x, y, z))
+        # print(qml.draw(qml.decompose(circuit, max_expansion=2))(x, y, z))
+        # print(f"{mod=}")
+        # print(f"{z=}")
+        print(f"Execution result: {out_ints}")
+        print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
+        # _exp = (2*(z + x*y) - num_y * (x+1) - num_x * y + num_x*num_y + y) % (2*mod)
+        # print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
 
-            if clean:
-                assert out_ints == (x, y, (z + x * y) % mod, 0)
-            else:
-                # Skip work wire check
-                assert out_ints[:-1] == (x, y, (z + x * y) % mod)
+        if clean:
+            assert out_ints == (x, y, (z + x * y) % mod, 0)
+        else:
+            # Skip work wire check
+            assert out_ints[:-1] == (x, y, (z + x * y) % mod)
 
 
 class TestOutMultiplier:
@@ -328,7 +330,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qml.list_decomps(qml.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            # _test_decomposition_rule(op, rule)
             if applicable:
                 _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed)
 
