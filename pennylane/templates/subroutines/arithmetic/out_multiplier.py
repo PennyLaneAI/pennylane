@@ -25,8 +25,16 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, MultiControlledX, X, Z, change_op_basis, ctrl
-from pennylane.templates.subroutines.arithmetic import CAddSub, SemiAdder
+from pennylane.ops import (
+    BasisState,
+    MidMeasure,
+    MultiControlledX,
+    X,
+    change_op_basis,
+    ctrl,
+    measure,
+)
+from pennylane.templates.subroutines.arithmetic import SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -312,7 +320,7 @@ class OutMultiplier(Operation):
         """
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
-            work_wire = work_wires[1:]
+            work_wire = work_wires[1:2]
         else:
             qft_output_wires = output_wires
             work_wire = ()
@@ -369,7 +377,7 @@ def _out_multiplier_with_qft(
 ):
     if mod != 2 ** len(output_wires):
         qft_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:]
+        work_wire = work_wires[1:2]
     else:
         qft_output_wires = output_wires
         work_wire = ()
@@ -434,8 +442,6 @@ def _out_multiplier_with_adder(
         # and the size of the y_wires
         out_wires = output_wires[max(0, k - (m + 1 + i)) : k - i]
         # Add y wires to shifted output, controlled by current x_wire
-        print(f"{y_wires=}")
-        print(f"{out_wires =}")
         ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
@@ -445,83 +451,83 @@ def _out_multiplier_with_caddsub_resources(
     # pylint: disable=unused-argument
     n = num_x_wires
     m = num_y_wires
-    k = num_output_wires
+    k = num_output_wires + 1  # augmented output register
 
     resources = defaultdict(int)
 
-    # multiply with 2 on register of size k+1 takes k SWAPs
-    resources[resource_rep(SWAP)] += k
-
     # Controlled add-subtract loop
-    for i in range(min(k, n)):
-        size = min(k + 1 - i, m + 1)
-        resources[resource_rep(CAddSub, num_y_wires=size)] += 1
+    loop_size = min(k, n)
+    if num_y_wires > 1:
+        resources[
+            controlled_resource_rep(
+                BasisState,
+                base_params={"num_wires": num_y_wires - 1},
+                num_control_wires=1,
+                num_zero_control_values=1,
+            )
+        ] += (
+            2 * loop_size
+        )
+    resources[
+        controlled_resource_rep(X, base_params={}, num_control_wires=1, num_zero_control_values=1)
+    ] += (2 * loop_size)
+    resources[
+        controlled_resource_rep(X, base_params={}, num_control_wires=1, num_zero_control_values=1)
+    ] += 2 * min(n, k - 1)
+    for i in range(loop_size):
+        size = min(k - i, m + 1)
+        resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
 
     # Add 2^m(x+1)
-    size = min(k + 1 - m, n + 1)
-    resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
-    resources[resource_rep(X)] += 4
-    resources[resource_rep(X)] += int(size > 1)
+    resources[resource_rep(SemiAdder, num_y_wires=k - m)] += 1
+    # bit flips corresponding to input carry activated. Accounts for the fact that
+    # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
+    has_work_wires = int(k > m + 1)
+    resources[resource_rep(X)] += 4 + has_work_wires
+    # The work wire reset bit flip is done via measurement
+    if has_work_wires:
+        resources[resource_rep(MidMeasure)] += 1
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[resource_rep(X)] += k + 1
+    resources[resource_rep(X)] += k
     # Add y
-    resources[resource_rep(SemiAdder, num_y_wires=k + 1)] += 1
+    resources[resource_rep(SemiAdder, num_y_wires=k)] += 1
     # increment 2^(n+m) bit
-    size = min(k + 1, n + m)
-    for i in range(1, size):
-        resources[
-            resource_rep(
-                MultiControlledX,
-                num_control_wires=i,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires - 1,
-                work_wire_type="zeroed",
-            )
-        ] += 1
-    resources[resource_rep(X)] += 1
+    size = k - n - m
+    if size > 0:
+        for i in range(1, size):
+            resources[
+                resource_rep(
+                    MultiControlledX,
+                    num_control_wires=i,
+                    num_zero_control_values=0,
+                    num_work_wires=num_work_wires - 1,
+                    work_wire_type="zeroed",
+                )
+            ] += 1
+        resources[resource_rep(X)] += 1
 
     # Second negation
-    resources[resource_rep(X)] += k + 1
+    resources[resource_rep(X)] += k
 
     # Add 2^n y
-    size = min(k + 1 - n, m + 1)
-    if size > 0:
-        resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
+    if k > n:
+        resources[resource_rep(SemiAdder, num_y_wires=k - n)] += 1
 
-    # divide by two on register of size k+1 takes k SWAPs
-    resources[resource_rep(SWAP)] += k
     return dict(resources)
 
 
 def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires, **_):
-    # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires):
-    # - k+1 - max(0, k+1-(m+1+0)), # Largest size occurring in CAddSub loop
-    # - k+1-m - max(0, k+1-(m+n+1)), # Add 2^m(x+1)
-    # - k+1, # Add y during subtracting 2^(n+m)+y     <-- Largest one
-    # - k+1-n - max(0, k+1-(m+n+1)), # Add 2^n y
+    # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires+1):
+    # - min(k, m+1) # Largest size occurring in CAddSub loop
+    # - k-m, # Add 2^m(x+1)
+    # - k, # Add y during subtracting 2^(n+m)+y     <-- Largest one
+    # - k-n, # Add 2^n y
     largest_adder_size = num_output_wires + 1
     # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
     min_num_work_wires = 1 + (largest_adder_size - 1)
     return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
-
-
-def _div_by_two(wires):
-    _ = [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
-
-
-def _mul_with_two(wires):
-    wires = wires[::-1]
-    _ = [SWAP(pair) for pair in zip(wires[:-1], wires[1:])]
-
-
-def _increment(wires, work_wires):
-    _ = [
-        MultiControlledX(wires[::-1][:i], work_wires=work_wires, work_wire_type="zeroed")
-        for i in range(len(wires), 1, -1)
-    ]
-    X(wires[-1])
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -539,7 +545,38 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     X(x_wires[-1])
     X(y_wires[-1])
     if work_wires:
-        X(work_wires[-1])
+        # In principle, we could just apply a bit flip here to reset the work wire.
+        # However, the SemiAdder uses a decomposition with a right elbow, which has an assumption
+        # about its output state attached to it, and we violate this assumption here.
+        # In order to obtain a correct behaviour both for unitary decompositions of the right elbow
+        # and for its implementation relying on the assumption, we replace the bit flip with
+        # a measurement + reset.
+        measure(work_wires[-1], reset=True)
+
+
+def _increment(wires, work_wires):
+    _ = [
+        MultiControlledX(wires[::-1][:i], work_wires=work_wires, work_wire_type="zeroed")
+        for i in range(len(wires), 1, -1)
+    ]
+    X(wires[-1])
+
+
+def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
+    if len(x_wires) > 1:
+        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+
+    work_wires = work_wires[: len(y_wires) - 1]
+    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    if work_wires:
+        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
+    SemiAdder(x_wires, y_wires, work_wires)
+    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    if work_wires:
+        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
+
+    if len(x_wires) > 1:
+        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
@@ -548,46 +585,48 @@ def _out_multiplier_with_caddsub(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod,
+    mod: None,
     work_wires: WiresLike,
     **__,
 ):  # pylint: disable=unused-argument
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
+    # We extend our output by one wire because we need to
+    # store 2x*y intermediately, instead of x*y.
+    output_wires = output_wires + [work_wires[0]]
+    # The other work wires can be used for arithmetic building blocks
+    work_wires = work_wires[1:]
     n = len(x_wires)
     m = len(y_wires)
     k = len(output_wires)
-    output_with_cache = output_wires + [work_wires[0]]
-    work_wires = work_wires[1:]
 
-    # Multiply by two
-    # _mul_with_two(output_with_cache)
     # Controlled add-subtract loop
     for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
         # and the size of the y_wires.
-        output = output_with_cache[max(0, k + 1 - (m + 1 + i)) : k + 1 - i]
-        # Add y wires to shifted output, controlled by current x_wire
-        CAddSub(x_wire, y_wires, output, work_wires)
-        ctrl(X(output[0]), control=x_wire, control_values=[0])
+        output = output_wires[max(0, k - (m + 1 + i)) : k - i]
+        _c_add_sub(x_wire, y_wires, output, work_wires)
+
     # Add 2^m(x+1)
-    # _add_plus_one(x_wires, output_with_cache[max(0, k + 1 - (m + n + 1)) : k + 1 - m], work_wires)
-    _add_plus_one(x_wires, output_with_cache[: k + 1 - m], work_wires)
-    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y
-    _ = [X(w) for w in output_with_cache]
-    SemiAdder(y_wires, output_with_cache, work_wires)
-    if n + m < k:
-        increment_wires = output_with_cache[: k - n - m]
+    _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+
+    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
+    # - Negate z: |y> |z> -> |y> |2^k-1-z>
+    # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
+    # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
+    #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
+    # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
+    # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
+    _ = [X(w) for w in output_wires]
+    SemiAdder(y_wires, output_wires, work_wires)
+    if k > n + m:
+        increment_wires = output_wires[: k - n - m]
         _increment(increment_wires, work_wires)
-    # increment_wires = output_with_cache[max(0, k + 1 - n - m) :]
-    # _increment(increment_wires, work_wires)
-    _ = [X(w) for w in output_with_cache]
-    # Add 2^n y
-    if min(k + 1 - n, m + 1) > 0:  # Only need to add if there will be target qubits
-        # SemiAdder(y_wires, output_with_cache[max(0, k + 1 - (n + m + 1)) : k + 1 - n], work_wires)
-        SemiAdder(y_wires, output_with_cache[: k + 1 - n], work_wires)
-    # Divide by two
-    _div_by_two(output_with_cache)
+    _ = [X(w) for w in output_wires]
+
+    # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
+    if k > n:
+        SemiAdder(y_wires, output_wires[: k - n], work_wires)
 
 
 add_decomps(

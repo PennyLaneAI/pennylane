@@ -37,8 +37,10 @@ def test_standard_validity_out_multiplier():
     qml.ops.functions.assert_valid(op)
 
 
-def _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed, clean=True):
+def _test_mult_correctness(all_wires, mod, rule, seed, clean=True, include_xy=None):
     """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
+    # pylint: disable=too-many-arguments
+    x_wires, y_wires, output_wires, work_wires = all_wires
 
     dev = qml.device("default.qubit")
 
@@ -64,28 +66,15 @@ def _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule
     xs = rng.choice(num_x, size=min(num_x, 3))
     num_y = 2 ** len(y_wires)
     ys = rng.choice(num_y, size=min(num_y, 3))
+    xys = list(product(xs, ys))
+    if include_xy is not None:
+        xys.append(include_xy)
 
-    print(rule)
-    # from pennylane.templates.subroutines.arithmetic.out_multiplier import _out_multiplier_with_caddsub
-    # if rule is not _out_multiplier_with_caddsub:
-    # return
-    for x, y in product(xs, ys):
-        z = 0
-        # for z in [0, 1, mod // 2 + 1, mod - 1]:
-        # pylint: disable=bad-reversed-sequence
-        # print(qml.draw(qml.decompose(circuit, max_expansion=0))(x, y, z))
-        print(x, y)
+    z = 0
+    for x, y in xys:
         output = circuit(x, y, z)
         assert len(output) == 4 and all(len(out) == 1 for out in output)
         out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
-        # print(qml.draw(qml.decompose(circuit, max_expansion=1))(x, y, z))
-        # print(qml.draw(qml.decompose(circuit, max_expansion=2))(x, y, z))
-        # print(f"{mod=}")
-        # print(f"{z=}")
-        print(f"Execution result: {out_ints}")
-        print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
-        # _exp = (2*(z + x*y) - num_y * (x+1) - num_x * y + num_x*num_y + y) % (2*mod)
-        # print(f"Expected result:  {(x, y, (z + x * y) % mod, 0)}")
 
         if clean:
             assert out_ints == (x, y, (z + x * y) % mod, 0)
@@ -100,60 +89,12 @@ class TestOutMultiplier:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y"),
         [
-            (
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                7,
-                [9, 10],
-                2,
-                3,
-            ),
-            (
-                [0, 1],
-                [3, 4, 5],
-                [6, 7, 8, 2],
-                14,
-                [9, 10],
-                1,
-                2,
-            ),
-            (
-                [0, 1, 2],
-                [3, 4],
-                [5, 6, 7, 8],
-                8,
-                [9, 10],
-                3,
-                3,
-            ),
-            (
-                [0, 1, 2, 3],
-                [4, 5],
-                [6, 7, 8, 9, 10],
-                22,
-                [11, 12],
-                0,
-                0,
-            ),
-            (
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                None,
-                [9, 10],
-                1,
-                3,
-            ),
-            (
-                [0, 1],
-                [3, 4, 5],
-                [6, 7, 8],
-                None,
-                None,
-                3,
-                3,
-            ),
+            ([0, 1, 2], [3, 4, 5], [6, 7, 8], 7, [9, 10], 2, 3),
+            ([0, 1], [3, 4, 5], [6, 7, 8, 2], 14, [9, 10], 1, 2),
+            ([0, 1, 2], [3, 4], [5, 6, 7, 8], 8, [9, 10], 3, 3),
+            ([0, 1, 2, 3], [4, 5], [6, 7, 8, 9, 10], 22, [11, 12], 0, 0),
+            ([0, 1, 2], [3, 4, 5], [6, 7, 8], None, [9, 10], 1, 3),
+            ([0, 1], [3, 4, 5], [6, 7, 8], None, None, 3, 3),
         ],
     )
     def test_operation_result(
@@ -161,14 +102,12 @@ class TestOutMultiplier:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
         _test_mult_correctness(
-            x_wires,
-            y_wires,
-            output_wires,
+            (x_wires, y_wires, output_wires, work_wires),
             mod,
-            work_wires,
             OutMultiplier.compute_decomposition,
             seed,
             clean=False,
+            include_xy=(x, y),
         )
 
     @pytest.mark.parametrize(
@@ -330,9 +269,10 @@ class TestOutMultiplier:
         for j, rule in enumerate(qml.list_decomps(qml.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
-            # _test_decomposition_rule(op, rule)
+            _test_decomposition_rule(op, rule)
             if applicable:
-                _test_mult_correctness(x_wires, y_wires, output_wires, mod, work_wires, rule, seed)
+                all_wires = (x_wires, y_wires, output_wires, work_wires)
+                _test_mult_correctness(all_wires, mod, rule, seed)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
