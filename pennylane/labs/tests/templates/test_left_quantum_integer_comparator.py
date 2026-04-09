@@ -22,6 +22,15 @@ import pennylane as qp
 from pennylane.labs.templates.left_quantum_integer_comparator import LeftQuantumIntegerComparator
 from pennylane.ops.functions.assert_valid import assert_valid
 
+
+def test():
+    op = LeftQuantumIntegerComparator([0, 1], [2, 3], 4, 5, 0)
+    assert op.hyperparameters["target_wire"] == qp.wires.Wires(4)
+    assert op.hyperparameters["x_wires"] == qp.wires.Wires([0, 1])
+    assert op.hyperparameters["y_wires"] == qp.wires.Wires([2, 3])
+    assert op.hyperparameters["work_wires"] == qp.wires.Wires(5)
+    assert op.hyperparameters["op"] == 0
+
 '''
 @pytest.mark.jax
 def test_standard_validity_c_add_sub():
