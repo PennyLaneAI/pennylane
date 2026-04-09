@@ -96,7 +96,6 @@ jobs:
     name: Create PR to merge RC branch into main
     runs-on: ubuntu-latest
     needs: [create_release,bump_rc_branch]
-    if: always()
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
