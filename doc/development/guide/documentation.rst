@@ -448,17 +448,8 @@ This indicates that we want the ``catalyst.draw_graph`` function to be callable
 from the ``pennylane.drawer`` module. If you are adding an entry point to a
 feature in Catalyst and a group name in the ``entry_points`` dictionary doesn't
 exist yet, you may add a group name with the associated features in a list as
-shown above. If the desired group name does exist, simply add the entry-point to
-the specific feature(s) to the list.
-
-Additionally, features within a particular entry-point group can be made
-top-level accessible (i.e., ``pennylane.<feature>``) by adding the group name to the ``_entry_point_groups``
-variable in ``pennylane/__init__.py``.
-
-.. code-block:: python3
-
-    # add to _entry_point_groups as new groups are added and desired to be accessed top-level
-    _entry_point_groups = ["pennylane.drawer"]
+shown above. If the desired group name does exist, simply add the feature(s) to
+the list.
 
 If no new group name was added in the previous steps (only individual features
 were added to existing groups), nothing more needs to be done; the feature(s)
@@ -476,9 +467,16 @@ and ``__dir__`` dunder methods similar to the example below from
 
     __all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.drawer")
 
-If the features therein are also desired to be accessible from top-level, open
-``pennylane/__init__.py`` and add the group name to the ``_entry_point_groups``
-variable.
+If the features therein are also desired to be accessible from top-level (i.e.,
+``pennylane.<feature>`` as opposed to ``pennylane.<some module>.<feature>``),
+open ``pennylane/__init__.py`` and add the group name to the
+``_entry_point_groups`` variable.
+
+.. code-block:: python3
+    # pennylane/__init__.py
+
+    # add to _entry_point_groups as new groups are added and desired to be accessed top-level
+    _entry_point_groups = ["pennylane.drawer"]
 
 Once all steps above are completed, the desired features from Catalyst should be
 accessible from PennyLane and the documentation that is part of the feature's
