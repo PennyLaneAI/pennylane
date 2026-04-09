@@ -1043,6 +1043,8 @@ class PauliSentence(dict):
     def simplify(self, tol=1e-8):
         """Remove any PauliWords with coefficients less than the threshold tolerance.
 
+        This method mutates the ``PauliSentence`` in place, and does not return anything.
+
         .. seealso:: :meth:`~.prune`
 
         """

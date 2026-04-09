@@ -612,6 +612,8 @@ class FermiSentence(dict):
     def simplify(self, tol=1e-8):
         """Remove any FermiWord with coefficients less than the threshold tolerance.
 
+        This method mutates the ``FermiSentence`` in place, and does not return anything.
+
         .. seealso:: :meth:`~.prune`
 
         """
