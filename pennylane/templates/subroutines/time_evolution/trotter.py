@@ -98,10 +98,7 @@ def _simplify(decomp):
             and isinstance(op, qml_ops.Evolution)
             and qml.equal(prev.base, op.base)
         ):
-            merged[-1] = qml_ops.Evolution(
-                prev.base,
-                prev.parameters[0] + op.parameters[0],
-            )
+            merged[-1] = qml_ops.Evolution(op.base, prev.param + op.param)
         else:
             merged.append(op)
 
