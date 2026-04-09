@@ -166,7 +166,7 @@ The following classes have been ported over:
   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
 * Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with zero coefficients.
-  []()
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Improvements 🛠</h3>
 
@@ -933,7 +933,7 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 * Fixed the docstring of ``FermiSentence`` that incorrectly claims that it is immutable.
-  []()
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Bug fixes 🐛</h3>
 
