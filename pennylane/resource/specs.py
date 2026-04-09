@@ -317,11 +317,26 @@ def _specs_from_analysis_pass(
     new_qnode._compile_pipeline = new_compile_pipeline
     compile_options = copy.deepcopy(qjit.compile_options)
     compile_options.target = "mlir"
-    compile_options.pipeline = [("pipe", ["quantum-compilation-stage"])]
+    compile_options.lower_to_llvm = False
+    # compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
 
     # Force a compilation, which will output the necessary JSON files
-    new_qjit.jit_compile(args, **kwargs)
+    # This code snippet is adapted from the source code of `QJIT.jit_compile`
+    if new_qjit.mlir_module is None:
+        new_qjit.workspace = new_qjit._get_workspace()
+        new_qjit.jaxed_function = None
+        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+            new_qjit.compiled_function.shared_object.close()
+
+        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
+            args, **kwargs
+        )
+
+        new_qjit.mlir_module = new_qjit.generate_ir()
+
+    new_qjit.mlir_opt  # Force resolution of this property to finish going through all MLIR passes
 
     results = {}
 
