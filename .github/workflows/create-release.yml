@@ -14,11 +14,6 @@ on:
         description: 'The release notes to use for the GitHub release. "New features since last release..."'
         required: true
         type: string
-      bump_catalyst_lightning:
-        description: 'Whether to bump catalyst and lightning versions in the RC branch. Check box to enable.'
-        required: false
-        type: boolean
-        default: true
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -49,8 +44,7 @@ jobs:
         run: |
           uv pip install setuptools wheel twine
 
-      - name: Bump Catalyst and Lightning versions
-        if: ${{ inputs.bump_catalyst_lightning == true }}
+      - name: Change Catalyst, Lightning, and/or Pennylane versions
         run: |
           git config --global user.name "ringo-but-quantum"
           git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
@@ -70,7 +64,7 @@ jobs:
 
           echo "Pushing changes..."
           git add pyproject.toml pennylane/compiler/compiler.py pennylane/_version.py
-          git commit -m "Bump minimum Lightning, Catalyst, and Pennylane versions to ${lightning_version}, ${catalyst_version}, and ${{ inputs.release_version }}"
+          git commit --allow-empty -m "Bump minimum Lightning, Catalyst, and Pennylane versions to ${lightning_version}, ${catalyst_version}, and ${{ inputs.release_version }}"
         
           git push 
 
