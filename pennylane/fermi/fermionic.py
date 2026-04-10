@@ -41,6 +41,8 @@ class FermiWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
+    __slots__ = ("_hashval", "sorted_dic")
+
     def __init__(self, operator):
         self.sorted_dic = dict(sorted(operator.items()))
 
@@ -51,6 +53,8 @@ class FermiWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
+
+        self._hashval = None
 
         super().__init__(operator)
 
@@ -106,7 +110,12 @@ class FermiWord(dict):
 
     def __hash__(self):
         r"""Hash value of a FermiWord."""
-        return hash(frozenset(self.items()))
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
+
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+
+        return self._hashval
 
     def to_string(self):
         r"""Return a compact string representation of a FermiWord. Each operator in the word is
