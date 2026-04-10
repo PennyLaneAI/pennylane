@@ -165,7 +165,7 @@ The following classes have been ported over:
 * Decomposition rules can now be assigned custom names using the ``name`` argument in :func:`qml.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
-* Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with zero coefficients.
+* Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Improvements 🛠</h3>

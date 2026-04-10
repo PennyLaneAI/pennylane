@@ -421,8 +421,8 @@ class FermiWord(dict):
 
 
 class FermiSentence(dict):
-    r"""A dictionary representing a Fermi sentence, a linear combination of Fermi words, with
-    FermiWord instances as the keys and the values correspond to coefficients.
+    r"""Dictionary-based representation of a linear combination of ``FermiWord`` instances.
+    Each key is a unique ``FermiWord`` and its corresponding value is its coefficient in the sentence.
 
     >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
