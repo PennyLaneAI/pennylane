@@ -187,10 +187,7 @@ class PauliWord(dict):
 
     def __init__(self, mapping):
         """Strip identities from PauliWord on init!"""
-        for wire, op in mapping.copy().items():
-            if op == I:
-                del mapping[wire]
-        super().__init__(mapping)
+        super().__init__(filter(lambda item: item[1] != I, mapping.items()))
         self._hashval = None
 
     @property
@@ -207,7 +204,7 @@ class PauliWord(dict):
 
     def __copy__(self):
         """Copy the PauliWord instance."""
-        return PauliWord(dict(self))
+        return PauliWord(self)
 
     def __deepcopy__(self, memo):
         res = self.__copy__()

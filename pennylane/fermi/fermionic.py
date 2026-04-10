@@ -43,8 +43,11 @@ class FermiWord(dict):
 
     __slots__ = ("_hashval", "sorted_dic")
 
-    def __init__(self, operator):
-        self.sorted_dic = dict(sorted(operator.items()))
+    def __init__(self, operator, _skip_sorting: bool = False):
+        if _skip_sorting:
+            self.sorted_dic = operator
+        else:
+            self.sorted_dic = dict(sorted(operator.items()))
 
         indices = [i[0] for i in self.sorted_dic.keys()]
 
@@ -100,7 +103,7 @@ class FermiWord(dict):
 
     def __copy__(self):
         r"""Copy the FermiWord instance."""
-        return FermiWord(dict(self))
+        return FermiWord(self.sorted_dic, _skip_sorting=True)
 
     def __deepcopy__(self, memo):
         r"""Deep copy the FermiWord instance."""
