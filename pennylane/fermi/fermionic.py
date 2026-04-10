@@ -603,7 +603,20 @@ class FermiSentence(dict):
         return operator
 
     def prune(self, tol=1e-8) -> None:
-        """Remove any FermiWord with coefficients less than the threshold tolerance."""
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+        >>> s = qml.FermiSentence({w1 : 0, w2: 3.1})
+        >>> s
+        FermiSentence({FermiWord({(0, 0): '+', (1, 1): '-'}): 0, FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+        >>> s.prune()
+        >>> s
+        FermiSentence({FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+
+        """
         items = list(self.items())
         for fw, coeff in items:
             if abs(coeff) <= tol:

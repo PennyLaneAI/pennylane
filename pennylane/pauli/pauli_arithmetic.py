@@ -1032,7 +1032,22 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def prune(self, tol=1e-8):
-        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance."""
+        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> ps = PauliSentence({
+        ...     PauliWord({0:'X', 1:'Y'}): 0,
+        ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+        ... })
+        >>> ps
+        0 * X(0) @ Y(1)
+        + (-0-0.45j) * Z(2) @ Y(0)
+        >>> ps.prune()
+        >>> ps
+        (-0-0.45j) * Z(2) @ Y(0)
+
+        """
         items = list(self.items())
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
