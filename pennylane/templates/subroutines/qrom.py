@@ -214,15 +214,24 @@ class QROM(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in control_wires):
-                raise ValueError("Control wires should be different from work wires.")
+        _wires_are_traced = any(
+            pl_math.is_abstract(w)
+            for ws in (control_wires, target_wires, work_wires)
+            for w in ws
+        )
 
-            if any(wire in work_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from work wires.")
+        # Wire overlap validation must be skipped when wires are JAX tracers,
+        # as their concrete values are not available during tracing.
+        if not _wires_are_traced:
+            if len(work_wires) != 0:
+                if any(wire in work_wires for wire in control_wires):
+                    raise ValueError("Control wires should be different from work wires.")
 
-        if any(wire in control_wires for wire in target_wires):
-            raise ValueError("Target wires should be different from control wires.")
+                if any(wire in work_wires for wire in target_wires):
+                    raise ValueError("Target wires should be different from work wires.")
+
+            if any(wire in control_wires for wire in target_wires):
+                raise ValueError("Target wires should be different from control wires.")
 
         if 2 ** len(control_wires) < data.shape[0]:
             raise ValueError(

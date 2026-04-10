@@ -415,6 +415,28 @@ class TestQROM:
 
         assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
 
+    @pytest.mark.jax
+    def test_traced_wires(self):
+        """Test that QROM construction and decomposition do not raise TracerBoolConversionError
+        when wires are JAX tracers."""
+
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        def build_and_decompose(data, control_wires, target_wires, work_wires):
+            op = qml.QROM(data, control_wires, target_wires, work_wires)
+            op.decomposition()
+            return True
+
+        n, m, w = 2, 2, 1
+        data = jnp.array([[1, 0], [0, 1], [1, 1], [0, 0]])
+        control_wires = jnp.arange(0, n)
+        target_wires = jnp.arange(n, n + m)
+        work_wires = jnp.arange(n + m, n + m + w)
+
+        jax.make_jaxpr(build_and_decompose)(data, control_wires, target_wires, work_wires)
+
 
 @pytest.mark.parametrize(
     ("control_wires", "target_wires", "work_wires", "msg_match"),
