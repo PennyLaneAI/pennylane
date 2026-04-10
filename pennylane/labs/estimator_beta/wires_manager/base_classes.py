@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
+
 from typing import Literal
 
 from pennylane.allocation import AllocateState

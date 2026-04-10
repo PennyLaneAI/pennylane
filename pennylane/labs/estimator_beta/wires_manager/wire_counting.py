@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the core logic for wire management."""
+
 from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
