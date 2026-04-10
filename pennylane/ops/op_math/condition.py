@@ -793,9 +793,8 @@ def _get_cond_qfunc_prim():
     cond_prim = QmlPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
-    qml.capture.register_custom_staging_rule(
-        cond_prim, lambda params: params["jaxpr_branches"][0].outvars
-    )
+
+    qml.capture.register_custom_staging_rule(cond_prim, lambda params: params["jaxpr_branches"][0])
 
     @cond_prim.def_abstract_eval
     def _abstract_eval(*_, jaxpr_branches, **__):
