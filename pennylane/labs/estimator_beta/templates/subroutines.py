@@ -96,15 +96,14 @@ class QROM(ResourceOperator):
             any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
-        The resources for QROM are derived from the following references:
+        The resources for QROM are derived from Appendix A, B from `Berry et al. (2019)
+        <https://arxiv.org/abs/1902.02134>`_.
 
-        * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
-          `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
-          measurement-based uncomputation technique described in
-          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+        * :code:`borrow_qubits=True`: Uses the borrowed qubit decomposition from Figure 4 of Appendix A in
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
-        * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
-          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+        * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
@@ -127,7 +126,7 @@ class QROM(ResourceOperator):
     Total gates : 85
     'Toffoli': 8,
     'CNOT': 36,
-    'X': 17,
+    'X': 18,
     'Hadamard': 24
     """
 
