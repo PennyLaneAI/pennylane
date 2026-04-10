@@ -236,6 +236,7 @@ def register_custom_staging_rule(
         )
 
         if not isinstance(outvar, jax.extend.core.Literal) and outvar not in env:
+            # prioritize first occurrence of a variable if it occurs multiple times in the output
             env[outvar] = out_tracer
         return out_tracer, new_var
 
