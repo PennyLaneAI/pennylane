@@ -1032,7 +1032,7 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def prune(self, tol=1e-8):
-        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance.
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
 
         **Examples**
 
@@ -1054,7 +1054,7 @@ class PauliSentence(dict):
                 del self[pw]
 
     def simplify(self, tol=1e-8) -> None:
-        """Remove any ``PauliWord``s with coefficients less than the threshold tolerance.
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
 
         This method mutates the ``PauliSentence`` in place, and does not return anything.
 
