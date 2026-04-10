@@ -232,18 +232,10 @@ class FermiWord(dict):
             if len(other) == 0:
                 return self
 
-            order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
-            other_wires = [i[1] for i in other.sorted_dic.keys()]
-
-            dict_other = dict(
-                zip(
-                    [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
-                    other.values(),
-                )
-            )
             dict_self = dict(self)
-
-            dict_self.update(dict_other)
+            dict_self.update(
+                ((order + len(self), wire), value) for (order, wire), value in other.items()
+            )
 
             return FermiWord(dict_self)
 
