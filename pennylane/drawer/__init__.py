@@ -20,9 +20,13 @@ This module provides the circuit drawing functionality used to display circuits 
 
 """
 
+from pennylane._entry_points_utils import _setup_entry_points
+
 from .draw import draw, draw_mpl
 from .label import label
 from .mpldrawer import MPLDrawer
 from .style import available_styles, use_style
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+__all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.drawer")

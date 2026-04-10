@@ -174,6 +174,8 @@ class PauliWord(dict):
 
     """
 
+    __slots__ = ("_hashval",)
+
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * pw1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
@@ -189,6 +191,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+        self._hashval = None
 
     @property
     def pauli_rep(self):
@@ -220,7 +223,11 @@ class PauliWord(dict):
         raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
-        return hash(frozenset(self.items()))
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+
+        return self._hashval
 
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
@@ -1024,14 +1031,37 @@ class PauliSentence(dict):
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
-    def simplify(self, tol=1e-8):
-        """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
+    def prune(self, tol=1e-8):
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> ps = PauliSentence({
+        ...     PauliWord({0:'X', 1:'Y'}): 0,
+        ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+        ... })
+        >>> ps
+        0 * X(0) @ Y(1)
+        + (-0-0.45j) * Z(2) @ Y(0)
+        >>> ps.prune()
+        >>> ps
+        (-0-0.45j) * Z(2) @ Y(0)
+
+        """
         items = list(self.items())
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
-        if len(self) == 0:
-            self = PauliSentence({})  # pylint: disable=self-cls-assignment
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        This method mutates the ``PauliSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""
