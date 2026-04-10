@@ -425,8 +425,8 @@ class FermiWord(dict):
 
 
 class FermiSentence(dict):
-    r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
-    as FermiWord instances and the values correspond to coefficients.
+    r"""Dictionary-based representation of a linear combination of ``FermiWord`` instances.
+    Each key is a unique ``FermiWord`` and its corresponding value is its coefficient in the sentence.
 
     >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
@@ -606,13 +606,35 @@ class FermiSentence(dict):
 
         return operator
 
-    def simplify(self, tol=1e-8):
-        r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
-        tolerance."""
+    def prune(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+        >>> s = qml.FermiSentence({w1 : 0, w2: 3.1})
+        >>> s
+        FermiSentence({FermiWord({(0, 0): '+', (1, 1): '-'}): 0, FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+        >>> s.prune()
+        >>> s
+        FermiSentence({FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+
+        """
         items = list(self.items())
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        This method mutates the ``FermiSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
