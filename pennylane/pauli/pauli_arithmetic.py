@@ -207,7 +207,7 @@ class PauliWord(dict):
 
     def __copy__(self):
         """Copy the PauliWord instance."""
-        return PauliWord(dict(self.items()))
+        return PauliWord(dict(self))
 
     def __deepcopy__(self, memo):
         res = self.__copy__()
@@ -234,7 +234,7 @@ class PauliWord(dict):
         base, iterator, swapped = (
             (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
-        result = copy(dict(base))
+        result = dict(base)
         coeff = 1
 
         for wire, term in iterator.items():
