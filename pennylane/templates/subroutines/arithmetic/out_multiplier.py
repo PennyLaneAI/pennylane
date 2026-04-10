@@ -478,25 +478,33 @@ def _out_multiplier_with_caddsub_resources(
 
     resources = defaultdict(int)
 
+    # Some resource reps we will need:
+    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
+    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
+    x_rep = resource_rep(X)
+    meas_rep = resource_rep(MidMeasure)
+
     # Controlled add-subtract loop
     loop_size = min(k, n)
+    # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if num_y_wires > 1:
-        resources[
-            controlled_resource_rep(
-                BasisState,
-                base_params={"num_wires": num_y_wires - 1},
-                num_control_wires=1,
-                num_zero_control_values=1,
-            )
-        ] += (
-            2 * loop_size
+        c_flips = controlled_resource_rep(
+            BasisState,
+            base_params={"num_wires": num_y_wires - 1},
+            num_control_wires=1,
+            num_zero_control_values=1,
         )
-    resources[
-        controlled_resource_rep(X, base_params={}, num_control_wires=1, num_zero_control_values=1)
-    ] += (2 * loop_size)
-    resources[
-        controlled_resource_rep(X, base_params={}, num_control_wires=1, num_zero_control_values=1)
-    ] += 2 * min(n, k - 1)
+        resources[c_flips] += 2 * loop_size
+
+    # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
+    resources[cnot_on_0_rep] += 2 * loop_size
+    # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
+    c_add_subs_with_work_wires = min(n, k - 1)
+    resources[cnot_on_0_rep] += c_add_subs_with_work_wires
+    # Bit reset on LSB work wire: one per ctrl-add-subtract that has work wires
+    resources[meas_rep] += c_add_subs_with_work_wires
+
+    # SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(k - i, m + 1)
         resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
@@ -506,33 +514,30 @@ def _out_multiplier_with_caddsub_resources(
     # bit flips corresponding to input carry activated. Accounts for the fact that
     # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
     has_work_wires = int(k > m + 1)
-    resources[resource_rep(X)] += 4 + has_work_wires
+    resources[x_rep] += 4 + has_work_wires
     # The work wire reset bit flip is done via measurement
     if has_work_wires:
-        resources[resource_rep(MidMeasure)] += 1
+        resources[meas_rep] += 1
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[resource_rep(X)] += k
+    resources[x_rep] += k
     # Add y
     resources[resource_rep(SemiAdder, num_y_wires=k)] += 1
     # increment 2^(n+m) bit
     size = k - n - m
+    mcx_kwargs = {
+        "num_zero_control_values": 0,
+        "num_work_wires": num_work_wires - 1,
+        "work_wire_type": "zeroed",
+    }
     if size > 0:
         for i in range(1, size):
-            resources[
-                resource_rep(
-                    MultiControlledX,
-                    num_control_wires=i,
-                    num_zero_control_values=0,
-                    num_work_wires=num_work_wires - 1,
-                    work_wire_type="zeroed",
-                )
-            ] += 1
-        resources[resource_rep(X)] += 1
+            resources[resource_rep(MultiControlledX, num_control_wires=i, **mcx_kwargs)] += 1
+        resources[x_rep] += 1
 
     # Second negation
-    resources[resource_rep(X)] += k
+    resources[x_rep] += k
 
     # Add 2^n y
     if k > n:
@@ -545,7 +550,7 @@ def _out_multiplier_with_caddsub_condition(
     num_output_wires, mod, num_work_wires, zeroed_output_wires, **_
 ):
     # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires+1):
-    # - min(k, m+1) # Largest size occurring in CAddSub loop
+    # - min(k, m+1) # Largest size occurring in controlled add/sub loop
     # - k-m, # Add 2^m(x+1)
     # - k, # Add y during subtracting 2^(n+m)+y     <-- Largest one
     # - k-n, # Add 2^n y
@@ -602,7 +607,12 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     SemiAdder(x_wires, y_wires, work_wires)
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
     if work_wires:
-        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
+        # In principle, we could just apply a bit flip here to reset the work wire, controlled
+        # on the `c_wire` being in state |0>.
+        # However, as discussed in _add_plus_one, we want to use a measurement+reset instead
+        # for addition + 1. In case `c_wire` is in state |1>, we just add a reset of a work
+        # wire that anyways is returned in state |0> by `SemiAdder`, so there is no harm done.
+        measure(work_wires[-1], reset=True)
 
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
