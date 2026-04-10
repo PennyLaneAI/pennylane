@@ -411,7 +411,9 @@ def _out_multiplier_with_qft(
     )
 
 
-def _out_multiplier_with_adder_resources(num_output_wires, num_x_wires, num_y_wires, **_) -> dict:
+def _out_multiplier_with_adder_resources(
+    num_output_wires, num_x_wires, num_y_wires, zeroed_output_wires, **_
+) -> dict:
     """Resources for OutMultiplier decomposition with controlled adders."""
     n = num_x_wires
     m = num_y_wires
@@ -419,7 +421,10 @@ def _out_multiplier_with_adder_resources(num_output_wires, num_x_wires, num_y_wi
 
     resources = defaultdict(int)
     for i in range(min(k, n)):
-        size = min(k - i, m + 1)
+        if zeroed_output_wires:
+            size = min(k - i, m + 1)
+        else:
+            size = k - i
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
@@ -438,12 +443,11 @@ def _out_multiplier_with_adder_condition(
     m = num_y_wires
     # Controlled adder takes as many work wires as the output register size. The largest controlled
     # adder is the first one in the loop, with size min(k, m+1)
-    min_num_work_wires = min(k, m + 1)
-    return (
-        mod in (None, 2**num_output_wires)
-        and num_work_wires >= min_num_work_wires
-        and zeroed_output_wires
-    )
+    if zeroed_output_wires:
+        min_num_work_wires = min(k, m + 1)
+    else:
+        min_num_work_wires = k
+    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
 @register_condition(_out_multiplier_with_adder_condition)
@@ -464,13 +468,16 @@ def _out_multiplier_with_adder(
     for i, x_wire in enumerate(x_wires[::-1][:k]):
         # Slice the output wires according to the shift in control, and bounded by its own size,
         # and the size of the y_wires
-        out_wires = output_wires[max(0, k - (m + 1 + i)) : k - i]
+        if zeroed_output_wires:
+            out_wires = output_wires[max(0, k - (m + 1 + i)) : k - i]
+        else:
+            out_wires = output_wires[: k - i]
         # Add y wires to shifted output, controlled by current x_wire
         ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
 def _out_multiplier_with_caddsub_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, **_
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, zeroed_output_wires, **_
 ) -> dict:
     n = num_x_wires
     m = num_y_wires
@@ -506,7 +513,10 @@ def _out_multiplier_with_caddsub_resources(
 
     # SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
-        size = min(k - i, m + 1)
+        if zeroed_output_wires:
+            size = min(k - i, m + 1)
+        else:
+            size = k - i
         resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
 
     # Add 2^m(x+1)
@@ -546,9 +556,7 @@ def _out_multiplier_with_caddsub_resources(
     return dict(resources)
 
 
-def _out_multiplier_with_caddsub_condition(
-    num_output_wires, mod, num_work_wires, zeroed_output_wires, **_
-):
+def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires, **_) -> bool:
     # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires+1):
     # - min(k, m+1) # Largest size occurring in controlled add/sub loop
     # - k-m, # Add 2^m(x+1)
@@ -557,11 +565,7 @@ def _out_multiplier_with_caddsub_condition(
     largest_adder_size = num_output_wires + 1
     # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
     min_num_work_wires = 1 + (largest_adder_size - 1)
-    return (
-        mod in (None, 2**num_output_wires)
-        and num_work_wires >= min_num_work_wires
-        and zeroed_output_wires
-    )
+    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -631,42 +635,82 @@ def _out_multiplier_with_caddsub(
 ):  # pylint: disable=unused-argument, too-many-arguments
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
-    # We extend our output by one wire because we need to
-    # store 2x*y intermediately, instead of x*y.
-    output_wires = output_wires + [work_wires[0]]
-    # The other work wires can be used for arithmetic building blocks
-    work_wires = work_wires[1:]
-    n = len(x_wires)
-    m = len(y_wires)
-    k = len(output_wires)
+    if zeroed_output_wires:
+        # We extend our output by one wire because we need to
+        # store 2x*y intermediately, instead of x*y.
+        output_wires = output_wires + [work_wires[0]]
+        # The other work wires can be used for arithmetic building blocks
+        work_wires = work_wires[1:]
+        n = len(x_wires)
+        m = len(y_wires)
+        k = len(output_wires)
 
-    # Controlled add-subtract loop
-    for i, x_wire in enumerate(x_wires[::-1][:k]):
-        # Slice the output wires according to the shift in control, and bounded by its own size,
-        # and the size of the y_wires.
-        output = output_wires[max(0, k - (m + 1 + i)) : k - i]
-        _c_add_sub(x_wire, y_wires, output, work_wires)
+        # Controlled add-subtract loop
+        for i, x_wire in enumerate(x_wires[::-1][:k]):
+            # Slice the output wires according to the shift in control, and bounded by its own size,
+            # and the size of the y_wires.
+            output = output_wires[max(0, k - (m + 1 + i)) : k - i]
+            _c_add_sub(x_wire, y_wires, output, work_wires)
 
-    # Add 2^m(x+1)
-    _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+        # Add 2^m(x+1)
+        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
 
-    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
-    # - Negate z: |y> |z> -> |y> |2^k-1-z>
-    # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
-    # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
-    #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
-    # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
-    # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
-    _ = [X(w) for w in output_wires]
-    SemiAdder(y_wires, output_wires, work_wires)
-    if k > n + m:
-        increment_wires = output_wires[: k - n - m]
-        _increment(increment_wires, work_wires)
-    _ = [X(w) for w in output_wires]
+        # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
+        # - Negate z: |y> |z> -> |y> |2^k-1-z>
+        # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
+        # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
+        #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
+        # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
+        # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
+        _ = [X(w) for w in output_wires]
+        SemiAdder(y_wires, output_wires, work_wires)
+        if k > n + m:
+            increment_wires = output_wires[: k - n - m]
+            _increment(increment_wires, work_wires)
+        _ = [X(w) for w in output_wires]
 
-    # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
-    if k > n:
-        SemiAdder(y_wires, output_wires[: k - n], work_wires)
+        # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
+        if k > n:
+            SemiAdder(y_wires, output_wires[: k - n], work_wires)
+
+    else:
+        # We extend our output by one wire because we need to
+        # store 2x*y intermediately, instead of x*y. This also multiplies the value stored in
+        # output_wires with two.
+        output_wires = output_wires + [work_wires[0]]
+        # The other work wires can be used for arithmetic building blocks
+        work_wires = work_wires[1:]
+        n = len(x_wires)
+        m = len(y_wires)
+        k = len(output_wires)
+
+        # Controlled add-subtract loop
+        for i, x_wire in enumerate(x_wires[::-1][:k]):
+            # Slice the output wires according to the shift in control, and bounded by its own size,
+            # and the size of the y_wires.
+            output = output_wires[: k - i]
+            _c_add_sub(x_wire, y_wires, output, work_wires)
+
+        # Add 2^m(x+1)
+        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+
+        # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
+        # - Negate z: |y> |z> -> |y> |2^k-1-z>
+        # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
+        # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
+        #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
+        # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
+        # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
+        _ = [X(w) for w in output_wires]
+        SemiAdder(y_wires, output_wires, work_wires)
+        if k > n + m:
+            increment_wires = output_wires[: k - n - m]
+            _increment(increment_wires, work_wires)
+        _ = [X(w) for w in output_wires]
+
+        # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
+        if k > n:
+            SemiAdder(y_wires, output_wires[: k - n], work_wires)
 
 
 add_decomps(
