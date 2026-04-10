@@ -513,10 +513,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
-        if zeroed_output_wires:
-            size = min(k - i, m + 1)
-        else:
-            size = k - i
+        size = min(k - i, m + 1) if zeroed_output_wires else k - i
         resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
 
     # Add 2^m(x+1)
@@ -635,82 +632,43 @@ def _out_multiplier_with_caddsub(
 ):  # pylint: disable=unused-argument, too-many-arguments
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
-    if zeroed_output_wires:
-        # We extend our output by one wire because we need to
-        # store 2x*y intermediately, instead of x*y.
-        output_wires = output_wires + [work_wires[0]]
-        # The other work wires can be used for arithmetic building blocks
-        work_wires = work_wires[1:]
-        n = len(x_wires)
-        m = len(y_wires)
-        k = len(output_wires)
+    # We extend our output by one wire because we need to store 2x*y intermediately, instead
+    # of x*y. This also multiplies the value stored in output_wires with two.
+    output_wires = output_wires + [work_wires[0]]
+    # The other work wires can be used for arithmetic building blocks
+    work_wires = work_wires[1:]
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires)
 
-        # Controlled add-subtract loop
-        for i, x_wire in enumerate(x_wires[::-1][:k]):
-            # Slice the output wires according to the shift in control, and bounded by its own size,
-            # and the size of the y_wires.
-            output = output_wires[max(0, k - (m + 1 + i)) : k - i]
-            _c_add_sub(x_wire, y_wires, output, work_wires)
+    # Controlled add-subtract loop
+    for i, x_wire in enumerate(x_wires[::-1][:k]):
+        # Slice the output wires according to the shift in control, and bounded by its own size,
+        # and the size of the y_wires.
+        output_msb = max(0, k - (m + 1 + i)) if zeroed_output_wires else 0
+        output = output_wires[output_msb : k - i]
+        _c_add_sub(x_wire, y_wires, output, work_wires)
 
-        # Add 2^m(x+1)
-        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+    # Add 2^m(x+1)
+    _add_plus_one(x_wires, output_wires[: k - m], work_wires)
 
-        # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
-        # - Negate z: |y> |z> -> |y> |2^k-1-z>
-        # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
-        # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
-        #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
-        # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
-        # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
-        _ = [X(w) for w in output_wires]
-        SemiAdder(y_wires, output_wires, work_wires)
-        if k > n + m:
-            increment_wires = output_wires[: k - n - m]
-            _increment(increment_wires, work_wires)
-        _ = [X(w) for w in output_wires]
+    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
+    # - Negate z: |y> |z> -> |y> |2^k-1-z>
+    # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
+    # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
+    #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
+    # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
+    # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
+    _ = [X(w) for w in output_wires]
+    SemiAdder(y_wires, output_wires, work_wires)
+    if k > n + m:
+        increment_wires = output_wires[: k - n - m]
+        _increment(increment_wires, work_wires)
+    _ = [X(w) for w in output_wires]
 
-        # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
-        if k > n:
-            SemiAdder(y_wires, output_wires[: k - n], work_wires)
-
-    else:
-        # We extend our output by one wire because we need to
-        # store 2x*y intermediately, instead of x*y. This also multiplies the value stored in
-        # output_wires with two.
-        output_wires = output_wires + [work_wires[0]]
-        # The other work wires can be used for arithmetic building blocks
-        work_wires = work_wires[1:]
-        n = len(x_wires)
-        m = len(y_wires)
-        k = len(output_wires)
-
-        # Controlled add-subtract loop
-        for i, x_wire in enumerate(x_wires[::-1][:k]):
-            # Slice the output wires according to the shift in control, and bounded by its own size,
-            # and the size of the y_wires.
-            output = output_wires[: k - i]
-            _c_add_sub(x_wire, y_wires, output, work_wires)
-
-        # Add 2^m(x+1)
-        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
-
-        # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
-        # - Negate z: |y> |z> -> |y> |2^k-1-z>
-        # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
-        # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
-        #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
-        # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
-        # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
-        _ = [X(w) for w in output_wires]
-        SemiAdder(y_wires, output_wires, work_wires)
-        if k > n + m:
-            increment_wires = output_wires[: k - n - m]
-            _increment(increment_wires, work_wires)
-        _ = [X(w) for w in output_wires]
-
-        # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
-        if k > n:
-            SemiAdder(y_wires, output_wires[: k - n], work_wires)
+    # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
+    if k > n:
+        SemiAdder(y_wires, output_wires[: k - n], work_wires)
 
 
 add_decomps(
