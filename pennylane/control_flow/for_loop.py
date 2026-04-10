@@ -293,9 +293,10 @@ def _get_for_loop_qfunc_prim():
         # invars now (*abstract_shapes, i, *args)
         var_consts = params["jaxpr_body_fn"].constvars
         jaxpr_invars = params["jaxpr_body_fn"].invars
-        invars_abstract_shapes = jaxpr_invars[abstract_shapes_slice]
 
         num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+        invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
+        # skip index
         invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
 
         env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
