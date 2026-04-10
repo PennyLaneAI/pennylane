@@ -215,9 +215,7 @@ class QROM(Operation):
         self.hyperparameters["clean"] = clean
 
         _wires_are_traced = any(
-            pl_math.is_abstract(w)
-            for ws in (control_wires, target_wires, work_wires)
-            for w in ws
+            pl_math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
         )
 
         # Wire overlap validation must be skipped when wires are JAX tracers,
