@@ -22,11 +22,11 @@ from pennylane.estimator.resource_operator import GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
 from pennylane.estimator.wires_manager import Allocate as estimator_Allocate
 from pennylane.estimator.wires_manager import Deallocate as estimator_Deallocate
+from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from ..resource_config import LabsResourceConfig
 from .base_classes import Allocate, AllocateState, Deallocate, MarkClean, MarkQubits
 
 

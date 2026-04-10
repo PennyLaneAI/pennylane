@@ -77,6 +77,7 @@ def selectpaulirot_controlled_resource_decomp(
     return gate_lst
 
 
+# pylint: disable=arguments-differ,too-many-arguments
 class QROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
@@ -451,8 +452,11 @@ class QROM(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
-    ):
+        cls,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -683,11 +687,11 @@ class QROM(ResourceOperator):
     def _single_ctrl_swap_cost(
         cls, register_size: int, num_swap_ctrls: int, repeat: int = 1
     ) -> list[GateCount]:
-        """This is a combination of the standard control-SWAP decomposition from Figure 1.b of
+        r"""This is a combination of the standard control-SWAP decomposition from Figure 1.b of
         `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_, with the observation that each
         set of swaps acts on one of the swap-control wires at a time. We can control this decomposition
-        on a single qubit using a single auxiliary qubit and a pair of l/r elbow gates for each swap-control
-        wires. This is because we can recycle the same auxiliary qubit for each set of l/r elbows.
+        on a single qubit using a single auxiliary qubit and a pair of elbow gates for each swap-control
+        wires. This is because we can recycle the same auxiliary qubit for each set of elbows.
 
         Args:
             register_size (int): The length of the bitstrings being encoded.
@@ -704,12 +708,13 @@ class QROM(ResourceOperator):
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
+        alloc_reg = Allocate(1, state="zero", restored=True)
         gate_cost = [
-            Allocate(1),  # need one temporary qubit for l/r-elbow to control SWAP
+            alloc_reg,  # need one temporary qubit for l/r-elbow to control SWAP
             GateCount(l_elbow, num_swap_ctrls),
             GateCount(ctrl_swap, repeat * (width - 1) * register_size),
             GateCount(r_elbow, num_swap_ctrls),
-            Deallocate(1),  # release temporary qubit for l/r-elbow to control SWAP
+            Deallocate(allocated_register=alloc_reg),  # release temporary qubit to control SWAP
         ]
         return gate_cost
 
@@ -800,7 +805,6 @@ class QROM(ResourceOperator):
         k = 2 ** round(math.log2(k_approx))  # must be a power of 2
 
         gate_lst = []
-        x = resource_rep(qre.X)
         z = resource_rep(qre.Z)
         had = qre.resource_rep(qre.Hadamard)
 
@@ -831,7 +835,7 @@ class QROM(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator.
 
         Args:

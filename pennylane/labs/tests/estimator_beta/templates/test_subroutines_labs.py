@@ -216,7 +216,7 @@ class TestLabsQROM:
             qre.QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, restored",
+        "num_data_points, size_data_points, num_bit_flips, depth, borrow",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
@@ -224,31 +224,31 @@ class TestLabsQROM:
         ),
     )
     def test_resource_params(
-        self, num_data_points, size_data_points, num_bit_flips, depth, restored
+        self, num_data_points, size_data_points, num_bit_flips, depth, borrow
     ):
         """Test that the resource params are correct."""
         if depth is None:
             op = qre.QROM(num_data_points, size_data_points)
         else:
-            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, restored, depth)
+            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, borrow, depth)
 
         assert op.resource_params == {
             "num_bitstrings": num_data_points,
             "size_bitstring": size_data_points,
             "num_bit_flips": num_bit_flips,
             "select_swap_depth": depth,
-            "restored": restored,
+            "borrow_qubits": borrow,
         }
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, restored",
+        "num_data_points, size_data_points, num_bit_flips, depth, borrow",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
+    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, borrow):
         """Test that the compressed representation is correct."""
         expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
@@ -259,7 +259,7 @@ class TestLabsQROM:
                 "size_bitstring": size_data_points,
                 "num_bit_flips": num_bit_flips,
                 "select_swap_depth": depth,
-                "restored": restored,
+                "borrow_qubits": borrow,
             },
         )
         assert (
@@ -267,7 +267,7 @@ class TestLabsQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                restored=restored,
+                borrow_qubits=borrow,
                 select_swap_depth=depth,
             )
             == expected
