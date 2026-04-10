@@ -390,7 +390,7 @@ class TestTapeConstruction:
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
-            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qp.counts."
         ):
             jitted_qnode1(0.123)
 
@@ -405,7 +405,7 @@ class TestTapeConstruction:
         jitted_qnode2 = jax.jit(circuit2)
 
         with pytest.raises(
-            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qp.counts."
         ):
             jitted_qnode2(0.123)
 

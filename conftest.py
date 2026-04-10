@@ -23,6 +23,8 @@ import numpy as base_numpy
 import scipy as base_scipy
 import pennylane as qml
 
+qp = qml
+
 try:
     import jax
 except ImportError:
@@ -35,6 +37,7 @@ except ImportError:
 
 
 namespace = {
+    "qp": qp,
     "qml": qml,
     "np": base_numpy,
     "sp": base_scipy,

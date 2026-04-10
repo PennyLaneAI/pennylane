@@ -40,7 +40,7 @@ def test_single_branch_statistics():
     mcm_config = MCMConfig(mcm_method="single-branch-statistics")
 
     with pytest.raises(
-        ValueError, match="Cannot use mcm_method='single-branch-statistics' without qml.qjit."
+        ValueError, match="Cannot use mcm_method='single-branch-statistics' without qp.qjit."
     ):
         _resolve_mcm_config(mcm_config, interface=Interface.AUTO, finite_shots=True)
 
