@@ -844,7 +844,7 @@ class SumOfSlatersPrep(Operation):
         then controls :class:`~.CNOT` gates that perform the actual uncomputation.
 
         Note that we guessed the required number of work wires (``num_work_wires``) in
-        :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
+        :func:`~.pennylane.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
         integer wire labels to those dynamically allocated wires. If we want to know
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:

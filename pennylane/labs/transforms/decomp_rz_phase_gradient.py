@@ -27,7 +27,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
     Here, we explicitly provide the necessary wires for the `phase gradient decomposition of RZ <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
     This way, this function can be used in a workflow context that explicitly uses those wires to generate this decomposition rule, which can then be used
-    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~.decompose` (when using the graph-based decomposition system).
+    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~.pennylane.decompose` (when using the graph-based decomposition system).
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
@@ -35,7 +35,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
 
     Returns:
-        qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.decompose`.
+        qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
 
     .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
 
