@@ -45,7 +45,7 @@ class FermiWord(dict):
 
     def __init__(self, operator, _skip_sorting: bool = False):
         if _skip_sorting:
-            self.sorted_dic = operator
+            self.sorted_dic = dict(operator)
         else:
             self.sorted_dic = dict(sorted(operator.items()))
 
