@@ -21,8 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.qrom import _qrom_decomposition, _calculate_n_select_work_wires
-
+from pennylane.templates.subroutines.qrom import _calculate_n_select_work_wires, _qrom_decomposition
 from pennylane.templates.subroutines.select import _select_decomp_unary
 
 has_jax = True
@@ -513,6 +512,7 @@ def test_too_many_work_wires_case():
 
     assert gates_clean == expected_gates
 
+
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [
@@ -525,11 +525,6 @@ def test_too_many_work_wires_case():
 def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    result = _calculate_n_select_work_wires(
-        terms=terms,
-        n=n_ctrl,
-        b=n_target,
-        n_work_wires=n_work
-    )
+    result = _calculate_n_select_work_wires(terms=terms, n=n_ctrl, b=n_target, n_work_wires=n_work)
 
     assert result == expected

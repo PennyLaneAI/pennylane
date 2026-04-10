@@ -14,6 +14,7 @@
 """
 This submodule contains the template for QROM.
 """
+
 from collections import Counter
 from functools import reduce
 from typing import Sequence
@@ -431,15 +432,17 @@ def _calculate_n_select_work_wires(terms, n, b, n_work_wires, **_):
 
     return n_select_work_wires
 
+
 def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):  # pylint: disable=too-many-branches
 
-    if num_work_wires < num_control_wires-1:
+    if num_work_wires < num_control_wires - 1:
         n_select_work_wires = num_work_wires
     else:
-        n_select_work_wires = _calculate_n_select_work_wires(num_bitstrings, num_control_wires, num_target_wires,
-                                                            num_work_wires)
+        n_select_work_wires = _calculate_n_select_work_wires(
+            num_bitstrings, num_control_wires, num_target_wires, num_work_wires
+        )
 
     num_work_wires_select = min(num_work_wires, n_select_work_wires)
     num_work_wires_swap = num_work_wires - num_work_wires_select
@@ -535,12 +538,14 @@ def _qrom_decomposition(
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
 
-    if len(work_wires) < len(control_wires)-1:
+    if len(work_wires) < len(control_wires) - 1:
         n_select_work_wires = len(work_wires)
     else:
-        n_select_work_wires = _calculate_n_select_work_wires(len(data), len(control_wires), len(target_wires), len(work_wires))
+        n_select_work_wires = _calculate_n_select_work_wires(
+            len(data), len(control_wires), len(target_wires), len(work_wires)
+        )
 
-    select_work_wires = work_wires[: n_select_work_wires]
+    select_work_wires = work_wires[:n_select_work_wires]
     swap_work_wires = work_wires[n_select_work_wires:]
     swap_wires = target_wires + swap_work_wires
 
