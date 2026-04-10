@@ -114,18 +114,6 @@ def test_integration_multi_wire(seed):
     Tests that the decomposition correctly realizes the phase gradient decomposition of SelectPauliRot as described in
     https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations
     """
-    # This test compares the exact output state after applying the operator to a random input state
-    # In particular, in confirms the following circuit identity
-    #
-    # |ψ>   ╭: ─╭◻──────────────────────────╭◻──────────┤ ╮ ≈MUX-R_Z(θ_j)|ψ>
-    #       │: ─├◻──────────────────────────├◻──────────┤ │
-    #       ╰: ─│──────────╭○────────────╭○─│───────────┤ ╯
-    # |0>    : ─├load(θ_j)─│──╭SemiAdder─│──├load†(θ_j)─┤   |0>
-    # |0>    : ─├load(θ_j)─│──├SemiAdder─│──├load†(θ_j)─┤   |0>
-    # |0>    : ─╰load(θ_j)─├──├SemiAdder─├──╰load†(θ_j)─┤   |0>
-    #       ╭: ────────────├X─├SemiAdder─├X─────────────┤ ╮
-    # |∇_b> ┤: ────────────├X─├SemiAdder─├X─────────────┤ ├ |∇_b>
-    #       ╰: ────────────╰X─╰SemiAdder─╰X─────────────┤ ╯
 
     with qp.decomposition.toggle_graph_ctx(
         True
