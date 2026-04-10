@@ -507,7 +507,7 @@ The following classes have been ported over:
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 * Created custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
-  for :class:`RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
+  for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
   These can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
