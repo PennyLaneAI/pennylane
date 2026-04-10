@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
+
 from itertools import combinations, combinations_with_replacement
 
 import numpy as np

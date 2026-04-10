@@ -14,6 +14,7 @@
 """
 Tests for the IQPEmbedding template.
 """
+
 import numpy as np
 import pytest
 

@@ -15,6 +15,7 @@
 """
 This module contains the qml.var measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math
@@ -132,7 +133,7 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -145,8 +146,8 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     Executing this QNode:
 
-    >>> circuit(0.5)
-    0.7701511529340698
+    >>> print(circuit(0.5))
+    0.770...
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)

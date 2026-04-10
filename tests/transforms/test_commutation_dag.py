@@ -14,6 +14,7 @@
 """
 Unit tests for CommutationDAG
 """
+
 from collections import OrderedDict
 
 import pytest

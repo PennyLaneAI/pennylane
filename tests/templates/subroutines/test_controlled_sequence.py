@@ -14,6 +14,7 @@
 """
 Unit tests for the ControlledSequence subroutine.
 """
+
 import numpy as np
 import pytest
 

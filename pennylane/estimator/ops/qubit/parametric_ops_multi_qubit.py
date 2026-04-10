@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric multi qubit operations."""
+
 from collections import Counter
 
 import pennylane.estimator as qre

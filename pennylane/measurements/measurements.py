@@ -16,6 +16,7 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+
 import copy
 import warnings
 from abc import ABC, abstractmethod
@@ -140,16 +141,17 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
         measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
 
+        >>> from pennylane.measurements import ProbabilityMP, SampleMP
         >>> ProbabilityMP._abstract_eval(n_wires=2)
-        ((4,), float)
+        ((4,), <class 'float'>)
         >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
-        ((4,), float)
+        ((4,), <class 'float'>)
         >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
-        ((50, 2), int)
+        ((50, 2), <class 'int'>)
         >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
-        ((50,), float)
+        ((50,), <class 'float'>)
         >>> SampleMP._abstract_eval(n_wires=None, shots=50)
-        ((50,), float)
+        ((50,), <class 'float'>)
 
         """
         return (), float
@@ -345,9 +347,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
+        >>> m = MeasurementProcess(obs=qml.X(1))
         >>> m.eigvals()
-        array([1, -1])
+        array([ 1., -1.])
 
         Returns:
             array: eigvals representation
@@ -465,6 +467,8 @@ class SampleMeasurement(MeasurementProcess):
     >>> class MyMeasurement(SampleMeasurement):
     ...     def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
     ...         return qml.math.sum(samples[..., self.wires])
+    ...     def process_counts(self, counts, wire_order):
+    ...         return qml.math.sum(counts[..., self.wires])
 
     We can now execute it in a QNode:
 
@@ -474,9 +478,8 @@ class SampleMeasurement(MeasurementProcess):
     ... def circuit():
     ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
-    ...
     >>> circuit()
-    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
+    (np.int64(1000), np.int64(0))
     """
 
     _shortname = "sample"
@@ -544,7 +547,7 @@ class StateMeasurement(MeasurementProcess):
     ...     qml.CNOT([0, 1])
     ...     return MyMeasurement(wires=[0])
     >>> circuit()
-    tensor([0.5, 0.5], requires_grad=True)
+    array([0.5, 0.5])
     """
 
     @abstractmethod

@@ -14,6 +14,7 @@
 """
 Tests for parametric single qubit resource operators.
 """
+
 import copy
 
 import pytest

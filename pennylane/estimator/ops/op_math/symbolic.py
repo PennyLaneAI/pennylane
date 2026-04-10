@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
+
 from collections.abc import Iterable
 from functools import singledispatch
 

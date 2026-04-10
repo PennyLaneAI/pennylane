@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file provides developer-facing functionality for the PennyLane logging module."""
+
 import inspect
 import sys
 

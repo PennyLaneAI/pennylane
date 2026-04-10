@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+
 from importlib.util import find_spec
 
 # pylint: disable=too-many-branches,arguments-differ
@@ -83,6 +84,10 @@ class BasisState(StatePrepBase):
     """
 
     resource_keys = {"num_wires"}
+
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:

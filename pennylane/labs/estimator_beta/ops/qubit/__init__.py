@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM pennylane/cuda/base:latest
-ARG INTERFACE_NAME=tensorflow
-WORKDIR /opt/pennylane/docker/interfaces
-RUN chmod +x install-interface-gpu.sh && ./install-interface-gpu.sh $INTERFACE_NAME
+r"""This module contains alternate decompositions for single qubit operations."""
 
-# Run Unit-Tests again
-WORKDIR /opt/pennylane
-RUN make test
-# Image build completed.
-CMD echo "Successfully built Docker image"
+from .non_parametric_ops import (
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
+from .parametric_ops_multi_qubit import paulirot_controlled_resource_decomp

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""This module contains resource operators for basic PennyLane Operators"""
 
-From pennylane/base:latest
-ARG PLUGIN_NAME=tensorflow
-WORKDIR /opt/pennylane/docker/plugins
-RUN chmod +x install-plugin.sh && ./install-plugin.sh $PLUGIN_NAME
-# Run Unit-Tests again
-WORKDIR /opt/pennylane
-RUN make test
-# Image build completed.
-CMD echo "Successfully built Docker image"
+from .qubit import (
+    paulirot_controlled_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
+from .op_math import ch_resource_decomp, ch_toffoli_based_resource_decomp

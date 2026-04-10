@@ -14,6 +14,7 @@
 """
 Unit tests for the SparseHamiltonian observable.
 """
+
 import numpy as np
 import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix

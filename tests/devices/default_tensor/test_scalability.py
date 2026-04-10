@@ -15,7 +15,6 @@
 Unit tests for the DefaultTensor class.
 """
 
-
 import numpy as np
 import pytest
 

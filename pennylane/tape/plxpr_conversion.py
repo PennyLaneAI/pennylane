@@ -19,7 +19,7 @@ from copy import copy
 
 import numpy as np
 
-from pennylane import ops
+from pennylane import ops, queuing
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -249,7 +249,8 @@ def _deallocate_primitive(self, *wires):
 @CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
 def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
     child = CollectOpsandMeas()
-    out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+    with queuing.QueuingManager.stop_recording():
+        out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
     name = name.split("_")[0]
     with pause():
         self.state["ops"].append(CollectedSubroutine(name, child.state["ops"]))

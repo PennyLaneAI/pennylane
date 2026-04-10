@@ -14,9 +14,10 @@
 """
 Unit tests for the available built-in parametric qubit operations.
 """
+
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import copy
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 import pytest
@@ -3307,6 +3308,38 @@ class TestMultiRZ:
 
         op = qml.MultiRZ(0.123, wires=[0, 1, 2, 3])
         qml.ops.functions.assert_valid(op)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_MultiRZ_decomposition_qjit_old(self, n):
+        """Test that the decomposition with qjit with the old decomposition system
+        produces the correct matrix."""
+        wires = tuple(range(n))
+        theta = 0.8362
+        mat_fn = qml.qjit(qml.matrix(qml.MultiRZ.compute_decomposition, wires), static_argnums=[1])
+        mat = mat_fn(theta, wires)
+        exp_mat = qml.MultiRZ.compute_matrix(theta, n)
+        assert np.allclose(mat, exp_mat)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_MultiRZ_decomposition_qjit_new(self, n):
+        """Test that the decomposition with qjit with the new decomposition system
+        produces the correct matrix."""
+        wires = tuple(range(n))
+        theta = 0.8362
+        exp_state = np.diag(qml.MultiRZ.compute_matrix(theta, n)) / 2 ** (n / 2)
+        for rule in qml.list_decomps(qml.MultiRZ):
+
+            @partial(qml.qjit, static_argnums=[1])
+            @qml.qnode(qml.device("lightning.qubit", wires=n))
+            def node(theta, rule):
+                _ = [qml.H(w) for w in range(n)]
+                rule(theta, wires)
+                return qml.state()
+
+            state = node(theta, rule)
+            assert np.allclose(state, exp_state)
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):

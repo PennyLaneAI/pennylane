@@ -22,10 +22,12 @@ This module contains the abstractions for defining subroutines.
     ~Subroutine
     ~SubroutineOp
     ~AbstractArray
+    ~change_op_basis_subroutine_resource_rep
     ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
 
 """
+
 import copy
 from collections import defaultdict
 from collections.abc import Callable
@@ -47,7 +49,9 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
+from pennylane.decomposition.resources import auto_wrap
+from pennylane.operation import Operation, Operator
+from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -89,6 +93,62 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
         leaves, struct = flatten(bound.arguments[arg])
         bound.arguments[arg] = (struct, tuple(leaves))
     return tuple(bound.arguments.values())
+
+
+def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, CompressedResourceOp):
+        return auto_wrap(initial)
+    if isinstance(initial, Operator):
+        return resource_rep(type(initial), **initial.resource_params)
+    return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
+
+
+def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, Operator):
+        return adjoint_resource_rep(type(initial), initial.resource_params)
+    if isinstance(initial, CompressedResourceOp):
+        return adjoint_resource_rep(initial.op_type, initial.params)
+    return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
+
+
+def change_op_basis_subroutine_resource_rep(
+    compute: "Operator | CompressedResourceOp | Subroutine",
+    target: "Operator | CompressedResourceOp | Subroutine",
+    uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
+) -> CompressedResourceOp:
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
+    in advance.
+
+    Args:
+        compute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the compute operator or subroutine.
+        target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
+        uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
+    Returns:
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the :func:`~.change_op_basis` involving a subroutine that can be
+        used in specifying the resources of another operator, template or subroutine.
+
+    .. note::
+
+        See :func:`~.subroutine_resource_rep` for more information.
+
+    """
+    compute_rep = _get_non_adjoint_rep(compute)
+    target_rep = _get_non_adjoint_rep(target)
+    if not uncompute:
+        uncompute_rep = _get_adjoint_rep(compute)
+    else:
+        uncompute_rep = _get_non_adjoint_rep(uncompute)
+    return CompressedResourceOp(
+        ChangeOpBasis,
+        {
+            "compute_op": compute_rep,
+            "target_op": target_rep,
+            "uncompute_op": uncompute_rep,
+        },
+    )
 
 
 def adjoint_subroutine_resource_rep(
@@ -817,7 +877,17 @@ class CollectedSubroutine(Operation):
 
     """
 
-    _primitive = None
+    def _flatten(self):
+        return self._decomp, self.name
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return CollectedSubroutine(metadata, data)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, name, decomp):
+        return cls._primitive.bind(name=name, decomp=decomp)
 
     def __repr__(self) -> str:
         return f"<CollectedSubroutine: {self.name}>"
@@ -827,8 +897,22 @@ class CollectedSubroutine(Operation):
         super().__init__(wires=Wires.all_wires([op.wires for op in decomp]))
         self._name = name
 
+    def queue(self, context: queuing.QueuingManager = queuing.QueuingManager):
+        context.append(self)
+        for op in self._decomp:
+            context.remove(op)
+
     def decomposition(self):
         return self._decomp
+
+
+if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-access
+
+    @CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        raise NotImplementedError(
+            "CollectedSubroutine should never be hit during abstract evaluation."
+        )
 
 
 __all__ = [
@@ -838,4 +922,5 @@ __all__ = [
     "subroutine_resource_rep",
     "CollectedSubroutine",
     "adjoint_subroutine_resource_rep",
+    "change_op_basis_subroutine_resource_rep",
 ]

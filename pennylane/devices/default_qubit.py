@@ -410,11 +410,11 @@ class DefaultQubit(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [-0.0006888975950537501,
-    0.025576307134457577,
-    -0.0038567269892757494,
-    0.1339705146860149,
-    -0.03780669772690448]
+    (tensor(-0.0006889, requires_grad=True),
+    tensor(0.02557631, requires_grad=True),
+    tensor(-0.00385673, requires_grad=True),
+    tensor(0.13397051, requires_grad=True),
+    tensor(-0.0378067, requires_grad=True))
 
     This device currently supports backpropagation derivatives:
 
@@ -434,12 +434,12 @@ class DefaultQubit(Device):
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
-            return post_processing_fn(results)
+            return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.362..., dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.932..., dtype=float64, weak_type=True)
 
     .. details::
         :title: Tracking
@@ -474,6 +474,11 @@ class DefaultQubit(Device):
         >>> new_batch, post_processing_fn = program(qscripts)
         >>> results = dev.execute(new_batch, execution_config=execution_config)
         >>> post_processing_fn(results)
+        (np.float64(-0.0006888975950538057),
+        np.float64(0.025576307134457466),
+        np.float64(-0.0038567269892758604),
+        np.float64(0.13397051468601484),
+        np.float64(-0.03780669772690465))
 
         If you monitor your CPU usage, you should see 5 new Python processes pop up to
         crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
@@ -503,7 +508,7 @@ class DefaultQubit(Device):
             if multiprocessing fails on macOS in your Jupyter notebook environment, try
             restarting the session and adding the following at the beginning of the file:
 
-            .. code-block:: python
+            .. code-block:: py
 
                 import multiprocessing
                 multiprocessing.set_start_method("fork")

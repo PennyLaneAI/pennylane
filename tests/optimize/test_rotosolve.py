@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import functools
 

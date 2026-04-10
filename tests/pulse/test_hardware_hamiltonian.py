@@ -14,6 +14,7 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
+
 # pylint: disable=too-few-public-methods, import-outside-toplevel
 import numpy as np
 import pytest

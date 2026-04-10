@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""This module contains resource operators for PennyLane subroutines and templates"""
 
-From pennylane/base:latest
-
-ARG INTERFACE_NAME=tensorflow
-WORKDIR /opt/pennylane/docker/interfaces
-RUN chmod +x install-interface.sh && ./install-interface.sh $INTERFACE_NAME
-# Run Unit-Tests again
-WORKDIR /opt/pennylane
-RUN make test
-# Image build completed.
-CMD echo "Successfully built Docker image"
+from .subroutines import selectpaulirot_controlled_resource_decomp

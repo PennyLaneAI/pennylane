@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in quantum channels.
 """
+
 # pylint: disable=too-few-public-methods
 from itertools import product
 
