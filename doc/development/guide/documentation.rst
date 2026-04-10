@@ -473,7 +473,6 @@ open ``pennylane/__init__.py`` and add the group name to the
 ``_entry_point_groups`` variable.
 
 .. code-block:: python3
-    # pennylane/__init__.py
 
     # add to _entry_point_groups as new groups are added and desired to be accessed top-level
     _entry_point_groups = ["pennylane.drawer"]
