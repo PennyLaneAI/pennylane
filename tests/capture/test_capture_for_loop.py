@@ -463,6 +463,26 @@ class TestDynamicShapes:
         _, a2 = jaxpr.eqns[-1].outvars
         assert a2.aval.shape[0] is jaxpr.jaxpr.invars[0]  # sz
 
+    def test_abstract_shapes_with_const(self):
+        """Test that abstract dimensions can be used when consts are used."""
+
+        def w(a):
+
+            b = jnp.array([1.0, 2.0])
+            c = jnp.ones(a)
+
+            @qml.for_loop(3)
+            def f(i, x, y):
+                return x + b, 2 * y
+
+            return f(b, c)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        shape, static_array, dynamic_array = jaxpr.eqns[-1].outvars
+        assert isinstance(shape, jax.core.DropVar)
+        assert static_array.aval.shape == (2,)
+        assert dynamic_array.aval.shape[0] == jaxpr.jaxpr.invars[0]  # the input a
+
 
 class TestCaptureCircuitsForLoop:
     """Tests for capturing for loops into jaxpr in the context of quantum circuits."""
