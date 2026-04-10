@@ -190,7 +190,14 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "num_work_wires", "mod"}
+    resource_keys = {
+        "num_output_wires",
+        "num_x_wires",
+        "num_y_wires",
+        "num_work_wires",
+        "mod",
+        "zeroed_output_wires",
+    }
 
     def __init__(
         self,
@@ -199,6 +206,7 @@ class OutMultiplier(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
+        zeroed_output_wires: bool = False,
         id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
@@ -246,6 +254,7 @@ class OutMultiplier(Operation):
         for name, wires in zip(wires_name, wires_list):
             self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
+        self.hyperparameters["zeroed_output_wires"] = zeroed_output_wires
 
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
@@ -259,6 +268,7 @@ class OutMultiplier(Operation):
             "num_y_wires": len(self.hyperparameters["y_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
+            "zeroed_output_wires": self.hyperparameters["zeroed_output_wires"],
         }
 
     @property
@@ -297,8 +307,13 @@ class OutMultiplier(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, mod, work_wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+        x_wires: WiresLike,
+        y_wires: WiresLike,
+        output_wires: WiresLike,
+        mod,
+        work_wires: WiresLike,
+        zeroed_output_wires: bool,
+    ):  # pylint: disable=arguments-differ, too-many-arguments, unused-argument
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -340,9 +355,8 @@ class OutMultiplier(Operation):
 
 
 def _out_multiplier_with_qft_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod, num_work_wires
+    num_output_wires, num_x_wires, num_y_wires, mod, **_
 ) -> dict:
-    # pylint: disable=unused-argument
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
         change_op_basis_resource_rep(
@@ -362,7 +376,7 @@ def _out_multiplier_with_qft_resources(
 
 
 def _out_multiplier_with_qft_condition(num_output_wires, mod, num_work_wires, **_):
-    return mod in (None, 2**num_output_wires) or num_work_wires >= 1
+    return mod in (None, 2**num_output_wires) or num_work_wires >= 2
 
 
 @register_condition(_out_multiplier_with_qft_condition)
@@ -373,8 +387,9 @@ def _out_multiplier_with_qft(
     output_wires: WiresLike,
     mod,
     work_wires: WiresLike,
-    **__,
-):
+    zeroed_output_wires: bool,
+    **_,
+):  # pylint: disable=too-many-arguments, unused-argument
     if mod != 2 ** len(output_wires):
         qft_output_wires = work_wires[:1] + output_wires
         work_wire = work_wires[1:2]
@@ -391,11 +406,8 @@ def _out_multiplier_with_qft(
     )
 
 
-def _out_multiplier_with_adder_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
-) -> dict:
-    # pylint: disable=unused-argument
-
+def _out_multiplier_with_adder_resources(num_output_wires, num_x_wires, num_y_wires, **_) -> dict:
+    """Resources for OutMultiplier decomposition with controlled adders."""
     n = num_x_wires
     m = num_y_wires
     k = num_output_wires
@@ -414,13 +426,19 @@ def _out_multiplier_with_adder_resources(
     return dict(resources)
 
 
-def _out_multiplier_with_adder_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
+def _out_multiplier_with_adder_condition(
+    num_output_wires, num_y_wires, mod, num_work_wires, zeroed_output_wires, **_
+):
     k = num_output_wires
     m = num_y_wires
     # Controlled adder takes as many work wires as the output register size. The largest controlled
     # adder is the first one in the loop, with size min(k, m+1)
     min_num_work_wires = min(k, m + 1)
-    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
+    return (
+        mod in (None, 2**num_output_wires)
+        and num_work_wires >= min_num_work_wires
+        and zeroed_output_wires
+    )
 
 
 @register_condition(_out_multiplier_with_adder_condition)
@@ -431,8 +449,9 @@ def _out_multiplier_with_adder(
     output_wires: WiresLike,
     mod,
     work_wires: WiresLike,
+    zeroed_output_wires: bool,
     **__,
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
     m = len(y_wires)
@@ -446,9 +465,8 @@ def _out_multiplier_with_adder(
 
 
 def _out_multiplier_with_caddsub_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, **_
 ) -> dict:
-    # pylint: disable=unused-argument
     n = num_x_wires
     m = num_y_wires
     k = num_output_wires + 1  # augmented output register
@@ -518,7 +536,9 @@ def _out_multiplier_with_caddsub_resources(
     return dict(resources)
 
 
-def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires, **_):
+def _out_multiplier_with_caddsub_condition(
+    num_output_wires, mod, num_work_wires, zeroed_output_wires, **_
+):
     # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires+1):
     # - min(k, m+1) # Largest size occurring in CAddSub loop
     # - k-m, # Add 2^m(x+1)
@@ -527,7 +547,11 @@ def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires
     largest_adder_size = num_output_wires + 1
     # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
     min_num_work_wires = 1 + (largest_adder_size - 1)
-    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
+    return (
+        mod in (None, 2**num_output_wires)
+        and num_work_wires >= min_num_work_wires
+        and zeroed_output_wires
+    )
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -587,8 +611,9 @@ def _out_multiplier_with_caddsub(
     output_wires: WiresLike,
     mod: None,
     work_wires: WiresLike,
+    zeroed_output_wires: bool,
     **__,
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     """We add the y register to the output register, controlled by one bit in the x register,
     and shifted onto the output register by the same shift as the control qubit."""
     # We extend our output by one wire because we need to

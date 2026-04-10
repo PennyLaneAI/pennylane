@@ -37,7 +37,9 @@ def test_standard_validity_out_multiplier():
     qml.ops.functions.assert_valid(op)
 
 
-def _test_mult_correctness(all_wires, mod, rule, seed, clean=True, include_xy=None):
+def _test_mult_correctness(
+    all_wires, mod, rule, seed, clean=True, include_xy=None, zeroed_output_wires=False
+):
     """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
     # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, work_wires = all_wires
@@ -50,7 +52,7 @@ def _test_mult_correctness(all_wires, mod, rule, seed, clean=True, include_xy=No
         qml.BasisEmbedding(x, wires=x_wires)
         qml.BasisEmbedding(y, wires=y_wires)
         qml.BasisEmbedding(z, wires=output_wires)
-        rule(x_wires, y_wires, output_wires, mod, work_wires)
+        rule(x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires)
         return (
             qml.counts(wires=x_wires),
             qml.counts(wires=y_wires),
@@ -63,24 +65,29 @@ def _test_mult_correctness(all_wires, mod, rule, seed, clean=True, include_xy=No
 
     rng = np.random.default_rng(seed)
     num_x = 2 ** len(x_wires)
-    xs = rng.choice(num_x, size=min(num_x, 3))
+    xs = rng.choice(num_x, size=min(num_x, 2))
     num_y = 2 ** len(y_wires)
-    ys = rng.choice(num_y, size=min(num_y, 3))
+    ys = rng.choice(num_y, size=min(num_y, 2))
     xys = list(product(xs, ys))
     if include_xy is not None:
         xys.append(include_xy)
 
-    z = 0
-    for x, y in xys:
+    if zeroed_output_wires:
+        zs = [0]
+    else:
+        zs = [0, mod // 2 + 1, mod - 1]
+
+    for (x, y), z in product(xys, zs):
         output = circuit(x, y, z)
         assert len(output) == 4 and all(len(out) == 1 for out in output)
         out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
+        expected = (x, y, (z + x * y) % mod, 0)
 
         if clean:
-            assert out_ints == (x, y, (z + x * y) % mod, 0)
+            assert out_ints == expected, f"\n{out_ints}\n{expected} ({z=})"
         else:
             # Skip work wire check
-            assert out_ints[:-1] == (x, y, (z + x * y) % mod)
+            assert out_ints[:-1] == expected[:-1], f"\n{out_ints[:-1]}\n{expected[:-1]} ({z=})"
 
 
 class TestOutMultiplier:
@@ -212,7 +219,9 @@ class TestOutMultiplier:
         )
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
+            .compute_decomposition(
+                x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires=False
+            )[0]
             .decomposition()
         )
 
@@ -261,18 +270,20 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
-    def test_decomposition_new(
+    def test_decomposition_new_zeroed_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+        op = qml.OutMultiplier(
+            x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires=True
+        )
         for j, rule in enumerate(qml.list_decomps(qml.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
-                _test_mult_correctness(all_wires, mod, rule, seed)
+                _test_mult_correctness(all_wires, mod, rule, seed, zeroed_output_wires=True)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
