@@ -100,7 +100,7 @@ class FermiWord(dict):
 
     def __copy__(self):
         r"""Copy the FermiWord instance."""
-        return FermiWord(dict(self.items()))
+        return FermiWord(dict(self))
 
     def __deepcopy__(self, memo):
         r"""Deep copy the FermiWord instance."""
@@ -241,7 +241,7 @@ class FermiWord(dict):
                     other.values(),
                 )
             )
-            dict_self = dict(zip(self.keys(), self.values()))
+            dict_self = dict(self)
 
             dict_self.update(dict_other)
 
