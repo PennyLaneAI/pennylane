@@ -159,13 +159,19 @@ class QROM(Operation):
         the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
 
 
-        The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
-        The first :math:`c-1` work wires are asigned to the :class:`~.Select` block where :math:`c` is the number of control wires in the operator.
-        On the other hand, let :math:`k` be the number of work wires left. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
-        Otherwise, we follow the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], and use auxiliary qubits to
-        load more than one bitstring in parallel. Let :math:`\lambda` be
-        the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
-        Then, :math:`k = l \cdot (\lambda-1)` work wires are needed, where :math:`l` is the length of the bitstrings.
+        The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
+        operator. These wires are dynamically partitioned into two sets: one for the
+        :class:`~.Select` block and another to facilitate parallel data loading via a
+        SWAP network.
+
+        The template determines depth, :math:`\lambda` (a power of 2),
+        based on the available ``work_wires``. Let :math:`b` be the length of the bitstrings.
+        The number of wires allocated to the SWAP network is :math:`k_{swap} = b \cdot (\lambda - 1)`.
+        The remaining wires, :math:`k_{select}`, are assigned to the :class:`~.Select` block.
+
+        To ensure the decomposition is valid, the template guarantees that
+        :math:`k_{select} \geq c - \log_2(\lambda) - 1`, where :math:`c` is the number of
+        control wires updating the depth if needed.
 
         The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
         The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
