@@ -976,7 +976,7 @@ The following classes have been ported over:
 
 * Fixed wire overlap validation in `QROM` and `Select` to support JAX-traced wires,
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
