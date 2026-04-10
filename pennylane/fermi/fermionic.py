@@ -227,10 +227,10 @@ class FermiWord(dict):
 
         if isinstance(other, FermiWord):
             if len(self) == 0:
-                return copy(other)
+                return other
 
             if len(other) == 0:
-                return copy(self)
+                return self
 
             order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
             other_wires = [i[1] for i in other.sorted_dic.keys()]
