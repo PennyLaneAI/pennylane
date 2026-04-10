@@ -170,6 +170,9 @@ The following classes have been ported over:
 * Decomposition rules can now be assigned custom names using the ``name`` argument in :func:`qml.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
+* Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
+
 <h3>Improvements 🛠</h3>
 
 * Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
@@ -962,6 +965,9 @@ The following classes have been ported over:
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
+
+* Fixed the docstring of ``FermiSentence`` that incorrectly claims that it is immutable.
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Bug fixes 🐛</h3>
 
