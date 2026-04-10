@@ -283,8 +283,8 @@ class QROM(ResourceOperator):
         num_bitstrings: int,
         size_bitstring: int,
         num_bit_flips: int | None = None,
-        select_swap_depth: int | None = None,
         borrow_qubits: bool = True,
+        select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list of ``GateCount`` objects representing the operator's resources.
 
@@ -293,24 +293,23 @@ class QROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            borrow_qubits (bool): Determine whether the auxiliary qubits should be borrowed (higher gate
+                cost) or freshly allocated (higher qubit cost). Defaults to :code:`True`.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
                 depth that minimizes T-gate count.
-            borrow_qubits (bool): Determine whether the auxiliary qubits should be borrowed (higher gate
-                cost) or freshly allocated (higher qubit cost). Defaults to :code:`True`.
 
         Resources:
-            The resources for QROM are derived from the following references:
+            The resources for QROM are derived from Appendix A, B from `Berry et al. (2019)
+            <https://arxiv.org/abs/1902.02134>`_.
 
-            * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
-              `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
-              measurement-based uncomputation technique described in
-              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+            * :code:`borrow_qubits=True`: Uses the borrowed qubit decomposition from Figure 4 of Appendix A in
+            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
-            * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
-              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+            * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
+            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             Note: we use the unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -462,10 +461,14 @@ class QROM(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            The resources for QROM are taken from the following two papers:
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-            :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-            (Figure 4) for :code:`restored = True`.
+            The resources for QROM are derived from Appendix A, B from `Berry et al. (2019)
+            <https://arxiv.org/abs/1902.02134>`_.
+
+            * :code:`borrow_qubits=True`: Uses the borrowed qubit decomposition from Figure 4 of Appendix A in
+            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+
+            * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
+            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n` additional work qubits,
@@ -539,7 +542,8 @@ class QROM(ResourceOperator):
         if num_data_blocks == 1:
             gate_cost.append(
                 GateCount(
-                    x, num_bit_flips * repeat
+                    x,
+                    num_bit_flips * repeat,
                 )  # each unitary in the select is just an X gate to load the data
             )
 
@@ -586,7 +590,8 @@ class QROM(ResourceOperator):
     def _single_ctrl_select_cost(
         cls, num_data_blocks: int, num_bit_flips: int, repeat: int = 1
     ) -> list[GateCount]:
-        r"""From Figure 7. of https://arxiv.org/abs/1805.03662
+        r"""The decomposition of a controlled Select operation using unary iteration as
+        described in Figure 7. of `Babbush et al. (2018) <https://arxiv.org/abs/1805.0366>`_.
 
         Args:
             num_data_blocks(int): The number of data blocks formed by partitioning the
@@ -607,14 +612,14 @@ class QROM(ResourceOperator):
             gate_cost.append(
                 GateCount(
                     x,
-                    repeat * num_bit_flips,
-                )  #  each unitary in the select is just an X
+                    num_bit_flips * repeat,
+                )  # each unitary in the select is just an X gate to load the data
             )
 
         else:  # num_data_blocks > 1
             gate_cost.append(
                 GateCount(x, repeat * (2 * (num_data_blocks - 1)))
-            )  # # conjugate 0-control in left-elbows
+            )  # conjugate 0-control in left-elbows
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -630,15 +635,17 @@ class QROM(ResourceOperator):
     def _swap_cost(
         cls, register_size: int, num_swap_ctrls: int, repeat: int = 1
     ) -> list[GateCount]:
-        """Constructs the control-S subroutine as defined in Figure 8 of
-        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the initial ``X`` gate.
+        r"""Constructs the control-S subroutine as defined in Figure 8 of
+        `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_ excluding the initial ``X`` gate.
 
         Args:
-            num_ctrl_wires (int): The number of control wires.
-            count (int): The number of times to repeat the subroutine.
+            register_size (int): The length of the bitstrings being encoded.
+            num_swap_ctrls (int): The number of control wires to be used for the swapping subroutine.
+                Should be equal to :math:`\log_{2}(\text{select_swap_depth})`.
+            repeat (int): The number of times to repeat the subroutine.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S` subroutine.
+            list[GateCount]: the resource decomposition of the control- :math:`S` subroutine
         """
         width = 2**num_swap_ctrls
         ctrl_swap = resource_rep(qre.CSWAP)
@@ -648,15 +655,17 @@ class QROM(ResourceOperator):
     def _swap_adj_cost(
         cls, register_size: int, num_swap_ctrls: int, repeat: int = 1
     ) -> list[GateCount]:
-        r"""Constructs the control-S^adj subroutine as defined in Fig.8 - Fig.10
-        of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the terminal ``X`` gate.
+        r"""Constructs the control-S^adj subroutine as defined in Figure 8 to Figure 10
+        of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_ excluding the terminal ``X`` gate.
 
         Args:
-            num_ctrl_wires (int): The number of control wires.
-            count (int): The number of times to repeat the subroutine.
+            register_size (int): The length of the bitstrings being encoded.
+            num_swap_ctrls (int): The number of control wires to be used for the swapping subroutine.
+                Should be equal to :math:`\log_{2}(\text{select_swap_depth})`.
+            repeat (int): The number of times to repeat the subroutine.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S^{\dagger}` subroutine.
+            list[GateCount]: the resource decomposition of the control- :math:`S^{\dagger}` subroutine
 
         """
         h = qre.resource_rep(qre.Hadamard)
@@ -674,21 +683,20 @@ class QROM(ResourceOperator):
     def _single_ctrl_swap_cost(
         cls, register_size: int, num_swap_ctrls: int, repeat: int = 1
     ) -> list[GateCount]:
-        """Constructs the control-S subroutine as defined in Figure 8 of
-        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the initial ``X`` gate.
-
-        This is a combination of the standard control-SWAP decomposition from Figure 1.b of
-        https://arxiv.org/abs/1812.00954, with the observation that each set of swaps acts on
-        one of the swap-control wires at a time. We can control this decomposition on a single
-        qubit using a single auxiliary qubit and a pair of l/r elbow gates for each swap-control
+        """This is a combination of the standard control-SWAP decomposition from Figure 1.b of
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_, with the observation that each
+        set of swaps acts on one of the swap-control wires at a time. We can control this decomposition
+        on a single qubit using a single auxiliary qubit and a pair of l/r elbow gates for each swap-control
         wires. This is because we can recycle the same auxiliary qubit for each set of l/r elbows.
 
         Args:
-            num_ctrl_wires (int): The number of control wires.
-            count (int): The number of times to repeat the subroutine.
+            register_size (int): The length of the bitstrings being encoded.
+            num_swap_ctrls (int): The number of control wires to be used for the swapping subroutine.
+                Should be equal to :math:`\log_{2}(\text{select_swap_depth})`.
+            repeat (int): The number of times to repeat the subroutine.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S` subroutine.
+            list[GateCount]: the resource decomposition of the control- :math:`S` subroutine
         """
         width = 2**num_swap_ctrls
 
@@ -709,6 +717,20 @@ class QROM(ResourceOperator):
     def qrom_clean_auxiliary_adjoint_resource_decomp(
         cls, target_resource_params: dict
     ) -> list[GateCount]:
+        """Returns a list representing the resources of the adjoint of the operator.
+
+        Args:
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            This is an alternate decomposition for the adjoint of QROM which uses a measurement and phase
+            fixup algorithm. This decomposition requires one clean auxiliary qubit. The resources are
+            based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears in the decomposition.
+        """
         d = target_resource_params["num_bitstrings"]
         M = target_resource_params["size_bitstring"]
         num_bit_flips = target_resource_params.get("num_bit_flips", None)
@@ -753,6 +775,20 @@ class QROM(ResourceOperator):
     def qrom_dirty_auxiliary_adjoint_resource_decomp(
         cls, target_resource_params: dict
     ) -> list[GateCount]:
+        """Returns a list representing the resources of the adjoint of the operator.
+
+        Args:
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            This is an alternate decomposition for the adjoint of QROM which uses a measurement and phase
+            fixup algorithm. This decomposition requires one borrowed auxiliary qubit. The resources are
+            based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears in the decomposition.
+        """
         d = target_resource_params["num_bitstrings"]
         M = target_resource_params["size_bitstring"]
         num_bit_flips = target_resource_params.get("num_bit_flips", None)
@@ -796,18 +832,15 @@ class QROM(ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
-        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
-        and the number of times it occurs in the decomposition.
+        r"""Returns a list representing the resources of the adjoint of the operator.
 
         Args:
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            This resources are based on Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
