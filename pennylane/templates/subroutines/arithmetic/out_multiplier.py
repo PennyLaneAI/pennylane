@@ -14,6 +14,7 @@
 """
 Contains the OutMultiplier template.
 """
+
 from collections import defaultdict
 
 from pennylane.decomposition import (
@@ -106,21 +107,27 @@ class OutMultiplier(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input four different sets of wires.
+        This template takes as input four different registers of wires.
 
-        The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, ``x_wires`` must contain
-        at least :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
+        The first register is ``x_wires`` which is used
+        to encode the integer :math:`x < mod` in the computational basis.
 
-        The second one is ``y_wires`` which is used
-        to encode the integer :math:`y < mod` in the computational basis. Therefore, ``y_wires`` must contain
-        at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`.
+        The second register is ``y_wires`` which is used
+        to encode the integer :math:`y < mod` in the computational basis.
 
-        The third one is ``output_wires`` which is used
-        to encode the integer :math:`b+ x \cdot y \; \text{mod} \; mod` in the computational basis. Therefore, it will require at least
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y \; \text{mod} \; mod`.  Note that these wires can be initialized with any integer
-        :math:`b < mod`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y \; \text{mod} \; mod`.
-        The following is an example for :math:`b = 1`.
+        The third register is ``output_wires`` which is used
+        to encode the integer :math:`(b+ x \cdot y) \; \text{mod} \; mod` in the computational
+        basis. Therefore, it will require at least :math:`\lceil \log_2(mod)\rceil` wires
+        Note that these wires can be initialized with any integer :math:`b < mod`.
+
+        The fourth register is ``work_wires`` containing the auxiliary qubits used to
+        perform the modular multiplication operation. The number of auxiliary wires determines
+        which decomposition is available (also see below).
+
+        **Initial state of output wires**
+
+        As indicated above, the initial state of ``output_wires`` can encode any value
+        :math:`b<mod`. The following is an example for :math:`b = 1`.
 
         .. code-block:: python
 
@@ -142,22 +149,20 @@ class OutMultiplier(Operation):
                 qml.BasisEmbedding(y, wires=y_wires)
                 qml.BasisEmbedding(b, wires=output_wires)
                 qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-                return qml.sample(wires=output_wires)
+                return qml.counts(wires=output_wires)
 
-        >>> print(circuit())
-        [[0 0 1 1]]
+        >>> out = circuit()
+        >>> print(out)
+        {np._bin("0011"): 1}
+        >>> print(int(list(out.keys())[0], 2))
+        3
 
-        The result :math:`[[0 0 1 1]]`, is the binary representation of
-        :math:`2 \cdot 7 + 1\; \text{modulo} \; 12 = 3`.
+        The result :math:`(0011)_2`, is the binary representation of
+        :math:`(1 + 2 \cdot 7)\; \text{modulo} \; 12 = 3`:
 
-        The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
-
-        - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
-
-        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
-
-        Note that the ``OutMultiplier`` template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
-        standard multiplication (with no modulo), that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.
+        If the initial state on the output wires is guaranteed to be :math:`|0\rangle`, this
+        can be indicated to ``OutMultiplier`` by setting ``zeroed_output_wires=True``. This
+        simplifies some of the available decompositions (also see below), saving quantum resources.
 
         **Different decompositions**
 
@@ -176,12 +181,12 @@ class OutMultiplier(Operation):
           :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The concrete :class:`~.Toffoli` count
           resulting from this is a bit verbose in general.
 
-        - The third implementation uses :class:`~.CAddSub`\ s to replace the controllled
+        - The third implementation uses controlled addition/subtraction to replace the controlled
           ``SemiAdder``\ s from the previous implementation, based on
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
           For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L=\min(k, n)` controlled add/subtract operations
-          of usually varying size :math:`\min(k + 1 - i, m + 1)` for :math:`0\leq i<L,
+          of usually varying size :math:`\min(k + 1 - i, m + 1)` for :math:`0\leq i<L`,
           three ``SemiAdder``\ s of sizes :math:`\min(k + 1 - m, n + 1)`,
           :math:`\min(k + 1 - n, m + 1)` and :math:`k+1`, as well as an incrementer on
           :math:`\min(k + 1, n + m)` qubits and Pauli gates.
