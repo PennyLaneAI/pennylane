@@ -931,6 +931,12 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `qml.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
+  instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
+  (e.g., `return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))`) and receives batched inputs. This
+  previously caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear`
+  layers.
+
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
