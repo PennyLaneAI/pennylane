@@ -186,6 +186,21 @@ def compile(
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 
+    if basis_set is not None:
+        for item in basis_set:
+            if isinstance(item, qml.operation.Operator):
+                raise ValueError(
+                    f"The basis_set should contain strings (operation names) but received "
+                    f"an Operator of type {type(item).__name__}. "
+                    f"If you want to include all operations, pass basis_set=None or basis_set=[]."
+                )
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"The basis_set should contain strings (operation names) but received "
+                    f"{type(item).__name__}. "
+                    f"If you want to include all operations, pass basis_set=None or basis_set=[]."
+                )
+
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we
