@@ -102,6 +102,17 @@ class TestDecomposeInterpreterGraphEnabled:
     """Tests the DecomposeInterpreter with the new graph-based decomposition system enabled."""
 
     @pytest.mark.unit
+    def test_error_no_gate_set_plxpr(self):
+        """Tests that a clear error is raised when DecomposeInterpreter is
+        created without gate_set while graph-based decomposition is enabled."""
+
+        with pytest.raises(
+            TypeError,
+            match="The gate_set argument is required when the graph-based decomposition system",
+        ):
+            DecomposeInterpreter()
+
+    @pytest.mark.unit
     def test_gate_set_contains(self):
         """Tests specifying the target gate set."""
 
