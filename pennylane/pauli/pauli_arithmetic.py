@@ -1052,8 +1052,9 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
+        return self
 
-    def simplify(self, tol=1e-8) -> None:
+    def simplify(self, tol=1e-8) -> "PauliSentence":
         """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
 
         This method mutates the ``PauliSentence`` in place, and does not return anything.

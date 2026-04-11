@@ -621,8 +621,9 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+        return self
 
-    def simplify(self, tol=1e-8) -> None:
+    def simplify(self, tol=1e-8) -> "FermiSentence":
         """Remove any FermiWord with coefficients less than the threshold tolerance.
 
         This method mutates the ``FermiSentence`` in place, and does not return anything.
