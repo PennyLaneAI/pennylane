@@ -385,8 +385,17 @@ def _add_measurement(
 
     if len(m.wires) == 0:  # state or probability across all wires
         n_wires = len(config.wire_map)
-        for i, s in enumerate(layer_str[:n_wires]):
-            layer_str[i] = s + meas_label
+        if isinstance(m, (StateMP, DensityMatrixMP)) and n_wires >= 2:
+            # Add measurement label with bracket notation (╭/╰) to first and last wire,
+            # and continue (├) for intermediate wires
+            layer_str[0] += "╭" + meas_label
+            for i in range(1, n_wires - 1):
+                layer_str[i] += "├" + meas_label
+            layer_str[n_wires - 1] += "╰" + meas_label
+        else:
+            for i, s in enumerate(layer_str[:n_wires]):
+                layer_str[i] = s + meas_label
+        return layer_str
 
     for w in m.wires:
         layer_str[config.wire_map[w]] += meas_label
