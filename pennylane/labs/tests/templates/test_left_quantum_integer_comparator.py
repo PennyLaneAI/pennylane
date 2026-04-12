@@ -23,16 +23,6 @@ from pennylane.labs.templates.left_quantum_integer_comparator import LeftQuantum
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
-def test():
-    op = LeftQuantumIntegerComparator([0, 1], [2, 3], 4, 5, 0)
-    assert op.hyperparameters["target_wire"] == qp.wires.Wires(4)
-    assert op.hyperparameters["x_wires"] == qp.wires.Wires([0, 1])
-    assert op.hyperparameters["y_wires"] == qp.wires.Wires([2, 3])
-    assert op.hyperparameters["work_wires"] == qp.wires.Wires(5)
-    assert op.hyperparameters["op"] == 0
-
-'''
-@pytest.mark.jax
 def test_standard_validity_c_add_sub():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -41,99 +31,76 @@ def test_standard_validity_c_add_sub():
     target_wire = 8
     op = 2
 
-    op = LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
-    assert_valid(op)
+    gate = LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
+    assert_valid(gate)
+
+    assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
+    assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
+    assert gate.hyperparameters["y_wires"] == qp.wires.Wires([3, 4, 5])
+    assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
+    assert gate.hyperparameters["op"] == 2
 
 
+class TestLeftQuantumIntegerComparator:
+    """Test LeftQuantumIntegerComparator template."""
 
-def validate_c_add_sub(output, x, y, ctrl_state, mod):
-    """Validate that a circuit output matches the expected when encoding x, y and ctrl_state
-    and applying ``CAddSub``."""
-    if not isinstance(output[0], dict):
-        # Output from QJIT
-        output = tuple(
-            {int(key): val for key, val in zip(out[0][np.where(out[1])], out[1][np.where(out[1])])}
-            for out in output
-        )
-    else:
-        output = tuple({int(key, 2): val for key, val in out.items()} for out in output)
+    # op:
+    # 0: <
+    # 1: <=
+    # 2: >=
+    # 3: >
 
-    assert all(len(counts) == 1 for counts in output)  # Output should be deterministic
-    x_val = list(output[0].keys())[0]
-    assert x_val == x
-    y_val = list(output[1].keys())[0]
-    if ctrl_state == 0:
-        assert y_val == (y - x) % mod
-    else:
-        assert y_val == (y + x) % mod
-
-    if len(output) > 2:
-        work_val = list(output[2].keys())[0]
-        assert work_val == 0
-
-
-class TestCAddSub:
-    """Test the qp.CAddSub template."""
-
-    @pytest.mark.usefixture("enable_and_disable_graph_decomp")
+    @pytest.mark.catalyst
+    @pytest.mark.external
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "work_wires", "x", "y"),
+        ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y", "op", "expected"),
         [
-            ([0], [1], None, 1, 0),
-            ([0], [1], None, 1, 1),
-            ([0, 1], [2], None, 0, 1),
-            ([0, 1], [2], None, 1, 1),
-            ([0, 1], [2], None, 1, 0),
-            ([0, 1], [2, 3], [4], 2, 0),
-            ([0, 1], [2, 3], [4], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6),
-            ([0, 1], [2, 3, 4], [5, 6], 3, 2),
-            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7),
-            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
-            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
-            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q"], 4, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, 0, False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, 1, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, 2, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, 3, False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, 0, False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, 1, False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, 2, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, 3, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, 0, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, 1, True),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, 2, False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, 3, False),
+            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, 0, True),
+            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, 1, True),
+            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, 2, False),
+            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, 3, False),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
+        self, x_wires, y_wires, target_wire, work_wires, x, y, op, expected
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the CAddSub template output."""
-        dev = qp.device("default.qubit")
-        control_wire = "control"
 
-        @qp.set_shots(100)
-        @qp.decompose(gate_set={"BasisEmbedding", "C(BasisState)", "SemiAdder"})
-        @qp.qnode(dev)
-        def circuit(x, y, ctrl_state):
-            qp.BasisEmbedding(ctrl_state, wires=control_wire)
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
-            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
-            if not work_wires:
-                return qp.counts(wires=x_wires), qp.counts(wires=y_wires)
-            return qp.counts(wires=x_wires), qp.counts(wires=y_wires), qp.counts(wires=work_wires)
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
+        def circuit():
+            qp.BasisState(x, wires=x_wires)
+            qp.BasisState(y, wires=y_wires)
+            LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
+            qp.CNOT([11, 12])
+            qp.adjoint(
+                lambda: LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
+            )()
+            return qp.sample(wires=[12])
 
-        mod = 2 ** len(y_wires)
-        for ctrl_state in [0, 1]:
-            output = circuit(x, y, ctrl_state)
-            validate_c_add_sub(output, x, y, ctrl_state, mod)
-
-        gates = qp.specs(circuit, level=1)(x, y, 1)["resources"].gate_types
-        assert gates == {"BasisEmbedding": 3, "C(BasisState)": 2, "SemiAdder": 1}
+        assert bool(circuit()[0]) == expected
 
     @pytest.mark.parametrize(
-        ("control_wire", "x_wires", "y_wires", "work_wires", "msg_match"),
+        ("target_wire", "x_wires", "y_wires", "work_wires", "op", "msg_match"),
         [
             (
                 8,
                 [0, 1, 2],
                 [3, 4, 5],
                 [1],
+                0,
                 "At least 2 work_wires should be provided.",
             ),
             (
@@ -141,13 +108,15 @@ class TestCAddSub:
                 [0, 1, 2],
                 [3, 4, 5],
                 [6, 7],
-                "None of the wires in work_wires should be the control wire.",
+                1,
+                "None of the wires in work_wires should be the target wire.",
             ),
             (
                 8,
                 [0, 1, 2],
                 [3, 4, 5],
                 [1, 6],
+                2,
                 "None of the wires in work_wires should be included in x_wires.",
             ),
             (
@@ -155,6 +124,7 @@ class TestCAddSub:
                 [0, 1, 2],
                 [3, 4, 5],
                 [3, 6],
+                3,
                 "None of the wires in work_wires should be included in y_wires.",
             ),
             (
@@ -162,13 +132,15 @@ class TestCAddSub:
                 [0, 1, 2],
                 [3, 4, 5],
                 [6, 7],
-                "None of the wires in x_wires should be the control wire.",
+                1,
+                "None of the wires in x_wires should be the target wire.",
             ),
             (
                 9,
                 [0, 1, 2],
                 [2, 3, 4, 5],
                 [6, 7, 8],
+                2,
                 "None of the wires in y_wires should be included in x_wires.",
             ),
             (
@@ -176,44 +148,24 @@ class TestCAddSub:
                 [0, 1, 2],
                 [3, 4, 5],
                 [6, 7],
-                "None of the wires in y_wires should be the control wire.",
+                1,
+                "None of the wires in y_wires should be the target wire.",
+            ),
+            (
+                8,
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7],
+                ">",
+                "Allowed values for 'op' are: 0, 1, 2 and 3.",
             ),
         ],
     )
     def test_wires_error(
-        self, control_wire, x_wires, y_wires, work_wires, msg_match
+        self, target_wire, x_wires, y_wires, work_wires, op, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.catalyst
-    @pytest.mark.external
-    def test_qjit_compatible(self):
-        """Test that the template is compatible with the QJIT compiler."""
-        x, y = 2, 3
-
-        x_wires = qp.math.array([0, 1, 4], like="jax")
-        y_wires = [2, 3, 5]
-        work_wires = [7, 8]
-        control_wire = 9
-        dev = qp.device("lightning.qubit", wires=10)
-
-        @qp.qjit
-        @qp.set_shots(100)
-        @qp.decompose(max_expansion=4)
-        @qp.qnode(dev)
-        def circuit(x_wires, y, ctrl_state):
-            qp.BasisEmbedding(ctrl_state, wires=control_wire)
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
-            qp.CAddSub(control_wire, x_wires, y_wires, work_wires)
-            return qp.counts(wires=x_wires), qp.counts(wires=y_wires), qp.counts(wires=work_wires)
-
-        mod = 2 ** len(y_wires)
-        for ctrl_state in [0, 1]:
-            output = circuit(x_wires, y, ctrl_state)
-            validate_c_add_sub(output, x, y, ctrl_state, mod)
-
-'''
+            qp.labs.templates.LeftQuantumIntegerComparator(
+                x_wires, y_wires, target_wire, work_wires, op
+            )

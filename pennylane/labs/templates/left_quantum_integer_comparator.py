@@ -26,6 +26,7 @@ from pennylane.templates.subroutines import Elbow
 from pennylane import cond, for_loop
 from pennylane import compiler, math, capture
 
+
 class LeftQuantumIntegerComparator(Operation):
     r"""This operator performs an inequality test between two quantum registeres :math:`x` and
     :math:`y`, storing the result in a target qubit. Depending on the value of the
@@ -59,24 +60,24 @@ class LeftQuantumIntegerComparator(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.labs.templates import LeftQuantumIntegerComparator
 
-        dev = qml.device("lightning.qubit")
+        dev = qp.device("lightning.qubit")
 
-        @qml.qjit
-        @qml.qnode(dev, shots=1)
+        @qp.qjit
+        @qp.qnode(dev, shots=1)
         def circuit(a, b):
 
             op = 2
-            qml.BasisState(a, wires=[0, 3, 6, 9])
-            qml.BasisState(b, wires=[1, 4, 7, 10])
+            qp.BasisState(a, wires=[0, 3, 6, 9])
+            qp.BasisState(b, wires=[1, 4, 7, 10])
             LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-            qml.CNOT([11, 12])
-            qml.adjoint(
+            qp.CNOT([11, 12])
+            qp.adjoint(
                 lambda: LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
             )()
-            return qml.sample(wires=[12])
+            return qp.sample(wires=[12])
 
     .. code-block:: pycon
 
@@ -104,7 +105,8 @@ class LeftQuantumIntegerComparator(Operation):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-
+        if op not in [0, 1, 2, 3]:
+            raise ValueError("Allowed values for 'op' are: 0, 1, 2 and 3.")
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
                 raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
@@ -127,7 +129,7 @@ class LeftQuantumIntegerComparator(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["op"] = op
 
-        all_wires = [ x_wires, y_wires, target_wire]
+        all_wires = [x_wires, y_wires, target_wire]
         if work_wires:
             all_wires.append(work_wires)
         all_wires = Wires.all_wires(all_wires)
@@ -135,8 +137,10 @@ class LeftQuantumIntegerComparator(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"num_y_wires": len(self.hyperparameters["y_wires"]),
-                "op": len(self.hyperparameters["op"]),}
+        return {
+            "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "op": self.hyperparameters["op"],
+        }
 
     @property
     def num_params(self):
@@ -154,10 +158,10 @@ class LeftQuantumIntegerComparator(Operation):
     def map_wires(self, wire_map: dict) -> "LeftQuantumIntegerComparator":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in [ "x_wires", "y_wires", "target_wire", "work_wires"]
+            for key in ["x_wires", "y_wires", "target_wire", "work_wires"]
         }
 
-        return LeftQuantumIntegerComparator(**new_dict, op = self.hyperparameters["op"])
+        return LeftQuantumIntegerComparator(**new_dict, op=self.hyperparameters["op"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -196,14 +200,14 @@ class LeftQuantumIntegerComparator(Operation):
         return q.queue
 
 
-def _left_quantum_integer_comparator_resources(num_y_wires ,op):
+def _left_quantum_integer_comparator_resources(num_y_wires, op):
 
     resources = {
         Elbow: num_y_wires,
-        CNOT: 2 + 5 * num_y_wires,
+        CNOT: 2 + 5 * (num_y_wires - 1),
     }
 
-    if op in [1,2]:
+    if op in [1, 2]:
         resources[X] = 1
 
     return resources
@@ -225,9 +229,14 @@ def _left_quantum_integer_comparator(x_wires, y_wires, target_wire, work_wires, 
     def _swap(x_wires, y_wires):
         return x_wires, y_wires
 
-    cond(math.logical_or(op == 1, op == 2), X(wires=target_wire))
+    x_wires, y_wires = _swap(x_wires, y_wires)
 
-    used_work_wires = Wires.all_wires([work_wires[:len(x_wires) - 1], target_wire])
+    def _negate_output():
+        X(wires=target_wire)
+
+    cond(math.logical_or(op == 1, op == 2), _negate_output)()
+
+    used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
     CNOT(wires=[x_wires[0], y_wires[0]])
     Elbow(wires=[x_wires[0], y_wires[0], used_work_wires[0]])
