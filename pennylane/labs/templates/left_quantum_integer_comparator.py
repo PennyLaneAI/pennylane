@@ -47,7 +47,8 @@ class LeftQuantumIntegerComparator(Operation):
 
     Args:
             x_wires (WiresLike): The wires that store the integer :math:`x`.
-            y_wires (WiresLike): The wires that store the integer :math:`y`.
+            y_wires (WiresLike): The wires that store the integer :math:`y`. The number of ``y_wires`` should be equal to
+                the number of ``x_wires``.
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` work wires should be provided.
@@ -106,15 +107,17 @@ class LeftQuantumIntegerComparator(Operation):
 
         if op not in [0, 1, 2, 3]:
             raise ValueError("Allowed values for 'op' are: 0, 1, 2 and 3.")
-        if work_wires:
-            if len(work_wires) < len(y_wires) - 1:
-                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
-            if work_wires.intersection(target_wire):
-                raise ValueError("None of the wires in work_wires should be the target wire.")
-            if work_wires.intersection(x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if work_wires.intersection(y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+
+        if len(work_wires) < len(y_wires) - 1:
+            raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+        if work_wires.intersection(target_wire):
+            raise ValueError("None of the wires in work_wires should be the target wire.")
+        if work_wires.intersection(x_wires):
+            raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        if work_wires.intersection(y_wires):
+            raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        if len(x_wires) != len(y_wires):
+            raise ValueError("The number of y_wires should be equal to the number of x_wires")
         if x_wires.intersection(target_wire):
             raise ValueError("None of the wires in x_wires should be the target wire.")
         if x_wires.intersection(y_wires):
@@ -128,9 +131,7 @@ class LeftQuantumIntegerComparator(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["op"] = op
 
-        all_wires = [x_wires, y_wires, target_wire]
-        if work_wires:
-            all_wires.append(work_wires)
+        all_wires = [x_wires, y_wires, target_wire, work_wires]
         all_wires = Wires.all_wires(all_wires)
         super().__init__(wires=all_wires)
 

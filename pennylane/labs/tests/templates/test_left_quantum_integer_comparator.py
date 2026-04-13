@@ -140,7 +140,7 @@ class TestLeftQuantumIntegerComparator:
             (
                 9,
                 [0, 1, 2],
-                [2, 3, 4, 5],
+                [2, 3, 4],
                 [6, 7, 8],
                 2,
                 "None of the wires in y_wires should be included in x_wires.",
@@ -160,6 +160,14 @@ class TestLeftQuantumIntegerComparator:
                 [6, 7],
                 ">",
                 "Allowed values for 'op' are: 0, 1, 2 and 3.",
+            ),
+            (
+                8,
+                [0, 2],
+                [3, 4, 5],
+                [6, 7],
+                0,
+                "The number of y_wires should be equal to the number of x_wires",
             ),
         ],
     )
