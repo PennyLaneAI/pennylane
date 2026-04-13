@@ -1823,7 +1823,6 @@ decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
-    _2mcx_elbow_explicit,
     decompose_mcx_many_workers_explicit,
     decompose_mcx_many_borrowed_workers,
     decompose_mcx_many_zeroed_workers,
