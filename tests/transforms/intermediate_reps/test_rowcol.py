@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the CNOT routing algorithm ROWCOL."""
+
 # pylint: disable=no-self-use
 import networkx as nx
 import numpy as np

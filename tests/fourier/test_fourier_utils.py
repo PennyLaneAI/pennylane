@@ -14,6 +14,7 @@
 """
 Tests for the Fourier module helper functions.
 """
+
 import numpy as np
 import pytest
 

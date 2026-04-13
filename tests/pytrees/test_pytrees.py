@@ -14,6 +14,7 @@
 """
 Tests for the pennylane pytrees module.
 """
+
 import re
 
 import pytest

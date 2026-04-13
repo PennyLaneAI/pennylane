@@ -14,6 +14,7 @@
 """Contains a function for generating generalized parameter shift rules and
 helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
+
 import functools
 import itertools
 import numbers

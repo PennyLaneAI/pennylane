@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for computing integrals over basis functions.
 """
+
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 

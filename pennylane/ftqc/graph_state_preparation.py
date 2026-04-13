@@ -14,7 +14,6 @@
 
 r"""This module contains the GraphStatePrep template."""
 
-
 import networkx as nx
 
 import pennylane as qml

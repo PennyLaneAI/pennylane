@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The bosonic representation classes and functions."""
+
 from copy import copy
 
 from pennylane import math

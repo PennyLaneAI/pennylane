@@ -14,6 +14,7 @@
 """
 Unit tests for the GateFabric template.
 """
+
 from functools import partial
 
 import numpy as np

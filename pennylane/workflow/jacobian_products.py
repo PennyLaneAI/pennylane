@@ -14,6 +14,7 @@
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
+
 from __future__ import annotations
 
 import abc

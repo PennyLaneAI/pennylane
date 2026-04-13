@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Tests for the transform ``qml.transforms.split_non_commuting``"""
+
 from unittest.mock import MagicMock
 
 import numpy as np

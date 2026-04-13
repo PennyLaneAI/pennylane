@@ -14,6 +14,7 @@
 """
 Tests for the Interferometer template.
 """
+
 import numpy as np
 import pytest
 
