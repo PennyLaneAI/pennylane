@@ -41,8 +41,9 @@ def _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
     num_y_wires = len(y_wires_pl)
 
     TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
+    crossover = min(num_y_wires - 1, num_x_wires)
 
-    for i in range(1, min(num_y_wires - 1, num_x_wires)):
+    for i in range(1, crossover):
         # Add the bit of x as well as the previous carry to the bit of y, and compute the next carry
         ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
         CNOT([ck, ik])
@@ -51,7 +52,7 @@ def _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
         CNOT([ck, aux])
 
     # From here on, we don't have any bits in x left, so we just need to propagate the carry over y
-    for i in range(min(num_y_wires - 1, num_x_wires), num_y_wires - 1):
+    for i in range(crossover, num_y_wires - 1):
         ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
         CNOT([ck, tk])
         TemporaryAND([ck, tk, aux])
@@ -70,14 +71,14 @@ def _right_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
     """
     num_x_wires = len(x_wires_pl)
     num_y_wires = len(y_wires_pl)
-    crossover = min(num_y_wires - 1, num_x_wires) - 1
+    crossover = min(num_y_wires - 1, num_x_wires)
     # For these bits, we don't have any bits in x, we only need to uncompute the carry propagation
-    for i in range(num_y_wires - 2, crossover, -1):
+    for i in range(num_y_wires - 2, crossover - 1, -1):
         ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ck, tk, aux]))
 
-    for i in range(crossover, 0, -1):
+    for i in range(crossover - 1, 0, -1):
         # Uncompute the carry and the addition of the bit of x and the next less-significant carry
         # into the bit of y.
         ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
@@ -102,15 +103,15 @@ def _controlled_right_ladder(x_wires_pl, y_wires_pl, work_wires_pl, **ctrl_kwarg
     """
     num_x_wires = len(x_wires_pl)
     num_y_wires = len(y_wires_pl)
-    crossover = min(num_y_wires - 1, num_x_wires) - 1
-    for i in range(len(y_wires_pl) - 2, crossover, -1):
+    crossover = min(num_y_wires - 1, num_x_wires)
+    for i in range(len(y_wires_pl) - 2, crossover - 1, -1):
         ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ck, tk, aux]))
         ctrl(CNOT(wires=[ck, tk]), **ctrl_kwargs)
         CNOT([ck, tk])
 
-    for i in range(crossover, 0, -1):
+    for i in range(crossover - 1, 0, -1):
 
         ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
         CNOT([ck, aux])
@@ -198,8 +199,7 @@ class SemiAdder(Operation):
 
     grad_method = None
 
-    # resource_keys = {"num_x_wires", "num_y_wires", "num_work_wires"}
-    resource_keys = {"num_y_wires"}
+    resource_keys = {"num_x_wires", "num_y_wires", "num_work_wires"}
 
     def __init__(
         self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
@@ -233,9 +233,9 @@ class SemiAdder(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            # "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_y_wires": len(self.hyperparameters["y_wires"]),
-            # "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
         }
 
     @property
@@ -300,17 +300,22 @@ class SemiAdder(Operation):
         return q.queue
 
 
-def _semiadder_resources(num_y_wires):
+def _semiadder_resources(num_x_wires, num_y_wires, **_):
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
-    # In the case where len(x_wires) < len(y_wires), this is an upper bound.
+    # _left_ladder uses (num_y_wires - 1) TemporaryANDs
+    # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
+    # _left_ladder uses (num_y_wires - 1) Adjoint(TemporaryAND)s
+    # and 3 * (crossover - 1) + (num_y_wires - 1 - crossover) + 1 CNOTs
+    # There are 1 + int(num_x_wires>=num_y_wires) additional CNOTs in the main decomp. function
+    crossover = min(num_y_wires - 1, num_x_wires)
     return {
         TemporaryAND: num_y_wires - 1,
         adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
-        CNOT: 6 * (num_y_wires - 2) + 3,
+        CNOT: 3 * (crossover + num_y_wires) - 7 + int(num_x_wires >= num_y_wires),
     }
 
 
-@register_resources(_semiadder_resources, exact=False)
+@register_resources(_semiadder_resources)
 def _semiadder(x_wires, y_wires, work_wires, **_):
 
     num_y_wires = len(y_wires)
@@ -337,36 +342,33 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 add_decomps(SemiAdder, _semiadder)
 
 
-def _controlled_semi_adder_resource(
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type,
-    **_,
-):
+def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
-    In the case where len(x_wires) < len(y_wires), this is an upper bound.
     """
+    # pylint: disable=unused-argument
+    num_x_wires = base_params["num_x_wires"]
     num_y_wires = base_params["num_y_wires"]
+    num_base_ww = base_params["num_work_wires"]
+    ctrl_kwargs["num_work_wires"] += num_base_ww - (num_y_wires - 1)
+    crossover = min(num_y_wires - 1, num_x_wires)
+
+    # _left_ladder uses (num_y_wires - 1) TemporaryANDs
+    # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
+    # _controlled_right_ladder uses (num_y_wires - 1) TemporaryANDs, (num_y_wires - 1) controlled
+    # CNOTs, and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
+    # There are 1 + int(num_x_wires>=num_y_wires) additional ctrl-CNOTs in the main function
+    num_cnots = 2 * crossover + 4 * num_y_wires - 10
+    num_ctrl_cnots = num_y_wires + int(num_x_wires >= num_y_wires)
     return {
         TemporaryAND: num_y_wires - 1,
         adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
-        CNOT: 6 * (num_y_wires - 2),
-        controlled_resource_rep(
-            CNOT,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        ): num_y_wires
-        + 1,
+        CNOT: num_cnots,
+        controlled_resource_rep(CNOT, {}, **ctrl_kwargs): num_ctrl_cnots,
     }
 
 
-@register_resources(_controlled_semi_adder_resource, exact=False)
+@register_resources(_controlled_semi_adder_resource)
 def _controlled_semi_adder(
     base, control_wires, control_values=None, work_wires=None, work_wire_type="borrowed", **_
 ):  # pylint: disable=too-many-arguments
@@ -377,11 +379,14 @@ def _controlled_semi_adder(
     y_wires = base.hyperparameters["y_wires"]
     x_wires = base.hyperparameters["x_wires"]
     base_work_wires = base.hyperparameters["work_wires"]
+    extra_work_wires_from_base = base_work_wires[len(y_wires) - 1 :]
     base_work_wires = base_work_wires[: len(y_wires) - 1]
+    work_wires = [] if work_wires is None else work_wires
+    ctrl_work_wires = Wires.all_wires([work_wires, extra_work_wires_from_base])
     ctrl_kwargs = {
         "control": control_wires,
         "control_values": control_values,
-        "work_wires": work_wires,
+        "work_wires": ctrl_work_wires,
         "work_wire_type": work_wire_type,
     }
 
