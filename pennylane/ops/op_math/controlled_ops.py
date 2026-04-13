@@ -29,6 +29,7 @@ import pennylane as qml
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
@@ -1804,7 +1805,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 
 
 def _2cx_elbow_explicit_resources(**__):
-    return {change_op_basis_resource_rep(resource_rep(qml.Elbow), qml.CNOT): 1}
+    return {qml.Elbow: 1, qml.CNOT: 1, adjoint_resource_rep(qml.Elbow): 1}
 
 
 def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
@@ -1814,8 +1815,10 @@ def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wi
 @register_condition(_2cx_elbow_explicit_condition)
 @register_resources(_2cx_elbow_explicit_resources)
 def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
-    elbow = qml.Elbow([wires[0], wires[1], work_wires[0]], control_values)
-    qml.change_op_basis(elbow, qml.CNOT([work_wires[0], wires[2]]))
+    elbow_wires = [wires[0], wires[1], work_wires[0]]
+    qml.Elbow(elbow_wires, control_values)
+    qml.CNOT([work_wires[0], wires[2]])
+    qml.adjoint(qml.Elbow)(elbow_wires, control_values)
 
 
 decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
