@@ -22,12 +22,52 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 
 from collections import namedtuple
 from collections.abc import Callable
-from copy import deepcopy
 from typing import Any
 
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
+
+"""
+Using copy or deepcopy on f somehow alters the consts so that the second time we use the consts
+we introduce new variables that turn into leaked tracers. If we copied ``f``
+and set the consts on the copy, we would get:
+
+.. code-block:: python 
+
+    def w(wires):
+        @qml.for_loop(wires.shape[0])
+        def f(i):
+            2*wires
+
+        f()
+
+        @qml.for_loop(wires.shape[0])
+        def g(i):
+            3*wires
+            
+
+        g()
+
+    with Patcher(*get_jax_patches()):
+        jaxpr = jax.make_jaxpr(w, abstracted_axes={0:"a"})(jnp.array([0,1,2]))
+        print(jaxpr.consts)
+        print(jaxpr)
+
+.. code-block:: 
+    
+    [JitTracer<~int32[]>, JitTracer<i32[JitTracer<~int32[]>]>]
+    { lambda a:i32[] b:i32[a]; c:i32[] d:i32[c]. let
+    ...
+    ...
+
+Here you can see ``a`` and ``b`` being introduced as consts with tracer values, even though there
+should only be ``c`` and ``d``.
+
+I don't know why this happens, but if we just use a try-finally to reset the consts,
+this doesn't happen and we don't run into leaked tracers.
+
+"""
 
 
 def promote_consts_to_inputs(f):
@@ -47,12 +87,18 @@ def promote_consts_to_inputs(f):
                 consts.append(val)
 
     def new_f(args, new_consts):
-        f_copy = deepcopy(f)
+        """A version of f where the consts with dynamic shapes have been promoted to inputs."""
 
-        for ind, c in zip(indices, new_consts):
-            f_copy.__closure__[ind].cell_contents = c
+        try:
+            for ind, c in zip(indices, new_consts):
+                f.__closure__[ind].cell_contents = c
 
-        return f_copy(*args), new_consts
+            f_results = f(*args)
+        finally:
+            for ind, c in zip(indices, consts):
+                f.__closure__[ind].cell_contents = c
+
+        return f_results, new_consts
 
     return new_f, consts
 

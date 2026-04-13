@@ -365,14 +365,12 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(w)(3)
         assert jaxpr.eqns[-1].primitive == for_loop_prim
-        shape, return_array, c = jaxpr.eqns[-1].outvars
+        _, return_array, c = jaxpr.eqns[-1].outvars
 
-        assert return_array.aval.shape[0] == shape
-        assert c.aval.shape[0] == shape
+        assert c.aval.shape[0] == jaxpr.jaxpr.invars[0]
         assert isinstance(c, jax.core.DropVar)
 
-        assert shape == jaxpr.jaxpr.outvars[0]
-        assert return_array == jaxpr.jaxpr.outvars[1]
+        assert return_array == jaxpr.jaxpr.outvars[0]
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):
@@ -487,6 +485,29 @@ class TestDynamicShapes:
         assert isinstance(shape, jax.core.DropVar)
         assert static_array.aval.shape == (2,)
         assert dynamic_array.aval.shape[0] == jaxpr.jaxpr.invars[0]  # the input a
+
+    def test_same_closure_variable_multiple_loops(self):
+        """Test that if the same variable is used as a closure var multiple times, we don't get leaked tracers.
+        When _loop_abstract_axes.promote_consts_to_inputs copied the function, it made it so that we ended
+        up with consts with tracer values, leading to leaked tracers when integrated with catalyst.
+        This just tests that doesn't happen again.
+        """
+
+        def w(x):
+            @qml.for_loop(x.shape[0])
+            def f(i):
+                2 * x  # pylint: disable=pointless-statement
+
+            f()
+
+            @qml.for_loop(x.shape[0])
+            def g(i):
+                3 * x  # pylint: disable=pointless-statement
+
+            g()
+
+        jaxpr = jax.make_jaxpr(w, abstracted_axes={0: "a"})(jnp.array([0, 1, 2]))
+        assert len(jaxpr.consts) == 0
 
 
 class TestCaptureCircuitsForLoop:
