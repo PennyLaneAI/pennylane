@@ -442,7 +442,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             params = tuple(
                 (p := self._bound_args.arguments[n])
                 for n in self.dyn_argnames
-                if qml.math.ndim(p) == 0
+                if qml.math.ndim(p) == 0 and "float" in qml.math.get_dtype_name(p)
             )
             self._parameters = params
 
