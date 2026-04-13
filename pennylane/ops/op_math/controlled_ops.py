@@ -1490,12 +1490,7 @@ add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {
-        change_op_basis_resource_rep(
-            qml.Elbow,
-            qml.CNOT,
-        ): 1,
-    }
+    return {change_op_basis_resource_rep(resource_rep(qml.Elbow), qml.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1808,6 +1803,23 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
             qml.PauliX(w)
 
 
+def _2cx_elbow_explicit_resources(**__):
+    return {change_op_basis_resource_rep(resource_rep(qml.Elbow), qml.CNOT): 1}
+
+
+def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
+    return num_work_wires >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
+
+
+@register_condition(_2cx_elbow_explicit_condition)
+@register_resources(_2cx_elbow_explicit_resources)
+def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
+    elbow = qml.Elbow([wires[0], wires[1], work_wires[0]], control_values)
+    qml.change_op_basis(elbow, qml.CNOT([work_wires[0], wires[2]]))
+
+
+decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
+
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
@@ -1821,6 +1833,7 @@ add_decomps(
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
+    decompose_mcx_two_controls_elbows,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory_no_reconstructor)

@@ -418,14 +418,21 @@ def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
 
 
-def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
-
+def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires, **__):
+    num_ww = num_control_wires - 2
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * (num_control_wires - 2)}
+        return {ops.Toffoli: 4 * num_ww}
+    num_extra_ww = num_work_wires - num_ww
     return {
-        qml.TemporaryAND: num_control_wires - 2,
-        adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
-        ops.Toffoli: 1,
+        qml.TemporaryAND: num_ww,
+        adjoint_resource_rep(qml.TemporaryAND): num_ww,
+        resource_rep(
+            ops.MultiControlledX,
+            num_control_wires=2,
+            num_work_wires=num_extra_ww,
+            num_zero_control_values=0,
+            work_wire_type="zeroed",
+        ): 1,
     }
 
 
@@ -437,7 +444,9 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
     target_wire, control_wires = wires[-1], wires[:-1]
-    work_wires = work_wires[: len(control_wires) - 2]
+    num_work_wires = len(control_wires) - 2
+    extra_work_wires = work_wires[num_work_wires:]
+    work_wires = work_wires[:num_work_wires]
 
     if work_wire_type == "borrowed":
         up_gate = down_gate = ops.Toffoli
@@ -445,11 +454,11 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         down_gate = qml.TemporaryAND
         up_gate = ops.adjoint(qml.TemporaryAND)
 
-    @control_flow.for_loop(1, len(work_wires), 1)
+    @control_flow.for_loop(1, num_work_wires, 1)
     def loop_up(i):
         up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    @control_flow.for_loop(len(work_wires) - 1, 0, -1)
+    @control_flow.for_loop(num_work_wires - 1, 0, -1)
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
@@ -459,7 +468,12 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
     loop_down()
-    ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
+
+    _wires = [control_wires[0], work_wires[0], target_wire]
+    if work_wire_type == "borrowed":
+        ops.Toffoli(_wires)
+    else:
+        ops.MultiControlledX(_wires, work_wires=extra_work_wires, work_wire_type="zeroed")
     loop_up()
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
