@@ -15,17 +15,34 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
-import math
 from collections import defaultdict
 
 import pytest
 
 import pennylane as qml
 import pennylane.labs.estimator_beta as qre
+from pennylane import math
 from pennylane.estimator import GateCount, ResourceConfig, resource_rep
 
+# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
 
-# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use
+
+def _test_decomp_equal(decomp1, decomp2):
+    if len(decomp1) != len(decomp2):
+        return False
+
+    for op1, op2 in zip(decomp1, decomp2):
+        if isinstance(op1, (qre.Allocate, qre.Deallocate)):
+            ops_equal = op1.equal(op2)
+        else:
+            ops_equal = op1 == op2
+
+        if not ops_equal:
+            return False
+
+    return True
+
+
 class TestLabsSelectPauliRot:
     """Test the custom controlled decomposition for ResourceSelectPauliRot template"""
 
@@ -223,9 +240,7 @@ class TestLabsQROM:
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_params(
-        self, num_data_points, size_data_points, num_bit_flips, depth, borrow
-    ):
+    def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, borrow):
         """Test that the resource params are correct."""
         if depth is None:
             op = qre.QROM(num_data_points, size_data_points)
@@ -273,7 +288,6 @@ class TestLabsQROM:
             == expected
         )
 
-    # pylint: disable=protected-access
     def test_t_select_swap_width(self):
         """Test that the private function doesn't give negative or
         fractional values for the depth"""
@@ -287,7 +301,591 @@ class TestLabsQROM:
         assert opt_width == 1
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
+        "num_data, num_flips, repeat, expected",  # computed by hand
+        (
+            (1, 5, 1, [GateCount(qre.X.resource_rep(), 5)]),
+            (
+                2,
+                3,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep(), 3),
+                ],
+            ),
+            (
+                3,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 4),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 1),
+                ],
+            ),
+            (
+                4,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 4),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 4),
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 1),
+                ],
+            ),
+            (
+                9,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 7),
+                    GateCount(qre.TemporaryAND.resource_rep(), 7),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 7),
+                ],
+            ),
+            (1, 5, 2, [GateCount(qre.X.resource_rep(), 10)]),
+            (
+                2,
+                3,
+                3,
+                [
+                    GateCount(qre.X.resource_rep(), 6),
+                    GateCount(qre.CNOT.resource_rep(), 9),
+                ],
+            ),
+            (
+                3,
+                10,
+                4,
+                [
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 40 + 4),
+                    GateCount(qre.TemporaryAND.resource_rep(), 4),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 4),
+                ],
+            ),
+            (
+                4,
+                10,
+                3,
+                [
+                    GateCount(qre.X.resource_rep(), 12),
+                    GateCount(qre.CNOT.resource_rep(), 30 + 12),
+                    GateCount(qre.TemporaryAND.resource_rep(), 3),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 3),
+                ],
+            ),
+            (
+                9,
+                10,
+                2,
+                [
+                    GateCount(qre.X.resource_rep(), 32),
+                    GateCount(qre.CNOT.resource_rep(), 20 + 14),
+                    GateCount(qre.TemporaryAND.resource_rep(), 14),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 14),
+                ],
+            ),
+        ),
+    )
+    def test_select_cost(self, num_data, num_flips, repeat, expected):
+        """Test that the private _select_cost method works as expected"""
+        assert qre.QROM._select_cost(num_data, num_flips, repeat) == expected
+
+    @pytest.mark.parametrize(
+        "num_data, num_flips, repeat, expected",  # computed by hand
+        (
+            (1, 5, 1, [GateCount(qre.CNOT.resource_rep(), 5)]),
+            (
+                2,
+                3,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep(), 3 + 1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 1),
+                ],
+            ),
+            (
+                3,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 4),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 2),
+                    GateCount(qre.TemporaryAND.resource_rep(), 2),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 2),
+                ],
+            ),
+            (
+                4,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 6),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 3),
+                    GateCount(qre.TemporaryAND.resource_rep(), 3),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 3),
+                ],
+            ),
+            (
+                9,
+                10,
+                1,
+                [
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 10 + 8),
+                    GateCount(qre.TemporaryAND.resource_rep(), 8),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 8),
+                ],
+            ),
+            (1, 5, 2, [GateCount(qre.CNOT.resource_rep(), 10)]),
+            (
+                2,
+                3,
+                3,
+                [
+                    GateCount(qre.X.resource_rep(), 6),
+                    GateCount(qre.CNOT.resource_rep(), 9 + 3),
+                    GateCount(qre.TemporaryAND.resource_rep(), 3),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 3),
+                ],
+            ),
+            (
+                3,
+                10,
+                4,
+                [
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 40 + 8),
+                    GateCount(qre.TemporaryAND.resource_rep(), 8),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 8),
+                ],
+            ),
+            (
+                4,
+                10,
+                3,
+                [
+                    GateCount(qre.X.resource_rep(), 18),
+                    GateCount(qre.CNOT.resource_rep(), 30 + 9),
+                    GateCount(qre.TemporaryAND.resource_rep(), 9),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 9),
+                ],
+            ),
+            (
+                9,
+                10,
+                2,
+                [
+                    GateCount(qre.X.resource_rep(), 32),
+                    GateCount(qre.CNOT.resource_rep(), 20 + 16),
+                    GateCount(qre.TemporaryAND.resource_rep(), 16),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 16),
+                ],
+            ),
+        ),
+    )
+    def test_control_select_cost(self, num_data, num_flips, repeat, expected):
+        """Test that the private _single_ctrl_select_cost method works as expected"""
+        assert qre.QROM._single_ctrl_select_cost(num_data, num_flips, repeat) == expected
+
+    @pytest.mark.parametrize(
+        "reg_size, num_swap_ctrls, repeat, expected",  # computed by hand
+        (
+            (1, 1, 1, [GateCount(qre.CSWAP.resource_rep(), 1)]),
+            (2, 1, 1, [GateCount(qre.CSWAP.resource_rep(), 2)]),
+            (3, 2, 1, [GateCount(qre.CSWAP.resource_rep(), 3 * 3)]),
+            (5, 3, 1, [GateCount(qre.CSWAP.resource_rep(), 5 * 7)]),
+            (3, 4, 1, [GateCount(qre.CSWAP.resource_rep(), 3 * 15)]),
+            (1, 1, 6, [GateCount(qre.CSWAP.resource_rep(), 6)]),
+            (2, 1, 7, [GateCount(qre.CSWAP.resource_rep(), 2 * 7)]),
+            (3, 2, 8, [GateCount(qre.CSWAP.resource_rep(), 3 * 3 * 8)]),
+            (5, 3, 7, [GateCount(qre.CSWAP.resource_rep(), 5 * 7 * 7)]),
+            (3, 4, 6, [GateCount(qre.CSWAP.resource_rep(), 3 * 15 * 6)]),
+        ),
+    )
+    def test_swap_cost(self, reg_size, num_swap_ctrls, repeat, expected):
+        """Test that the private _swap_cost method works as expected"""
+        assert qre.QROM._swap_cost(reg_size, num_swap_ctrls, repeat) == expected
+
+    @pytest.mark.parametrize(
+        "reg_size, num_swap_ctrls, repeat, base_decomp",  # computed by hand
+        (
+            (
+                1,
+                1,
+                1,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.CSWAP.resource_rep(), 1),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 1),
+                ],
+            ),
+            (
+                2,
+                1,
+                1,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.CSWAP.resource_rep(), 2),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 1),
+                ],
+            ),
+            (
+                3,
+                2,
+                1,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 3 * 3),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 2),
+                ],
+            ),
+            (
+                5,
+                3,
+                1,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 3),
+                    GateCount(qre.CSWAP.resource_rep(), 5 * 7),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 3),
+                ],
+            ),
+            (
+                3,
+                4,
+                1,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 4),
+                    GateCount(qre.CSWAP.resource_rep(), 3 * 15),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 4),
+                ],
+            ),
+            (
+                1,
+                1,
+                6,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 6),
+                    GateCount(qre.CSWAP.resource_rep(), 6),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 6),
+                ],
+            ),
+            (
+                2,
+                1,
+                7,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 7),
+                    GateCount(qre.CSWAP.resource_rep(), 2 * 7),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 7),
+                ],
+            ),
+            (
+                3,
+                2,
+                8,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 2 * 8),
+                    GateCount(qre.CSWAP.resource_rep(), 3 * 3 * 8),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 2 * 8),
+                ],
+            ),
+            (
+                5,
+                3,
+                7,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 3 * 7),
+                    GateCount(qre.CSWAP.resource_rep(), 5 * 7 * 7),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 3 * 7),
+                ],
+            ),
+            (
+                3,
+                4,
+                6,
+                [
+                    GateCount(qre.TemporaryAND.resource_rep(), 4 * 6),
+                    GateCount(qre.CSWAP.resource_rep(), 3 * 15 * 6),
+                    GateCount(qre.Adjoint.resource_rep(qre.TemporaryAND.resource_rep()), 4 * 6),
+                ],
+            ),
+        ),
+    )
+    def test_control_swap_cost(self, reg_size, num_swap_ctrls, repeat, base_decomp):
+        """Test that the private _single_ctrl_swap_cost method works as expected"""
+        ## Add qubit allocation:
+        alloc_reg = qre.Allocate(1, "zero", True)
+        dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
+        expected = [alloc_reg] + base_decomp + [dealloc_reg]
+
+        computed = qre.QROM._single_ctrl_swap_cost(reg_size, num_swap_ctrls, repeat)
+        assert _test_decomp_equal(computed, expected)
+
+    @pytest.mark.parametrize(
+        "reg_size, num_swap_ctrls, repeat, expected",  # computed by hand
+        (
+            (
+                1,
+                1,
+                1,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 1),
+                    GateCount(qre.CZ.resource_rep(), 1),
+                    GateCount(qre.CNOT.resource_rep(), 1),
+                ],
+            ),
+            (
+                2,
+                1,
+                1,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CZ.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep(), 2),
+                ],
+            ),
+            (
+                3,
+                2,
+                1,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3 * 3),
+                    GateCount(qre.CZ.resource_rep(), 3 * 3),
+                    GateCount(qre.CNOT.resource_rep(), 3 * 3),
+                ],
+            ),
+            (
+                5,
+                3,
+                1,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 5 * 7),
+                    GateCount(qre.CZ.resource_rep(), 5 * 7),
+                    GateCount(qre.CNOT.resource_rep(), 5 * 7),
+                ],
+            ),
+            (
+                3,
+                4,
+                1,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3 * 15),
+                    GateCount(qre.CZ.resource_rep(), 3 * 15),
+                    GateCount(qre.CNOT.resource_rep(), 3 * 15),
+                ],
+            ),
+            (
+                1,
+                1,
+                6,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 6),
+                    GateCount(qre.CZ.resource_rep(), 6),
+                    GateCount(qre.CNOT.resource_rep(), 6),
+                ],
+            ),
+            (
+                2,
+                1,
+                7,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2 * 7),
+                    GateCount(qre.CZ.resource_rep(), 2 * 7),
+                    GateCount(qre.CNOT.resource_rep(), 2 * 7),
+                ],
+            ),
+            (
+                3,
+                2,
+                8,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3 * 3 * 8),
+                    GateCount(qre.CZ.resource_rep(), 3 * 3 * 8),
+                    GateCount(qre.CNOT.resource_rep(), 3 * 3 * 8),
+                ],
+            ),
+            (
+                5,
+                3,
+                7,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 5 * 7 * 7),
+                    GateCount(qre.CZ.resource_rep(), 5 * 7 * 7),
+                    GateCount(qre.CNOT.resource_rep(), 5 * 7 * 7),
+                ],
+            ),
+            (
+                3,
+                4,
+                6,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3 * 15 * 6),
+                    GateCount(qre.CZ.resource_rep(), 3 * 15 * 6),
+                    GateCount(qre.CNOT.resource_rep(), 3 * 15 * 6),
+                ],
+            ),
+        ),
+    )
+    def test_swap_adj_cost(self, reg_size, num_swap_ctrls, repeat, expected):
+        """Test that the private _swap_adj_cost method works as expected"""
+        assert qre.QROM._swap_adj_cost(reg_size, num_swap_ctrls, repeat) == expected
+
+    @pytest.mark.parametrize(
+        "resource_params, alloc_reg, base_decomp",  # computed by hand,
+        (
+            (
+                {
+                    "num_bitstrings": 25,  # d
+                    "size_bitstring": 8,  # M
+                    "num_bit_flips": 50,
+                },
+                None,  # k ~ 4 < M = 8, don't need to allocate
+                (
+                    [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2)
+                    + [GateCount(qre.Hadamard.resource_rep(), 4)]
+                    + qre.QROM._select_cost(math.ceil(25 / 4), 50)
+                    + [GateCount(qre.Hadamard.resource_rep(), 4)]
+                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
+                    + [GateCount(qre.X.resource_rep())]
+                ),
+            ),
+            (
+                {
+                    "num_bitstrings": 49,  # d
+                    "size_bitstring": 4,  # M
+                    "num_bit_flips": 50,
+                },
+                qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
+                (
+                    [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3)
+                    + [GateCount(qre.Hadamard.resource_rep(), 8)]
+                    + qre.QROM._select_cost(math.ceil(49 / 8), 50)
+                    + [GateCount(qre.Hadamard.resource_rep(), 8)]
+                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
+                    + [GateCount(qre.X.resource_rep())]
+                ),
+            ),
+        ),
+    )
+    def test_qrom_adjoint_clean(self, resource_params, alloc_reg, base_decomp):
+        """Test that the qrom_clean_auxiliary_adjoint_resource_decomp method works as expected"""
+        expected = base_decomp
+        if alloc_reg:
+            dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
+            expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
+
+        computed = qre.QROM.qrom_clean_auxiliary_adjoint_resource_decomp(resource_params)
+        assert _test_decomp_equal(computed, expected)
+
+    @pytest.mark.parametrize(
+        "resource_params, alloc_reg, base_decomp",  # computed by hand,
+        (
+            (
+                {
+                    "num_bitstrings": 25,  # d
+                    "size_bitstring": 8,  # M
+                    "num_bit_flips": 50,
+                },
+                None,  # k ~ 4 < M = 8, don't need to allocate
+                (
+                    [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2)
+                    + [GateCount(qre.Hadamard.resource_rep(), 4)]
+                    + qre.QROM._select_cost(math.ceil(25 / 4), 50)
+                    + [GateCount(qre.Hadamard.resource_rep(), 4)]
+                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
+                    + [GateCount(qre.X.resource_rep())]
+                ),
+            ),
+            (
+                {
+                    "num_bitstrings": 49,  # d
+                    "size_bitstring": 4,  # M
+                    "num_bit_flips": 50,
+                },
+                qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
+                (
+                    [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3)
+                    + [GateCount(qre.Hadamard.resource_rep(), 8)]
+                    + qre.QROM._select_cost(math.ceil(49 / 8), 50)
+                    + [GateCount(qre.Hadamard.resource_rep(), 8)]
+                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
+                    + [GateCount(qre.X.resource_rep())]
+                ),
+            ),
+        ),
+    )
+    def test_adjoint_resources(self, resource_params, alloc_reg, base_decomp):
+        """Test that the adjoint resources are as expected"""
+        expected = base_decomp
+        if alloc_reg:
+            dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
+            expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
+
+        computed = qre.QROM.adjoint_resource_decomp(resource_params)
+        assert _test_decomp_equal(computed, expected)
+
+    @pytest.mark.parametrize(
+        "resource_params, alloc_reg, base_decomp",  # computed by hand,
+        (
+            (
+                {
+                    "num_bitstrings": 50,  # d
+                    "size_bitstring": 8,  # M
+                    "num_bit_flips": 50,
+                },
+                None,  # k ~ 4 < M = 8, don't need to allocate
+                (
+                    [
+                        GateCount(qre.Hadamard.resource_rep(), 8),
+                        GateCount(qre.Z.resource_rep(), 2),
+                        GateCount(qre.Hadamard.resource_rep(), 2),
+                    ]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2, repeat=4)
+                    + qre.QROM._select_cost(math.ceil(50 / 4), 50, 2)
+                ),
+            ),
+            (
+                {
+                    "num_bitstrings": 98,  # d
+                    "size_bitstring": 4,  # M
+                    "num_bit_flips": 50,
+                },
+                qre.Allocate(8 - 4, state="any", restored=True),  # k ~ 8 > M = 4,
+                (
+                    [
+                        GateCount(qre.Hadamard.resource_rep(), 4),
+                        GateCount(qre.Z.resource_rep(), 2),
+                        GateCount(qre.Hadamard.resource_rep(), 2),
+                    ]
+                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3, repeat=4)
+                    + qre.QROM._select_cost(math.ceil(98 / 8), 50, 2)
+                ),
+            ),
+        ),
+    )
+    def test_qrom_adjoint_dirty(self, resource_params, alloc_reg, base_decomp):
+        """Test that the qrom_dirty_auxiliary_adjoint_resource_decomp method works as expected"""
+        expected = base_decomp
+        if alloc_reg:
+            dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
+            expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
+
+        computed = qre.QROM.qrom_dirty_auxiliary_adjoint_resource_decomp(resource_params)
+        assert _test_decomp_equal(computed, expected)
+
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res",
         (
             (
                 10,
@@ -386,7 +984,7 @@ class TestLabsQROM:
         ),
     )
     def test_resources(
-        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res
     ):
         """Test that the resources are correct."""
         assert (
@@ -394,7 +992,7 @@ class TestLabsQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                restored=restored,
+                borrow_qubits=borrow,
                 select_swap_depth=depth,
             )
             == expected_res
@@ -587,174 +1185,3 @@ class TestLabsQROM:
             )
             == expected_res
         )
-
-    @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
-        (
-            (
-                10,
-                3,
-                15,
-                None,
-                True,
-                [
-                    GateCount(qre.Hadamard.resource_rep(), 3),
-                    qre.Allocate(4),
-                    GateCount(qre.Z.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    GateCount(qre.CSWAP.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    GateCount(qre.CZ.resource_rep(), 2),
-                    GateCount(qre.CNOT.resource_rep(), 2),
-                    GateCount(qre.X.resource_rep(), 14),
-                    GateCount(qre.CNOT.resource_rep(), 16),
-                    GateCount(qre.TemporaryAND.resource_rep(), 6),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        6,
-                    ),
-                    qre.Deallocate(4),
-                ],
-            ),
-            (
-                100,
-                5,
-                50,
-                2,
-                False,
-                [
-                    GateCount(qre.Hadamard.resource_rep(), 5),
-                    qre.Allocate(7),
-                    GateCount(qre.X.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 4),
-                    GateCount(qre.CSWAP.resource_rep(), 1),
-                    GateCount(qre.Hadamard.resource_rep(), 1),
-                    GateCount(qre.CZ.resource_rep(), 1),
-                    GateCount(qre.CNOT.resource_rep(), 1),
-                    GateCount(qre.X.resource_rep(), 97),
-                    GateCount(qre.CNOT.resource_rep(), 98),
-                    GateCount(qre.TemporaryAND.resource_rep(), 48),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        48,
-                    ),
-                    qre.Deallocate(7),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                1,
-                True,
-                [
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    qre.Allocate(4),
-                    GateCount(qre.Z.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    GateCount(qre.CSWAP.resource_rep(), 0),
-                    GateCount(qre.Hadamard.resource_rep(), 0),
-                    GateCount(qre.CZ.resource_rep(), 0),
-                    GateCount(qre.CNOT.resource_rep(), 0),
-                    GateCount(qre.X.resource_rep(), 21),
-                    GateCount(qre.CNOT.resource_rep(), 16),
-                    GateCount(qre.TemporaryAND.resource_rep(), 10),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        10,
-                    ),
-                    qre.Deallocate(4),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                128,  # This will get truncated to 16 as the max depth
-                False,
-                [
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    qre.Allocate(16),
-                    GateCount(qre.X.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 32),
-                    GateCount(qre.CSWAP.resource_rep(), 15),
-                    GateCount(qre.Hadamard.resource_rep(), 15),
-                    GateCount(qre.CZ.resource_rep(), 15),
-                    GateCount(qre.CNOT.resource_rep(), 15),
-                    GateCount(qre.X.resource_rep(), 8),
-                    qre.Deallocate(16),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                16,
-                True,
-                [
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    qre.Allocate(16),
-                    GateCount(qre.Z.resource_rep(), 2),
-                    GateCount(qre.Hadamard.resource_rep(), 2),
-                    GateCount(qre.CSWAP.resource_rep(), 30),
-                    GateCount(qre.Hadamard.resource_rep(), 30),
-                    GateCount(qre.CZ.resource_rep(), 30),
-                    GateCount(qre.CNOT.resource_rep(), 30),
-                    GateCount(qre.X.resource_rep(), 16),
-                    qre.Deallocate(16),
-                ],
-            ),
-        ),
-    )
-    def test_adjoint_resources(
-        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
-    ):
-        """Test that the resources are correct."""
-
-        assert (
-            qre.QROM.adjoint_resource_decomp(
-                {
-                    "num_bitstrings": num_data_points,
-                    "size_bitstring": size_data_points,
-                    "num_bit_flips": num_bit_flips,
-                    "restored": restored,
-                    "select_swap_depth": depth,
-                }
-            )
-            == expected_res
-        )
-
-    @pytest.mark.parametrize(
-        "num_data_points, output_size, restored, depth",
-        (
-            (100, 10, False, 2),
-            (100, 2, False, 4),
-            (12, 1, False, 1),
-            (12, 3, True, 1),
-            (160, 8, True, 2),
-        ),
-    )
-    def test_toffoli_counts(self, num_data_points, output_size, restored, depth):
-        """Test that the Toffoli counts are correct compared to arXiv:1902.02134."""
-
-        qrom = qre.Adjoint(
-            qre.QROM(
-                num_bitstrings=num_data_points,
-                size_bitstring=output_size,
-                restored=restored,
-                select_swap_depth=depth,
-            )
-        )
-        resources = qre.estimate(qrom)
-
-        toffoli_count = int(math.ceil(num_data_points / depth)) + depth - 3
-        if restored and depth > 1:
-            toffoli_count *= 2
-
-        assert resources.gate_counts["Toffoli"] == toffoli_count

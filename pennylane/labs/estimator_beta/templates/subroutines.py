@@ -615,9 +615,9 @@ class QROM(ResourceOperator):
         if num_data_blocks == 1:
             gate_cost.append(
                 GateCount(
-                    x,
+                    cnot,
                     num_bit_flips * repeat,
-                )  # each unitary in the select is just an X gate to load the data
+                )  # each unitary in the select is just a CNOT gate to load the data
             )
 
         else:  # num_data_blocks > 1
@@ -676,7 +676,7 @@ class QROM(ResourceOperator):
         cz = qre.resource_rep(qre.CZ)
         cnot = qre.resource_rep(qre.CNOT)
 
-        width = 2**num_swap_ctrls
+        width = 2**num_swap_ctrls - 1
         return [
             qre.GateCount(h, repeat * width * register_size),
             qre.GateCount(cz, repeat * width * register_size),
@@ -711,9 +711,9 @@ class QROM(ResourceOperator):
         alloc_reg = Allocate(1, state="zero", restored=True)
         gate_cost = [
             alloc_reg,  # need one temporary qubit for l/r-elbow to control SWAP
-            GateCount(l_elbow, num_swap_ctrls),
+            GateCount(l_elbow, repeat * num_swap_ctrls),
             GateCount(ctrl_swap, repeat * (width - 1) * register_size),
-            GateCount(r_elbow, num_swap_ctrls),
+            GateCount(r_elbow, repeat * num_swap_ctrls),
             Deallocate(allocated_register=alloc_reg),  # release temporary qubit to control SWAP
         ]
         return gate_cost
