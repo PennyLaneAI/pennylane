@@ -439,11 +439,11 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def parameters(self) -> list[TensorLike]:
         """Trainable parameters that the operator depends on."""
         if not self._parameters:
-            params = [
+            params = tuple(
                 (p := self._bound_args.arguments[n])
                 for n in self.dyn_argnames
                 if qml.math.ndim(p) == 0
-            ]
+            )
             self._parameters = params
 
         return self._parameters
