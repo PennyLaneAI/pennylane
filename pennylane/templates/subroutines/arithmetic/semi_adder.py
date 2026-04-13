@@ -349,8 +349,7 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     # pylint: disable=unused-argument
     num_x_wires = base_params["num_x_wires"]
     num_y_wires = base_params["num_y_wires"]
-    num_base_ww = base_params["num_work_wires"]
-    ctrl_kwargs["num_work_wires"] += num_base_ww - (num_y_wires - 1)
+    ctrl_kwargs["num_work_wires"] += base_params["num_work_wires"] - (num_y_wires - 1)
     crossover = min(num_y_wires - 1, num_x_wires)
 
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
@@ -379,14 +378,15 @@ def _controlled_semi_adder(
     y_wires = base.hyperparameters["y_wires"]
     x_wires = base.hyperparameters["x_wires"]
     base_work_wires = base.hyperparameters["work_wires"]
+    # Slice out the needed work wires for the left and right ladders, the extra work wires
+    # will be used as work wires for `ctrl`
     extra_work_wires_from_base = base_work_wires[len(y_wires) - 1 :]
     base_work_wires = base_work_wires[: len(y_wires) - 1]
     work_wires = [] if work_wires is None else work_wires
-    ctrl_work_wires = Wires.all_wires([work_wires, extra_work_wires_from_base])
     ctrl_kwargs = {
         "control": control_wires,
         "control_values": control_values,
-        "work_wires": ctrl_work_wires,
+        "work_wires": Wires.all_wires([work_wires, extra_work_wires_from_base]),
         "work_wire_type": work_wire_type,
     }
 
