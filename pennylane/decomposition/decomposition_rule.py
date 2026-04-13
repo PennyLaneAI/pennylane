@@ -417,7 +417,7 @@ class DecompositionRule:
             self._source = inspect.getsource(func)
         except OSError:  # pragma: no cover
             # OSError is raised if the source code cannot be retrieved
-            self._source = ""  # pragma: no cover
+            self._source = "Unable to retrieve source code."  # pragma: no cover
 
         self.name = name or func.__name__
 
@@ -441,7 +441,7 @@ class DecompositionRule:
         return dedent(self._source).strip()
 
     def __repr__(self):
-        return self.name
+        return f"DecompositionRule(name={self.name})"
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
