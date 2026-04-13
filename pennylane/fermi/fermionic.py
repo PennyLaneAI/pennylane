@@ -103,7 +103,9 @@ class FermiWord(dict):
 
     def __copy__(self):
         r"""Copy the FermiWord instance."""
-        return FermiWord(self.sorted_dic, _skip_sorting=True)
+        res = FermiWord(self.sorted_dic, _skip_sorting=True)
+        res._hashval = self._hashval
+        return res
 
     def __deepcopy__(self, memo):
         r"""Deep copy the FermiWord instance."""
