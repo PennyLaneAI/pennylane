@@ -248,3 +248,20 @@ class TestReuse:
 
         expected = qml.tape.QuantumScript([qml.X(2), qml.Y(3)])
         qml.assert_equal(expected, new_tape)
+
+
+class TestPhaseGradResolution:
+    """Tests that phase-gradient allocations are explicitly not resolved yet."""
+
+    def test_phase_grad_raises_allocation_error(self):
+        """Test that resolving a phase-grad allocation raises AllocationError."""
+        alloc = qml.allocation.Allocate.from_num_wires(
+            2, state=AllocateState.PHASE_GRAD, precision=1e-6
+        )
+        tape = qml.tape.QuantumScript([alloc])
+
+        with pytest.raises(
+            qml.exceptions.AllocationError,
+            match="Phase-gradient allocation resolution is not yet implemented",
+        ):
+            qml.transforms.resolve_dynamic_wires(tape, min_int=0)
