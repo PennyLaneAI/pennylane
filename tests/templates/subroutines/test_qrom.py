@@ -525,6 +525,8 @@ def test_too_many_work_wires_case():
 def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    result = _calculate_n_select_work_wires(terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work)
+    result = _calculate_n_select_work_wires(
+        terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work
+    )
 
     assert result == expected
