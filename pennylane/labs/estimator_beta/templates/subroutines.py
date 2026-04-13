@@ -759,8 +759,8 @@ class QROM(ResourceOperator):
             )  #  we can re-use the M output qubits
             gate_lst.append(aux_reg)
 
-        new_address_size = math.ceil(d / k)
-        swap_ctrl_register_size = math.log2(k)
+        new_address_size = int(math.ceil(d / k))
+        swap_ctrl_register_size = int(math.log2(k))
 
         # Apply phase fixup (Fig. 6 Appendix C. https://arxiv.org/abs/1902.02134)
         gate_lst.append(GateCount(x))
@@ -817,8 +817,8 @@ class QROM(ResourceOperator):
             )  #  we can re-use the M output qubits
             gate_lst.append(aux_reg)
 
-        new_address_size = math.ceil(d / k)
-        swap_ctrl_register_size = math.log2(k)
+        new_address_size = int(math.ceil(d / k))
+        swap_ctrl_register_size = int(math.log2(k))
 
         t = cls._select_cost(new_address_size, num_bit_flips, repeat=2)
         s = cls._swap_cost(register_size=1, num_swap_ctrls=swap_ctrl_register_size, repeat=4)
