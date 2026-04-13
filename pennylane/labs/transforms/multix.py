@@ -25,7 +25,7 @@ class MultiX(qp.operation.Operator):
     The main benefit of this gate is that it has eficient controlled operators.
     In particular, we can use it to create a fanout operation ``qp.ctrl(MultiX(range(4)), control=[f"c{i}" for i in range(4)])``:
 
-    .. code-block:: python
+    .. code-block::
 
         c0: ─╭●─┤   ─╭●─╭●─╭●─╭●─┤
         c1: ─├●─┤   ─├●─├●─├●─├●─┤
