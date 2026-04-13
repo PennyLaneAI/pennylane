@@ -173,6 +173,13 @@ The following classes have been ported over:
 * Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
+* Added a ``"phase-grad"`` allocation state to :func:`~.allocate` with required ``precision``
+  metadata, preserved through queuing, capture, and tape construction. This is a frontend
+  scaffold for phase-gradient allocation planning; concrete preparation and lowering are
+  deferred to follow-up changes. :func:`~.transforms.resolve_dynamic_wires` raises an explicit
+  error for unresolved ``"phase-grad"`` allocations.
+  [(#9300)](https://github.com/PennyLaneAI/pennylane/pull/9300)
+
 <h3>Improvements 🛠</h3>
 
 * Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
