@@ -2,10 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
-  can be interpreted.
-  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
-
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
 
@@ -905,6 +901,10 @@ The following classes have been ported over:
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
 <h3>Bug fixes 🐛</h3>
+
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
 * Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,
