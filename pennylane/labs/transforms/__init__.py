@@ -16,11 +16,23 @@ This subpackage contains experimental PennyLane transforms and their building bl
 
 .. currentmodule:: pennylane.labs.transforms
 
+Transforms
+~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
     ~select_pauli_rot_phase_gradient
 
+Custom operators
+~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~MultiX
+
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
+from .multix import MultiX
