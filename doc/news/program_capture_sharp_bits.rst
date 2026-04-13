@@ -53,7 +53,6 @@ Device wires
 With program capture enabled, all devices that Catalyst supports require 
 that ``wires`` be specified at device instantiation.
 
->>> import pennylane as qml
 >>> @qml.qjit(capture=True)
 ... @qml.qnode(qml.device('lightning.qubit'))
 ... def circuit():
@@ -64,8 +63,6 @@ Traceback (most recent call last):
 NotImplementedError: devices must specify wires for integration with program capture.
 
 .. code-block:: python 
-
-    import pennylane as qml
 
     @qml.qjit(capture=True)
     @qml.qnode(qml.device('lightning.qubit', wires=1))
@@ -90,9 +87,6 @@ and `braket.aws.qubit <https://amazon-braket-pennylane-plugin-python.readthedocs
 please consult their respective documentation pages for information on gradient support.
 
 .. code-block:: python
-
-    import pennylane as qml
-    import jax.numpy as jnp 
 
     dev = qml.device('lightning.qubit', wires=1)
 
@@ -126,9 +120,6 @@ in quantum operations, and will result in an error:
 
 .. code-block:: python
 
-    import pennylane as qml 
-    import jax.numpy as jnp
-
     dev = qml.device('lightning.qubit', wires=["a", "b", "c"])
 
     @qml.qjit(capture=True)
@@ -143,8 +134,6 @@ TypeError: Argument 'a' of type <class 'str'> is not a valid JAX type
 
 .. code-block:: python
 
-    import pennylane as qml 
-    import jax.numpy as jnp
 
     dev = qml.device('lightning.qubit', wires=[0, 1, 2])
 
@@ -168,8 +157,6 @@ For example, the positional argument in ``qml.QubitUnitary`` can't be a ``list``
 
 .. code-block:: python
 
-    import pennylane as qml 
-
     my_unitary = [[1, 0], [0, 1]]
 
     dev = qml.device('lightning.qubit', wires=2)
@@ -188,8 +175,6 @@ But a ``list`` can be passed to ``qml.QubitUnitary`` as a keyword argument:
 
 .. code-block:: python
 
-    import pennylane as qml 
-
     my_unitary = [[1, 0], [0, 1]]
 
     dev = qml.device('lightning.qubit', wires=2)
@@ -206,9 +191,6 @@ Array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j], dtype=complex128)
 Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
 .. code-block:: python
-
-    import pennylane as qml 
-    import jax
 
     my_unitary = jax.numpy.array([[1, 0], [0, 1]])
 
@@ -236,9 +218,6 @@ For instance, consider this example with ``RZ``:
 
 .. code-block:: python
 
-    import pennylane as qml 
-    import jax.numpy as jnp
-
     dev = qml.device("lightning.qubit", wires=1)
 
     @qml.qjit(capture=True)
@@ -259,9 +238,6 @@ But, when the angle is passed as a positional argument, the circuit executes as
 expected:
 
 .. code-block:: python
-
-    import pennylane as qml 
-    import jax.numpy as jnp
 
     dev = qml.device("lightning.qubit", wires=1)
 
@@ -328,7 +304,6 @@ and still have program structure preserved. This can be accessed with ``qjit(cap
 
 .. code-block:: python
 
-    import pennylane as qml
 
     @qml.qjit(capture=True, autograph=True)
     @qml.qnode(qml.device("lightning.qubit", wires=2))
@@ -376,10 +351,6 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
 
 .. code-block:: python
 
-    import pennylane as qml 
-    import jax
-    import jax.numpy as jnp
-
     dev = qml.device("lightning.qubit", wires=1)
 
     @qml.qjit(capture=True)
@@ -404,8 +375,6 @@ then a ``False`` branch much be provided that returns the same generic type:
 
 .. code-block:: python
 
-    import pennylane as qml
-
     @qml.qjit(capture=True)
     @qml.qnode(qml.device("lightning.qubit", wires=2))
     def circuit():
@@ -425,8 +394,6 @@ In this particular example, to acheive the desired behaviour when the condition
 is ``False``, a ``false_fn`` must be provided:
 
 .. code-block:: python
-
-    import pennylane as qml
 
     @qml.qjit(capture=True)
     @qml.qnode(qml.device("lightning.qubit", wires=2))
@@ -450,8 +417,6 @@ That, or the ``true_fn`` itself can be an operator type:
 
 .. code-block:: python
 
-    import pennylane as qml
-
     @qml.qjit(capture=True)
     @qml.qnode(qml.device("lightning.qubit", wires=2))
     def circuit():
@@ -471,8 +436,6 @@ The matrix of an operator cannot be computed with :func:`~.pennylane.matrix` wit
 a QNode, and will raise an error:
 
 .. code-block:: python
-
-    import pennylane as qml 
 
     dev = qml.device("lightning.qubit", wires=1)
 

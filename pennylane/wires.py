@@ -143,6 +143,8 @@ class Wires(Sequence):
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
+        if math.is_abstract(idx) and jax_available:
+            return jax.numpy.array(self._labels)[idx]
         if isinstance(idx, slice):
             return Wires(self._labels[idx])
         return self._labels[idx]
