@@ -41,8 +41,8 @@ class LeftQuantumIntegerComparator(Operation):
         |x\rangle |y\rangle |x > y\rangle & \text{if } op = 3
         \end{cases}
 
-    The decomposition is defined as the left block on Figure 6 of Appendix E
-    in `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition used auxiliary wires
+    The decomposition is defined as the left block in Figure 6 in Appendix E
+    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires
     and in order to clean them, we must apply the adjoint of this operator after using the target qubit.
 
     Args:
