@@ -405,6 +405,43 @@ class TestAllocateStatePhaseGrad:
 class TestAllocatePhaseGrad:
     """Tests for phase-gradient allocation via the allocate function and Allocate op."""
 
+    def test_qml_allocate_phase_grad_in_qnode(self):
+        """Test that qml.allocate with phase-grad works inside a QNode at the user level."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.H(0)
+            with qml.allocate(2, state="phase-grad", precision=1e-6, restored=True) as wires:
+                qml.CNOT((0, wires[0]))
+                qml.CNOT((wires[0], wires[1]))
+            return qml.expval(qml.Z(0))
+
+        # At the user level, the tape should contain the Allocate op with phase-grad metadata
+        tape = qml.workflow.construct_tape(circuit)()
+        alloc_ops = [op for op in tape.operations if isinstance(op, Allocate)]
+        assert len(alloc_ops) == 1
+        assert alloc_ops[0].state is AllocateState.PHASE_GRAD
+        assert alloc_ops[0].precision == 1e-6
+        assert alloc_ops[0].is_phase_gradient
+
+    def test_qml_allocate_phase_grad_device_execution_raises(self):
+        """Test that device execution of a phase-grad allocation raises AllocationError.
+
+        Phase-gradient wire resolution is not yet implemented, so lowering to
+        device level should produce a clear error rather than silently miscompiling.
+        The inner AllocationError from resolve_dynamic_wires is wrapped by device
+        preprocessing into a higher-level message.
+        """
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit():
+            with qml.allocate(1, state="phase-grad", precision=1e-6, restored=True) as wires:
+                qml.X(wires[0])
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(qml.exceptions.AllocationError):
+            circuit()
+
     def test_allocate_phase_grad_returns_register(self):
         """Test that allocate with state='phase-grad' returns a DynamicRegister."""
         with qml.queuing.AnnotatedQueue() as q:
