@@ -1031,14 +1031,37 @@ class PauliSentence(dict):
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
-    def simplify(self, tol=1e-8):
-        """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
+    def prune(self, tol=1e-8):
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> ps = PauliSentence({
+        ...     PauliWord({0:'X', 1:'Y'}): 0,
+        ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+        ... })
+        >>> ps
+        0 * X(0) @ Y(1)
+        + (-0-0.45j) * Z(2) @ Y(0)
+        >>> ps.prune()
+        >>> ps
+        (-0-0.45j) * Z(2) @ Y(0)
+
+        """
         items = list(self.items())
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
-        if len(self) == 0:
-            self = PauliSentence({})  # pylint: disable=self-cls-assignment
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        This method mutates the ``PauliSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""
