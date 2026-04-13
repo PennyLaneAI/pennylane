@@ -112,10 +112,10 @@ jobs:
           --ignore=doc/releases
           --ignore=doc/_static
           --ignore=doc/_templates
+          --ignore=doc/news/new_opmath.rst
           "
           TO_DO="
           --ignore=doc/development
-          --ignore=doc/news
           --ignore=doc/introduction/chemistry.rst
           --ignore=doc/introduction/compiling_circuits.rst
           --ignore=doc/introduction/compiling_workflows.rst
