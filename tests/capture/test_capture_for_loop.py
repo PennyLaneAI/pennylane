@@ -255,6 +255,62 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    def test_reverse_iteration(self):
+        """Test that a requested reverse iteration is converted to a positive iteration."""
+
+        @qml.for_loop(7, 0, -3)
+        def f(i, j, x):
+            x = x.at[j].set(i)
+            return j + 1, x
+
+        jaxpr = jax.make_jaxpr(f)(0, jnp.ones(5))
+
+        # will hit 7, 4, 1
+        assert jaxpr.eqns[0].invars[0].val == 0
+        assert jaxpr.eqns[0].invars[1].val == 3
+        assert jaxpr.eqns[0].invars[2].val == 1
+
+        body_fn = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert body_fn.eqns[0].primitive.name == "mul"
+        assert body_fn.eqns[0].invars[0].val == -3  # the step
+        assert body_fn.eqns[1].primitive.name == "add"
+        assert body_fn.eqns[1].invars[0].val == 7  # the initial start
+
+        final_j, x = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0, jnp.zeros(5))
+        assert qml.math.allclose(final_j, 3)
+        assert qml.math.allclose(x, jnp.array([7, 4, 1, 0, 0]))
+
+    def test_reverse_iteration_abstract_step(self):
+        """Test that reverse iteration can be detected if the step is abstract
+        but the start and stop are not."""
+
+        def w(step):
+
+            @qml.for_loop(8, 0, step)
+            def f(i, j, x):
+                # keep track of the order i occured in
+                x = x.at[j].set(i)
+                return j + 1, x
+
+            return f(0, jnp.zeros(6))
+
+        jaxpr = jax.make_jaxpr(w)(-1)
+
+        assert jaxpr.eqns[-1].invars[0].val == 0
+        assert jaxpr.eqns[-1].invars[2].val == 1
+
+        assert jaxpr.eqns[-1].invars[1].aval.dtype == jnp.int64
+
+        body_fn = jaxpr.eqns[-1].params["jaxpr_body_fn"]
+        assert body_fn.eqns[0].primitive.name == "mul"
+        assert body_fn.eqns[0].invars[0] == body_fn.constvars[0]  # the step
+        assert body_fn.eqns[1].primitive.name == "add"
+        assert body_fn.eqns[1].invars[0].val == 8  # the initial start
+
+        final_j, x = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, -2)
+        assert qml.math.allclose(final_j, 4)
+        assert qml.math.allclose(x, jnp.array([8, 6, 4, 2, 0, 0]))
+
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
