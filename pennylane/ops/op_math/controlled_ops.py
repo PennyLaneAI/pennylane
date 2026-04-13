@@ -1808,9 +1808,30 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
             qml.PauliX(w)
 
 
+def _2mcx_elbow_explicit_resources(**__):
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(qml.Elbow),
+            qml.CNOT,
+        ): 1,
+    }
+
+
+def _2mcx_elbow_explicit_condition(num_control_wires, work_wire_type, **__):
+    return num_control_wires == 2 and work_wire_type == "zeroed"
+
+
+@register_condition(_2mcx_elbow_explicit_condition)
+@register_resources(_2mcx_elbow_explicit_resources)
+def _2mcx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
+    elbow = qml.Elbow([wires[0], wires[1], work_wires[0]], control_values)
+    qml.change_op_basis(elbow, qml.CNOT([work_wires[0], wires[2]]))
+
+
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
+    _2mcx_elbow_explicit,
     decompose_mcx_many_workers_explicit,
     decompose_mcx_many_borrowed_workers,
     decompose_mcx_many_zeroed_workers,
