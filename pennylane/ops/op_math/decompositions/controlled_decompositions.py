@@ -422,13 +422,16 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires
     num_ww = num_control_wires - 2
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * num_ww}
-    mcx_rep = resource_rep(
-        ops.MultiControlledX,
-        num_control_wires=2,
-        num_work_wires=num_work_wires - num_ww,  # Guaranteed to be >=0 due to condition function
-        num_zero_control_values=0,
-        work_wire_type="zeroed",
-    )
+    if num_work_wires == num_ww:
+        mcx_rep = resource_rep(qml.Toffoli)
+    else:
+        mcx_rep = resource_rep(
+            ops.MultiControlledX,
+            num_control_wires=2,
+            num_work_wires=num_work_wires - num_ww,  # Guaranteed to be >0 due to condition
+            num_zero_control_values=0,
+            work_wire_type="zeroed",
+        )
     return {qml.TemporaryAND: num_ww, adjoint_resource_rep(qml.TemporaryAND): num_ww, mcx_rep: 1}
 
 
@@ -466,7 +469,7 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     loop_down()
 
     _wires = [control_wires[0], work_wires[0], target_wire]
-    if work_wire_type == "borrowed":
+    if work_wire_type == "borrowed" or not extra_work_wires:
         ops.Toffoli(_wires)
     else:
         ops.MultiControlledX(_wires, work_wires=extra_work_wires, work_wire_type="zeroed")
@@ -483,8 +486,10 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, num_work_wires, **_: _mcx_many_workers_resource(
-        num_control_wires, "zeroed", num_work_wires
+    lambda num_control_wires=None, **_: _mcx_many_workers_resource(
+        num_control_wires=num_control_wires,
+        work_wire_type="zeroed",
+        num_work_wires=num_control_wires - 2,
     ),
     work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 2},
 )
@@ -502,8 +507,10 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, num_work_wires, **_: _mcx_many_workers_resource(
-        num_control_wires, "borrowed", num_work_wires
+    lambda num_control_wires=None, **_: _mcx_many_workers_resource(
+        num_control_wires=num_control_wires,
+        work_wire_type="borrowed",
+        num_work_wires=num_control_wires - 2,
     ),
     work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
 )
