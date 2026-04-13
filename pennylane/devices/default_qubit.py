@@ -245,7 +245,7 @@ def _conditional_broadcast_expand(tape):
 def no_counts(tape):
     """Throws an error on counts measurements."""
     if any(isinstance(mp, CountsMP) for mp in tape.measurements):
-        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qp.counts.")
     return (tape,), null_postprocessing
 
 
