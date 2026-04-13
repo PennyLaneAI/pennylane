@@ -164,14 +164,14 @@ class QROM(Operation):
         :class:`~.Select` block and another to facilitate parallel data loading via a
         SWAP network.
 
-        The template determines depth, :math:`\lambda` (a power of 2),
+        The template determines the depth, :math:`\lambda` (a power of 2),
         based on the available ``work_wires``. Let :math:`b` be the length of the bitstrings.
         The number of wires allocated to the SWAP network is :math:`k_{swap} = b \cdot (\lambda - 1)`.
         The remaining wires, :math:`k_{select}`, are assigned to the :class:`~.Select` block.
 
         To ensure the decomposition is valid, the template guarantees that
         :math:`k_{select} \geq c - \log_2(\lambda) - 1`, where :math:`c` is the number of
-        control wires updating the depth if needed.
+        control wires, updating the depth if needed.
 
         The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
         The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
