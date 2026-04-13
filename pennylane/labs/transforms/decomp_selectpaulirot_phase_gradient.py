@@ -132,20 +132,20 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'ChangeOpBasis': 1}
+    {'QROM': 2, 'CNOT': 6, 'PauliX': 6, 'SemiAdder': 1}
     >>> print(qp.draw(circuit, wire_order=[0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires)(angles))
-         0: ─╭QROM(M0)───────────────────────────────────────╭QROM(M0)†─┤  State
-         1: ─├QROM(M0)───────────────────────────────────────├QROM(M0)†─┤  State
-         2: ─├QROM(M0)───────────────────────────────────────├QROM(M0)†─┤  State
-         3: ─│─────────╭●────╭●────╭●───────────────╭●─╭●─╭●─│──────────┤  State
-     aux_0: ─├QROM(M0)─│─────│─────│─────╭SemiAdder─│──│──│──├QROM(M0)†─┤  State
-     aux_1: ─├QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│──├QROM(M0)†─┤  State
-     aux_2: ─╰QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│──╰QROM(M0)†─┤  State
-     qft_0: ───────────╰X──X─│─────│─────├SemiAdder─│──│──╰X──X─────────┤  State
-     qft_1: ─────────────────╰X──X─│─────├SemiAdder─│──╰X──X────────────┤  State
-     qft_2: ───────────────────────╰X──X─├SemiAdder─╰X──X───────────────┤  State
-    work_0: ─────────────────────────────├SemiAdder─────────────────────┤  State
-    work_1: ─────────────────────────────╰SemiAdder─────────────────────┤  State
+         0: ─╭QROM(M0)──────────────────────────────────────────╭QROM(M0)─┤  State
+         1: ─├QROM(M0)──────────────────────────────────────────├QROM(M0)─┤  State
+         2: ─├QROM(M0)──────────────────────────────────────────├QROM(M0)─┤  State
+         3: ─│─────────╭●────╭●────╭●───────────────╭●─╭●─╭●────│─────────┤  State
+     aux_0: ─├QROM(M0)─│─────│─────│─────╭SemiAdder─│──│──│─────├QROM(M0)─┤  State
+     aux_1: ─├QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│─────├QROM(M0)─┤  State
+     aux_2: ─├QROM(M0)─│─────│─────│─────├SemiAdder─│──│──│─────├QROM(M0)─┤  State
+     qft_0: ─│─────────╰X──X─│─────│─────├SemiAdder─│──│──╰X──X─│─────────┤  State
+     qft_1: ─│───────────────╰X──X─│─────├SemiAdder─│──╰X──X────│─────────┤  State
+     qft_2: ─│─────────────────────╰X──X─├SemiAdder─╰X──X───────│─────────┤  State
+    work_0: ─├QROM(M0)───────────────────├SemiAdder─────────────├QROM(M0)─┤  State
+    work_1: ─╰QROM(M0)───────────────────╰SemiAdder─────────────╰QROM(M0)─┤  State
 
     """
 
