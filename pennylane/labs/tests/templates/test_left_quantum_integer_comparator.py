@@ -23,7 +23,7 @@ from pennylane.labs.templates.left_quantum_integer_comparator import LeftQuantum
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
-def test_standard_validity_c_add_sub():
+def test_standard_validity_left_comparator():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
@@ -76,7 +76,7 @@ class TestLeftQuantumIntegerComparator:
     def test_operation_result(
         self, x_wires, y_wires, target_wire, work_wires, x, y, op, expected
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the CAddSub template output."""
+        """Test the correctness of the LeftComparator template output."""
 
         pytest.importorskip("catalyst")
 

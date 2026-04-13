@@ -27,7 +27,7 @@ from pennylane import compiler, math, capture
 
 
 class LeftQuantumIntegerComparator(Operation):
-    r"""This operator performs an inequality test between two quantum registeres :math:`x` and
+    r"""This operator performs an inequality test between two quantum registers :math:`x` and
     :math:`y`, storing the result in a target qubit. Depending on the value of the
     ``op`` argument, the operator evaluates one of four possible relations:
 
@@ -50,8 +50,8 @@ class LeftQuantumIntegerComparator(Operation):
             y_wires (WiresLike): The wires that store the integer :math:`y`.
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
-                At least ``len(y_wires) - 1`` work wires should be provided.
-            op (int): The operator used in the inequality. The value could be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
+                At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
+            op (int): The operator used in the inequality. The value can be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
                 representing '<', '<=', '>=' and '>' respectively.
 
     **Example**
@@ -102,10 +102,10 @@ class LeftQuantumIntegerComparator(Operation):
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
-        work_wires = Wires(work_wires if work_wires is not None else [])
+        work_wires = Wires(work_wires)
 
         if op not in [0, 1, 2, 3]:
-            raise ValueError("Allowed values for 'op' are: 0, 1, 2 and 3.")
+            raise ValueError("Allowed values for 'op' are: 0, 1, 2 and 3. Got {op}")
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
                 raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
