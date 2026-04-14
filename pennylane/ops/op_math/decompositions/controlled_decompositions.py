@@ -14,6 +14,7 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
+
 from typing import Literal
 
 import numpy as np
@@ -881,12 +882,15 @@ def _convert_to_real_diagonal(q):
     return q * math.reshape(math.exp(-1j * exp_angles), (1, 2))
 
 
-def _param_su2(ar, ai, br, bi):
+def _param_su2(ar, ai, br, bi=0):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
+    return math.stack(
+        [math.stack([ar + 1j * ai, -br + 1j * bi]),
+         math.stack([br + 1j * bi, ar + 1j * -ai])]
+    )
 
 
 def _bisect_compute_a(u):
@@ -910,7 +914,10 @@ def _bisect_compute_a(u):
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1),
+        lambda: math.array([[1 + 0j, -1 + 0j], [1 + 0j, 1 + 0j]]) * 2**-0.5,
+        _compute_a,
+        (),
     )
 
 
@@ -928,7 +935,7 @@ def _bisect_compute_b(u):
 
     b = math.cond(
         math.allclose(s, 0),
-        lambda: 0,
+        lambda: 0.0,
         lambda: math.cond(
             math.allclose(t, 0),
             lambda: (1 / 2 - w / 2) * math.sqrt(2 * w + 2) / s,
@@ -942,7 +949,7 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: 0, lambda: math.sqrt(w), ()),
+            lambda: math.cond(w < 0, lambda: 0.0, lambda: math.sqrt(w), ()),
             lambda: math.sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t,
             (),
         ),
@@ -963,13 +970,13 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0, ()),
+            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0.0, ()),
             lambda: math.sqrt(2 - 2 * w) / 2,
             (),
         ),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: 0,
+            lambda: 0.0,
             lambda: -math.sqrt(2) * math.sqrt((1 - w) / (s**2 + t**2)) * math.abs(t) / 2,
             (),
         ),

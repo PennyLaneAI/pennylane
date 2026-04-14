@@ -438,6 +438,48 @@ class TestControlledDecompBisect:
         assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, su, atol=tol, rtol=tol)
 
     @pytest.mark.unit
+    def test_bisect_compute_a_jit_compatible(self, tol):
+        """Test that _bisect_compute_a works under JAX tracing (jax.jit)."""
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(u):
+            return _bisect_compute_a(u)
+
+        # SU(2) matrix with non-zero off-diagonal
+        U = jax.numpy.array([[1 + 0j, 1 + 0j], [-1 + 0j, 1 + 0j]]) * 2**-0.5
+        result = f(U)
+        assert result.shape == (2, 2)
+        assert jax.numpy.iscomplexobj(result)
+
+        sx = qml.PauliX.compute_matrix()
+        at = _matrix_adjoint(np.array(result))
+        a = np.array(result)
+        assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, np.array(U), atol=tol, rtol=tol)
+
+    @pytest.mark.unit
+    def test_bisect_compute_b_jit_compatible(self, tol):
+        """Test that _bisect_compute_b works under JAX tracing (jax.jit)."""
+
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(u):
+            return _bisect_compute_b(u)
+
+        # SU(2) matrix with zero main-diagonal
+        U = jax.numpy.array([[0 + 0j, 0 + 1j], [0 + 1j, 0 + 0j]])
+        result = f(U)
+        assert result.shape == (2, 2)
+        assert jax.numpy.iscomplexobj(result)
+
+        sx = qml.PauliX.compute_matrix()
+        sh = qml.Hadamard.compute_matrix()
+        bt = _matrix_adjoint(np.array(result))
+        b = np.array(result)
+        assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, np.array(U), atol=tol, rtol=tol)
+
+    @pytest.mark.unit
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(
