@@ -571,7 +571,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
         raise ValueError("Cannot add multiple decompositions with the same name.")
     all_rules = _decompositions_var.get()[to_name(op_type)]
     if dup_rule := next((rule for rule in new_rules if rule in all_rules), None):
-        raise ValueError(f"There is already a decomposition rule with the same name {dup_rule}.")
+        raise ValueError(f"There is already a decomposition rule with the same name: {dup_rule}.")
     all_rules.update(new_rules)
 
 
@@ -595,7 +595,7 @@ class DecompCollection:
 
     def __str__(self) -> str:
         rules = [f"{i}: {rule.name}" for i, rule in enumerate(self)]
-        return "Avaialble Decomposition Rules:\n" + "\n".join(rules)
+        return "Available Decomposition Rules:\n" + "\n".join(rules)
 
     def __iter__(self):
         return iter(self._dict.values())
