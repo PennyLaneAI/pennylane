@@ -284,7 +284,7 @@ def multi_qubit_decomposition(U, wires):
 #######################
 
 
-def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
+def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
     def _resource_fn(num_wires):  # pylint: disable=unused-argument
@@ -292,7 +292,7 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
 
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda num_wires: num_wires == 1)
-    @register_resources(_resource_fn, exact=False)
+    @register_resources(_resource_fn, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -367,11 +367,11 @@ def _su2_zxz_decomp(U, wires, **__):
     ops.RZ(omega, wires=wires[0])
 
 
-rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource)
-zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource)
-xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource)
-xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource)
-zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource)
+rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
+zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource, "zyz")
+xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource, "xyx")
+xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource, "xzx")
+zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
 def _two_qubit_resource(**_):
