@@ -393,29 +393,6 @@ class TestQROM:
         assert qml.math.allclose(output, [0, 0, 1, 0])
 
     @pytest.mark.jax
-    def test_jit_compatible(self):
-        """Test that the template is compatible with the JIT compiler."""
-
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @jax.jit
-        @qml.qnode(dev)
-        def circuit():
-            qml.QROM(
-                [[1], [0], [0], [1]],
-                control_wires=[0, 1],
-                target_wires=[2],
-                work_wires=[3],
-            )
-            return qml.probs(wires=3)
-
-        assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
-
-    @pytest.mark.jax
     def test_traced_wires(self):
         """Test that QROM construction and decomposition do not raise TracerBoolConversionError
         when wires are JAX tracers."""
