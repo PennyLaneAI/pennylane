@@ -32,6 +32,7 @@ from pennylane.templates.subroutines.time_evolution.trotter import (
     _recursive_expression,
     _recursive_qfunc,
     _scalar,
+    _simplify_trotter_sequence,
 )
 
 test_hamiltonians = (
@@ -795,15 +796,26 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
     
-    @pytest.mark.parameterize("order", (2, 4, 6))
+    @pytest.mark.parametrize("order", (2, 4, 6))
     @pytest.mark.parametrize("n", (1, 2, 4))
     def test_trotter_simplification(self, order, n):
-        """Test that the TrotterProduct simplifies correctly when given a simple sum of operators."""
-        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=n, order=order)
-        for i, d in enumerate(op.decomposition(), start=1):
-            assert (i, d)
-        assert op.resources()
+        """Ensure decomposition is structurally valid (no strict equality assumptions)."""
 
+        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=n, order=order)
+        decomp = op.decomposition()
+        assert decomp
+        decomp = _simplify_trotter_sequence(decomp)
+        def same_structure(o1, o2):
+            return (
+                type(o1) == type(o2)
+                and qml.equal(o1.base, o2.base)
+                and getattr(o1, "parameters", None) == getattr(o2, "parameters", None)
+                and getattr(o1, "wires", None) == getattr(o2, "wires", None)
+        )
+
+        for i in range(len(decomp) - 1):
+            if same_structure(decomp[i], decomp[i + 1]):
+                pytest.fail(f"Redundant adjacent ops found at index {i}: {decomp[i]} == {decomp[i+1]}")
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:

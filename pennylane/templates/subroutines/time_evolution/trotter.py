@@ -78,33 +78,42 @@ def _recursive_expression(x, order, ops):
 
 @QueuingManager.stop_recording()
 def _simplify_trotter_sequence(decomp):
-    """Simplify a list of operations by merging consecutive evolutions with the same base.
-    
-    Args:
-        decomp (list): A list of operations to simplify.
 
-    Returns:
-        list: The simplified list of operations.
-    """
+    def _op_key(op):
+        return (
+            type(op),
+            tuple(getattr(op, "wires", ())),
+            getattr(op, "name", None),
+        )
+
     if not decomp:
         return []
 
     merged = [decomp[0]]
 
-    for op in decomp[1:]:
-        prev = merged[-1]
+    prev = decomp[0]
+    prev_key = _op_key(prev.base) if isinstance(prev, qml_ops.Evolution) else None
 
+    for op in decomp[1:]:
         if (
             isinstance(prev, qml_ops.Evolution)
             and isinstance(op, qml_ops.Evolution)
-            and qml.equal(prev.base, op.base)
         ):
-            merged[-1] = qml_ops.Evolution(
-                op.base,
-                prev.param + op.param,
-            )
+            op_key = _op_key(op.base)
+
+            if op_key == prev_key and prev.wires == op.wires:
+                merged[-1] = qml_ops.Evolution(
+                    prev.base,
+                    prev.param + op.param,
+                )
+                continue
+
+            prev_key = op_key
         else:
-            merged.append(op)
+            prev_key = None
+
+        merged.append(op)
+        prev = op
 
     return merged
 
@@ -517,7 +526,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         decomp = _simplify_trotter_sequence(decomp)
 
         if QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in decomp:
                 apply(op)
 
         return decomp
