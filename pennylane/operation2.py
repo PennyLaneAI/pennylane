@@ -69,21 +69,25 @@ def create_operator_primitive(
         return None
 
     primitive = capture.QmlPrimitive(operator_type.__name__)
-    primitive.prim_type = "operator"
+    primitive.prim_type = "operator2"
 
     @primitive.def_impl
-    def _impl(*args, **kwargs):
-        if "n_wires" not in kwargs:
-            return type.__call__(operator_type, *args, **kwargs)
-        n_wires = kwargs.pop("n_wires")
+    def _impl(*args, dyn_argnames, wire_argnames, wire_lengths, **kwargs):
+        args_dict = {**kwargs}
 
-        split = None if n_wires == 0 else -n_wires
-        # need to convert array values into integers
-        # for plxpr, all wires must be integers
-        # could be abstract when using tracing evaluation in interpreter
-        wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
-        return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
+        cur_idx = 0
+        for d in dyn_argnames:
+            args_dict[d] = args[cur_idx]
+            cur_idx += 1
+
+        for i, w in enumerate(wire_argnames):
+            cur_slice = slice(cur_idx, wire_lengths[i], 1)
+            args_dict[w] = tuple(
+                wire if is_abstract(wire) else int(wire) for wire in args[cur_slice]
+            )
+            cur_idx += wire_lengths[i]
+
+        return type.__call__(operator_type, **args_dict)
 
     abstract_type = _get_abstract_operator()
 
@@ -223,8 +227,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             "wire_lengths": tuple(wire_lengths),
             "dyn_argnames": cls.dyn_argnames,
             "wire_argnames": cls.wire_argnames,
-            # static_argnames is probably not necessary
-            "static_argnames": cls.static_argnames,
         }
         return cls._primitive.bind(*prim_args, **prim_kwargs)
 
@@ -606,7 +608,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 # =============================================================================
 
 
-class Gate(Operator2):
+class Operation2(Operator2):
     r"""Base class representing quantum gates or channels applied to quantum states."""
 
     grad_recipe = None
@@ -685,7 +687,7 @@ class Gate(Operator2):
             self.grad_recipe = [None] * self.num_params
 
 
-class StatePrepBase(Gate):
+class StatePrepBase(Operation2):
     """An interface for state-prep operations."""
 
     grad_method = None
@@ -712,7 +714,7 @@ class StatePrepBase(Gate):
         return "|Ψ⟩"
 
 
-def operation_derivative(operation: Gate) -> TensorLike:
+def operation_derivative(operation: Operation2) -> TensorLike:
     r"""Calculate the derivative of an operation."""
     generator = qml.matrix(
         qml.generator(operation, format="observable"), wire_order=operation.wires

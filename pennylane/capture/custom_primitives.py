@@ -26,6 +26,7 @@ class PrimitiveType(Enum):
 
     DEFAULT = "default"
     OPERATOR = "operator"
+    OPERATOR2 = "operator2"
     MEASUREMENT = "measurement"
     HIGHER_ORDER = "higher_order"
     TRANSFORM = "transform"
