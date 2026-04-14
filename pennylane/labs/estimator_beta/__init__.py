@@ -47,6 +47,16 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+Resource Operators
+~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~QROM
+
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,6 +71,9 @@ Alternate Decompositions
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
+    ~mcx_one_clean_aux_resource_decomp
+    ~mcx_one_dirty_aux_resource_decomp
+    ~mcx_many_clean_aux_resource_decomp
 
 """
 

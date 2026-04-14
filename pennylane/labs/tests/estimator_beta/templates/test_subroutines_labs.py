@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, ResourceConfig, resource_rep
+from pennylane.labs.estimator_beta.templates import QROM
 from pennylane.math import ceil_log2
 
 # pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
@@ -217,21 +218,21 @@ class TestLabsQROM:
         """
         select_swap_depth = "Not A Valid Input"
         with pytest.raises(ValueError, match="`select_swap_depth` must be None or an integer."):
-            qre.QROM(100, 10, select_swap_depth=select_swap_depth)
+            QROM(100, 10, select_swap_depth=select_swap_depth)
 
         with pytest.raises(ValueError, match="`select_swap_depth` must be None or an integer."):
-            qre.QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
+            QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
 
         select_swap_depth = 3
         with pytest.raises(
             ValueError, match="`select_swap_depth` must be 1 or a positive integer power of 2."
         ):
-            qre.QROM(100, 10, select_swap_depth=select_swap_depth)
+            QROM(100, 10, select_swap_depth=select_swap_depth)
 
         with pytest.raises(
             ValueError, match="`select_swap_depth` must be 1 or a positive integer power of 2."
         ):
-            qre.QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
+            QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
 
     @pytest.mark.parametrize(
         "num_data_points, size_data_points, num_bit_flips, depth, borrow",
@@ -244,9 +245,9 @@ class TestLabsQROM:
     def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, borrow):
         """Test that the resource params are correct."""
         if depth is None:
-            op = qre.QROM(num_data_points, size_data_points)
+            op = QROM(num_data_points, size_data_points)
         else:
-            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, borrow, depth)
+            op = QROM(num_data_points, size_data_points, num_bit_flips, borrow, depth)
 
         assert op.resource_params == {
             "num_bitstrings": num_data_points,
@@ -268,7 +269,7 @@ class TestLabsQROM:
         """Test that the compressed representation is correct."""
         expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
-            qre.QROM,
+            QROM,
             expected_num_wires,
             {
                 "num_bitstrings": num_data_points,
@@ -279,7 +280,7 @@ class TestLabsQROM:
             },
         )
         assert (
-            qre.QROM.resource_rep(
+            QROM.resource_rep(
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
@@ -295,7 +296,7 @@ class TestLabsQROM:
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = qre.QROM._t_optimized_select_swap_width(
+        opt_width = QROM._t_optimized_select_swap_width(
             num_bitstrings,
             size_bitstring,
             borrow=False,
@@ -395,7 +396,7 @@ class TestLabsQROM:
     )
     def test_select_cost(self, num_data, num_flips, repeat, expected):
         """Test that the private _select_cost method works as expected"""
-        assert qre.QROM._select_cost(num_data, num_flips, repeat) == expected
+        assert QROM._select_cost(num_data, num_flips, repeat) == expected
 
     @pytest.mark.parametrize(
         "num_data, num_flips, repeat, expected",  # computed by hand
@@ -494,7 +495,7 @@ class TestLabsQROM:
     )
     def test_control_select_cost(self, num_data, num_flips, repeat, expected):
         """Test that the private _single_ctrl_select_cost method works as expected"""
-        assert qre.QROM._single_ctrl_select_cost(num_data, num_flips, repeat) == expected
+        assert QROM._single_ctrl_select_cost(num_data, num_flips, repeat) == expected
 
     @pytest.mark.parametrize(
         "reg_size, num_swap_ctrls, repeat, expected",  # computed by hand
@@ -513,7 +514,7 @@ class TestLabsQROM:
     )
     def test_swap_cost(self, reg_size, num_swap_ctrls, repeat, expected):
         """Test that the private _swap_cost method works as expected"""
-        assert qre.QROM._swap_cost(reg_size, num_swap_ctrls, repeat) == expected
+        assert QROM._swap_cost(reg_size, num_swap_ctrls, repeat) == expected
 
     @pytest.mark.parametrize(
         "reg_size, num_swap_ctrls, repeat, base_decomp",  # computed by hand
@@ -627,7 +628,7 @@ class TestLabsQROM:
         dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
         expected = [alloc_reg] + base_decomp + [dealloc_reg]
 
-        computed = qre.QROM._single_ctrl_swap_cost(reg_size, num_swap_ctrls, repeat)
+        computed = QROM._single_ctrl_swap_cost(reg_size, num_swap_ctrls, repeat)
         assert _test_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
@@ -737,7 +738,7 @@ class TestLabsQROM:
     )
     def test_swap_adj_cost(self, reg_size, num_swap_ctrls, repeat, expected):
         """Test that the private _swap_adj_cost method works as expected"""
-        assert qre.QROM._swap_adj_cost(reg_size, num_swap_ctrls, repeat) == expected
+        assert QROM._swap_adj_cost(reg_size, num_swap_ctrls, repeat) == expected
 
     @pytest.mark.parametrize(
         "resource_params, alloc_reg, base_decomp",  # computed by hand,
@@ -751,11 +752,11 @@ class TestLabsQROM:
                 None,  # k ~ 4 < M = 8, don't need to allocate
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    + qre.QROM._select_cost(math.ceil(25 / 4), 50)
+                    + QROM._select_cost(math.ceil(25 / 4), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
+                    + QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.X.resource_rep())]
                 ),
             ),
@@ -768,11 +769,11 @@ class TestLabsQROM:
                 qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    + qre.QROM._select_cost(math.ceil(49 / 8), 50)
+                    + QROM._select_cost(math.ceil(49 / 8), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
+                    + QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.X.resource_rep())]
                 ),
             ),
@@ -785,7 +786,7 @@ class TestLabsQROM:
             dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
-        computed = qre.QROM.qrom_clean_auxiliary_adjoint_resource_decomp(resource_params)
+        computed = QROM.qrom_clean_auxiliary_adjoint_resource_decomp(resource_params)
         assert _test_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
@@ -800,11 +801,11 @@ class TestLabsQROM:
                 None,  # k ~ 4 < M = 8, don't need to allocate
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    + qre.QROM._select_cost(math.ceil(25 / 4), 50)
+                    + QROM._select_cost(math.ceil(25 / 4), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
+                    + QROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.X.resource_rep())]
                 ),
             ),
@@ -817,11 +818,11 @@ class TestLabsQROM:
                 qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    + qre.QROM._select_cost(math.ceil(49 / 8), 50)
+                    + QROM._select_cost(math.ceil(49 / 8), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    + qre.QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
+                    + QROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.X.resource_rep())]
                 ),
             ),
@@ -834,7 +835,7 @@ class TestLabsQROM:
             dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
-        computed = qre.QROM.adjoint_resource_decomp(resource_params)
+        computed = QROM.adjoint_resource_decomp(resource_params)
         assert _test_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
@@ -853,8 +854,8 @@ class TestLabsQROM:
                         GateCount(qre.Z.resource_rep(), 2),
                         GateCount(qre.Hadamard.resource_rep(), 2),
                     ]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=2, repeat=4)
-                    + qre.QROM._select_cost(math.ceil(50 / 4), 50, 2)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=2, repeat=4)
+                    + QROM._select_cost(math.ceil(50 / 4), 50, 2)
                 ),
             ),
             (
@@ -870,8 +871,8 @@ class TestLabsQROM:
                         GateCount(qre.Z.resource_rep(), 2),
                         GateCount(qre.Hadamard.resource_rep(), 2),
                     ]
-                    + qre.QROM._swap_cost(register_size=1, num_swap_ctrls=3, repeat=4)
-                    + qre.QROM._select_cost(math.ceil(98 / 8), 50, 2)
+                    + QROM._swap_cost(register_size=1, num_swap_ctrls=3, repeat=4)
+                    + QROM._select_cost(math.ceil(98 / 8), 50, 2)
                 ),
             ),
         ),
@@ -883,19 +884,20 @@ class TestLabsQROM:
             dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
-        computed = qre.QROM.qrom_dirty_auxiliary_adjoint_resource_decomp(resource_params)
+        computed = QROM.qrom_dirty_auxiliary_adjoint_resource_decomp(resource_params)
         assert _test_decomp_equal(computed, expected)
 
     @staticmethod
     def resources_data(index):
         """Store the expected resources used in the test_resources method"""
+        resources = []
         if index == 0:  # 10, 3, 15, None, True
             # opt_depth = 1 because sqrt(10/(3*2)) ~ 1
             allocate_sel = qre.Allocate(ceil_log2(10) - 1, "zero", True)
 
             resources = (
                 [allocate_sel]
-                + qre.QROM._select_cost(10, 15)
+                + QROM._select_cost(10, 15)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 1:  # 100, 5, 50, 2, False
@@ -903,9 +905,9 @@ class TestLabsQROM:
             allocate_swap = qre.Allocate(5, "zero", True)
             resources = (
                 [allocate_sel, allocate_swap]
-                + qre.QROM._select_cost(50, 50)
+                + QROM._select_cost(50, 50)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._swap_cost(5, 1)
+                + QROM._swap_cost(5, 1)
                 + [
                     qre.GateCount(qre.Hadamard.resource_rep(), 5),
                     qre.Deallocate(allocated_register=allocate_swap),
@@ -915,7 +917,7 @@ class TestLabsQROM:
             allocate_sel = qre.Allocate(ceil_log2(12) - 1, "zero", True)
             resources = (
                 [allocate_sel]
-                + qre.QROM._select_cost(12, 5)
+                + QROM._select_cost(12, 5)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 3:  # 12, 2, 5, 128, False
@@ -923,8 +925,8 @@ class TestLabsQROM:
             allocate_swap = qre.Allocate((max_depth - 1) * 2, "zero", True)
             resources = (
                 [allocate_swap]
-                + qre.QROM._select_cost(1, 5)
-                + qre.QROM._swap_cost(2, 4)
+                + QROM._select_cost(1, 5)
+                + QROM._swap_cost(2, 4)
                 + [
                     qre.GateCount(qre.Hadamard.resource_rep(), (max_depth - 1) * 2),
                     qre.Deallocate(allocated_register=allocate_swap),
@@ -938,9 +940,9 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 2 * 2)]
-                + qre.QROM._select_cost(3, 5, repeat=2)
+                + QROM._select_cost(3, 5, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._swap_cost(2, 2, repeat=4)
+                + QROM._swap_cost(2, 2, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
         return resources
@@ -961,7 +963,7 @@ class TestLabsQROM:
         """Test that the resources are correct."""
         expected_decomp = self.resources_data(expected_res_index)
 
-        computed_decomp = qre.QROM.resource_decomp(
+        computed_decomp = QROM.resource_decomp(
             num_bitstrings=num_data_points,
             size_bitstring=size_data_points,
             num_bit_flips=num_bit_flips,
@@ -973,13 +975,14 @@ class TestLabsQROM:
     @staticmethod
     def single_ctrl_resources_data(index):
         """Store the expected resources used in the test_single_controlled_res_decomp method"""
+        resources = []
         if index == 0:  # 10, 3, 15, None, True
             # opt_depth = 1 because sqrt(10/(3*2)) ~ 1
             allocate_sel = qre.Allocate(ceil_log2(10), "zero", True)
 
             resources = (
                 [allocate_sel]
-                + qre.QROM._single_ctrl_select_cost(10, 15)
+                + QROM._single_ctrl_select_cost(10, 15)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 1:  # 10, 3, 15, 2, True
@@ -990,9 +993,9 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + QROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + QROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
         if index == 2:  # 12, 2, 5, 16, True
@@ -1002,8 +1005,8 @@ class TestLabsQROM:
             resources = (
                 [allocate_swap]
                 + [qre.GateCount(h, 2 * 2)]
-                + qre.QROM._single_ctrl_select_cost(1, 5, repeat=2)
-                + qre.QROM._single_ctrl_swap_cost(2, 4, repeat=4)
+                + QROM._single_ctrl_select_cost(1, 5, repeat=2)
+                + QROM._single_ctrl_swap_cost(2, 4, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
         return resources
@@ -1021,7 +1024,7 @@ class TestLabsQROM:
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
         expected_decomp = self.single_ctrl_resources_data(expected_res_index)
-        computed_decomp = qre.QROM.single_controlled_res_decomp(
+        computed_decomp = QROM.single_controlled_res_decomp(
             num_bitstrings=num_data_points,
             size_bitstring=size_data_points,
             num_bit_flips=num_bit_flips,
@@ -1033,6 +1036,7 @@ class TestLabsQROM:
     @staticmethod
     def ctrl_resources_data(index):
         """Store the expected resources used in the test_single_controlled_res_decomp method"""
+        resources = []
         if index == 0:  # 1, 0, 10, 3, 15, 2, True
             allocate_sel = qre.Allocate(ceil_log2(5), "zero", True)
             allocate_swap = qre.Allocate(3, "any", True)
@@ -1041,9 +1045,9 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + QROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + QROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
         if index == 1:  # 2, 1, 10, 3, 15, 2, True
@@ -1064,9 +1068,9 @@ class TestLabsQROM:
                 ]
                 + [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + QROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + QROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
                 + [
                     qre.GateCount(r_elbow, 2 - 1),
@@ -1091,9 +1095,9 @@ class TestLabsQROM:
                 ]
                 + [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + QROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + QROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
                 + [
                     qre.GateCount(r_elbow, 5 - 1),
@@ -1123,7 +1127,7 @@ class TestLabsQROM:
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
         expected_decomp = self.ctrl_resources_data(expected_res_index)
-        computed_decomp = qre.QROM.controlled_resource_decomp(
+        computed_decomp = QROM.controlled_resource_decomp(
             num_ctrl_wires=num_ctrl_wires,
             num_zero_ctrl=num_zero_ctrl,
             target_resource_params={
