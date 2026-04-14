@@ -149,17 +149,19 @@ class TestTemporaryAND:
 
         @qml.qnode(dev)
         def circuit(state):
+            # Prepare control state
             qml.StatePrep(state, wires=sys_wires[:2])
             op = qml.TemporaryAND(wires=sys_wires, control_values=control_values)
             rule(sys_wires, base=op)
+            # Unprepare control state
+            qml.adjoint(qml.StatePrep)(state, wires=sys_wires[:2])
             return qml.probs(wires=sys_wires)
 
         rng = np.random.default_rng(seed)
         state = rng.random(4) + 1j * rng.random(4)
         state /= np.linalg.norm(state)
-        exp_probs = np.kron(np.abs(state) ** 2, np.eye(2)[0])
         probs = circuit(state)
-        assert qml.math.allclose(probs, exp_probs)
+        assert qml.math.allclose(probs, np.eye(8)[0])
 
     @pytest.mark.parametrize("rule", qml.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
