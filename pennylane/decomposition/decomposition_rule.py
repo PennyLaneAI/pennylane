@@ -417,7 +417,7 @@ class DecompositionRule:
             self._source = inspect.getsource(func)
         except OSError:  # pragma: no cover
             # OSError is raised if the source code cannot be retrieved
-            self._source = ""  # pragma: no cover
+            self._source = "Unable to retrieve source code."  # pragma: no cover
 
         self.name = name or func.__name__
 
@@ -441,7 +441,7 @@ class DecompositionRule:
         return dedent(self._source).strip()
 
     def __repr__(self):
-        return self.name
+        return f"DecompositionRule(name={self.name})"
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
@@ -597,7 +597,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
 
     >>> import pennylane as qml
     >>> qml.list_decomps(qml.CRX)
-    [_crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr]
+    [DecompositionRule(name=_crx_to_rx_cz), DecompositionRule(name=_crx_to_rz_ry), DecompositionRule(name=_crx_to_h_crz), DecompositionRule(name=_crx_to_ppr)]
 
     Each decomposition rule can be inspected:
 
