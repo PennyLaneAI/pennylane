@@ -589,7 +589,22 @@ class DecompCollection:
         return self._dict[arg]
 
     def __repr__(self) -> str:
-        return repr(list(self._dict.values()))
+        rules = ["    " + repr(rule) for rule in self]
+        inner_str = "" if not rules else "\n" + ",\n".join(rules) + "\n"
+        return f"DecompCollection([{inner_str}])"
+
+    def __str__(self) -> str:
+        rules = [f"{i}: {rule.name}" for i, rule in enumerate(self)]
+        return "Avaialble Decomposition Rules:\n" + "\n".join(rules)
+
+    def __iter__(self):
+        return iter(self._dict.values())
+
+    def __len__(self) -> int:
+        return len(self._dict)
+
+    def __add__(self, other) -> list:
+        return list(self) + list(other)
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
