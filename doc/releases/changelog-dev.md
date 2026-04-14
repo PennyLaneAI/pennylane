@@ -487,6 +487,9 @@ The following classes have been ported over:
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 
+* The :func:`~pennylane.list_decomps` now returns a new ``DecompCollection`` that supports both index-based and name-based access of the decomposition rules that it contains.
+  [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
