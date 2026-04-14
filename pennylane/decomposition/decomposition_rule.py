@@ -571,14 +571,16 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
         raise ValueError("Cannot add multiple decompositions with the same name.")
     all_rules = _decompositions_var.get()[to_name(op_type)]
     if dup_rule := next((rule for rule in new_rules if rule in all_rules), None):
-        raise ValueError(f"There is already a decomposition rule with the same name {dup_rule}.")
+        raise ValueError(f"There is already a decomposition of the same name: {dup_rule}.")
     all_rules.update(new_rules)
 
 
 class DecompCollection:
     """A collection of decomposition rules."""
 
-    def __init__(self, decomps: dict[str, DecompositionRule]) -> None:
+    def __init__(self, decomps: dict[str, DecompositionRule] | list[DecompositionRule]) -> None:
+        if isinstance(decomps, list):
+            decomps = {rule.name: rule for rule in decomps}
         self._dict = decomps
 
     def __getitem__(self, arg: int | str) -> DecompositionRule:
@@ -603,11 +605,23 @@ class DecompCollection:
     def __len__(self) -> int:
         return len(self._dict)
 
-    def __add__(self, other) -> list:
-        return list(self) + list(other)
+    def __add__(self, other) -> DecompCollection:
+        if isinstance(other, DecompCollection):
+            other = other._dict
+        if isinstance(other, list):
+            other = {rule.name: rule for rule in other}
+        if isinstance(other, dict):
+            if dup_rule := next((rule for rule in other if rule in self._dict), None):
+                raise ValueError(f"There is already a decomposition of the same name: {dup_rule}.")
+            return DecompCollection(self._dict | other)
+        return NotImplemented
 
-    def __radd__(self, other) -> list:
-        return list(other) + list(self)
+    def __radd__(self, other) -> DecompCollection:
+        if isinstance(other, (list, dict)):
+            other = DecompCollection(other)
+        if not isinstance(other, DecompCollection):
+            return NotImplemented
+        return other + self
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
