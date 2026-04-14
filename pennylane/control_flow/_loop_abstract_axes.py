@@ -28,47 +28,6 @@ from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
 
-"""
-Using copy or deepcopy on f somehow alters the consts so that the second time we use the consts
-we introduce new variables that turn into leaked tracers. If we copied ``f``
-and set the consts on the copy, we would get:
-
-.. code-block:: python 
-
-    def w(wires):
-        @qml.for_loop(wires.shape[0])
-        def f(i):
-            2*wires
-
-        f()
-
-        @qml.for_loop(wires.shape[0])
-        def g(i):
-            3*wires
-            
-
-        g()
-
-    with Patcher(*get_jax_patches()):
-        jaxpr = jax.make_jaxpr(w, abstracted_axes={0:"a"})(jnp.array([0,1,2]))
-        print(jaxpr.consts)
-        print(jaxpr)
-
-.. code-block:: 
-    
-    [JitTracer<~int32[]>, JitTracer<i32[JitTracer<~int32[]>]>]
-    { lambda a:i32[] b:i32[a]; c:i32[] d:i32[c]. let
-    ...
-    ...
-
-Here you can see ``a`` and ``b`` being introduced as consts with tracer values, even though there
-should only be ``c`` and ``d``.
-
-I don't know why this happens, but if we just use a try-finally to reset the consts,
-this doesn't happen and we don't run into leaked tracers.
-
-"""
-
 
 def promote_consts_to_inputs(f):
     """This function extracts any closure variables with dynamic shapes from f.__closure__
@@ -88,6 +47,11 @@ def promote_consts_to_inputs(f):
 
     def new_f(args, new_consts):
         """A version of f where the consts with dynamic shapes have been promoted to inputs."""
+
+        # even deepcopy does not actually copy the closure for a function
+        # we don't have a way to produce a new function with independent closure
+        # so therefore we just need to make sure to clean up after ourselves after
+        # in-place modifying the closure contents.
 
         try:
             for ind, c in zip(indices, new_consts):
