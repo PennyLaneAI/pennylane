@@ -140,8 +140,10 @@ class QROM(ResourceOperator):
     }
 
     @staticmethod
-    def _t_optimized_select_swap_width(num_bitstrings, size_bitstring):
-        opt_width_continuous = math.sqrt((2 / 3) * (num_bitstrings / size_bitstring))
+    def _t_optimized_select_swap_width(num_bitstrings, size_bitstring, borrow):
+        pre_factor = 1 / 2 if borrow else 1
+        opt_width_continuous = math.sqrt(pre_factor * (num_bitstrings / size_bitstring))
+
         if opt_width_continuous < 1:
             # The continuous solution could be non-physical
             w1 = w2 = 1
@@ -149,10 +151,14 @@ class QROM(ResourceOperator):
             w1 = 2 ** int(math.floor(math.log2(opt_width_continuous)))
             w2 = 2 ** ceil_log2(opt_width_continuous)
 
-        def t_cost_func(w):
-            return 4 * (math.ceil(num_bitstrings / w) - 2) + 6 * (w - 1) * size_bitstring
+        def t_cost_func(w, borrow):
+            sel_factor, swap_factor = (2, 4) if borrow else (1, 1)
+            return (
+                sel_factor * (math.ceil(num_bitstrings / w) - 2)
+                + swap_factor * (w - 1) * size_bitstring
+            )
 
-        if t_cost_func(w2) < t_cost_func(w1):
+        if t_cost_func(w2, borrow) < t_cost_func(w1, borrow):
             return w2
         return w1
 
@@ -327,7 +333,9 @@ class QROM(ResourceOperator):
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
         W_opt = select_swap_depth or cls._t_optimized_select_swap_width(
-            num_bitstrings, size_bitstring
+            num_bitstrings,
+            size_bitstring,
+            borrow_qubits,
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = ceil_log2(L_opt)
@@ -341,7 +349,7 @@ class QROM(ResourceOperator):
             aux_wires_swap = Allocate(
                 num_wires=(W_opt - 1) * size_bitstring,
                 state="any" if borrow_qubits else "zero",
-                restored=borrow_qubits,
+                restored=True,
             )
             gate_cost.append(aux_wires_swap)
 
@@ -393,7 +401,9 @@ class QROM(ResourceOperator):
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
         W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
-            num_bitstrings, size_bitstring
+            num_bitstrings,
+            size_bitstring,
+            borrow_qubits,
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = ceil_log2(L_opt)
@@ -407,7 +417,7 @@ class QROM(ResourceOperator):
             aux_wires_swap = Allocate(
                 num_wires=(W_opt - 1) * size_bitstring,
                 state="any" if borrow_qubits else "zero",
-                restored=borrow_qubits,
+                restored=True,
             )
             gate_cost.append(aux_wires_swap)
 

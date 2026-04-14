@@ -15,14 +15,15 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+import math
 from collections import defaultdict
 
 import pytest
 
 import pennylane as qml
 import pennylane.labs.estimator_beta as qre
-from pennylane import math
 from pennylane.estimator import GateCount, ResourceConfig, resource_rep
+from pennylane.math import ceil_log2
 
 # pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
 
@@ -297,6 +298,7 @@ class TestLabsQROM:
         opt_width = qre.QROM._t_optimized_select_swap_width(
             num_bitstrings,
             size_bitstring,
+            borrow=False,
         )
         assert opt_width == 1
 
@@ -884,279 +886,228 @@ class TestLabsQROM:
         computed = qre.QROM.qrom_dirty_auxiliary_adjoint_resource_decomp(resource_params)
         assert _test_decomp_equal(computed, expected)
 
+    @staticmethod
+    def resources_data(index):
+        """Store the expected resources used in the test_resources method"""
+        if index == 0:  # 10, 3, 15, None, True
+            # opt_depth = 1 because sqrt(10/(3*2)) ~ 1
+            allocate_sel = qre.Allocate(ceil_log2(10) - 1, "zero", True)
+
+            resources = (
+                [allocate_sel]
+                + qre.QROM._select_cost(10, 15)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+            )
+        if index == 1:  # 100, 5, 50, 2, False
+            allocate_sel = qre.Allocate(ceil_log2(50) - 1, "zero", True)
+            allocate_swap = qre.Allocate(5, "zero", True)
+            resources = (
+                [allocate_sel, allocate_swap]
+                + qre.QROM._select_cost(50, 50)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._swap_cost(5, 1)
+                + [
+                    qre.GateCount(qre.Hadamard.resource_rep(), 5),
+                    qre.Deallocate(allocated_register=allocate_swap),
+                ]
+            )
+        if index == 2:  # 12, 2, 5, 1, True
+            allocate_sel = qre.Allocate(ceil_log2(12) - 1, "zero", True)
+            resources = (
+                [allocate_sel]
+                + qre.QROM._select_cost(12, 5)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+            )
+        if index == 3:  # 12, 2, 5, 128, False
+            max_depth = 16  # 128 depth is not possible, truncate to 16
+            allocate_swap = qre.Allocate((max_depth - 1) * 2, "zero", True)
+            resources = (
+                [allocate_swap]
+                + qre.QROM._select_cost(1, 5)
+                + qre.QROM._swap_cost(2, 4)
+                + [
+                    qre.GateCount(qre.Hadamard.resource_rep(), (max_depth - 1) * 2),
+                    qre.Deallocate(allocated_register=allocate_swap),
+                ]
+            )
+        if index == 4:  # 12, 2, 5, 4, True
+            allocate_sel = qre.Allocate(ceil_log2(12 / 4) - 1, "zero", True)
+            allocate_swap = qre.Allocate((4 - 1) * 2, "any", True)
+            h = qre.Hadamard.resource_rep()
+
+            resources = (
+                [allocate_sel, allocate_swap]
+                + [qre.GateCount(h, 2 * 2)]
+                + qre.QROM._select_cost(3, 5, repeat=2)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._swap_cost(2, 2, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+            )
+        return resources
+
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res",
+        "num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index",
         (
-            (
-                10,
-                3,
-                15,
-                None,
-                True,
-                [
-                    qre.Allocate(5),
-                    GateCount(qre.Hadamard.resource_rep(), 6),
-                    GateCount(qre.X.resource_rep(), 14),
-                    GateCount(qre.CNOT.resource_rep(), 36),
-                    GateCount(qre.TemporaryAND.resource_rep(), 6),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        6,
-                    ),
-                    qre.Deallocate(2),
-                    GateCount(qre.CSWAP.resource_rep(), 12),
-                    qre.Deallocate(3),
-                ],
-            ),
-            (
-                100,
-                5,
-                50,
-                2,
-                False,
-                [
-                    qre.Allocate(10),
-                    GateCount(qre.X.resource_rep(), 97),
-                    GateCount(qre.CNOT.resource_rep(), 98),
-                    GateCount(qre.TemporaryAND.resource_rep(), 48),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        48,
-                    ),
-                    qre.Deallocate(5),
-                    GateCount(qre.CSWAP.resource_rep(), 5),
-                    GateCount(qre.X.resource_rep(), 5),
-                    qre.Deallocate(5),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                1,
-                True,
-                [
-                    qre.Allocate(3),
-                    GateCount(qre.X.resource_rep(), 21),
-                    GateCount(qre.CNOT.resource_rep(), 15),
-                    GateCount(qre.TemporaryAND.resource_rep(), 10),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        10,
-                    ),
-                    qre.Deallocate(3),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                128,  # This will get truncated to 16 as the max depth
-                False,
-                [
-                    qre.Allocate(30),
-                    GateCount(qre.X.resource_rep(), 5),
-                    GateCount(qre.CSWAP.resource_rep(), 30),
-                    GateCount(qre.X.resource_rep(), 30),
-                    qre.Deallocate(30),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                16,
-                True,
-                [
-                    qre.Allocate(30),
-                    GateCount(qre.Hadamard.resource_rep(), 4),
-                    GateCount(qre.X.resource_rep(), 10),
-                    GateCount(qre.CSWAP.resource_rep(), 120),
-                    qre.Deallocate(30),
-                ],
-            ),
+            (10, 3, 15, None, True, 0),
+            (100, 5, 50, 2, False, 1),
+            (12, 2, 5, 1, True, 2),
+            (12, 2, 5, 128, False, 3),
+            (12, 2, 5, 4, True, 4),
         ),
     )
     def test_resources(
-        self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index
     ):
         """Test that the resources are correct."""
-        assert (
-            qre.QROM.resource_decomp(
-                num_bitstrings=num_data_points,
-                size_bitstring=size_data_points,
-                num_bit_flips=num_bit_flips,
-                borrow_qubits=borrow,
-                select_swap_depth=depth,
-            )
-            == expected_res
+        expected_decomp = self.resources_data(expected_res_index)
+
+        computed_decomp = qre.QROM.resource_decomp(
+            num_bitstrings=num_data_points,
+            size_bitstring=size_data_points,
+            num_bit_flips=num_bit_flips,
+            borrow_qubits=borrow,
+            select_swap_depth=depth,
         )
+        assert _test_decomp_equal(computed_decomp, expected_decomp)
+
+    @staticmethod
+    def single_ctrl_resources_data(index):
+        """Store the expected resources used in the test_single_controlled_res_decomp method"""
+        if index == 0:  # 10, 3, 15, None, True
+            # opt_depth = 1 because sqrt(10/(3*2)) ~ 1
+            allocate_sel = qre.Allocate(ceil_log2(10), "zero", True)
+
+            resources = (
+                [allocate_sel]
+                + qre.QROM._single_ctrl_select_cost(10, 15)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+            )
+        if index == 1:  # 10, 3, 15, 2, True
+            allocate_sel = qre.Allocate(ceil_log2(5), "zero", True)
+            allocate_swap = qre.Allocate(3, "any", True)
+            h = qre.Hadamard.resource_rep()
+
+            resources = (
+                [allocate_sel, allocate_swap]
+                + [qre.GateCount(h, 3 * 2)]
+                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+            )
+        if index == 2:  # 12, 2, 5, 16, True
+            allocate_swap = qre.Allocate(15 * 2, "any", True)
+            h = qre.Hadamard.resource_rep()
+
+            resources = (
+                [allocate_swap]
+                + [qre.GateCount(h, 2 * 2)]
+                + qre.QROM._single_ctrl_select_cost(1, 5, repeat=2)
+                + qre.QROM._single_ctrl_swap_cost(2, 4, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+            )
+        return resources
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
+        "num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index",
         (
-            (
-                10,
-                3,
-                15,
-                None,
-                True,
-                [
-                    qre.Allocate(6),
-                    GateCount(qre.Hadamard.resource_rep(), 6),
-                    GateCount(qre.X.resource_rep(), 16),
-                    GateCount(qre.CNOT.resource_rep(), 38),
-                    GateCount(qre.TemporaryAND.resource_rep(), 8),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        8,
-                    ),
-                    qre.Deallocate(3),
-                    qre.Allocate(1),
-                    GateCount(qre.TemporaryAND.resource_rep(), 1),
-                    GateCount(qre.CSWAP.resource_rep(), 12),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        1,
-                    ),
-                    qre.Deallocate(1),
-                    qre.Deallocate(3),
-                ],
-            ),
-            (
-                10,
-                3,
-                15,
-                1,
-                True,
-                [
-                    qre.Allocate(4),
-                    GateCount(qre.X.resource_rep(), 18),
-                    GateCount(qre.CNOT.resource_rep(), 24),
-                    GateCount(qre.TemporaryAND.resource_rep(), 9),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        9,
-                    ),
-                    qre.Deallocate(4),
-                ],
-            ),
-            (
-                12,
-                2,
-                5,
-                16,
-                True,
-                [
-                    qre.Allocate(30),
-                    GateCount(qre.Hadamard.resource_rep(), 4),
-                    GateCount(qre.X.resource_rep(), 10),
-                    qre.Allocate(1),
-                    GateCount(qre.TemporaryAND.resource_rep(), 4),
-                    GateCount(qre.CSWAP.resource_rep(), 120),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        4,
-                    ),
-                    qre.Deallocate(1),
-                    qre.Deallocate(30),
-                ],
-            ),
+            (10, 3, 15, None, True, 0),
+            (10, 3, 15, 2, True, 1),
+            (12, 2, 5, 16, True, 2),
         ),
     )
     def test_single_controlled_res_decomp(
-        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
-        assert (
-            qre.QROM.single_controlled_res_decomp(
-                num_bitstrings=num_data_points,
-                size_bitstring=size_data_points,
-                num_bit_flips=num_bit_flips,
-                restored=restored,
-                select_swap_depth=depth,
-            )
-            == expected_res
+        expected_decomp = self.single_ctrl_resources_data(expected_res_index)
+        computed_decomp = qre.QROM.single_controlled_res_decomp(
+            num_bitstrings=num_data_points,
+            size_bitstring=size_data_points,
+            num_bit_flips=num_bit_flips,
+            borrow_qubits=borrow,
+            select_swap_depth=depth,
         )
+        assert _test_decomp_equal(computed_decomp, expected_decomp)
+
+    @staticmethod
+    def ctrl_resources_data(index):
+        """Store the expected resources used in the test_single_controlled_res_decomp method"""
+        if index == 0:  # 1, 0, 10, 3, 15, 2, True
+            allocate_sel = qre.Allocate(ceil_log2(5), "zero", True)
+            allocate_swap = qre.Allocate(3, "any", True)
+            h = qre.Hadamard.resource_rep()
+
+            resources = (
+                [allocate_sel, allocate_swap]
+                + [qre.GateCount(h, 3 * 2)]
+                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+            )
+        if index == 1:  # 2, 1, 10, 3, 15, 2, True
+            allocate_sel = qre.Allocate(ceil_log2(5), "zero", True)
+            allocate_swap = qre.Allocate(3, "any", True)
+            allocate_mcx_aux = qre.Allocate(2 - 1, "zero", True)
+
+            x = qre.X.resource_rep()
+            h = qre.Hadamard.resource_rep()
+            l_elbow = qre.TemporaryAND.resource_rep()
+            r_elbow = qre.Adjoint.resource_rep(l_elbow)
+
+            resources = (
+                [
+                    qre.GateCount(x, 2),
+                    allocate_mcx_aux,
+                    qre.GateCount(l_elbow, 2 - 1),
+                ]
+                + [allocate_sel, allocate_swap]
+                + [qre.GateCount(h, 3 * 2)]
+                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+                + [
+                    qre.GateCount(r_elbow, 2 - 1),
+                    qre.Deallocate(allocated_register=allocate_mcx_aux),
+                ]
+            )
+        if index == 2:  # 5, 3, 10, 3, 15, 2, True
+            allocate_sel = qre.Allocate(ceil_log2(5), "zero", True)
+            allocate_swap = qre.Allocate(3, "any", True)
+            allocate_mcx_aux = qre.Allocate(5 - 1, "zero", True)
+
+            x = qre.X.resource_rep()
+            h = qre.Hadamard.resource_rep()
+            l_elbow = qre.TemporaryAND.resource_rep()
+            r_elbow = qre.Adjoint.resource_rep(l_elbow)
+
+            resources = (
+                [
+                    qre.GateCount(x, 2 * 3),
+                    allocate_mcx_aux,
+                    qre.GateCount(l_elbow, 5 - 1),
+                ]
+                + [allocate_sel, allocate_swap]
+                + [qre.GateCount(h, 3 * 2)]
+                + qre.QROM._single_ctrl_select_cost(5, 15, repeat=2)
+                + [qre.Deallocate(allocated_register=allocate_sel)]
+                + qre.QROM._single_ctrl_swap_cost(3, 1, repeat=4)
+                + [qre.Deallocate(allocated_register=allocate_swap)]
+                + [
+                    qre.GateCount(r_elbow, 5 - 1),
+                    qre.Deallocate(allocated_register=allocate_mcx_aux),
+                ]
+            )
+        return resources
 
     @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
+        "num_ctrl_wires, num_zero_ctrl, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index",
         (
-            (
-                1,
-                0,
-                10,
-                3,
-                15,
-                None,
-                True,
-                [
-                    qre.Allocate(6),
-                    GateCount(qre.Hadamard.resource_rep(), 6),
-                    GateCount(qre.X.resource_rep(), 16),
-                    GateCount(qre.CNOT.resource_rep(), 38),
-                    GateCount(qre.TemporaryAND.resource_rep(), 8),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        8,
-                    ),
-                    qre.Deallocate(3),
-                    qre.Allocate(1),
-                    GateCount(qre.TemporaryAND.resource_rep(), 1),
-                    GateCount(qre.CSWAP.resource_rep(), 12),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        1,
-                    ),
-                    qre.Deallocate(1),
-                    qre.Deallocate(3),
-                ],
-            ),
-            (
-                2,
-                1,
-                10,
-                3,
-                15,
-                1,
-                True,
-                [
-                    GateCount(qre.X.resource_rep(), 2),
-                    qre.Allocate(1),
-                    GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
-                    qre.Allocate(4),
-                    GateCount(qre.X.resource_rep(), 18),
-                    GateCount(qre.CNOT.resource_rep(), 24),
-                    GateCount(qre.TemporaryAND.resource_rep(), 9),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        9,
-                    ),
-                    qre.Deallocate(4),
-                    GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
-                    qre.Deallocate(1),
-                ],
-            ),
+            (1, 0, 10, 3, 15, 2, True, 0),
+            (2, 1, 10, 3, 15, 2, True, 1),
+            (5, 3, 10, 3, 15, 2, True, 2),
         ),
     )
     def test_controlled_res_decomp(
@@ -1167,21 +1118,20 @@ class TestLabsQROM:
         size_data_points,
         num_bit_flips,
         depth,
-        restored,
-        expected_res,
+        borrow,
+        expected_res_index,
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
-        assert (
-            qre.QROM.controlled_resource_decomp(
-                num_ctrl_wires=num_ctrl_wires,
-                num_zero_ctrl=num_zero_ctrl,
-                target_resource_params={
-                    "num_bitstrings": num_data_points,
-                    "size_bitstring": size_data_points,
-                    "num_bit_flips": num_bit_flips,
-                    "restored": restored,
-                    "select_swap_depth": depth,
-                },
-            )
-            == expected_res
+        expected_decomp = self.ctrl_resources_data(expected_res_index)
+        computed_decomp = qre.QROM.controlled_resource_decomp(
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+            target_resource_params={
+                "num_bitstrings": num_data_points,
+                "size_bitstring": size_data_points,
+                "num_bit_flips": num_bit_flips,
+                "borrow_qubits": borrow,
+                "select_swap_depth": depth,
+            },
         )
+        assert _test_decomp_equal(computed_decomp, expected_decomp)
