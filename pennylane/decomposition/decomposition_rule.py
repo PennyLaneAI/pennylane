@@ -551,6 +551,8 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "registered using qml.register_resources"
         )
     new_rules = {rule.name: rule for rule in decomps}
+    if len(new_rules) < len(decomps):
+        raise ValueError("Cannot add multiple decompositions with the same name.")
     all_rules = _decompositions_var.get()[to_name(op_type)]
     if dup_rule := next((rule for rule in new_rules if rule in all_rules), None):
         raise ValueError(f"There is already a decomposition rule with the same name {dup_rule}.")
@@ -595,44 +597,8 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
-    .. seealso::
-
-        Use :func:`~pennylane.decomposition.get_decomp` to get a decomposition rule by its name.
-
     """
     return list(_decompositions_var.get()[to_name(op)].values())
-
-
-def get_decomp(op: type[Operator] | Operator | str, name: str):
-    """Get a decomposition rule for an operator by its name.
-
-    Args:
-        op (type or Operator or str): the operator or operator type to retrieve decomposition
-            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
-            ``"C(RX)"``, etc.
-        name (str): the name of the decomposition rule to retrieve.
-
-    Returns:
-        DecompositionRule: a decomposition rule of the given name reigstered for the operator.
-
-    **Example**
-
-    >>> import pennylane as qml
-    >>> print(qml.list_decomps(qml.CRX))
-    [_crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr]
-
-    To retrieve a decomposition rule by its name:
-
-    >>> print(qml.get_decomp(qml.CRX, "_crx_to_rx_cz"))
-    @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
-        qml.RX(phi / 2, wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.RX(-phi / 2, wires=wires[1])
-        qml.CZ(wires=wires)
-
-    """
-    return _decompositions_var.get()[to_name(op)][name]
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
