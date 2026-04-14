@@ -184,13 +184,19 @@ def _preprocess_level_input(
         list[int]: The preprocessed level input
     """
 
-    if level == "all" and num_tape_levels > 1:
-        # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
-        return list(range(pipeline_len + 2))
-
     if level in ("all", "all-mlir"):
-        # Account for "Before MLIR passes" level
-        return list(range(num_tape_levels, pipeline_len + 1))
+        if num_tape_levels > 1:
+            # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
+            stop = pipeline_len + 2
+        else:
+            # Account only for "Before MLIR passes" level
+            stop = pipeline_len + 1
+
+        if level == "all-mlir":
+            start = num_tape_levels
+        else:
+            start = 0
+        return list(range(start, stop))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -352,7 +358,9 @@ def _specs_from_analysis_pass(
         res_file.unlink()  # Clean up the resource tracking file
 
         results[level_to_name[curr_level]] = _mlir_resources_to_specs_resources(
-            next(iter(data.values()))  # TODO: Are we guaranteed that the main function is always first?
+            next(
+                iter(data.values())
+            )  # TODO: Are we guaranteed that the main function is always first?
         )
 
     return results
@@ -371,7 +379,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # This value is used to determine the last level which is a transform and not an MLIR pass
     num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
     mlir_only = (level == "all-mlir") or num_tape_levels == 0
-    if not mlir_only:
+    if num_tape_levels != 0:
         # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
@@ -382,7 +390,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         marker_to_level[marker] = lvl
 
         # Account for the MLIR lowering pass if necessary
-        if not mlir_only and lvl >= num_tape_levels:
+        if num_tape_levels > 0 and lvl >= num_tape_levels:
             marker_to_level[marker] += 1
 
     # Multiple markers can correspond to the same level
