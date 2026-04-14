@@ -15,6 +15,7 @@
 Tests for the TemporaryAND template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -138,7 +139,7 @@ class TestTemporaryAND:
 
     @pytest.mark.parametrize("rule", qml.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
-    def test_adjoint_temporary_and_decomposition(self, control_values, rule):
+    def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """
         Validate the MCM-based decomposition of Adjoint(TemporaryAND).
         """
@@ -147,19 +148,18 @@ class TestTemporaryAND:
         dev = qml.device("default.qubit", wires=sys_wires + work_wires)
 
         @qml.qnode(dev)
-        def circuit(a, b):
-            qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
+        def circuit(state):
+            qml.StatePrep(state, wires=sys_wires[:2])
             op = qml.TemporaryAND(wires=sys_wires, control_values=control_values)
             rule(sys_wires, base=op)
             return qml.probs(wires=sys_wires)
 
-        for a in (0, 1):
-            for b in (0, 1):
-                probs = circuit(a, b)
-                idx = (a << 2) | (b << 1)
-                assert qml.math.allclose(
-                    probs[idx], 1.0
-                ), f"Failed for a={a}, b={b}, cv={control_values}"
+        rng = np.random.default_rng(seed)
+        state = rng.random(4) + 1j * rng.random(4)
+        state /= np.linalg.norm(state)
+        exp_probs = np.kron(np.abs(state) ** 2, np.eye(2)[0])
+        probs = circuit(state)
+        assert qml.math.allclose(probs, exp_probs)
 
     @pytest.mark.parametrize("rule", qml.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
