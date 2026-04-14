@@ -45,15 +45,15 @@ class TestTemporaryAND:
             toffoli_mat = x_mat @ toffoli_mat @ x_mat
         if zeroed == "input":
             # When the third qubit starts in |0>, we only check the odd columns
-            iso = matrix[:, ::2]
-            iso_toffoli = toffoli_mat[:, ::2]
+            isometry = matrix[:, ::2]
+            isometry_toffoli = toffoli_mat[:, ::2]
 
         # When the third qubit ends in |0>, we only check the odd rows
         else:
-            iso = matrix[::2, :]
-            iso_toffoli = toffoli_mat[::2, :]
+            isometry = matrix[::2, :]
+            isometry_toffoli = toffoli_mat[::2, :]
 
-        assert qml.math.allclose(iso, iso_toffoli)
+        assert qml.math.allclose(isometry, isometry_toffoli)
 
     def test_repr(self):
         """Test the repr of TemporaryAND."""

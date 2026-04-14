@@ -177,8 +177,12 @@ class TemporaryAND(Operation):
         return result_matrix
 
 
+# The number of X gates we put into resource estimates for flipping control qubits.
+# We choose 2 here because it is the average over the four possible scenarios.
+_number_xs = 2
+
+
 def _temporary_and_resources():
-    number_xs = 4  # worst case scenario
     prod_rep = resource_rep(
         ops.Prod,
         resources={
@@ -189,7 +193,7 @@ def _temporary_and_resources():
         },
     )
     return {
-        resource_rep(ops.X): number_xs,
+        resource_rep(ops.X): _number_xs,
         change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
         adjoint_resource_rep(ops.S, {}): 1,
     }
@@ -233,7 +237,7 @@ def _toffoli_with_cvals(wires, cvals):
     ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
 
 
-@register_resources({ops.Toffoli: 1, ops.X: 4}, exact=False)
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
 def _temporary_and_to_toffoli(wires: WiresLike, **kwargs):
     _toffoli_with_cvals(wires, kwargs["control_values"])
 
@@ -243,7 +247,7 @@ add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 # pylint: disable=unused-argument
 def _adjoint_temporary_and_resources(base_class=None, base_params=None):
-    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: 4}
+    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
 
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
@@ -259,7 +263,7 @@ def _adjoint_temporary_and(wires: WiresLike, **kwargs):  # pylint: disable=unuse
     ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
 
 
-@register_resources({ops.Toffoli: 1, ops.X: 4}, exact=False)
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
 def _adjoint_temporary_and_to_toffoli(wires: WiresLike, **kwargs):
     _toffoli_with_cvals(wires, kwargs["base"].hyperparameters["control_values"])
 
