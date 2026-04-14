@@ -223,14 +223,18 @@ def _temporary_and(wires: WiresLike, **kwargs):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
+def _toffoli_with_cvals(wires, cvals):
+    """Conjugate a Toffoli by Pauli X depending on control values."""
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
+    ops.Toffoli(wires)
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
+
+
 @register_resources({ops.Toffoli: 1, ops.X: 4}, exact=False)
 def _temporary_and_to_toffoli(wires: WiresLike, **kwargs):
-    control_values = kwargs["control_values"]
-    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
-    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
-    ops.Toffoli(wires)
-    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
-    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+    _toffoli_with_cvals(wires, kwargs["control_values"])
 
 
 add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
@@ -249,7 +253,12 @@ def _adjoint_temporary_and(wires: WiresLike, **kwargs):  # pylint: disable=unuse
     ops.cond(m_0, ops.CZ)(wires=[wires[0], wires[1]])
 
 
-add_decomps("Adjoint(TemporaryAND)", _adjoint_temporary_and)
+@register_resources({ops.Toffoli: 1, ops.X: 4}, exact=False)
+def _adjoint_temporary_and_to_toffoli(wires: WiresLike, **kwargs):
+    _toffoli_with_cvals(wires, kwargs["base"].hyperparameters["control_values"])
+
+
+add_decomps("Adjoint(TemporaryAND)", _adjoint_temporary_and, _adjoint_temporary_and_to_toffoli)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

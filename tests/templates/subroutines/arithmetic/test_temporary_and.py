@@ -19,7 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_temporary_and
+from pennylane.templates.subroutines.arithmetic.temporary_and import (
+    _adjoint_temporary_and,
+    _adjoint_temporary_and_to_toffoli,
+    _temporary_and_to_toffoli,
+)
 
 
 class TestTemporaryAND:
@@ -132,8 +136,9 @@ class TestTemporaryAND:
             matrix = qml.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
+    @pytest.mark.parametrize("rule", qml.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
-    def test_adjoint_temporary_and_decomposition(self, control_values):
+    def test_adjoint_temporary_and_decomposition(self, control_values, rule):
         """
         Validate the MCM-based decomposition of Adjoint(TemporaryAND).
         """
@@ -144,8 +149,8 @@ class TestTemporaryAND:
         @qml.qnode(dev)
         def circuit(a, b):
             qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
-            qml.TemporaryAND(wires=sys_wires, control_values=control_values)
-            _adjoint_temporary_and(wires=sys_wires)
+            op = qml.TemporaryAND(wires=sys_wires, control_values=control_values)
+            rule(sys_wires, base=op)
             return qml.probs(wires=sys_wires)
 
         for a in (0, 1):
@@ -156,17 +161,20 @@ class TestTemporaryAND:
                     probs[idx], 1.0
                 ), f"Failed for a={a}, b={b}, cv={control_values}"
 
+    @pytest.mark.parametrize("rule", qml.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_adjoint_temporary_and_integration(self):
+    def test_adjoint_temporary_and_integration(self, rule):
         wires = [0, 1, "aux0", 2]
-        gate_set = {"X", "T", "Adjoint(T)", "Hadamard", "CX", "CZ", "MidMeasureMP", "Adjoint(S)"}
+        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli"}
 
         @qml.set_shots(1)
         @qml.qnode(qml.device("default.qubit", wires=wires), interface=None)
         @qml.transforms.decompose(
             gate_set=gate_set,
             fixed_decomps={
-                qml.Select: qml.templates.subroutines.select._select_decomp_unary  # pylint: disable=protected-access
+                qml.Select: qml.templates.subroutines.select._select_decomp_unary,  # pylint: disable=protected-access
+                "Adjoint(TemporaryAND)": rule,
+                "TemporaryAND": _temporary_and_to_toffoli,
             },
         )
         def circuit():
@@ -176,47 +184,37 @@ class TestTemporaryAND:
 
         tape = qml.workflow.construct_tape(circuit)()
         expected_operators = [
+            # Start of left elbow with cval [0, 0]
             qml.X(0),
             qml.X(1),
-            qml.H("aux0"),
-            qml.T("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.adjoint(qml.T("aux0")),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.T("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.adjoint(qml.T("aux0")),
-            qml.H("aux0"),
-            qml.adjoint(qml.S("aux0")),
+            qml.Toffoli([0, 1, "aux0"]),
             qml.X(0),
             qml.X(1),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
+            # End of left elbow
+            qml.CZ(wires=["aux0", 2]),  # First target op
+            # Merged right and left elbow (cvals [0, 0] to [0, 1])
+            qml.CNOT(wires=[0, "aux0"]),
             qml.X("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
-            "ConditionalCZ",
+            qml.CZ(wires=["aux0", 2]),  # Second target op
+            # Merged right and left elbow (cvals [0, 1] to [1, 0])
+            qml.CNOT(wires=[0, "aux0"]),
+            qml.CNOT(wires=[1, "aux0"]),
+            qml.CZ(wires=["aux0", 2]),  # Third target op
+            # Merged right and left elbow (cvals [1, 0] to [1, 1])
+            qml.CNOT(wires=[0, "aux0"]),
+            qml.CZ(wires=["aux0", 2]),  # Fourth target op
         ]
+        if rule == _adjoint_temporary_and:
+            expected_operators += [
+                qml.H("aux0"),
+                qml.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
+                "ConditionalCZ",
+            ]
+        elif rule == _adjoint_temporary_and_to_toffoli:
+            expected_operators += [qml.Toffoli([0, 1, "aux0"])]
+
+        else:
+            raise NotImplementedError(f"Please add expected operators for rule {rule}")
 
         for op, exp_op in zip(tape.operations, expected_operators):
             # manual check: each MidMeasure has a unique ID, which prevents
