@@ -122,8 +122,8 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # Will be defined by the instance lazily
     _parameters: tuple | None = None
 
-    # NOTE: new
-    dyn_argnames: ClassVar[tuple[str, ...]] = ()
+    # NOTE: new, will be set automatically; must not be manually overriden
+    dyn_argnames: ClassVar[tuple[str, ...]]
 
     # NOTE: new
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
