@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
 
+# pylint: disable=missing-function-docstring
 import argparse
 import os
 
@@ -144,6 +145,10 @@ def pytest_runtest_setup(item):
         else:
             pytest.skip("Test skipped as corresponding code base is currently broken!")
 
+    marks = {mark.name for mark in item.iter_markers()}
+    if "jax" in marks and not jax_available:
+        pytest.skip("Test requires JAX")
+
 
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
@@ -267,3 +272,46 @@ def pytest_runtest_makereport(item, call):
                 tr.outcome = "skipped"
 
     return tr
+
+
+#######################################################################
+# pylint: disable=unused-import,
+try:
+    import jax  # noqa: F401
+
+    jax_available = True
+except ImportError:
+    jax_available = False
+
+
+@pytest.fixture(scope="function")
+def enable_disable_plxpr():
+    """Enable and disable capture around each test."""
+    qml.capture.enable()
+    try:
+        yield
+    finally:
+        qml.capture.disable()
+
+
+@pytest.fixture(scope="function")
+def enable_graph_decomposition():
+    """Enable and disable graph-decomposition around each test."""
+    with qml.decomposition.toggle_graph_ctx(True):
+        yield
+
+
+@pytest.fixture(scope="function")
+def disable_graph_decomposition():
+    """Disable graph-decomposition around each test."""
+    with qml.decomposition.toggle_graph_ctx(False):
+        yield
+
+
+def pytest_collection_modifyitems(items, config):  # pylint: disable=unused-argument)
+    for item in items:
+        markers = {mark.name for mark in item.iter_markers()}
+        if "capture" in markers:
+            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
+            if "jax" not in markers:
+                item.add_marker(pytest.mark.jax)

@@ -135,6 +135,7 @@ class MultiX(qp.operation.Operator):
         return {"num_wires": len(self.wires)}
 
 
+# Add decomposition
 def _resources(num_wires):
     return {qp.resource_rep(qp.X): num_wires}
 
@@ -149,6 +150,7 @@ def decomp(wires, **_):
 qp.add_decomps(MultiX, decomp)
 
 
+# Add controlled decomposition
 def _ctrl_and_ladder_resources(
     *_,
     base_params,
