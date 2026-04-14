@@ -256,8 +256,8 @@ class TestDecompositionRule:
 
         assert qml.decomposition.has_decomp(CustomOp)
         assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-        assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
-        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
+        assert list(qml.list_decomps(CustomOp)) == [custom_decomp, custom_decomp2, custom_decomp3]
+        assert list(qml.list_decomps(CustomOp(wires=[0, 1]))) == [
             custom_decomp,
             custom_decomp2,
             custom_decomp3,
@@ -307,11 +307,15 @@ class TestDecompositionRule:
 
             assert qml.decomposition.has_decomp(CustomOp)
             assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-            assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+            assert list(qml.list_decomps(CustomOp)) == [
+                custom_decomp,
+                custom_decomp2,
+                custom_decomp3,
+            ]
             assert custom_decomp in qml.list_decomps(qml.CRX)
 
         # test that the context properly cleans up.
-        assert qml.list_decomps(CustomOp) == []
+        assert list(qml.list_decomps(CustomOp)) == []
         assert not qml.decomposition.has_decomp(CustomOp)
         assert custom_decomp not in qml.list_decomps(qml.CRX)
 
@@ -328,9 +332,9 @@ class TestDecompositionRule:
 
         qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
         assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
+        assert list(qml.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
         assert qml.decomposition.has_decomp(qml.adjoint(CustomOp(wires=[0, 1])))
-        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
+        assert list(qml.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
