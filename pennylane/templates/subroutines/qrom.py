@@ -162,7 +162,7 @@ class QROM(Operation):
         The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
         operator. These wires are dynamically partitioned into two sets: one for the
         :class:`~.Select` block and another to facilitate parallel data loading via a
-        [`SWAP network <https://pennylane.ai/compilation/swap-network>`__].
+        `SWAP network <https://pennylane.ai/compilation/swap-network>`__.
 
         The template determines the depth, :math:`\lambda` (a power of 2),
         based on the available ``work_wires``. Let :math:`b` be the length of the bitstrings.
@@ -448,11 +448,11 @@ def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):  # pylint: disable=too-many-branches
 
-    num_select_work_wires = _calculate_n_select_work_wires(
+    num_work_wires_select = _calculate_n_select_work_wires(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
     )
 
-    num_work_wires_select = min(num_work_wires, num_select_work_wires)
+    num_work_wires_select = min(num_work_wires, num_work_wires_select)
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
