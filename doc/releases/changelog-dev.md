@@ -180,6 +180,9 @@ The following classes have been ported over:
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
+* Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
+  [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
+
 * Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
