@@ -582,7 +582,7 @@ class TestDecompositionGraph:
         def _custom_decomp(_):
             raise NotImplementedError
 
-        # This decomposition rule isn't actually reacheable, therefore, the minimum number of
+        # This decomposition rule isn't actually reacheable for the target gate set because it requires `qml.H`, therefore, the minimum number of
         # work wires required to decompose `AnotherOp` should be 4, not 3
         @qml.register_resources({CustomOp: 1, qml.H: 4}, work_wires={"zeroed": 2})
         def _another_decomp(_):
