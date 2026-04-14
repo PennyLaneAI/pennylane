@@ -603,12 +603,6 @@ class DecompCollection:
     def __len__(self) -> int:
         return len(self._dict)
 
-    def __add__(self, other) -> list:
-        return list(self) + list(other)
-
-    def __radd__(self, other) -> list:
-        return list(other) + list(self)
-
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.

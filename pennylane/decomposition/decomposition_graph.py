@@ -419,7 +419,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
 
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+        decomps = self._alt_decomps.get(op_name, []) + list(list_decomps(op_name))
 
         if (
             issubclass(op.op_type, qml.ops.Adjoint)
