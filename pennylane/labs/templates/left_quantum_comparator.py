@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the LeftQuantumIntegerComparator template for performing inequality test of two quantum registers."""
+"""Contains the LeftQuantumComparator template for performing inequality test of two quantum registers."""
 
 from pennylane.decomposition import (
     add_decomps,
@@ -26,14 +26,14 @@ from pennylane import cond, for_loop
 from pennylane import compiler, math, capture
 
 
-class LeftQuantumIntegerComparator(Operation):
+class LeftQuantumComparator(Operation):
     r"""This operator performs an inequality test between two quantum registers :math:`x` and
     :math:`y`, storing the result in a target qubit. Depending on the value of the
     ``op`` argument, the operator evaluates one of four possible relations:
 
     .. math::
 
-        \text{LeftQuantumIntegerComparator}(op) |x\rangle |y\rangle |0\rangle =
+        \text{LeftQuantumComparator}(op) |x\rangle |y\rangle |0\rangle =
         \begin{cases}
         |x\rangle |y\rangle |x < y\rangle & \text{if } op = 0 \\
         |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = 1 \\
@@ -61,7 +61,7 @@ class LeftQuantumIntegerComparator(Operation):
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.templates import LeftQuantumIntegerComparator
+        from pennylane.labs.templates import LeftQuantumComparator
 
         dev = qp.device("lightning.qubit")
 
@@ -72,10 +72,10 @@ class LeftQuantumIntegerComparator(Operation):
             op = 2
             qp.BasisState(a, wires=[0, 3, 6, 9])
             qp.BasisState(b, wires=[1, 4, 7, 10])
-            LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
+            LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
             qp.CNOT([11, 12])
             qp.adjoint(
-                lambda: LeftQuantumIntegerComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
+                lambda: LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
             )()
             return qp.sample(wires=[12])
 
@@ -155,13 +155,13 @@ class LeftQuantumIntegerComparator(Operation):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
-    def map_wires(self, wire_map: dict) -> "LeftQuantumIntegerComparator":
+    def map_wires(self, wire_map: dict) -> "LeftQuantumComparator":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["x_wires", "y_wires", "target_wire", "work_wires"]
         }
 
-        return LeftQuantumIntegerComparator(**new_dict, op=self.hyperparameters["op"])
+        return LeftQuantumComparator(**new_dict, op=self.hyperparameters["op"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -173,7 +173,7 @@ class LeftQuantumIntegerComparator(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, y_wires, target_wire, work_wires, op
+        x_wires, y_wires, target_wire, work_wires, op=None
     ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
@@ -190,7 +190,7 @@ class LeftQuantumIntegerComparator(Operation):
         """
 
         with AnnotatedQueue() as q:
-            _left_quantum_integer_comparator(x_wires, y_wires, target_wire, work_wires, op)
+            _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, op=op)
 
         if QueuingManager.recording():
             for op in q.queue:
@@ -199,7 +199,7 @@ class LeftQuantumIntegerComparator(Operation):
         return q.queue
 
 
-def _left_quantum_integer_comparator_resources(num_y_wires, op):
+def _left_quantum_comparator_resources(num_y_wires, op):
 
     resources = {
         Elbow: num_y_wires,
@@ -212,8 +212,8 @@ def _left_quantum_integer_comparator_resources(num_y_wires, op):
     return resources
 
 
-@register_resources(_left_quantum_integer_comparator_resources, exact=True)
-def _left_quantum_integer_comparator(
+@register_resources(_left_quantum_comparator_resources, exact=True)
+def _left_quantum_comparator(
     x_wires, y_wires, target_wire, work_wires, op, **_
 ):  # pylint: disable=too-many-arguments
     # op = ['<', '<=', '>=', '>']
@@ -260,4 +260,4 @@ def _left_quantum_integer_comparator(
     _loop()
 
 
-add_decomps(LeftQuantumIntegerComparator, _left_quantum_integer_comparator)
+add_decomps(LeftQuantumComparator, _left_quantum_comparator)

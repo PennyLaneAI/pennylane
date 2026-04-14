@@ -15,4 +15,4 @@
 This module contains templates, which are pre-coded routines that can be used in a quantum node.
 """
 
-from .left_quantum_integer_comparator import LeftQuantumIntegerComparator
+from .left_quantum_comparator import LeftQuantumComparator

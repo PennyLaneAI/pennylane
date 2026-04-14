@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the LeftQuantumIntegerComparator template.
+Tests for the LeftQuantumComparator template.
 """
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.templates.left_quantum_integer_comparator import LeftQuantumIntegerComparator
+from pennylane.labs.templates.left_quantum_comparator import LeftQuantumComparator
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
@@ -31,7 +31,7 @@ def test_standard_validity_left_comparator():
     target_wire = 8
     op = ">="
 
-    gate = LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op=op)
+    gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op=op)
     assert_valid(gate)
 
     assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
@@ -41,8 +41,8 @@ def test_standard_validity_left_comparator():
     assert gate.hyperparameters["op"] == ">="
 
 
-class TestLeftQuantumIntegerComparator:
-    """Test LeftQuantumIntegerComparator template."""
+class TestLeftQuantumComparator:
+    """Test LeftQuantumComparator template."""
 
     # op:
     # 0: <
@@ -85,10 +85,10 @@ class TestLeftQuantumIntegerComparator:
         def circuit():
             qp.BasisState(x, wires=x_wires)
             qp.BasisState(y, wires=y_wires)
-            LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
+            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op)
             qp.CNOT([11, 12])
             qp.adjoint(
-                lambda: LeftQuantumIntegerComparator(x_wires, y_wires, target_wire, work_wires, op)
+                lambda: LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op)
             )()
             return qp.sample(wires=[12])
 
@@ -176,6 +176,6 @@ class TestLeftQuantumIntegerComparator:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qp.labs.templates.LeftQuantumIntegerComparator(
+            qp.labs.templates.LeftQuantumComparator(
                 x_wires, y_wires, target_wire, work_wires, op=op
             )
