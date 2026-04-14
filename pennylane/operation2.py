@@ -111,8 +111,10 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     __array_priority__ = 1000
-
     _primitive: Optional["jax.extend.core.Primitive"] = None
+    _name: ClassVar[str]
+    _batch_size = None
+    batch_size = None
 
     # NOTE: These should all be defined as ClassVars
     num_wires: ClassVar[int | None] = None
@@ -138,7 +140,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     _bound_args: BoundArguments
 
     def __init__(self, *args, **kwargs):
-        self._name: str = self.__class__.__name__
         self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
@@ -154,13 +155,11 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
         cls._sig = signature(cls)
+        cls._name = cls.__name__
 
         param_names = cls._sig.parameters.keys()
         def_argnames = cls.static_argnames + cls.wire_argnames
         dyn_argnames = []
-
-        if any(n not in param_names for n in def_argnames):
-            raise ValueError("Static or wire argnames are ill-defined.")
 
         for p in param_names:
             if p not in def_argnames:
@@ -437,14 +436,18 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def parameters(self) -> list[TensorLike]:
         """Trainable parameters that the operator depends on."""
         if self._parameters is None:
-            params = tuple(
-                (p := self._bound_args.arguments[n])
-                for n in self.dyn_argnames
-                if math.ndim(p) == 0 and "float" in math.get_dtype_name(p)
-            )
-            self._parameters = params
+            params = []
+            for n in self.dyn_argnames:
+                p = self._bound_args.arguments[n]
+                if math.ndim(p) == 0 and "float" in math.get_dtype_name(p):
+                    params.append(p)
+            self._parameters = tuple(params)
 
         return self._parameters
+
+    @property
+    def data(self):
+        return self.parameters
 
     def pow(self, z: float) -> list["Operator2"]:
         """A list of new operators equal to this one raised to the given power. This method is used to simplify
@@ -590,16 +593,15 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return cls(**args)
 
     def __getattr__(self, name):
-        try:
+        if "_bound_args" in vars(self) and name in self._bound_args.arguments:
             return self._bound_args.arguments[name]
-        except KeyError as e:
-            raise KeyError(f"{self.name} does not contain a {name} attribute.") from e
+        return object.__getattribute__(self, name)
 
     def __setattr__(self, name, value):
-        if name in self._bound_args.arguments:
+        if "_bound_args" in vars(self) and name in self._bound_args.arguments:
             self._bound_args.arguments[name] = value
         else:
-            raise KeyError(f"{self.name} does not contain a {name} attribute.")
+            object.__setattr__(self, name, value)
 
 
 # =============================================================================
