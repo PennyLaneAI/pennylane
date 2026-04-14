@@ -888,8 +888,7 @@ def _param_su2(ar, ai, br, bi=0):
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
     return math.stack(
-        [math.stack([ar + 1j * ai, -br + 1j * bi]),
-         math.stack([br + 1j * bi, ar + 1j * -ai])]
+        [math.stack([ar + 1j * ai, -br + 1j * bi]), math.stack([br + 1j * bi, ar + 1j * -ai])]
     )
 
 
