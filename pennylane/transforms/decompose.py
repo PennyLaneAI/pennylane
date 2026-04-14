@@ -90,7 +90,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
-        ):  # pylint: disable=too-many-arguments
+            strict=True,):  # pylint: disable=too-many-arguments
             self.max_expansion = max_expansion
             self._current_depth = 0
 
@@ -428,7 +428,7 @@ def decompose(
 
     You can decompose the circuit into a set of gates:
 
-    >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
+    >>> batch, fn = qml.decompose(tape, gate_set={qml.CNOT, qml.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
