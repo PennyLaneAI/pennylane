@@ -25,7 +25,6 @@ from pennylane.estimator.wires_manager import Deallocate as estimator_Deallocate
 from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
-    AllocateState,
     Deallocate,
     MarkClean,
     MarkQubits,
