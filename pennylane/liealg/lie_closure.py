@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
+
 import warnings
 from collections.abc import Iterable
 from copy import copy

@@ -14,6 +14,7 @@
 """
 Tests for the AngleEmbedding template.
 """
+
 import numpy as np
 import pytest
 

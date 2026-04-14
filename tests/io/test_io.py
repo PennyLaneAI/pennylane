@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
+
 from textwrap import dedent
 from unittest.mock import Mock
 
@@ -297,8 +298,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit)(1.2, 0.9)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -308,8 +308,7 @@ class TestOpenQasm:
             rz(0.9) q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_measure_qubits_subset_only(self):
@@ -324,8 +323,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, measure_all=False)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -333,8 +331,7 @@ class TestOpenQasm:
             h q[0];
             cx q[0],q[1];
             measure q[1] -> c[0];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_rotations_with_expval(self):
@@ -349,8 +346,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, rotations=True)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -363,8 +359,7 @@ class TestOpenQasm:
             h q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_precision(self):
@@ -379,8 +374,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, precision=4)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -389,8 +383,7 @@ class TestOpenQasm:
             cx q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert qasm == expected
 

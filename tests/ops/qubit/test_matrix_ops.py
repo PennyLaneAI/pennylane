@@ -14,6 +14,7 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
+
 # pylint: disable=import-outside-toplevel
 from functools import reduce
 

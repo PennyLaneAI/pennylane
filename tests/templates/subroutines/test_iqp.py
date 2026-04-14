@@ -14,6 +14,7 @@
 """
 Unit tests for the :func:`pennylane.template.subroutines.iqp` class.
 """
+
 import re
 from itertools import combinations
 

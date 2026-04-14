@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
+
 import autograd
 import numpy as np
 import pytest

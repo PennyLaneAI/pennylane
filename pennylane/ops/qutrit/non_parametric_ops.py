@@ -15,6 +15,7 @@
 This submodule contains the qutrit quantum operations
 that do not depend on any parameters.
 """
+
 # pylint:disable=arguments-differ
 import numpy as np
 

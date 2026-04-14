@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """While loop."""
+
 import functools
 from collections.abc import Callable
 from typing import Literal
@@ -237,7 +238,20 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim = QmlPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
+
+    def setup_env(tracers, params):
+        tracer_args = tracers[slice(*params["args_slice"])]
+        env = dict(zip(params["jaxpr_body_fn"].invars, tracer_args, strict=True))
+
+        body_consts = tracers[slice(*params["body_slice"])]
+        env.update(dict(zip(params["jaxpr_body_fn"].constvars, body_consts, strict=True)))
+        return env
+
+    register_custom_staging_rule(
+        while_loop_prim,
+        lambda params: params["jaxpr_body_fn"],
+        setup_env=setup_env,
+    )
 
     @while_loop_prim.def_impl
     def _impl(
@@ -370,11 +384,14 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
-            return ops_loader.while_loop(
-                self.cond_fn, allow_array_resizing=self.allow_array_resizing
-            )(self.body_fn)(*init_state)
+            return ops_loader.while_loop(self.cond_fn, allow_array_resizing=allow_array_resizing)(
+                self.body_fn
+            )(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

@@ -14,6 +14,7 @@
 """
 This module contains functions for tape expansion
 """
+
 import warnings
 
 # pylint: disable=protected-access

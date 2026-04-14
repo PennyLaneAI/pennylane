@@ -14,6 +14,7 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
+
 # pylint: disable=no-self-use
 
 from collections.abc import Callable, Sequence

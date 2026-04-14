@@ -14,6 +14,7 @@
 """
 Unit tests for utilities for optimization transforms.
 """
+
 # pylint: disable=too-few-public-methods
 
 from itertools import product

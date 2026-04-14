@@ -14,7 +14,6 @@
 
 """Transform that eliminates the swap operators by reordering the wires."""
 
-
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn

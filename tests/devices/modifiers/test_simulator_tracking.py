@@ -14,6 +14,7 @@
 """
 Tests for qml.devices.modifiers.simulator_tracking.
 """
+
 from typing import Optional
 
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring

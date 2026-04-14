@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
+
 import pickle
 from copy import copy, deepcopy
 
@@ -754,6 +755,22 @@ class TestFermiSentence:
         assert deep_copy_fs == fs
         assert copy_fs is not fs
         assert deep_copy_fs is not fs
+
+    def test_prune(self):
+        """Test that prune removes terms in the FermiSentence with coefficient less than the
+        threshold."""
+        un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+
+        expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+        expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
+        expected_simplified_fs2 = FermiSentence({fw3: 1})
+
+        un_simplified_fs.prune()
+        assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
+        un_simplified_fs.prune(tol=1e-2)
+        assert un_simplified_fs == expected_simplified_fs1
+        un_simplified_fs.prune(tol=1e-1)
+        assert un_simplified_fs == expected_simplified_fs2
 
     def test_simplify(self):
         """Test that simplify removes terms in the FermiSentence with coefficient less than the

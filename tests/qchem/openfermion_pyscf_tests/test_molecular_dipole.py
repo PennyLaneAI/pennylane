@@ -14,6 +14,7 @@
 """
 Unit tests for molecular dipole.
 """
+
 # pylint: disable=too-many-arguments, protected-access
 import pytest
 

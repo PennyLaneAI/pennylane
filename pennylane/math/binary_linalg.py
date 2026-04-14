@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains linear algebraic functions over the binary numbers,
 also referred to as finite field F_2, Galois field GF_2, or ℤ_2."""
+
 import numpy as np
 
 from pennylane import math

@@ -57,6 +57,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms.disentangle_cnot
+    ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
@@ -399,6 +401,7 @@ for a comprehensive overview of transforms and core functionalities, consult the
 # Leave as alias for backwards-compatibility
 from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
+from pennylane._entry_points_utils import _setup_entry_points
 
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, CompilePipeline
@@ -410,16 +413,7 @@ from .compile import compile
 
 from .decompositions import (
     clifford_t_decomposition,
-    commute_ppr,
-    decompose_clifford_ppr,
-    decompose_non_clifford_ppr,
-    decompose_arbitrary_ppr,
     gridsynth,
-    merge_ppr_ppm,
-    ppm_compilation,
-    ppr_to_ppm,
-    reduce_t_depth,
-    to_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
@@ -472,3 +466,5 @@ from .intermediate_reps import (
     rowcol,
 )
 from .rz_phase_gradient import rz_phase_gradient
+
+__all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.transforms")

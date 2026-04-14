@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in parametric qutrit operations.
 """
+
 # pylint: disable=unnecessary-lambda-assignment, too-few-public-methods, too-many-arguments
 
 import copy

@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods

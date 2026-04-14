@@ -14,6 +14,7 @@
 """
 Unit tests for the optimization transform ``merge_rotations``.
 """
+
 # pylint: disable=too-many-arguments
 
 

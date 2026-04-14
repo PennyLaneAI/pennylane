@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
+
 # pylint: disable=protected-access
 import pytest
 
