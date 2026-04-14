@@ -22,13 +22,13 @@ import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
 from inspect import BoundArguments, Signature, signature
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -41,7 +41,6 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
 from pennylane.operation import _get_abstract_operator, classproperty
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import QueuingManager
@@ -83,7 +82,7 @@ def create_operator_primitive(
         for i, w in enumerate(wire_argnames):
             cur_slice = slice(cur_idx, wire_lengths[i], 1)
             args_dict[w] = tuple(
-                wire if is_abstract(wire) else int(wire) for wire in args[cur_slice]
+                wire if math.is_abstract(wire) else int(wire) for wire in args[cur_slice]
             )
             cur_idx += wire_lengths[i]
 
@@ -115,31 +114,28 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     _primitive: Optional["jax.extend.core.Primitive"] = None
 
-    num_wires: int | None = None
+    # NOTE: These should all be defined as ClassVars
+    num_wires: ClassVar[int | None] = None
+    num_params: ClassVar[int] = 0
+    ndim_params: ClassVar[tuple] = ()
+
+    # Will be defined by the instance lazily
+    _parameters: tuple | None = None
 
     # NOTE: new
-    _num_params: int
+    dyn_argnames: ClassVar[tuple[str, ...]] = ()
 
     # NOTE: new
-    _parameters: tuple
+    wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
 
     # NOTE: new
-    _ndim_params: tuple
+    static_argnames: ClassVar[tuple[str, ...]] = ()
 
     # NOTE: new
-    _sig: Signature
+    _sig: ClassVar[Signature]
 
     # NOTE: new
     _bound_args: BoundArguments
-
-    # NOTE: new
-    dyn_argnames: tuple[str, ...] = ()
-
-    # NOTE: new
-    wire_argnames: tuple[str, ...] = ("wires",)
-
-    # NOTE: new
-    static_argnames: tuple[str, ...] = ()
 
     def __init__(self, *args, **kwargs):
         self._name: str = self.__class__.__name__
@@ -233,7 +229,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
-        return hash((str(self.name), tuple(self._sig), tuple(self._bound_args.arguments.values())))
+        return hash((str(self.name), self._sig, tuple(self._bound_args.arguments.values())))
 
     def __eq__(self, other) -> bool:
         return qml.equal(self, other)
@@ -285,7 +281,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         ):
             return canonical_matrix
 
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_sparse_matrix(*args, format: str = "csr", **kwargs) -> spmatrix:
@@ -307,7 +303,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             **self._bound_args.arguments, format="csr"
         )
 
-        return expand_matrix(
+        return math.expand_matrix(
             canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
         ).asformat(format)
 
@@ -368,7 +364,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
-                return qml.math.linalg.eigvals(self.matrix())
+                return math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
     def terms(self) -> tuple[list[TensorLike], list["Operator2"]]:  # pylint: disable=no-self-use
@@ -391,12 +387,12 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
             from/to cache, formatting its position in the cache as parameter string."""
-            if len(qml.math.shape(x)) == 0:
+            if len(math.shape(x)) == 0:
                 # Scalar case
                 if decimals is None:
                     return ""
                 try:
-                    return format(qml.math.toarray(x), f".{decimals}f")
+                    return format(math.toarray(x), f".{decimals}f")
                 except ValueError:
                     # If the parameter can't be displayed as a float
                     return format(x)
@@ -407,7 +403,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
             # Retrieve matrix location in cache, or write the matrix to cache as new entry
             for i, mat in enumerate(mat_cache):
-                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
                     return f"M{i}"
             mat_num = len(mat_cache)
             mat_cache.append(x)
@@ -432,16 +428,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return f"{self.name}(wires={self.wires.tolist()})"
 
     @property
-    def num_params(self) -> int:
-        """Number of trainable parameters that the operator depends on."""
-        return self._num_params
-
-    @property
-    def ndim_params(self) -> tuple[int]:
-        """Number of dimensions per trainable parameter of the operator."""
-        return self._ndim_params
-
-    @property
     def wires(self) -> Wires:
         """Wires that the operator acts on."""
         return Wires.all_wires(self._bound_args.arguments[w] for w in self.wire_argnames)
@@ -449,11 +435,11 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def parameters(self) -> list[TensorLike]:
         """Trainable parameters that the operator depends on."""
-        if not self._parameters:
+        if self._parameters is None:
             params = tuple(
                 (p := self._bound_args.arguments[n])
                 for n in self.dyn_argnames
-                if qml.math.ndim(p) == 0 and "float" in qml.math.get_dtype_name(p)
+                if math.ndim(p) == 0 and "float" in math.get_dtype_name(p)
             )
             self._parameters = params
 
@@ -523,7 +509,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if isinstance(other, Operator2):
             return qml.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if qml.math.allequal(other, 0):
+            if math.allequal(other, 0):
                 return self
             return qml.sum(
                 self,
@@ -557,7 +543,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if isinstance(other, Operator2):
             return self + qml.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
-            return self + (qml.math.multiply(-1, other))
+            return self + (math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other: Union["Operator2", TensorLike]):
@@ -725,6 +711,6 @@ def operation_derivative(operation: Operation2) -> TensorLike:
 @qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
-    according to ``qml.math.requires_grad``.
+    according to ``math.requires_grad``.
     """
-    return any(qml.math.requires_grad(p) for p in obj.parameters)
+    return any(math.requires_grad(p) for p in obj.parameters)
