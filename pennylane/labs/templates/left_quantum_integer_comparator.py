@@ -52,8 +52,8 @@ class LeftQuantumIntegerComparator(Operation):
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
-            op (int): The operator used in the inequality. The value can be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
-                representing '<', '<=', '>=' and '>' respectively.
+            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
+
 
     **Example**
 
@@ -97,7 +97,7 @@ class LeftQuantumIntegerComparator(Operation):
         y_wires: WiresLike,
         target_wire: WiresLike,
         work_wires: WiresLike,
-        op: int,
+        op=None,
     ):  # pylint: disable=too-many-arguments
 
         target_wire = Wires(target_wire)
@@ -105,8 +105,8 @@ class LeftQuantumIntegerComparator(Operation):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires)
 
-        if op not in [0, 1, 2, 3]:
-            raise ValueError("Allowed values for 'op' are: 0, 1, 2 and 3.")
+        if op not in ["<", "<=", ">=", ">"]:
+            raise ValueError("Allowed values for 'op' are: '<', '<=', '>=' and '>'.")
 
         if len(work_wires) < len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
@@ -183,8 +183,7 @@ class LeftQuantumIntegerComparator(Operation):
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` work wires should be provided.
-            op (int): The operator used in the inequality. The value could be :math:`0`, :math:`1`, :math:`2` or :math:`3`,
-                representing '<', '<=', '>=' and '>' respectively.
+            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
 
         Returns:
             list[.Operator]: Decomposition of the operator
@@ -207,7 +206,7 @@ def _left_quantum_integer_comparator_resources(num_y_wires, op):
         CNOT: 2 + 5 * (num_y_wires - 1),
     }
 
-    if op in [1, 2]:
+    if op in [">=", "<="]:
         resources[X] = 1
 
     return resources
@@ -223,7 +222,7 @@ def _left_quantum_integer_comparator(
     x_wires = x_wires[::-1]
     y_wires = y_wires[::-1]
 
-    @cond(math.logical_or(op == 0, op == 2))
+    @cond(math.logical_or(op == "<", op == ">="))
     def _swap(x_wires, y_wires):
         return y_wires, x_wires
 
@@ -236,7 +235,7 @@ def _left_quantum_integer_comparator(
     def _negate_output():
         X(wires=target_wire)
 
-    cond(math.logical_or(op == 1, op == 2), _negate_output)()
+    cond(math.logical_or(op == "<=", op == ">="), _negate_output)()
 
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
