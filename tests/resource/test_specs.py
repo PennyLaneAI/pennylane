@@ -49,6 +49,7 @@ def test_error_with_bad_key(key):
     "level,output,expect_warnings",
     [
         (0, [0], False),
+        (-1, [6], False),
         (slice(3), [0, 1, 2], False),
         (slice(1, 3), [1, 2], False),
         (slice(1, 4, 2), [1, 3], False),
@@ -56,6 +57,7 @@ def test_error_with_bad_key(key):
         ([0, 1, 1, 1], [0, 1], True),
         ((0, 1), [0, 1], False),
         (range(3, 0, -1), [1, 2, 3], True),
+        (range(-1, -4, -1), [4, 5, 6], True),
         ("foo", [2], False),
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
@@ -106,13 +108,14 @@ def test_preprocess_levels_all(num_tapes, expected):
 
 
 def test_preprocess_levels_invalid():
-    with pytest.raises(
-        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
-    ):
-        _preprocess_level_input(-1, {}, [], 0)
+    with pytest.raises(ValueError, match="out of bounds"):
+        _preprocess_level_input(-10, {}, 5, 0)
+
+    with pytest.raises(ValueError, match="out of bounds"):
+        _preprocess_level_input(10, {}, 5, 0)
 
     with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        _preprocess_level_input("foo", {}, [], 0)
+        _preprocess_level_input("foo", {}, 5, 0)
 
 
 def test_get_last_tape_transform_level():

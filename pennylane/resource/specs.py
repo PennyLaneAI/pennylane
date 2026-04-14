@@ -158,7 +158,7 @@ def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     return 0
 
 
-def _preprocess_level_input(
+def _preprocess_level_input(  # pylint: disable=too-many-branches
     level: str | int | slice | list[int | str],
     marker_to_level: dict[str, int],
     pipeline_len: int,
@@ -175,17 +175,17 @@ def _preprocess_level_input(
     Returns:
         list[int]: The preprocessed level input
     """
-    if num_tape_levels > 1:
-        # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
-        max_level = pipeline_len + 2
-    else:
-        # Account only for "Before MLIR passes" level
-        max_level = pipeline_len + 1
+    # Account for "Before MLIR passes" level
+    max_level = pipeline_len + 1
 
+    if num_tape_levels > 1:
+        # Account for an additional "Before Tape Transforms" level
+        max_level += 1
+
+    if level == "all":
+        return list(range(0, max_level))
     if level == "all-mlir":
         return list(range(num_tape_levels, max_level))
-    elif level == "all":
-        return list(range(0, max_level))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -202,13 +202,9 @@ def _preprocess_level_input(
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
             if lvl < 0:
-                if max_level - abs(lvl) < 0:
-                    raise ValueError(
-                        "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, "
-                        f"got {lvl}."
-                    )
-
                 level[i] = max_level - abs(lvl)
+        else:
+            raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
 
     level_sorted = sorted(set(level))
     if level != level_sorted:
@@ -218,10 +214,10 @@ def _preprocess_level_input(
             UserWarning,
         )
 
-    if level_sorted[-1] >= max_level:
+    if len(bad_levels := [lvl for lvl in level_sorted if lvl >= max_level or lvl < 0]) > 0:
         raise ValueError(
             "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, got "
-            f"{', '.join(str(lvl) for lvl in level_sorted if lvl >= max_level)}."
+            f"{', '.join(str(lvl) for lvl in bad_levels)}."
         )
 
     return level_sorted
@@ -277,7 +273,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         marker_to_level[marker] = lvl
 
         # Account for the MLIR lowering pass if necessary
-        if num_tape_levels > 0 and lvl >= num_tape_levels:
+        if 0 < num_tape_levels <= lvl:
             marker_to_level[marker] += 1
 
     # Multiple markers can correspond to the same level
@@ -701,7 +697,7 @@ def specs(
 
         Or, equivalently, by using the int level directly:
 
-        >>> print(all_specs.resources[all_specs.level[2]])
+        >>> print(qml.specs(circuit, level=-1)(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -711,8 +707,13 @@ def specs(
         - probs(all wires): 1
         Depth: Not computed
 
-        This also works with negative level numbers, similar to how Python slices work, where ``-1`` corresponds to the
-        last applied transform or pass, ``-2`` to the second to last, and so on.
+        .. note::
+
+            The integer argument to ``specs`` may be negative. In these cases the indexing happens
+            with respect to the final transform or pass in the sequence. This is similar to how
+            Python slices work, where ``-1`` corresponds to the last applied transform or pass,
+            ``-2`` to the second to last, and so on.
+
         For example, the following would also return the resources after the ``merge-rotations`` pass:
 
         >>> print(all_specs.resources[all_specs.level[-1]])
