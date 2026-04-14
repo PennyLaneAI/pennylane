@@ -981,6 +981,10 @@ The following classes have been ported over:
 * Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` to avoid inconsistent types return from branches.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
+
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
@@ -1099,6 +1103,10 @@ The following classes have been ported over:
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
   [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
+
+* Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
+  when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
+  [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
 <h3>Contributors ✍️</h3>
 
