@@ -575,7 +575,24 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     all_rules.update(new_rules)
 
 
-def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
+class DecompCollection:
+    """A collection of decomposition rules."""
+
+    def __init__(self, decomps: dict[str, DecompositionRule]) -> None:
+        self._dict = decomps
+
+    def __getitem__(self, arg: int | str) -> DecompositionRule:
+        if isinstance(arg, int):
+            return list(self._dict.values())[arg]
+        if arg not in self._dict:
+            raise KeyError(f"Cannot find a decomposition rule with the given name: {arg}.")
+        return self._dict[arg]
+
+    def __repr__(self) -> str:
+        return repr(list(self._dict.values()))
+
+
+def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -591,7 +608,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
             ``"C(RX)"``, etc.
 
     Returns:
-        list[DecompositionRule]: a list of decomposition rules registered for the given operator.
+        DecompCollection: a collection of decomposition rules registered for the given operator.
 
     **Example**
 
@@ -613,7 +630,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return list(_decompositions_var.get()[to_name(op)].values())
+    return DecompCollection(_decompositions_var.get()[to_name(op)])
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
