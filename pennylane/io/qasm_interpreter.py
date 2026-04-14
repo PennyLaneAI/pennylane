@@ -1395,7 +1395,9 @@ class QasmInterpreter:
 
         return gate, args, wires
 
-    def _setup_wires(self, node: ast.QuantumPhase | ast.QuantumGate, context: Context):  # pragma: no cover
+    def _setup_wires(  # pragma: no cover
+        self, node: ast.QuantumPhase | ast.QuantumGate, context: Context  # pragma: no cover
+    ):  # pragma: no cover
         """
         Sets up wires for a QuantumGate or QuantumPhase application.
 
