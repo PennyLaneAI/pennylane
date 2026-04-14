@@ -711,6 +711,20 @@ def specs(
         - probs(all wires): 1
         Depth: Not computed
 
+        This also works with negative level numbers, similar to how Python slices work, where ``-1`` corresponds to the
+        last applied transform or pass, ``-2`` to the second to last, and so on.
+        For example, the following would also return the resources after the ``merge-rotations`` pass:
+
+        >>> print(all_specs.resources[all_specs.level[-1]])
+        Wire allocations: 3
+        Total gates: 2
+        Gate counts:
+        - RX: 1
+        - CNOT: 1
+        Measurements:
+        - probs(all wires): 1
+        Depth: Not computed
+
         .. warning::
             Certain transforms, like the ``split-non-commuting`` transform, can result in multiple output tapes.
             In this case, the resources for that level will be returned as a list of :class:`~.resource.SpecsResources`
