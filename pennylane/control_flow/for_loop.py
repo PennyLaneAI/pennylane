@@ -49,9 +49,11 @@ def _reverse_iterator(f, start, step):
 
 
 def _is_reverse_iteration(start, stop, step):
-    if not math.is_abstract(step) and step < 0:
-        return True
-    return not math.is_abstract(start) and not math.is_abstract(stop) and stop < start
+    # without the int() call, when we have a jnp array with a single int
+    # in it (jnp.array(1)), performing a comparison will produce a tracer
+    if not math.is_abstract(step):
+        return int(step) < 0
+    return not math.is_abstract(start) and not math.is_abstract(stop) and int(stop) < int(start)
 
 
 def for_loop(
