@@ -898,7 +898,10 @@ def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=
     """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
     if gate_set is None and enabled_graph():
-        raise TypeError("The gate_set argument is required when ...")
+        raise TypeError(
+            "The gate_set argument is required when the graph-based decomposition system "
+            "is enabled via qml.decomposition.enable_graph()"
+        )
 
     gate_set = gate_set or {}
     if isinstance(gate_set, Iterable):
