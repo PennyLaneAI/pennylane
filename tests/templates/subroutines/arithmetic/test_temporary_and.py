@@ -19,11 +19,36 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_TemporaryAND
+from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_temporary_and
 
 
 class TestTemporaryAND:
     """Tests specific to the TemporaryAND operation"""
+
+    def compare_to_toffoli_on_zero(self, matrix, zeroed, cvals=None):
+        """Compare a given matrix to the matrix of Toffoli on a constrained subspace.
+        The constraint is either that the input state is |0> on the target qubit, or that the
+        output is |0>. This is determined by the argument ``zeroed``.
+        """
+        cvals = cvals or [1, 1]
+        toffoli_mat = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
+        if not cvals[0]:
+            x_mat = qml.matrix(qml.X(0), wire_order=[0, 1, 2])
+            toffoli_mat = x_mat @ toffoli_mat @ x_mat
+        if not cvals[1]:
+            x_mat = qml.matrix(qml.X(1), wire_order=[0, 1, 2])
+            toffoli_mat = x_mat @ toffoli_mat @ x_mat
+        if zeroed == "input":
+            # When the third qubit starts in |0>, we only check the odd columns
+            iso = matrix[:, ::2]
+            iso_toffoli = toffoli_mat[:, ::2]
+
+        # When the third qubit ends in |0>, we only check the odd rows
+        else:
+            iso = matrix[::2, :]
+            iso_toffoli = toffoli_mat[::2, :]
+
+        assert qml.math.allclose(iso, iso_toffoli)
 
     def test_repr(self):
         """Test the repr of TemporaryAND."""
@@ -42,8 +67,9 @@ class TestTemporaryAND:
     @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
-
         op = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
+        # to mcm + cond(CZ) do not reproduce the matrix of the op.
         qml.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     def test_correctness(self):
@@ -55,8 +81,8 @@ class TestTemporaryAND:
 
         qs_and = qml.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
+                qml.RY(-2.6321, 0),
+                qml.RY(0.612, 1),
                 qml.TemporaryAND([0, 1, 2], control_values=[0, 1]),
                 qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
@@ -67,8 +93,8 @@ class TestTemporaryAND:
 
         qs_toffoli = qml.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
+                qml.RY(-2.6321, 0),
+                qml.RY(0.612, 1),
                 qml.X(0),
                 qml.Toffoli([0, 1, 2]),
                 qml.X(0),
@@ -90,26 +116,21 @@ class TestTemporaryAND:
         assert qml.math.allclose(output_toffoli, output_and)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
-        M_and = qml.matrix(qml.TemporaryAND(wires=[0, 1, 2]))
-        M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAND(wires=[0, 1, 2])))
-        M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
-
-        # When the third qubit starts in |0>, we only check the odd columns
-        iso_and = M_and[:, ::2]
-        iso_toffoli = M_toffoli[:, ::2]
-
-        # When the third qubit ends in |0>, we only check the odd rows
-        iso_M_and_adj = M_and_adj[::2, :]
-        iso_toffoli_adj = M_toffoli[::2, :]
-
-        assert qml.math.allclose(iso_and, iso_toffoli)
-        assert qml.math.allclose(iso_M_and_adj, iso_toffoli_adj)
+        matrix_and = qml.matrix(qml.TemporaryAND(wires=[0, 1, 2]))
+        matrix_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAND(wires=[0, 1, 2])))
+        self.compare_to_toffoli_on_zero(matrix_and, "input")
+        self.compare_to_toffoli_on_zero(matrix_and_adj, "output")
 
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 0), (1, 1)])
-    def test_and_decompositions(self, cvals):
+    def test_temporary_and_decompositions(self, cvals):
         """Tests that TemporaryAND is decomposed properly."""
+        wires = [0, 1, 2]
         for rule in qml.list_decomps(qml.TemporaryAND):
-            _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=cvals), rule)
+            _test_decomposition_rule(
+                qml.TemporaryAND(wires, control_values=cvals), rule, skip_decomp_matrix_check=True
+            )
+            matrix = qml.matrix(rule, wire_order=wires)(wires, control_values=cvals)
+            self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values):
@@ -124,7 +145,7 @@ class TestTemporaryAND:
         def circuit(a, b):
             qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
             qml.TemporaryAND(wires=sys_wires, control_values=control_values)
-            _adjoint_TemporaryAND(wires=sys_wires)
+            _adjoint_temporary_and(wires=sys_wires)
             return qml.probs(wires=sys_wires)
 
         for a in (0, 1):

@@ -32,16 +32,18 @@ from pennylane.wires import Wires, WiresLike
 class TemporaryAND(Operation):
     r"""TemporaryAND(wires, control_values)
 
-    The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
-    about the target wire to enable more efficient circuit decompositions. The ``TemporaryAND`` assumes the target qubit
-    to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
+    The ``TemporaryAND`` operation is a three-qubit gate equivalent to a reversible ``AND``,
+    or :class:`~pennylane.Toffoli`, gate that leverages extra information about the target
+    wire to enable more efficient circuit decompositions. ``TemporaryAND`` assumes the target qubit
+    to be in the state :math:`|0\rangle`, while ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
     For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of this operation, the user must ensure
-        that before computation the input state of the target wire is :math:`|0\rangle`,
-        and that after uncomputation the output state of the target wire is :math:`|0\rangle`,
+        that before using ``TemporaryAND`` the input state of the target wire is :math:`|0\rangle`,
+        and that after uncomputation, i.e., after using ``Adjoint(TemporaryAND)``, the output
+        state of the target wire is :math:`|0\rangle`,
         when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
         Otherwise, behaviour may differ from the expected ``AND``.
 
@@ -221,7 +223,17 @@ def _temporary_and(wires: WiresLike, **kwargs):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
-add_decomps(TemporaryAND, _temporary_and)
+@register_resources({ops.Toffoli: 1, ops.X: 4}, exact=False)
+def _temporary_and_to_toffoli(wires: WiresLike, **kwargs):
+    control_values = kwargs["control_values"]
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+    ops.Toffoli(wires)
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+
+
+add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
 # pylint: disable=unused-argument
@@ -230,14 +242,14 @@ def _adjoint_temporary_and_resources(base_class=None, base_params=None):
 
 
 @register_resources(_adjoint_temporary_and_resources)
-def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
+def _adjoint_temporary_and(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
     ops.Hadamard(wires=wires[2])
     m_0 = ops.measure(wires[2], reset=True)
     ops.cond(m_0, ops.CZ)(wires=[wires[0], wires[1]])
 
 
-add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND)
+add_decomps("Adjoint(TemporaryAND)", _adjoint_temporary_and)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

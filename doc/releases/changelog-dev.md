@@ -175,6 +175,11 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+  decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
+  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+
 * Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
