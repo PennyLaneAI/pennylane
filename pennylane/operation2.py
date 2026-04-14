@@ -137,9 +137,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # NOTE: new
     static_argnames: tuple[str, ...] = ()
 
-    # NOTE: new
-    dyn_sized_wires: tuple[str, ...] = ()
-
     def __init__(self, *args, **kwargs):
         self._name: str = self.__class__.__name__
         self._pauli_rep: qml.pauli.PauliSentence | None = (
@@ -147,15 +144,16 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         )
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
+
+        for n in self.wire_argnames:
+            self._bound_args.arguments[n] = Wires(self._bound_args.arguments[n])
+
         self.queue()
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
-
         cls._sig = signature(cls)
-        if not set(cls.dyn_sized_wires).issubset(cls.wire_argnames):
-            raise ValueError("Incorrect dyn_wires.")
 
         param_names = cls._sig.parameters.keys()
         def_argnames = cls.static_argnames + cls.wire_argnames
@@ -178,7 +176,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
-        # FIXME: to fix
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
@@ -194,30 +191,42 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             *array_types,
         )
 
-        # process wires so that we can handle them either as a final argument or as a keyword argument.
-        # Stick `n_wires` as a keyword argument so we have enough information to repack them during
-        # the implementation call defined by `primitive.def_impl`.
-        if "wires" in kwargs:
-            wires = kwargs.pop("wires")
-            if isinstance(wires, array_types) and wires.shape == ():
-                wires = (wires,)
-            elif isinstance(wires, iterable_wires_types):
-                wires = tuple(wires)
-            else:
-                wires = (wires,)
-            kwargs["n_wires"] = len(wires)
-            args += wires
-        # If not in kwargs, check if the last positional argument represents wire(s).
-        elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
-            kwargs["n_wires"] = 1
-        elif args and isinstance(args[-1], iterable_wires_types):
-            wires = tuple(args[-1])
-            kwargs["n_wires"] = len(wires)
-            args = args[:-1] + wires
-        else:
-            kwargs["n_wires"] = 1
+        bound_args = cls._sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        args_dict = bound_args.arguments
 
-        return cls._primitive.bind(*args, **kwargs)
+        dyn_args = []
+        for d in cls.dyn_argnames:
+            dyn_args.append(args_dict[d])
+
+        all_wires = []
+        wire_lengths = []
+        for w in cls.wire_argnames:
+            cur_wires = args_dict[w]
+            if isinstance(cur_wires, array_types) and cur_wires.shape == ():
+                all_wires.append(cur_wires)
+                wire_lengths.append(1)
+            elif isinstance(cur_wires, iterable_wires_types):
+                all_wires += list(cur_wires)
+                wire_lengths.append(len(cur_wires))
+            else:
+                all_wires.append(cur_wires)
+                wire_lengths.append(1)
+
+        static_args = {}
+        for s in cls.static_argnames:
+            static_args[s] = args_dict[s]
+
+        prim_args = (*dyn_args, *all_wires)
+        prim_kwargs = {
+            **static_args,
+            "wire_lengths": tuple(wire_lengths),
+            "dyn_argnames": cls.dyn_argnames,
+            "wire_argnames": cls.wire_argnames,
+            # static_argnames is probably not necessary
+            "static_argnames": cls.static_argnames,
+        }
+        return cls._primitive.bind(*prim_args, **prim_kwargs)
 
     @property
     def hash(self) -> int:
@@ -568,7 +577,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         dyn_data = []
         hashable_data = []
         for k, v in self._bound_args.arguments.items():
-            if k in self.dyn_argnames or self.dyn_sized_wires:
+            if k in self.dyn_argnames:
                 dyn_data.append(v)
                 hashable_data.append((k, None))
             else:
