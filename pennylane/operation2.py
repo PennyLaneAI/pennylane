@@ -269,7 +269,8 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis."""
-        canonical_matrix = self.compute_matrix(**self._bound_args.arguments)
+        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
+        canonical_matrix = self.compute_matrix(**args)
 
         if (
             wire_order is None
@@ -299,9 +300,8 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis."""
-        canonical_sparse_matrix = self.compute_sparse_matrix(
-            **self._bound_args.arguments, format="csr"
-        )
+        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
+        canonical_sparse_matrix = self.compute_sparse_matrix(**args, format="csr")
 
         return math.expand_matrix(
             canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
@@ -359,8 +359,9 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def eigvals(self) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis."""
+        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
         try:
-            return self.compute_eigvals(**self._bound_args.arguments)
+            return self.compute_eigvals(**args)
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
@@ -588,6 +589,18 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         return cls(**args)
 
+    def __getattr__(self, name):
+        try:
+            return self._bound_args.arguments[name]
+        except KeyError as e:
+            raise KeyError(f"{self.name} does not contain a {name} attribute.") from e
+
+    def __setattr__(self, name, value):
+        if name in self._bound_args.arguments:
+            self._bound_args.arguments[name] = value
+        else:
+            raise KeyError(f"{self.name} does not contain a {name} attribute.")
+
 
 # =============================================================================
 # Base Operation class
@@ -673,7 +686,7 @@ class Operation2(Operator2):
             self.grad_recipe = [None] * self.num_params
 
 
-class StatePrepBase(Operation2):
+class StatePrepBase2(Operation2):
     """An interface for state-prep operations."""
 
     grad_method = None
