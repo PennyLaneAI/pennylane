@@ -175,14 +175,17 @@ def _preprocess_level_input(
     Returns:
         list[int]: The preprocessed level input
     """
-
-    if level == "all" and num_tape_levels > 1:
+    if num_tape_levels > 1:
         # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
-        return list(range(pipeline_len + 2))
+        max_level = pipeline_len + 2
+    else:
+        # Account only for "Before MLIR passes" level
+        max_level = pipeline_len + 1
 
-    if level in ("all", "all-mlir"):
-        # Account for "Before MLIR passes" level
-        return list(range(num_tape_levels, pipeline_len + 1))
+    if level == "all-mlir":
+        return list(range(num_tape_levels, max_level))
+    elif level == "all":
+        return list(range(0, max_level))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -199,10 +202,13 @@ def _preprocess_level_input(
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
             if lvl < 0:
-                raise ValueError(
-                    "The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative, "
-                    f"got {lvl}."
-                )
+                if max_level - abs(lvl) < 0:
+                    raise ValueError(
+                        "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, "
+                        f"got {lvl}."
+                    )
+
+                level[i] = max_level - abs(lvl)
 
     level_sorted = sorted(set(level))
     if level != level_sorted:
@@ -210,6 +216,12 @@ def _preprocess_level_input(
             "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
             UserWarning,
+        )
+
+    if level_sorted[-1] >= max_level:
+        raise ValueError(
+            "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, got "
+            f"{', '.join(str(lvl) for lvl in level_sorted if lvl >= max_level)}."
         )
 
     return level_sorted
@@ -254,8 +266,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
     num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
-    mlir_only = (level == "all-mlir") or num_tape_levels == 0
-    if not mlir_only:
+    if num_tape_levels != 0:
         # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
@@ -266,7 +277,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         marker_to_level[marker] = lvl
 
         # Account for the MLIR lowering pass if necessary
-        if not mlir_only and lvl >= num_tape_levels:
+        if num_tape_levels > 0 and lvl >= num_tape_levels:
             marker_to_level[marker] += 1
 
     # Multiple markers can correspond to the same level
@@ -290,7 +301,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     resources = {}
 
     # Handle tape transforms
-    if not mlir_only:
+    if len(tape_levels) > 0:
         for tape_level in tape_levels:
             # User transforms always come first, so level and tape_level align correctly
             batch, _ = qml.workflow.construct_batch(original_qnode, level=tape_level)(
