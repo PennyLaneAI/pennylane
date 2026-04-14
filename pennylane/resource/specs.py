@@ -697,7 +697,7 @@ def specs(
 
         Or, equivalently, by using the int level directly:
 
-        >>> print(qml.specs(circuit, level=-1)(1.23).resources)
+        >>> print(all_specs.resources[all_specs.level[2]])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -709,14 +709,15 @@ def specs(
 
         .. note::
 
-            The integer argument to ``specs`` may be negative. In these cases the indexing happens
-            with respect to the final transform or pass in the sequence. This is similar to how
-            Python slices work, where ``-1`` corresponds to the last applied transform or pass,
+            The level argument to ``specs`` may be negative. When negative integers are used for
+            ``level``, these indices are interpreted as counting backwards with respect to the
+            final transform or pass in the sequence. This is similar to how Python slices
+            operate, where ``-1`` corresponds to the last applied transform or pass,
             ``-2`` to the second to last, and so on.
 
-        For example, the following would also return the resources after the ``merge-rotations`` pass:
+        For example, the following will also return the resources after the ``merge-rotations`` pass:
 
-        >>> print(all_specs.resources[all_specs.level[-1]])
+        >>> print(qml.specs(circuit, level=-1)(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
