@@ -497,7 +497,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         if _is_reverse_iteration(self.start, self.stop, self.step):
             # mlir does not support reverse iteration of for loops
-            # ceil divide
             num_iterations = math.ceil((self.stop - self.start) / self.step).astype(int)
             start, stop, step = 0, num_iterations, 1
         else:
