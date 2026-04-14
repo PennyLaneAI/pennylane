@@ -14,7 +14,6 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
-
 from typing import Literal
 
 import numpy as np
