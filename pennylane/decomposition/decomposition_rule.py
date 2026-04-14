@@ -632,10 +632,23 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
     >>> import pennylane as qml
     >>> qml.list_decomps(qml.CRX)
-    [DecompositionRule(name=_crx_to_rx_cz), DecompositionRule(name=_crx_to_rz_ry), DecompositionRule(name=_crx_to_h_crz), DecompositionRule(name=_crx_to_ppr)]
+    DecompCollection([
+        DecompositionRule(name=_crx_to_rx_cz),
+        DecompositionRule(name=_crx_to_rz_ry),
+        DecompositionRule(name=_crx_to_h_crz),
+        DecompositionRule(name=_crx_to_ppr)
+    ])
+    >>> print(qml.list_decomps(qml.CRX))
+    Avaialble Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
 
-    Each decomposition rule can be inspected:
+    Each decomposition rule can be accessed by name or by index.
 
+    >>> qml.list_decomps(qml.CRX)['_crx_to_ppr']
+    DecompositionRule(name=_crx_to_ppr)
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
     def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
