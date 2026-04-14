@@ -352,7 +352,7 @@ def _specs_from_analysis_pass(
         res_file.unlink()  # Clean up the resource tracking file
 
         results[level_to_name[curr_level]] = _mlir_resources_to_specs_resources(
-            next(iter(data.values()))
+            next(iter(data.values()))  # TODO: Are we guaranteed that the main function is always first?
         )
 
     return results
