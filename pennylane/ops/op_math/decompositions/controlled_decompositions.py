@@ -419,20 +419,25 @@ def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
 
 
 def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires, **__):
-    num_ww = num_control_wires - 2
+    num_used_work_wires = num_control_wires - 2
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * num_ww}
-    if num_work_wires == num_ww:
+        return {ops.Toffoli: 4 * num_used_work_wires}
+    if num_work_wires == num_used_work_wires:
         mcx_rep = resource_rep(qml.Toffoli)
     else:
         mcx_rep = resource_rep(
             ops.MultiControlledX,
             num_control_wires=2,
-            num_work_wires=num_work_wires - num_ww,  # Guaranteed to be >0 due to condition
+            num_work_wires=num_work_wires
+            - num_used_work_wires,  # Guaranteed to be >0 due to condition
             num_zero_control_values=0,
             work_wire_type="zeroed",
         )
-    return {qml.TemporaryAND: num_ww, adjoint_resource_rep(qml.TemporaryAND): num_ww, mcx_rep: 1}
+    return {
+        qml.TemporaryAND: num_used_work_wires,
+        adjoint_resource_rep(qml.TemporaryAND): num_used_work_wires,
+        mcx_rep: 1,
+    }
 
 
 # pylint: disable=no-value-for-parameter
