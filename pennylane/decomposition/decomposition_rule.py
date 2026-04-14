@@ -633,7 +633,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
         DecompositionRule(name=_crx_to_ppr)
     ])
     >>> print(qml.list_decomps(qml.CRX))
-    Avaialble Decomposition Rules:
+    Available Decomposition Rules:
     0: _crx_to_rx_cz
     1: _crx_to_rz_ry
     2: _crx_to_h_crz
