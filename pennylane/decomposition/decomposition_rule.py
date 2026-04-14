@@ -217,6 +217,24 @@ def register_resources(
 
     >>> my_cnot = qml.register_resources({qml.H: 2, qml.CZ: 1}, my_cnot)
 
+    By default, the name of the decorated function is taken as the name of the decomposition rule.
+
+    >>> my_cnot.name
+    'my_cnot'
+
+    Optionally, a custom name can be assigned using the ``name`` argument:
+
+    .. code-block:: python
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1}, name="to-cz")
+        def my_cnot(wires, **_):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+    >>> my_cnot.name
+    'to-cz'
+
     .. details::
         :title: Quantum Functions as Decomposition Rules
 
@@ -401,9 +419,7 @@ class DecompositionRule:
             # OSError is raised if the source code cannot be retrieved
             self._source = ""  # pragma: no cover
 
-        self.name = name
-        if not name:
-            self.name = func.__name__
+        self.name = name or func.__name__
 
         if isinstance(resources, dict):
 
@@ -580,8 +596,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     **Example**
 
     >>> import pennylane as qml
-    >>> from pprint import pprint
-    >>> pprint(qml.list_decomps(qml.CRX))
+    >>> qml.list_decomps(qml.CRX)
     [_crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr]
 
     Each decomposition rule can be inspected:
