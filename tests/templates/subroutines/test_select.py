@@ -361,7 +361,6 @@ class TestSelect:
 
         assert resources["op_reps"] == op_reps
 
-
     @pytest.mark.jax
     def test_traced_wires(self):
         """Test that Select construction does not raise TracerBoolConversionError when the control
@@ -376,6 +375,7 @@ class TestSelect:
 
         control_wires = jnp.arange(1, 3)
         jax.make_jaxpr(circuit)(control_wires)
+
 
 class TestErrorMessages:
     """Test that the correct errors are raised"""
