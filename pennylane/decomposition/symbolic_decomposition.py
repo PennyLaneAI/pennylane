@@ -59,10 +59,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
             qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
         _impl._source = (
-            "With base_decomposition defined as:\n\n"
+            dedent(_impl._source).strip()
+            + "\n\nwhere base_decomposition is defined as:\n\n"
             + dedent(base_source).strip()
-            + "\n\nThe full decomposition is defined as:\n\n"
-            + dedent(_impl._source).strip()
         )
 
         return _impl
@@ -80,10 +79,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
 
     _impl_using_reconstructor._source = (
-        "With base_decomposition defined as:\n\n"
+        dedent(_impl_using_reconstructor._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
         + dedent(base_source).strip()
-        + "\n\nThe full decomposition is defined as:\n\n"
-        + dedent(_impl_using_reconstructor._source).strip()
     )
     return _impl_using_reconstructor
 
@@ -352,10 +350,9 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
             qml.PauliX(w)
 
     _impl._source = (
-        "With base_decomposition defined as:\n\n"
+        dedent(_impl._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
         + dedent(base_decomposition._source).strip()
-        + "\n\nThe full decomposition is defined as:\n\n"
-        + dedent(_impl._source).strip()
     )
     return _impl
 
@@ -402,10 +399,9 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
 
     base_source = inner_decomp._source
     _impl._source = (
-        "With inner_decomp defined as:\n\n"
+        dedent(_impl._source).strip()
+        + "\n\nwhere inner_decomp is defined as:\n\n"
         + dedent(base_source).strip()
-        + "\n\nThe full decomposition is defined as:\n\n"
-        + dedent(_impl._source).strip()
     )
     return _impl
 

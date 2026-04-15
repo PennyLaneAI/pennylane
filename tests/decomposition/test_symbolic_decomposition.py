@@ -149,18 +149,6 @@ class TestAdjointDecompositionRules:
 
         if not use_reconstructor:
             assert str(rule) == dedent("""
-                With base_decomposition defined as:
-
-                @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
-                def _custom_decomp(phi, wires, **_):
-                    qml.H(wires[0])
-                    qml.CNOT(wires=wires[:2])
-                    qml.RX(phi, wires=wires[1])
-                    qml.CNOT(wires=wires[1:3])
-                    qml.T(wires[2])
-
-                The full decomposition is defined as:
-
                 @register_condition(_condition_fn)
                 @register_resources(
                     _resource_fn,
@@ -171,10 +159,8 @@ class TestAdjointDecompositionRules:
                 def _impl(*params, wires, base):
                     # pylint: disable=protected-access
                     qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
-                """).strip()
-        else:
-            assert str(rule) == dedent("""
-                With base_decomposition defined as:
+
+                where base_decomposition is defined as:
 
                 @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
                 def _custom_decomp(phi, wires, **_):
@@ -183,9 +169,9 @@ class TestAdjointDecompositionRules:
                     qml.RX(phi, wires=wires[1])
                     qml.CNOT(wires=wires[1:3])
                     qml.T(wires[2])
-
-                The full decomposition is defined as:
-
+                """).strip()
+        else:
+            assert str(rule) == dedent("""
                 @register_condition(_condition_fn)
                 @register_resources(
                     _resource_fn,
@@ -196,6 +182,16 @@ class TestAdjointDecompositionRules:
                 def _impl_using_reconstructor(*params, wires, base_params, **_):
                     # pylint: disable=protected-access
                     qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
+
+                where base_decomposition is defined as:
+
+                @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
+                def _custom_decomp(phi, wires, **_):
+                    qml.H(wires[0])
+                    qml.CNOT(wires=wires[:2])
+                    qml.RX(phi, wires=wires[1])
+                    qml.CNOT(wires=wires[1:3])
+                    qml.T(wires[2])
                 """).strip()
 
         assert rule.name == "adjoint(_custom_decomp)"
@@ -559,25 +555,6 @@ class TestControlledDecomposition:
         rule = make_controlled_decomp(custom_decomp)
 
         assert str(rule) == dedent("""
-            With base_decomposition defined as:
-
-            @qml.register_resources(_custom_resource)
-            def custom_decomp(*params, wires, **_):
-                qml.X(wires[0])
-                qml.CNOT(wires=wires[:2])
-                qml.Toffoli(wires=wires[:3])
-                qml.MultiControlledX(wires=wires[:4], control_values=[1, 0, 1], work_wires=[4])
-                qml.RX(params[0], wires=wires[0])
-                qml.Rot(params[0], params[1], params[2], wires=wires[0])
-                qml.CRZ(params[0], wires=wires[:2])
-                qml.MultiRZ(params[0], wires=wires)
-                qml.ctrl(qml.MultiRZ(params[0], wires=wires[1:]), control=wires[0])
-                qml.PauliRot(params[0], "XYX", wires=wires[:3])
-                qml.Z(wires[0])
-                qml.CZ(wires=wires[:2])
-
-            The full decomposition is defined as:
-
             @register_condition(_condition_fn)
             @register_resources(
                 _resource_fn,
@@ -600,6 +577,23 @@ class TestControlledDecomposition:
                 )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
                 for w in zero_control_wires:
                     qml.PauliX(w)
+
+            where base_decomposition is defined as:
+
+            @qml.register_resources(_custom_resource)
+            def custom_decomp(*params, wires, **_):
+                qml.X(wires[0])
+                qml.CNOT(wires=wires[:2])
+                qml.Toffoli(wires=wires[:3])
+                qml.MultiControlledX(wires=wires[:4], control_values=[1, 0, 1], work_wires=[4])
+                qml.RX(params[0], wires=wires[0])
+                qml.Rot(params[0], params[1], params[2], wires=wires[0])
+                qml.CRZ(params[0], wires=wires[:2])
+                qml.MultiRZ(params[0], wires=wires)
+                qml.ctrl(qml.MultiRZ(params[0], wires=wires[1:]), control=wires[0])
+                qml.PauliRot(params[0], "XYX", wires=wires[:3])
+                qml.Z(wires[0])
+                qml.CZ(wires=wires[:2])
             """).strip()
 
         assert rule.name == "controlled(custom_decomp)"
@@ -884,18 +878,6 @@ class TestControlledDecomposition:
         assert rule.name == "flip_zero_ctrl_values(_custom_controlled_rule)"
 
         assert str(rule) == dedent("""
-            With inner_decomp defined as:
-
-            @qml.register_resources({qml.CNOT: 3, qml.H: 2})
-            def _custom_controlled_rule(wires, **_):
-                qml.CNOT(wires[0:2])
-                qml.H(wires[1])
-                qml.CNOT(wires[1:3])
-                qml.H(wires[1])
-                qml.CNOT(wires[0:2])
-
-            The full decomposition is defined as:
-
             @register_condition(_condition_fn)
             @register_resources(
                 _resource_fn,
@@ -916,6 +898,16 @@ class TestControlledDecomposition:
                 )
                 for w in zero_control_wires:
                     qml.PauliX(w)
+
+            where inner_decomp is defined as:
+
+            @qml.register_resources({qml.CNOT: 3, qml.H: 2})
+            def _custom_controlled_rule(wires, **_):
+                qml.CNOT(wires[0:2])
+                qml.H(wires[1])
+                qml.CNOT(wires[1:3])
+                qml.H(wires[1])
+                qml.CNOT(wires[0:2])
             """).strip()
 
         with qml.queuing.AnnotatedQueue() as q:
