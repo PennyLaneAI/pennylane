@@ -412,7 +412,7 @@ class TestCaptureWhileLoopDynamicShapes:
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**(5-2)
 
     @pytest.mark.parametrize("allow_array_resizing", (False, "auto"))
-    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
+    def test_combine_with_dynamic_closure_var(self, allow_array_resizing):
         """Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
         can be combines."""
 
