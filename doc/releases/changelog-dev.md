@@ -978,7 +978,8 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` to avoid inconsistent types return from branches.
+* Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` 
+  by avoiding returns with inconsistent types from branches.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
 * Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
