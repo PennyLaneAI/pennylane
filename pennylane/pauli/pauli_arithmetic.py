@@ -185,12 +185,12 @@ class PauliWord(dict):
         then no operator acts on it, so return the Identity."""
         return I
 
-    def __init__(self, mapping):
+    def __init__(self, mapping, _skip_filter=False):
         """Strip identities from PauliWord on init!"""
-        for wire, op in mapping.copy().items():
-            if op == I:
-                del mapping[wire]
-        super().__init__(mapping)
+        if _skip_filter:
+            super().__init__(mapping)
+        else:
+            super().__init__(filter(lambda item: item[1] != I, mapping.items()))
         self._hashval = None
 
     @property
@@ -207,7 +207,9 @@ class PauliWord(dict):
 
     def __copy__(self):
         """Copy the PauliWord instance."""
-        return PauliWord(dict(self.items()))
+        res = PauliWord(self, _skip_filter=True)
+        res._hashval = self._hashval
+        return res
 
     def __deepcopy__(self, memo):
         res = self.__copy__()
@@ -234,7 +236,7 @@ class PauliWord(dict):
         base, iterator, swapped = (
             (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
-        result = copy(dict(base))
+        result = dict(base)
         coeff = 1
 
         for wire, term in iterator.items():

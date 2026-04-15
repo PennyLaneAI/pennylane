@@ -103,6 +103,44 @@ def promote_consts_to_inputs(f):
     return new_f, consts
 
 
+def promote_consts_to_inputs(f):
+    """This function extracts any closure variables with dynamic shapes from f.__closure__
+    and promotes them to being normal arguments. This produces a new function that
+    takes the original args and the new consts as explicit inputs. It also returns
+    the extracted consts.
+    """
+    indices = []
+    consts = []
+
+    if getattr(f, "__closure__", None) is not None:
+        for ind, cell in enumerate(f.__closure__):
+            val = cell.cell_contents
+            if hasattr(val, "shape") and not all(isinstance(s, int) for s in val.shape):
+                indices.append(ind)
+                consts.append(val)
+
+    def new_f(args, new_consts):
+        """A version of f where the consts with dynamic shapes have been promoted to inputs."""
+
+        # even deepcopy does not actually copy the closure for a function
+        # we don't have a way to produce a new function with independent closure
+        # so therefore we just need to make sure to clean up after ourselves after
+        # in-place modifying the closure contents.
+
+        try:
+            for ind, c in zip(indices, new_consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+            f_results = f(*args)
+        finally:
+            for ind, c in zip(indices, consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+        return f_results, new_consts
+
+    return new_f, consts
+
+
 def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):  # pragma: no cover
     """Add the abstract shapes at the specified locations to the output of f.
 
