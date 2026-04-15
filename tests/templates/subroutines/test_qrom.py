@@ -516,6 +516,8 @@ def test_too_many_work_wires_case():
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [
+        (16, 4, 1, 3, 2),
+        (16, 4, 10, 5, 5),
         (7, 3, 2, 2, 2),
         (14, 4, 2, 10, 4),
         (256, 8, 2, 10, 8),

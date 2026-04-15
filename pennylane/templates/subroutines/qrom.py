@@ -426,8 +426,7 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = n_swap_wires // num_target_wires
-    depth = int(2 ** np.floor(np.log2(depth)))
-    depth = min(depth, terms)
+    depth = int(2 ** np.floor(np.log2(min(depth, terms))))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     n_swap_work_wires = num_target_wires * depth - num_target_wires
@@ -452,7 +451,6 @@ def _qrom_decomposition_resources(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
     )
 
-    num_work_wires_select = min(num_work_wires, num_work_wires_select)
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
