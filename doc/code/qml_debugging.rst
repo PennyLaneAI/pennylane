@@ -33,7 +33,7 @@ circuit below.
 .. code-block:: python
     :linenos:
 
-    import pennylane as qml
+    import pennylane as qp
     
     @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
     def circuit(x):

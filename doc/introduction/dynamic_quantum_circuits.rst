@@ -168,7 +168,7 @@ This works for both unary and binary operators. To see a full list of supported 
 
 .. code-block:: python3
 
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device("default.qubit")
 
@@ -195,7 +195,7 @@ measurement values to the measurement process:
 
 .. code-block:: python3
 
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device("default.qubit")
 

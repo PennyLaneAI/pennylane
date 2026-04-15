@@ -134,7 +134,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
 
     class FlipAndRotate(qml.operation.Operation):

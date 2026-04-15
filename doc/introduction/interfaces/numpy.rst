@@ -16,7 +16,7 @@ provided by PennyLane alongside with the PennyLane library:
 
 .. code::
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import numpy as np
 
 This is powered via `Autograd <https://github.com/HIPS/autograd>`_, and enables

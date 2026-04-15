@@ -3,7 +3,7 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qp.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
@@ -52,10 +52,10 @@ Pending deprecations
   .. code-block:: python
 
     # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="my-rx")
+    qp.RX(0.5, wires=0, id="my-rx")
 
     # New method:
-    qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+    qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
 
   Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
@@ -63,10 +63,10 @@ Pending deprecations
   .. code-block:: python
 
     # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="x0")
+    qp.RX(0.5, wires=0, id="x0")
 
     # New method:
-    qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+    qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
@@ -83,13 +83,13 @@ Pending deprecations
   - Will be removed in v0.46
 
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>`
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
   function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
   - Deprecated in v0.45
@@ -101,8 +101,8 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46
@@ -113,14 +113,14 @@ Pending deprecations
 
   .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, shots=1000)
+    @qp.qnode(dev, shots=1000)
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
-    circuit_analytic = qml.set_shots(circuit, None)
+    circuit_analytic = qp.set_shots(circuit, None)
 
   - Deprecated in v0.43
   - Will be removed in a future version
@@ -148,7 +148,7 @@ for details on how to port your legacy code to the new system. The following fun
 
 * In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
   :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
+  that ``qp.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
 
   - Deprecated in v0.39
   - Removed in v0.40
@@ -187,14 +187,14 @@ Completed deprecation cycles
   - Deprecated in v0.44
   - Removed in v0.45
 
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+* The ``custom_decomps`` keyword argument to ``qp.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qp.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
   - Deprecated in v0.44
   - Removed in v0.45
 
-* ``argnum`` has been renamed ``argnums`` in ``qml.grad``, ``qml.jacobian``, ``qml.jvp``, and ``qml.vjp``
+* ``argnum`` has been renamed ``argnums`` in ``qp.grad``, ``qp.jacobian``, ``qp.jvp``, and ``qp.vjp``
   to better match Catalyst and JAX.
 
   - Deprecated in v0.44
@@ -224,7 +224,7 @@ Completed deprecation cycles
 
   .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from functools import partial
 
     @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)

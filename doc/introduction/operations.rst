@@ -13,7 +13,7 @@ These operators can be used in quantum functions, like shown in the following ex
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)

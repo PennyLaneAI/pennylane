@@ -55,37 +55,37 @@ Transforms can be applied on ``QNodes`` using the decorator syntax:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.transforms.split_non_commuting(grouping_strategy="wires")
-    @qml.qnode(dev)
+    @qp.transforms.split_non_commuting(grouping_strategy="wires")
+    @qp.qnode(dev)
     def circuit(params):
-        qml.RX(params[0], wires=0)
-        qml.RZ(params[1], wires=1)
+        qp.RX(params[0], wires=0)
+        qp.RZ(params[1], wires=1)
         return [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.Y(1)),
-            qml.expval(qml.Z(0) @ qml.Z(1)),
-            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.Y(1)),
+            qp.expval(qp.Z(0) @ qp.Z(1)),
+            qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
         ]
 
 They can additionally be stacked, allowing for the application of multiple compilation passes on a ``QNode``:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses(recursive=True)
-    @qml.qnode(device=dev)
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses(recursive=True)
+    @qp.qnode(device=dev)
     def circuit(x, y):
-        qml.X(wires=0)
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=0)
-        qml.X(wires=0)
-        qml.RX(x, wires=0)
-        qml.RX(y, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.X(wires=0)
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=0)
+        qp.X(wires=0)
+        qp.RX(x, wires=0)
+        qp.RX(y, wires=0)
+        return qp.expval(qp.Z(0))
 
 Alternatively, multiple transforms can be chained together into custom circuit optimization pipelines
 via the :class:`~.CompilePipeline` class. The defined compilation program can then be applied on a
@@ -97,31 +97,31 @@ the number of gates in the following quantum circuit can be reduced by almost a 
 
 .. code-block:: python
 
-    pipeline = qml.CompilePipeline(
-        qml.transforms.commute_controlled,
-        qml.transforms.cancel_inverses(recursive=True),
-        qml.transforms.merge_rotations,
+    pipeline = qp.CompilePipeline(
+        qp.transforms.commute_controlled,
+        qp.transforms.cancel_inverses(recursive=True),
+        qp.transforms.merge_rotations,
     )
 
     @pipeline
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def circuit(x, y, z):
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=1)
-        qml.Hadamard(wires=2)
-        qml.RZ(z, wires=2)
-        qml.CNOT(wires=[2, 1])
-        qml.RX(z, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RZ(-z, wires=2)
-        qml.RX(y, wires=2)
-        qml.Y(wires=2)
-        qml.CZ(wires=[1, 2])
-        return qml.expval(qml.Z(wires=0))
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=1)
+        qp.Hadamard(wires=2)
+        qp.RZ(z, wires=2)
+        qp.CNOT(wires=[2, 1])
+        qp.RX(z, wires=0)
+        qp.CNOT(wires=[1, 0])
+        qp.RX(x, wires=0)
+        qp.CNOT(wires=[1, 0])
+        qp.RZ(-z, wires=2)
+        qp.RX(y, wires=2)
+        qp.Y(wires=2)
+        qp.CZ(wires=[1, 2])
+        return qp.expval(qp.Z(wires=0))
 
->>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
+>>> print(qp.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
@@ -160,20 +160,20 @@ a pre-defined set of gates:
     
     from pennylane.transforms import decompose
 
-    dev = qml.device('default.qubit')
-    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ, qml.GlobalPhase}
+    dev = qp.device('default.qubit')
+    allowed_gates = {qp.Toffoli, qp.RX, qp.RZ, qp.GlobalPhase}
 
     @decompose(gate_set=allowed_gates)
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.Hadamard(wires=[0])
-        qml.Toffoli(wires=[0,1,2])
-        return qml.expval(qml.Z(0))
+        qp.Hadamard(wires=[0])
+        qp.Toffoli(wires=[0,1,2])
+        return qp.expval(qp.Z(0))
     
 With the Hadamard gate not in our gate set, it will be decomposed into allowed rotation 
 gate operators.
 
->>> print(qml.draw(circuit)())
+>>> print(qp.draw(circuit)())
 0: ──RZ(1.57)─╭GlobalPhase(-0.79)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-0.79)─╭●─┤  <Z>
 1: ───────────├GlobalPhase(-0.79)─────────────────────├GlobalPhase(-0.79)─├●─┤     
 2: ───────────╰GlobalPhase(-0.79)─────────────────────╰GlobalPhase(-0.79)─╰X─┤     
@@ -186,15 +186,15 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    qml.decomposition.disable_graph()
+    qp.decomposition.disable_graph()
 
     @decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.Toffoli(wires=[0,1,2])
-        return qml.expval(qml.Z(0)) 
+        qp.Toffoli(wires=[0,1,2])
+        return qp.expval(qp.Z(0))
 
->>> print(qml.draw(circuit)())
+>>> print(qp.draw(circuit)())
 0: ───────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
 1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
 2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
@@ -213,15 +213,15 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
     phase = 1 
     target_wires = [0]
-    unitary = qml.RX(phase, wires=0).matrix()
+    unitary = qp.RX(phase, wires=0).matrix()
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
 
-    @qml.qnode(qml.device('default.qubit'))
+    @qp.qnode(qp.device('default.qubit'))
     def circuit():
         # Start in the |+> eigenstate of the unitary
-        qml.Hadamard(wires=target_wires)
-        qml.QuantumPhaseEstimation(
+        qp.Hadamard(wires=target_wires)
+        qp.QuantumPhaseEstimation(
             unitary,
             target_wires=target_wires,
             estimation_wires=estimation_wires,
@@ -229,13 +229,13 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
 From here, we can iterate through the stages of decomposition:
 
->>> print(qml.draw(decompose(circuit, max_expansion=0))())
+>>> print(qp.draw(decompose(circuit, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
 2: ────├QuantumPhaseEstimation─┤  
 3: ────╰QuantumPhaseEstimation─┤  
 
->>> print(qml.draw(decompose(circuit, max_expansion=1))())
+>>> print(qp.draw(decompose(circuit, max_expansion=1))())
 0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
 1: ──H─╰●──────│───────│───────╭QFT†─┤  
 2: ──H─────────╰●──────│───────├QFT†─┤  
@@ -244,7 +244,7 @@ M0 =
 [[0.87758256+0.j         0.        -0.47942554j]
  [0.        -0.47942554j 0.87758256+0.j        ]]
 
->>> print(qml.draw(decompose(circuit, max_expansion=2))())
+>>> print(qp.draw(decompose(circuit, max_expansion=2))())
 0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
 1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
 2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
@@ -278,14 +278,14 @@ For example, suppose we would like to implement the following QNode:
 .. code-block:: python
 
     def circuit(weights):
-        qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
-        return qml.expval(qml.Z(0))
+        qp.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+        return qp.expval(qp.Z(0))
 
-    original_dev = qml.device("default.qubit", wires=3)
-    original_qnode = qml.QNode(circuit, original_dev)
+    original_dev = qp.device("default.qubit", wires=3)
+    original_qnode = qp.QNode(circuit, original_dev)
 
 >>> weights = np.array([[0.4, 0.5, 0.6]])
->>> print(qml.draw(original_qnode, level="device")(weights))
+>>> print(qp.draw(original_qnode, level="device")(weights))
 0: ──RX(0.40)─╭●────╭X─┤  <Z>
 1: ──RX(0.50)─╰X─╭●─│──┤     
 2: ──RX(0.60)────╰X─╰●─┤     
@@ -296,16 +296,16 @@ to a device:
 
 .. code-block:: python3
 
-    @qml.decomposition.register_resources({
-        qml.H: 2,
-        qml.CZ: 1
+    @qp.decomposition.register_resources({
+        qp.H: 2,
+        qp.CZ: 1
     })
     def _custom_cnot_decomposition(wires, **_):
-        qml.Hadamard(wires=wires[1])
-        qml.CZ(wires=[wires[0], wires[1]])
-        qml.Hadamard(wires=wires[1])
+        qp.Hadamard(wires=wires[1])
+        qp.CZ(wires=[wires[0], wires[1]])
+        qp.Hadamard(wires=wires[1])
 
-    qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
+    qp.decomposition.add_decomps(qp.CNOT, _custom_cnot_decomposition)
 
     qml.decomposition.enable_graph()
 

@@ -40,7 +40,7 @@ For example:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)
@@ -418,7 +418,7 @@ and then used multiple times on the ``forest.qpu`` device provided by PennyLane-
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device('forest.qpu', wires=2)
 

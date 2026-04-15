@@ -51,7 +51,7 @@ geometry of the molecule and the basis set parameters are all differentiable.
 
 .. code-block:: python3
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import numpy as np
 
     symbols = ["H", "H"]
@@ -177,7 +177,7 @@ in ``molecular_hamiltonian``:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import numpy as np
 
     symbols = ["H", "H"]

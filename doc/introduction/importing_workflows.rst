@@ -60,7 +60,7 @@ using:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     pl_qfunc_from_qk = qml.from_qiskit(qk_circuit)
 
@@ -126,7 +126,7 @@ We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     pl_qfunc_from_oq = qml.from_qasm(oq_circuit)
 
@@ -164,7 +164,7 @@ This ``Program`` can be converted into a PennyLane quantum function using the
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     pl_qfunc_from_pq = qml.from_pyquil(pq_program)
 
@@ -217,7 +217,7 @@ a PennyLane :class:`Operator <pennylane.operation.Operator>`:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     pl_op = qml.from_qiskit_op(qk_op)
 

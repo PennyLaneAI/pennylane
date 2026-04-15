@@ -11,7 +11,7 @@ PyTorch interface
 
     .. code::
 
-        import pennylane as qml
+        import pennylane as qp
         import torch
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
@@ -152,7 +152,7 @@ result in an expectation value of 0.5 we can do the following:
 .. code-block:: python
 
     import torch
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device('default.qubit', wires=2)
 

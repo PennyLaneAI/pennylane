@@ -16,7 +16,7 @@ correspond:
 
 .. code-block:: python3
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import qaoa
     from networkx import Graph
 

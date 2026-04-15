@@ -25,7 +25,7 @@ Tensorflow is imported as follows:
 
 .. code::
 
-    import pennylane as qml
+    import pennylane as qp
     import tensorflow as tf
 
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
