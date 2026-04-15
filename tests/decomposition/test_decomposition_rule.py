@@ -303,7 +303,7 @@ class TestDecompositionRule:
 
         qml.add_decomps(AnotherOp, custom_decomp)
 
-        with pytest.raises(ValueError, match="same name: custom_decomp"):
+        with pytest.raises(ValueError, match="name: custom_decomp already exists"):
             qml.add_decomps(AnotherOp, some_decomp)
 
         _decompositions_private.pop("AnotherOp")  # cleanup
