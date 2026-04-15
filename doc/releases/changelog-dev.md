@@ -180,6 +180,11 @@ The following classes have been ported over:
   -2 representing the second-to-last, and so on.
   [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
 
+* Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
+  work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
+  `CNOT`.
+  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
+
 * Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
