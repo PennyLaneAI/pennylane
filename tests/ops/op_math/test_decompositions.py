@@ -14,6 +14,7 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+
 # pylint: disable=unused-variable,unused-argument
 
 from functools import reduce
@@ -61,7 +62,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
             qml.math.unwrap(gate.parameters),
             expected_params[i],
             atol=1e-7,
-        ), "Incorrect gate parameters"
+        ), f"Incorrect gate parameters\n{qml.math.unwrap(gate.parameters)}\n{expected_params[i]}"
 
     obtained_mat = reduce(
         qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]

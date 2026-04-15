@@ -109,7 +109,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year} | Xanadu | All rights reserved"
 author = "Xanadu Inc."
 
 add_module_names = False
@@ -383,14 +383,15 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
             name = literal.astext()
             url = f"code/api/pennylane.estimator.{module_name}.{name}"
             refuri = app.builder.get_relative_uri(fromdocname, url)
-            refnode = nodes.reference('', refuri=refuri)
+            refnode = nodes.reference("", refuri=refuri)
             refnode += nodes.literal(text=name)
             literal.parent.replace(literal, refnode)
             logger.info(
-                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}")
+                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}"
+            )
 
 
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect('source-read', add_noindex_to_estimator_stubs)
+    app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)

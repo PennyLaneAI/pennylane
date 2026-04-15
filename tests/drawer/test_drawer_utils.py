@@ -95,6 +95,21 @@ class TestDefaultBitMap:
         bit_map = default_bit_map(queue)
         assert bit_map == {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
+    def test_subroutine(self):
+        """Test that default_bit_map can handle subroutines that return measurement values."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            return [qml.measure(w) for w in wires]
+
+        op = f.operator((0, 1, 2))
+        cond1 = qml.ops.Conditional(op.output[1], qml.S(0))
+        mp = qml.expval(op.output[2])
+        queue = [op, cond1, mp]
+
+        bit_map = default_bit_map(queue)
+        assert bit_map == {op.output[1].measurements[0]: 0, op.output[2].measurements[0]: 1}
+
 
 class TestConvertWireOrder:
     """Tests the ``convert_wire_order`` utility function."""
@@ -427,3 +442,26 @@ class TestCwireConnections:
         assert clayers == {0: [[2 * i, 2 * i + 1] for i in range(rep)]}
         assert wires == {0: [[0, 2]] * rep}
         assert new_bit_map == {_m.measurements[0]: 0 for _m in m}
+
+    def test_subroutine_with_output(self):
+        """Test that cwire_connections can handle a subroutine with MCM outputs."""
+
+        @qml.templates.Subroutine
+        def f(wires):
+            return [2] + [qml.measure(w) for w in wires]
+
+        f_op = f.operator((0, 1))
+        conds = [
+            qml.ops.Conditional(f_op.output[1], qml.S(0)),
+            qml.ops.Conditional(f_op.output[2], qml.T(0)),
+            qml.ops.Conditional(f_op.output[1], qml.SX(2)),
+        ]
+
+        layers = [[f_op], [conds[0]], [conds[1]], [conds[2]]]
+        bit_map = {f_op.output[1].measurements[0]: 0, f_op.output[2].measurements[0]: 1}
+
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+
+        assert bit_map == new_bit_map
+        assert clayers == {0: [[0, 1, 3]], 1: [[0, 2]]}
+        assert wires == {0: [[1, 0, 2]], 1: [[1, 0]]}

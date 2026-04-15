@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/variational_kak.py functionality"""
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods, protected-access, no-self-use, import-outside-toplevel

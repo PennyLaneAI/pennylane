@@ -14,6 +14,7 @@
 """
 A transform to obtain the commutation DAG of a quantum circuit.
 """
+
 import heapq
 from collections import OrderedDict
 from functools import partial

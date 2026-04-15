@@ -14,6 +14,7 @@
 """
 Unit tests for the ``observable`` function for openfermion operators.
 """
+
 # pylint: disable=too-many-arguments
 import sys
 

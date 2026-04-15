@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
+
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -87,7 +88,7 @@ class Shots:
 
     >>> shots = Shots(100)
     >>> shots.total_shots, shots.shot_vector
-    (100, (ShotCopies(100 shots),))
+    (100, (ShotCopies(100 shots x 1),))
 
     Example constructing a Shots instance with another instance:
 
@@ -282,7 +283,7 @@ class Shots:
         Example:
             >>> shots = Shots((1, 1, 2, 3))
             >>> list(shots.bins())
-            [(0,1), (1,2), (2,4), (4,7)]
+            [(0, 1), (1, 2), (2, 4), (4, 7)]
         """
         lower_bound = 0
         for sc in self.shot_vector:

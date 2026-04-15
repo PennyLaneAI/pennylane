@@ -14,6 +14,7 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+
 import copy
 from collections import defaultdict
 

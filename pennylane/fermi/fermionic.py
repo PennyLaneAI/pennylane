@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The fermionic representation classes and functions."""
+
 import re
 from copy import copy
 
@@ -40,8 +41,13 @@ class FermiWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator):
-        self.sorted_dic = dict(sorted(operator.items()))
+    __slots__ = ("_hashval", "sorted_dic")
+
+    def __init__(self, operator, _skip_sorting: bool = False):
+        if _skip_sorting:
+            self.sorted_dic = dict(operator)
+        else:
+            self.sorted_dic = dict(sorted(operator.items()))
 
         indices = [i[0] for i in self.sorted_dic.keys()]
 
@@ -50,6 +56,8 @@ class FermiWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
+
+        self._hashval = None
 
         super().__init__(operator)
 
@@ -95,7 +103,9 @@ class FermiWord(dict):
 
     def __copy__(self):
         r"""Copy the FermiWord instance."""
-        return FermiWord(dict(self.items()))
+        res = FermiWord(self.sorted_dic, _skip_sorting=True)
+        res._hashval = self._hashval
+        return res
 
     def __deepcopy__(self, memo):
         r"""Deep copy the FermiWord instance."""
@@ -105,7 +115,12 @@ class FermiWord(dict):
 
     def __hash__(self):
         r"""Hash value of a FermiWord."""
-        return hash(frozenset(self.items()))
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
+
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+
+        return self._hashval
 
     def to_string(self):
         r"""Return a compact string representation of a FermiWord. Each operator in the word is
@@ -217,23 +232,15 @@ class FermiWord(dict):
 
         if isinstance(other, FermiWord):
             if len(self) == 0:
-                return copy(other)
+                return other
 
             if len(other) == 0:
-                return copy(self)
+                return self
 
-            order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
-            other_wires = [i[1] for i in other.sorted_dic.keys()]
-
-            dict_other = dict(
-                zip(
-                    [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
-                    other.values(),
-                )
+            dict_self = dict(self)
+            dict_self.update(
+                ((order + len(self), wire), value) for (order, wire), value in other.items()
             )
-            dict_self = dict(zip(self.keys(), self.values()))
-
-            dict_self.update(dict_other)
 
             return FermiWord(dict_self)
 
@@ -420,8 +427,8 @@ class FermiWord(dict):
 
 
 class FermiSentence(dict):
-    r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
-    as FermiWord instances and the values correspond to coefficients.
+    r"""Dictionary-based representation of a linear combination of ``FermiWord`` instances.
+    Each key is a unique ``FermiWord`` and its corresponding value is its coefficient in the sentence.
 
     >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
@@ -601,13 +608,35 @@ class FermiSentence(dict):
 
         return operator
 
-    def simplify(self, tol=1e-8):
-        r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
-        tolerance."""
+    def prune(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+        >>> s = qml.FermiSentence({w1 : 0, w2: 3.1})
+        >>> s
+        FermiSentence({FermiWord({(0, 0): '+', (1, 1): '-'}): 0, FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+        >>> s.prune()
+        >>> s
+        FermiSentence({FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+
+        """
         items = list(self.items())
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        This method mutates the ``FermiSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.

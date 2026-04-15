@@ -14,6 +14,7 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+
 import inspect
 from itertools import combinations
 
@@ -61,15 +62,6 @@ unmodified_templates_cases = [
     (qml.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qml.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qml.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
-    (qml.BasisEmbedding, (jnp.array([1, 0]), [2, 3]), {}),
-    pytest.param(
-        qml.BasisEmbedding,
-        (),
-        {"features": jnp.array([1, 0]), "wires": [2, 3]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata [sc-104808]"),
-    ),
-    (qml.BasisEmbedding, (6, [0, 5, 2]), {}),
-    (qml.BasisEmbedding, (jnp.array([1, 0, 1]),), {"wires": [0, 2, 3]}),
     (qml.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.1]), [0, 10]), {"n_repeats": 3, "pattern": None}),
@@ -297,6 +289,7 @@ def test_unmodified_templates(template, args, kwargs):
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
 tested_modified_templates = [
+    qml.BasisEmbedding,
     qml.TrotterProduct,
     qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
@@ -341,6 +334,17 @@ tested_modified_templates = [
 # pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
+
+    def test_basis_embedding_is_basis_state(self):
+        """Test that basis embedding is just BasisState."""
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+
+        jaxpr = jax.make_jaxpr(qml.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
+        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
     @pytest.mark.parametrize(
         "template, kwargs",

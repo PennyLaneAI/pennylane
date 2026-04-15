@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """For loop."""
+
 import functools
 import logging
 import warnings
@@ -156,7 +157,8 @@ def for_loop(
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         The following discussion applies to the experimental capture infrastructure, which can be
-        turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
+        turned on with ``qml.qjit(capture=True)`` when using Catalyst.
+        See the ``capture`` module for more information.
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
@@ -277,7 +279,36 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim = QmlPrimitive("for_loop")
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(for_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
+
+    def setup_env(tracers, params):
+        # slice out start, stop, step
+        tracers = tracers[3:]
+        # tracers now (*consts, *abstract_shapes, *args)
+        tracer_consts = tracers[slice(*params["consts_slice"])]
+        abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
+        tracer_abstract_shapes = tracers[abstract_shapes_slice]
+        args_slice = slice(*params["args_slice"])
+        tracer_args = tracers[args_slice]
+
+        # invars now (*abstract_shapes, i, *args)
+        var_consts = params["jaxpr_body_fn"].constvars
+        jaxpr_invars = params["jaxpr_body_fn"].invars
+
+        num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+        invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
+        # skip index
+        invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
+
+        env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
+        env.update(dict(zip(invars_args, tracer_args, strict=True)))
+        env.update(dict(zip(var_consts, tracer_consts, strict=True)))
+        return env
+
+    register_custom_staging_rule(
+        for_loop_prim,
+        get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
+        setup_env=setup_env,
+    )
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
@@ -457,10 +488,13 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
             return ops_loader.for_loop(
-                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+                self.start, self.stop, self.step, allow_array_resizing=allow_array_resizing
             )(self.body_fn)(*init_state)
 
         start_equals_stop = (

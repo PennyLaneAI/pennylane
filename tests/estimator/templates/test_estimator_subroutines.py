@@ -14,6 +14,7 @@
 """
 Tests for quantum algorithmic subroutines resource operators.
 """
+
 import math
 
 import numpy as np
@@ -814,17 +815,14 @@ class TestResourceOutMultiplier:
         a_register_size = 5
         b_register_size = 3
 
-        toff = resource_rep(qre.Toffoli)
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
-        num_elbows = 12
-        num_toff = 1
+        num_elbows = 25
 
         expected = [
             GateCount(l_elbow, num_elbows),
             GateCount(r_elbow, num_elbows),
-            GateCount(toff, num_toff),
         ]
         assert qre.OutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
 

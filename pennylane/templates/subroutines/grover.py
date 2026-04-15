@@ -14,6 +14,7 @@
 """
 Contains the Grover Operation template.
 """
+
 import numpy as np
 
 from pennylane import capture, math

@@ -14,6 +14,7 @@
 """
 Unit tests for Hartree-Fock functions.
 """
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 

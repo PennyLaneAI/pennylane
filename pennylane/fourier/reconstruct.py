@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
+
 import warnings
 from inspect import signature
 

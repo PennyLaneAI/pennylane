@@ -92,6 +92,8 @@ def get_dummy_arg(arg):  # pragma: no cover
     We use numpy instead of jax so the creation of the array will not show up in the jaxpr.
 
     """
+    if not hasattr(arg, "shape"):  # like an int
+        return arg
     if all(isinstance(s, int) for s in arg.shape):
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes

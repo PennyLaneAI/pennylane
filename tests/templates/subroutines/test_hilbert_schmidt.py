@@ -14,6 +14,7 @@
 """
 Unit tests for the Hilbert-Schmidt templates.
 """
+
 import copy
 
 import numpy as np
