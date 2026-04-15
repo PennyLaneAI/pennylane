@@ -487,8 +487,8 @@ The following classes have been ported over:
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
-* The inspectibility of general symbolic decomposition rules are improved. The string representation of a decomposition rule
-  is by default its source code. Now for symbolic decomposition rules that wraps a base decomposition rule, the source code
+* The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
+  is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 

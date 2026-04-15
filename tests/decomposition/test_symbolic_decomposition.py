@@ -154,7 +154,7 @@ class TestAdjointDecompositionRules:
                     _resource_fn,
                     work_wires=base_decomposition._work_wire_spec,
                     exact=base_decomposition.exact_resources,
-                    name=f"Adjoint({base_decomposition.name})",
+                    name=f"adjoint({base_decomposition.name})",
                 )
                 def _impl(*params, wires, base):
                     # pylint: disable=protected-access
@@ -177,7 +177,7 @@ class TestAdjointDecompositionRules:
                     _resource_fn,
                     work_wires=base_decomposition._work_wire_spec,
                     exact=base_decomposition.exact_resources,
-                    name=f"Adjoint({base_decomposition.name})",
+                    name=f"adjoint({base_decomposition.name})",
                 )
                 def _impl_using_reconstructor(*params, wires, base_params, **_):
                     # pylint: disable=protected-access
@@ -194,7 +194,7 @@ class TestAdjointDecompositionRules:
                     qml.T(wires[2])
                 """).strip()
 
-        assert rule.name == "Adjoint(_custom_decomp)"
+        assert rule.name == "adjoint(_custom_decomp)"
 
         kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
@@ -560,7 +560,7 @@ class TestControlledDecomposition:
                 _resource_fn,
                 work_wires=base_decomposition._work_wire_spec,
                 exact=base_decomposition.exact_resources,
-                name=f"Controlled({base_decomposition.name})",
+                name=f"controlled({base_decomposition.name})",
             )
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
                 zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
@@ -596,7 +596,7 @@ class TestControlledDecomposition:
                 qml.CZ(wires=wires[:2])
             """).strip()
 
-        assert rule.name == "Controlled(custom_decomp)"
+        assert rule.name == "controlled(custom_decomp)"
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -875,7 +875,7 @@ class TestControlledDecomposition:
             qml.CNOT(wires[0:2])
 
         rule = flip_zero_control(_custom_controlled_rule)
-        assert rule.name == "FlipZeroControl(_custom_controlled_rule)"
+        assert rule.name == "flip_zero_ctrl_values(_custom_controlled_rule)"
 
         assert str(rule) == dedent("""
             @register_condition(_condition_fn)
@@ -883,7 +883,7 @@ class TestControlledDecomposition:
                 _resource_fn,
                 work_wires=inner_decomp._work_wire_spec,
                 exact=inner_decomp.exact_resources,
-                name=f"FlipZeroControl({inner_decomp.name})",
+                name=f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
                 zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]

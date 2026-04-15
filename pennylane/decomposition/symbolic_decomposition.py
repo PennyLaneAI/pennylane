@@ -52,7 +52,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
             _resource_fn,
             work_wires=base_decomposition._work_wire_spec,
             exact=base_decomposition.exact_resources,
-            name=f"Adjoint({base_decomposition.name})",
+            name=f"adjoint({base_decomposition.name})",
         )
         def _impl(*params, wires, base):
             # pylint: disable=protected-access
@@ -331,7 +331,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         _resource_fn,
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
-        name=f"Controlled({base_decomposition.name})",
+        name=f"controlled({base_decomposition.name})",
     )
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
@@ -381,7 +381,7 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         _resource_fn,
         work_wires=inner_decomp._work_wire_spec,
         exact=inner_decomp.exact_resources,
-        name=f"FlipZeroControl({inner_decomp.name})",
+        name=f"flip_zero_ctrl_values({inner_decomp.name})",
     )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
