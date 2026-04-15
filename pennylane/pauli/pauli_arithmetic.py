@@ -185,12 +185,12 @@ class PauliWord(dict):
         then no operator acts on it, so return the Identity."""
         return I
 
-    def __init__(self, mapping):
+    def __init__(self, mapping, _skip_filter=False):
         """Strip identities from PauliWord on init!"""
-        for wire, op in mapping.copy().items():
-            if op == I:
-                del mapping[wire]
-        super().__init__(mapping)
+        if _skip_filter:
+            super().__init__(mapping)
+        else:
+            super().__init__(filter(lambda item: item[1] != I, mapping.items()))
         self._hashval = None
 
     @property
@@ -207,7 +207,9 @@ class PauliWord(dict):
 
     def __copy__(self):
         """Copy the PauliWord instance."""
-        return PauliWord(dict(self.items()))
+        res = PauliWord(self, _skip_filter=True)
+        res._hashval = self._hashval
+        return res
 
     def __deepcopy__(self, memo):
         res = self.__copy__()
@@ -234,7 +236,7 @@ class PauliWord(dict):
         base, iterator, swapped = (
             (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
-        result = copy(dict(base))
+        result = dict(base)
         coeff = 1
 
         for wire, term in iterator.items():
@@ -1031,14 +1033,37 @@ class PauliSentence(dict):
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
-    def simplify(self, tol=1e-8):
-        """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
+    def prune(self, tol=1e-8):
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> ps = PauliSentence({
+        ...     PauliWord({0:'X', 1:'Y'}): 0,
+        ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+        ... })
+        >>> ps
+        0 * X(0) @ Y(1)
+        + (-0-0.45j) * Z(2) @ Y(0)
+        >>> ps.prune()
+        >>> ps
+        (-0-0.45j) * Z(2) @ Y(0)
+
+        """
         items = list(self.items())
         for pw, coeff in items:
             if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
-        if len(self) == 0:
-            self = PauliSentence({})  # pylint: disable=self-cls-assignment
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any ``PauliWord`` with coefficients less than the threshold tolerance.
+
+        This method mutates the ``PauliSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""

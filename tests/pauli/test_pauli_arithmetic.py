@@ -884,6 +884,22 @@ class TestPauliSentence:
         un_simplified_ps.simplify(tol=1e-1)
         assert un_simplified_ps == expected_simplified_ps2
 
+    def test_prune(self):
+        """Test that prune removes terms in the PauliSentence with
+        coefficient less than the threshold"""
+        un_simplified_ps = PauliSentence({pw1: 0.001, pw2: 0.05, pw3: 1})
+
+        expected_simplified_ps0 = PauliSentence({pw1: 0.001, pw2: 0.05, pw3: 1})
+        expected_simplified_ps1 = PauliSentence({pw2: 0.05, pw3: 1})
+        expected_simplified_ps2 = PauliSentence({pw3: 1})
+
+        un_simplified_ps.prune()
+        assert un_simplified_ps == expected_simplified_ps0  # default tol = 1e-8
+        un_simplified_ps.prune(tol=1e-2)
+        assert un_simplified_ps == expected_simplified_ps1
+        un_simplified_ps.prune(tol=1e-1)
+        assert un_simplified_ps == expected_simplified_ps2
+
     tup_ps_operation = (
         (PauliSentence({PauliWord({0: X}): 1}), qml.s_prod(1, qml.PauliX(wires=0))),
         (
