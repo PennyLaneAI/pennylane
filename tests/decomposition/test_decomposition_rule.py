@@ -536,3 +536,10 @@ class TestDecompCollection:
         assert len(collection) == 3
         assert all(isinstance(rule, DecompositionRule) for rule in collection)
         assert [r.name for r in collection] == ["custom_decomp", "custom2", "custom_decomp3"]
+
+        assert collection[0] in collection
+        assert "custom_decomp" in collection
+        assert "hello" not in collection
+
+        with pytest.raises(KeyError, match="Cannot find a decomposition with the given name: abc"):
+            collection["abc"]  # pylint: disable=pointless-statement

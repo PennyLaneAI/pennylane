@@ -546,10 +546,8 @@ class DecompCollection:
         """Add a sequence of decomposition rules to the collection."""
         if dup_name := next((rule.name for rule in rules if rule.name in self), None):
             raise ValueError(f"A decomposition of the name: {dup_name} already exists!")
-        decomps = {rule.name: rule for rule in rules}
-        if len(decomps) < len(rules):
-            raise ValueError("Found multiple decompositions with the same name!")
-        self._decomps |= decomps
+        decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
+        self._decomps |= decomps._decomps  # pylint: disable=protected-access
 
     def __add__(self, other: DecompCollection | Sequence[DecompositionRule]) -> DecompCollection:
         return DecompCollection(list(self) + list(other))
