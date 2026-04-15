@@ -238,7 +238,7 @@ def _multi_rz_decomposition_resources(num_wires):
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
-    if compiler.active() or qml.capture.enabled() or math.get_interface(theta) == "jax":
+    if compiler.active() or qml.capture.enabled():
         wires = math.array(wires, like="jax")
 
     @qml.for_loop(len(wires) - 1, 0, -1)
