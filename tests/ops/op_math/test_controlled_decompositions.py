@@ -1132,3 +1132,56 @@ class TestMCXDecomposition:
             _ = _decompose_mcx_with_two_workers_old(
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
+
+    @pytest.mark.jax
+    @pytest.mark.external
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires",
+        [(n_ctrl, n_work) for n_ctrl in range(1, 10) for n_work in range(0, n_ctrl + 1)],
+    )
+    def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
+        """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
+        jax = pytest.importorskip("jax")
+        catalyst = pytest.importorskip("catalyst")
+        from catalyst.device.decomposition import catalyst_decompose
+
+        jnp = jax.numpy
+        qml.decomposition.enable_graph()
+
+        gate_set = {
+            "X",
+            "CNOT",
+            "Toffoli",
+            "TemporaryAND",
+            "Adjoint(TemporaryAND)",
+            "Cond",
+            "HybridAdjoint",
+            "ForLoop",
+            "S",
+            "T",
+            "Adjoint(S)",
+            "Adjoint(T)",
+            "RZ",
+            "Hadamard",
+            "GlobalPhase",
+        }
+
+        wires = jnp.arange(num_control_wires + 1)
+        work_wires = jnp.arange(num_control_wires + 1, num_control_wires + 1 + num_work_wires)
+        cvals = (0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0)[:num_control_wires]
+
+        @qml.qjit(capture=False, static_argnums=2)
+        @catalyst_decompose(capabilities=None, target_gates=gate_set)
+        @qml.qnode(qml.device("lightning.qubit"))
+        def circuit(wires, work_wires, cvals):
+            qml.MultiControlledX(
+                wires,
+                work_wires=work_wires,
+                control_values=cvals,
+                work_wire_type=work_wire_type,
+            )
+            return qml.probs(wires=wires)
+
+        result = circuit(wires, work_wires, cvals)
+        assert result is not None
