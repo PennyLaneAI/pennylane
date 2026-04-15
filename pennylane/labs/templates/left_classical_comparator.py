@@ -27,57 +27,59 @@ from pennylane import compiler, math, capture
 
 
 class LeftClassicalComparator(Operation):
-    r"""This operator performs an inequality test between a classical value :math:`L` and quantum registers :math:`x`,
-    storing the result in a target qubit. Depending on the value of the
-    ``op`` argument, the operator evaluates one of four possible relations:
+    r"""This operator performs an inequality test between a quantum register :math:`x` and a
+    classical integer :math:`L`, storing the result in a target qubit.
+
+    Depending on the value of the ``op`` argument, the operator evaluates one of four
+    possible relations:
 
     .. math::
 
-        \text{LeftQuantumComparator}(op) |x\rangle |y\rangle |0\rangle =
+        \text{LeftClassicalComparator}(op) |x\rangle |0\rangle =
         \begin{cases}
-        |x\rangle |y\rangle |x < y\rangle & \text{if } op = 0 \\
-        |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = 1 \\
-        |x\rangle |y\rangle |x \geq y\rangle & \text{if } op = 2 \\
-        |x\rangle |y\rangle |x > y\rangle & \text{if } op = 3
+        |x\rangle |x < L\rangle & \text{if } op = \text{'<' } \\
+        |x\rangle |x \leq L\rangle & \text{if } op = \text{'<='} \\
+        |x\rangle |x \geq L\rangle & \text{if } op = \text{'>='} \\
+        |x\rangle |x > L\rangle & \text{if } op = \text{'>' }
         \end{cases}
 
-    The decomposition is defined as the left block in Figure 6 in Appendix E
-    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires
-    and in order to clean them, we must apply the adjoint of this operator after using the target qubit.
+    The decomposition is based on the left block in Figure 6 in Appendix E
+    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical
+    constant. Note that the decomposition uses auxiliary wires and in order to clean them,
+    one must apply the adjoint of this operator after using the target qubit.
 
     Args:
-            x_wires (WiresLike): The wires that store the integer :math:`x`.
-            y_wires (WiresLike): The wires that store the integer :math:`y`. The number of ``y_wires`` should be equal to
-                the number of ``x_wires``.
-            target_wire (WiresLike): The wire that stores the value of the inequality test.
-            work_wires (WiresLike): The auxiliary wires to use for the addition.
-                At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
-            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
-
+        x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
+        L (int): The classical integer to compare against.
+        target_wire (WiresLike): The wire that stores the value of the inequality test.
+        work_wires (WiresLike): The auxiliary wires to use for the comparison.
+            At least ``len(x_wires) - 1`` zeroed work wires should be provided.
+            They are not returned in the zero state.
+        op (str): The operator used in the inequality. Possible values are:
+            '<', '<=', '>=' and '>'.
 
     **Example**
 
-
     .. code-block:: python
 
-        import pennylane as qp
-        from pennylane.labs.templates import LeftQuantumComparator
+        import pennylane as qml
+        from pennylane.labs.templates import LeftClassicalComparator
 
-        dev = qp.device("lightning.qubit")
+        dev = qml.device("lightning.qubit", wires=6, shots = 1)
 
-        @qp.qjit
-        @qp.qnode(dev, shots=1)
-        def circuit(a, b):
+        @qml.qnode(dev)
+        def circuit(x_val, L_val):
 
-            op = 2
-            qp.BasisState(a, wires=[0, 3, 6, 9])
-            qp.BasisState(b, wires=[1, 4, 7, 10])
-            LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-            qp.CNOT([11, 12])
-            qp.adjoint(
-                lambda: LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-            )()
-            return qp.sample(wires=[12])
+            qml.BasisState(x_val, wires=[0, 1, 2])
+
+            LeftClassicalComparator(
+                x_wires=[0, 1, 2],
+                L=L_val,
+                target_wire=3,
+                work_wires=[4, 5],
+                op='>='
+            )
+            return qml.sample(wires=3)
 
     .. code-block:: pycon
 
@@ -89,7 +91,7 @@ class LeftClassicalComparator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "op"}
+    resource_keys = {"num_x_wires", "op", "L"}
 
     def __init__(
         self,
@@ -130,6 +132,7 @@ class LeftClassicalComparator(Operation):
     def resource_params(self) -> dict:
         return {
             "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "L": self.hyperparameters["L"],
             "op": self.hyperparameters["op"],
         }
 
@@ -149,7 +152,7 @@ class LeftClassicalComparator(Operation):
     def map_wires(self, wire_map: dict) -> "LeftClassicalComparator":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "y_wires", "target_wire", "work_wires"]
+            for key in ["x_wires", "target_wire", "work_wires"]
         }
 
         return LeftClassicalComparator(**new_dict, L=self.hyperparameters["L"], op=self.hyperparameters["op"])
@@ -169,12 +172,14 @@ class LeftClassicalComparator(Operation):
         r"""Representation of the operator as a product of other operators.
 
         Args:
-            x_wires (WiresLike): The wires that store the integer :math:`x`.
-            y_wires (WiresLike): The wires that store the integer :math:`y`.
+            x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
+            L (int): The classical integer to compare against.
             target_wire (WiresLike): The wire that stores the value of the inequality test.
-            work_wires (WiresLike): The auxiliary wires to use for the addition.
-                At least ``len(y_wires) - 1`` work wires should be provided.
-            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
+            work_wires (WiresLike): The auxiliary wires to use for the comparison.
+                At least ``len(x_wires) - 1`` zeroed work wires should be provided.
+                They are not returned in the zero state.
+            op (str): The operator used in the inequality. Possible values are:
+                '<', '<=', '>=' and '>'.
 
         Returns:
             list[.Operator]: Decomposition of the operator
@@ -191,17 +196,32 @@ class LeftClassicalComparator(Operation):
 
 
 def _get_specific_bit(L, i):
+    # returns the i-th bit of the binary representation of L
     return (L >> i) & 1
 
-def _left_classical_comparator_resources(num_x_wires, op):
+def _left_classical_comparator_resources(num_x_wires, L, op):
+    if op in ["<=", ">"]:
+        L += 1
 
     resources = {
-        Elbow: num_x_wires,
-        CNOT: 2 + 5 * (num_x_wires - 1),
+        Elbow: num_x_wires - 1,
+        CNOT: 0,
+        X: 0,
     }
 
-    if op in [">=", "<="]:
-        resources[X] = 1
+    bit_0 = (L >> 0) & 1
+    if bit_0:
+        resources[X] += 2
+        resources[CNOT] += 1
+
+    for i in range(1, num_x_wires):
+        bit_i = (L >> i) & 1
+        resources[CNOT] += 1
+        if bit_i:
+            resources[X] += 4
+
+    if op in [">", ">="]:
+        resources[X] += 1
 
     return resources
 
