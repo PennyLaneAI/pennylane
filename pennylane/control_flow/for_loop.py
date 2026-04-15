@@ -18,7 +18,7 @@ import logging
 import warnings
 from typing import Literal
 
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
@@ -35,6 +35,25 @@ from ._loop_abstract_axes import (
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+def _reverse_iterator(f, start, step):
+    """Produces a new f with positive steps."""
+
+    def new_f(*args):
+        new_i = start + step * args[0]
+        inputs = args[1:]
+        return f(new_i, *inputs)
+
+    return new_f
+
+
+def _is_reverse_iteration(start, stop, step):
+    # without the int() call, when we have a jnp array with a single int
+    # in it (jnp.array(1)), performing a comparison will produce a tracer
+    if not math.is_abstract(step):
+        return int(step) < 0
+    return not math.is_abstract(start) and not math.is_abstract(stop) and int(stop) < int(start)
 
 
 def for_loop(
@@ -398,9 +417,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        # need in_tree to include index so flat_fn will repack args correctly
         f_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
 
+        # need in_tree to include index so flat_fn will repack args correctly
         flat_args, in_tree = jax.tree_util.tree_flatten(((0, *init_state), dynamic_consts))
 
         # slice out the index so shape_locations indexes from non-index args/ results
@@ -419,6 +438,10 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         else:
             new_body_fn = flat_fn
             dummy_init_state = flat_args
+
+        if _is_reverse_iteration(self.start, self.stop, self.step):
+            # MLIR does not support reverse iteration of for loops
+            new_body_fn = _reverse_iterator(new_body_fn, self.start, self.step)
 
         try:
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
@@ -472,10 +495,17 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
         args_slice = slice(abstract_shapes_slice.stop, None)
 
+        if _is_reverse_iteration(self.start, self.stop, self.step):
+            # mlir does not support reverse iteration of for loops
+            num_iterations = math.ceil((self.stop - self.start) / self.step).astype(int)
+            start, stop, step = 0, num_iterations, 1
+        else:
+            start, stop, step = self.start, self.stop, self.step
+
         results = for_loop_prim.bind(
-            self.start,
-            self.stop,
-            self.step,
+            start,
+            stop,
+            step,
             *jaxpr_body_fn.consts,
             *abstract_shapes,
             *flat_args,
