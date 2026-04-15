@@ -515,6 +515,8 @@ def test_too_many_work_wires_case():
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [
+        (16, 4, 1, 3, 2),
+        (16, 4, 10, 5, 5),
         (7, 3, 2, 2, 2),
         (14, 4, 2, 10, 4),
         (256, 8, 2, 10, 8),
@@ -524,6 +526,8 @@ def test_too_many_work_wires_case():
 def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    result = _calculate_n_select_work_wires(terms=terms, n=n_ctrl, b=n_target, n_work_wires=n_work)
+    result = _calculate_n_select_work_wires(
+        terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work
+    )
 
     assert result == expected
