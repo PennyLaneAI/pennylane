@@ -27,8 +27,8 @@ to generate the electronic Hamiltonian in a single call. For example,
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    molecule = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule)
+    molecule = qp.qchem.Molecule(symbols, geometry)
+    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
 
 where:
 
@@ -50,13 +50,13 @@ space can also be specified for each backend.
 
 .. code-block:: python
 
-    molecule = qml.qchem.Molecule(
+    molecule = qp.qchem.Molecule(
         symbols,
         geometry,
         charge=0,
         mult=1,
         basis_name='sto-3g')
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
+    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(
         molecule,
         mapping='jordan_wigner',
         active_electrons=2,
@@ -83,7 +83,7 @@ file using the :func:`~.read_structure` function:
 
 .. code-block:: python
 
-    symbols, geometry = qml.qchem.read_structure('h2.xyz')
+    symbols, geometry = qp.qchem.read_structure('h2.xyz')
 
 
 VQE simulations
@@ -95,22 +95,22 @@ the expectation value of the *electronic Hamiltonian*, while a classical optimiz
 find its ground state.
 
 PennyLane supports treating Hamiltonians just like any other observable, and the
-expectation value of a Hamiltonian can be calculated using ``qml.expval``:
+expectation value of a Hamiltonian can be calculated using ``qp.expval``:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=4)
+    dev = qp.device('default.qubit', wires=4)
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    molecule = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule)
+    molecule = qp.qchem.Molecule(symbols, geometry)
+    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(params):
-        qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-        qml.DoubleExcitation(params, wires=[0, 1, 2, 3])
-        return qml.expval(hamiltonian)
+        qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+        qp.DoubleExcitation(params, wires=[0, 1, 2, 3])
+        return qp.expval(hamiltonian)
 
     params = np.array(0.20885146442480412, requires_grad=True)
     circuit(params)

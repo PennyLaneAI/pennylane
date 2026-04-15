@@ -1,4 +1,4 @@
-qml.workflow
+qp.workflow
 ==============
 
 .. currentmodule:: pennylane.workflow

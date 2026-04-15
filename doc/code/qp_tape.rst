@@ -1,4 +1,4 @@
-qml.tape
+qp.tape
 ========
 
 .. currentmodule:: pennylane.tape
@@ -29,8 +29,8 @@ A ``QuantumScript`` is purely a representation of a quantum circuit, and can onl
 via initialization. Once it is initialized, the contents should then remain immutable throughout its lifetime.
 
 >>> from pennylane.tape import QuantumScript
->>> ops = [qml.PauliX(0)]
->>> measurements = [qml.expval(qml.PauliZ(0))]
+>>> ops = [qp.PauliX(0)]
+>>> measurements = [qp.expval(qp.PauliZ(0))]
 >>> QuantumScript(ops, measurements, shots=10)
 <QuantumScript: wires=[0], params=0>
 
@@ -41,8 +41,8 @@ situations.
 
 >>> from pennylane.tape import QuantumTape
 >>> with QuantumTape(shots=10) as tape:
-...     qml.PauliX(0)
-...     qml.expval(qml.PauliZ(0))
+...     qp.PauliX(0)
+...     qp.expval(qp.PauliZ(0))
 >>> tape
 <QuantumTape: wires=[0], params=0>
 
@@ -55,7 +55,7 @@ resulting in a larger memory footprint.
 To capture a quantum function, we instead recommend queuing a quantum function into an :class:`~.AnnotatedQueue`,
 and then processing that into a ``QuantumScript``.
 
->>> with qml.queuing.AnnotatedQueue() as q:
+>>> with qp.queuing.AnnotatedQueue() as q:
 ...     qfunc(*args, **kwargs)
 >>> QuantumScript.from_queue(q)
 <QuantumScript: wires=[0], params=0> 
@@ -64,8 +64,8 @@ Since queuing is also sensitive to the "identity" of an operation, not just its 
 order for it to be used multiple times in a ``QuantumTape``.  A ``QuantumScript`` can allow the same operation to be
 used many times in the circuit, potentially reducing its memory footprint.
 
->>> op = qml.T(0)
->>> QuantumScript([op] * 100, [qml.probs(wires=0)])
+>>> op = qp.T(0)
+>>> QuantumScript([op] * 100, [qp.probs(wires=0)])
 
 Since users are familiar with the term ``QuantumTape``, that term should be used in documentation. For performance
 and a reduction in unintended side effects, ``QuantumScript`` is strictly used in PennyLane source code.

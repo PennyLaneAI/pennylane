@@ -1,4 +1,4 @@
-qml.shadows
+qp.shadows
 =============
 
 .. currentmodule:: pennylane.shadows

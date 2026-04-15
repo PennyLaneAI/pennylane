@@ -1,4 +1,4 @@
-qml.logging
+qp.logging
 ================
 
 .. currentmodule:: pennylane.logging

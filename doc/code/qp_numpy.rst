@@ -1,4 +1,4 @@
-qml.numpy
+qp.numpy
 =========
 
 .. currentmodule:: pennylane.numpy

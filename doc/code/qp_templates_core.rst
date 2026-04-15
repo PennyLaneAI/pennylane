@@ -1,4 +1,4 @@
-qml.templates.core
+qp.templates.core
 ==================
 
 .. currentmodule:: pennylane.templates.core

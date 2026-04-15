@@ -1,4 +1,4 @@
-qml.resource
+qp.resource
 =============
 
 .. currentmodule:: pennylane.resource

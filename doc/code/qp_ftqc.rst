@@ -1,4 +1,4 @@
-qml.ftqc
+qp.ftqc
 ========
 
 .. currentmodule:: pennylane.ftqc

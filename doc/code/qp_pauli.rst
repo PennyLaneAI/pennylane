@@ -1,4 +1,4 @@
-qml.pauli
+qp.pauli
 ============
 
 Overview
@@ -131,7 +131,7 @@ strategies. As an example, the :func:`~.group_observables` function partitions
 a list of observables (Pauli operations and tensor products thereof) into
 groupings according to a binary relation (e.g., qubit-wise commuting):
 
->>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+>>> observables = [qp.PauliY(0), qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(1)]
 >>> obs_groupings = group_observables(observables)
 >>> obs_groupings
 [[PauliX(wires=[0]) @ PauliX(wires=[1])],
@@ -143,7 +143,7 @@ Pauli-word grouping method (e.g., *qubit-wise commuting*) and the underlying
 graph-colouring algorithm (e.g., *recursive largest first*) used for creating
 the groups of observables:
 
->>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+>>> obs = [qp.PauliY(0), qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'qwc', 'rlf')
 >>> obs_groupings

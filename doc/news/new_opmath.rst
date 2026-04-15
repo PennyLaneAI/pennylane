@@ -105,11 +105,11 @@ Summary of the update
     | scalar products                            | ``ops.Hamiltonian``  | ``ops.SProd``             |
     | ``1.5 * X(1)``                             |                      |                           |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qp.dot(coeffs,ops)``                    | ``ops.Sum``          | ``ops.Sum``               |
+    | ``qp.dot(coeffs,ops)``                     | ``ops.Sum``          | ``ops.Sum``               |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qp.Hamiltonian(coeffs, ops)``           | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
+    | ``qp.Hamiltonian(coeffs, ops)``            | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qp.ops.LinearCombination(coeffs, ops)`` | n/a                  | ``ops.LinearCombination`` |
+    | ``qp.ops.LinearCombination(coeffs, ops)``  | n/a                  | ``ops.LinearCombination`` |
     +--------------------------------------------+----------------------+---------------------------+
 
 

@@ -1,4 +1,4 @@
-qml.qaoa
+qp.qaoa
 ========
 
 .. currentmodule:: pennylane.qaoa
@@ -43,28 +43,28 @@ which we implement as the following function:
 
 Finally, the full QAOA circuit is built. We begin by initializing the wires in an even superposition over
 computational basis states, and then repeatedly apply QAOA layers with the
-``qml.layer`` method. In this case we repeat the circuit twice:
+``qp.layer`` method. In this case we repeat the circuit twice:
 
 .. code-block:: python3
 
     # Repeatedly applies layers of the QAOA ansatz
     def circuit(params):
         for w in wires:
-            qml.Hadamard(wires=w)
-        qml.layer(qaoa_layer, 2, params[0], params[1])
+            qp.Hadamard(wires=w)
+        qp.layer(qaoa_layer, 2, params[0], params[1])
 
-With the circuit defined, we call the device on which QAOA will be executed and use ``qml.expval()`` to
+With the circuit defined, we call the device on which QAOA will be executed and use ``qp.expval()`` to
 create the QAOA cost function: the expected value of the cost Hamiltonian with respect to the parametrized output
 of the QAOA circuit.
 
 .. code-block:: python3
     
     # Defines the device and the QAOA cost function
-    dev = qml.device('default.qubit', wires=len(wires))
-    @qml.qnode(dev)
+    dev = qp.device('default.qubit', wires=len(wires))
+    @qp.qnode(dev)
     def cost_function(params):
         circuit(params)
-        return qml.expval(cost_h)
+        return qp.expval(cost_h)
 
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299

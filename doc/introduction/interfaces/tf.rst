@@ -43,15 +43,15 @@ QNode is to specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qpdevice('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qpqnode(dev, interface='tf')
     def circuit(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qpRX(phi[0], wires=0)
+        qpRY(phi[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        qpPhaseShift(theta, wires=0)
+        return qpexpval(qpPauliZ(0)), qpexpval(qpHadamard(1))
 
 The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` and
 ``tf.Tensor`` objects as input, and returning ``tf.Tensor`` objects.
@@ -70,18 +70,18 @@ TensorFlow-capable QNodes can also be created using the
 
 .. code-block:: python
 
-    dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('default.mixed', wires=2)
+    dev1 = qpdevice('default.qubit', wires=2)
+    dev2 = qpdevice('default.mixed', wires=2)
 
     def circuit1(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qpRX(phi[0], wires=0)
+        qpRY(phi[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        qpPhaseShift(theta, wires=0)
+        return qpexpval(qpPauliZ(0)), qpexpval(qpHadamard(1))
 
-    qnode1 = qml.QNode(circuit1, dev1)
-    qnode2 = qml.QNode(circuit1, dev2, interface='tf')
+    qnode1 = qpQNode(circuit1, dev1)
+    qnode2 = qpQNode(circuit1, dev2, interface='tf')
 
 ``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a TensorFlow-capable
 QNode:
@@ -103,15 +103,15 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qpdevice('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qpqnode(dev, interface='tf')
     def circuit(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qpRX(phi[0], wires=0)
+        qpRY(phi[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        qpPhaseShift(theta, wires=0)
+        return qpexpval(qpPauliZ(0))
 
     phi = tf.Variable([0.5, 0.1])
     theta = tf.Variable(0.2)
@@ -133,14 +133,14 @@ To include non-differentiable data arguments, simply use ``tf.constant``:
 
 .. code-block:: python
 
-    @qml.qnode(dev, interface='tf')
+    @qpqnode(dev, interface='tf')
     def circuit3(weights, data):
-        qml.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(weights[2], wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qpAmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qpRX(weights[0], wires=0)
+        qpRY(weights[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        qpPhaseShift(weights[2], wires=0)
+        return qpexpval(qpPauliZ(0))
 
     weights = tf.Variable([0.1, 0.2, 0.3])
     rng = np.random.default_rng(seed=111)
@@ -171,15 +171,15 @@ result in an expectation value of 0.5, we can do the following:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qpdevice('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qpqnode(dev, interface='tf')
     def circuit4(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qpRX(phi[0], wires=0)
+        qpRY(phi[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        qpPhaseShift(theta, wires=0)
+        return qpexpval(qpPauliZ(0))
 
     phi = tf.Variable([0.5, 0.1], dtype=tf.float64)
     theta = tf.Variable(0.2, dtype=tf.float64)

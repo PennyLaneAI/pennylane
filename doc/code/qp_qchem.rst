@@ -1,4 +1,4 @@
-qml.qchem
+qp.qchem
 =========
 
 Overview
@@ -70,8 +70,8 @@ We then construct the Hamiltonian.
 
     args = [geometry, alpha, coeff] # initial values of the differentiable parameters
 
-    molecule = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, args=args)
+    molecule = qp.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule, args=args)
 
 >>> print(hamiltonian)
 -0.3596823592263396 * I(0) + 0.1308241430372839 * Z(0) + -0.11496335836158356 * Z(2)+ 0.10316898251630022 * (Z(0) @ Z(2)) + 0.1308241430372839 * Z(1) + 0.15405495855812648 * (Z(0) @ Z(1)) + 0.050130617426473734 * (Y(0) @ X(1) @ X(2) @ Y(3)) + -0.050130617426473734 * (Y(0) @ Y(1) @ X(2) @ X(3)) + -0.050130617426473734 * (X(0) @ X(1) @ Y(2) @ Y(3)) + 0.050130617426473734 * (X(0) @ Y(1) @ Y(2) @ X(3)) + -0.11496335836158356 * Z(3) + 0.15329959994277395 * (Z(0) @ Z(3)) + 0.10316898251630022 * (Z(1) @ Z(3)) + 0.15329959994277395 * (Z(1) @ Z(2)) + 0.16096866639866414 * (Z(2) @ Z(3))
@@ -84,16 +84,16 @@ molecular geometry optimization with PennyLane is provided in this
 
 .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=4)
+    dev = qp.device("default.qubit", wires=4)
     hf_state = np.array([1, 1, 0, 0])
     params = [np.array([0.0], requires_grad=True)] # initial values of the circuit parameters
 
     def generate_circuit(mol):
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(*args):
-            qml.BasisState(hf_state, wires=[0, 1, 2, 3])
-            qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qml.expval(qml.qchem.molecular_hamiltonian(mol, args=args[1:])[0])
+            qp.BasisState(hf_state, wires=[0, 1, 2, 3])
+            qp.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
+            return qp.expval(qp.qchem.molecular_hamiltonian(mol, args=args[1:])[0])
         return circuit
 
 Now that the circuit is defined, we can create a geometry and parameter optimization loop. For
@@ -103,23 +103,23 @@ convenience, we create a molecule object that stores the molecular parameters.
 
     for n in range(21):
 
-        mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [params, geometry, alpha, coeff] # initial values of the differentiable parameters
 
         # compute gradients with respect to the circuit parameters and update the parameters
-        g_params = qml.grad(generate_circuit(mol), argnum = 0)(*args)
+        g_params = qp.grad(generate_circuit(mol), argnum = 0)(*args)
         params = params - 0.25 * g_params[0]
 
         # compute gradients with respect to the nuclear coordinates and update geometry
-        g_coor = qml.grad(generate_circuit(mol), argnum = 1)(*args)
+        g_coor = qp.grad(generate_circuit(mol), argnum = 1)(*args)
         geometry = geometry - 0.5 * g_coor
 
         # compute gradients with respect to the Gaussian exponents and update the exponents
-        g_alpha = qml.grad(generate_circuit(mol), argnum = 2)(*args)
+        g_alpha = qp.grad(generate_circuit(mol), argnum = 2)(*args)
         alpha = alpha - 0.25 * g_alpha
 
         # compute gradients with respect to the Gaussian contraction coefficients and update them
-        g_coeff = qml.grad(generate_circuit(mol), argnum = 3)(*args)
+        g_coeff = qp.grad(generate_circuit(mol), argnum = 3)(*args)
         coeff = coeff - 0.25 * g_coeff
 
         if n%5 == 0:
@@ -151,14 +151,14 @@ integral can be differentiated with respect to the basis set parameters as follo
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
                     [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
 
-    mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [alpha, coeff]
 
     a = mol.basis_set[0]
     b = mol.basis_set[1]
 
-    g_alpha = qml.grad(qml.qchem.overlap_integral(a, b), argnum = 0)(*args)
-    g_coeff = qml.grad(qml.qchem.overlap_integral(a, b), argnum = 1)(*args)
+    g_alpha = qp.grad(qp.qchem.overlap_integral(a, b), argnum = 0)(*args)
+    g_coeff = qp.grad(qp.qchem.overlap_integral(a, b), argnum = 1)(*args)
 
 >>> print(g_alpha)
 [[ 0.00169332 -0.14826928 -0.37296693]
@@ -182,8 +182,8 @@ in ``molecular_hamiltonian``:
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    molecule = qml.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, method='pyscf')
+    molecule = qp.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
+    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule, method='pyscf')
 
 The non-differentiable backends require either ``OpenFermion-PySCF`` or ``PySCF`` to be installed by
 the user with

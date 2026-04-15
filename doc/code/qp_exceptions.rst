@@ -1,4 +1,4 @@
-qml.exceptions
+qp.exceptions
 ==============
 
 .. currentmodule:: pennylane.exceptions

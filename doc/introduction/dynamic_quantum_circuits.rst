@@ -24,16 +24,16 @@ The function to perform a mid-circuit measurement in PennyLane is
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit")
+    dev = qpdevice("default.qubit")
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def my_qnode(x, y):
-        qml.RY(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        m_0 = qml.measure(1, reset=False, postselect=None)
+        qpRY(x, wires=0)
+        qpCNOT(wires=[0, 1])
+        m_0 = qpmeasure(1, reset=False, postselect=None)
 
-        qml.cond(m_0, qml.RY)(y, wires=0)
-        return qml.probs(wires=[0]), qml.expval(m_0)
+        qpcond(m_0, qpRY)(y, wires=0)
+        return qpprobs(wires=[0]), qpexpval(m_0)
 
 See the following sections for details on
 :func:`~.pennylane.measure`, :func:`~.pennylane.cond`, and statistics
@@ -53,14 +53,14 @@ reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.penn
 
 .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=3)
+    dev = qpdevice("default.qubit", wires=3)
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def func():
-        qml.PauliX(1)
-        m_0 = qml.measure(1, reset=True)
-        qml.PauliX(1)
-        return qml.probs(wires=[1])
+        qpPauliX(1)
+        m_0 = qpmeasure(1, reset=True)
+        qpPauliX(1)
+        return qpprobs(wires=[1])
 
 Executing this QNode:
 
@@ -80,13 +80,13 @@ the :math:`|1\rangle` state, i.e., disregarding all outcomes where :math:`|0\ran
 
 .. code-block:: python3
 
-    dev = qml.device("default.qubit")
+    dev = qpdevice("default.qubit")
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def func(x):
-        qml.RX(x, wires=0)
-        m_0 = qml.measure(0, postselect=1)
-        return qml.sample(wires=0)
+        qpRX(x, wires=0)
+        m_0 = qpmeasure(0, postselect=1)
+        return qpsample(wires=0)
 
 By postselecting on ``1``, we only consider results that measured the outcome ``1``.
 Executing this QNode with 10 shots yields
@@ -114,14 +114,14 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
 
 .. code-block:: python
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def qnode_conditional_op_on_zero(x, y):
-        qml.RY(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        m_0 = qml.measure(1)
+        qpRY(x, wires=0)
+        qpCNOT(wires=[0, 1])
+        m_0 = qpmeasure(1)
 
-        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
-        return qml.probs(wires=[0])
+        qpcond(m_0 == 0, qpRY)(y, wires=0)
+        return qpprobs(wires=[0])
 
     pars = np.array([0.643, 0.246], requires_grad=True)
 
@@ -145,14 +145,14 @@ are supported.
 
 .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qpdevice("default.qubit", wires=2)
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def func(x, y):
-        qml.RX(x, wires=0)
-        m_0 = qml.measure(0)
-        qml.cond(m_0, qml.RY)(y, wires=1)
-        return qml.probs(wires=1), qml.probs(op=m_0)
+        qpRX(x, wires=0)
+        m_0 = qpmeasure(0)
+        qpcond(m_0, qpRY)(y, wires=1)
+        return qpprobs(wires=1), qpprobs(op=m_0)
 
 Executing this ``QNode``:
 
@@ -170,15 +170,15 @@ This works for both unary and binary operators. To see a full list of supported 
 
     import pennylane as qp
 
-    dev = qml.device("default.qubit")
+    dev = qpdevice("default.qubit")
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def circuit(phi, theta):
-        qml.RX(phi, wires=0)
-        m_0 = qml.measure(wires=0)
-        qml.RY(theta, wires=1)
-        m_1 = qml.measure(wires=1)
-        return qml.sample(~m_0 - 2 * m_1)
+        qpRX(phi, wires=0)
+        m_0 = qpmeasure(wires=0)
+        qpRY(theta, wires=1)
+        m_1 = qpmeasure(wires=1)
+        return qpsample(~m_0 - 2 * m_1)
 
 Executing this ``QNode``:
 
@@ -197,15 +197,15 @@ measurement values to the measurement process:
 
     import pennylane as qp
 
-    dev = qml.device("default.qubit")
+    dev = qpdevice("default.qubit")
 
-    @qml.qnode(dev)
+    @qpqnode(dev)
     def circuit(phi, theta):
-        qml.RX(phi, wires=0)
-        m_0 = qml.measure(wires=0)
-        qml.RY(theta, wires=1)
-        m_1 = qml.measure(wires=1)
-        return qml.sample([m_0, m_1])
+        qpRX(phi, wires=0)
+        m_0 = qpmeasure(wires=0)
+        qpRY(theta, wires=1)
+        m_1 = qpmeasure(wires=1)
+        return qpsample([m_0, m_1])
 
 Executing this ``QNode``:
 
@@ -328,7 +328,7 @@ memory and simulation time that scale exponentially with the number of measureme
 
 .. code-block:: pycon
 
-    >>> deferred_qnode = qml.defer_measurements(my_qnode)
+    >>> deferred_qnode = qpdefer_measurements(my_qnode)
     >>> pars = np.array([0.643, 0.246])
     >>> deferred_qnode(*pars)
     (tensor([0.90165331, 0.09834669], requires_grad=True),
@@ -339,11 +339,11 @@ before and after applying the transform:
 
 .. code-block:: pycon
 
-    >>> print(qml.draw(my_qnode)(*pars))
+    >>> print(qpdraw(my_qnode)(*pars))
     0: ──RY(0.64)─╭●───────RY(0.25)─┤  Probs
     1: ───────────╰X──┤↗├──║────────┤
                        ╚═══╩════════╡  <MCM>
-    >>> print(qml.draw(deferred_qnode)(*pars))
+    >>> print(qpdraw(deferred_qnode)(*pars))
     0: ──RY(0.64)─╭●────╭RY(0.25)─┤  Probs
     1: ───────────╰X─╭●─│─────────┤
     2: ──────────────╰X─╰●────────┤  <None>
@@ -449,17 +449,17 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
   .. code-block:: python3
 
-      dev = qml.device("default.qubit", wires=3)
+      dev = qpdevice("default.qubit", wires=3)
 
       def circ():
-          qml.Hadamard(0)
-          m_0 = qml.measure(0, postselect=1)
-          return qml.sample(qml.PauliZ(0))
+          qpHadamard(0)
+          m_0 = qpmeasure(0, postselect=1)
+          return qpsample(qpPauliZ(0))
 
-      fill_shots = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="fill-shots")
-      hw_like = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="hw-like")
-      fill_shots = qml.set_shots(fill_shots, shots=10)
-      hw_like = qml.set_shots(hw_like, shots=10)
+      fill_shots = qpQNode(circ, dev, mcm_method="deferred", postselect_mode="fill-shots")
+      hw_like = qpQNode(circ, dev, mcm_method="deferred", postselect_mode="hw-like")
+      fill_shots = qpset_shots(fill_shots, shots=10)
+      hw_like = qpset_shots(hw_like, shots=10)
 
   .. code-block:: pycon
 

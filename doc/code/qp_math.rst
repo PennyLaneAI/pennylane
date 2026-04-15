@@ -1,4 +1,4 @@
-qml.math
+qp.math
 ========
 
 Overview

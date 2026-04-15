@@ -45,26 +45,26 @@ compile your hybrid workflows:
 
     from jax import numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=2)
+    dev = qpdevice("lightning.qubit", wires=2)
 
-    @qml.qjit
-    @qml.set_shots(shots=1000)
-    @qml.qnode(dev)
+    @qpqjit
+    @qpset_shots(shots=1000)
+    @qpqnode(dev)
     def circuit(params):
-        qml.Hadamard(0)
-        qml.RX(jnp.sin(params[0]) ** 2, wires=1)
-        qml.CRY(params[0], wires=[0, 1])
-        qml.RX(jnp.sqrt(params[1]), wires=1)
-        return qml.expval(qml.Z(1))
+        qpHadamard(0)
+        qpRX(jnp.sin(params[0]) ** 2, wires=1)
+        qpCRY(params[0], wires=[0, 1])
+        qpRX(jnp.sqrt(params[1]), wires=1)
+        return qpexpval(qpZ(1))
 
 The :func:`~.qjit` decorator can also be used on hybrid functions --
 that is, functions that include both QNodes and classical processing.
 
 .. code-block:: python
 
-    @qml.qjit
+    @qpqjit
     def hybrid_function(params, x):
-        grad = qml.grad(circuit)(params)
+        grad = qpgrad(circuit)(params)
         return jnp.abs(grad - x) ** 2
 
 In addition, functions that are compiled with ``@jax.jit`` can contain calls
@@ -90,7 +90,7 @@ using ``@jax.jit``:
 
         return params
 
-Compiling the entire hybrid workflow using ``@qml.qjit`` however will lead to better
+Compiling the entire hybrid workflow using ``@qpqjit`` however will lead to better
 performance. For more details, please see
 `the Catalyst documentation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html#try-and-compile-the-full-workflow>`__.
 
@@ -104,16 +104,16 @@ rather than in Python at compile time. You can enable this feature via the
 
 .. code-block:: python
 
-    @qml.qjit(autograph=True)
-    @qml.qnode(dev)
+    @qpqjit(autograph=True)
+    @qpqnode(dev)
     def circuit(x: int):
 
         if x < 5:
-            qml.Hadamard(wires=0)
+            qpHadamard(wires=0)
         else:
-            qml.T(wires=0)
+            qpT(wires=0)
 
-        return qml.expval(qml.Z(0))
+        return qpexpval(qpZ(0))
 
 >>> circuit(3)
 array(0.)
@@ -143,15 +143,15 @@ decorator:
 
 .. code-block:: python
 
-    dev = qml.device("softwareq.qpp", wires=2)
+    dev = qpdevice("softwareq.qpp", wires=2)
 
-    @qml.qjit(compiler="cuda_quantum")
-    @qml.qnode(dev)
+    @qpqjit(compiler="cuda_quantum")
+    @qpqnode(dev)
     def circuit(x):
-        qml.RX(x[0], wires=0)
-        qml.RY(x[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.Y(0))
+        qpRX(x[0], wires=0)
+        qpRY(x[1], wires=1)
+        qpCNOT(wires=[0, 1])
+        return qpexpval(qpY(0))
 
 >>> circuit(jnp.array([0.5, 1.4]))
 -0.47244976756708373

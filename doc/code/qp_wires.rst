@@ -1,4 +1,4 @@
-qml.wires
+qp.wires
 ============
 
 .. currentmodule:: pennylane.wires

@@ -1,4 +1,4 @@
-qml.spin
+qp.spin
 =========
 
 Overview

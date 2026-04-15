@@ -1,4 +1,4 @@
-qml.gate_sets
+qp.gate_sets
 =============
 
 .. currentmodule:: pennylane.gate_sets

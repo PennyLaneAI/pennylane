@@ -1,4 +1,4 @@
-qml.estimator
+qp.estimator
 =============
 
 .. currentmodule:: pennylane.estimator

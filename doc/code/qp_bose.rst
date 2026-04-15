@@ -1,4 +1,4 @@
-qml.bose
+qp.bose
 =========
 
 Overview

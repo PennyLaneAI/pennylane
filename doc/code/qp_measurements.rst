@@ -1,4 +1,4 @@
-qml.measurements
+qp.measurements
 ================
 
 .. currentmodule:: pennylane.measurements

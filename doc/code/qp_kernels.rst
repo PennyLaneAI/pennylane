@@ -1,4 +1,4 @@
-qml.kernels
+qp.kernels
 ===========
 
 Overview

@@ -1,4 +1,4 @@
-qml.labs
+qp.labs
 ================
 
 .. currentmodule:: pennylane.labs

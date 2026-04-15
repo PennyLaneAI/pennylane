@@ -1,4 +1,4 @@
-qml.fourier
+qp.fourier
 ===========
 
 Overview
@@ -61,14 +61,14 @@ single parameter.
     import pennylane as qp
     from pennylane import numpy as np
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def simple_circuit(x):
-        qml.RX(x[0], wires=0)
-        qml.RY(x[0], wires=1)
-        qml.CNOT(wires=[1, 0])
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x[0], wires=0)
+        qp.RY(x[0], wires=1)
+        qp.CNOT(wires=[1, 0])
+        return qp.expval(qp.PauliZ(0))
 
 We can mathematically evaluate the expectation value of this function to be
 :math:`\langle Z \rangle = 0.5 + 0.5 \cos(2x)`. Thus, the Fourier coefficients
@@ -110,14 +110,14 @@ have to give input-encoding gates an ``id``:
 
     import pennylane as qp
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def simple_circuit_marked(x):
-        qml.RX(x[0], wires=0, id="x")
-        qml.RY(x[0], wires=1, id="x")
-        qml.CNOT(wires=[1, 0])
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x[0], wires=0, id="x")
+        qp.RY(x[0], wires=1, id="x")
+        qp.CNOT(wires=[1, 0])
+        return qp.expval(qp.PauliZ(0))
 
 We can then compute the frequencies supported by the input-encoding gates as:
 
@@ -237,21 +237,21 @@ customization options available:
 
    weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 
-   @qml.qnode(dev)
+   @qp.qnode(dev)
    def circuit_with_weights(w, x):
-       qml.RX(x[0], wires=0)
-       qml.RY(x[1], wires=1)
-       qml.CNOT(wires=[1, 0])
+       qp.RX(x[0], wires=0)
+       qp.RY(x[1], wires=1)
+       qp.CNOT(wires=[1, 0])
 
-       qml.Rot(*w[0], wires=0)
-       qml.Rot(*w[1], wires=1)
-       qml.CNOT(wires=[1, 0])
+       qp.Rot(*w[0], wires=0)
+       qp.Rot(*w[1], wires=1)
+       qp.CNOT(wires=[1, 0])
 
-       qml.RX(x[0], wires=0)
-       qml.RY(x[1], wires=1)
-       qml.CNOT(wires=[1, 0])
+       qp.RX(x[0], wires=0)
+       qp.RY(x[1], wires=1)
+       qp.CNOT(wires=[1, 0])
 
-       return qml.expval(qml.PauliZ(0))
+       return qp.expval(qp.PauliZ(0))
 
    coeffs = coefficients(partial(circuit_with_weights, weights), 2, 2)
 
