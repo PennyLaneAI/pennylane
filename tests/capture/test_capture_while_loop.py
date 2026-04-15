@@ -415,8 +415,6 @@ class TestCaptureWhileLoopDynamicShapes:
     def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
         """Test that if a broadcasting error is raised when a dynamically shaped closure variable
         is present, the error mentions it may be due to the closure variable with a dynamic shape.
-"""Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
-can be combines."""
 
         def w(i0):
             c = jnp.arange(i0)
