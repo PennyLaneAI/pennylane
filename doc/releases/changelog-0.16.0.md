@@ -4,7 +4,7 @@
 <h4>First class support for quantum kernels</h4>
 
 * The new `qml.kernels` module provides basic functionalities for [working with quantum
-  kernels](https://pennylane.readthedocs.io/en/stable/code/qp_kernels.html) as
+  kernels](https://pennylane.readthedocs.io/en/stable/code/qml_kernels.html) as
   well as post-processing methods to mitigate sampling errors and device noise:
   [(#1102)](https://github.com/PennyLaneAI/pennylane/pull/1102)
 
@@ -35,7 +35,7 @@
 <h4>Extract the fourier representation of quantum circuits</h4>
 
 * PennyLane now has a `fourier` module, which hosts a [growing library
-  of methods](https://pennylane.readthedocs.io/en/stable/code/qp_fourier.html)
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
   that help with investigating the Fourier representation of functions
   implemented by quantum circuits. The Fourier representation can be used
   to examine and characterize the expressivity of the quantum circuit.

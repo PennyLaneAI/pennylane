@@ -98,7 +98,7 @@
 <h4>New differentiable quantum transforms</h4>
 
 A new module is available,
-[qml.transforms](https://pennylane.rtfd.io/en/stable/code/qp_transforms.html),
+[qml.transforms](https://pennylane.rtfd.io/en/stable/code/qml_transforms.html),
 which contains *differentiable quantum transforms*. These are functions that act
 on QNodes, quantum functions, devices, and tapes, transforming them while remaining
 fully differentiable.
