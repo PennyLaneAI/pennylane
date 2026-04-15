@@ -175,6 +175,10 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
+  can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
+  [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
+
 * Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
   work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
   `CNOT`.
@@ -183,7 +187,9 @@ The following classes have been ported over:
 * Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
-* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
+* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and
+  ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via
+  generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
 * Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
@@ -804,6 +810,9 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
 * With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
   after the loop.
