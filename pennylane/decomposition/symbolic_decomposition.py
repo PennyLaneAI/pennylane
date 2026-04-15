@@ -72,7 +72,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
         _resource_fn,
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
-        name=f"Adjoint({base_decomposition.name})",
+        name=f"adjoint({base_decomposition.name})",
     )
     def _impl_using_reconstructor(*params, wires, base_params, **_):
         # pylint: disable=protected-access
