@@ -175,6 +175,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Made decompositions of :class:`~.MultiControlledX` JIT-compatible.
+  [(#9044)](https://github.com/PennyLaneAI/pennylane/pull/9044)
+
 * Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
   work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
   `CNOT`.

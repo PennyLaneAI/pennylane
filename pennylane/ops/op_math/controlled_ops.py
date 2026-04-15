@@ -1599,15 +1599,18 @@ class MultiControlledX(ControlledOp):
 
     @staticmethod
     def _validate_control_values(control_values):
-        if control_values is not None:
-            if not (
-                isinstance(control_values, (bool, int))
-                or (
-                    isinstance(control_values, (list, tuple))
-                    and all(isinstance(val, (bool, int)) for val in control_values)
-                )
+        if control_values is None:
+            return
+        if isinstance(control_values, (bool, int)):
+            return
+        if isinstance(control_values, (list, tuple)):
+            if all(
+                isinstance(val, (bool, int)) or qml.math.is_abstract(val) for val in control_values
             ):
-                raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+                return
+        if qml.math.is_abstract(control_values):
+            return
+        raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
     def __init__(
         self,
@@ -1655,9 +1658,13 @@ class MultiControlledX(ControlledOp):
 
     @property
     def resource_params(self) -> dict:
+        if qml.math.is_abstract(self.control_values):
+            num_zero_control_values = len(self.control_values)
+        else:
+            num_zero_control_values = len(self.control_values) - sum(self.control_values)
         return {
             "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_zero_control_values": num_zero_control_values,
             "num_work_wires": len(self.work_wires),
             "work_wire_type": self.work_wire_type,
         }

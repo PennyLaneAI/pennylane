@@ -912,7 +912,10 @@ def _param_su2(ar, ai, br, bi):
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
+    return math.array(
+        [[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]],
+        like=math.get_interface(ar, ai, br, bi),
+    )
 
 
 def _bisect_compute_a(u):
@@ -932,11 +935,14 @@ def _bisect_compute_a(u):
         mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
         ai = zi * mul
         br = x * mul
-        bi = 0
+        bi = 0.0
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1),
+        lambda: math.array([[1, -1], [1, 1]], dtype=complex) * 2**-0.5,
+        _compute_a,
+        (),
     )
 
 

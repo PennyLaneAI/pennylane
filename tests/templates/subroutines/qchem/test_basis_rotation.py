@@ -589,7 +589,7 @@ class TestInterfaces:
 
         dev = qml.device(device_name, wires=3)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
+        circuit = jax.jit(qml.QNode(circuit_template, dev))
         circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(unitary_matrix)

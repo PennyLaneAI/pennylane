@@ -201,6 +201,44 @@ class TestControlledInit:
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
 
+@pytest.mark.jax
+class TestControlledInitJit:
+    """Test the initialization process with jitted control values."""
+
+    import jax
+
+    @staticmethod
+    def init_fn(vals, wires):
+        temp_op = TempOperator("a")
+        op = Controlled(temp_op, wires, control_values=vals)
+        return op.control_values
+
+    def test_zero_one_control_values_jit(self):
+        """Test assignment of provided control_values with jit."""
+        import jax
+
+        wires = (0, 1)
+        fn = jax.jit(self.init_fn, static_argnums=1)
+        assert fn(jax.numpy.array([0, 1]), wires) == [False, True]
+
+    @pytest.mark.parametrize("control_values", [True, False, 0, 1])
+    def test_scalar_control_values_jit(self, control_values):
+        """Test assignment of provided control_values with jit."""
+        import jax
+
+        wires = (0,)
+        fn = jax.jit(self.init_fn, static_argnums=1)
+        assert fn(jax.numpy.array(control_values), wires) == [bool(control_values)]
+
+    def test_control_values_wrong_length_jit(self):
+        """Test checking control_values length error with jit."""
+        import jax
+
+        fn = jax.jit(self.init_fn, static_argnums=1)
+        with pytest.raises(ValueError, match="control_values should be the same length"):
+            fn(jax.numpy.array([True]), wires=(0, 1))
+
+
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
 
