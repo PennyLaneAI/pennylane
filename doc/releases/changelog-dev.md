@@ -175,6 +175,11 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
+  work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
+  `CNOT`.
+  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
+
 * Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
@@ -985,6 +990,10 @@ The following classes have been ported over:
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Bug fixes 🐛</h3>
+
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
