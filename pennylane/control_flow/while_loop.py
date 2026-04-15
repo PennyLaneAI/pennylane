@@ -27,6 +27,7 @@ from ._loop_abstract_axes import (
     get_dummy_arg,
     handle_jaxpr_error,
     loop_determine_abstracted_axes,
+    promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
 
@@ -41,6 +42,14 @@ def _to_bool_cond_fn(cond_fn):
         return jnp.bool(out)
 
     return _new_cond_fn
+
+
+def _body_consts_extracted_cond(cond_fn):
+    # pylint: disable=unused-argument
+    def new_cond_fn(args, body_consts):
+        return cond_fn(*args)
+
+    return new_cond_fn
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
@@ -317,14 +326,16 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     def _get_jaxprs(self, init_state, allow_array_resizing):
         import jax  # pylint: disable=import-outside-toplevel
 
-        flat_args, in_tree = jax.tree_util.tree_flatten(init_state)
+        body_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
+
+        flat_args, in_tree = jax.tree_util.tree_flatten((init_state, dynamic_consts))
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
 
-        flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
-        flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+        flat_body_fn = FlatFn(body_consts_extracted, in_tree=in_tree)
+        flat_cond_fn = FlatFn(_body_consts_extracted_cond(self.cond_fn), in_tree=in_tree)
         bool_cond_fn = _to_bool_cond_fn(flat_cond_fn)
 
         if abstracted_axes:  # pragma: no cover
@@ -379,7 +390,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        # [0] to slice out the consts extracted by promote_consts_to_inputs
+        return jax.tree_util.tree_unflatten(out_tree, results)[0]
 
     def __call__(self, *init_state):
 

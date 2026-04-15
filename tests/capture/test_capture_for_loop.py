@@ -348,11 +348,10 @@ class TestDynamicShapes:
         assert qml.math.allclose(final_j, 5)  # 2 +3
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
 
-    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
-    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
-        """Test that if a broadcasting error is raised when a dynamically shaped closure variable
-        is present, the error mentions it may be due to the closure variable with a dynamic shape.
-        """
+    @pytest.mark.parametrize("allow_array_resizing", (False, "auto"))
+    def test_combine_with_dynamic_closure_var(self, allow_array_resizing):
+        """Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
+        can be combined."""
 
         def w(i0):
             c = jnp.arange(i0)
@@ -363,11 +362,14 @@ class TestDynamicShapes:
 
             return f(jnp.arange(i0))
 
-        with pytest.warns(
-            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
-        ):
-            jaxpr = jax.make_jaxpr(w)(3)
-        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
+        jaxpr = jax.make_jaxpr(w)(3)
+        assert jaxpr.eqns[-1].primitive == for_loop_prim
+        _, return_array, c = jaxpr.eqns[-1].outvars
+
+        assert c.aval.shape[0] == jaxpr.jaxpr.invars[0]
+        assert isinstance(c, jax.core.DropVar)
+
+        assert return_array == jaxpr.jaxpr.outvars[0]
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):
@@ -482,6 +484,29 @@ class TestDynamicShapes:
         assert isinstance(shape, jax.core.DropVar)
         assert static_array.aval.shape == (2,)
         assert dynamic_array.aval.shape[0] == jaxpr.jaxpr.invars[0]  # the input a
+
+    def test_same_closure_variable_multiple_loops(self):
+        """Test that if the same variable is used as a closure var multiple times, we don't get leaked tracers.
+        When _loop_abstract_axes.promote_consts_to_inputs copied the function, it made it so that we ended
+        up with consts with tracer values, leading to leaked tracers when integrated with catalyst.
+        This just tests that doesn't happen again.
+        """
+
+        def w(x):
+            @qml.for_loop(x.shape[0])
+            def f(i):
+                2 * x  # pylint: disable=pointless-statement
+
+            f()
+
+            @qml.for_loop(x.shape[0])
+            def g(i):
+                3 * x  # pylint: disable=pointless-statement
+
+            g()
+
+        jaxpr = jax.make_jaxpr(w, abstracted_axes={0: "a"})(jnp.array([0, 1, 2]))
+        assert len(jaxpr.consts) == 0
 
 
 class TestCaptureCircuitsForLoop:
