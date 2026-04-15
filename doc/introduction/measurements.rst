@@ -126,7 +126,7 @@ the ``@`` notation. For example, to measure the expectation value of
         qp.CNOT(wires=[0, 1])
         qp.RY(y, wires=1)
         qp.CNOT(wires=[0, 2])
-        return qp.expval(qpPauliZ(0) @ qpPauliX(2))
+        return qp.expval(qp.PauliZ(0) @ qp.PauliX(2))
 
 Note that we don't need to declare the identity observable on wire 1; this is
 implicitly assumed.
@@ -147,14 +147,14 @@ The previous example will be modified as follows:
 
 .. code-block:: python
 
-    dev = qpdevice("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qpset_shots(shots=1000)
-    @qpqnode(dev)
+    @qp.set_shots(shots=1000)
+    @qp.qnode(dev)
     def circuit():
-        qpHadamard(wires=0)
-        qpCNOT(wires=[0, 1])
-        return qpcounts(qpPauliZ(0)), qpcounts(qpPauliZ(1))
+        qp.Hadamard(wires=0)
+        qp.CNOT(wires=[0, 1])
+        return qp.counts(qp.PauliZ(0)), qp.counts(qp.PauliZ(1))
 
 After executing the circuit, we can directly see how many times each measurement outcome occurred:
 
@@ -165,14 +165,14 @@ Similarly, if the observable is not provided, the count of the observed computat
 
 .. code-block:: python
 
-    dev = qpdevice("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qpset_shots(shots=1000)
-    @qpqnode(dev)
+    @qp.set_shots(shots=1000)
+    @qp.qnode(dev)
     def circuit():
-        qpHadamard(wires=0)
-        qpCNOT(wires=[0, 1])
-        return qpcounts()
+        qp.Hadamard(wires=0)
+        qp.CNOT(wires=[0, 1])
+        return qp.counts()
 
 And the result is:
 
@@ -186,14 +186,14 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 
 .. code-block:: python
 
-    dev = qpdevice("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qpset_shots(shots=1000)
-    @qpqnode(dev)
+    @qp.set_shots(shots=1000)
+    @qp.qnode(dev)
     def circuit():
-        qpHadamard(wires=0)
-        qpCNOT(wires=[0, 1])
-        return qpcounts(all_outcomes=True)
+        qp.Hadamard(wires=0)
+        qp.CNOT(wires=[0, 1])
+        return qp.counts(all_outcomes=True)
 
 >>> result = circuit()
 >>> print(result)
@@ -208,12 +208,12 @@ a tuple is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
 
-    @qpqnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qpHadamard(wires=0)
-        qpCNOT(wires=[0,1])
-        qpX(1)
-        return qpexpval(qpPauliZ(0)),qpexpval(qpPauliZ(1)), qpcounts()
+        qp.Hadamard(wires=0)
+        qp.CNOT(wires=[0,1])
+        qp.X(1)
+        return qp.expval(qp.PauliZ(0)),qp.expval(qp.PauliZ(1)), qp.counts()
 
 >>> circuit()
 (-0.036, 0.036, {'01': 482, '10': 518})
@@ -229,16 +229,16 @@ computational basis.
 .. code-block:: python3
 
     def my_quantum_function(x, y):
-        qpRZ(x, wires=0)
-        qpCNOT(wires=[0, 1])
-        qpRY(y, wires=1)
-        qpCNOT(wires=[0, 2])
-        return qpprobs(wires=[0, 1])
+        qp.RZ(x, wires=0)
+        qp.CNOT(wires=[0, 1])
+        qp.RY(y, wires=1)
+        qp.CNOT(wires=[0, 2])
+        return qp.probs(wires=[0, 1])
 
 For example:
 
->>> dev = qpdevice("default.qubit", wires=3)
->>> qnode = qpQNode(my_quantum_function, dev)
+>>> dev = qp.device("default.qubit", wires=3)
+>>> qnode = qp.QNode(my_quantum_function, dev)
 >>> qnode(0.56, 0.1)
 array([0.99750208, 0.00249792, 0.        , 0.        ])
 
@@ -264,20 +264,20 @@ can also be directly applied to a QNode.
 
 .. code-block:: python
 
-    dev = qpdevice("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qpset_shots(shots=10)
-    @qpqnode(dev)
+    @qp.set_shots(shots=10)
+    @qp.qnode(dev)
     def circuit(x, y):
-        qpRX(x, wires=0)
-        qpRY(y, wires=0)
-        return qpexpval(qpPauliZ(0))
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     # execute the QNode using 10 shots
     result = circuit(0.54, 0.1)
 
     # execute the QNode again, now using 1 shot
-    result = qpset_shots(circuit, shots=1)(0.54, 0.1)
+    result = qp.set_shots(circuit, shots=1)(0.54, 0.1)
 
 
 With an increasing number of shots, the average over
@@ -289,27 +289,27 @@ circuit:
     # fix seed to make results reproducible
     np.random.seed(1)
 
-    dev = qpdevice("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qpqnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qpHadamard(wires=0)
-        return qpexpval(qpPauliZ(0))
+        qp.Hadamard(wires=0)
+        return qp.expval(qp.PauliZ(0))
 
 Running the simulator with ``shots=None`` returns the exact expectation.
 
->>> qpset_shots(circuit, shots=None)()
+>>> qp.set_shots(circuit, shots=None)()
 0.0
 
 Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
->>> qpset_shots(circuit, shots=10)()
+>>> qp.set_shots(circuit, shots=10)()
 0.2
 
->>> qpset_shots(circuit, shots=1000)()
+>>> qp.set_shots(circuit, shots=1000)()
 -0.062
 
->>> qpset_shots(circuit, shots=100000)()
+>>> qp.set_shots(circuit, shots=100000)()
 0.00056
 
 The result converges to the exact expectation.
