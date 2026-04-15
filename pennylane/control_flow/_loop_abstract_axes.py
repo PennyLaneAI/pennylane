@@ -59,7 +59,7 @@ def promote_consts_to_inputs(f):
 
             f_results = f(*args)
         finally:
-            for ind, c in zip(indices, consts):
+            for ind, c in zip(indices, consts, strict=True):
                 f.__closure__[ind].cell_contents = c
 
         return f_results, new_consts
