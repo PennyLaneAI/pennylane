@@ -16,7 +16,6 @@ Tests for the controlled decompositions.
 """
 
 import itertools
-from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -867,15 +866,9 @@ class TestMCXDecomposition:
             decompose_mcx_many_workers_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_many_workers_explicit.compute_resources(**mcx.resource_params)
-        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
-        actual_gate_counts = defaultdict(int)
-        for _op in q.queue:
-            if isinstance(_op, qml.Projector):
-                continue
-            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-            actual_gate_counts[resource_rep] += 1
-        assert actual_gate_counts == expected_gate_counts
+        _test_decomposition_rule(
+            mcx, decompose_mcx_many_workers_explicit, skip_decomp_matrix_check=True
+        )
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -944,15 +937,9 @@ class TestMCXDecomposition:
             decompose_mcx_one_worker_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_one_worker_explicit.compute_resources(**mcx.resource_params)
-        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
-        actual_gate_counts = defaultdict(int)
-        for _op in q.queue:
-            if isinstance(_op, qml.Projector):
-                continue
-            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-            actual_gate_counts[resource_rep] += 1
-        assert actual_gate_counts == expected_gate_counts
+        _test_decomposition_rule(
+            mcx, decompose_mcx_one_worker_explicit, skip_decomp_matrix_check=True
+        )
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -988,15 +975,7 @@ class TestMCXDecomposition:
             _mcx_two_workers(mcx.wires, work_wires, work_wire_type)
 
         # Verify that the resource estimate is correct.
-        resource = _mcx_two_workers.compute_resources(**mcx.resource_params)
-        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
-        actual_gate_counts = defaultdict(int)
-        for _op in q.queue:
-            if isinstance(_op, qml.Projector):
-                continue
-            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-            actual_gate_counts[resource_rep] += 1
-        assert actual_gate_counts == expected_gate_counts
+        _test_decomposition_rule(mcx, _mcx_two_workers, skip_decomp_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -1024,13 +1003,7 @@ class TestMCXDecomposition:
             _decompose_mcx_with_no_worker(mcx.wires)
 
         # Verify that the resource estimate is correct.
-        resource = _decompose_mcx_with_no_worker.compute_resources(**mcx.resource_params)
-        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
-        actual_gate_counts = defaultdict(int)
-        for _op in q.queue:
-            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-            actual_gate_counts[resource_rep] += 1
-        assert actual_gate_counts == expected_gate_counts
+        _test_decomposition_rule(mcx, _decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -1060,19 +1033,40 @@ class TestMCXDecomposition:
         assert qml.math.allclose(matrix, expected_matrix)
 
     @pytest.mark.parametrize(
-        "test_mcx",
+        "params",
         [
-            qml.MultiControlledX(wires=[1, 0]),
-            qml.MultiControlledX(wires=[1, 0], control_values=[0]),
-            qml.MultiControlledX(wires=[2, 1, 0]),
-            qml.MultiControlledX(wires=[2, 1, 0], control_values=[0, 1]),
+            {"wires": [1, 0]},
+            {"wires": [1, 0], "control_values": [0]},
+            {"wires": [2, 1, 0]},
+            {"wires": [2, 1, 0], "control_values": [0, 1]},
+            {"wires": [1, 0], "work_wires": [2]},
+            {"wires": [1, 0], "control_values": [0], "work_wires": [2]},
+            {"wires": [2, 1, 0], "work_wires": [3, 4]},
+            {"wires": [2, 1, 0], "control_values": [0, 1], "work_wires": [3, 4]},
+            {"wires": [1, 0], "work_wires": [2], "work_wire_type": "zeroed"},
+            {"wires": [1, 0], "control_values": [0], "work_wires": [2], "work_wire_type": "zeroed"},
+            {"wires": [2, 1, 0], "work_wires": [3, 4], "work_wire_type": "zeroed"},
+            {
+                "wires": [2, 1, 0],
+                "control_values": [0, 1],
+                "work_wires": [3, 4],
+                "work_wire_type": "zeroed",
+            },
+            {"wires": [2, 3, 1, 0], "work_wires": [5, 4, 6], "work_wire_type": "zeroed"},
+            {
+                "wires": [2, 1, 0, 3],
+                "control_values": [0, 0, 1],
+                "work_wires": [5, 4, 6],
+                "work_wire_type": "zeroed",
+            },
         ],
     )
-    def test_mcx_decompositions(self, test_mcx):
+    def test_mcx_decompositions(self, params):
         """Tests that MCX can be resolved into CNOT and Toffoli properly."""
 
+        mcx = qml.MultiControlledX(**params)
         for rule in qml.list_decomps(qml.MultiControlledX):
-            _test_decomposition_rule(test_mcx, rule)
+            _test_decomposition_rule(mcx, rule)
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
