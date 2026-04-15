@@ -19,6 +19,7 @@ from collections import defaultdict
 
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     change_op_basis_resource_rep,
     controlled_resource_rep,
     register_condition,
@@ -31,6 +32,7 @@ from pennylane.ops import (
     MidMeasure,
     MultiControlledX,
     X,
+    adjoint,
     change_op_basis,
     ctrl,
     measure,
@@ -684,9 +686,62 @@ def _out_multiplier_with_caddsub(
         SemiAdder(y_wires, output_wires[: k - n], work_wires)
 
 
+def _out_multiplier_with_cache_condition(
+    num_output_wires, num_work_wires, zeroed_output_wires, **_
+):
+    return num_work_wires >= 2 * num_output_wires - 1 and not zeroed_output_wires
+
+
+def _out_multiplier_with_cache_resources(
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, zeroed_output_wires, mod, **_
+):  # pylint: disable=unused-argument,too-many-arguments
+    new_num_work_wires = num_work_wires - num_output_wires
+    mult_params = {
+        "num_x_wires": num_x_wires,
+        "num_y_wires": num_y_wires,
+        "num_output_wires": num_output_wires,
+        "num_work_wires": new_num_work_wires,
+        "mod": mod,
+        "zeroed_output_wires": True,
+    }
+    adder_params = {
+        "num_x_wires": num_output_wires,
+        "num_y_wires": num_output_wires,
+        "num_work_wires": new_num_work_wires,
+    }
+    return {
+        resource_rep(OutMultiplier, **mult_params): 1,
+        resource_rep(SemiAdder, **adder_params): 1,
+        adjoint_resource_rep(OutMultiplier, base_params=mult_params): 1,
+    }
+
+
+@register_condition(_out_multiplier_with_cache_condition)
+@register_resources(_out_multiplier_with_cache_resources)
+def _out_multiplier_with_cache(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod: None,
+    work_wires: WiresLike,
+    zeroed_output_wires,
+    **__,
+):  # pylint: disable=unused-argument,too-many-arguments
+    cache_wires = work_wires[: len(output_wires)]
+    work_wires = work_wires[len(output_wires) :]
+    OutMultiplier(
+        x_wires, y_wires, cache_wires, mod=mod, work_wires=work_wires, zeroed_output_wires=True
+    )
+    SemiAdder(cache_wires, output_wires, work_wires)
+    adjoint(OutMultiplier)(
+        x_wires, y_wires, cache_wires, mod=mod, work_wires=work_wires, zeroed_output_wires=True
+    )
+
+
 add_decomps(
     OutMultiplier,
     _out_multiplier_with_qft,
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
+    _out_multiplier_with_cache,
 )
