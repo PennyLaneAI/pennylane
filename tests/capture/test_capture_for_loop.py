@@ -350,9 +350,8 @@ class TestDynamicShapes:
 
     @pytest.mark.parametrize("allow_array_resizing", (False, "auto"))
     def test_combine_with_dynamic_closure_var(self, allow_array_resizing):
-"""Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
-can be combines."""
-        """
+        """Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
+        can be combines."""
 
         def w(i0):
             c = jnp.arange(i0)
