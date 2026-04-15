@@ -19,7 +19,7 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qml
-from pennylane import allocation, control_flow, math, ops, queuing
+from pennylane import allocation, compiler, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -444,6 +444,10 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     else:
         down_gate = qml.TemporaryAND
         up_gate = ops.adjoint(qml.TemporaryAND)
+
+    if compiler.active() or qml.capture.enabled():
+        control_wires = math.array(control_wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
 
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
@@ -1057,6 +1061,11 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
+
+    if compiler.active() or qml.capture.enabled():
+        control_wires_x = math.array(control_wires_x, like="jax")
+        control_wires_y = math.array(control_wires_y, like="jax")
+        target_wires = math.array(target_wires, like="jax")
 
     @control_flow.for_loop(0, len(control_wires_x), 1)
     def loop(i):

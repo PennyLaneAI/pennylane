@@ -343,7 +343,7 @@ class PauliRot(Operation):
                 "Allowed characters are I, X, Y and Z"
             )
 
-        num_wires = 1 if isinstance(wires, int) else len(wires)
+        num_wires = len(self._wires)
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
