@@ -191,8 +191,8 @@ class LeftClassicalComparator(Operation):
             _left_classical_comparator(x_wires, L, target_wire, work_wires, op=op)
 
         if QueuingManager.recording():
-            for op in q.queue:
-                apply(op)
+            for o in q.queue:
+                apply(o)
 
         return q.queue
 
@@ -264,6 +264,7 @@ def _left_classical_comparator(
         x_wires = math.array(x_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
+    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         bit = _get_specific_bit(L, i)

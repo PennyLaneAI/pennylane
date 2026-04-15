@@ -15,7 +15,6 @@
 Tests for the LeftClassicalComparator template.
 """
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -83,7 +82,7 @@ class TestLeftClassicalComparator:
             qp.adjoint(lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, op))()
             return qp.sample(wires=[12])
 
-        assert bool(circuit()[0]) == expected
+        assert bool(circuit()) == expected
 
     @pytest.mark.parametrize(
         ("target_wire", "x_wires", "L", "work_wires", "op", "msg_match"),
