@@ -15,7 +15,6 @@
 Tests for the LeftQuantumComparator template.
 """
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -92,7 +91,7 @@ class TestLeftQuantumComparator:
             )()
             return qp.sample(wires=[12])
 
-        assert bool(circuit()[0]) == expected
+        assert bool(circuit()) == expected
 
     @pytest.mark.parametrize(
         ("target_wire", "x_wires", "y_wires", "work_wires", "op", "msg_match"),

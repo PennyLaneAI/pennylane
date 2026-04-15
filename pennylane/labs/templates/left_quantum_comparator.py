@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the LeftQuantumComparator template for performing inequality test of two quantum registers."""
 
+from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -20,10 +21,8 @@ from pennylane.decomposition import (
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.wires import Wires, WiresLike
 from pennylane.templates.subroutines import Elbow
-from pennylane import cond, for_loop
-from pennylane import compiler, math, capture
+from pennylane.wires import Wires, WiresLike
 
 
 class LeftQuantumComparator(Operation):
@@ -193,8 +192,8 @@ class LeftQuantumComparator(Operation):
             _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, op=op)
 
         if QueuingManager.recording():
-            for op in q.queue:
-                apply(op)
+            for o in q.queue:
+                apply(o)
 
         return q.queue
 
@@ -248,6 +247,7 @@ def _left_quantum_comparator(
         y_wires = math.array(y_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
+    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         CNOT(wires=[x_wires[i], y_wires[i]])
