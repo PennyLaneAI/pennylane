@@ -491,7 +491,7 @@ class TestDecompCollection:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RZ(theta, wires=wires[0])
 
-        @register_resources({qml.RX: 2, qml.CZ: 1})
+        @register_resources({qml.RX: 2, qml.CZ: 1}, name="custom2")
         def custom_decomp2(theta, wires, **_):
             qml.RX(theta, wires=wires[0])
             qml.CZ(wires=[wires[0], wires[1]])
@@ -516,14 +516,14 @@ class TestDecompCollection:
         assert repr(collection) == dedent("""
             DecompCollection([
                 DecompositionRule(name=custom_decomp),
-                DecompositionRule(name=custom_decomp2),
+                DecompositionRule(name=custom2),
                 DecompositionRule(name=custom_decomp3)
             ])
             """).strip()
         assert str(collection) == dedent("""
             Available Decomposition Rules:
             0: custom_decomp
-            1: custom_decomp2
+            1: custom2
             2: custom_decomp3
             """).strip()
 
@@ -535,4 +535,4 @@ class TestDecompCollection:
         assert collection["custom_decomp3"].name == "custom_decomp3"
         assert len(collection) == 3
         assert all(isinstance(rule, DecompositionRule) for rule in collection)
-        assert [r.name for r in collection] == ["custom_decomp", "custom_decomp2", "custom_decomp3"]
+        assert [r.name for r in collection] == ["custom_decomp", "custom2", "custom_decomp3"]
