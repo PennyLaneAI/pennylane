@@ -803,6 +803,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
+
 * With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
   after the loop.
   [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
