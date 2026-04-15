@@ -992,7 +992,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2e2a2e94b (Remove duplicate changelog entry)
 * Fixed an internal `TypeError: 'NoneType' object is not iterable` when using `qml.decompose`
   without a `gate_set` argument while `qml.decomposition.enable_graph()` is active. The error
   message now clearly states that `gate_set` is required with graph-based decomposition.
@@ -1152,4 +1155,5 @@ Jay Soni,
 Nate Stemen,
 David Wierichs,
 Fuyuan Xia,
-Jake Zaia.
+Jake Zaia,
+Adithya Phani Thota.
