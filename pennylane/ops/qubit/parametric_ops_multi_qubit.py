@@ -683,20 +683,20 @@ class PCPhase(Operation):
 
     >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qp.draw(op_13.decomposition)())
-    1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
-    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
-    3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+    1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤
+    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
+    3: ────────────├○───────────├GlobalPhase(-1.23)─┤
     4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
     If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
 
     >>> op_16 = qp.PCPhase(1.23, dim=16, wires=range(6))
     >>> print(qp.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
-    0: ────╭○───────────╭GlobalPhase(1.23)─┤  
-    1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤  
-    2: ─────────────────├GlobalPhase(1.23)─┤  
-    3: ─────────────────├GlobalPhase(1.23)─┤  
-    4: ─────────────────├GlobalPhase(1.23)─┤  
+    0: ────╭○───────────╭GlobalPhase(1.23)─┤
+    1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤
+    2: ─────────────────├GlobalPhase(1.23)─┤
+    3: ─────────────────├GlobalPhase(1.23)─┤
+    4: ─────────────────├GlobalPhase(1.23)─┤
     5: ─────────────────╰GlobalPhase(1.23)─┤
 
     """
@@ -830,9 +830,9 @@ class PCPhase(Operation):
 
         >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
         >>> print(qp.draw(op_13.decomposition)())
-        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
-        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
-        3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤
+        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
+        3: ────────────├○───────────├GlobalPhase(-1.23)─┤
         4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
         In the following we provide a detailed example for illustration purposes.
@@ -899,9 +899,9 @@ class PCPhase(Operation):
         which concludes the decomposition, now reading:
 
         >>> print(qp.draw(op_3.decomposition)())
-        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤  
-        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤  
-        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤  
+        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤
+        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤
+        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤
         3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
 
         """
