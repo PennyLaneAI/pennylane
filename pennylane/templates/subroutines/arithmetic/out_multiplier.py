@@ -412,7 +412,7 @@ def _out_multiplier_with_qft(
 
 
 def _out_multiplier_with_adder_resources(
-    num_output_wires, num_x_wires, num_y_wires, zeroed_output_wires, **_
+    num_output_wires, num_x_wires, num_y_wires, zeroed_output_wires, num_work_wires, **_
 ) -> dict:
     """Resources for OutMultiplier decomposition with controlled adders."""
     n = num_x_wires
@@ -428,7 +428,11 @@ def _out_multiplier_with_adder_resources(
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
-                base_params={"num_y_wires": size},
+                base_params={
+                    "num_x_wires": m,
+                    "num_y_wires": size,
+                    "num_work_wires": num_work_wires,
+                },
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
@@ -482,6 +486,7 @@ def _out_multiplier_with_caddsub_resources(
     n = num_x_wires
     m = num_y_wires
     k = num_output_wires + 1  # augmented output register
+    num_passed_ww = num_work_wires - 1  # One work wire is used by the arithmetic logic itself.
 
     resources = defaultdict(int)
 
@@ -514,10 +519,14 @@ def _out_multiplier_with_caddsub_resources(
     # SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(k - i, m + 1) if zeroed_output_wires else k - i
-        resources[resource_rep(SemiAdder, num_y_wires=size)] += 1
+        resources[
+            resource_rep(SemiAdder, num_x_wires=m, num_y_wires=size, num_work_wires=size - 1)
+        ] += 1
 
     # Add 2^m(x+1)
-    resources[resource_rep(SemiAdder, num_y_wires=k - m)] += 1
+    resources[
+        resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k - m, num_work_wires=k - m - 1)
+    ] += 1
     # bit flips corresponding to input carry activated. Accounts for the fact that
     # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
     has_work_wires = int(k > m + 1)
@@ -530,12 +539,14 @@ def _out_multiplier_with_caddsub_resources(
     # First negation
     resources[x_rep] += k
     # Add y
-    resources[resource_rep(SemiAdder, num_y_wires=k)] += 1
+    resources[
+        resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
+    ] += 1
     # increment 2^(n+m) bit
     size = k - n - m
     mcx_kwargs = {
         "num_zero_control_values": 0,
-        "num_work_wires": num_work_wires - 1,
+        "num_work_wires": num_passed_ww,
         "work_wire_type": "zeroed",
     }
     if size > 0:
@@ -548,7 +559,9 @@ def _out_multiplier_with_caddsub_resources(
 
     # Add 2^n y
     if k > n:
-        resources[resource_rep(SemiAdder, num_y_wires=k - n)] += 1
+        resources[
+            resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k - n, num_work_wires=num_passed_ww)
+        ] += 1
 
     return dict(resources)
 
