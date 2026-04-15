@@ -54,7 +54,7 @@ def promote_consts_to_inputs(f):
         # in-place modifying the closure contents.
 
         try:
-            for ind, c in zip(indices, new_consts):
+            for ind, c in zip(indices, new_consts, strict=True):
                 f.__closure__[ind].cell_contents = c
 
             f_results = f(*args)
