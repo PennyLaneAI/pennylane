@@ -709,10 +709,10 @@ def specs(
 
         .. note::
 
-            The level argument to ``specs`` may be negative. When negative integers are used for
+            The ``level`` argument provided to ``specs`` may be negative. When negative integers are used for
             ``level``, these indices are interpreted as counting backwards with respect to the
-            final transform or pass in the sequence. This is similar to how Python slices
-            operate, where ``-1`` corresponds to the last applied transform or pass,
+            final transform in the sequence. This is similar to how Python slices
+            operate; ``-1`` corresponds to the last level,
             ``-2`` to the second to last, and so on.
 
         For example, the following will also return the resources after the ``merge-rotations`` pass:
