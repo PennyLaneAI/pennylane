@@ -49,7 +49,7 @@ class LeftClassicalComparator(Operation):
 
     Args:
         x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
-        L (int): The classical integer to compare against.
+        L (int): The classical integer to compare against. It must be smaller than :math:`2^{\text{len(x_wires)}}`.
         target_wire (WiresLike): The wire that stores the value of the inequality test.
         work_wires (WiresLike): The auxiliary wires to use for the comparison.
             At least ``len(x_wires) - 1`` zeroed work wires should be provided.
@@ -174,7 +174,7 @@ class LeftClassicalComparator(Operation):
 
         Args:
             x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
-            L (int): The classical integer to compare against.
+            L (int): The classical integer to compare against. It must be smaller than :math:`2^{\text{len(x_wires)}}`.
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the comparison.
                 At least ``len(x_wires) - 1`` zeroed work wires should be provided.
