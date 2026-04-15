@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the LeftClassicalComparator template for performing inequality test of two quantum registers."""
 
+from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -20,10 +21,8 @@ from pennylane.decomposition import (
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.wires import Wires, WiresLike
 from pennylane.templates.subroutines import Elbow
-from pennylane import cond, for_loop
-from pennylane import compiler, math, capture
+from pennylane.wires import Wires, WiresLike
 
 
 class LeftClassicalComparator(Operation):
