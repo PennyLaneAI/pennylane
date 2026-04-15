@@ -155,7 +155,7 @@ class OutMultiplier(Operation):
 
         >>> out = circuit()
         >>> print(out)
-        {np._bin("0011"): 1}
+        {np.str_('0011'): np.int64(1)}
         >>> print(int(list(out.keys())[0], 2))
         3
 
@@ -319,7 +319,7 @@ class OutMultiplier(Operation):
         output_wires: WiresLike,
         mod,
         work_wires: WiresLike,
-        zeroed_output_wires: bool,
+        zeroed_output_wires: bool = False,
     ):  # pylint: disable=arguments-differ, too-many-arguments, unused-argument
         r"""Representation of the operator as a product of other operators.
 
