@@ -29,6 +29,7 @@ from ._loop_abstract_axes import (
     get_dummy_arg,
     handle_jaxpr_error,
     loop_determine_abstracted_axes,
+    promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
 
@@ -398,7 +399,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         import jax  # pylint: disable=import-outside-toplevel
 
         # need in_tree to include index so flat_fn will repack args correctly
-        flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
+        f_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
+
+        flat_args, in_tree = jax.tree_util.tree_flatten(((0, *init_state), dynamic_consts))
 
         # slice out the index so shape_locations indexes from non-index args/ results
         flat_args = flat_args[1:]
@@ -407,7 +410,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
 
-        flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
+        flat_fn = FlatFn(f_consts_extracted, in_tree=in_tree)
 
         if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
@@ -483,7 +486,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        # [0] to slice out the consts extracted by promote_consts_to_inputs
+        return jax.tree_util.tree_unflatten(out_tree, results)[0]
 
     def __call__(self, *init_state):
 
