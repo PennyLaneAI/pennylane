@@ -1,4 +1,4 @@
-qml
+qp
 ===
 
 .. currentmodule:: pennylane
