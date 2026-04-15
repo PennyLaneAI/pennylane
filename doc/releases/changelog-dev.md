@@ -175,8 +175,8 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* ``qp.specs`` now supports negative integers for its ``level`` argument when using pass-by-pass mode.
-  When supplied a negative integer, it treats it the same way as a Python slice, with -1 representing the last pass,
+* ``qp.specs`` now supports negative integers for its ``level`` argument.
+  When supplied with a negative integer, :func:`~.specs` handles it like a Python slice; with -1 representing the last level,
   -2 representing the second-to-last, and so on.
   [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
 
