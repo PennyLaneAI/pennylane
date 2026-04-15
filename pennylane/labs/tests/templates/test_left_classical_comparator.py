@@ -49,22 +49,22 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize(
         ("x_wires", "L", "target_wire", "work_wires", "x", "op", "expected"),
         [
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1,  "<", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1,  "<=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1,  ">=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1,  ">", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2,  "<", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2,  "<=", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2,  ">=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2,  ">", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1,  "<", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1,  "<=", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1,  ">=", False),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1,  ">", False),
-            ([0, 3, 6], 5, 11, [2, 5], 2,  "<", True),
-            ([0, 3, 6], 5, 11, [2, 5], 2,  "<=", True),
-            ([0, 3, 6], 5, 11, [2, 5], 2,  ">=", False),
-            ([0, 3, 6], 5, 11, [2, 5], 2,  ">", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, "<", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, "<=", True),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, ">=", True),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, ">", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, "<", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, "<=", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, ">=", True),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, ">", True),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, "<", True),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, "<=", True),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, ">=", False),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, ">", False),
+            ([0, 3, 6], 5, 11, [2, 5], 2, "<", True),
+            ([0, 3, 6], 5, 11, [2, 5], 2, "<=", True),
+            ([0, 3, 6], 5, 11, [2, 5], 2, ">=", False),
+            ([0, 3, 6], 5, 11, [2, 5], 2, ">", False),
         ],
     )
     def test_operation_result(
@@ -80,9 +80,7 @@ class TestLeftClassicalComparator:
             qp.BasisState(x, wires=x_wires)
             LeftClassicalComparator(x_wires, L, target_wire, work_wires, op)
             qp.CNOT([11, 12])
-            qp.adjoint(
-                lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, op)
-            )()
+            qp.adjoint(lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, op))()
             return qp.sample(wires=[12])
 
         assert bool(circuit()[0]) == expected
@@ -137,6 +135,4 @@ class TestLeftClassicalComparator:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qp.labs.templates.LeftClassicalComparator(
-                x_wires, L, target_wire, work_wires, op=op
-            )
+            qp.labs.templates.LeftClassicalComparator(x_wires, L, target_wire, work_wires, op=op)

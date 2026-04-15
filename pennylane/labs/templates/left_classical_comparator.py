@@ -155,7 +155,9 @@ class LeftClassicalComparator(Operation):
             for key in ["x_wires", "target_wire", "work_wires"]
         }
 
-        return LeftClassicalComparator(**new_dict, L=self.hyperparameters["L"], op=self.hyperparameters["op"])
+        return LeftClassicalComparator(
+            **new_dict, L=self.hyperparameters["L"], op=self.hyperparameters["op"]
+        )
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -198,6 +200,7 @@ class LeftClassicalComparator(Operation):
 def _get_specific_bit(L, i):
     # returns the i-th bit of the binary representation of L
     return (L >> i) & 1
+
 
 def _left_classical_comparator_resources(num_x_wires, L, op):
     if op in ["<=", ">"]:
