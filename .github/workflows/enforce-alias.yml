@@ -27,10 +27,16 @@ jobs:
       default_runner: ubuntu-latest
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
-  documentation-tests:
+  enforce-alias:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      CORE_MODULES: |
+        pennylane/operation.py
+
+      TEST_MODULES: |
+        tests/test_operation.py
 
     name: Enforce PennyLane alias as qp
 
@@ -54,11 +60,23 @@ jobs:
           version: 0.9.17
           enable-cache: true  
 
-      - name: Test 'pennylane' folder
+      - name: Enforce 'qp' Alias (Code)
         if: always()
         run: |
-          MODULES="
-          pennylane/operation.py
-          "
+          uvx ruff check ${{ env.CORE_MODULES }} \
+            --select ICN \
+            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \ 
+            --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
 
-          uvx ruff check $MODULES --select ICN --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
+      - name: Enforce 'qp' Alias (Tests)
+        if: always()
+        run: |
+          uvx ruff check ${{ env.TEST_MODULES }} \
+            --select ICN \
+            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \ 
+            --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
+
+      - name: Enforce 'qp' Alias (Documentation)
+        if: always()
+        run: |
+          grep -rn "qml" ${{ env.CORE_MODULES }} ${{ env.TEST_MODULES }}
