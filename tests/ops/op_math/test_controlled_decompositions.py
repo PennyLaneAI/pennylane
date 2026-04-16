@@ -1136,7 +1136,8 @@ class TestMCXDecomposition:
     @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires", [(4, 1), (4, 2)],
+        "num_control_wires, num_work_wires",
+        [(4, 1), (4, 2)],
     )
     def test_mcx_qjit(self, num_control_wires, num_work_wires):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
