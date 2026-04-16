@@ -38,6 +38,7 @@ import pennylane as qml
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
 from .reconstruct import decomps_use_reconstructor
@@ -322,7 +323,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         rules = [
             rule
             for rule in self._get_decompositions(op, use_reconstructor)
-            if rule.is_applicable(**op.params)
+            if (
+                rule.is_applicable(**op.params)
+                if isinstance(op, (Operator2, Operator))
+                else rule.is_applicable()
+            )
         ]
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -373,11 +378,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     ) -> _DecompositionNode | None:
         """Adds a decomposition rule to the graph and returns whether it depends on work wires."""
 
-        if not rule.is_applicable(**op_node.op.params):
+        args = op_node.op.params if isinstance(op_node.op, (Operator, Operator2)) else {}
+        if not rule.is_applicable(**args):
             return None  # skip the decomposition rule if it is not applicable
 
-        decomp_resource = rule.compute_resources(**op_node.op.params)
-        work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
+        decomp_resource = rule.compute_resources(**args)
+        work_wire_spec = rule.get_work_wire_spec(**args)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)

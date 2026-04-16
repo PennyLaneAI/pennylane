@@ -26,6 +26,7 @@ from textwrap import dedent
 from typing import overload
 
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 
 from .resources import Resources, auto_wrap
 from .utils import to_name
@@ -452,7 +453,13 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
+                if (isinstance(op, type) and issubclass(op, Operator2)) or isinstance(
+                    op, Operator2
+                ):
+                    key = op
+                else:
+                    key = auto_wrap(op)
+                gate_counter.update({key: count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:

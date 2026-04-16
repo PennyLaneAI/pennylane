@@ -22,6 +22,7 @@ from contextvars import ContextVar
 from functools import singledispatch
 
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -77,6 +78,11 @@ def _type_to_name(op: type):
 
 @to_name.register
 def _operator_to_name(op: Operator):
+    return translate_op_alias(op.name)
+
+
+@to_name.register
+def _operator_to_name(op: Operator2):
     return translate_op_alias(op.name)
 
 
