@@ -121,7 +121,7 @@ to handle a single circuit. See the documentation for each modifier for more det
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out

@@ -98,7 +98,7 @@ def device(name, *args, **kwargs):
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run
-    :func:`qml.about <pennylane.about>`.
+    :func:`qp.about <pennylane.about>`.
 
     Args:
         name (str): the name of the device to load
@@ -116,12 +116,12 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=5)
+        dev = qp.device('default.qubit', wires=5)
 
         def circuit():
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[3, 4])
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[3, 4])
             ...
 
     The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
@@ -129,37 +129,37 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
+        dev = qp.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
 
         def circuit():
-            qml.Hadamard(wires='q11')
-            qml.Hadamard(wires=['auxiliary'])
-            qml.CNOT(wires=['q12', -1])
+            qp.Hadamard(wires='q11')
+            qp.Hadamard(wires=['auxiliary'])
+            qp.CNOT(wires=['q12', -1])
             ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qp.device("default.qubit")
 
     When executing quantum circuits on a device, we can specify the number of times the circuit must be executed
     to estimate stochastic return values by using the :func:`~pennylane.set_shots` transform.
-    As an example, ``qml.sample()`` measurements will return as many samples as the number of shots specified.
+    As an example, ``qp.sample()`` measurements will return as many samples as the number of shots specified.
     Note that ``shots`` can be a single integer or a list of shot values.
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1, seed=42)
+        dev = qp.device('default.qubit', wires=1, seed=42)
 
-        @qml.set_shots(10)
-        @qml.qnode(dev)
+        @qp.set_shots(10)
+        @qp.qnode(dev)
         def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.Z(0))
+            qp.RX(a, wires=0)
+            return qp.sample(qp.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1.,  1., -1.,  1.,  1., -1.,  1.,  1.,  1.,  1.])
-    >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
+    >>> new_circuit = qp.set_shots(circuit, shots=[3, 4, 4])
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([ 1., -1.,  1.]), array([1., 1., 1., 1.]), array([1., 1., 1., 1.]))
     """
