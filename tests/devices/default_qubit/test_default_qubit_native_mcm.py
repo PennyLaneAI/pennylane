@@ -294,7 +294,7 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
     tape = qp.tape.QuantumScript(
         [qp.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qp.sample(wires=0)], shots=10
     )
-    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qp.transforms.dynamic_one_shot(tape)
 
     dev = qp.device("default.qubit", seed=seed)
@@ -306,7 +306,7 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         qp.measure(0, postselect=1)
         return qp.sample(wires=0)
 
-    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         _ = circuit([0.1, 0.2])
 
 
