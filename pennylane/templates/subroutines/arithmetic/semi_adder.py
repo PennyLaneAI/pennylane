@@ -145,17 +145,17 @@ class SemiAdder(Operation):
         x = 3
         y = 4
 
-        wires = qml.registers({"x":3, "y":6, "work":5})
+        wires = qp.registers({"x":3, "y":6, "work":5})
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=wires["x"])
-            qml.BasisEmbedding(y, wires=wires["y"])
-            qml.SemiAdder(wires["x"], wires["y"], wires["work"])
-            return qml.sample(wires=wires["y"])
+            qp.BasisEmbedding(x, wires=wires["x"])
+            qp.BasisEmbedding(y, wires=wires["y"])
+            qp.SemiAdder(wires["x"], wires["y"], wires["work"])
+            return qp.sample(wires=wires["y"])
 
     .. code-block:: pycon
 
@@ -171,17 +171,17 @@ class SemiAdder(Operation):
         x = 3
         y = 1
 
-        wires = qml.registers({"x":3, "y":2, "work":1})
+        wires = qp.registers({"x":3, "y":2, "work":1})
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=wires["x"])
-            qml.BasisEmbedding(y, wires=wires["y"])
-            qml.SemiAdder(wires["x"], wires["y"], wires["work"])
-            return qml.sample(wires=wires["y"])
+            qp.BasisEmbedding(x, wires=wires["x"])
+            qp.BasisEmbedding(y, wires=wires["y"])
+            qp.SemiAdder(wires["x"], wires["y"], wires["work"])
+            return qp.sample(wires=wires["y"])
 
     >>> print(circuit())
     [[0 0]]
