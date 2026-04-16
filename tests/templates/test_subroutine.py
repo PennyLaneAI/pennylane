@@ -21,7 +21,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
@@ -39,7 +39,7 @@ class TestInitialization:
         """Test the creation of a simple subroutine."""
 
         def Simple(x, wires):
-            qml.RX(x, wires=wires)
+            qp.RX(x, wires=wires)
 
         S = Subroutine(Simple)
 
@@ -55,15 +55,15 @@ class TestInitialization:
         assert S.dynamic_argnames == ("x",)
         assert S.exact_resources
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             S.definition(0.5, 0)
 
         assert len(q.queue) == 1
-        qml.assert_equal(q.queue[0], qml.RX(0.5, 0))
+        qp.assert_equal(q.queue[0], qp.RX(0.5, 0))
 
         resources = S.compute_resources(0.5, wires=0)
         expected = defaultdict(int)
-        expected[qml.resource_rep(qml.RX)] = 1
+        expected[qp.resource_rep(qp.RX)] = 1
         assert resources == expected
 
     def test_wire_argnames(self):
@@ -116,19 +116,19 @@ class TestInitialization:
 
         def compute_resources(x, wires, metadata):
             assert metadata == 2  # test filled in with default values.
-            assert isinstance(wires, qml.wires.Wires)
-            return {qml.RX: len(wires)}
+            assert isinstance(wires, qp.wires.Wires)
+            return {qp.RX: len(wires)}
 
         @partial(Subroutine, compute_resources=compute_resources)
         def HasResources(x, wires, metadata=2):
             for w in wires:
-                qml.RX(x, w)
+                qp.RX(x, w)
 
         out = HasResources.compute_resources(0.5, [0, 1, 2])
-        assert out == {qml.RX: 3}
+        assert out == {qp.RX: 3}
         # test wires setup properly
         out2 = HasResources.compute_resources(0.5, 0)
-        assert out2 == {qml.RX: 1}
+        assert out2 == {qp.RX: 1}
 
     @pytest.mark.parametrize("exact_resources", (True, False))
     def test_setting_exact_resources(self, exact_resources):
@@ -136,7 +136,7 @@ class TestInitialization:
 
         @partial(Subroutine, exact_resources=exact_resources)
         def f(wires):
-            qml.X(wires)
+            qp.X(wires)
 
         assert f.exact_resources == exact_resources
 
@@ -153,8 +153,8 @@ class TestInitialization:
 
 
 def Example1(x, y, reg1, reg2, pauli_words):
-    qml.PauliRot(x, pauli_words[0], reg1)
-    qml.PauliRot(y, pauli_words[1], reg2)
+    qp.PauliRot(x, pauli_words[0], reg1)
+    qp.PauliRot(y, pauli_words[1], reg2)
     return 2
 
 
@@ -164,7 +164,7 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
 
 def Example1Resources(x, y, reg1, reg2, pauli_words):
     return {
-        qml.resource_rep(qml.PauliRot, pauli_word=pw): num
+        qp.resource_rep(qp.PauliRot, pauli_word=pw): num
         for pw, num in Counter(pauli_words).items()
     }
 
@@ -181,7 +181,7 @@ Example1Subroutine = Subroutine(
 def generate_subroutine_op_example(*args, **kwargs):
     bound_args = Example1Subroutine.signature.bind(*args, **kwargs)
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         output = Example1(*args, **kwargs)
     return SubroutineOp(Example1Subroutine, bound_args, decomposition=q.queue, output=output)
 
@@ -191,13 +191,13 @@ def test_operator_method():
 
     @Subroutine
     def f(x, wires):
-        qml.RX(x, wires)
+        qp.RX(x, wires)
         return 2
 
     op = f.operator(0.5, 0)
     assert isinstance(op, SubroutineOp)
     assert op.output == 2
-    qml.equal(op.decomposition()[0], qml.RX(0.5, 0))
+    qp.equal(op.decomposition()[0], qp.RX(0.5, 0))
 
 
 def test_fallback_creating_resources_AbstractArray():
@@ -209,18 +209,18 @@ def test_fallback_creating_resources_AbstractArray():
             p,
             w,
         ) in zip(params["a"], wires):
-            qml.PauliRot(p, rotation, w)
-        qml.MultiControlledX(wires)
+            qp.PauliRot(p, rotation, w)
+        qp.MultiControlledX(wires)
 
     p = AbstractArray((3,), float)
     w = AbstractArray((3,))
 
     resources = f.compute_resources({"a": p}, w, "Z")
     expected = defaultdict(int)
-    expected[qml.resource_rep(qml.PauliRot, pauli_word="Z")] = 3
+    expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
 
-    r = qml.resource_rep(
-        qml.MultiControlledX,
+    r = qp.resource_rep(
+        qp.MultiControlledX,
         num_control_wires=2,
         num_zero_control_values=0,
         num_work_wires=0,
@@ -233,20 +233,20 @@ def test_fallback_creating_resources_AbstractArray():
 def test_fallback_resources_error():
     """Test that if an error occurs when using the resources fallback, we get a more informative error."""
 
-    @qml.templates.Subroutine
+    @qp.templates.Subroutine
     def f(wires):
         raise ValueError("AHHHH")
 
     with pytest.raises(
         ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
     ):
-        f.compute_resources(qml.templates.AbstractArray((2,)))
+        f.compute_resources(qp.templates.AbstractArray((2,)))
 
 
 class TestSubroutineOp:
 
     op1 = generate_subroutine_op_example(
-        0.5, 0.6, qml.wires.Wires((0, "a")), qml.wires.Wires(("a", 1)), ("XY", "YZ")
+        0.5, 0.6, qp.wires.Wires((0, "a")), qp.wires.Wires(("a", 1)), ("XY", "YZ")
     )
 
     def test_no_primitive_bind_call(self):
@@ -263,7 +263,7 @@ class TestSubroutineOp:
 
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-        qml.ops.functions.assert_valid(self.op1, skip_pickle=True)
+        qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""
@@ -275,7 +275,7 @@ class TestSubroutineOp:
 
     def test_set_wires(self):
         """Test that the wires for a subroutineop are set."""
-        assert self.op1.wires == qml.wires.Wires([0, "a", 1])
+        assert self.op1.wires == qp.wires.Wires([0, "a", 1])
 
     def test_set_data(self):
         """Test that data can automatically be extracted."""
@@ -298,33 +298,33 @@ class TestSubroutineOp:
         """Test that map_wires can handle multiple registers."""
 
         new_op = self.op1.map_wires({0: 3, "a": 4})
-        assert new_op.wires == qml.wires.Wires([3, 4, 1])
+        assert new_op.wires == qp.wires.Wires([3, 4, 1])
         decomp = new_op.decomposition()
-        qml.assert_equal(decomp[0], qml.PauliRot(0.5, "XY", (3, 4)))
-        qml.assert_equal(decomp[1], qml.PauliRot(0.6, "YZ", (4, 1)))
+        qp.assert_equal(decomp[0], qp.PauliRot(0.5, "XY", (3, 4)))
+        qp.assert_equal(decomp[1], qp.PauliRot(0.6, "YZ", (4, 1)))
 
     def test_decomposition(self):
         """Test that decomposition behaves like normal."""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             decomp = self.op1.decomposition()
 
         decomp2 = self.op1.decomposition()  # no queuing context
 
         for d in [q.queue, decomp, decomp2]:
-            qml.assert_equal(d[0], qml.PauliRot(0.5, "XY", (0, "a")))
-            qml.assert_equal(d[1], qml.PauliRot(0.6, "YZ", ("a", 1)))
+            qp.assert_equal(d[0], qp.PauliRot(0.5, "XY", (0, "a")))
+            qp.assert_equal(d[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_integration(self):
         """Test that SubroutineOp can be used with the decompose transform in a basic use case."""
 
-        tape = qml.tape.QuantumScript([self.op1])
+        tape = qp.tape.QuantumScript([self.op1])
 
-        [new_tape], _ = qml.transforms.decompose(tape, gate_set={qml.PauliRot})
+        [new_tape], _ = qp.transforms.decompose(tape, gate_set={qp.PauliRot})
 
-        qml.assert_equal(new_tape[0], qml.PauliRot(0.5, "XY", (0, "a")))
-        qml.assert_equal(new_tape[1], qml.PauliRot(0.6, "YZ", ("a", 1)))
+        qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
+        qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
 
 
 class TestSubroutineCall:
@@ -338,9 +338,9 @@ class TestSubroutineCall:
         @partial(Subroutine, setup_inputs=my_setup_inputs)
         def f(wires, pauli_words):
             assert isinstance(pauli_words, tuple)
-            qml.PauliRot(0.5, pauli_words[0], wires)
+            qp.PauliRot(0.5, pauli_words[0], wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             out = f(0, ["X"])
         op = q.queue[0]
         assert out is None
@@ -353,7 +353,7 @@ class TestSubroutineCall:
         def f(wires, metadata="default_value"):
             pass
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             out = f(0)
         assert out is None
         op = q.queue[0]
@@ -376,15 +376,15 @@ class TestSubroutineCall:
 
         @Subroutine
         def mcm_output(wires):
-            return [qml.measure(w) for w in wires]
+            return [qp.measure(w) for w in wires]
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             out = mcm_output((0, 1))
 
         assert len(out) == 2
         assert isinstance(out, list)
-        assert isinstance(out[0], qml.ops.MeasurementValue)
-        assert isinstance(out[1], qml.ops.MeasurementValue)
+        assert isinstance(out[0], qp.ops.MeasurementValue)
+        assert isinstance(out[1], qp.ops.MeasurementValue)
 
         assert len(q.queue) == 1
         op = q.queue[0]
@@ -406,16 +406,16 @@ class TestSubroutineCapture:
         @partial(Subroutine, setup_inputs=my_setup_inputs, static_argnames="pauli_words")
         def f(wires, pauli_words):
             assert isinstance(pauli_words, tuple)
-            qml.PauliRot(0.5, pauli_words[0], wires)
+            qp.PauliRot(0.5, pauli_words[0], wires)
 
         def w():
             f(0, ["X"])
 
         jaxpr = jax.make_jaxpr(w)()
-        assert jaxpr.eqns[-1].primitive == qml.capture.primitives.quantum_subroutine_prim
+        assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
         # pylint: disable=protected-access
-        assert inner_jaxpr.eqns[-1].primitive == qml.PauliRot._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qp.PauliRot._primitive
         assert inner_jaxpr.eqns[-1].params["pauli_word"] == "X"
 
     def test_different_forms_of_wires(self):
@@ -423,10 +423,10 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
             assert wires.shape == (1,)
-            qml.X(wires[0])
+            qp.X(wires[0])
 
         jaxpr1 = jax.make_jaxpr(f)(0)
 
@@ -444,7 +444,7 @@ class TestSubroutineCapture:
         jaxpr5 = jax.make_jaxpr(w2)()
 
         for jaxpr in [jaxpr1, jaxpr2, jaxpr3, jaxpr4, jaxpr5]:
-            assert jaxpr.eqns[-1].primitive == qml.capture.primitives.quantum_subroutine_prim
+            assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
 
             assert jaxpr.eqns[-1].invars[0].aval.shape == (1,)
             assert "int" in jaxpr.eqns[-1].invars[0].aval.dtype.name
@@ -454,9 +454,9 @@ class TestSubroutineCapture:
 
         import jax
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            return [qml.measure(w) for w in wires]
+            return [qp.measure(w) for w in wires]
 
         def w(wires):
             out = f(wires)
@@ -471,7 +471,7 @@ class TestSubroutineCapture:
 
         eqn = jaxpr.eqns[-1]  # setup has some slicing and dicing
         assert len(eqn.outvars) == 3  # the three measurement values
-        assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+        assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
 
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
@@ -481,11 +481,11 @@ class TestSubroutineCapture:
         @Subroutine
         def f(x, wires):
             if x > 0:
-                qml.X(wires)
+                qp.X(wires)
             else:
-                qml.Y(wires)
+                qp.Y(wires)
 
-        @qml.capture.run_autograph
+        @qp.capture.run_autograph
         def w(x):
             f(x, 0)
 
@@ -498,18 +498,18 @@ class TestSubroutineCapture:
         import jax  # pylint: disable=import-outside-toplevel
 
         @Subroutine
-        @qml.capture.run_autograph
+        @qp.capture.run_autograph
         def f(x, wires):
             if x > 0:
-                qml.X(wires)
+                qp.X(wires)
 
         jaxpr = jax.make_jaxpr(f)(0.5, 0)
 
         subroutine_eqn = jaxpr.eqns[-1]
-        assert subroutine_eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+        assert subroutine_eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
 
         inner_xpr = subroutine_eqn.params["jaxpr"]
-        assert inner_xpr.eqns[-1].primitive == qml.capture.primitives.cond_prim
+        assert inner_xpr.eqns[-1].primitive == qp.capture.primitives.cond_prim
 
     def test_id_ignored(self):
         """Test that id is ignored with program capture."""
@@ -536,7 +536,7 @@ class TestCollectedSubroutine:
         jax = pytest.importorskip("jax")
 
         def f():
-            CollectedSubroutine("bla", [qml.X(0)])
+            CollectedSubroutine("bla", [qp.X(0)])
 
         with pytest.raises(NotImplementedError, match="should never be hit"):
             jax.make_jaxpr(f)()
@@ -547,17 +547,17 @@ class TestCollectedSubroutine:
 
         @Subroutine
         def f(wires):
-            qml.X(wires)
+            qp.X(wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.adjoint(f)(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.adjoint(f)(0)
 
         [adj_op] = q.queue
-        assert isinstance(adj_op, qml.ops.Adjoint)
+        assert isinstance(adj_op, qp.ops.Adjoint)
         base = adj_op.base
         assert isinstance(base, CollectedSubroutine)
         assert base.name == "f"
-        qml.assert_equal(base.decomposition()[0], qml.X(0))
+        qp.assert_equal(base.decomposition()[0], qp.X(0))
 
 
 @pytest.mark.integration
@@ -568,88 +568,88 @@ class TestTapePLIntegration:
 
         @Subroutine
         def Tester(x, y, wires):
-            qml.RX(x, wires[0])
-            qml.RY(y, wires[1])
+            qp.RX(x, wires[0])
+            qp.RY(y, wires[1])
 
-        @qml.qnode(qml.device("reference.qubit", wires=2))
+        @qp.qnode(qp.device("reference.qubit", wires=2))
         def c(x, y):
             Tester(x, y, wires=(0, 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         x = 0.5
         y = 1.2
         res1, res2 = c(x, y)
-        assert qml.math.allclose(res1, qml.math.cos(x))
-        assert qml.math.allclose(res2, qml.math.cos(y))
+        assert qp.math.allclose(res1, qp.math.cos(x))
+        assert qp.math.allclose(res2, qp.math.cos(y))
 
     def test_subroutine_gradient(self):
         """Test that SubroutineOp can be handled by gradients (namely parameter shift.)"""
 
         @Subroutine
         def Tester(x, y, wires):
-            qml.RX(x, wires[0])
-            qml.RY(y, wires[1])
+            qp.RX(x, wires[0])
+            qp.RY(y, wires[1])
 
-        @qml.qnode(qml.device("reference.qubit", wires=2))
+        @qp.qnode(qp.device("reference.qubit", wires=2))
         def c(x, y):
             Tester(x, y, wires=(0, 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        g0 = qml.grad(lambda x, y: c(x, y)[0])(qml.numpy.array(0.5), 1.2)
-        assert qml.math.allclose(g0, -qml.math.sin(0.5))
+        g0 = qp.grad(lambda x, y: c(x, y)[0])(qp.numpy.array(0.5), 1.2)
+        assert qp.math.allclose(g0, -qp.math.sin(0.5))
 
     def test_mcm_integration(self):
         """Test that subroutines can return the results of mid circuit measurements."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def MCMTester(wires):
-            return [qml.measure(wires=w, reset=True) for w in wires]
+            return [qp.measure(wires=w, reset=True) for w in wires]
 
-        @qml.qnode(qml.device("default.qubit", wires=2), mcm_method="tree-traversal")
+        @qp.qnode(qp.device("default.qubit", wires=2), mcm_method="tree-traversal")
         def c(x):
-            qml.X(0)
+            qp.X(0)
             m1, m2 = MCMTester((0, 1))
-            qml.cond(m1, qml.RX)(x, 0)
-            qml.cond(m2, qml.RX)(x, 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            qp.cond(m1, qp.RX)(x, 0)
+            qp.cond(m2, qp.RX)(x, 1)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         r1, r2 = c(0.5)
-        assert qml.math.allclose(r1, qml.math.cos(0.5))
-        assert qml.math.allclose(r2, 1)
+        assert qp.math.allclose(r1, qp.math.cos(0.5))
+        assert qp.math.allclose(r2, 1)
 
     def test_drawing(self):
         """Test that subroutines can be drawn."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def Tester(x, y, wires):
-            qml.RX(x, wires[0])
-            qml.RY(y, wires[1])
+            qp.RX(x, wires[0])
+            qp.RY(y, wires[1])
 
-        @qml.qnode(qml.device("reference.qubit", wires=2))
+        @qp.qnode(qp.device("reference.qubit", wires=2))
         def c(x, y):
             Tester(x, y, wires=(0, 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        out = qml.draw(c)(0.5, 1.2)
+        out = qp.draw(c)(0.5, 1.2)
         assert out == "0: ─╭Tester(0.50,1.20)─┤  <Z>\n1: ─╰Tester(0.50,1.20)─┤  <Z>"
 
-        out2 = qml.draw(c, decimals=None)(0.5, 1.2)
+        out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
     def test_specs(self):
         """Test that subroutines show up as gate types in specs."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def Tester(x, y, wires):
-            qml.RX(x, wires[0])
-            qml.RY(y, wires[1])
+            qp.RX(x, wires[0])
+            qp.RY(y, wires[1])
 
-        @qml.qnode(qml.device("reference.qubit", wires=2))
+        @qp.qnode(qp.device("reference.qubit", wires=2))
         def c(x, y):
             Tester(x, y, wires=(0, 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        specs = qml.specs(c, level="top")(0.5, 1.2)
+        specs = qp.specs(c, level="top")(0.5, 1.2)
         assert specs.resources.gate_types["Tester"] == 1
 
 
@@ -659,17 +659,17 @@ class TestGraphDecomposition:
     def test_creating_abstract_array(self):
         """Test basic checks for creating an AbstractArray."""
 
-        a = qml.templates.AbstractArray((2, 2, 3), np.float64)
+        a = qp.templates.AbstractArray((2, 2, 3), np.float64)
         assert a.shape == (2, 2, 3)
         assert a.dtype is np.dtype(np.float64)
 
-        b = qml.templates.AbstractArray(())
+        b = qp.templates.AbstractArray(())
         assert b.shape == ()
         assert b.dtype is np.dtype(np.int64)
 
         assert a != b
         assert hash(a)
-        assert b == qml.templates.AbstractArray(())
+        assert b == qp.templates.AbstractArray(())
 
     @pytest.mark.torch
     def test_torch_dtype_converted_to_numpy(self):
@@ -678,7 +678,7 @@ class TestGraphDecomposition:
         import torch
 
         x = torch.tensor(0.5, dtype=torch.float64)
-        a = qml.templates.AbstractArray((), x.dtype)
+        a = qp.templates.AbstractArray((), x.dtype)
         assert a.dtype is np.dtype(np.float64)
 
     def test_inbuilt_type_promotion_to_numpy(self):
@@ -690,7 +690,7 @@ class TestGraphDecomposition:
     def test_abstract_array_len(self):
         """Test that AbstractArray's have a length."""
 
-        a = qml.templates.AbstractArray((2, 3, 3))
+        a = qp.templates.AbstractArray((2, 3, 3))
         assert len(a) == 18
 
     def test_resource_keys(self):
@@ -702,13 +702,13 @@ class TestGraphDecomposition:
         """Test that the resource_params creates the signature key properly."""
 
         op1 = generate_subroutine_op_example(
-            0.5, 0.6, qml.wires.Wires((0, "a")), qml.wires.Wires(("a", 1)), ("XY", "YZ")
+            0.5, 0.6, qp.wires.Wires((0, "a")), qp.wires.Wires(("a", 1)), ("XY", "YZ")
         )
         rp = op1.resource_params
         assert list(rp.keys()) == ["subroutine", "signature_key"]
         assert rp["subroutine"] == Example1Subroutine
 
-        struct = qml.pytrees.flatten(0.5)[1]
+        struct = qp.pytrees.flatten(0.5)[1]
         key = (
             (struct, (AbstractArray((), float),)),
             (struct, (AbstractArray((), float),)),
@@ -730,16 +730,16 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
-            resource_rep(qml.PauliX),
+            resource_rep(qp.PauliX),
         )
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "PauliX"
         assert rr.params["target_op"].op_type == PauliX
 
-        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "SubroutineOp"
         assert rr.params["compute_op"].op_type == SubroutineOp
         assert rr.params["compute_op"].params == {
@@ -749,7 +749,7 @@ class TestGraphDecomposition:
             ),
         }
 
-        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "Adjoint(SubroutineOp)"
         assert rr.params["uncompute_op"].op_type == Adjoint
         assert rr.params["uncompute_op"].params == {
@@ -766,21 +766,21 @@ class TestGraphDecomposition:
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
 
         rr = change_op_basis_subroutine_resource_rep(
-            qml.PauliZ(0),
-            resource_rep(qml.PauliX),
+            qp.PauliZ(0),
+            resource_rep(qp.PauliX),
         )
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "PauliZ"
         assert rr.params["compute_op"].op_type == PauliZ
 
-        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "PauliX"
         assert rr.params["target_op"].op_type == PauliX
 
-        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
         assert rr.params["uncompute_op"].op_type == Adjoint
 
@@ -793,17 +793,17 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qml.PauliX),
+            resource_rep(qp.PauliX),
             partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
         )
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "PauliX"
         assert rr.params["compute_op"].op_type == PauliX
 
-        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "SubroutineOp"
         assert rr.params["target_op"].op_type == SubroutineOp
         assert rr.params["target_op"].params == {
@@ -813,7 +813,7 @@ class TestGraphDecomposition:
             ),
         }
 
-        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
         assert rr.params["uncompute_op"].op_type == Adjoint
 
@@ -826,22 +826,22 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            qml.CNOT([0, 1]),
-            qml.PauliX(0),
+            qp.CNOT([0, 1]),
+            qp.PauliX(0),
             subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
         )
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "CNOT"
         assert rr.params["compute_op"].op_type == CNOT
 
-        assert isinstance(rr.params["target_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "PauliX"
         assert rr.params["target_op"].op_type == PauliX
 
-        assert isinstance(rr.params["uncompute_op"], qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "SubroutineOp"
         assert rr.params["uncompute_op"].op_type == SubroutineOp
         assert rr.params["uncompute_op"].params == {
@@ -863,11 +863,11 @@ class TestGraphDecomposition:
         rr = adjoint_subroutine_resource_rep(
             f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
         )
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "Adjoint(SubroutineOp)"
         assert rr.params["base_params"]["subroutine"] == f
 
-        s = qml.pytrees.flatten(x)[1]
+        s = qp.pytrees.flatten(x)[1]
 
         # note that order is reflected in the call signature order, not order
         # provided to adjoint_subroutine_resource_rep
@@ -924,11 +924,11 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
-        assert isinstance(rr, qml.decomposition.CompressedResourceOp)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "SubroutineOp"
         assert rr.params["subroutine"] == f
 
-        s = qml.pytrees.flatten(x)[1]
+        s = qp.pytrees.flatten(x)[1]
 
         # note that order is reflected in the call signature order, not order
         # provided to subroutine_resource_rep
@@ -992,14 +992,14 @@ class TestGraphDecomposition:
     def test_pytree_array_input_resource_params(self):
         """Test calculating the resource params when the dynamic input has a pytree structure."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(x, wires):
             pass
 
         x = {"a": np.zeros((3, 4), dtype=np.float32), "b": np.ones((5, 4), dtype=np.int32)}
         op = f.operator(x, wires=0)
 
-        struct = qml.pytrees.flatten(x)[1]
+        struct = qp.pytrees.flatten(x)[1]
 
         expected_signature_key = (
             (
@@ -1014,37 +1014,37 @@ class TestGraphDecomposition:
         """Test that we can take the adjoint of a subroutine with graph decomps."""
 
         def RXLayerResources(params, wires):
-            return {qml.RX: qml.math.shape(params)[0]}
+            return {qp.RX: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RX(params[i], wires[i])
+                qp.RX(params[i], wires[i])
 
-        op = qml.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
-        tape = qml.tape.QuantumScript([op])
-        new_tape = qml.decompose(tape)[0][0]
-        qml.assert_equal(new_tape[0], qml.RX(-3, 3))
-        qml.assert_equal(new_tape[1], qml.RX(-2, 2))
-        qml.assert_equal(new_tape[2], qml.RX(-1, 1))
+        op = qp.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
+        tape = qp.tape.QuantumScript([op])
+        new_tape = qp.decompose(tape)[0][0]
+        qp.assert_equal(new_tape[0], qp.RX(-3, 3))
+        qp.assert_equal(new_tape[1], qp.RX(-2, 2))
+        qp.assert_equal(new_tape[2], qp.RX(-1, 1))
 
     def test_ctrl_of_subroutine(self):
         """ "Test that graph decompositions can handle the ctrl of a subroutineop."""
 
         def RXLayerResources(params, wires):
-            return {qml.RX: qml.math.shape(params)[0]}
+            return {qp.RX: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RX(params[i], wires[i])
+                qp.RX(params[i], wires[i])
 
-        op = qml.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
-        tape = qml.tape.QuantumScript([op])
-        new_tape = qml.decompose(tape, max_expansion=1)[0][0]
-        qml.assert_equal(new_tape[0], qml.ctrl(qml.RX(1, 1), (4, 5)))
-        qml.assert_equal(new_tape[1], qml.ctrl(qml.RX(2, 2), (4, 5)))
-        qml.assert_equal(new_tape[2], qml.ctrl(qml.RX(3, 3), (4, 5)))
+        op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
+        tape = qp.tape.QuantumScript([op])
+        new_tape = qp.decompose(tape, max_expansion=1)[0][0]
+        qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
+        qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
+        qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
 
     def test_operator_decompose_to_subroutine(self):
         """Test that an Operator can decompose to a subroutine, and that the choice
@@ -1056,23 +1056,23 @@ class TestGraphDecomposition:
         """
 
         def RXLayerResources(params, wires):
-            return {qml.RX: qml.math.shape(params)[0]}
+            return {qp.RX: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RX(params[i], wires[i])
+                qp.RX(params[i], wires[i])
 
         def RYLayerResources(params, wires):
-            return {qml.RY: qml.math.shape(params)[0]}
+            return {qp.RY: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RYLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RYLayerResources)
         def RYLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RY(params[i], wires[i])
+                qp.RY(params[i], wires[i])
 
         # pylint: disable=too-few-public-methods
-        class SubroutineDemoOp(qml.operation.Operator):
+        class SubroutineDemoOp(qp.operation.Operator):
 
             resource_keys = frozenset(())
 
@@ -1083,41 +1083,41 @@ class TestGraphDecomposition:
         rx_rr = subroutine_resource_rep(RXLayer, AbstractArray((3,), float), AbstractArray((3,)))
         ry_rr = subroutine_resource_rep(RYLayer, AbstractArray((3,), float), AbstractArray((3,)))
 
-        @qml.decomposition.register_resources({rx_rr: 1})
+        @qp.decomposition.register_resources({rx_rr: 1})
         def rx_decomp(wires):
             RXLayer(np.array([0.0, 1.0, 2.0]), wires)
 
-        @qml.decomposition.register_resources({ry_rr: 1})
+        @qp.decomposition.register_resources({ry_rr: 1})
         def ry_decomp(wires):
             RYLayer(np.array([0.0, 1.0, 2.0]), wires)
 
-        qml.add_decomps(SubroutineDemoOp, rx_decomp, ry_decomp)
+        qp.add_decomps(SubroutineDemoOp, rx_decomp, ry_decomp)
 
         op = SubroutineDemoOp(wires=(0, 1, 2))
-        tape = qml.tape.QuantumScript([op])
+        tape = qp.tape.QuantumScript([op])
 
-        tape_rx = qml.decompose(tape, gate_set={qml.RX})[0][0]
-        qml.assert_equal(tape_rx[0], qml.RX(0.0, 0))
-        qml.assert_equal(tape_rx[1], qml.RX(1.0, 1))
-        qml.assert_equal(tape_rx[2], qml.RX(2.0, 2))
+        tape_rx = qp.decompose(tape, gate_set={qp.RX})[0][0]
+        qp.assert_equal(tape_rx[0], qp.RX(0.0, 0))
+        qp.assert_equal(tape_rx[1], qp.RX(1.0, 1))
+        qp.assert_equal(tape_rx[2], qp.RX(2.0, 2))
 
-        tape_ry = qml.decompose(tape, gate_set={qml.RY})[0][0]
-        qml.assert_equal(tape_ry[0], qml.RY(0.0, 0))
-        qml.assert_equal(tape_ry[1], qml.RY(1.0, 1))
-        qml.assert_equal(tape_ry[2], qml.RY(2.0, 2))
+        tape_ry = qp.decompose(tape, gate_set={qp.RY})[0][0]
+        qp.assert_equal(tape_ry[0], qp.RY(0.0, 0))
+        qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
+        qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 
         def r(wires):
-            return {qml.X: 2}
+            return {qp.X: 2}
 
         @partial(Subroutine, compute_resources=r, exact_resources=False)
         def f(wires):
-            qml.X(wires)
+            qp.X(wires)
 
         op = f.operator(0)
-        qml.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""
@@ -1128,15 +1128,15 @@ class TestGraphDecomposition:
                 p,
                 w,
             ) in zip(params, wires):
-                qml.PauliRot(p, rotation, w)
-            qml.MultiControlledX(wires)
+                qp.PauliRot(p, rotation, w)
+            qp.MultiControlledX(wires)
 
         params = np.array([0.5, 1.2, 3.4])
         wires = [0, 1, 2]
-        tape = qml.tape.QuantumScript([f.operator(params, wires, "X")])
-        [decomposed], _ = qml.decompose(tape, gate_set=qml.gate_sets.ALL_OPS)
+        tape = qp.tape.QuantumScript([f.operator(params, wires, "X")])
+        [decomposed], _ = qp.decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
         print(decomposed.circuit)
-        qml.assert_equal(decomposed[0], qml.PauliRot(0.5, "X", 0))
-        qml.assert_equal(decomposed[1], qml.PauliRot(1.2, "X", 1))
-        qml.assert_equal(decomposed[2], qml.PauliRot(3.4, "X", 2))
-        qml.assert_equal(decomposed[3], qml.MultiControlledX(wires))
+        qp.assert_equal(decomposed[0], qp.PauliRot(0.5, "X", 0))
+        qp.assert_equal(decomposed[1], qp.PauliRot(1.2, "X", 1))
+        qp.assert_equal(decomposed[2], qp.PauliRot(3.4, "X", 2))
+        qp.assert_equal(decomposed[3], qp.MultiControlledX(wires))
