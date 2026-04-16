@@ -29,6 +29,7 @@ import pennylane as qp
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
@@ -1488,12 +1489,7 @@ add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {
-        change_op_basis_resource_rep(
-            qp.Elbow,
-            qp.CNOT,
-        ): 1,
-    }
+    return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1806,6 +1802,25 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
             qp.PauliX(w)
 
 
+def _2cx_elbow_explicit_resources(**__):
+    return {qml.Elbow: 1, qml.CNOT: 1, adjoint_resource_rep(qml.Elbow): 1}
+
+
+def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
+    return num_work_wires >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
+
+
+@register_condition(_2cx_elbow_explicit_condition)
+@register_resources(_2cx_elbow_explicit_resources)
+def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
+    elbow_wires = [wires[0], wires[1], work_wires[0]]
+    qml.Elbow(elbow_wires, control_values)
+    qml.CNOT([work_wires[0], wires[2]])
+    qml.adjoint(qml.Elbow)(elbow_wires, control_values)
+
+
+decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
+
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
@@ -1819,6 +1834,7 @@ add_decomps(
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
+    decompose_mcx_two_controls_elbows,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory_no_reconstructor)
