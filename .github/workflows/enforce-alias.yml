@@ -32,10 +32,10 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     env:
-      CORE_MODULES: |
+      CORE_MODULES: >
         pennylane/operation.py
 
-      TEST_MODULES: |
+      TEST_MODULES: >
         tests/test_operation.py
 
     name: Enforce PennyLane alias as qp
