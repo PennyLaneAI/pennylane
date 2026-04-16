@@ -152,6 +152,8 @@ class NullQubit(Device):
 
     .. code-block:: python
 
+        import pennylane as qp
+
         qs = qp.tape.QuantumScript(
             [qp.Hadamard(0), qp.CNOT([0, 1])],
             [qp.expval(qp.PauliZ(0)), qp.probs()],

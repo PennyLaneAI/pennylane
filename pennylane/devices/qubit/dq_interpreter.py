@@ -44,6 +44,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
         key (None, jax.numpy.ndarray): the ``PRNGKey`` to use for random number generation.
 
 
+    >>> import pennylane as qp
     >>> from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
     >>> qp.capture.enable()
     >>> import jax

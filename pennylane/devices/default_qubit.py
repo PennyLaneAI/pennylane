@@ -391,6 +391,8 @@ class DefaultQubit(Device):
 
     .. code-block:: python
 
+        import pennylane as qp
+
         n_layers = 5
         n_wires = 10
         num_qscripts = 5

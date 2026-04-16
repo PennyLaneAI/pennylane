@@ -116,6 +116,8 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
+        import pennylane as qp
+
         dev = qp.device('default.qubit', wires=5)
 
         def circuit():

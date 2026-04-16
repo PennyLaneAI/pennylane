@@ -205,6 +205,8 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
         @simulator_tracking

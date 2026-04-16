@@ -229,6 +229,8 @@ class DefaultClifford(Device):
 
     .. code-block:: python
 
+        import pennylane as qp
+
         dev = qp.device("default.clifford", tableau=True)
 
         @qp.qnode(dev)

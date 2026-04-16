@@ -156,6 +156,8 @@ def single_tape_support(cls: type) -> type:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         @single_tape_support
         class MyDevice(qp.devices.Device):
 

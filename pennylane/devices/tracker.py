@@ -55,6 +55,8 @@ class Tracker:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         dev = qp.device('default.qubit', wires=1, seed=42)
 
         @qp.set_shots(shots=100)

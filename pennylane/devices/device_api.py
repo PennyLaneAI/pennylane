@@ -109,6 +109,7 @@ class Device(abc.ABC):
         If an arbitrary, non-preprocessed circuit is provided, :meth:`~.execute` has no responsibility to perform any
         validation or provide clearer error messages.
 
+        >>> import pennylane as qp
         >>> op = qp.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qp.tape.QuantumScript([op], [qp.state()])
         >>> from pennylane.devices import DefaultQubit

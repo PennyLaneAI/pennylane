@@ -154,6 +154,7 @@ class LegacyDeviceFacade(Device):
     Args:
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
 
+    >>> import pennylane as qp
     >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
     >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)

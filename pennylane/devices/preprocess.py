@@ -336,6 +336,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     **Example:**
 
+    >>> import pennylane as qp
     >>> def stopping_condition(obj):
     ...     return obj.name in {"CNOT", "RX", "RZ"}
     >>> tape = qp.tape.QuantumScript([qp.IsingXX(1.2, wires=(0,1))], [qp.expval(qp.Z(0))])
@@ -776,6 +777,7 @@ def device_resolve_dynamic_wires(
     If device wires are provided, possible values for dynamic wires are determined from
     device wires not present in the tape.
 
+    >>> import pennylane as qp
     >>> from pennylane.devices.preprocess import device_resolve_dynamic_wires
     >>> def f():
     ...     qp.H(0)
