@@ -1143,7 +1143,6 @@ class TestMCXDecomposition:
     def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
         jax = pytest.importorskip("jax")
-        catalyst = pytest.importorskip("catalyst")
         from catalyst.device.decomposition import catalyst_decompose
 
         jnp = jax.numpy
