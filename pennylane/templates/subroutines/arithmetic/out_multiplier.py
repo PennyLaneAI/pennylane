@@ -251,12 +251,8 @@ class OutMultiplier(Operation):
         if any(wire in y_wires for wire in output_wires):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
 
-        wires_list = [x_wires, y_wires, output_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires"]
-
-        if len(work_wires) != 0:
-            wires_list.append(work_wires)
-            wires_name.append("work_wires")
+        wires_list = [x_wires, y_wires, output_wires, work_wires]
+        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
 
         for name, wires in zip(wires_name, wires_list):
             self.hyperparameters[name] = Wires(wires)
@@ -422,7 +418,10 @@ def _out_multiplier_with_adder_resources(
     k = num_output_wires
 
     resources = defaultdict(int)
-    for i in range(min(k, n)):
+    if zeroed_output_wires:
+        resources[resource_rep(TemporaryAND)] += min(m, k)
+
+    for i in range(int(zeroed_output_wires), min(k, n)):
         if zeroed_output_wires:
             size = min(k - i, m + 1)
         else:
@@ -448,9 +447,10 @@ def _out_multiplier_with_adder_condition(
     k = num_output_wires
     m = num_y_wires
     # Controlled adder takes as many work wires as the output register size. The largest controlled
-    # adder is the first one in the loop, with size min(k, m+1)
+    # adder is the first one in the loop, with size `min(k - 1, m+1)` if zeroed_output_wires=True
+    # (because in that case the very first adder is replaced by ctrl(copy)) and size `k` else.
     if zeroed_output_wires:
-        min_num_work_wires = min(k, m + 1)
+        min_num_work_wires = min(k - 1, m + 1)
     else:
         min_num_work_wires = k
     return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
@@ -471,7 +471,17 @@ def _out_multiplier_with_adder(
     and shifted onto the output register by the same shift as the control qubit."""
     m = len(y_wires)
     k = len(output_wires)
-    for i, x_wire in enumerate(x_wires[::-1][:k]):
+
+    # If the output wires are zeroed, the first controlled adder is just a controlled copy.
+    if zeroed_output_wires:
+        for y_wire, out_wire in zip(
+            y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=False
+        ):
+            TemporaryAND([x_wires[-1], y_wire, out_wire])
+
+    # If the output wires are zeroed, we already did the first controlled adder above
+    start = int(zeroed_output_wires)
+    for i, x_wire in enumerate(x_wires[::-1][start:k], start=start):
         # Slice the output wires according to the shift in control, and bounded by its own size,
         # and the size of the y_wires
         if zeroed_output_wires:

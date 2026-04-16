@@ -57,7 +57,7 @@ def _test_mult_correctness(
             qml.counts(wires=x_wires),
             qml.counts(wires=y_wires),
             qml.counts(wires=output_wires),
-            qml.counts(wires=work_wires),
+            qml.counts(wires=(work_wires or None)),
         )
 
     if mod is None:
@@ -83,7 +83,7 @@ def _test_mult_correctness(
         out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
         expected = (x, y, (z + x * y) % mod, 0)
 
-        if clean:
+        if clean and len(work_wires) > 0:
             assert out_ints == expected, f"\n{out_ints}\n{expected} ({z=})"
         else:
             # Skip work wire check
@@ -250,12 +250,12 @@ class TestOutMultiplier:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         [
-            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [], [0]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1]),
             ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
-            ([0], [3, 6], [5, 8], 4, [9], [0]),
-            ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+            ([0], [3, 6], [5, 8], 4, [], [0]),
+            ([0], [3, 6], [5, 8], 4, [9], [0, 1]),
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
