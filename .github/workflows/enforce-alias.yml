@@ -32,7 +32,7 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Documentation Tests on Python 3.11
+    name: Enforce PennyLane alias as qp
 
     steps:
       - name: Checkout repository
