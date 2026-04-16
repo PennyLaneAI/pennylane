@@ -68,4 +68,4 @@ jobs:
       - name: Enforce 'qp' Alias (Documentation)
         if: always()
         run: |
-          grep -rn "qml" ${{ env.CORE_MODULES }} ${{ env.TEST_MODULES }}
+          ! grep -rn "qml" ${{ env.CORE_MODULES }} ${{ env.TEST_MODULES }}
