@@ -423,7 +423,7 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * num_used_work_wires}
     if num_work_wires == num_used_work_wires:
-        mcx_rep = resource_rep(qml.Toffoli)
+        mcx_rep = resource_rep(qp.Toffoli)
     else:
         mcx_rep = resource_rep(
             ops.MultiControlledX,
