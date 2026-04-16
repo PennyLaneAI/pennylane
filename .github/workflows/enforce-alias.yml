@@ -49,11 +49,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pip and setuptools
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade setuptools
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -65,7 +60,7 @@ jobs:
         run: |
           uvx ruff check ${{ env.CORE_MODULES }} \
             --select ICN \
-            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \ 
+            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \
             --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
 
       - name: Enforce 'qp' Alias (Tests)
@@ -73,7 +68,7 @@ jobs:
         run: |
           uvx ruff check ${{ env.TEST_MODULES }} \
             --select ICN \
-            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \ 
+            --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \
             --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
 
       - name: Enforce 'qp' Alias (Documentation)
