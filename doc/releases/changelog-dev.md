@@ -992,19 +992,9 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 2e2a2e94b (Remove duplicate changelog entry)
-* Fixed an internal `TypeError: 'NoneType' object is not iterable` when using `qml.decompose`
-  without a `gate_set` argument while `qml.decomposition.enable_graph()` is active. The error
-  message now clearly states that `gate_set` is required with graph-based decomposition.
-  [(#9255)](https://github.com/PennyLaneAI/pennylane/pull/9255)
-
 * Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
   can be interpreted.
   [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
-
 
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
@@ -1155,5 +1145,4 @@ Jay Soni,
 Nate Stemen,
 David Wierichs,
 Fuyuan Xia,
-Jake Zaia,
-Adithya Phani Thota.
+Jake Zaia.
