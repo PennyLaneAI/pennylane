@@ -598,10 +598,10 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
     def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
-        qp.RX(phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
-        qp.RX(-phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
     >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
