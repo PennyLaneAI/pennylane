@@ -68,6 +68,13 @@ class TestCaptureForLoop:
 
         jaxpr = jax.make_jaxpr(fn)(array)
         assert jaxpr.eqns[1].primitive == for_loop_prim
+
+        assert jaxpr.eqns[1].invars[0].val == 0
+        assert jaxpr.eqns[1].invars[1].val == 10
+        assert jaxpr.eqns[1].invars[2].val == 2
+
+        assert len(jaxpr.eqns[1].params["jaxpr_body_fn"].eqns) == 0
+
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -99,6 +106,19 @@ class TestCaptureForLoop:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(fn)(array)
+
+        assert jaxpr.eqns[1].invars[0].val == 0
+        assert jaxpr.eqns[1].invars[1].val == 10
+        assert jaxpr.eqns[1].invars[2].val == 1
+
+        assert jaxpr.eqns[2].invars[0].val == 10
+        assert jaxpr.eqns[2].invars[1].val == 1
+        assert jaxpr.eqns[2].invars[2].val == 1
+
+        assert jaxpr.eqns[3].invars[0].val == 0
+        assert jaxpr.eqns[3].invars[1].val == 10
+        assert jaxpr.eqns[3].invars[2].val == 1
+
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -136,6 +156,16 @@ class TestCaptureForLoop:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(fn)(array)
+
+        assert jaxpr.eqns[1].invars[0].val == 0
+        assert jaxpr.eqns[1].invars[2].val == 1
+
+        assert jaxpr.eqns[2].invars[0].val == 0
+        assert jaxpr.eqns[2].invars[2].val == 1
+
+        assert jaxpr.eqns[3].invars[0].val == 0
+        assert jaxpr.eqns[3].invars[2].val == 1
+
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -255,6 +285,112 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    def test_reverse_iteration(self):
+        """Test that a requested reverse iteration is converted to a positive iteration."""
+
+        @qml.for_loop(7, 0, -3)
+        def f(i, j, x):
+            x = x.at[j].set(i)
+            return j + 1, x
+
+        jaxpr = jax.make_jaxpr(f)(0, jnp.ones(5))
+
+        # will hit 7, 4, 1
+        assert jaxpr.eqns[0].invars[0].val == 0
+        assert jaxpr.eqns[0].invars[1].val == 3
+        assert jaxpr.eqns[0].invars[2].val == 1
+
+        body_fn = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert body_fn.eqns[0].primitive.name == "mul"
+        assert body_fn.eqns[0].invars[0].val == -3  # the step
+        assert body_fn.eqns[1].primitive.name == "add"
+        assert body_fn.eqns[1].invars[0].val == 7  # the initial start
+
+        final_j, x = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0, jnp.zeros(5))
+        assert qml.math.allclose(final_j, 3)
+        assert qml.math.allclose(x, jnp.array([7, 4, 1, 0, 0]))
+
+    def test_reverse_iteration_abstract_step(self):
+        """Test that reverse iteration can be detected if the step is abstract
+        but the start and stop are not."""
+
+        def w(step):
+
+            @qml.for_loop(8, 0, step)
+            def f(i, j, x):
+                # keep track of the order i occured in
+                x = x.at[j].set(i)
+                return j + 1, x
+
+            return f(0, jnp.zeros(6))
+
+        jaxpr = jax.make_jaxpr(w)(-1)
+
+        assert jaxpr.eqns[-1].invars[0].val == 0
+        assert jaxpr.eqns[-1].invars[2].val == 1
+
+        assert jaxpr.eqns[-1].invars[1].aval.dtype == jnp.int64
+
+        body_fn = jaxpr.eqns[-1].params["jaxpr_body_fn"]
+        assert body_fn.eqns[0].primitive.name == "mul"
+        assert body_fn.eqns[0].invars[0] == body_fn.constvars[0]  # the step
+        assert body_fn.eqns[1].primitive.name == "add"
+        assert body_fn.eqns[1].invars[0].val == 8  # the initial start
+
+        final_j, x = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, -2)
+        assert qml.math.allclose(final_j, 4)
+        assert qml.math.allclose(x, jnp.array([8, 6, 4, 2, 0, 0]))
+
+    def test_array_step(self):
+        """Test that a jnp.array as a step works.  Checks that _reverse_iteration
+        check still works and doesn't internally produce a tracer because of the array."""
+
+        step = jnp.array(2)
+        stop = jnp.array(5)
+
+        def w():
+
+            @qml.for_loop(1, stop, step)
+            def l(i, x):
+                return x + i
+
+            l(0)
+
+        jaxpr = jax.make_jaxpr(w)()
+        assert jaxpr.eqns[0].invars[0].val == 1
+        assert jaxpr.eqns[0].invars[1] == jaxpr.jaxpr.constvars[0]
+        assert jaxpr.eqns[0].invars[2] == jaxpr.jaxpr.constvars[1]
+
+        assert qml.math.allclose(jaxpr.consts[0], 5)
+        assert qml.math.allclose(jaxpr.consts[1], 2)
+
+    def test_array_step_reverse_iteration(self):
+        """Test that a jnp.array as a step works.  Checks that _reverse_iteration
+        check still works and doesn't internally produce a tracer because of the array."""
+
+        step = jnp.array(-1)
+        stop = jnp.array(-5)
+
+        def w():
+
+            @qml.for_loop(1, stop, step)
+            def l(i, x):
+                return x + i
+
+            l(0)
+
+        jaxpr = jax.make_jaxpr(w)()
+        # check that it detected a reverse iteration
+        # step is one instead of negative one
+        assert jaxpr.eqns[-1].invars[0].val == 0
+        assert jaxpr.eqns[-1].invars[2].val == 1
+
+        # includes all the conversions to calculate num_iterations
+        # so not just the for_loop eqn
+        assert len(jaxpr.eqns) > 1
+        # includes the index conversion to reversed
+        assert jaxpr.eqns[-1].params["jaxpr_body_fn"].eqns[0].primitive.name == "mul"
+
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
@@ -348,11 +484,10 @@ class TestDynamicShapes:
         assert qml.math.allclose(final_j, 5)  # 2 +3
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
 
-    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
-    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
-        """Test that if a broadcasting error is raised when a dynamically shaped closure variable
-        is present, the error mentions it may be due to the closure variable with a dynamic shape.
-        """
+    @pytest.mark.parametrize("allow_array_resizing", (False, "auto"))
+    def test_combine_with_dynamic_closure_var(self, allow_array_resizing):
+        """Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
+        can be combined."""
 
         def w(i0):
             c = jnp.arange(i0)
@@ -363,11 +498,14 @@ class TestDynamicShapes:
 
             return f(jnp.arange(i0))
 
-        with pytest.warns(
-            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
-        ):
-            jaxpr = jax.make_jaxpr(w)(3)
-        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
+        jaxpr = jax.make_jaxpr(w)(3)
+        assert jaxpr.eqns[-1].primitive == for_loop_prim
+        _, return_array, c = jaxpr.eqns[-1].outvars
+
+        assert c.aval.shape[0] == jaxpr.jaxpr.invars[0]
+        assert isinstance(c, jax.core.DropVar)
+
+        assert return_array == jaxpr.jaxpr.outvars[0]
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):
@@ -482,6 +620,29 @@ class TestDynamicShapes:
         assert isinstance(shape, jax.core.DropVar)
         assert static_array.aval.shape == (2,)
         assert dynamic_array.aval.shape[0] == jaxpr.jaxpr.invars[0]  # the input a
+
+    def test_same_closure_variable_multiple_loops(self):
+        """Test that if the same variable is used as a closure var multiple times, we don't get leaked tracers.
+        When _loop_abstract_axes.promote_consts_to_inputs copied the function, it made it so that we ended
+        up with consts with tracer values, leading to leaked tracers when integrated with catalyst.
+        This just tests that doesn't happen again.
+        """
+
+        def w(x):
+            @qml.for_loop(x.shape[0])
+            def f(i):
+                2 * x  # pylint: disable=pointless-statement
+
+            f()
+
+            @qml.for_loop(x.shape[0])
+            def g(i):
+                3 * x  # pylint: disable=pointless-statement
+
+            g()
+
+        jaxpr = jax.make_jaxpr(w, abstracted_axes={0: "a"})(jnp.array([0, 1, 2]))
+        assert len(jaxpr.consts) == 0
 
 
 class TestCaptureCircuitsForLoop:
