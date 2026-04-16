@@ -167,6 +167,32 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         cls.dyn_argnames = tuple(dyn_argnames)
 
+    @classproperty
+    def resource_keys(cls):
+        return set(cls._sig.parameters.keys())
+
+    @property
+    def resource_params(self):
+        from pennylane.templates.core import AbstractArray
+
+        resource_params = {s: self._bound_args.arguments[s] for s in self.static_argnames}
+        if self.num_wires is not None and self.wire_argnames == ("wires",):
+            resource_params["wires"] = AbstractArray((self.num_wires,), int)
+        else:
+            for w in self.wire_argnames:
+                resource_params[w] = AbstractArray((len(self._bound_args.arguments[w]),), int)
+        for d in self.dyn_argnames:
+            d_arg = self._bound_args.arguments[d]
+            resource_params[d] = AbstractArray(math.shape(d_arg), math.get_dtype_name(d_arg))
+
+        return resource_params
+
+    @classproperty
+    def op_type(cls):
+        return cls
+
+    params = resource_params
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         """This class method should match the call signature of the class itself.
@@ -231,7 +257,12 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return hash((str(self.name), self._sig, tuple(self._bound_args.arguments.values())))
 
     def __eq__(self, other) -> bool:
-        return qml.equal(self, other)
+        if type(other) != type(self):
+            return False
+
+        return all(
+            other._bound_args.arguments[k] == v for k, v in self._bound_args.arguments.items()
+        )
 
     def __hash__(self) -> int:
         return self.hash
@@ -268,8 +299,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis."""
-        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
-        canonical_matrix = self.compute_matrix(**args)
+        canonical_matrix = self.compute_matrix(**self._bound_args.arguments)
 
         if (
             wire_order is None
@@ -299,8 +329,9 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis."""
-        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
-        canonical_sparse_matrix = self.compute_sparse_matrix(**args, format="csr")
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            **self._bound_args.arguments, format="csr"
+        )
 
         return math.expand_matrix(
             canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
@@ -358,9 +389,8 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def eigvals(self) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis."""
-        args = {k: v for k, v in self._bound_args.arguments.items() if k not in self.wire_argnames}
         try:
-            return self.compute_eigvals(**args)
+            return self.compute_eigvals(**self._bound_args.arguments)
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
