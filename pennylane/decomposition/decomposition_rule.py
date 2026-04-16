@@ -497,10 +497,13 @@ class DecompCollection:
     ) -> None:
         decomps = decomps or {}
         if not isinstance(decomps, dict):
-            num_decomps = len(decomps)
+            names = [rule.name for rule in decomps]
+            if dup := next((r for i, r in enumerate(names) if r in names[i + 1 :]), None):
+                raise ValueError(
+                    "Decomposition rules in the same collection must have unique names. "
+                    f"Found multiple decompositions with the same name: '{dup}'."
+                )
             decomps = {rule.name: rule for rule in decomps}
-            if len(decomps) < num_decomps:
-                raise ValueError("Found multiple decompositions with the same name.")
         self._decomps = decomps.copy()
 
     def __getitem__(self, arg: int | str) -> DecompositionRule:
@@ -555,8 +558,9 @@ class DecompCollection:
     def __radd__(self, other: DecompCollection | Sequence[DecompositionRule]) -> DecompCollection:
         return DecompCollection(list(other) + list(self))
 
-    def __iadd__(self, other):
+    def __iadd__(self, other) -> DecompCollection:
         self.extend(other)
+        return self
 
 
 _decompositions_private = defaultdict(DecompCollection)

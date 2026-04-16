@@ -540,6 +540,41 @@ class TestDecompCollection:
         assert collection[0] in collection
         assert "custom_decomp" in collection
         assert "hello" not in collection
+        assert 42 not in collection
 
         with pytest.raises(KeyError, match="Cannot find a decomposition with the given name: abc"):
             collection["abc"]  # pylint: disable=pointless-statement
+
+    def test_append(self):
+        """Tests the append method."""
+
+        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        collection = qml.list_decomps(CustomOp)
+        with pytest.raises(ValueError, match="name: custom_decomp already exists!"):
+            collection.append(custom_decomp)
+
+        custom_decomp.name = "custom3"
+        collection.append(custom_decomp)
+        assert "custom3" in collection
+        assert len(collection) == 4
+
+    def test_concatenate(self):
+        """Tests adding DecompCollection objects."""
+
+        @register_resources({qml.RZ: 2, qml.CNOT: 1}, name="custom3")
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        collection = qml.list_decomps(CustomOp)
+        other = [custom_decomp]
+
+        new_collection = collection + other
+        assert len(new_collection) == 4
+        assert "custom3" in new_collection
+
+        collection += other  # uses iadd
+        assert len(collection) == 4
+        assert "custom3" in collection
