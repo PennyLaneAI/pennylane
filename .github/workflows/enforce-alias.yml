@@ -57,8 +57,8 @@ jobs:
       - name: Test 'pennylane' folder
         if: always()
         run: |
-          $MODULES="
-          operation.py
+          MODULES="
+          pennylane/operation.py
           "
 
-          uvx ruff check pennylane/${MODULES} --select ICN --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
+          uvx ruff check $MODULES --select ICN --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
