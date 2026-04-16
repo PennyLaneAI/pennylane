@@ -923,6 +923,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* The `qml` alias as in `import pennylane as qml` has been updated to `qp` in the `doc` module.
+  [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
