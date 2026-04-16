@@ -188,7 +188,7 @@ class TestSplitEvolTapes:
     other operations and creates a new tape for each provided set of replacing operations."""
 
     def test_with_standard_ops(self):
-        """Test basic behaviour of the operation replacement with standard qml ops."""
+        """Test basic behaviour of the operation replacement with standard ops."""
         ops = [qp.RX(0.4, 2), qp.PauliZ(0), qp.CNOT([0, 2])]
         tape = qp.tape.QuantumScript(ops)
         split_evolve_ops = (
