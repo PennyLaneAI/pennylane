@@ -28,16 +28,16 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import (
+    CNOT,
     BasisState,
     MidMeasure,
-    MultiControlledX,
     X,
     adjoint,
     change_op_basis,
     ctrl,
     measure,
 )
-from pennylane.templates.subroutines.arithmetic import SemiAdder
+from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -544,16 +544,13 @@ def _out_multiplier_with_caddsub_resources(
     resources[
         resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
     ] += 1
+
     # increment 2^(n+m) bit
     size = k - n - m
-    mcx_kwargs = {
-        "num_zero_control_values": 0,
-        "num_work_wires": num_passed_ww,
-        "work_wire_type": "zeroed",
-    }
     if size > 0:
-        for i in range(1, size):
-            resources[resource_rep(MultiControlledX, num_control_wires=i, **mcx_kwargs)] += 1
+        resources[resource_rep(TemporaryAND)] += size - 2
+        resources[adjoint_resource_rep(TemporaryAND)] += size - 2
+        resources[resource_rep(CNOT)] += size - 1
         resources[x_rep] += 1
 
     # Second negation
@@ -605,11 +602,59 @@ def _add_plus_one(x_wires, y_wires, work_wires):
 
 
 def _increment(wires, work_wires):
-    _ = [
-        MultiControlledX(wires[::-1][:i], work_wires=work_wires, work_wire_type="zeroed")
-        for i in range(len(wires), 1, -1)
-    ]
-    X(wires[-1])
+    """Increment the input `wires` by one, using zeroed `work_wires`.
+    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
+    This is a manually reduced decomposition of the standard incrementer via MCX gates if
+    work wires are available:
+
+    Generic decomposition:
+    0: ─╭X────────────────┤
+    1: ─├●─╭X─────────────┤
+    2: ─├●─├●─╭X──────────┤
+    3: ─├●─├●─├●─╭X───────┤
+    4: ─├●─├●─├●─├●─╭X────┤
+    5: ─╰●─╰●─╰●─╰●─╰●──X─┤
+
+    Decompose all MCX gates into elbows and CNOTs:
+       0: ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
+       1: ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
+       2: ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
+       3: ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
+       4: ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
+       5: ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
+    aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
+    aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
+    aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
+    aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
+
+    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
+       0: ─────────────╭X───────────────────────────────┤
+       1: ──────────╭●─│───●╮─╭X────────────────────────┤
+       2: ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
+       3: ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
+       4: ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
+       5: ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
+    aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
+    aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
+    aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
+    aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
+
+    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
+    """
+    wires = wires[::-1]
+    if len(wires) > 1:
+        # Construct the wires on which the ladder will act.
+        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
+        # Forward ladder
+        for k in range(len(wires) - 2):
+            TemporaryAND(all_wires[2 * k : 2 * k + 3])
+        # Backward ladder
+        for k in range(len(wires) - 3, -1, -1):
+            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
+            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
+        # Trailing CNOT
+        CNOT(wires[:2])
+    X(wires[0])
 
 
 def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
