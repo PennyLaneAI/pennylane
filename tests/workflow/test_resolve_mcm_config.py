@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the `qml.workflow.resolution._resolve_mcm_config` helper function"""
+"""Unit tests for the `qp.workflow.resolution._resolve_mcm_config` helper function"""
 
 import pytest
 
