@@ -214,16 +214,3 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
-
-[tool.ruff]
-
-[tool.ruff.lint]
-select = [
-    "ICN001",  # Import Conventions (THIS IS THE ONE)
-]
-
-[tool.ruff.lint.flake8-import-conventions.aliases]
-pennylane = "qp"
-
-[tool.ruff.lint.flake8-import-conventions.banned-aliases]
-pennylane = ["qml"]
