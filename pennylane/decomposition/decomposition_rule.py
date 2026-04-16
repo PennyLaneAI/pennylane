@@ -488,7 +488,15 @@ class DecompositionRule:
 
 
 class DecompCollection:
-    """A collection of decomposition rules."""
+    """A collection of decomposition rules.
+
+    The :func:`~pennylane.list_decomps` function returns a ``DecompCollection`` for an operator,
+    which is an ordered sequence of decomposition rules. Individual decomposition rules within a
+    collection can be accessed by index or by name.
+
+    .. seealso:: :func:`~pennylane.list_decomps`
+
+    """
 
     _decomps: dict[str, DecompositionRule]
 
