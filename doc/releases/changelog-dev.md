@@ -493,6 +493,9 @@ The following classes have been ported over:
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
+* Simplified Trotter Product and added test for trotter simplification.
+  [(#9262)](https://github.com/PennyLaneAI/pennylane/pull/9262)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -1139,6 +1142,7 @@ Joseph Lee,
 Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
+Shrey Patel,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,

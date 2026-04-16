@@ -18,6 +18,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 import copy
 from collections import defaultdict
 
+import pennylane as qml
 from pennylane import math
 from pennylane import ops as qml_ops
 from pennylane.capture.autograph import wraps
@@ -74,6 +75,48 @@ def _recursive_expression(x, order, ops):
     ops_lst_2 = _recursive_expression(scalar_2 * x, order - 2, ops)
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
+
+
+@QueuingManager.stop_recording()
+def _simplify_trotter_sequence(decomp):
+
+    def _op_key(op):
+        return (
+            type(op),
+            tuple(getattr(op, "wires", ())),
+            getattr(op, "name", None),
+        )
+
+    if not decomp:
+        return []
+
+    merged = [decomp[0]]
+
+    prev = decomp[0]
+    prev_key = _op_key(prev.base) if isinstance(prev, qml_ops.Evolution) else None
+
+    for op in decomp[1:]:
+        if (
+            isinstance(prev, qml_ops.Evolution)
+            and isinstance(op, qml_ops.Evolution)
+        ):
+            op_key = _op_key(op.base)
+
+            if op_key == prev_key and prev.wires == op.wires:
+                merged[-1] = qml_ops.Evolution(
+                    prev.base,
+                    prev.param + op.param,
+                )
+                continue
+
+            prev_key = op_key
+        else:
+            prev_key = None
+
+        merged.append(op)
+        prev = op
+
+    return merged
 
 
 class TrotterProduct(ErrorOperation, ResourcesOperation):
@@ -481,9 +524,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+        decomp = _simplify_trotter_sequence(decomp)
 
         if QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in decomp:
                 apply(op)
 
         return decomp
