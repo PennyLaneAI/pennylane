@@ -402,11 +402,12 @@ class TestAllocateStatePhaseGrad:
         assert not AllocateState.ANY.is_phase_gradient()
 
 
+@pytest.mark.integration
 class TestAllocatePhaseGrad:
     """Tests for phase-gradient allocation via the allocate function and Allocate op."""
 
-    def test_qml_allocate_phase_grad_in_qnode(self):
-        """Test that qml.allocate with phase-grad works inside a QNode at the user level."""
+    def test_phase_grad_in_qnode_preserves_metadata(self):
+        """Test that phase-grad allocation inside a QNode preserves state and precision on the tape."""
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
@@ -424,7 +425,7 @@ class TestAllocatePhaseGrad:
         assert alloc_ops[0].precision == 1e-6
         assert alloc_ops[0].is_phase_gradient
 
-    def test_qml_allocate_phase_grad_device_execution_raises(self):
+    def test_phase_grad_device_execution_raises(self):
         """Test that device execution of a phase-grad allocation raises AllocationError.
 
         Phase-gradient wire resolution is not yet implemented, so lowering to
@@ -442,7 +443,7 @@ class TestAllocatePhaseGrad:
         with pytest.raises(qml.exceptions.AllocationError):
             circuit()
 
-    def test_allocate_phase_grad_returns_register(self):
+    def test_phase_grad_returns_dynamic_register(self):
         """Test that allocate with state='phase-grad' returns a DynamicRegister."""
         with qml.queuing.AnnotatedQueue() as q:
             wires = allocate(3, state="phase-grad", precision=1e-6)
@@ -453,7 +454,7 @@ class TestAllocatePhaseGrad:
         assert isinstance(op, Allocate)
         assert op.state is AllocateState.PHASE_GRAD
 
-    def test_allocate_phase_grad_stores_precision(self):
+    def test_phase_grad_stores_precision_on_op(self):
         """Test that precision is stored on the queued Allocate op."""
         with qml.queuing.AnnotatedQueue() as q:
             allocate(2, state="phase-grad", precision=1e-6)
@@ -463,12 +464,12 @@ class TestAllocatePhaseGrad:
         assert op.precision == 1e-6
         assert op.is_phase_gradient
 
-    def test_allocate_phase_grad_precision_required(self):
+    def test_phase_grad_precision_required(self):
         """Test that phase-grad without precision raises ValueError."""
         with pytest.raises(ValueError, match="precision is required for state='phase-grad'"):
             allocate(2, state="phase-grad")
 
-    def test_allocate_phase_grad_hyperparameters(self):
+    def test_phase_grad_hyperparameters(self):
         """Test full hyperparameters dict for phase-grad allocation."""
         with qml.queuing.AnnotatedQueue() as q:
             allocate(1, state="phase-grad", precision=0.001, restored=True)
@@ -480,7 +481,7 @@ class TestAllocatePhaseGrad:
             "precision": 0.001,
         }
 
-    def test_allocate_op_from_num_wires_phase_grad(self):
+    def test_from_num_wires_phase_grad(self):
         """Test Allocate.from_num_wires with phase-grad state."""
         op = Allocate.from_num_wires(
             4, state=AllocateState.PHASE_GRAD, precision=1e-4, restored=True
