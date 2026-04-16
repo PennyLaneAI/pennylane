@@ -995,6 +995,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
+  enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
+  [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
+
 * Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
   can be interpreted.
   [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
