@@ -261,9 +261,7 @@ class QROMStatePreparation(Operation):
             for ind, wire in enumerate(precision_wires):
                 decomp_ops.append(
                     qp.ctrl(
-                        qp.GlobalPhase(
-                            (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
-                        ),
+                        qp.GlobalPhase((2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]),
                         control=wire,
                     )
                 )

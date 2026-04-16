@@ -45,15 +45,11 @@ def _validate_mps_shape(mps):
         shape = qp.math.shape(array)
         assert qp.math.isclose(len(shape), 3), f"Tensor {i} must have exactly 3 dimensions."
         new_dj0, new_dj1, new_dj2 = shape
-        assert qp.math.isclose(
-            new_dj1, 2
-        ), f"The second dimension of tensor {i} must be exactly 2."
+        assert qp.math.isclose(new_dj1, 2), f"The second dimension of tensor {i} must be exactly 2."
         assert qp.math.log2(
             new_dj0
         ).is_integer(), f"The first dimension of tensor {i} must be a power of 2."
-        assert qp.math.isclose(
-            new_dj1, 2
-        ), f"The second dimension of tensor {i} must be exactly 2."
+        assert qp.math.isclose(new_dj1, 2), f"The second dimension of tensor {i} must be exactly 2."
         assert qp.math.log2(
             new_dj2
         ).is_integer(), f"The third dimension of tensor {i} must be a power of 2."
@@ -215,9 +211,7 @@ def right_canonicalize_mps(mps):
         output_mps[i] = vd_matrix.reshape(chi_new, d, chi_right)
 
         # Contract U with diag(S) and merge it with the preceding MPS tensor, preserving the canonical structure
-        mps[i - 1] = qp.math.tensordot(
-            mps[i - 1], u_matrix @ qp.math.diag(s_diag), axes=([2], [0])
-        )
+        mps[i - 1] = qp.math.tensordot(mps[i - 1], u_matrix @ qp.math.diag(s_diag), axes=([2], [0]))
 
     output_mps[0] = mps[0][0]
     output_mps[-1] = output_mps[-1][:, :, 0]
