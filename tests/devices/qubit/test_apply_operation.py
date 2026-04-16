@@ -25,7 +25,7 @@ from gate_data import I, X, Y, Z
 from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,
@@ -48,9 +48,9 @@ ml_frameworks_list = [
 def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
     """Apply an operation to a state using the sparse matrix method"""
     # Convert op to a CSR matrix
-    op = qml.QubitUnitary(csr_matrix(op.matrix()), wires=op.wires)
+    op = qp.QubitUnitary(csr_matrix(op.matrix()), wires=op.wires)
     # Convert state into numpy
-    state = qml.math.asarray(state, like="numpy")
+    state = qp.math.asarray(state, like="numpy")
     return apply_operation_csr_matrix(op, state, is_state_batched)
 
 
@@ -85,20 +85,20 @@ def test_custom_operator_with_matrix():
     state = np.array([-0.30688912 - 0.4768824j, 0.8100052 - 0.14931113j])
 
     new_state = apply_operation(CustomOp(0), state)
-    assert qml.math.allclose(new_state, mat @ state)
+    assert qp.math.allclose(new_state, mat @ state)
 
 
 class TestSparseOperation:
     """Test the sparse matrix application method"""
 
     ops_to_sparsify = [
-        qml.PauliX(0),
-        qml.CNOT((0, 1)),
-        qml.Toffoli((0, 1, 2)),
-        qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[1, 1, 1, 1]),
-        qml.GroverOperator(wires=[0, 1, 2]),
-        qml.IsingXX(np.pi / 2, wires=[0, 1]),
-        qml.DoubleExcitation(np.pi / 4, wires=[0, 1, 2, 3]),
+        qp.PauliX(0),
+        qp.CNOT((0, 1)),
+        qp.Toffoli((0, 1, 2)),
+        qp.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[1, 1, 1, 1]),
+        qp.GroverOperator(wires=[0, 1, 2]),
+        qp.IsingXX(np.pi / 2, wires=[0, 1]),
+        qp.DoubleExcitation(np.pi / 4, wires=[0, 1, 2, 3]),
     ]
 
     def test_sparse_operation_dense_state(self):
@@ -106,31 +106,31 @@ class TestSparseOperation:
 
         # Create a random unitary matrix
         U = unitary_group.rvs(2**3)
-        U = qml.math.asarray(U, like="numpy")
+        U = qp.math.asarray(U, like="numpy")
 
         # Create a random state vector
         state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
-        state = qml.math.asarray(state, like="numpy").reshape([2] * 3)
+        state = qp.math.asarray(state, like="numpy").reshape([2] * 3)
 
         # Apply the operation
-        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+        U_sp = qp.QubitUnitary(csr_matrix(U), wires=range(3))
         new_state = apply_operation_csr_matrix(U_sp, state)
         expected_state = state.reshape((1, 8)) @ U.reshape((8, 8)).T
         expected_state = expected_state.reshape([2] * 3)
 
-        assert qml.math.allclose(new_state, expected_state)
+        assert qp.math.allclose(new_state, expected_state)
 
     def test_sparse_operation_sparse_state(self):
         """Test that apply_operation does not support with a sparse state operation"""
 
         # Create a random unitary matrix
         U = unitary_group.rvs(2**3)
-        U = qml.math.asarray(U, like="numpy")
+        U = qp.math.asarray(U, like="numpy")
 
         # Create a random state vector
         state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
         state = csr_matrix(state)
-        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+        U_sp = qp.QubitUnitary(csr_matrix(U), wires=range(3))
 
         # Apply the operation
         with pytest.raises(
@@ -161,26 +161,26 @@ class TestSparseOperation:
         state = state / np.linalg.norm(state)
         state = state.reshape(state_shape)
 
-        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(N))
+        U_sp = qp.QubitUnitary(csr_matrix(U), wires=range(N))
         new_state = apply_operation_csr_matrix(U_sp, state)
 
         # Don't waste time constructing dense U to test, instead we just check that the U^Dagger @ state is correct
         final_state = apply_operation_csr_matrix(U_sp, new_state)
-        assert qml.math.allclose(final_state, state)
+        assert qp.math.allclose(final_state, state)
 
     @pytest.mark.parametrize("N", range(4, 10, 2))
     @pytest.mark.parametrize(
         "op",
         [
-            qml.QubitUnitary(
+            qp.QubitUnitary(
                 csr_matrix(X),
                 wires=[0],
             ),
-            qml.QubitUnitary(
+            qp.QubitUnitary(
                 csr_matrix(Y),
                 wires=[0],
             ),
-            qml.QubitUnitary(
+            qp.QubitUnitary(
                 csr_matrix(Z),
                 wires=[0],
             ),
@@ -213,7 +213,7 @@ class TestSparseOperation:
 
         new_state = apply_operation_sparse_wrapped(op, state)
         expected_state = apply_operation(op, state)
-        assert qml.math.allclose(new_state, expected_state)
+        assert qp.math.allclose(new_state, expected_state)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -232,18 +232,18 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        new_state = method(qml.PauliX(wire), initial_state)
+        new_state = method(qp.PauliX(wire), initial_state)
 
-        initial0dim = qml.math.take(initial_state, 0, axis=wire)
-        new1dim = qml.math.take(new_state, 1, axis=wire)
+        initial0dim = qp.math.take(initial_state, 0, axis=wire)
+        new1dim = qp.math.take(new_state, 1, axis=wire)
 
-        assert qml.math.allclose(initial0dim, new1dim)
+        assert qp.math.allclose(initial0dim, new1dim)
 
-        initial1dim = qml.math.take(initial_state, 1, axis=wire)
-        new0dim = qml.math.take(new_state, 0, axis=wire)
-        assert qml.math.allclose(initial1dim, new0dim)
+        initial1dim = qp.math.take(initial_state, 1, axis=wire)
+        new0dim = qp.math.take(new_state, 0, axis=wire)
+        assert qp.math.allclose(initial1dim, new0dim)
 
     def test_pauliz(self, method, wire, ml_framework):
         """Test the application of a pauliz gate on a two qubit state."""
@@ -253,17 +253,17 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        new_state = method(qml.PauliZ(wire), initial_state)
+        new_state = method(qp.PauliZ(wire), initial_state)
 
-        initial0 = qml.math.take(initial_state, 0, axis=wire)
-        new0 = qml.math.take(new_state, 0, axis=wire)
-        assert qml.math.allclose(initial0, new0)
+        initial0 = qp.math.take(initial_state, 0, axis=wire)
+        new0 = qp.math.take(new_state, 0, axis=wire)
+        assert qp.math.allclose(initial0, new0)
 
-        initial1 = qml.math.take(initial_state, 1, axis=wire)
-        new1 = qml.math.take(new_state, 1, axis=wire)
-        assert qml.math.allclose(initial1, -new1)
+        initial1 = qp.math.take(initial_state, 1, axis=wire)
+        new1 = qp.math.take(new_state, 1, axis=wire)
+        assert qp.math.allclose(initial1, -new1)
 
     def test_pauliy(self, method, wire, ml_framework):
         """Test the application of a pauliy gate on a two qubit state."""
@@ -273,17 +273,17 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        new_state = method(qml.PauliY(wire), initial_state)
+        new_state = method(qp.PauliY(wire), initial_state)
 
-        initial0 = qml.math.take(initial_state, 0, axis=wire)
-        new1 = qml.math.take(new_state, 1, axis=wire)
-        assert qml.math.allclose(1j * initial0, new1)
+        initial0 = qp.math.take(initial_state, 0, axis=wire)
+        new1 = qp.math.take(new_state, 1, axis=wire)
+        assert qp.math.allclose(1j * initial0, new1)
 
-        initial1 = qml.math.take(initial_state, 1, axis=wire)
-        new0 = qml.math.take(new_state, 0, axis=wire)
-        assert qml.math.allclose(-1j * initial1, new0)
+        initial1 = qp.math.take(initial_state, 1, axis=wire)
+        new0 = qp.math.take(new_state, 0, axis=wire)
+        assert qp.math.allclose(-1j * initial1, new0)
 
     def test_hadamard(self, method, wire, ml_framework):
         """Test the application of a hadamard on a two qubit state."""
@@ -293,22 +293,22 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        new_state = method(qml.Hadamard(wire), initial_state)
+        new_state = method(qp.Hadamard(wire), initial_state)
 
         inv_sqrt2 = 1 / np.sqrt(2)
 
-        initial0 = qml.math.take(initial_state, 0, axis=wire)
-        initial1 = qml.math.take(initial_state, 1, axis=wire)
+        initial0 = qp.math.take(initial_state, 0, axis=wire)
+        initial1 = qp.math.take(initial_state, 1, axis=wire)
 
         expected0 = inv_sqrt2 * (initial0 + initial1)
-        new0 = qml.math.take(new_state, 0, axis=wire)
-        assert qml.math.allclose(new0, expected0)
+        new0 = qp.math.take(new_state, 0, axis=wire)
+        assert qp.math.allclose(new0, expected0)
 
         expected1 = inv_sqrt2 * (initial0 - initial1)
-        new1 = qml.math.take(new_state, 1, axis=wire)
-        assert qml.math.allclose(new1, expected1)
+        new1 = qp.math.take(new_state, 1, axis=wire)
+        assert qp.math.allclose(new1, expected1)
 
     def test_phaseshift(self, method, wire, ml_framework):
         """test the application of a phaseshift gate on a two qubit state."""
@@ -319,20 +319,20 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        phase = qml.math.asarray(-2.3, like=ml_framework)
-        shift = qml.math.exp(1j * qml.math.cast(phase, np.complex128))
+        phase = qp.math.asarray(-2.3, like=ml_framework)
+        shift = qp.math.exp(1j * qp.math.cast(phase, np.complex128))
 
-        new_state = method(qml.PhaseShift(phase, wire), initial_state)
+        new_state = method(qp.PhaseShift(phase, wire), initial_state)
 
-        new0 = qml.math.take(new_state, 0, axis=wire)
-        initial0 = qml.math.take(initial_state, 0, axis=wire)
-        assert qml.math.allclose(new0, initial0)
+        new0 = qp.math.take(new_state, 0, axis=wire)
+        initial0 = qp.math.take(initial_state, 0, axis=wire)
+        assert qp.math.allclose(new0, initial0)
 
-        initial1 = qml.math.take(initial_state, 1, axis=wire)
-        new1 = qml.math.take(new_state, 1, axis=wire)
-        assert qml.math.allclose(shift * initial1, new1)
+        initial1 = qp.math.take(initial_state, 1, axis=wire)
+        new1 = qp.math.take(new_state, 1, axis=wire)
+        assert qp.math.allclose(shift * initial1, new1)
 
     def test_cnot(self, method, wire, ml_framework):
         """Test the application of a cnot gate on a two qubit state."""
@@ -343,21 +343,21 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
         control = wire
         target = int(not control)
 
-        new_state = method(qml.CNOT((control, target)), initial_state)
+        new_state = method(qp.CNOT((control, target)), initial_state)
 
-        initial0 = qml.math.take(initial_state, 0, axis=control)
-        new0 = qml.math.take(new_state, 0, axis=control)
-        assert qml.math.allclose(initial0, new0)
+        initial0 = qp.math.take(initial_state, 0, axis=control)
+        new0 = qp.math.take(new_state, 0, axis=control)
+        assert qp.math.allclose(initial0, new0)
 
-        initial1 = qml.math.take(initial_state, 1, axis=control)
-        new1 = qml.math.take(new_state, 1, axis=control)
-        assert qml.math.allclose(initial1[1], new1[0])
-        assert qml.math.allclose(initial1[0], new1[1])
+        initial1 = qp.math.take(initial_state, 1, axis=control)
+        new1 = qp.math.take(new_state, 1, axis=control)
+        assert qp.math.allclose(initial1[1], new1[0])
+        assert qp.math.allclose(initial1[0], new1[1])
 
     def test_grover(self, method, wire, ml_framework):
         """Test the application of GroverOperator on a two qubit state."""
@@ -368,20 +368,20 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
         wires = [wire, 1 - wire]
-        op = qml.GroverOperator(wires)
+        op = qp.GroverOperator(wires)
         new_state = method(op, initial_state)
 
-        overlap = qml.math.sum(initial_state) / 2
-        ones_state = qml.math.ones_like(initial_state) / 2
+        overlap = qp.math.sum(initial_state) / 2
+        ones_state = qp.math.ones_like(initial_state) / 2
         expected_state = 2 * ones_state * overlap - initial_state
-        assert qml.math.allclose(new_state, expected_state)
-        state_via_mat = qml.math.tensordot(
+        assert qp.math.allclose(new_state, expected_state)
+        state_via_mat = qp.math.tensordot(
             op.matrix().reshape([2] * 4), initial_state, axes=[[2, 3], [0, 1]]
         )
-        assert qml.math.allclose(new_state, state_via_mat)
+        assert qp.math.allclose(new_state, state_via_mat)
 
     def test_identity(self, method, wire, ml_framework):
         """Test the application of an Identity gate on a two qubit state."""
@@ -392,11 +392,11 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        new_state = method(qml.Identity(wire), initial_state)
+        new_state = method(qp.Identity(wire), initial_state)
 
-        assert qml.math.allclose(initial_state, new_state)
+        assert qp.math.allclose(initial_state, new_state)
 
     def test_globalphase(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
@@ -406,16 +406,16 @@ class TestTwoQubitStateSpecialCases:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-        phase = qml.math.asarray(-2.3, like=ml_framework)
-        shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
+        phase = qp.math.asarray(-2.3, like=ml_framework)
+        shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-        new_state_with_wire = method(qml.GlobalPhase(phase, wire), initial_state)
-        new_state_no_wire = method(qml.GlobalPhase(phase), initial_state)
+        new_state_with_wire = method(qp.GlobalPhase(phase, wire), initial_state)
+        new_state_no_wire = method(qp.GlobalPhase(phase), initial_state)
 
-        assert qml.math.allclose(shift * initial_state, new_state_with_wire)
-        assert qml.math.allclose(shift * initial_state, new_state_no_wire)
+        assert qp.math.allclose(shift * initial_state, new_state_with_wire)
+        assert qp.math.allclose(shift * initial_state, new_state_no_wire)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -450,34 +450,34 @@ def test_globalphase_batched(wire, ml_framework, state_batched):
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-    initial_state = qml.math.asarray(initial_state, like=ml_framework)
+    initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
-    phase = qml.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
-    shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
+    phase = qp.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
+    shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
     new_state_with_wire = apply_operation(
-        qml.GlobalPhase(phase, wire), initial_state, state_batched
+        qp.GlobalPhase(phase, wire), initial_state, state_batched
     )
-    new_state_no_wire = apply_operation(qml.GlobalPhase(phase), initial_state, state_batched)
+    new_state_no_wire = apply_operation(qp.GlobalPhase(phase), initial_state, state_batched)
 
-    assert qml.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)
-    assert qml.math.allclose(shift[:, None, None] * initial_state, new_state_no_wire)
+    assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)
+    assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_no_wire)
 
 
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
-    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
 
-    coeffs = [qml.pulse.constant, qml.pulse.constant, 0.4, 0.9]
+    coeffs = [qp.pulse.constant, qp.pulse.constant, 0.4, 0.9]
 
-    return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
+    return qp.pulse.ParametrizedHamiltonian(coeffs, ops)
 
 
 def time_dependent_hamiltonian():
     """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
     import jax.numpy as jnp
 
-    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
 
     def f1(params, t):
         return params * t
@@ -486,7 +486,7 @@ def time_dependent_hamiltonian():
         return params * jnp.cos(t)
 
     coeffs = [f1, f2, 4, 9]
-    return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
+    return qp.pulse.ParametrizedHamiltonian(coeffs, ops)
 
 
 @pytest.mark.jax
@@ -511,10 +511,10 @@ class TestApplyParametrizedEvolution:
         params = jnp.array([1.0, 2.0])
         t = 0.4
 
-        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
-        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
+        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
 
         new_state = method(op, initial_state)
         new_state_expected = apply_operation(U, initial_state)
@@ -540,16 +540,16 @@ class TestApplyParametrizedEvolution:
         params = jnp.array([1.0, 2.0])
         t = 0.4
 
-        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
         def generator(params):
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qp.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
-        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
 
         new_state = method(op, initial_state)
         new_state_expected = apply_operation(U, initial_state)
@@ -563,7 +563,7 @@ class TestApplyParametrizedEvolution:
 
         import jax.numpy as jnp
 
-        spy = mocker.spy(qml.math, "einsum")
+        spy = mocker.spy(qp.math, "einsum")
 
         initial_state = np.array(
             [
@@ -576,10 +576,10 @@ class TestApplyParametrizedEvolution:
         params = jnp.array([1.0, 2.0])
         t = 0.4
 
-        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
-        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
+        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
 
         new_state = apply_operation(op, initial_state)
         new_state_expected = apply_operation(U, initial_state)
@@ -598,7 +598,7 @@ class TestApplyParametrizedEvolution:
 
         import jax.numpy as jnp
 
-        spy = mocker.spy(qml.math, "einsum")
+        spy = mocker.spy(qp.math, "einsum")
 
         initial_state = np.array(
             [
@@ -653,10 +653,10 @@ class TestApplyParametrizedEvolution:
         params = jnp.array([1.0, 2.0])
         t = 0.4
 
-        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
-        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
+        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
 
         new_state = apply_operation(op, initial_state)
         new_state_expected = apply_operation(U, initial_state)
@@ -673,7 +673,7 @@ class TestApplyParametrizedEvolution:
         import jax.numpy as jnp
 
         state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
-        ev = qml.evolve(qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX("a")]))
+        ev = qp.evolve(qp.pulse.ParametrizedHamiltonian([1], [qp.PauliX("a")]))
         with pytest.raises(
             ValueError,
             match="The parameters and the time window are required to compute the matrix",
@@ -686,7 +686,7 @@ class TestApplyParametrizedEvolution:
         method is used."""
         import jax.numpy as jnp
 
-        H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        H = qp.pulse.ParametrizedHamiltonian([1], [qp.PauliX(0)])
         spy_evolve = mocker.spy(
             apply_operation_module, "_evolve_state_vector_under_parametrized_evolution"
         )
@@ -694,12 +694,12 @@ class TestApplyParametrizedEvolution:
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi - phi[0]
         state = jnp.array([1.0 + 0j, 0.0], dtype=complex)
-        ev = qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+        ev = qp.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
         state_ev = apply_operation(ev, state)
-        state_rx = apply_operation(qml.RX(phi_for_RX, 0), state)
+        state_rx = apply_operation(qp.RX(phi_for_RX, 0), state)
 
         assert spy_evolve.call_count == 1
-        assert qml.math.allclose(state_ev, state_rx, atol=1e-6)
+        assert qp.math.allclose(state_ev, state_rx, atol=1e-6)
 
     @pytest.mark.parametrize("num_state_wires", [2, 4])
     def test_with_batched_state(self, num_state_wires, mocker):
@@ -707,12 +707,12 @@ class TestApplyParametrizedEvolution:
         Note that the branching logic is different for batched input states, because
         evolving the state vector does not support batching of the state. Instead,
         the evolved matrix is used always."""
-        spy_einsum = mocker.spy(qml.math, "einsum")
+        spy_einsum = mocker.spy(qp.math, "einsum")
         H = time_independent_hamiltonian()
         params = np.array([1.0, 2.0])
         t = 0.1
 
-        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
         initial_state = np.array(
             [
@@ -725,8 +725,8 @@ class TestApplyParametrizedEvolution:
             zero_state_two_wires = np.eye(4)[0].reshape((2, 2))
             initial_state = np.tensordot(initial_state, zero_state_two_wires, axes=0)
 
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
-        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
+        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
 
         new_state = apply_operation(op, initial_state, is_state_batched=True)
         new_state_expected = apply_operation(U, initial_state, is_state_batched=True)
@@ -752,11 +752,11 @@ class TestSnapshot:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
-        new_state = apply_operation(qml.Snapshot(), initial_state)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
+        new_state = apply_operation(qp.Snapshot(), initial_state)
 
         assert new_state.shape == initial_state.shape
-        assert qml.math.allclose(new_state, initial_state)
+        assert qp.math.allclose(new_state, initial_state)
 
     def test_empty_tag(self, ml_framework):
         """Test a snapshot is recorded properly when there is no tag"""
@@ -766,17 +766,17 @@ class TestSnapshot:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
         debugger = Debugger()
-        new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
+        new_state = apply_operation(qp.Snapshot(), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
-        assert qml.math.allclose(new_state, initial_state)
+        assert qp.math.allclose(new_state, initial_state)
 
         assert list(debugger.snapshots.keys()) == [0]
         assert debugger.snapshots[0].shape == (4,)
-        assert qml.math.allclose(debugger.snapshots[0], qml.math.flatten(initial_state))
+        assert qp.math.allclose(debugger.snapshots[0], qp.math.flatten(initial_state))
 
     def test_provided_tag(self, ml_framework):
         """Test a snapshot is recorded property when provided a tag"""
@@ -786,18 +786,18 @@ class TestSnapshot:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
 
         debugger = Debugger()
         tag = "abcd"
-        new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
+        new_state = apply_operation(qp.Snapshot(tag), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
-        assert qml.math.allclose(new_state, initial_state)
+        assert qp.math.allclose(new_state, initial_state)
 
         assert list(debugger.snapshots.keys()) == [tag]
         assert debugger.snapshots[tag].shape == (4,)
-        assert qml.math.allclose(debugger.snapshots[tag], qml.math.flatten(initial_state))
+        assert qp.math.allclose(debugger.snapshots[tag], qp.math.flatten(initial_state))
 
     def test_measurement(self, ml_framework):
         """Test that an arbitrary measurement is recorded properly when a snapshot is created"""
@@ -807,38 +807,38 @@ class TestSnapshot:
                 [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
             ]
         )
-        initial_state = qml.math.asarray(initial_state, like=ml_framework)
-        measurement = qml.expval(qml.PauliZ(0))
+        initial_state = qp.math.asarray(initial_state, like=ml_framework)
+        measurement = qp.expval(qp.PauliZ(0))
 
         debugger = Debugger()
         new_state = apply_operation(
-            qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
+            qp.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
 
         assert new_state.shape == initial_state.shape
-        assert qml.math.allclose(new_state, initial_state)
+        assert qp.math.allclose(new_state, initial_state)
 
         assert list(debugger.snapshots.keys()) == [0]
         assert debugger.snapshots[0].shape == ()
-        assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
+        assert debugger.snapshots[0] == qp.devices.qubit.measure(measurement, initial_state)
 
     def test_override_shots(self, ml_framework):
         """Test that shots can be overridden for one measurement."""
 
-        initial_state = qml.math.asarray(np.array([1.0, 0.0]), like=ml_framework)
+        initial_state = qp.math.asarray(np.array([1.0, 0.0]), like=ml_framework)
 
         debugger = Debugger()
-        op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
+        op = qp.Snapshot("tag", qp.sample(wires=0), shots=50)
         _ = apply_operation(op, initial_state, debugger=debugger)
 
         assert debugger.snapshots["tag"].shape == (50, 1)
 
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
-        initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
+        initial_state = qp.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
         debugger = Debugger()
         new_state = apply_operation(
-            qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
+            qp.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
         )
         assert new_state.shape == initial_state.shape
         assert set(debugger.snapshots) == {0}
@@ -867,8 +867,8 @@ class TestRXCalcGrad:
         expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
         expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 
-        assert qml.math.allclose(new_state[0, :, :], expected0)
-        assert qml.math.allclose(new_state[1, :, :], expected1)
+        assert qp.math.allclose(new_state[0, :, :], expected0)
+        assert qp.math.allclose(new_state[1, :, :], expected1)
 
         g_expected0 = (
             -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
@@ -877,23 +877,23 @@ class TestRXCalcGrad:
             -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
         )
 
-        assert qml.math.allclose(g[0], g_expected0)
-        assert qml.math.allclose(g[1], g_expected1)
+        assert qp.math.allclose(g[0], g_expected0)
+        assert qp.math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
     def test_rx_grad_autograd(self, method):
         """Test that the application of an rx gate is differentiable with autograd."""
 
-        state = qml.numpy.array(self.state)
+        state = qp.numpy.array(self.state)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             return method(op, state)
 
-        phi = qml.numpy.array(0.325 + 0j, requires_grad=True)
+        phi = qp.numpy.array(0.325 + 0j, requires_grad=True)
 
         new_state = f(phi)
-        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        g = qp.jacobian(lambda x: qp.math.real(f(x)))(phi)
         self.compare_expected_result(phi, state, new_state, g)
 
     @pytest.mark.jax
@@ -906,7 +906,7 @@ class TestRXCalcGrad:
         state = jax.numpy.array(self.state)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             return method(op, state)
 
         if use_jit:
@@ -927,7 +927,7 @@ class TestRXCalcGrad:
         state = torch.tensor(self.state)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             return method(op, state)
 
         phi = torch.tensor(0.325, requires_grad=True)
@@ -953,7 +953,7 @@ class TestRXCalcGrad:
         phi = tf.Variable(0.8589 + 0j)
 
         with tf.GradientTape() as grad_tape:
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             new_state = method(op, state)
 
         grads = grad_tape.jacobian(new_state, [phi])
@@ -970,30 +970,30 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     # include operations both with batch_size==1 and batch_size>1
     broadcasted_ops = [
-        qml.RX(np.array([np.pi]), wires=2),
-        qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
-        qml.PhaseShift(np.array([np.pi]), wires=2),
-        qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
-        qml.IsingXX(np.array([np.pi]), wires=[1, 2]),
-        qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
-        qml.QubitUnitary(
+        qp.RX(np.array([np.pi]), wires=2),
+        qp.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qp.PhaseShift(np.array([np.pi]), wires=2),
+        qp.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qp.IsingXX(np.array([np.pi]), wires=[1, 2]),
+        qp.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qp.QubitUnitary(
             np.array([unitary_group.rvs(8)]),
             wires=[0, 1, 2],
         ),
-        qml.QubitUnitary(
+        qp.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
             wires=[0, 1, 2],
         ),
     ]
 
     unbroadcasted_ops = [
-        qml.PauliX(2),
-        qml.PauliZ(2),
-        qml.CNOT([1, 2]),
-        qml.RX(np.pi, wires=2),
-        qml.PhaseShift(np.pi / 2, wires=2),
-        qml.IsingXX(np.pi / 2, wires=[1, 2]),
-        qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
+        qp.PauliX(2),
+        qp.PauliZ(2),
+        qp.CNOT([1, 2]),
+        qp.RX(np.pi, wires=2),
+        qp.PhaseShift(np.pi / 2, wires=2),
+        qp.IsingXX(np.pi / 2, wires=[1, 2]),
+        qp.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
 
     @pytest.mark.parametrize("op", broadcasted_ops)
@@ -1001,7 +1001,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         """Tests that batched operations are applied correctly to an unbatched state."""
         state = np.ones((2, 2, 2), dtype=complex) / np.sqrt(8)
 
-        res = method(op, qml.math.asarray(state, like=ml_framework))
+        res = method(op, qp.math.asarray(state, like=ml_framework))
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = (
@@ -1013,22 +1013,22 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
             (expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(op.batch_size)
         ]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
         state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
-        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        res = method(op, qp.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = np.kron(np.eye(2**missing_wires), mat) if missing_wires else mat
         expected = [(expanded_mat @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework):
@@ -1038,7 +1038,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
-        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        res = method(op, qp.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = (
@@ -1050,15 +1050,15 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
             (expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(op.batch_size)
         ]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     def test_batch_size_set_if_missing(self, method, ml_framework):
         """Tests that the batch_size is set on an operator if it was missing before.
         Mostly useful for TF-autograph since it may have batch size set to None."""
-        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
-        op = qml.RX(param, 0)
+        op = qp.RX(param, 0)
         assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
@@ -1097,7 +1097,7 @@ class TestLargerOperations:
     def test_multicontrolledx(self, method, control_values):
         """Tests a four qubit multi-controlled x gate."""
 
-        op = qml.MultiControlledX(wires=(0, 1, 2, 3), control_values=control_values)
+        op = qp.MultiControlledX(wires=(0, 1, 2, 3), control_values=control_values)
         new_state = method(op, self.state)
 
         expected_state = np.copy(self.state)
@@ -1108,12 +1108,12 @@ class TestLargerOperations:
         expected_state[values + (1,)] = self.state[values + (0,)]
         expected_state[values + (0,)] = self.state[values + (1,)]
 
-        assert qml.math.allclose(new_state, expected_state)
+        assert qp.math.allclose(new_state, expected_state)
 
     def test_double_excitation(self, method):
         """Tests a double excitation operation compared to its decomposition."""
 
-        op = qml.DoubleExcitation(np.array(2.14), wires=(3, 1, 2, 0))
+        op = qp.DoubleExcitation(np.array(2.14), wires=(3, 1, 2, 0))
 
         state_v1 = method(op, self.state)
 
@@ -1121,19 +1121,19 @@ class TestLargerOperations:
         for d_op in op.decomposition():
             state_v2 = method(d_op, state_v2)
 
-        assert qml.math.allclose(state_v1, state_v2)
+        assert qp.math.allclose(state_v1, state_v2)
 
     @pytest.mark.parametrize("apply_wires", ([0, 3], [0, 1, 3, 2], [2, 1], [1, 3]))
     def test_grover(self, method, apply_wires):
         """Tests a four qubit GroverOperator."""
-        op = qml.GroverOperator(apply_wires)
+        op = qp.GroverOperator(apply_wires)
         new_state = method(op, self.state)
 
         expected_state = self.state
         for _op in op.decomposition():
             expected_state = method(_op, expected_state)
 
-        assert qml.math.allclose(expected_state, new_state)
+        assert qp.math.allclose(expected_state, new_state)
 
 
 class TestApplyGroverOperator:
@@ -1174,9 +1174,9 @@ class TestApplyGroverOperator:
         # pylint: disable=too-many-arguments
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
-        op = qml.GroverOperator(list(range(op_wires)))
-        spy_einsum = mocker.spy(qml.math, "einsum")
-        spy_tensordot = mocker.spy(qml.math, "argsort")
+        op = qp.GroverOperator(list(range(op_wires)))
+        spy_einsum = mocker.spy(qp.math, "einsum")
+        spy_tensordot = mocker.spy(qp.math, "argsort")
         apply_operation(op, state, is_state_batched=False, debugger=None)
         assert spy_einsum.call_count == int(einsum_called)
         assert spy_tensordot.call_count == int(tensordot_called)
@@ -1191,7 +1191,7 @@ class TestApplyGroverOperator:
         flat_shape = (batch_dim, 2**state_wires) if batched else (2**state_wires,)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
-        op = qml.GroverOperator(list(range(op_wires)))
+        op = qp.GroverOperator(list(range(op_wires)))
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
         # Double transpose to accomodate for batching
         expected_via_mat = (op.matrix() @ state.reshape(flat_shape).T).T.reshape(shape)
@@ -1211,7 +1211,7 @@ class TestApplyGroverOperator:
 
         for start_wire in [0, 1, state_wires - op_wires]:
             wires = list(range(start_wire, start_wire + op_wires))
-            op = qml.GroverOperator(wires)
+            op = qp.GroverOperator(wires)
             out = apply_operation(op, state, is_state_batched=batched, debugger=None)
             expected_via_mat = apply_operation_tensordot(op, state, batched)
             expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
@@ -1230,7 +1230,7 @@ class TestApplyGroverOperator:
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
-        op = qml.GroverOperator(wires)
+        op = qp.GroverOperator(wires)
         expected_via_mat = apply_operation_tensordot(op, state, batched)
         if op_wires == state_wires:
             expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
@@ -1238,11 +1238,11 @@ class TestApplyGroverOperator:
             expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
 
         # Cast to interface and apply operation
-        state = qml.numpy.array(state)
+        state = qp.numpy.array(state)
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
 
-        assert qml.math.allclose(out, expected_via_mat)
-        assert qml.math.allclose(out, expected_via_kernel)
+        assert qp.math.allclose(out, expected_via_mat)
+        assert qp.math.allclose(out, expected_via_kernel)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
@@ -1258,7 +1258,7 @@ class TestApplyGroverOperator:
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
-        op = qml.GroverOperator(wires)
+        op = qp.GroverOperator(wires)
         expected_via_mat = apply_operation_tensordot(op, state, batched)
         if op_wires == state_wires:
             expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
@@ -1269,8 +1269,8 @@ class TestApplyGroverOperator:
         state = tf.Variable(state)
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
 
-        assert qml.math.allclose(out, expected_via_mat)
-        assert qml.math.allclose(out, expected_via_kernel)
+        assert qp.math.allclose(out, expected_via_mat)
+        assert qp.math.allclose(out, expected_via_kernel)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
@@ -1288,7 +1288,7 @@ class TestApplyGroverOperator:
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
-        op = qml.GroverOperator(wires)
+        op = qp.GroverOperator(wires)
         expected_via_mat = apply_operation_tensordot(op, state, batched)
         if op_wires == state_wires:
             expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
@@ -1299,8 +1299,8 @@ class TestApplyGroverOperator:
         state = jax.numpy.array(state)
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
 
-        assert qml.math.allclose(out, expected_via_mat)
-        assert qml.math.allclose(out, expected_via_kernel)
+        assert qp.math.allclose(out, expected_via_mat)
+        assert qp.math.allclose(out, expected_via_kernel)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
@@ -1316,7 +1316,7 @@ class TestApplyGroverOperator:
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
-        op = qml.GroverOperator(wires)
+        op = qp.GroverOperator(wires)
         expected_via_mat = apply_operation_tensordot(op, state, batched)
         if op_wires == state_wires:
             expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
@@ -1327,8 +1327,8 @@ class TestApplyGroverOperator:
         state = torch.tensor(state, requires_grad=True)
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
 
-        assert qml.math.allclose(out, expected_via_mat)
-        assert qml.math.allclose(out, expected_via_kernel)
+        assert qp.math.allclose(out, expected_via_mat)
+        assert qp.math.allclose(out, expected_via_kernel)
 
 
 class TestMultiControlledXKernel:
@@ -1357,9 +1357,9 @@ class TestMultiControlledXKernel:
         self, num_op_wires, num_state_wires, einsum_called, tdot_called, mocker
     ):
         """Test that apply_multicontrolledx dispatches to the right method and is correct."""
-        op = qml.MultiControlledX(wires=list(range(num_op_wires)))
+        op = qp.MultiControlledX(wires=list(range(num_op_wires)))
         state = np.random.random([2] * num_state_wires).astype(complex)
-        spies = [mocker.spy(qml.math, "einsum"), mocker.spy(qml.math, "tensordot")]
+        spies = [mocker.spy(qp.math, "einsum"), mocker.spy(qp.math, "tensordot")]
         out = apply_operation(op, state, is_state_batched=False, debugger=None)
         # Compute expected output
         exp_out = state.copy()
@@ -1375,7 +1375,7 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with JAX."""
         from jax import numpy as jnp
 
-        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        op = qp.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
         jax_state = jnp.array(state)
@@ -1383,7 +1383,7 @@ class TestMultiControlledXKernel:
         # Compute expected output
         exp_out = state.copy()
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qml.math.allclose(out, exp_out)
+        assert qp.math.allclose(out, exp_out)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -1391,7 +1391,7 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Tensorflow."""
         import tensorflow as tf
 
-        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        op = qp.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
         tf_state = tf.Variable(state)
@@ -1399,21 +1399,21 @@ class TestMultiControlledXKernel:
         # Compute expected output
         exp_out = state.copy()
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qml.math.allclose(out, exp_out)
+        assert qp.math.allclose(out, exp_out)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
         """Test that the custom kernel works with Autograd."""
-        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        op = qp.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
-        ag_state = qml.numpy.array(state)
+        ag_state = qp.numpy.array(state)
         out = apply_operation(op, ag_state, is_state_batched=batch_dim is not None, debugger=None)
         # Compute expected output
         exp_out = state.copy()
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qml.math.allclose(out, exp_out)
+        assert qp.math.allclose(out, exp_out)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -1421,7 +1421,7 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Torch."""
         import torch
 
-        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        op = qp.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
         torch_state = torch.tensor(state, requires_grad=True)
@@ -1431,7 +1431,7 @@ class TestMultiControlledXKernel:
         # Compute expected output
         exp_out = state.copy()
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qml.math.allclose(out, exp_out)
+        assert qp.math.allclose(out, exp_out)
 
 
 @pytest.mark.tf
@@ -1439,7 +1439,7 @@ class TestLargeTFCornerCases:
     """Test large corner cases for tensorflow."""
 
     @pytest.mark.parametrize(
-        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
+        "op", (qp.PauliZ(8), qp.PhaseShift(1.0, 8), qp.S(8), qp.T(8), qp.CNOT((5, 6)))
     )
     def test_tf_large_state(self, op):
         """Tests that custom kernels that use slicing fall back to a different method when
@@ -1451,45 +1451,45 @@ class TestLargeTFCornerCases:
         new_state = apply_operation(op, state)
 
         # still all zeros.  Mostly just making sure error not raised
-        assert qml.math.allclose(state, new_state)
+        assert qp.math.allclose(state, new_state)
 
     def test_cnot_large_batched_state_tf(self):
         """Test that CNOT with large batched states works as expected."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=8)
+        dev = qp.device("default.qubit", wires=8)
 
-        @qml.qnode(dev, interface="tf")
+        @qp.qnode(dev, interface="tf")
         def auxiliary_qcnn_circuit(inputs):
-            qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliZ(1)
-            qml.Toffoli(wires=[0, 2, 4])
-            qml.Toffoli(wires=[0, 2, 5])
-            qml.Toffoli(wires=[0, 2, 6])
-            qml.Toffoli(wires=[0, 2, 7])
-            return [qml.expval(qml.PauliZ(i)) for i in range(4, 8)]
+            qp.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
+            qp.CNOT(wires=[0, 1])
+            qp.PauliZ(1)
+            qp.Toffoli(wires=[0, 2, 4])
+            qp.Toffoli(wires=[0, 2, 5])
+            qp.Toffoli(wires=[0, 2, 6])
+            qp.Toffoli(wires=[0, 2, 7])
+            return [qp.expval(qp.PauliZ(i)) for i in range(4, 8)]
 
         batch_size = 3
         params = np.random.rand(batch_size, 16)
         result = auxiliary_qcnn_circuit(tf.Variable(params))
-        assert qml.math.shape(result) == (4, batch_size)
+        assert qp.math.shape(result) == (4, batch_size)
 
     def test_pauliz_large_batched_state_tf(self):
         """Test that PauliZ with large batched states works as expected."""
         import tensorflow as tf
 
-        @qml.qnode(qml.device("default.qubit"), interface="tf")
+        @qp.qnode(qp.device("default.qubit"), interface="tf")
         def circuit(init_state):
-            qml.StatePrep(init_state, wires=range(8))
-            qml.PauliX(0)
-            qml.PauliZ(0)
-            return qml.state()
+            qp.StatePrep(init_state, wires=range(8))
+            qp.PauliX(0)
+            qp.PauliZ(0)
+            return qp.state()
 
         states = np.zeros((3, 256))
         states[:, 0] = 1.0
         results = circuit(tf.Variable(states))
-        assert qml.math.shape(results) == (3, 256)
+        assert qp.math.shape(results) == (3, 256)
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
 
 
@@ -1500,7 +1500,7 @@ class TestConditionalsAndMidMeasure:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("batched", (False, True))
-    @pytest.mark.parametrize("unitary", (qml.CRX, qml.CRZ))
+    @pytest.mark.parametrize("unitary", (qp.CRX, qp.CRZ))
     @pytest.mark.parametrize("wires", ([0, 1], [1, 0]))
     def test_conditional(self, wires, unitary, batched, ml_framework):
         """Test the application of a Conditional on an arbitrary state."""
@@ -1523,27 +1523,27 @@ class TestConditionalsAndMidMeasure:
             ][:n_states]
         )
 
-        rotated_state = qml.math.dot(
-            initial_state, qml.matrix(unitary(-0.238, wires), wire_order=[0, 1]).T
+        rotated_state = qp.math.dot(
+            initial_state, qp.matrix(unitary(-0.238, wires), wire_order=[0, 1]).T
         )
-        rotated_state = qml.math.asarray(rotated_state, like=ml_framework)
-        rotated_state = qml.math.squeeze(qml.math.reshape(rotated_state, (n_states, 2, 2)))
+        rotated_state = qp.math.asarray(rotated_state, like=ml_framework)
+        rotated_state = qp.math.squeeze(qp.math.reshape(rotated_state, (n_states, 2, 2)))
 
-        m0 = qml.measure(0)
-        op = qml.ops.op_math.Conditional(m0, unitary(0.238, wires))
+        m0 = qp.measure(0)
+        op = qp.ops.op_math.Conditional(m0, unitary(0.238, wires))
 
         mid_meas = {m0.measurements[0]: 0}
         old_state = apply_operation(
             op, rotated_state, batched, interface=ml_framework, mid_measurements=mid_meas
         )
-        assert qml.math.allclose(rotated_state, old_state)
+        assert qp.math.allclose(rotated_state, old_state)
 
         mid_meas[m0.measurements[0]] = 1
         new_state = apply_operation(
             op, rotated_state, batched, interface=ml_framework, mid_measurements=mid_meas
         )
-        assert qml.math.allclose(
-            qml.math.squeeze(initial_state), qml.math.reshape(new_state, (n_states, 4))
+        assert qp.math.allclose(
+            qp.math.squeeze(initial_state), qp.math.reshape(new_state, (n_states, 4))
         )
 
     @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
@@ -1561,16 +1561,16 @@ class TestConditionalsAndMidMeasure:
         mid_state[m_res[0]] = initial_state[m_res[0]] / np.linalg.norm(initial_state[m_res[0]])
         end_state[m_res] = mid_state[m_res] / np.abs(mid_state[m_res])
 
-        m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
+        m0, m1 = qp.measure(0).measurements[0], qp.measure(1).measurements[0]
         mid_meas = {}
 
         monkeypatch.setattr(np.random, "binomial", lambda *args: m_res[0])
 
         res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas)
-        assert qml.math.allclose(mid_state, res_state)
+        assert qp.math.allclose(mid_state, res_state)
 
         res_state = apply_operation(m1, res_state, mid_measurements=mid_meas)
-        assert qml.math.allclose(end_state, res_state)
+        assert qp.math.allclose(end_state, res_state)
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
@@ -1578,11 +1578,11 @@ class TestConditionalsAndMidMeasure:
         """Test an edge case where the mcm probability is greater than one by an insignificant amount."""
 
         ops = [
-            qml.RX(-5.754168297787336, wires=0),
-            qml.H(1),
-            qml.ops.MidMeasure(1),
-            qml.ops.MidMeasure(2),
-            qml.ops.MidMeasure(3),
+            qp.RX(-5.754168297787336, wires=0),
+            qp.H(1),
+            qp.ops.MidMeasure(1),
+            qp.ops.MidMeasure(2),
+            qp.ops.MidMeasure(3),
         ]
         state = np.zeros((2, 2, 2, 2))
         state[0, 0, 0, 0] = 1
@@ -1598,13 +1598,13 @@ class TestConditionalsAndMidMeasure:
         state = np.zeros((2,))
         state[0] = 1.0005
         with pytest.raises(ValueError, match="probabilities greater than 1."):
-            apply_operation(qml.ops.MidMeasure(0), state)
+            apply_operation(qp.ops.MidMeasure(0), state)
 
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 
         with pytest.raises(ValueError, match="MidMeasure cannot be applied to batched states."):
-            m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
+            m0, input_state = qp.measure(0).measurements[0], qp.math.array([[1, 0], [1, 0]])
             apply_operation(m0, state=input_state, is_state_batched=True)
 
 
@@ -1621,12 +1621,12 @@ class TestNumpyFastPathAutograd:
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             result = apply_operation(op, state)
-            return qml.math.real(result[0])
+            return qp.math.real(result[0])
 
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        grad = qml.grad(f)(phi)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        grad = qp.grad(f)(phi)
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
@@ -1639,12 +1639,12 @@ class TestNumpyFastPathAutograd:
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             result = apply_operation(op, state)
-            return qml.math.imag(result[1])
+            return qp.math.imag(result[1])
 
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        grad = qml.grad(f)(phi)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        grad = qp.grad(f)(phi)
         expected_grad = -0.5 * np.cos(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
@@ -1658,12 +1658,12 @@ class TestNumpyFastPathAutograd:
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
 
         def f(phi):
-            op = qml.RY(phi, wires=0)
+            op = qp.RY(phi, wires=0)
             result = apply_operation(op, state)
-            return qml.math.real(result[0])
+            return qp.math.real(result[0])
 
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        grad = qml.grad(f)(phi)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        grad = qp.grad(f)(phi)
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
@@ -1676,12 +1676,12 @@ class TestNumpyFastPathAutograd:
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
 
         def f(phi):
-            op = qml.RY(phi, wires=0)
+            op = qp.RY(phi, wires=0)
             result = apply_operation(op, state)
-            return qml.math.real(result[1])
+            return qp.math.real(result[1])
 
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        grad = qml.grad(f)(phi)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        grad = qp.grad(f)(phi)
         expected_grad = 0.5 * np.cos(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
@@ -1691,12 +1691,12 @@ class TestNumpyFastPathAutograd:
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
 
         def f(phi):
-            op = qml.RZ(phi, wires=0)
+            op = qp.RZ(phi, wires=0)
             result = apply_operation(op, state)
-            return qml.math.real(result[0])
+            return qp.math.real(result[0])
 
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        grad = qml.grad(f)(phi)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        grad = qp.grad(f)(phi)
         # d/dphi Re(exp(-i*phi/2)) = -0.5 * sin(phi/2)
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
@@ -1704,11 +1704,11 @@ class TestNumpyFastPathAutograd:
     @pytest.mark.autograd
     def test_hadamard_autograd_does_not_break(self):
         """Test that Hadamard on autograd state works correctly."""
-        state = qml.numpy.array([1.0 + 0j, 0.0], requires_grad=False)
-        op = qml.Hadamard(wires=0)
+        state = qp.numpy.array([1.0 + 0j, 0.0], requires_grad=False)
+        op = qp.Hadamard(wires=0)
         result = apply_operation(op, state)
         inv_sqrt2 = 1 / np.sqrt(2)
-        assert qml.math.allclose(result, [inv_sqrt2, inv_sqrt2])
+        assert qp.math.allclose(result, [inv_sqrt2, inv_sqrt2])
 
     @pytest.mark.autograd
     def test_default_fastpath_skips_autograd_params(self):
@@ -1717,12 +1717,12 @@ class TestNumpyFastPathAutograd:
         from pennylane.devices.qubit.apply_operation import _apply_operation_default
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        op = qml.RX(phi, wires=0)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        op = qp.RX(phi, wires=0)
         # This should not raise TypeError from np.asarray on ArrayBox
         result = _apply_operation_default(op, state, False, None)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.jax
     def test_rx_jax_param_numpy_state(self):
@@ -1732,12 +1732,12 @@ class TestNumpyFastPathAutograd:
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
         phi = jax.numpy.array(0.5)
-        op = qml.RX(phi, wires=0)
+        op = qp.RX(phi, wires=0)
         result = apply_operation(op, state)
         c = np.cos(0.25)
         s = np.sin(0.25)
         expected = np.array([c + 0j, -1j * s])
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.jax
     def test_default_handles_jax_params(self):
@@ -1749,10 +1749,10 @@ class TestNumpyFastPathAutograd:
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
         phi = jax.numpy.array(0.5)
-        op = qml.RX(phi, wires=0)
+        op = qp.RX(phi, wires=0)
         result = _apply_operation_default(op, state, False, None)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.jax
     def test_rx_jax_gradient(self):
@@ -1762,7 +1762,7 @@ class TestNumpyFastPathAutograd:
         state = jax.numpy.array([1.0 + 0j, 0.0], dtype=jax.numpy.complex128)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qp.RX(phi, wires=0)
             result = apply_operation(op, state)
             return jax.numpy.real(result[0])
 
@@ -1779,7 +1779,7 @@ class TestNumpyFastPathAutograd:
         state = jax.numpy.array([1.0 + 0j, 0.0], dtype=jax.numpy.complex128)
 
         def f(phi):
-            op = qml.RY(phi, wires=0)
+            op = qp.RY(phi, wires=0)
             result = apply_operation(op, state)
             return jax.numpy.real(result[0])
 
@@ -1796,7 +1796,7 @@ class TestNumpyFastPathAutograd:
         state = jax.numpy.array([1.0 + 0j, 0.0], dtype=jax.numpy.complex128)
 
         def f(phi):
-            op = qml.RZ(phi, wires=0)
+            op = qp.RZ(phi, wires=0)
             result = apply_operation(op, state)
             return jax.numpy.real(result[0])
 
@@ -1814,97 +1814,97 @@ class TestNumpyFastPathCorrectness:
     def test_hadamard_numpy_state(self):
         """Test Hadamard on a plain numpy state goes through _apply_single_qubit_np."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        op = qml.Hadamard(wires=0)
+        op = qp.Hadamard(wires=0)
         result = apply_operation(op, state)
         inv_sqrt2 = 1 / np.sqrt(2)
         expected = np.array([inv_sqrt2, inv_sqrt2])
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_hadamard_numpy_state_without_cached_matrix(self, monkeypatch):
         """Test Hadamard falls back to casting the shared matrix on a cache miss."""
         monkeypatch.setattr(apply_operation_module, "_HADAMARD_CACHE", {})
 
         state = np.array([1.0 + 0j, 0.0], dtype=np.complex128)
-        op = qml.Hadamard(wires=0)
+        op = qp.Hadamard(wires=0)
         result = apply_operation(op, state)
 
         inv_sqrt2 = 1 / np.sqrt(2)
         expected = np.array([inv_sqrt2, inv_sqrt2], dtype=np.complex128)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_hadamard_numpy_multiqubit(self):
         """Test Hadamard on wire 1 of a 3-qubit numpy state."""
         state = np.zeros((2, 2, 2), dtype=complex)
         state[1, 0, 0] = 1.0  # |100>
-        op = qml.Hadamard(wires=1)
+        op = qp.Hadamard(wires=1)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_rx_numpy_state(self):
         """Test RX on a plain numpy state."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        op = qml.RX(0.5, wires=0)
+        op = qp.RX(0.5, wires=0)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_rx_numpy_multiqubit(self):
         """Test RX on wire 2 of a 4-qubit numpy state."""
         state = np.random.randn(2, 2, 2, 2).astype(complex)
         state /= np.linalg.norm(state)
-        op = qml.RX(0.7, wires=2)
+        op = qp.RX(0.7, wires=2)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_ry_numpy_state(self):
         """Test RY on a plain numpy state."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        op = qml.RY(0.5, wires=0)
+        op = qp.RY(0.5, wires=0)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_ry_numpy_multiqubit(self):
         """Test RY on wire 1 of a 3-qubit numpy state."""
         state = np.random.randn(2, 2, 2).astype(complex)
         state /= np.linalg.norm(state)
-        op = qml.RY(1.3, wires=1)
+        op = qp.RY(1.3, wires=1)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_rz_numpy_state(self):
         """Test RZ on a plain numpy state."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        op = qml.RZ(0.5, wires=0)
+        op = qp.RZ(0.5, wires=0)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_rz_numpy_multiqubit(self):
         """Test RZ on wire 3 of a 5-qubit numpy state."""
         state = np.random.randn(2, 2, 2, 2, 2).astype(complex)
         state /= np.linalg.norm(state)
-        op = qml.RZ(2.1, wires=3)
+        op = qp.RZ(2.1, wires=3)
         result = apply_operation(op, state)
         expected = apply_operation_einsum(op, state)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_16_qubit_tensordot_fallback(self):
         """Sanity check that 16-qubit states use tensordot and produce correct results."""
         state = np.zeros((2,) * 16, dtype=complex)
         state[(0,) * 16] = 1.0  # |000...0>
-        for gate_cls, param in [(qml.RX, 0.5), (qml.RY, 0.5), (qml.RZ, 0.5)]:
+        for gate_cls, param in [(qp.RX, 0.5), (qp.RY, 0.5), (qp.RZ, 0.5)]:
             op = gate_cls(param, wires=8)
             result = apply_operation(op, state)
             expected = apply_operation_tensordot(op, state)
-            assert qml.math.allclose(result, expected)
-        op_h = qml.Hadamard(wires=8)
+            assert qp.math.allclose(result, expected)
+        op_h = qp.Hadamard(wires=8)
         result_h = apply_operation(op_h, state)
         expected_h = apply_operation_tensordot(op_h, state)
-        assert qml.math.allclose(result_h, expected_h)
+        assert qp.math.allclose(result_h, expected_h)
 
 
 class TestStateBatchedKernels:
@@ -1914,37 +1914,37 @@ class TestStateBatchedKernels:
         """Test RX kernel with a batch of 3 states."""
         state = np.random.randn(3, 2, 2).astype(complex)
         state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
-        op = qml.RX(0.5, wires=0)
+        op = qp.RX(0.5, wires=0)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_ry_state_batched(self):
         """Test RY kernel with a batch of 3 states."""
         state = np.random.randn(3, 2, 2).astype(complex)
         state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
-        op = qml.RY(0.5, wires=1)
+        op = qp.RY(0.5, wires=1)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_rz_state_batched(self):
         """Test RZ kernel with a batch of 3 states."""
         state = np.random.randn(3, 2, 2).astype(complex)
         state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
-        op = qml.RZ(0.5, wires=0)
+        op = qp.RZ(0.5, wires=0)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_hadamard_state_batched(self):
         """Test Hadamard kernel with a batch of 3 states."""
         state = np.random.randn(3, 2, 2).astype(complex)
         state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
-        op = qml.Hadamard(wires=1)
+        op = qp.Hadamard(wires=1)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.torch
     def test_rx_state_batched_torch(self):
@@ -1953,20 +1953,20 @@ class TestStateBatchedKernels:
 
         state_np = np.random.randn(3, 2, 2).astype(complex)
         state = torch.tensor(state_np, dtype=torch.complex128)
-        op = qml.RX(0.5, wires=0)
+        op = qp.RX(0.5, wires=0)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.autograd
     def test_rz_state_batched_autograd(self):
         """Test RZ kernel with batched autograd state."""
         state_np = np.random.randn(3, 2, 2).astype(complex)
-        state = qml.numpy.array(state_np, requires_grad=False)
-        op = qml.RZ(0.5, wires=1)
+        state = qp.numpy.array(state_np, requires_grad=False)
+        op = qp.RZ(0.5, wires=1)
         result = apply_operation(op, state, is_state_batched=True)
         expected = apply_operation_einsum(op, state, is_state_batched=True)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
 
 class TestBatchedStateKernels:
@@ -1977,43 +1977,43 @@ class TestBatchedStateKernels:
     def test_rx_batched(self, method, ml_framework):
         """Test RX with batched parameters, asserting full complex values."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        state = qml.math.asarray(state, like=ml_framework)
+        state = qp.math.asarray(state, like=ml_framework)
         params = np.array([0.1, 0.5, 1.0])
-        op = qml.RX(params, wires=0)
+        op = qp.RX(params, wires=0)
         result = method(op, state)
         for i, p in enumerate(params):
             c = np.cos(p / 2)
             s = np.sin(p / 2)
-            assert qml.math.allclose(result[i, 0], c + 0j, atol=1e-7)
-            assert qml.math.allclose(result[i, 1], -1j * s, atol=1e-7)
+            assert qp.math.allclose(result[i, 0], c + 0j, atol=1e-7)
+            assert qp.math.allclose(result[i, 1], -1j * s, atol=1e-7)
 
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("method", methods)
     def test_ry_batched(self, method, ml_framework):
         """Test RY with batched parameters, asserting full complex values."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        state = qml.math.asarray(state, like=ml_framework)
+        state = qp.math.asarray(state, like=ml_framework)
         params = np.array([0.1, 0.5, 1.0])
-        op = qml.RY(params, wires=0)
+        op = qp.RY(params, wires=0)
         result = method(op, state)
         for i, p in enumerate(params):
             c = np.cos(p / 2)
             s = np.sin(p / 2)
-            assert qml.math.allclose(result[i, 0], c + 0j, atol=1e-7)
-            assert qml.math.allclose(result[i, 1], s + 0j, atol=1e-7)
+            assert qp.math.allclose(result[i, 0], c + 0j, atol=1e-7)
+            assert qp.math.allclose(result[i, 1], s + 0j, atol=1e-7)
 
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("method", methods)
     def test_rz_batched(self, method, ml_framework):
         """Test RZ with batched parameters, asserting full complex values."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        state = qml.math.asarray(state, like=ml_framework)
+        state = qp.math.asarray(state, like=ml_framework)
         params = np.array([0.1, 0.5, 1.0])
-        op = qml.RZ(params, wires=0)
+        op = qp.RZ(params, wires=0)
         result = method(op, state)
         for i, p in enumerate(params):
-            assert qml.math.allclose(result[i, 0], np.exp(-0.5j * p), atol=1e-7)
-            assert qml.math.allclose(result[i, 1], 0.0 + 0j, atol=1e-7)
+            assert qp.math.allclose(result[i, 0], np.exp(-0.5j * p), atol=1e-7)
+            assert qp.math.allclose(result[i, 1], 0.0 + 0j, atol=1e-7)
 
 
 class TestTorchGradient:
@@ -2026,7 +2026,7 @@ class TestTorchGradient:
 
         state = torch.tensor([1.0 + 0j, 0.0], dtype=torch.complex128)
         phi = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
-        op = qml.RX(phi, wires=0)
+        op = qp.RX(phi, wires=0)
         result = apply_operation(op, state)
         # Backprop through Re(result[0]) = cos(phi/2)
         loss = result[0].real
@@ -2041,7 +2041,7 @@ class TestTorchGradient:
 
         state = torch.tensor([1.0 + 0j, 0.0], dtype=torch.complex128)
         phi = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
-        op = qml.RZ(phi, wires=0)
+        op = qp.RZ(phi, wires=0)
         result = apply_operation(op, state)
         # Backprop through Re(result[0]) = Re(exp(-i*phi/2)) = cos(phi/2)
         loss = result[0].real
@@ -2059,12 +2059,12 @@ class TestMixedInterfaceParams:
         import torch
 
         state = torch.tensor([1.0 + 0j, 0.0], dtype=torch.complex128)
-        op = qml.RX(0.5, wires=0)
+        op = qp.RX(0.5, wires=0)
         result = apply_operation(op, state)
         c = np.cos(0.25)
         s = np.sin(0.25)
         expected = torch.tensor([c + 0j, -1j * s], dtype=torch.complex128)
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.torch
     def test_rz_torch_state_numpy_param(self):
@@ -2072,10 +2072,10 @@ class TestMixedInterfaceParams:
         import torch
 
         state = torch.tensor([1.0 + 0j, 0.0], dtype=torch.complex128)
-        op = qml.RZ(0.5, wires=0)
+        op = qp.RZ(0.5, wires=0)
         result = apply_operation(op, state)
         expected = torch.tensor([np.exp(-0.25j), 0.0], dtype=torch.complex128)
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.autograd
     def test_rx_autograd_state_numpy_param(self):
@@ -2083,13 +2083,13 @@ class TestMixedInterfaceParams:
         This exercises the _align_torch_interfaces no-op path: interfaces
         differ (autograd vs numpy) but neither is torch, so no conversion
         is needed."""
-        state = qml.numpy.array([1.0 + 0j, 0.0], requires_grad=False)
-        op = qml.RX(0.5, wires=0)
+        state = qp.numpy.array([1.0 + 0j, 0.0], requires_grad=False)
+        op = qp.RX(0.5, wires=0)
         result = apply_operation(op, state)
         c = np.cos(0.25)
         s = np.sin(0.25)
         expected = np.array([c + 0j, -1j * s])
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.autograd
     def test_ry_numpy_state_autograd_param(self):
@@ -2098,10 +2098,10 @@ class TestMixedInterfaceParams:
         differ (numpy vs autograd) but neither is torch, so no conversion
         is needed."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        phi = qml.numpy.array(0.5, requires_grad=True)
-        op = qml.RY(phi, wires=0)
+        phi = qp.numpy.array(0.5, requires_grad=True)
+        op = qp.RY(phi, wires=0)
         result = apply_operation(op, state)
         c = np.cos(0.25)
         s = np.sin(0.25)
         expected = np.array([c + 0j, s + 0j])
-        assert qml.math.allclose(result, expected, atol=1e-7)
+        assert qp.math.allclose(result, expected, atol=1e-7)
