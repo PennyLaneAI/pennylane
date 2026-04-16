@@ -58,18 +58,12 @@ jobs:
       - name: Enforce 'qp' Alias (Code)
         if: always()
         run: |
-          uvx ruff check ${{ env.CORE_MODULES }} \
-          --select ICN \
-          --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \
-          --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
+          uvx ruff check ${{ env.CORE_MODULES }} --select ICN --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
 
       - name: Enforce 'qp' Alias (Tests)
         if: always()
         run: |
-          uvx ruff check ${{ env.TEST_MODULES }} \
-          --select ICN \
-          --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" \
-          --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
+          uvx ruff check ${{ env.TEST_MODULES }} --select ICN --config "lint.flake8-import-conventions.aliases = { pennylane = 'qp' }" --config "lint.flake8-import-conventions.banned-aliases = { pennylane = ['qml'] }"
 
       - name: Enforce 'qp' Alias (Documentation)
         if: always()
