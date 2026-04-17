@@ -126,9 +126,6 @@ def _get_inner_transform_slice(
         return slice(0, None)  # Include all remaining transforms
 
     if isinstance(level, int):
-        if level < 0:
-            return slice(0, level)
-
         # Include additional transforms up to the requested level
         # (levels <= num_user_transforms are handled by early exit)
         inner_level = level - num_user_transforms
@@ -136,15 +133,8 @@ def _get_inner_transform_slice(
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
     assert isinstance(level, slice)
-    start = level.start or 0
-    if start >= 0:
-        start = max(0, (level.start or 0) - num_user_transforms)
-    if level.stop is None:
-        stop = None
-    elif level.stop < 0:
-        stop = level.stop
-    else:
-        stop = max(0, level.stop - num_user_transforms)
+    start = max(0, (level.start or 0) - num_user_transforms)
+    stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
     return slice(start, stop, level.step)
 
 
@@ -434,10 +424,7 @@ def construct_batch(
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 
-        if (
-            level_slice_initial.stop is not None
-            and 0 <= level_slice_initial.stop <= num_user_transforms
-        ):
+        if level_slice_initial.stop is not None and level_slice_initial.stop <= num_user_transforms:
             # If the level slice is fully contained within user transforms, we can return early
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
