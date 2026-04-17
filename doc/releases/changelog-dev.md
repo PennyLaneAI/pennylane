@@ -175,7 +175,21 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
+* With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
+  can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
+  [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
+
+* Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
+  work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
+  `CNOT`.
+  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
+
+* Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
+  [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
+
+* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and
+  ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via
+  generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
 * Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
@@ -478,6 +492,11 @@ The following classes have been ported over:
 * The :func:`~pennylane.ops.sk_decomposition` now accepts `"Adjoint(T)"` and `"Adjoint(S)"` in the `basis_set` as a
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
+
+* The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
+  is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
+  for the base decomposition rule is also displayed when printing this rule.
+  [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -789,6 +808,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
+
 * With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
   after the loop.
   [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
@@ -975,6 +997,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
+
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
@@ -1093,6 +1119,10 @@ The following classes have been ported over:
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
   [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
+
+* Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
+  when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
+  [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
 <h3>Contributors ✍️</h3>
 

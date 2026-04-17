@@ -14,6 +14,8 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
+from textwrap import dedent
+
 import pytest
 
 import pennylane as qml
@@ -32,6 +34,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     ctrl_single_work_wire,
     flip_control_adjoint,
     flip_pow_adjoint,
+    flip_zero_control,
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
@@ -143,6 +146,55 @@ class TestAdjointDecompositionRules:
 
         op = qml.adjoint(op_type(0.5, wires=[0, 1, 2]))
         rule = make_adjoint_decomp(_custom_decomp, use_reconstructor)
+
+        if not use_reconstructor:
+            assert str(rule) == dedent("""
+                @register_condition(_condition_fn)
+                @register_resources(
+                    _resource_fn,
+                    work_wires=base_decomposition._work_wire_spec,
+                    exact=base_decomposition.exact_resources,
+                    name=f"adjoint({base_decomposition.name})",
+                )
+                def _impl(*params, wires, base):
+                    # pylint: disable=protected-access
+                    qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+
+                where base_decomposition is defined as:
+
+                @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
+                def _custom_decomp(phi, wires, **_):
+                    qml.H(wires[0])
+                    qml.CNOT(wires=wires[:2])
+                    qml.RX(phi, wires=wires[1])
+                    qml.CNOT(wires=wires[1:3])
+                    qml.T(wires[2])
+                """).strip()
+        else:
+            assert str(rule) == dedent("""
+                @register_condition(_condition_fn)
+                @register_resources(
+                    _resource_fn,
+                    work_wires=base_decomposition._work_wire_spec,
+                    exact=base_decomposition.exact_resources,
+                    name=f"adjoint({base_decomposition.name})",
+                )
+                def _impl_using_reconstructor(*params, wires, base_params, **_):
+                    # pylint: disable=protected-access
+                    qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
+
+                where base_decomposition is defined as:
+
+                @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
+                def _custom_decomp(phi, wires, **_):
+                    qml.H(wires[0])
+                    qml.CNOT(wires=wires[:2])
+                    qml.RX(phi, wires=wires[1])
+                    qml.CNOT(wires=wires[1:3])
+                    qml.T(wires[2])
+                """).strip()
+
+        assert rule.name == "adjoint(_custom_decomp)"
 
         kwargs = get_decomp_kwargs(op)
         with qml.queuing.AnnotatedQueue() as q:
@@ -502,6 +554,50 @@ class TestControlledDecomposition:
 
         rule = make_controlled_decomp(custom_decomp)
 
+        assert str(rule) == dedent("""
+            @register_condition(_condition_fn)
+            @register_resources(
+                _resource_fn,
+                work_wires=base_decomposition._work_wire_spec,
+                exact=base_decomposition.exact_resources,
+                name=f"controlled({base_decomposition.name})",
+            )
+            def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
+                zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+                for w in zero_control_wires:
+                    qml.PauliX(w)
+                # We're extracting control wires and base wires from the wires argument instead
+                # of directly using control_wires and base.wires, `wires` is properly traced, but
+                # `control_wires` and `base.wires` are not.
+                qml.ctrl(
+                    base_decomposition._impl,  # pylint: disable=protected-access
+                    control=wires[: len(control_wires)],
+                    work_wires=work_wires,
+                    work_wire_type=work_wire_type,
+                )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
+                for w in zero_control_wires:
+                    qml.PauliX(w)
+
+            where base_decomposition is defined as:
+
+            @qml.register_resources(_custom_resource)
+            def custom_decomp(*params, wires, **_):
+                qml.X(wires[0])
+                qml.CNOT(wires=wires[:2])
+                qml.Toffoli(wires=wires[:3])
+                qml.MultiControlledX(wires=wires[:4], control_values=[1, 0, 1], work_wires=[4])
+                qml.RX(params[0], wires=wires[0])
+                qml.Rot(params[0], params[1], params[2], wires=wires[0])
+                qml.CRZ(params[0], wires=wires[:2])
+                qml.MultiRZ(params[0], wires=wires)
+                qml.ctrl(qml.MultiRZ(params[0], wires=wires[1:]), control=wires[0])
+                qml.PauliRot(params[0], "XYX", wires=wires[:3])
+                qml.Z(wires[0])
+                qml.CZ(wires=wires[:2])
+            """).strip()
+
+        assert rule.name == "controlled(custom_decomp)"
+
         # Single control wire controlled on 1
         op = qml.ctrl(
             CustomMultiQubitOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]),
@@ -766,6 +862,66 @@ class TestControlledDecomposition:
                 ): 1
             }
         )
+
+    def test_flip_zero_control(self):
+        """Tests the `flip_zero_control` modifier."""
+
+        @qml.register_resources({qml.CNOT: 3, qml.H: 2})
+        def _custom_controlled_rule(wires, **_):
+            qml.CNOT(wires[0:2])
+            qml.H(wires[1])
+            qml.CNOT(wires[1:3])
+            qml.H(wires[1])
+            qml.CNOT(wires[0:2])
+
+        rule = flip_zero_control(_custom_controlled_rule)
+        assert rule.name == "flip_zero_ctrl_values(_custom_controlled_rule)"
+
+        assert str(rule) == dedent("""
+            @register_condition(_condition_fn)
+            @register_resources(
+                _resource_fn,
+                work_wires=inner_decomp._work_wire_spec,
+                exact=inner_decomp.exact_resources,
+                name=f"flip_zero_ctrl_values({inner_decomp.name})",
+            )
+            def _impl(*params, wires, control_wires, control_values, **kwargs):
+                zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+                for w in zero_control_wires:
+                    qml.PauliX(w)
+                inner_decomp(
+                    *params,
+                    wires=wires,
+                    control_wires=control_wires,
+                    control_values=[1] * len(control_wires),  # all control values are 1 now
+                    **kwargs,
+                )
+                for w in zero_control_wires:
+                    qml.PauliX(w)
+
+            where inner_decomp is defined as:
+
+            @qml.register_resources({qml.CNOT: 3, qml.H: 2})
+            def _custom_controlled_rule(wires, **_):
+                qml.CNOT(wires[0:2])
+                qml.H(wires[1])
+                qml.CNOT(wires[1:3])
+                qml.H(wires[1])
+                qml.CNOT(wires[0:2])
+            """).strip()
+
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(wires=[2, 3, 4], control_wires=[2, 3], control_values=[True, False])
+
+        assert q.queue == [
+            qml.X(3),
+            qml.CNOT([2, 3]),
+            qml.H(3),
+            qml.CNOT([3, 4]),
+            qml.H(3),
+            qml.CNOT([2, 3]),
+            qml.X(3),
+        ]
 
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
