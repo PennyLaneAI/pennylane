@@ -267,9 +267,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     coeffs = qp.math.multiply(val, qp.math.array(list(ts_ps.values()), like=interface))
 
     if interface == "jax" and qp.math.is_abstract(coeffs):
-        tapered_ham = qp.sum(
-            *(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True))
-        )
+        tapered_ham = qp.sum(*(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True)))
     else:
         if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= 1e-8):
             coeffs = qp.math.real(coeffs)

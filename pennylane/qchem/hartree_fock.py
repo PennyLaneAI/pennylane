@@ -163,9 +163,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         w, v = qp.math.linalg.eigh(s)
         x = v @ qp.math.diag(1.0 / qp.math.sqrt(w)) @ v.T
 
-        eigvals, w_fock = qp.math.linalg.eigh(
-            x.T @ h_core @ x
-        )  # initial guess for the scf problem
+        eigvals, w_fock = qp.math.linalg.eigh(x.T @ h_core @ x)  # initial guess for the scf problem
         coeffs = x @ w_fock
 
         p = mol_density_matrix(n_electron, coeffs)

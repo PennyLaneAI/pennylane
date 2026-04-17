@@ -595,9 +595,7 @@ def _diff2(i, j, ri, rj, alpha, beta):
     p = alpha + beta
 
     d1 = j * (j - 1) * qp.math.sqrt(np.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
-    d2 = (
-        -2 * beta * (2 * j + 1) * qp.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
-    )
+    d2 = -2 * beta * (2 * j + 1) * qp.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
     d3 = 4 * beta**2 * qp.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
     return d1 + d2 + d3

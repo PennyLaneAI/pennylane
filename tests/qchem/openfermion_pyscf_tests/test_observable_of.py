@@ -141,9 +141,7 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
-    assert qp.qchem.convert._openfermion_pennylane_equivalent(
-        qubit_op, res_obs, wires=custom_wires
-    )
+    assert qp.qchem.convert._openfermion_pennylane_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
 msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"

@@ -321,9 +321,7 @@ class TestToOpenFermion:
         r"""Test if the conversion complains about non Pauli matrix observables in the ``LinearCombination``."""
         _match = "Expected a Pennylane operator with a valid Pauli word representation,"
 
-        pl_op = qp.ops.LinearCombination(
-            np.array([0.1 + 0.0j, 0.0]), [qp.prod(qp.PauliX(0)), op]
-        )
+        pl_op = qp.ops.LinearCombination(np.array([0.1 + 0.0j, 0.0]), [qp.prod(qp.PauliX(0)), op])
         with pytest.raises(ValueError, match=_match):
             qp.to_openfermion(qp.to_openfermion(pl_op))
 
