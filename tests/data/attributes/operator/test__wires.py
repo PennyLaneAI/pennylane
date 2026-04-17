@@ -19,7 +19,7 @@ import json
 
 import numpy as np
 import pytest
-import qp
+import pennylane as qp
 
 import pennylane
 from pennylane.data.attributes.operator._wires import UnserializableWireError, wires_to_json

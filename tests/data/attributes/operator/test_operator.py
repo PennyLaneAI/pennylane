@@ -20,7 +20,7 @@ import itertools
 
 import numpy as np
 import pytest
-import qp
+import pennylane as qp
 
 import pennylane
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree

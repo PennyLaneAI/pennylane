@@ -18,7 +18,7 @@ Tests for the ``DatasetPyTree`` attribute type.
 from dataclasses import dataclass
 
 import pytest
-import qp
+import pennylane as qp
 
 import pennylane
 from pennylane.data import Dataset, DatasetPyTree

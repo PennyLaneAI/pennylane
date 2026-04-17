@@ -22,7 +22,7 @@ from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-import qp
+import pennylane as qp
 import requests
 
 import pennylane

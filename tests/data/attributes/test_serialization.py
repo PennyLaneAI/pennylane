@@ -20,7 +20,7 @@ from typing import Any
 
 import numpy as np
 import pytest
-import qp
+import pennylane as qp
 
 import pennylane
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
