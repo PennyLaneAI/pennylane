@@ -232,11 +232,24 @@ def _multi_temporary_and_decomp_with_work_wires(
         wires=[control_wires[0], control_wires[1], work_wires[0]],
         control_values=(control_values[0], control_values[1]),
     )
+    ii_ = 0
+
     for i in range(1, num_needed):
+        _wires = (
+            [work_wires[i - 1], control_wires[i + 1], work_wires[i]]
+            if i < num_needed - 1
+            else [work_wires[i - 1], control_wires[i + 1], wires[-1]]
+        )
         qp.TemporaryAND(
-            wires=[work_wires[i - 1], control_wires[i + 1], work_wires[i]],
+            wires=_wires,
             control_values=(True, control_values[i + 1]),
         )
+        ii_ += 1
+
+    # qp.TemporaryAND(
+    #     wires=[work_wires[ii_ - 1], control_wires[ii_ + 1], wires[-1]],
+    #     control_values=(True, control_values[ii_ + 1]),
+    # )
 
 
 # same decomposition but using dynamic allocation
@@ -274,9 +287,15 @@ def _multi_temporary_and_decomp_with_work_wires_allocated(
             wires=[control_wires[0], control_wires[1], aw[0]],
             control_values=(control_values[0], control_values[1]),
         )
+
         for i in range(1, num_needed):
+            _wires = (
+                [aw[i - 1], control_wires[i + 1], aw[i]]
+                if i < num_needed - 1
+                else [aw[i - 1], control_wires[i + 1], wires[-1]]
+            )
             qp.TemporaryAND(
-                wires=[aw[i - 1], control_wires[i + 1], aw[i]],
+                wires=_wires,
                 control_values=(True, control_values[i + 1]),
             )
 
