@@ -70,7 +70,7 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qp/demos/tutorial_liealgebra/>`__
 
     **Example**
 
@@ -239,7 +239,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
+    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qp/demos/tutorial_liesim/#lie-algebra-basics>`__.
 
     Args:
         g (np.array): The (dynamical) Lie algebra provided as matrix matrices, as generated from :func:`~lie_closure`.
@@ -256,18 +256,18 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from pennylane import X, Y, Z, I
     >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> gens = [qp.X(i) @ qp.X(i+1) + qp.Y(i) @ qp.Y(i+1) + qp.Z(i) @ qp.Z(i+1) for i in range(n-1)]
+    >>> g = qp.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj = qp.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 

@@ -110,7 +110,7 @@ def hadamard_toffoli_based_controlled_decomp(
 
     .. note::
 
-        This operation assumes a `catalytic T state <https://pennylane.ai/qml/demos/tutorial_magic_state_distillation>`_ is available.
+        This operation assumes a `catalytic T state <https://pennylane.ai/qp/demos/tutorial_magic_state_distillation>`_ is available.
         Users should ensure the cost of constructing such a state has been accounted for.
 
     Args:
