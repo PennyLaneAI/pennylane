@@ -68,11 +68,12 @@ def create_operator_primitive(
         return None
 
     primitive = capture.QmlPrimitive(operator_type.__name__)
-    primitive.prim_type = "operator2"
+    primitive.prim_type = "operator"
+    primitive.prototype_op = True
 
     @primitive.def_impl
-    def _impl(*args, dyn_argnames, wire_argnames, wire_lengths, **kwargs):
-        args_dict = {**kwargs}
+    def _impl(*args, dyn_argnames, wire_argnames, **static_args):
+        args_dict = dict(static_args)
 
         cur_idx = 0
         for d in dyn_argnames:
@@ -80,11 +81,8 @@ def create_operator_primitive(
             cur_idx += 1
 
         for i, w in enumerate(wire_argnames):
-            cur_slice = slice(cur_idx, wire_lengths[i], 1)
-            args_dict[w] = tuple(
-                wire if math.is_abstract(wire) else int(wire) for wire in args[cur_slice]
-            )
-            cur_idx += wire_lengths[i]
+            args_dict[w] = args[cur_idx]
+            cur_idx += 1
 
         return type.__call__(operator_type, **args_dict)
 
@@ -225,18 +223,14 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             dyn_args.append(args_dict[d])
 
         all_wires = []
-        wire_lengths = []
         for w in cls.wire_argnames:
             cur_wires = args_dict[w]
             if isinstance(cur_wires, array_types) and cur_wires.shape == ():
-                all_wires.append(cur_wires)
-                wire_lengths.append(1)
+                all_wires.append(jax.numpy.array([cur_wires]))
             elif isinstance(cur_wires, iterable_wires_types):
-                all_wires += list(cur_wires)
-                wire_lengths.append(len(cur_wires))
+                all_wires.append(jax.numpy.array(cur_wires))
             else:
-                all_wires.append(cur_wires)
-                wire_lengths.append(1)
+                all_wires.append(jax.numpy.array([cur_wires]))
 
         static_args = {}
         for s in cls.static_argnames:
@@ -245,7 +239,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         prim_args = (*dyn_args, *all_wires)
         prim_kwargs = {
             **static_args,
-            "wire_lengths": tuple(wire_lengths),
             "dyn_argnames": cls.dyn_argnames,
             "wire_argnames": cls.wire_argnames,
         }
