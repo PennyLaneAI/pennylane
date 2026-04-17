@@ -33,7 +33,14 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     env:
       CORE_MODULES: >-
-        doc
+        doc/code
+        doc/development
+        doc/introduction
+        doc/news
+        doc/releases/changelog-dev.md
+        doc/conf.py
+        doc/index.rst
+        doc/robots.txt
         pennylane/operation.py
 
       TEST_MODULES: >-
