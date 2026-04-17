@@ -26,7 +26,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
 from .resource_config import LabsResourceConfig
-from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_resources
+from .wires_manager.wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
 
 # pylint: disable=too-many-arguments
 

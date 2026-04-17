@@ -47,6 +47,16 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+Resource Operators
+~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta
+
+.. autosummary::
+    :toctree: api
+
+    ~QROM
+
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,6 +71,9 @@ Alternate Decompositions
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
+    ~mcx_one_clean_aux_resource_decomp
+    ~mcx_one_dirty_aux_resource_decomp
+    ~mcx_many_clean_aux_resource_decomp
 
 """
 
@@ -68,23 +81,31 @@ from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
 from .estimate import estimate
-from .wires_manager import (
+from .wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
     MarkQubits,
+)
+from .wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import selectpaulirot_controlled_resource_decomp
+from .templates import (
+    selectpaulirot_controlled_resource_decomp,
+    QROM,
+)  # Note QROM overrides estimator.QROM
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
     paulirot_controlled_resource_decomp,
+    mcx_one_clean_aux_resource_decomp,
+    mcx_one_dirty_aux_resource_decomp,
+    mcx_many_clean_aux_resource_decomp,
 )
 
 
