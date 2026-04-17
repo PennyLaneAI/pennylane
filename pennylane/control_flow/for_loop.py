@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """For loop."""
+
 import functools
 import logging
 import warnings
 from typing import Literal
 
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
@@ -28,11 +29,31 @@ from ._loop_abstract_axes import (
     get_dummy_arg,
     handle_jaxpr_error,
     loop_determine_abstracted_axes,
+    promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+def _reverse_iterator(f, start, step):
+    """Produces a new f with positive steps."""
+
+    def new_f(*args):
+        new_i = start + step * args[0]
+        inputs = args[1:]
+        return f(new_i, *inputs)
+
+    return new_f
+
+
+def _is_reverse_iteration(start, stop, step):
+    # without the int() call, when we have a jnp array with a single int
+    # in it (jnp.array(1)), performing a comparison will produce a tracer
+    if not math.is_abstract(step):
+        return int(step) < 0
+    return not math.is_abstract(start) and not math.is_abstract(stop) and int(stop) < int(start)
 
 
 def for_loop(
@@ -156,7 +177,8 @@ def for_loop(
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         The following discussion applies to the experimental capture infrastructure, which can be
-        turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
+        turned on with ``qml.qjit(capture=True)`` when using Catalyst.
+        See the ``capture`` module for more information.
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
@@ -277,7 +299,36 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim = QmlPrimitive("for_loop")
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(for_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
+
+    def setup_env(tracers, params):
+        # slice out start, stop, step
+        tracers = tracers[3:]
+        # tracers now (*consts, *abstract_shapes, *args)
+        tracer_consts = tracers[slice(*params["consts_slice"])]
+        abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
+        tracer_abstract_shapes = tracers[abstract_shapes_slice]
+        args_slice = slice(*params["args_slice"])
+        tracer_args = tracers[args_slice]
+
+        # invars now (*abstract_shapes, i, *args)
+        var_consts = params["jaxpr_body_fn"].constvars
+        jaxpr_invars = params["jaxpr_body_fn"].invars
+
+        num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+        invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
+        # skip index
+        invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
+
+        env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
+        env.update(dict(zip(invars_args, tracer_args, strict=True)))
+        env.update(dict(zip(var_consts, tracer_consts, strict=True)))
+        return env
+
+    register_custom_staging_rule(
+        for_loop_prim,
+        get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
+        setup_env=setup_env,
+    )
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
@@ -366,8 +417,10 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
+        f_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
+
         # need in_tree to include index so flat_fn will repack args correctly
-        flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
+        flat_args, in_tree = jax.tree_util.tree_flatten(((0, *init_state), dynamic_consts))
 
         # slice out the index so shape_locations indexes from non-index args/ results
         flat_args = flat_args[1:]
@@ -376,7 +429,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
 
-        flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
+        flat_fn = FlatFn(f_consts_extracted, in_tree=in_tree)
 
         if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
@@ -385,6 +438,10 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         else:
             new_body_fn = flat_fn
             dummy_init_state = flat_args
+
+        if _is_reverse_iteration(self.start, self.stop, self.step):
+            # MLIR does not support reverse iteration of for loops
+            new_body_fn = _reverse_iterator(new_body_fn, self.start, self.step)
 
         try:
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
@@ -438,10 +495,17 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
         args_slice = slice(abstract_shapes_slice.stop, None)
 
+        if _is_reverse_iteration(self.start, self.stop, self.step):
+            # mlir does not support reverse iteration of for loops
+            num_iterations = math.ceil((self.stop - self.start) / self.step).astype(int)
+            start, stop, step = 0, num_iterations, 1
+        else:
+            start, stop, step = self.start, self.stop, self.step
+
         results = for_loop_prim.bind(
-            self.start,
-            self.stop,
-            self.step,
+            start,
+            stop,
+            step,
             *jaxpr_body_fn.consts,
             *abstract_shapes,
             *flat_args,
@@ -452,15 +516,19 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        # [0] to slice out the consts extracted by promote_consts_to_inputs
+        return jax.tree_util.tree_unflatten(out_tree, results)[0]
 
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
             return ops_loader.for_loop(
-                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+                self.start, self.stop, self.step, allow_array_resizing=allow_array_resizing
             )(self.body_fn)(*init_state)
 
         start_equals_stop = (

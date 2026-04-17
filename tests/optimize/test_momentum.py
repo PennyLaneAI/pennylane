@@ -14,6 +14,7 @@
 """
 Unit tests for the ``MomentumOptimizer``.
 """
+
 import pytest
 
 from pennylane import numpy as np

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The functions related to the construction of the Taylor form Hamiltonian."""
+
 import itertools
 
 import numpy as np

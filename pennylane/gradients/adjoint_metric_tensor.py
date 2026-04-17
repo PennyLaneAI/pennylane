@@ -14,6 +14,7 @@
 """
 Contains the adjoint_metric_tensor.
 """
+
 from functools import partial
 from itertools import chain
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for fusing sequences of single-qubit gates."""
 
-
 from functools import lru_cache, partial
 
 import pennylane as qml

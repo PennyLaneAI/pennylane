@@ -140,7 +140,7 @@ measurement functions such as :func:`~pennylane.expval` are responsible for addi
 to the tape's ``measurement`` property.
 
 >>> with qml.tape.QuantumTape() as tape:
-...	    qfunc(params)
+...     qfunc(params)
 
 >>> tape.operations
 [RX(Array(0.5, dtype=float32), wires=['b']),

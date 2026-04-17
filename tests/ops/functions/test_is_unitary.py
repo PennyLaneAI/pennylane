@@ -14,6 +14,7 @@
 """
 Unit tests for the qml.is_unitary function
 """
+
 import pytest
 
 import pennylane as qml

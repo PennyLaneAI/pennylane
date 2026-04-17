@@ -14,6 +14,7 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+
 import inspect
 from itertools import combinations
 

@@ -15,6 +15,7 @@
 Unit tests for the circuit implementations required in measurement optimization found in
 `grouping/transformations.py`.
 """
+
 import numpy as np
 import pytest
 

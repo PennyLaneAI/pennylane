@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
+
 from collections import OrderedDict
 from importlib import metadata, reload
 from sys import version_info

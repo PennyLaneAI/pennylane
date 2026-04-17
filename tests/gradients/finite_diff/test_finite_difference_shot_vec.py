@@ -14,6 +14,7 @@
 """
 Tests for the gradients.finite_difference module using shot vectors.
 """
+
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy

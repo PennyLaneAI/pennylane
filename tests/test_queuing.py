@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
+
 from multiprocessing.dummy import Pool as ThreadPool
 
 import numpy as np

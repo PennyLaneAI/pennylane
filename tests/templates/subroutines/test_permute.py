@@ -14,6 +14,7 @@
 """
 Tests for the Permute template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments

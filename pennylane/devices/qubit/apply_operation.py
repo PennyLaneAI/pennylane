@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
+
 # pylint: disable=unused-argument
 
 from functools import singledispatch
@@ -25,10 +26,19 @@ from pennylane import math, ops
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, MidMeasure
 
-SQRT2INV = 1 / math.sqrt(2)
-
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
+
+_INV_SQRT2 = 1 / np.sqrt(2)
+
+_HADAMARD_MAT = np.array(
+    [[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]],
+    dtype=np.complex128,
+)
+_HADAMARD_CACHE = {
+    np.dtype("complex64"): _HADAMARD_MAT.astype(np.complex64),
+    np.dtype("complex128"): _HADAMARD_MAT,
+}
 
 
 def _get_slice(index, axis, num_axes):
@@ -58,6 +68,84 @@ def _get_slice(index, axis, num_axes):
     idx = [slice(None)] * num_axes
     idx[axis] = index
     return tuple(idx)
+
+
+def _apply_single_qubit_np(mat, state, axis):
+    """Apply a 2x2 numpy matrix to ``state`` via ``np.tensordot``.
+
+    This is the NumPy-only contraction path for single-qubit gates. Callers must
+    verify the interface is ``"numpy"`` before calling; autodiff tensors
+    will lose gradient tracking.
+
+    Args:
+        mat (np.ndarray): A ``(2, 2)`` unitary matrix
+        state (np.ndarray): Input quantum state
+        axis (int): The axis (wire) to contract on, already batch-offset
+
+    Returns:
+        np.ndarray: output state
+    """
+    return np.moveaxis(np.tensordot(mat, state, axes=[[1], [axis]]), 0, axis)
+
+
+def _align_torch_interfaces(params, state0, state1, state_interface, param_interface):
+    """Align torch/non-torch interface mismatches for non-batched parametric ops.
+
+    Args:
+        params (tensor_like): Operation parameters, already cast to complex
+        state0 (tensor_like): Slice of state for the ``|0>`` component
+        state1 (tensor_like): Slice of state for the ``|1>`` component
+        state_interface (str): Interface of the state tensor
+        param_interface (str): Interface of the parameters
+
+    Returns:
+        tuple: ``(params, state0, state1)`` with aligned interfaces
+    """
+    # Only torch requires explicit alignment because it cannot interoperate
+    # with other frameworks in math.multiply. Other mismatches (e.g. autograd
+    # state + numpy params) work without conversion via math.* dispatch.
+    if state_interface != param_interface:
+        if state_interface == "torch":
+            params = math.array(params, like=state_interface)
+        elif param_interface == "torch":
+            state0 = math.array(state0, like="torch")
+            state1 = math.array(state1, like="torch")
+    return params, state0, state1
+
+
+def _prepare_batched_params(  # pylint: disable=too-many-arguments
+    params, state, state0, state1, axis, n_dim, is_state_batched
+):
+    """Prepare parameters and state slices for batched parametric operations.
+
+    Args:
+        params (tensor_like): Operation parameters, already cast to complex
+        state (tensor_like): Full state tensor
+        state0 (tensor_like): Slice of state for the ``|0>`` component
+        state1 (tensor_like): Slice of state for the ``|1>`` component
+        axis (int): The axis along which the operation acts
+        n_dim (int): Number of dimensions of the state
+        is_state_batched (bool): Whether the state itself is batched
+
+    Returns:
+        tuple: ``(params, state0, state1, axis)`` with aligned interfaces and shapes
+    """
+    interface = math.get_interface(state, params)
+    if interface == "torch":
+        if math.get_interface(params) != "torch":
+            params = math.array(params, like=interface)
+        if math.get_interface(state0) != "torch":
+            state0 = math.array(state0, like=interface)
+        if math.get_interface(state1) != "torch":
+            state1 = math.array(state1, like=interface)
+    if is_state_batched:
+        params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+    else:
+        axis = axis + 1
+        params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
+        state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
+        state1 = math.expand_dims(state1, 0)
+    return params, state0, state1, axis
 
 
 def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
@@ -215,7 +303,7 @@ def apply_operation(
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
 
-    .. code-block:: python
+    .. code-block:: py
 
         @apply_operation.register
         def _(op: type_op, state):
@@ -226,11 +314,11 @@ def apply_operation(
     >>> state = np.zeros((2,2))
     >>> state[0][0] = 1
     >>> state
-    tensor([[1., 0.],
-        [0., 0.]], requires_grad=True)
+    array([[1., 0.],
+           [0., 0.]])
     >>> apply_operation(qml.X(0), state)
-    tensor([[0., 0.],
-        [1., 0.]], requires_grad=True)
+    array([[0., 0.],
+           [1., 0.]])
 
     """
     return _apply_operation_default(op, state, is_state_batched, debugger)
@@ -476,19 +564,11 @@ def apply_phaseshift(op: ops.PhaseShift, state, is_state_batched: bool = False, 
     state0 = state[sl_0]
     state1 = state[sl_1]
     if op.batch_size is not None:
-        interface = math.get_interface(state)
-        if interface == "torch":
-            params = math.array(params, like=interface)
-        if is_state_batched:
-            params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
-        else:
-            axis = axis + 1
-            params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
-            state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
-            state1 = math.expand_dims(state1, 0)
+        params, state0, state1, axis = _prepare_batched_params(
+            params, state, state0, state1, axis, n_dim, is_state_batched
+        )
     state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
-    state = math.stack([state0, state1], axis=axis)
-    return state
+    return math.stack([state0, state1], axis=axis)
 
 
 @apply_operation.register
@@ -527,6 +607,156 @@ def apply_S(op: ops.S, state, is_state_batched: bool = False, debugger=None, **_
 
     state1 = math.multiply(math.cast(state[sl_1], dtype=complex), 1j)
     return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply Hadamard to state."""
+
+    n_dim = math.ndim(state)
+    state_interface = math.get_interface(state)
+
+    if state_interface == "autograd":
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    if (
+        n_dim >= 9 and state_interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    if state_interface == "numpy":
+        # H uses direct matrix application since its coefficients are constant;
+        # no parameter-dependent logic needed unlike RX/RY/RZ.
+        axis = op.wires[0] + is_state_batched
+        state_dtype = np.dtype(state.dtype)
+        mat = _HADAMARD_CACHE.get(state_dtype)
+        if mat is None:
+            mat = _HADAMARD_MAT.astype(state_dtype, copy=False)
+            _HADAMARD_CACHE[state_dtype] = mat
+        return _apply_single_qubit_np(mat, state, axis)
+
+    if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+        return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
+    op, state, is_state_batched, compute_coeffs
+):
+    """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
+
+    Args:
+        op (Operator): The rotation gate
+        state (tensor_like): Input quantum state
+        is_state_batched (bool): Whether the state has a leading batch dimension
+        compute_coeffs (callable): ``(params, lib) -> (a, b, c, d)`` returning the
+            four entries of the 2×2 matrix ``[[a, b], [c, d]]``. ``lib`` is either
+            the ``np`` or ``math`` module depending on the code path.
+
+    Returns:
+        tensor_like: output state
+    """
+    n_dim = math.ndim(state)
+    state_interface = math.get_interface(state)
+
+    if state_interface == "autograd":
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    if (
+        n_dim >= 9 and state_interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    axis = op.wires[0] + is_state_batched
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    params = op.parameters[0]
+    state0 = state[sl_0]
+    state1 = state[sl_1]
+    param_interface = math.get_interface(params)
+
+    state_dtype = state.dtype
+
+    if op.batch_size is not None:
+        params = params if param_interface == "torch" else math.cast(params, dtype=complex)
+        params, state0, state1, axis = _prepare_batched_params(
+            params, state, state0, state1, axis, n_dim, is_state_batched
+        )
+        a, b, c, d = compute_coeffs(params, math)
+        if state_interface != "torch":
+            state0 = math.cast(state0, dtype=complex)
+            state1 = math.cast(state1, dtype=complex)
+        new0 = math.multiply(state0, a) + math.multiply(state1, b)
+        new1 = math.multiply(state0, c) + math.multiply(state1, d)
+        return math.stack([new0, new1], axis=axis)
+
+    if state_interface == "numpy" and param_interface == "numpy":
+        p = np.asarray(params, dtype=state_dtype)
+        a, b, c, d = compute_coeffs(p, np)
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return np.stack(
+                [
+                    np.multiply(state0, a) + np.multiply(state1, b),
+                    np.multiply(state0, c) + np.multiply(state1, d),
+                ],
+                axis=axis,
+            )
+        mat = np.array([[a, b], [c, d]], dtype=state_dtype)
+        return _apply_single_qubit_np(mat, state, axis)
+
+    params = params if param_interface == "torch" else math.cast(params, dtype=complex)
+    params, state0, state1 = _align_torch_interfaces(
+        params, state0, state1, state_interface, param_interface
+    )
+    a, b, c, d = compute_coeffs(params, math)
+    if state_interface != "torch":
+        state0 = math.cast(state0, dtype=complex)
+        state1 = math.cast(state1, dtype=complex)
+    new0 = math.multiply(state0, a) + math.multiply(state1, b)
+    new1 = math.multiply(state0, c) + math.multiply(state1, d)
+    return math.stack([new0, new1], axis=axis)
+
+
+def _rz_coeffs(params, lib):
+    e = lib.exp(-0.5j * params)
+    z = lib.zeros_like(e)
+    return e, z, z, lib.conj(e)
+
+
+def _rx_coeffs(params, lib):
+    c = lib.cos(params / 2)
+    js = -1j * lib.sin(params / 2)
+    return c, js, js, c
+
+
+def _ry_coeffs(params, lib):
+    c = lib.cos(params / 2)
+    s = lib.sin(params / 2)
+    return c, -s, s, c
+
+
+@apply_operation.register
+def apply_rz(op: ops.RZ, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply RZ to state."""
+    return _apply_rotation_1q(op, state, is_state_batched, _rz_coeffs)
+
+
+@apply_operation.register
+def apply_rx(op: ops.RX, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply RX to state."""
+    return _apply_rotation_1q(op, state, is_state_batched, _rx_coeffs)
+
+
+@apply_operation.register
+def apply_ry(op: ops.RY, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply RY to state."""
+    return _apply_rotation_1q(op, state, is_state_batched, _ry_coeffs)
 
 
 @apply_operation.register

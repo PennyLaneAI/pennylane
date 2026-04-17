@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
 import copy
 from collections.abc import Iterable

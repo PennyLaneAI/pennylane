@@ -15,6 +15,7 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+
 import warnings
 from functools import partial
 

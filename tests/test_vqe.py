@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.vqe` submodule.
 """
+
 import copy
 
 import numpy as np

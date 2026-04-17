@@ -14,6 +14,7 @@
 """
 Unit tests for the `transforms.zx.push_hadamards` transform.
 """
+
 import sys
 
 import numpy as np

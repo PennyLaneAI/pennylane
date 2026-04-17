@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit."""
+
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock

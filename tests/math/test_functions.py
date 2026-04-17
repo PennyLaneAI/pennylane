@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for pennylane.math.single_dispatch"""
+
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial

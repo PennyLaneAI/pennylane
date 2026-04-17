@@ -15,7 +15,6 @@
 Functions for partitioning a graph using KaHyPar.
 """
 
-
 from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path

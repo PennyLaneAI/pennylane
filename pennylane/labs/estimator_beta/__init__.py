@@ -50,17 +50,20 @@ Qubit Tracking Functionality
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.estimator_beta.ops
+.. currentmodule:: pennylane.labs.estimator_beta
 
 .. autosummary::
     :toctree: api
 
+    ~selectpaulirot_controlled_resource_decomp
+    ~paulirot_controlled_resource_decomp
     ~ch_resource_decomp
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
 
 """
+
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
@@ -75,11 +78,13 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
+from .templates import selectpaulirot_controlled_resource_decomp
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
+    paulirot_controlled_resource_decomp,
 )
 
 
