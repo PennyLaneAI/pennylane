@@ -636,8 +636,9 @@ def specs(
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
-        * The string ``"all"``: To output information about all user-applied transforms and compilation passes
-        * The string ``"all-mlir"``: To output information about all compilation passes at the MLIR level only
+        * The string ``"all"``: To output information about each user-applied transform and compilation pass
+        * The string ``"all-mlir"``: To output information about each compilation pass at the MLIR level only
+        * The string ``"user"``: To output information after all user-applied compilation passes have been applied
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
@@ -706,17 +707,11 @@ def specs(
         - probs(all wires): 1
         Depth: Not computed
 
-        .. note::
+        A shortcut to access the resources after all user-specified transforms and passes have been
+        applied is to use the ``"user"`` level. For example, the following will also return the
+        resources after the ``merge-rotations`` pass:
 
-            The ``level`` argument provided to ``specs`` may be negative. When negative integers are used for
-            ``level``, these indices are interpreted as counting backwards with respect to the
-            final transform in the sequence. This is similar to how Python slices
-            operate; ``-1`` corresponds to the last level,
-            ``-2`` to the second to last, and so on.
-
-        For example, the following will also return the resources after the ``merge-rotations`` pass:
-
-        >>> print(qml.specs(circuit, level=-1)(1.23).resources)
+        >>> print(qml.specs(circuit, level="user")(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
