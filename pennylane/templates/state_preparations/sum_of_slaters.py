@@ -703,8 +703,8 @@ class SumOfSlatersPrep(Operation):
     (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
     >>> # Adding 0.0 to the rounded result will prevent stochastic signed zeros
     >>> print(np.round(prepared_state[where], 4) + 0.0)
-    [ 0.3536+0.j     -0.    -0.3536j  0.    +0.3536j  0.3536+0.j
-      0.3536-0.j      0.    -0.3536j  0.3536-0.j     -0.    +0.3536j]
+    [0.3536+0.j     0.    -0.3536j 0.    +0.3536j 0.3536+0.j
+     0.3536+0.j     0.    -0.3536j 0.3536+0.j     0.    +0.3536j]
 
     That looks exactly right! Internally, the state preparation looks like this:
 
@@ -791,8 +791,8 @@ class SumOfSlatersPrep(Operation):
         (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
         >>> # Adding 0.0 to the rounded result will prevent stochastic signed zeros
         >>> print(np.round(prepared_state[where], 4) + 0.0)
-        [ 0.25-0.j    0.  +0.25j -0.25+0.j    0.5 -0.j    0.5 +0.j    0.25+0.j
-          0.  -0.25j  0.25+0.j   -0.25-0.j    0.25+0.j  ]
+        [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+          0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
 
 
         The reduced circuit looks like this:
