@@ -67,7 +67,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -81,7 +81,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -95,7 +95,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="Cannot apply qp.AmplitudeEmbedding after operators with dynamic wires.",
+            match="AmplitudeEmbedding after operators with dynamic wires.",
         ):
             jax.make_jaxpr(qfunc)(1)
 
@@ -110,7 +110,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -128,7 +128,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
 
@@ -146,7 +146,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
 
@@ -173,7 +173,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -200,7 +200,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -229,7 +229,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -262,7 +262,7 @@ class TestRepeatedQubitTransformErrors:
 
         with pytest.raises(
             TransformError,
-            match="qp.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             args = (3,)
             jax.make_jaxpr(f)(*args)
@@ -470,7 +470,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         with pytest.raises(
             TransformError,
-            match="Cannot apply qp.AmplitudeEmbedding after operators with dynamic wires.",
+            match=" AmplitudeEmbedding after operators with dynamic wires.",
         ):
             _ = jax.make_jaxpr(f)(2)
 
@@ -507,7 +507,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [w])
 
         with pytest.raises(
-            TransformError, match="Cannot apply qp.AmplitudeEmbedding with dynamic wires"
+            TransformError, match="AmplitudeEmbedding with dynamic wires"
         ):
             _ = jax.make_jaxpr(f)(0)
 
@@ -598,7 +598,7 @@ class TestHigherOrderPrimitiveIntegration:
             qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
 
         with pytest.raises(
-            TransformError, match="Cannot apply qp.AmplitudeEmbedding with dynamic wires"
+            TransformError, match="AmplitudeEmbedding with dynamic wires"
         ):
             _ = jax.make_jaxpr(qfunc)(1)
 

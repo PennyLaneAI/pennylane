@@ -281,7 +281,7 @@ class TestCond:
         jaxpr = jax.make_jaxpr(f)(1.23)
         with pytest.raises(
             ConditionalTransformError,
-            match="Cannot use qp.cond with a combination of mid-circuit measurements",
+            match="cond with a combination of mid-circuit measurements",
         ):
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 

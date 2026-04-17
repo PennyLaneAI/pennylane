@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 import pennylane as qp
 
-import pennylane
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
 from pennylane.operation import Operator
