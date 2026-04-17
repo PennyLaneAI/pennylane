@@ -501,6 +501,24 @@ The following classes have been ported over:
 * The :func:`~pennylane.list_decomps` now returns a new ``DecompCollection`` that supports both index-based and name-based access of the decomposition rules that it contains.
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
+  ```pycon
+  >>> import pennylane as qml
+  >>> collection = qml.list_decomps(qml.CRX)
+  >>> print(collection)
+  Available Decomposition Rules:
+  0: _crx_to_rx_cz
+  1: _crx_to_rz_ry
+  2: _crx_to_h_crz
+  3: _crx_to_ppr
+  >>> collection[0]
+  DecompositionRule(name=_crx_to_rx_cz)
+  >>> collection['_crx_to_ppr']
+  DecompositionRule(name=_crx_to_ppr)
+  >>> print(qml.draw(collection[0])(0.5, wires=[0, 1])
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  ```
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
