@@ -35,7 +35,7 @@ def _get_vjp_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    vjp_prim = capture.QmlPrimitive("vjp")
+    vjp_prim = capture.QpPrimitive("vjp")
     vjp_prim.multiple_results = True
     vjp_prim.prim_type = "higher_order"
 

@@ -192,15 +192,15 @@ qnode_prim: "jax.extend.core.Primitive"
 PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
-QmlPrimitive: "Type[jax.extend.core.Primitive]"
+QpPrimitive: "Type[jax.extend.core.Primitive]"
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
-    if key == "QmlPrimitive":
-        from .custom_primitives import QmlPrimitive
+    if key == "QpPrimitive":
+        from .custom_primitives import QpPrimitive
 
-        return QmlPrimitive
+        return QpPrimitive
 
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator

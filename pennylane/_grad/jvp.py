@@ -42,7 +42,7 @@ def _get_jvp_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    jvp_prim = capture.QmlPrimitive("jvp")
+    jvp_prim = capture.QpPrimitive("jvp")
     jvp_prim.multiple_results = True
     jvp_prim.prim_type = "higher_order"
 

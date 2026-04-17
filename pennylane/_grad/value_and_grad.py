@@ -37,7 +37,7 @@ def _get_value_and_grad_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    value_and_grad_prim = capture.QmlPrimitive("value_and_grad")
+    value_and_grad_prim = capture.QpPrimitive("value_and_grad")
     value_and_grad_prim.multiple_results = True
     value_and_grad_prim.prim_type = "higher_order"
 
