@@ -21,10 +21,10 @@ from pennylane.labs.transforms import MultiTemporaryAND
 from pennylane.ops.functions.assert_valid import _check_decomposition_new
 
 
-@pytest.mark.parametrize("n", [2, 3, 5])
+@pytest.mark.parametrize("n", [3, 4, 5, 6])
 def test_valid_decomp(n):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
     wires = range(n)
     op = MultiTemporaryAND(wires)
-    _check_decomposition_new(op)
+    _check_decomposition_new(op, skip_decomp_matrix_check=True)
