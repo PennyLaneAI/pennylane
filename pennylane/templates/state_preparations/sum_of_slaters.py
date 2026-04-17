@@ -701,7 +701,8 @@ class SumOfSlatersPrep(Operation):
     >>> where = np.where(prepared_state)
     >>> print(where)
     (array([ 0,  1,  2,  4,  8, 16, 32, 64]),)
-    >>> print(np.round(prepared_state[where], 4))
+    >>> # Adding 0.0 to the rounded result will prevent stochastic signed zeros
+    >>> print(np.round(prepared_state[where], 4) + 0.0)
     [ 0.3536+0.j     -0.    -0.3536j  0.    +0.3536j  0.3536+0.j
       0.3536-0.j      0.    -0.3536j  0.3536-0.j     -0.    +0.3536j]
 
@@ -788,7 +789,8 @@ class SumOfSlatersPrep(Operation):
         >>> where = np.where(np.abs(prepared_state)>1e-12)
         >>> print(where)
         (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
-        >>> print(np.round(prepared_state[where], 4))
+        >>> # Adding 0.0 to the rounded result will prevent stochastic signed zeros
+        >>> print(np.round(prepared_state[where], 4) + 0.0)
         [ 0.25-0.j    0.  +0.25j -0.25+0.j    0.5 -0.j    0.5 +0.j    0.25+0.j
           0.  -0.25j  0.25+0.j   -0.25-0.j    0.25+0.j  ]
 
