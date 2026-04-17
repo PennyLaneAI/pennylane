@@ -33,7 +33,7 @@ from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
+# pylint: disable= no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
 
 
 def _circuit_w_expval(circ):

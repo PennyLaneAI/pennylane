@@ -315,10 +315,10 @@ class LabsQROM(ResourceOperator):
             <https://arxiv.org/abs/1902.02134>`_.
 
             * :code:`borrow_qubits=True`: Uses the borrowed qubit decomposition from Figure 4 of Appendix A in
-            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
-            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             Note: we use the unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -481,10 +481,10 @@ class LabsQROM(ResourceOperator):
             <https://arxiv.org/abs/1902.02134>`_.
 
             * :code:`borrow_qubits=True`: Uses the borrowed qubit decomposition from Figure 4 of Appendix A in
-            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
-            `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n` additional work qubits,
