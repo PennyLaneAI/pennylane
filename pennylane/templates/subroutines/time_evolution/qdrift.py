@@ -115,8 +115,6 @@ class QDrift(Operation):
 
     .. code-block:: python
 
-        import pennylane as qp
-
         coeffs = [0.25, 0.75]
         ops = [qp.X(0), qp.Z(0)]
         H = qp.dot(coeffs, ops)

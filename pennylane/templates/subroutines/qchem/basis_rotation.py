@@ -182,7 +182,6 @@ def BasisRotation(wires: WiresLike, unitary_matrix: TensorLike, check: bool = Fa
 
         where :math:`\lambda_k` denotes the eigenvalues of matrix :math:`V`, the Hamiltonian coefficients matrix.
 
-        >>> import pennylane as qp
         >>> V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],
         ...               [-0.1126064 +2.41479668j,  1.48694623+0.j        ]])
         >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)

@@ -211,8 +211,6 @@ def qsvt(
 
     .. code-block:: python
 
-        import pennylane as qp
-
         # P(x) = -x + 0.5 x^3 + 0.5 x^5
         poly = np.array([0, -1, 0, 0.5, 0, 0.5])
 

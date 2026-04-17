@@ -50,8 +50,6 @@ class Qubitization(Operation):
 
     .. code-block:: python
 
-        import pennylane as qp
-
         H = qp.dot([0.1, 0.3, -0.3], [qp.Z(0), qp.Z(1), qp.Z(0) @ qp.Z(2)])
 
         @qp.qnode(qp.device("default.qubit"))

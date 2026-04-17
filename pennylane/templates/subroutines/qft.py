@@ -56,8 +56,6 @@ class QFT(Operation):
 
     .. code-block:: python
 
-        import pennylane as qp
-
         wires = 3
 
         dev = qp.device('default.qubit',wires=wires)

@@ -122,8 +122,6 @@ class QROM(Operation):
 
     .. code-block:: python
 
-        import pennylane as qp
-
         # a list of bitstrings is defined
         data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
 

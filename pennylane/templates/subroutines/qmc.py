@@ -312,8 +312,6 @@ class QuantumMonteCarlo(Operation):
 
         .. code-block:: python
 
-            import pennylane as qp
-
             n = 10
             N = 2 ** n
 

@@ -77,8 +77,6 @@ class SelectPauliRot(Operation):
 
     .. code-block:: python
 
-        import pennylane as qp
-
         angles = np.array([1.0, 2.0, 3.0, 4.0])
 
         wires = qp.registers({"control": 2, "target": 1})
