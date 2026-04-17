@@ -506,9 +506,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qp.H(0)
             qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [w])
 
-        with pytest.raises(
-            TransformError, match="AmplitudeEmbedding with dynamic wires"
-        ):
+        with pytest.raises(TransformError, match="AmplitudeEmbedding with dynamic wires"):
             _ = jax.make_jaxpr(f)(0)
 
 
@@ -597,9 +595,7 @@ class TestHigherOrderPrimitiveIntegration:
             qp.measure(wires=0)
             qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
 
-        with pytest.raises(
-            TransformError, match="AmplitudeEmbedding with dynamic wires"
-        ):
+        with pytest.raises(TransformError, match="AmplitudeEmbedding with dynamic wires"):
             _ = jax.make_jaxpr(qfunc)(1)
 
     def test_ctrl_transform_prim(self):
