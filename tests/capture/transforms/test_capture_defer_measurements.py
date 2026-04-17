@@ -777,5 +777,5 @@ def test_defer_measurements_plxpr_to_plxpr_no_aux_wires_error():
     tkwargs = {}
     jaxpr = jax.make_jaxpr(f)(*args)
 
-    with pytest.raises(ValueError, match="'num_wires' argument for qml.defer_measurements must be"):
+    with pytest.raises(ValueError, match="'num_wires' argument for qp.defer_measurements must be"):
         defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
