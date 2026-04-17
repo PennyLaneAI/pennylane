@@ -9,7 +9,7 @@ Program capture sharp bits
     Program capture is an experimental feature under active development.
     Bugs and unexpected behaviour may occur, and breaking changes are possible in future releases.
     Execution without Catalyst is no longer being developed or maintained; please use
-    program capture with Catalyst present only, which can be done with `qml.qjit(capture=True)`.
+    program capture with Catalyst present only, which can be done with `qp.qjit(capture=True)`.
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
@@ -53,25 +53,25 @@ Device wires
 With program capture enabled, all devices that Catalyst supports require 
 that ``wires`` be specified at device instantiation.
 
->>> import pennylane as qml
->>> @qml.qjit(capture=True)
-... @qml.qnode(qml.device('lightning.qubit'))
+>>> import pennylane as qp
+>>> @qp.qjit(capture=True)
+... @qp.qnode(qp.device('lightning.qubit'))
 ... def circuit():
-...     qml.Hadamard(0)
-...     return qml.state()
+...     qp.Hadamard(0)
+...     return qp.state()
 Traceback (most recent call last):
 ...
 NotImplementedError: devices must specify wires for integration with program capture.
 
 .. code-block:: python 
 
-    import pennylane as qml
+    import pennylane as qp
 
-    @qml.qjit(capture=True)
-    @qml.qnode(qml.device('lightning.qubit', wires=1))
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device('lightning.qubit', wires=1))
     def circuit():
-        qml.Hadamard(0)
-        return qml.state()
+        qp.Hadamard(0)
+        return qp.state()
 
 >>> circuit()
 Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
@@ -91,20 +91,20 @@ please consult their respective documentation pages for information on gradient 
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import jax.numpy as jnp 
 
-    dev = qml.device('lightning.qubit', wires=1)
+    dev = qp.device('lightning.qubit', wires=1)
 
-    @qml.qjit(capture=True)
+    @qp.qjit(capture=True)
     def workflow(x):
 
-        @qml.qnode(dev, diff_method="adjoint")
+        @qp.qnode(dev, diff_method="adjoint")
         def circuit(_x):
-            qml.RX(_x, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(_x, wires=0)
+            return qp.expval(qp.Z(0))
         
-        return qml.grad(circuit)(x)
+        return qp.grad(circuit)(x)
 
 >>> x = jnp.array(jnp.pi / 4)
 >>> workflow(x)
@@ -126,16 +126,16 @@ in quantum operations, and will result in an error:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax.numpy as jnp
 
-    dev = qml.device('lightning.qubit', wires=["a", "b", "c"])
+    dev = qp.device('lightning.qubit', wires=["a", "b", "c"])
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(jnp.array(0.1), wires=["a", "b"])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(jnp.array(0.1), wires=["a", "b"])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 ...
@@ -143,16 +143,16 @@ TypeError: Argument 'a' of type <class 'str'> is not a valid JAX type
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax.numpy as jnp
 
-    dev = qml.device('lightning.qubit', wires=[0, 1, 2])
+    dev = qp.device('lightning.qubit', wires=[0, 1, 2])
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(jnp.array(0.1), wires=[0, 1])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(jnp.array(0.1), wires=[0, 1])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array(0., dtype=float64)
@@ -164,41 +164,41 @@ Python ``lists`` are valid Pytrees, but there are cases with program capture ena
 where they can lead to errors, and we recommend using ``jax.numpy`` arrays in place 
 of Python lists wherever possible.
 
-For example, the positional argument in ``qml.QubitUnitary`` can't be a ``list``:
+For example, the positional argument in ``qp.QubitUnitary`` can't be a ``list``:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
 
     my_unitary = [[1, 0], [0, 1]]
 
-    dev = qml.device('lightning.qubit', wires=2)
+    dev = qp.device('lightning.qubit', wires=2)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        qml.QubitUnitary(my_unitary, wires=0)
-        return qml.state()
+        qp.QubitUnitary(my_unitary, wires=0)
+        return qp.state()
 
 >>> circuit()
 ...
 TypeError: Argument '[[1, 0], [0, 1]]' of type '<class 'list'>' is not a valid JAX type
 
-But a ``list`` can be passed to ``qml.QubitUnitary`` as a keyword argument:
+But a ``list`` can be passed to ``qp.QubitUnitary`` as a keyword argument:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
 
     my_unitary = [[1, 0], [0, 1]]
 
-    dev = qml.device('lightning.qubit', wires=2)
+    dev = qp.device('lightning.qubit', wires=2)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        qml.QubitUnitary(U=my_unitary, wires=0)
-        return qml.state()
+        qp.QubitUnitary(U=my_unitary, wires=0)
+        return qp.state()
 
 >>> circuit()
 Array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j], dtype=complex128)
@@ -207,18 +207,18 @@ Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax
 
     my_unitary = jax.numpy.array([[1, 0], [0, 1]])
 
-    dev = qml.device('lightning.qubit', wires=2)
+    dev = qp.device('lightning.qubit', wires=2)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        qml.QubitUnitary(my_unitary, wires=0)
-        return qml.state()
+        qp.QubitUnitary(my_unitary, wires=0)
+        return qp.state()
 
 >>> circuit()
 Array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j], dtype=complex128)
@@ -236,16 +236,16 @@ For instance, consider this example with ``RZ``:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax.numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit(angle):
-        qml.RX(phi=angle, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(phi=angle, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> angle = jnp.array(0.1)
 >>> circuit(angle)
@@ -260,16 +260,16 @@ expected:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax.numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit(angle):
-        qml.RX(angle, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(angle, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> angle = jnp.array(0.1)
 >>> circuit(angle)
@@ -328,15 +328,15 @@ and still have program structure preserved. This can be accessed with ``qjit(cap
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    @qml.qjit(capture=True, autograph=True)
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    @qp.qjit(capture=True, autograph=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
         for _ in range(1000000):
-            qml.RX(0.1, 0)
+            qp.RX(0.1, 0)
 
-        return qml.state()
+        return qp.state()
 
 >>> circuit()
 Array([-0.01787726+0.j        ,  0.        +0.j        ,
@@ -376,17 +376,17 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
     import jax
     import jax.numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> x = jnp.array([0.1, 0.2, 0.3])
 >>> vmap_circuit = jax.vmap(circuit)
@@ -396,7 +396,7 @@ Array([0.99500417, 0.98006658, 0.95533649], dtype=float64)
 More information for using ``jax.vmap`` can be found in the 
 `JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
 
-qml.cond
+qp.cond
 --------
 
 When using :func:`~.cond`, if the ``True`` branch of a condition returns something, 
@@ -404,19 +404,19 @@ then a ``False`` branch much be provided that returns the same generic type:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    @qml.qjit(capture=True)
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
         def true_branch(x):
-            return qml.X(0)
+            return qp.X(0)
 
-        m0 = qml.measure(0)
-        qml.cond(m0, true_branch)(4)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_branch)(4)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 ValueError: The false branch must be provided if the true branch returns any variables
@@ -426,22 +426,22 @@ is ``False``, a ``false_fn`` must be provided:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    @qml.qjit(capture=True)
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
         def true_branch(x):
-            return qml.X(0)
+            return qp.X(0)
 
         def false_branch(x):
-            return qml.Identity(0)
+            return qp.Identity(0)
 
-        m0 = qml.measure(0)
-        qml.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array(0., dtype=float64)
@@ -450,16 +450,16 @@ That, or the ``true_fn`` itself can be an operator type:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    @qml.qjit(capture=True)
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
-        m0 = qml.measure(0)
-        qml.cond(m0, true_fn=qml.X)(0)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_fn=qp.X)(0)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array(0., dtype=float64)
@@ -472,15 +472,15 @@ a QNode, and will raise an error:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp
 
-    dev = qml.device("lightning.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qml.qjit(capture=True)
-    @qml.qnode(dev)
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
     def circuit():
-        mat = qml.matrix(qml.X(0))
-        return qml.state()
+        mat = qp.matrix(qp.X(0))
+        return qp.state()
 
 >>> circuit()
 ...
