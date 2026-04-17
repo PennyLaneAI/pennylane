@@ -332,8 +332,10 @@ def cancel_inverses(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        recursive (bool): Whether or not to recursively cancel inverses after a first pair
-            of mutual inverses has been cancelled. Enabled by default.
+        recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
+
+            .. note::
+                This argument is not supported within a :func:`~.qjit` workflow.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -405,6 +407,58 @@ def cancel_inverses(
         0: ──RZ(3.00)───────────╭●─┤  <Z>
         1: ──H─────────RY(2.00)─│──┤
         2: ──RX(1.00)──RX(2.00)─╰X─┤
+
+    .. details::
+        :title: Usage with qjit
+
+        There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
+
+        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
+
+        * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
+
+          - :class:`qml.Hadamard <pennylane.Hadamard>`,
+          - :class:`qml.PauliX <pennylane.PauliX>`,
+          - :class:`qml.PauliY <pennylane.PauliY>`,
+          - :class:`qml.PauliZ <pennylane.PauliZ>`
+          - :class:`qml.CNOT <pennylane.CNOT>`,
+          - :class:`qml.CY <pennylane.CY>`,
+          - :class:`qml.CZ <pennylane.CZ>`,
+          - :class:`qml.SWAP <pennylane.SWAP>`
+          - :class:`qml.Toffoli <pennylane.Toffoli>`
+
+        .. code-block:: python
+
+            dev = qml.device("lightning.qubit", wires=1)
+
+            @qml.qjit(capture=True)
+            @qml.transforms.cancel_inverses
+            @qml.qnode(dev)
+            def circuit():
+                qml.RX(0.1, wires=0)
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> print(qml.specs(circuit, level=1)())
+        Device: lightning.qubit
+        Device wires: 1
+        Shots: Shots(total=None)
+        Level: cancel-inverses
+        <BLANKLINE>
+        Wire allocations: 1
+        Total gates: 1
+        Gate counts:
+        - RX: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
+        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
+
+        For more technical information on how this transform behaves, consult the Catalyst
+        documentation for :func:`catalyst.passes.cancel_inverses`.
 
     """
     # Make a working copy of the list to traverse

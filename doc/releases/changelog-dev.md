@@ -162,12 +162,34 @@ The following classes have been ported over:
   This is important for discretization steps, for example via [phase gradient decompositions](https://pennylane.ai/compilation/phase-gradient/).
   [(#9117)](https://github.com/PennyLaneAI/pennylane/pull/9117)
 
+* The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
+  available in PennyLane instead of only Catalyst. These compilation passes simplify rendundant
+  ``CNOT`` and ``SWAP`` gates.
+  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
+
 * Decomposition rules can now be assigned custom names using the ``name`` argument in :func:`qml.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
+* Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
+
 <h3>Improvements 🛠</h3>
 
-* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via generator expressions. These operators are now much faster for large Pauli strings.
+* With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
+  can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
+  [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
+
+* Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
+  work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
+  `CNOT`.
+  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
+
+* Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
+  [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
+
+* Replaced the O(n²) incremental ``@=`` operator chaining in ``qp.pauli.string_to_pauli_word`` and
+  ``qp.pauli.binary_to_pauli`` with a single ``qp.prod(*tuple_of_ops)`` call, collecting operators via
+  generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
 * Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
@@ -340,6 +362,9 @@ The following classes have been ported over:
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
 
+* Catalyst's ``draw_graph`` function is now accessible from PennyLane as :func:`pennylane.draw_graph`.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
 * Raises a more informative error if something that is not a measurement process is returned from a
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
@@ -468,6 +493,11 @@ The following classes have been ported over:
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
+* The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
+  is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
+  for the base decomposition rule is also displayed when printing this rule.
+  [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -511,6 +541,15 @@ The following classes have been ported over:
   These can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
+<h4>Other improvements</h4>
+
+* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
+  redundant. However, all Pauli-based computation passes can still be accessed from the
+  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
+  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
+  source of truth for documentation of a feature if it is desired to be accessible
+  from both PennyLane and Catalyst.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 <h3>Breaking changes 💔</h3>
 
@@ -774,6 +813,13 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
+
+* With program capture, arrays dynamic shapes with `qml.for_loop` and `qml.while_loop` can now be combined
+  after the loop.
+  [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
+
 * Patched `jax._src.pjit._infer_params_internal` for dynamic shapes to correctly handle the concatenation of closure variables and arguments before return.
   [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
 
@@ -901,6 +947,10 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Documentation has been added to :func:`~.transforms.cancel_inverses` and
+  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
+  [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+
 * A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
   [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
 
@@ -930,12 +980,31 @@ The following classes have been ported over:
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
+* Infrastructure has been put in place for features that should be accessible from both PennyLane and
+  Catalyst to have a single source of truth for documentation, which will provide a better overall
+  experience when consulting our documentation.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
+  The process for Catalyst frontend features to be automatically accessible from PennyLane while
+  ensuring that such features' documentation is properly sourced from Catalyst and hosted on
+  PennyLane's documentation is outlined in the
+  :doc:`documentation development guide <../development/guide/documentation>` under the section
+  titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
+  found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
+
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
+* Fixed the docstring of ``FermiSentence`` that incorrectly claims that it is immutable.
+  [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
+
 <h3>Bug fixes 🐛</h3>
+
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
 * Fixes an issue with Catalyst and `qml.for_loop` and `qml.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
@@ -1055,6 +1124,10 @@ The following classes have been ported over:
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
   [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
+
+* Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
+  when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
+  [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
 <h3>Contributors ✍️</h3>
 
