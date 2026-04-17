@@ -812,9 +812,7 @@ class TestCondCircuits:
                     qp.RZ(j, wires=0)
                     qp.RY(x**2, wires=0)
                     m_2 = qp.measure(0)
-                    qp.cond(m_2, true_fn=true_fn, false_fn=false_fn, elifs=((m_1, elif_fn)))(
-                        arg[0]
-                    )
+                    qp.cond(m_2, true_fn=true_fn, false_fn=false_fn, elifs=((m_1, elif_fn)))(arg[0])
                     return j + 1
 
                 inner(i + 1)

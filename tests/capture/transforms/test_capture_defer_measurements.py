@@ -645,9 +645,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         @qp.qnode(dev, diff_method="parameter-shift", shots=10)
         def f(x):
             m0 = qp.measure(0, postselect=postselect)
-            m1 = qp.measure(
-                0, postselect=postselect if postselect is None else int(not postselect)
-            )
+            m1 = qp.measure(0, postselect=postselect if postselect is None else int(not postselect))
 
             @qp.cond(2 * m0 + m1)
             def true_fn(phi):

@@ -20,8 +20,9 @@ from typing import Any
 
 import numpy as np
 import pytest
+import qp
 
-import pennylane qp
+import pennylane
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
@@ -202,9 +203,7 @@ H_TWO_QUBITS = np.array(
         qp.Hamiltonian(
             (1.1, -0.4, 0.333), (qp.PauliX(0), qp.Hermitian(H_ONE_QUBIT, 2), qp.PauliZ(2))
         ),
-        qp.Hamiltonian(
-            np.array([-0.1, 0.5]), [qp.Hermitian(H_TWO_QUBITS, [0, 1]), qp.PauliY(0)]
-        ),
+        qp.Hamiltonian(np.array([-0.1, 0.5]), [qp.Hermitian(H_TWO_QUBITS, [0, 1]), qp.PauliY(0)]),
     ],
 )
 def test_pennylane_pytree_roundtrip(obj_in: Any):

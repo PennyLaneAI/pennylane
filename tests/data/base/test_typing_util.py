@@ -18,8 +18,9 @@ Tests for the :mod:`pennylane.data.base.typing_util` functions.
 from typing import Optional, Union
 
 import pytest
+import qp
 
-import pennylane qp
+import pennylane
 from pennylane.data.base.typing_util import UNSET, get_type, get_type_str, resolve_special_type
 from pennylane.qchem import Molecule
 

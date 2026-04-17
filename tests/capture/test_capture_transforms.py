@@ -72,9 +72,7 @@ def expval_z_obs_to_x_obs_plxpr(
 
         def interpret_measurement(self, meas):
             """Interpret measurement."""
-            if isinstance(meas, qp.measurements.ExpectationMP) and isinstance(
-                meas.obs, qp.PauliZ
-            ):
+            if isinstance(meas, qp.measurements.ExpectationMP) and isinstance(meas.obs, qp.PauliZ):
                 return qp.expval(qp.X(meas.wires))
 
             return super().interpret_measurement(meas)
