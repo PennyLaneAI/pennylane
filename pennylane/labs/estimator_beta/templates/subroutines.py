@@ -78,7 +78,7 @@ def selectpaulirot_controlled_resource_decomp(
 
 
 # pylint: disable=arguments-differ,too-many-arguments
-class QROM(ResourceOperator):
+class LabsQROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
     Args:
@@ -106,14 +106,16 @@ class QROM(ResourceOperator):
         * :code:`borrow_qubits=False`: Uses the clean qubit decomposition from Appendix B in
           `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
-    .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
+    .. seealso::
+        The associated PennyLane operation :class:`~.pennylane.QROM` and the resource operator
+        :class:`~.pennylane.estimator.templates.subroutines.QROM`.
 
     **Example**
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
-    >>> qrom = qre.QROM(
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qrom = qre.LabsQROM(
     ...     num_bitstrings=10,
     ...     size_bitstring=4,
     ... )
@@ -124,7 +126,7 @@ class QROM(ResourceOperator):
         allocated wires: 3
         zero state: 3
         any state: 0
-    Total gates : 85
+    Total gates : 86
     'Toffoli': 8,
     'CNOT': 36,
     'X': 18,
@@ -174,7 +176,7 @@ class QROM(ResourceOperator):
     ) -> None:
         if "restored" in kwargs:
             raise ValueError(
-                "'restored' is no longer a supported argument for 'labs.estimator_beta.QROM'."
+                "'restored' is no longer a supported argument for 'labs.estimator_beta.LabsQROM'."
                 "Use 'borrow_qubits = True' instead. Alternatively import 'QROM' from 'pennylane.estimator'."
             )
 
@@ -395,12 +397,12 @@ class QROM(ResourceOperator):
         select_swap_depth: int | None = None,
         borrow_qubits: bool = True,
     ):
-        r"""The resource decomposition for QROM controlled on a single wire."""
+        r"""The resource decomposition for LabsQROM controlled on a single wire."""
         if select_swap_depth:
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
-        W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
+        W_opt = select_swap_depth or cls._t_optimized_select_swap_width(
             num_bitstrings,
             size_bitstring,
             borrow_qubits,

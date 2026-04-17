@@ -521,7 +521,7 @@ The following classes have been ported over:
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 * Added alternate decompositions in labs for ``MultiControlledX`` and created a new 
-  ``~.labs.estimator_beta.QROM`` resource operator in labs that utilize the advanced qubit management features.
+  ``~.labs.estimator_beta.LabsQROM`` resource operator in labs that utilize the new qubit management features.
   [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
 
 <h4>Other improvements</h4>
