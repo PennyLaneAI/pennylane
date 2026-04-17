@@ -20,12 +20,12 @@ import pytest
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.custom_primitives import PrimitiveType, QmlPrimitive
+from pennylane.capture.custom_primitives import PrimitiveType, qpPrimitive
 
 pytestmark = pytest.mark.jax
 
 
-def test_qml_primitive_prim_type_default():
+def test_qp_primitive_prim_type_default():
     """Test that the default prim_type of a QmlPrimitive is set correctly."""
     prim = QmlPrimitive("primitive")
     assert prim._prim_type == PrimitiveType("default")  # pylint: disable=protected-access
