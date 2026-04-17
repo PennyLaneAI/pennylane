@@ -156,6 +156,7 @@ Transforms for circuit pre/post-processing and other utilities
 The following transforms are useful for multiple purposes such as circuit preprocessing, getting
 information from a circuit, and more.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
