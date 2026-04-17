@@ -175,9 +175,7 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* ``qp.specs`` now supports negative integers for its ``level`` argument.
-  When supplied with a negative integer, :func:`~.specs` handles it like a Python slice; with -1 representing the last level,
-  -2 representing the second-to-last, and so on.
+* :func:`~.specs` now supports ``level="user"`` for workflows compiled with ``qp.qjit``.
   [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
 
 * With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
