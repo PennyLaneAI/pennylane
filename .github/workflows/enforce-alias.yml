@@ -33,6 +33,7 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     env:
       CORE_MODULES: >-
+        doc
         pennylane/operation.py
 
       TEST_MODULES: >-
