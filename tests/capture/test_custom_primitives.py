@@ -20,7 +20,7 @@ import pytest
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.custom_primitives import PrimitiveType, qpPrimitive
+from pennylane.capture.custom_primitives import PrimitiveType, QpPrimitive
 
 pytestmark = pytest.mark.jax
 
