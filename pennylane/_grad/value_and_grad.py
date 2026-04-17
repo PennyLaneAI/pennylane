@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines qml.value_and_grad.
+Defines qp.value_and_grad.
 """
 
 import inspect
@@ -184,15 +184,15 @@ class value_and_grad:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(jnp.pi * x, wires=0)
-                return qml.expval(qml.PauliY(0))
-            return qml.value_and_grad(circuit)(x)
+                qp.RX(jnp.pi * x, wires=0)
+                return qp.expval(qp.PauliY(0))
+            return qp.value_and_grad(circuit)(x)
 
     >>> workflow(0.2)
     (Array(-0.58778525, dtype=float64), Array(-2.54160185, dtype=float64))
@@ -201,19 +201,19 @@ class value_and_grad:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def value_and_grad_loss(theta):
-            @qml.qnode(dev, diff_method="adjoint")
+            @qp.qnode(dev, diff_method="adjoint")
             def circuit(theta):
-                qml.RX(jnp.exp(theta ** 2) / jnp.cos(theta / 4), wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                qp.RX(jnp.exp(theta ** 2) / jnp.cos(theta / 4), wires=0)
+                return qp.expval(qp.PauliZ(wires=0))
 
             def loss(theta):
                 return jnp.pi / jnp.tanh(circuit(theta))
 
-            return qml.value_and_grad(loss, method="auto")(theta)
+            return qp.value_and_grad(loss, method="auto")(theta)
 
     >>> value_and_grad_loss(1.0)
     (Array(-4.2622289, dtype=float64), Array(5.04324559, dtype=float64))
@@ -225,9 +225,9 @@ class value_and_grad:
         def square(x: float):
             return x ** 2
 
-        @qml.qjit
+        @qp.qjit
         def dsquare(x: float):
-            return qml.value_and_grad(square)(x)
+            return qp.value_and_grad(square)(x)
 
     >>> dsquare(2.3)
     (Array(5.29, dtype=float64), Array(4.6, dtype=float64))
