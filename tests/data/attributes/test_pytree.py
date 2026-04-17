@@ -20,7 +20,6 @@ from dataclasses import dataclass
 import pytest
 import pennylane as qp
 
-import pennylane
 from pennylane.data import Dataset, DatasetPyTree
 from pennylane.pytrees.pytrees import (
     _register_pytree_with_pennylane,

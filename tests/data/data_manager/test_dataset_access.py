@@ -25,7 +25,6 @@ import pytest
 import pennylane as qp
 import requests
 
-import pennylane
 import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import _validate_attributes
