@@ -580,7 +580,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):
+class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}
