@@ -578,3 +578,183 @@ class TestDecompCollection:
         collection += other  # uses iadd
         assert len(collection) == 4
         assert "custom3" in collection
+
+
+class CustomParametrizedOp(Operator):
+    """A custom parametrized op for testing."""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, theta, wires):
+        super().__init__(theta, wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+
+class TestShowDecomps:
+    """Tests inspecting decomposition rules."""
+
+    @pytest.fixture(autouse=True, scope="class")
+    def setup(self):
+        """Sets up decomposition rules for CustomOp."""
+
+        @register_condition(lambda num_wires: num_wires == 2)
+        @register_resources({qml.RZ: 2, qml.CNOT: 1}, name="simple")
+        def two_wires_decomp(theta, wires, **_):
+            qml.RZ(theta, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RZ(theta, wires=wires[0])
+
+        @register_resources(lambda num_wires: {qml.RX: 2, qml.CZ: 2 * (num_wires - 1), qml.H: 1})
+        def general_decomp(theta, wires, **_):
+
+            @qml.for_loop(len(wires) - 1)
+            def _loop(i):
+                qml.CZ(wires=[wires[i], wires[i + 1]])
+
+            @qml.for_loop(len(wires) - 1, 0, -1)
+            def _loop_back(i):
+                qml.CZ(wires=[wires[i - 1], wires[i]])
+
+            qml.RX(theta, wires=wires[0])
+            _loop()
+            qml.H(wires[-1])
+            _loop_back()
+            qml.RX(theta, wires=wires[0])
+
+        @register_condition(lambda num_wires: num_wires > 3)
+        @register_resources(
+            lambda num_wires: {qml.CZ: 6, qml.Toffoli: 2 * (num_wires - 1), qml.H: 1, qml.RX: 1},
+            work_wires={"zeroed": 2},
+            name="with-aux",
+        )
+        def another_decomp(theta, wires, **_):
+
+            @qml.for_loop(len(wires) - 2)
+            def _loop(i):
+                qml.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])
+
+            @qml.for_loop(len(wires) - 1, 1, -1)
+            def _loop_back(i):
+                qml.Toffoli(wires=[wires[i - 2], wires[i - 1], wires[i]])
+
+            with qml.allocate(2, "zero") as aux_wires:
+                qml.CZ([wires[0], aux_wires[0]])
+                qml.CZ(aux_wires)
+                qml.CZ([aux_wires[1], wires[0]])
+                _loop()
+                qml.H(aux_wires[1])
+                qml.RX(theta, aux_wires[0])
+                _loop_back()
+                qml.CZ([aux_wires[1], wires[0]])
+                qml.CZ(aux_wires)
+                qml.CZ([wires[0], aux_wires[0]])
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(CustomParametrizedOp, two_wires_decomp, general_decomp, another_decomp)
+            yield
+
+    def test_show_all_decomps(self, capsys):
+        """Tests showing all decomposition rules associated with an operator."""
+
+        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: simple)
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
+            1: ───────────╰X───────────┤  
+            Gate Count: {RZ: 2, CNOT: 1}
+
+            Decomposition 1 (name: general_decomp)
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
+            1: ───────────╰Z──H─╰Z───────────┤  
+            Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
+
+            Decomposition 2 (name: with-aux)
+            Not applicable to the provided operator instance!
+            """).lstrip()
+
+        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: simple)
+            Not applicable to the provided operator instance!
+
+            Decomposition 1 (name: general_decomp)
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+
+            Decomposition 2 (name: with-aux)
+            <DynamicWire>: ─╭Allocate─╭Z─╭●──RX(0.50)──────────────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●─────────H────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z────────╭●─────────────╭●─╰Z────╰●─────────────┤  
+                        1: ───────────────────────────├●─╭●───────╭●─├●──────────────────────┤  
+                        2: ───────────────────────────╰X─├●─╭●─╭●─├●─╰X──────────────────────┤  
+                        3: ──────────────────────────────╰X─├●─├●─╰X─────────────────────────┤  
+                        4: ─────────────────────────────────╰X─╰X────────────────────────────┤  
+            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1}
+            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, RX: 1}
+            Wire Allocations: {'zero': 1}
+            """).lstrip()
+
+    def test_show_decomp_by_name(self, capsys):
+        """Tests inspecting a particular decomp by name."""
+
+        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Name: simple
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
+            1: ───────────╰X───────────┤  
+            Gate Count: {RZ: 2, CNOT: 1}
+            """).lstrip()
+
+    def test_show_decomp_with_rule(self, capsys):
+        """Tests inspecting a particular decomposition rule."""
+
+        rule = qml.list_decomps(CustomParametrizedOp)["general_decomp"]
+        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Name: general_decomp
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            """).lstrip()
+
+    def test_show_multiple_decomps(self, capsys):
+        """Tests showing multiple decomposition rules."""
+
+        rule = qml.list_decomps(CustomParametrizedOp)["general_decomp"]
+        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux")
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: general_decomp)
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+
+            Decomposition 1 (name: with-aux)
+            <DynamicWire>: ─╭Allocate─╭Z─╭●──RX(0.50)──────────────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●─────────H────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z────────╭●─────────────╭●─╰Z────╰●─────────────┤  
+                        1: ───────────────────────────├●─╭●───────╭●─├●──────────────────────┤  
+                        2: ───────────────────────────╰X─├●─╭●─╭●─├●─╰X──────────────────────┤  
+                        3: ──────────────────────────────╰X─├●─├●─╰X─────────────────────────┤  
+                        4: ─────────────────────────────────╰X─╰X────────────────────────────┤  
+            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1}
+            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, RX: 1}
+            Wire Allocations: {'zero': 1}
+            """).lstrip()
