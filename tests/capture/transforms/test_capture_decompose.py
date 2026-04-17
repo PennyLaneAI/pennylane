@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
+
 # pylint:disable=protected-access,unused-argument, wrong-import-position
 
 import pytest
@@ -152,7 +153,6 @@ class TestDecomposeInterpreter:
             f(x, (1, 2))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
-
         eqn1 = jaxpr.eqns[3]  # the first subroutine prim
         eqn2 = jaxpr.eqns[7]  # the second subroutine prim
 

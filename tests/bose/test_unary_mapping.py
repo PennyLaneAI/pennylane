@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains tests for unary_mapping of bosonic operators."""
+
 import pytest
 
 import pennylane as qml

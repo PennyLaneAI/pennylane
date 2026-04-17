@@ -561,10 +561,10 @@ class OutMultiplier(ResourceOperator):
         allocated wires: 0
         zero state: 0
         any state: 0
-    Total gates : 70
-    'Toffoli': 14,
-    'CNOT': 14,
-    'Hadamard': 42
+    Total gates : 140
+    'Toffoli': 28,
+    'CNOT': 28,
+    'Hadamard': 84
     """
 
     resource_keys = {"a_num_wires", "b_num_wires"}
@@ -621,23 +621,16 @@ class OutMultiplier(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        l = max(a_num_wires, b_num_wires)
-
-        toff = resource_rep(qre.Toffoli)
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
-        toff_count = 2 * a_num_wires * b_num_wires - l
-        elbow_count = toff_count // 2
-        toff_count = toff_count - (elbow_count * 2)
+        toff_count = 2 * a_num_wires * b_num_wires - max(a_num_wires, b_num_wires)
 
         gate_lst = [
-            GateCount(l_elbow, elbow_count),
-            GateCount(r_elbow, elbow_count),
+            GateCount(l_elbow, toff_count),
+            GateCount(r_elbow, toff_count),
         ]
 
-        if toff_count:
-            gate_lst.append(GateCount(toff))
         return gate_lst
 
 

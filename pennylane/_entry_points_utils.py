@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import sys
 from importlib import metadata
 
 
-def _setup_entry_points(module_name, group_name):
+def _setup_entry_points(module_name, group_name):  # pragma: no cover
     """Returns dunder methods required to import entry-points from the module in which this function is called. Entry-point
     elements are lazy-loaded.
 
@@ -56,7 +56,8 @@ def _setup_entry_points(module_name, group_name):
     def module_getattr(name):
         """The new __getattr__ method for the current_module"""
         if name in ep_dict:
-            func = ep_dict[name].load()  # lazy load the entry point
+            # lazy load the entry point
+            func = ep_dict[name].load()
             func.__module__ = module_name
             setattr(current_module, name, func)
             return func

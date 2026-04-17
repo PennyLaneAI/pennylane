@@ -94,7 +94,7 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
+ignore_warnings = [("code/api/qp_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -109,7 +109,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year} | Xanadu | All rights reserved"
 author = "Xanadu Inc."
 
 add_module_names = False
@@ -373,7 +373,7 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 
 def add_links_to_estimator_table(app, doctree, fromdocname):
     """Replace literal names in automodsumm tables with links to stub HTML files."""
-    if "qml_estimator" not in fromdocname:
+    if "qp_estimator" not in fromdocname:
         return
     # Define the modules and their corresponding table indices
     modules = {3: "ops", 4: "templates"}
@@ -391,45 +391,7 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
             )
 
 
-import importlib.metadata
-
-
-def get_catalyst_docstrings():
-    """
-    Finds docstrings for Catalyst functionality. This can be extended in the future to other entry-point
-    groups if needed. Current entry-point groups:
-
-    - pennylane.transforms
-    - pennylane.drawer
-    """
-
-    # add to this list as more entry-point groups are added
-    groups = ["pennylane.transforms", "pennylane.drawer"]
-
-    docs_dict = {}
-    for group in groups:
-        eps = importlib.metadata.entry_points(group=group)
-
-        for ep in eps:
-            target_obj = ep.load()
-            docs_dict[ep.name] = target_obj.__doc__.splitlines()
-
-    return docs_dict
-
-
-def catalyst_docstring_lookup(app, what, name, obj, options, lines):
-    short_name = name.split(".")[-1]
-    registry = get_catalyst_docstrings()
-
-    if short_name in registry:
-        new_lines = registry[short_name]
-        if lines != new_lines:
-            lines.clear()
-            lines.extend(new_lines)
-
-
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect("autodoc-process-docstring", catalyst_docstring_lookup)
     app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)

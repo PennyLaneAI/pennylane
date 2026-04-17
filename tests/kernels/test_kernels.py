@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` kernels module.
 """
+
 # pylint: disable=import-outside-toplevel
 import math
 import sys

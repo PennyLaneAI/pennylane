@@ -15,6 +15,7 @@
 """
 This submodule contains the template for the Reflection operation.
 """
+
 import copy
 
 import numpy as np

@@ -14,6 +14,7 @@
 """
 Contains the MPSPrep template.
 """
+
 import numpy as np
 
 import pennylane as qml

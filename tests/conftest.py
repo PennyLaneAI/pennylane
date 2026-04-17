@@ -14,6 +14,7 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
+
 # pylint: disable=unused-import
 import os
 import pathlib
@@ -316,7 +317,7 @@ def pytest_collection_modifyitems(items, config):
         ):
             item.add_marker(pytest.mark.core)
         if "capture" in markers:
-            item.fixturenames.append("enable_disable_plxpr")
+            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
             if "jax" not in markers:
                 item.add_marker(pytest.mark.jax)
 

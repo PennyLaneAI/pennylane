@@ -14,6 +14,7 @@
 r"""
 Contains the SqueezingEmbedding template.
 """
+
 from pennylane import math
 
 # pylint: disable=too-many-arguments

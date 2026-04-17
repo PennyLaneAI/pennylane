@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the particle number observable.
 """
+
 import pytest
 
 import pennylane as qml

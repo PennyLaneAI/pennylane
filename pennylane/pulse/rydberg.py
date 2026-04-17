@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
+
 from dataclasses import dataclass
 
 import numpy as np

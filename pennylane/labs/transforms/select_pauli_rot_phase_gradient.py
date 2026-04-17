@@ -14,6 +14,7 @@
 r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
+
 import numpy as np
 
 import pennylane as qml
@@ -51,7 +52,7 @@ def _select_pauli_rot_phase_gradient(
     """
 
     precision = len(angle_wires)
-    binary_int = [_binary_repr_int(phi, precision) for phi in phis]
+    binary_int = [qml.math.binary_decimals(phi, precision, unit=4 * np.pi) for phi in phis]
 
     ops = [
         qml.QROM(

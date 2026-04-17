@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in qutrit quantum channels.
 """
+
 import numpy as np
 import pytest
 from numpy.linalg import matrix_power

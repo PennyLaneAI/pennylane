@@ -14,6 +14,7 @@
 """
 This module contains tests for functions needed to do vscf calculations.
 """
+
 from pathlib import Path
 
 import numpy as np

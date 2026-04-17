@@ -14,6 +14,7 @@
 """
 Contains the quantum_monte_carlo transform.
 """
+
 from copy import copy
 
 import pennylane as qml

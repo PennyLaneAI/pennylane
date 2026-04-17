@@ -15,6 +15,7 @@
 This package provides a wrapped version of autograd.numpy.fft, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
+
 from autograd.numpy import fft as _fft
 
 from .wrapper import wrap_arrays

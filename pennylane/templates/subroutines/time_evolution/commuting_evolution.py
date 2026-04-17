@@ -14,6 +14,7 @@
 r"""
 Contains the CommutingEvolution template.
 """
+
 # pylint: disable-msg=too-many-arguments
 import copy
 

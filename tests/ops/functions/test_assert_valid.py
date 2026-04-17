@@ -14,6 +14,7 @@
 """
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
+
 import string
 from pickle import PicklingError
 
