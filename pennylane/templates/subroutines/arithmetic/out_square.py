@@ -14,17 +14,19 @@
 """
 Contains the OutSquare template.
 """
+
 from collections import defaultdict
 from itertools import combinations
 
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
+    register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, Controlled
+from pennylane.ops import CNOT, BasisState, X, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.wires import Wires, WiresLike
@@ -409,11 +411,115 @@ def _out_square_with_adder(
         start_add_y_wires = max(0, m - n - i - 1) if output_wires_zeroed else 0
         add_y_wires = output_wires[start_add_y_wires : max(0, m - i)]
         CNOT([x_wire, work_wires[0]])
-        Controlled(
-            SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:]),
-            control_wires=work_wires[:1],
+        ctrl(
+            SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:-1]),
+            control=work_wires[:1],
+            work_wires=work_wires[-1:],
         )
         CNOT([x_wire, work_wires[0]])
 
 
-add_decomps(OutSquare, _out_square_with_adder)
+def _out_square_with_caddsub_condition(
+    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+) -> bool:
+    return True
+
+
+def _out_square_with_caddsub_resources(
+    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+) -> dict:
+    # pylint: disable=unused-argument
+    n = num_x_wires
+    k = num_output_wires + 1
+    resources = defaultdict(int)
+
+    cnot_rep = resource_rep(CNOT)
+    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
+    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
+    x_rep = resource_rep(X)
+    meas_rep = resource_rep(MidMeasure)
+
+    # Controlled add-subtract loop
+    loop_size = min(k, n)
+    # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
+    if n > 1:
+        c_flips = controlled_resource_rep(
+            BasisState,
+            base_params={"num_wires": n - 1},
+            num_control_wires=1,
+            num_zero_control_values=1,
+        )
+        resources[c_flips] += 2 * loop_size
+
+    # Caching of bit in x onto c_wire, to control on it.
+    resources[cnot_rep] += 2 * loop_size
+    # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
+    resources[cnot_on_0_rep] += 2 * loop_size
+    # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
+    c_add_subs_with_work_wires = min(n, k - 1)
+    resources[cnot_on_0_rep] += c_add_subs_with_work_wires
+    # Bit reset on LSB work wire: one per ctrl-add-subtract that has work wires
+    resources[meas_rep] += c_add_subs_with_work_wires
+
+    # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
+    for i in range(loop_size):
+        size = min(k - i, n + 1) if zeroed_output_wires else k - i
+        resources[
+            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=size, num_work_wires=size - 1)
+        ] += 1
+
+    return dict(resources)
+
+
+def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
+    if len(x_wires) > 1:
+        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+
+    work_wires = work_wires[: len(y_wires) - 1]
+    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    if work_wires:
+        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
+    SemiAdder(x_wires, y_wires, work_wires)
+    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    if work_wires:
+        # In principle, we could just apply a bit flip here to reset the work wire, controlled
+        # on the `c_wire` being in state |0>.
+        # However, we want to use a measurement+reset instead
+        # for addition + 1. In case `c_wire` is in state |1>, we just add a reset of a work
+        # wire that anyways is returned in state |0> by `SemiAdder`, so there is no harm done.
+        measure(work_wires[-1], reset=True)
+
+    if len(x_wires) > 1:
+        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+
+
+@register_condition(_out_square_with_caddsub_condition)
+@register_resources(_out_square_with_caddsub_resources)
+def _out_square_with_caddsub(
+    x_wires: WiresLike,
+    output_wires: WiresLike,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+    **_,
+):
+    # First work wire is used for caching control bits
+    c_wire = work_wires[0]
+    # Second work wire is used to augment the output wires because we compute
+    # twice the desired output at first, and then divide by 2.
+    output_wires = output_wires + [work_wires[1]]
+    work_wires = work_wires[2:]
+    n = len(x_wires)
+    k = len(output_wires)
+
+    for i, x_wire in enumerate(x_wires[::-1][:k]):
+        output_msb = max(0, k - (n + 1 + i)) if output_wires_zeroed else 0
+        output = output_wires[output_msb : max(0, k - i)]
+        CNOT([x_wire, c_wire])
+        _c_add_sub(c_wire, x_wires, output, work_wires)
+        CNOT([x_wire, c_wire])
+
+    # Corrections
+    # TODO
+
+
+add_decomps(OutSquare, _out_square_with_adder, _out_square_with_caddsub)
