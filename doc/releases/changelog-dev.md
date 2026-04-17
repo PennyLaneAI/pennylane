@@ -948,6 +948,7 @@ The following classes have been ported over:
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+  [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
 
 * A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
   [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
