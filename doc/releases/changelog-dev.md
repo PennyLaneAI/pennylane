@@ -28,6 +28,7 @@
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
+  [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
 
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
@@ -941,9 +942,6 @@ The following classes have been ported over:
   [(#9188)](https://github.com/PennyLaneAI/pennylane/pull/9188)
 
 <h3>Documentation 📝</h3>
-
-* Fix the documentation example in `SumOfSlatersPrep` to prevent stochastic zeros from showing up.
-  [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
