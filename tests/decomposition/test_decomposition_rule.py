@@ -626,7 +626,13 @@ class TestShowDecomps:
 
         @register_condition(lambda num_wires: num_wires > 3)
         @register_resources(
-            lambda num_wires: {qml.CZ: 6, qml.Toffoli: 2 * (num_wires - 1), qml.H: 1, qml.RX: 1},
+            lambda num_wires: {
+                qml.CZ: 6,
+                qml.Toffoli: 2 * (num_wires - 1),
+                qml.H: 1,
+                qml.RX: 1,
+                qml.ops.MidMeasure: 1,
+            },
             work_wires={"zeroed": 2},
             name="with-aux",
         )
@@ -646,7 +652,8 @@ class TestShowDecomps:
                 qml.CZ([aux_wires[1], wires[0]])
                 _loop()
                 qml.H(aux_wires[1])
-                qml.RX(theta, aux_wires[0])
+                m = qml.measure(aux_wires[1])
+                qml.cond(m, qml.RX)(theta, aux_wires[0])
                 _loop_back()
                 qml.CZ([aux_wires[1], wires[0]])
                 qml.CZ(aux_wires)
@@ -691,15 +698,16 @@ class TestShowDecomps:
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
 
             Decomposition 2 (name: with-aux)
-            <DynamicWire>: ─╭Allocate─╭Z─╭●──RX(0.50)──────────────────────╭●─╭Z─╭Deallocate─┤  
-            <DynamicWire>: ─╰Allocate─│──╰Z─╭●─────────H────────────────╭●─╰Z─│──╰Deallocate─┤  
-                        0: ───────────╰●────╰Z────────╭●─────────────╭●─╰Z────╰●─────────────┤  
-                        1: ───────────────────────────├●─╭●───────╭●─├●──────────────────────┤  
-                        2: ───────────────────────────╰X─├●─╭●─╭●─├●─╰X──────────────────────┤  
-                        3: ──────────────────────────────╰X─├●─├●─╰X─────────────────────────┤  
-                        4: ─────────────────────────────────╰X─╰X────────────────────────────┤  
-            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1}
-            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, RX: 1}
+            <DynamicWire>: ─╭Allocate─╭Z─╭●───────────────────RX(0.50)─────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●──H────────┤↗├──║─────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z─╭●─────────║───║──────────────╭●─╰Z────╰●─────────────┤  
+                        1: ────────────────────├●─╭●──────║───║───────────╭●─├●──────────────────────┤  
+                        2: ────────────────────╰X─├●─╭●───║───║────────╭●─├●─╰X──────────────────────┤  
+                        3: ───────────────────────╰X─├●───║───║────────├●─╰X─────────────────────────┤  
+                        4: ──────────────────────────╰X───║───║────────╰X────────────────────────────┤  
+                                                          ╚═══╝                                         
+            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
+            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 1}
             """).lstrip()
 
@@ -747,14 +755,15 @@ class TestShowDecomps:
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
 
             Decomposition 1 (name: with-aux)
-            <DynamicWire>: ─╭Allocate─╭Z─╭●──RX(0.50)──────────────────────╭●─╭Z─╭Deallocate─┤  
-            <DynamicWire>: ─╰Allocate─│──╰Z─╭●─────────H────────────────╭●─╰Z─│──╰Deallocate─┤  
-                        0: ───────────╰●────╰Z────────╭●─────────────╭●─╰Z────╰●─────────────┤  
-                        1: ───────────────────────────├●─╭●───────╭●─├●──────────────────────┤  
-                        2: ───────────────────────────╰X─├●─╭●─╭●─├●─╰X──────────────────────┤  
-                        3: ──────────────────────────────╰X─├●─├●─╰X─────────────────────────┤  
-                        4: ─────────────────────────────────╰X─╰X────────────────────────────┤  
-            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1}
-            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, RX: 1}
+            <DynamicWire>: ─╭Allocate─╭Z─╭●───────────────────RX(0.50)─────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●──H────────┤↗├──║─────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z─╭●─────────║───║──────────────╭●─╰Z────╰●─────────────┤  
+                        1: ────────────────────├●─╭●──────║───║───────────╭●─├●──────────────────────┤  
+                        2: ────────────────────╰X─├●─╭●───║───║────────╭●─├●─╰X──────────────────────┤  
+                        3: ───────────────────────╰X─├●───║───║────────├●─╰X─────────────────────────┤  
+                        4: ──────────────────────────╰X───║───║────────╰X────────────────────────────┤  
+                                                          ╚═══╝                                         
+            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
+            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 1}
             """).lstrip()

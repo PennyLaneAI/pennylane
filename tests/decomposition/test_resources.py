@@ -247,6 +247,18 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(bar=1, foo=2)"
 
+        op = adjoint_resource_rep(qml.MultiRZ, {"num_wires": 4})
+        assert repr(op) == "Adjoint(MultiRZ(num_wires=4))"
+
+        op = pow_resource_rep(qml.MultiRZ, {"num_wires": 4}, z=2)
+        assert repr(op) == "Pow(MultiRZ(num_wires=4), z=2)"
+
+        op = controlled_resource_rep(qml.MultiRZ, {"num_wires": 5}, num_control_wires=2)
+        assert (
+            repr(op)
+            == "Controlled(MultiRZ(num_wires=5), num_control_wires=2, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed)"
+        )
+
     @pytest.mark.parametrize(
         "op, expected_name",
         [
