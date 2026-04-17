@@ -489,7 +489,7 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 4)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -510,7 +510,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 4)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
