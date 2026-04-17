@@ -24,21 +24,21 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 
 
-@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+@pytest.mark.parametrize("zeroed_output_wires", [False, True])
 @pytest.mark.jax
-def test_standard_validity_out_square(output_wires_zeroed):
+def test_standard_validity_out_square(zeroed_output_wires):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
     output_wires = [4, 5, 6, 7, 8, 9, 10]
-    work_wires = [11, 12, 13, 14, 15, 16, 17]
-    op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+    work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
+    op = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
     qml.ops.functions.assert_valid(op)
 
 
 class TestOutSquare:
     """Test the OutSquare template."""
 
-    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    @pytest.mark.parametrize("zeroed_output_wires", [False, True])
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "x_values"),
         [
@@ -81,7 +81,7 @@ class TestOutSquare:
         output_wires,
         work_wires,
         x_values,
-        output_wires_zeroed,
+        zeroed_output_wires,
         use_jit,
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutSquare template output."""
@@ -93,7 +93,7 @@ class TestOutSquare:
         dev = qml.device("lightning.qubit")
 
         mod = 2 ** len(output_wires)
-        if output_wires_zeroed:
+        if zeroed_output_wires:
             z = 0
         else:
             z = mod - 2  # Some number close to causing overflows
@@ -103,7 +103,7 @@ class TestOutSquare:
         def circuit(x, z):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(z, wires=output_wires)
-            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+            OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
             return (
                 qml.sample(wires=x_wires),
                 qml.sample(wires=output_wires),
@@ -120,8 +120,9 @@ class TestOutSquare:
 
     @pytest.mark.catalyst
     @pytest.mark.external
-    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-    def test_qjit_dynamic_wires(self, output_wires_zeroed):
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("zeroed_output_wires", [False, True])
+    def test_qjit_dynamic_wires(self, zeroed_output_wires):
         """Test the OutSquare template with dynamic wires."""
         import jax
 
@@ -129,24 +130,27 @@ class TestOutSquare:
 
         x_wires = np.array([0, 1, 2, 3])
         output_wires = np.array([4, 5, 6, 7, 8])
-        work_wires = np.array([9, 10, 11, 12, 13])
+        work_wires = np.array([9, 10, 11, 12, 13, 14, 15])
 
         dev = qml.device("lightning.qubit")
 
         x = 13
         mod = 2 ** len(output_wires)
-        if output_wires_zeroed:
+        if zeroed_output_wires:
             z = 0
         else:
             z = mod - 2  # Some number close to causing overflows
 
         @qml.qjit
         @qml.set_shots(1)
+        @qml.decompose(
+            max_expansion=2, fixed_decomps={"C(SemiAdder)": qml.list_decomps("C(SemiAdder)")[0]}
+        )
         @qml.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(z, wires=output_wires)
-            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+            OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
             return (
                 qml.sample(wires=x_wires),
                 qml.sample(wires=output_wires),
@@ -213,21 +217,21 @@ class TestOutSquare:
         if should_raise:
             msg_match = "OutSquare requires at least"
             with pytest.raises(ValueError, match=msg_match):
-                OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+                OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires=zeroed)
         else:
-            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+            OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires=zeroed)
 
-    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-    def test_decomposition(self, output_wires_zeroed):
+    @pytest.mark.parametrize("zeroed_output_wires", [False, True])
+    def test_decomposition(self, zeroed_output_wires):
         """Test that compute_decomposition and decomposition work as expected."""
         x_wires, output_wires, work_wires = (
             [0, 1, 2],
             [3, 4, 5, 6],
             [7, 8, 9, 10],
         )
-        decomp = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed).decomposition()
+        decomp = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires).decomposition()
 
-        if output_wires_zeroed:
+        if zeroed_output_wires:
             expected = [
                 # controlled copy
                 qml.CNOT([2, 6]),
@@ -261,7 +265,7 @@ class TestOutSquare:
         assert decomp == expected
 
     @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "work_wires", "output_wires_zeroed"),
+        ("x_wires", "output_wires", "work_wires", "zeroed_output_wires"),
         [
             ([0, 1, 2], [3, 5], [9, 10], False),
             ([0, 1, 2], [3, 5], [9, 10], True),
@@ -272,9 +276,9 @@ class TestOutSquare:
         ],
     )
     def test_decomposition_new(
-        self, x_wires, output_wires, work_wires, output_wires_zeroed
+        self, x_wires, output_wires, work_wires, zeroed_output_wires
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
-        op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        op = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
         for rule in qml.list_decomps(OutSquare):
             _test_decomposition_rule(op, rule)

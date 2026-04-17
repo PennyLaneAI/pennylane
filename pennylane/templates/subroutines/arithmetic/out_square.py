@@ -27,6 +27,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, BasisState, X, ctrl
+from pennylane.ops.mid_measure import MidMeasure, measure
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.wires import Wires, WiresLike
@@ -48,11 +49,11 @@ class OutSquare(Operation):
         output_wires (WiresLike): the wires that store the squaring result. If the
             register is in a non-zero state :math:`b`, the solution will be added to this value.
             If the register is guaranteed to be in the zero state, it is recommended to set
-            ``output_wires_zeroed=True``.
+            ``zeroed_output_wires=True``.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
-            ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
+            ``len(output_wires)`` work wires are required if ``zeroed_output_wires=False``,
             otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
-        output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
+        zeroed_output_wires (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
     **Example**
@@ -122,16 +123,16 @@ class OutSquare(Operation):
         The third register is ``work_wires``, which consists of the auxiliary qubits used to
         perform the modular squaring operation. The required number of work wires depends
         on whether we are guaranteed that :math:`b=0` in the ``output_wires`` before the
-        computation, which needs to be passed via ``output_wires_zeroed`` (see below for an
-        example). If ``output_wires_zeroed=False`` (the default), :math:`n` work wires are
-        required. If ``output_wires_zeroed=True``, :math:`min(n, k+1)` work wires are required,
+        computation, which needs to be passed via ``zeroed_output_wires`` (see below for an
+        example). If ``zeroed_output_wires=False`` (the default), :math:`n` work wires are
+        required. If ``zeroed_output_wires=True``, :math:`min(n, k+1)` work wires are required,
         where :math:`k` denotes the length of the first register ``x_wires``.
 
         **Cheaper decomposition for zeroed output state**
 
         If we know that the qubits in ``output_wires`` are in the state
         :math:`|0\rangle^{\otimes n}` before ``OutSquare`` is applied, we can pass this information
-        to the template via ``output_wires_zeroed``, leading to a cheaper decomposition.
+        to the template via ``zeroed_output_wires``, leading to a cheaper decomposition.
         Consider the following example, where we control this information with the ``QNode``
         argument ``zeroed``:
 
@@ -148,7 +149,7 @@ class OutSquare(Operation):
             @qml.qnode(dev, shots=1_000)
             def circuit(zeroed):
                 qml.BasisEmbedding(x, wires=x_wires)
-                qml.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+                qml.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires=zeroed)
                 return qml.counts(wires=output_wires)
 
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
@@ -224,21 +225,21 @@ class OutSquare(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "output_wires_zeroed"}
+    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "zeroed_output_wires"}
 
     def __init__(
         self,
         x_wires: WiresLike,
         output_wires: WiresLike,
         work_wires: WiresLike,
-        output_wires_zeroed: bool = False,
+        zeroed_output_wires: bool = False,
     ):
 
         x_wires = Wires(x_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        if output_wires_zeroed:
+        if zeroed_output_wires:
             num_required_work_wires = min(len(x_wires) + 1, len(output_wires))
         else:
             num_required_work_wires = len(output_wires)
@@ -246,7 +247,7 @@ class OutSquare(Operation):
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
                 f"{len(x_wires)} input wires, {len(output_wires)} output wires "
-                f"and {output_wires_zeroed=}."
+                f"and {zeroed_output_wires=}."
             )
 
         registers = [
@@ -263,7 +264,7 @@ class OutSquare(Operation):
         for wires, name in registers:
             self.hyperparameters[name] = wires
 
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
+        self.hyperparameters["zeroed_output_wires"] = zeroed_output_wires
         all_wires = x_wires + output_wires + work_wires
         super().__init__(wires=all_wires)
 
@@ -273,7 +274,7 @@ class OutSquare(Operation):
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
+            "zeroed_output_wires": self.hyperparameters["zeroed_output_wires"],
         }
 
     @property
@@ -299,7 +300,7 @@ class OutSquare(Operation):
             new_dict["x_wires"],
             new_dict["output_wires"],
             new_dict["work_wires"],
-            self.hyperparameters["output_wires_zeroed"],
+            self.hyperparameters["zeroed_output_wires"],
         )
 
     def decomposition(self):
@@ -314,7 +315,7 @@ class OutSquare(Operation):
         x_wires: WiresLike,
         output_wires: WiresLike,
         work_wires: WiresLike,
-        output_wires_zeroed: bool,
+        zeroed_output_wires: bool,
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -323,11 +324,11 @@ class OutSquare(Operation):
             output_wires (WiresLike): the wires that store the squaring result. If the register
                 is in a non-zero state :math:`b`, the solution will be added to this value.
                 If the register is guaranteed to be in the zero state, it is recommended to set
-                ``output_wires_zeroed=True``.
+                ``zeroed_output_wires=True``.
             work_wires (WiresLike): the auxiliary wires to use for the squaring.
-                ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
+                ``len(output_wires)`` work wires are required if ``zeroed_output_wires=False``,
                 otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
-            output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
+            zeroed_output_wires (bool): Whether the output wires are guaranteed to be in the state
                 :math:`|0\rangle` initially. Defaults to ``False``.
 
         Returns:
@@ -336,11 +337,11 @@ class OutSquare(Operation):
         **Example**
 
         >>> all_wires = ([0, 1], [2, 3], [4, 5])
-        >>> qml.OutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
+        >>> qml.OutSquare.compute_decomposition(*all_wires, zeroed_output_wires=True)
         [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2, 5]), control_wires=[4]), CNOT(wires=[0, 4])]
         """
         with AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed)
+            _out_square_with_adder(x_wires, output_wires, work_wires, zeroed_output_wires)
 
         if QueuingManager.recording():
             for op in q.queue:
@@ -349,45 +350,65 @@ class OutSquare(Operation):
         return q.queue
 
 
+def _out_square_with_adder_condition(
+    num_x_wires, num_output_wires, num_work_wires, zeroed_output_wires
+) -> bool:
+    n = num_x_wires
+    k = num_output_wires
+    if zeroed_output_wires:
+        largest_adder = min(k, n + 1)
+    else:
+        largest_adder = k
+    # work wires: one for control cache, largest_adder-1 for adder
+    min_num_work_wires = 1 + (largest_adder - 1)
+    return num_work_wires >= min_num_work_wires
+
+
 def _out_square_with_adder_resources(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    num_x_wires, num_output_wires, num_work_wires, zeroed_output_wires
 ) -> dict:
     # pylint: disable=unused-argument
     n = num_x_wires
     m = num_output_wires
     resources = defaultdict(int)
-    if output_wires_zeroed:
+    if zeroed_output_wires:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
         resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (min(n, m) - 1)
+        resources[resource_rep(TemporaryAND)] = zeroed_output_wires * (min(n, m) - 1)
 
-    # Controlled adders, includes the one for copying if output_wires_zeroed=False
-    for i in range(output_wires_zeroed, min(num_x_wires, num_output_wires)):
-        start_add_y_wires = max(0, m - n - i - 1) if output_wires_zeroed else 0
-        num_out = max(0, m - i) - start_add_y_wires
+    # Controlled adders, includes the one for copying if zeroed_output_wires=False
+    for i in range(zeroed_output_wires, min(n, m)):
+        num_out = min(m - i, n + 1) if zeroed_output_wires else m - i
         resources[resource_rep(CNOT)] += 2
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
-                base_params={"num_y_wires": num_out},
+                base_params={
+                    "num_x_wires": n,
+                    "num_y_wires": num_out,
+                    "num_work_wires": num_work_wires - 1,
+                },
                 num_control_wires=1,
+                # num_work_wires=num_work_wires-num_out,
+                # work_wire_type="zeroed",
             )
         ] += 1
     return dict(resources)
 
 
+@register_condition(_out_square_with_adder_condition)
 @register_resources(_out_square_with_adder_resources)
 def _out_square_with_adder(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
+    zeroed_output_wires: bool,
     **_,
 ):
     n = len(x_wires)
     m = len(output_wires)
 
-    if output_wires_zeroed:
+    if zeroed_output_wires:
         # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
         # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
         # the other bits.
@@ -403,30 +424,37 @@ def _out_square_with_adder(
 
     for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
         # Add x to the output register, controlled on x_wire via the work_wires[0] and
-        # shifted by i bit positions. For output_wires_zeroed=False, includes the initial copy
+        # shifted by i bit positions. For zeroed_output_wires=False, includes the initial copy
         # The output wires of the adder need to take all of the output register of square
-        # into account due to carry values. For output_wires_zeroed=True, we can reduce to
+        # into account due to carry values. For zeroed_output_wires=True, we can reduce to
         # a fixed size (`n`) instead, because we know at each step how large the value stored
         # in the output register can have grown by then.
-        start_add_y_wires = max(0, m - n - i - 1) if output_wires_zeroed else 0
-        add_y_wires = output_wires[start_add_y_wires : max(0, m - i)]
+        output_msb = max(0, m - n - i - 1) if zeroed_output_wires else 0
+        output = output_wires[output_msb : m - i]
         CNOT([x_wire, work_wires[0]])
         ctrl(
-            SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:-1]),
+            SemiAdder(x_wires=x_wires, y_wires=output, work_wires=work_wires[1:]),
             control=work_wires[:1],
-            work_wires=work_wires[-1:],
         )
         CNOT([x_wire, work_wires[0]])
 
 
 def _out_square_with_caddsub_condition(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    num_x_wires, num_output_wires, num_work_wires, zeroed_output_wires
 ) -> bool:
-    return True
+    n = num_x_wires
+    k = num_output_wires + 1
+    if zeroed_output_wires:
+        largest_adder = min(k, n + 1)
+    else:
+        largest_adder = k
+    # work wires: one for control cache, one for augmented output, largest_adder-1 for adder
+    min_num_work_wires = 1 + 1 + (largest_adder - 1)
+    return num_work_wires >= min_num_work_wires
 
 
 def _out_square_with_caddsub_resources(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    num_x_wires, num_output_wires, num_work_wires, zeroed_output_wires
 ) -> dict:
     # pylint: disable=unused-argument
     n = num_x_wires
@@ -436,7 +464,6 @@ def _out_square_with_caddsub_resources(
     cnot_rep = resource_rep(CNOT)
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
     meas_rep = resource_rep(MidMeasure)
 
     # Controlled add-subtract loop
@@ -499,7 +526,7 @@ def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
+    zeroed_output_wires: bool,
     **_,
 ):
     # First work wire is used for caching control bits
@@ -512,8 +539,8 @@ def _out_square_with_caddsub(
     k = len(output_wires)
 
     for i, x_wire in enumerate(x_wires[::-1][:k]):
-        output_msb = max(0, k - (n + 1 + i)) if output_wires_zeroed else 0
-        output = output_wires[output_msb : max(0, k - i)]
+        output_msb = max(0, k - (n + 1 + i)) if zeroed_output_wires else 0
+        output = output_wires[output_msb : k - i]
         CNOT([x_wire, c_wire])
         _c_add_sub(c_wire, x_wires, output, work_wires)
         CNOT([x_wire, c_wire])
