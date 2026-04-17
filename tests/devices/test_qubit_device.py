@@ -1449,21 +1449,25 @@ class TestGetBatchSize:
         broadcasted_shape = (1,) + shape
         tensor0 = np.ones(broadcasted_shape, dtype=complex)
         assert (
-            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
+            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape))
+            is None
         )
         tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
         assert (
-            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
+            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape))
+            is None
         )
 
         broadcasted_shape = (3,) + shape
         tensor0 = np.ones(broadcasted_shape, dtype=complex)
         assert (
-            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
+            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape))
+            is None
         )
         tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
         assert (
-            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
+            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape))
+            is None
         )
 
 

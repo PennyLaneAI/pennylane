@@ -232,11 +232,9 @@ def validate_multiprocessing_workers(
             raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
 
         if any(isinstance(op, Snapshot) for op in tape.operations):
-            raise RuntimeError(
-                """ProcessPoolExecutor cannot execute a QuantumScript with
+            raise RuntimeError("""ProcessPoolExecutor cannot execute a QuantumScript with
                 a ``Snapshot`` operation. Change the value of ``max_workers``
-                to ``None`` or execute the QuantumScript separately."""
-            )
+                to ``None`` or execute the QuantumScript separately.""")
 
     return (tape,), null_postprocessing
 

@@ -359,16 +359,14 @@ class Lattice:
 
         for edge in custom_edges:
             if len(edge) not in (1, 2):
-                raise TypeError(
-                    """
+                raise TypeError("""
                     The elements of custom_edges should be lists of length 1 or 2.
                     Inside said lists should be a tuple that contains two lattice
                     indices to represent the edge and, optionally, a tuple that represents
                     the operation and coefficient for that edge.
                     Every tuple must contain two lattice indices to represent the edge
                     and can optionally include a list to represent the operation and coefficient for that edge.
-                    """
-                )
+                    """)
 
             if edge[0][0] >= self.n_sites or edge[0][1] >= self.n_sites:
                 raise ValueError(

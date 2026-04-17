@@ -83,13 +83,17 @@ class TestMeasurementDispatch:
     def test_sum_sparse_method_when_large_and_nonoverlapping(self):
         """Check that the sparse expectation value method is used if the state is numpy and
         the Sum is large with overlapping wires."""
-        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(*(qp.PauliY(i) for i in range(8)))
+        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(
+            *(qp.PauliY(i) for i in range(8))
+        )
         state = np.zeros(2)
         assert get_measurement_function(qp.expval(S), state) is csr_dot_products
 
     def test_sum_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when"""
-        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(*(qp.PauliY(i) for i in range(8)))
+        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(
+            *(qp.PauliY(i) for i in range(8))
+        )
         state = qp.numpy.zeros(2)
         assert get_measurement_function(qp.expval(S), state) is sum_of_terms_method
 

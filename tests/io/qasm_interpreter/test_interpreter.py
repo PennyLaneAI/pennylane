@@ -169,16 +169,14 @@ class TestBuiltIns:  # pylint: disable=too-few-public-methods
         assert context.vars["s"].val == 7
 
     def test_constants(self):
-        ast = parse(
-            """
+        ast = parse("""
             const float one = π;
             const float two = τ;
             const float three = ℇ;
             const float four = pi;
             const float five = tau;
             const float six = e;
-            """
-        )
+            """)
 
         context = QasmInterpreter().interpret(ast, context={"name": "constants", "wire_map": None})
 
@@ -194,15 +192,13 @@ class TestBuiltIns:  # pylint: disable=too-few-public-methods
 class TestIO:
 
     def test_output(self):
-        ast = parse(
-            """
+        ast = parse("""
             output float v;
             output bit b;
             qubit q;
             v = 2.2;
             measure q -> b;
-            """
-        )
+            """)
 
         context = QasmInterpreter().interpret(ast, context={"name": "outputs", "wire_map": None})
 
@@ -210,13 +206,11 @@ class TestIO:
         assert isinstance(context["return"]["b"].val, MeasurementValue)
 
     def test_wrong_input(self):
-        ast = parse(
-            """
+        ast = parse("""
             input float theta;
             qubit q;
             rx(theta) q;
-            """
-        )
+            """)
 
         with pytest.raises(
             ValueError,
@@ -229,13 +223,11 @@ class TestIO:
             )
 
     def test_missing_input(self):
-        ast = parse(
-            """
+        ast = parse("""
             input float theta;
             qubit q;
             rx(theta) q;
-            """
-        )
+            """)
 
         with pytest.raises(
             ValueError,
@@ -244,13 +236,11 @@ class TestIO:
             QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
 
     def test_input(self):
-        ast = parse(
-            """
+        ast = parse("""
             input float theta;
             qubit q;
             rx(theta) q;
-            """
-        )
+            """)
 
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
@@ -860,12 +850,10 @@ class TestRegisters:
 
     def test_index_out_of_bounds(self):
         # parse the QASM program
-        ast = parse(
-            """
+        ast = parse("""
             qubit[3] q;
             id q[4];
-            """
-        )
+            """)
 
         with pytest.raises(
             IndexError, match="Index 4 into register q of length 3 out of bounds on line 3"
@@ -874,12 +862,10 @@ class TestRegisters:
 
     def test_unsupported_register_index(self):
         # parse the QASM program
-        ast = parse(
-            """
+        ast = parse("""
             qubit[3] q;
             id q[1, 2];
-            """
-        )
+            """)
 
         with pytest.raises(NotImplementedError, match="Only a single Expression"):
             QasmInterpreter().interpret(

@@ -65,7 +65,9 @@ def test_probs_with_negative_on_diagonal():
     assert np.allclose(probs, expected_probs)
 
 
-@pytest.mark.parametrize("mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)])
+@pytest.mark.parametrize(
+    "mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)]
+)
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, mp, two_qutrit_state):
@@ -230,7 +232,9 @@ class TestMeasurements:
     "obs",
     [
         qp.Hamiltonian([-0.5, 2], [qp.GellMann(0, 5), qp.GellMann(0, 3)]),
-        qp.THermitian(-0.5 * qp.GellMann(0, 5).matrix() + 2 * qp.GellMann(0, 3).matrix(), wires=0),
+        qp.THermitian(
+            -0.5 * qp.GellMann(0, 5).matrix() + 2 * qp.GellMann(0, 3).matrix(), wires=0
+        ),
     ],
 )
 class TestExpValAnalytical:

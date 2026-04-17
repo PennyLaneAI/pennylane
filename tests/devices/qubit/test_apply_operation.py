@@ -455,7 +455,9 @@ def test_globalphase_batched(wire, ml_framework, state_batched):
     phase = qp.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
     shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-    new_state_with_wire = apply_operation(qp.GlobalPhase(phase, wire), initial_state, state_batched)
+    new_state_with_wire = apply_operation(
+        qp.GlobalPhase(phase, wire), initial_state, state_batched
+    )
     new_state_no_wire = apply_operation(qp.GlobalPhase(phase), initial_state, state_batched)
 
     assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)

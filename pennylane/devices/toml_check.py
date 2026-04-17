@@ -30,9 +30,7 @@ except ImportError as e:  # pragma: no cover
         "toml_check requires `lark` library. Consider `pip install lark`"
     ) from e  # pragma: no cover
 
-parser = Lark(
-    dedent(
-        """
+parser = Lark(dedent("""
         start: schema_body \
                gates_section \
                pennylane_gates_section? \
@@ -80,6 +78,4 @@ parser = Lark(
         %import common.WS
         %ignore WS
         %ignore COMMENT
-        """
-    )
-)  # pragma: no cover
+        """))  # pragma: no cover

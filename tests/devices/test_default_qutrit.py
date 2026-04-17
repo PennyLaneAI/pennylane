@@ -972,7 +972,9 @@ class TestTensorExpval:
         )
         res = dev.expval(obs)
 
-        obs_mat = np.kron(qp.GellMann.compute_matrix(index_1), qp.GellMann.compute_matrix(index_2))
+        obs_mat = np.kron(
+            qp.GellMann.compute_matrix(index_1), qp.GellMann.compute_matrix(index_2)
+        )
         state = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 0]]) / np.sqrt(2)
         expected = state.conj() @ obs_mat @ state.T
         assert np.isclose(res, expected[0], atol=tol, rtol=0)

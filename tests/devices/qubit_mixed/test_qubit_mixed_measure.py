@@ -58,7 +58,9 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
-@pytest.mark.parametrize("mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)])
+@pytest.mark.parametrize(
+    "mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)]
+)
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, mp, two_qubit_state):
@@ -111,20 +113,26 @@ class TestMeasurementDispatch:
     def test_sum_sparse_method_when_large_and_nonoverlapping(self):
         """Check that the sum_of_terms_method is used if the state is numpy and
         the Sum is large with overlapping wires."""
-        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(*(qp.PauliY(i) for i in range(8)))
+        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(
+            *(qp.PauliY(i) for i in range(8))
+        )
         state = np.zeros(2)
         assert get_measurement_function(qp.expval(S), state) is csr_dot_products_density_matrix
 
     def test_sum_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when"""
-        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(*(qp.PauliY(i) for i in range(8)))
+        S = qp.prod(*(qp.PauliX(i) for i in range(8))) + qp.prod(
+            *(qp.PauliY(i) for i in range(8))
+        )
         state = qp.numpy.zeros(2)
         assert get_measurement_function(qp.expval(S), state) is sum_of_terms_method
 
     def test_sparse_method_for_density_matrix(self):
         """Check that csr_dot_products_density_matrix is used for sparse measurements on density matrices"""
         # Create a sparse observable
-        H = qp.SparseHamiltonian(qp.Hamiltonian([1.0], [qp.PauliZ(0)]).sparse_matrix(), wires=[0])
+        H = qp.SparseHamiltonian(
+            qp.Hamiltonian([1.0], [qp.PauliZ(0)]).sparse_matrix(), wires=[0]
+        )
         state = np.zeros((2, 2))  # 2x2 density matrix
 
         # Verify the correct measurement function is selected

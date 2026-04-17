@@ -1982,7 +1982,9 @@ class TestPostselection:
         else:
             assert isinstance(res, tuple)
             for r in res:
-                assert qp.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                assert (
+                    qp.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
                 assert qp.math.shape(r) == expected_shape
 
     @pytest.mark.parametrize(
@@ -2122,7 +2124,9 @@ class TestPostselection:
             assert isinstance(res, tuple)
             for r in res:
                 assert qp.math.shape(r) == expected_shape
-                assert qp.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                assert (
+                    qp.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
                 if not 0 in expected_shape:  # No nan values if array is empty
                     assert qp.math.all(qp.math.isnan(r))
 

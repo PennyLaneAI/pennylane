@@ -349,7 +349,9 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             qp.PauliZ(wires=1),
         ]
 
-        unsupported_nested_observables = [qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliY(2)))]
+        unsupported_nested_observables = [
+            qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliY(2)))
+        ]
 
         with pytest.raises(DeviceError, match="Observable PauliY not supported"):
             dev.check_validity(queue, unsupported_nested_observables)

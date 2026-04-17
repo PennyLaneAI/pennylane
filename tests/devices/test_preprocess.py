@@ -269,7 +269,9 @@ class TestDecomposeValidation:
 
     def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
-        tape = QuantumScript(ops=[qp.PauliX(0), qp.RZ(0.123, wires=0)], measurements=[qp.state()])
+        tape = QuantumScript(
+            ops=[qp.PauliX(0), qp.RZ(0.123, wires=0)], measurements=[qp.state()]
+        )
         decompose(tape, lambda obj: obj.has_matrix)
 
     def test_infinite_decomposition_loop(self):
@@ -279,7 +281,9 @@ class TestDecomposeValidation:
         with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
 
-    @pytest.mark.parametrize("error_type", [RuntimeError, qp.operation.DecompositionUndefinedError])
+    @pytest.mark.parametrize(
+        "error_type", [RuntimeError, qp.operation.DecompositionUndefinedError]
+    )
     def test_error_type_can_be_set(self, error_type):
         """Test that passing a class of Error the ``decompose`` transform allows raising another type
         of error instead of the default ``DeviceError``."""
