@@ -514,7 +514,7 @@ The following classes have been ported over:
   DecompositionRule(name=_crx_to_rx_cz)
   >>> collection['_crx_to_ppr']
   DecompositionRule(name=_crx_to_ppr)
-  >>> print(qml.draw(collection[0])(0.5, wires=[0, 1])
+  >>> print(qml.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
