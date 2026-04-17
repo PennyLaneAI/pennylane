@@ -128,7 +128,7 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(name + "_obs")
+    primitive = capture.QpPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -165,7 +165,7 @@ def create_measurement_mcm_primitive(
 
     if not has_jax:
         return None
-    primitive = capture.QmlPrimitive(name + "_mcm")
+    primitive = capture.QpPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -201,7 +201,7 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(name + "_wires")
+    primitive = capture.QpPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
