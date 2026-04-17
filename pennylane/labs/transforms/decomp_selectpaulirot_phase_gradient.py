@@ -57,7 +57,7 @@ def _select_pauli_rot_phase_gradient(
 
     pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires),
         qp.prod(*adj_ops[::-1]),
     )
 
