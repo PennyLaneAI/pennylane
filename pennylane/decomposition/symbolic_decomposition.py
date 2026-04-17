@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import copy
+from textwrap import dedent
 
 import numpy as np
 
@@ -41,6 +42,8 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
+    base_source = base_decomposition._source
+
     if not use_reconstructor:
 
         # pylint: disable=protected-access
@@ -49,10 +52,17 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
             _resource_fn,
             work_wires=base_decomposition._work_wire_spec,
             exact=base_decomposition.exact_resources,
+            name=f"adjoint({base_decomposition.name})",
         )
         def _impl(*params, wires, base):
             # pylint: disable=protected-access
             qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+
+        _impl._source = (
+            dedent(_impl._source).strip()
+            + "\n\nwhere base_decomposition is defined as:\n\n"
+            + dedent(base_source).strip()
+        )
 
         return _impl
 
@@ -62,11 +72,17 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
         _resource_fn,
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
+        name=f"adjoint({base_decomposition.name})",
     )
     def _impl_using_reconstructor(*params, wires, base_params, **_):
         # pylint: disable=protected-access
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
 
+    _impl_using_reconstructor._source = (
+        dedent(_impl_using_reconstructor._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
+        + dedent(base_source).strip()
+    )
     return _impl_using_reconstructor
 
 
@@ -315,6 +331,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         _resource_fn,
         work_wires=base_decomposition._work_wire_spec,
         exact=base_decomposition.exact_resources,
+        name=f"controlled({base_decomposition.name})",
     )
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
@@ -332,6 +349,11 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         for w in zero_control_wires:
             qml.PauliX(w)
 
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
+        + dedent(base_decomposition._source).strip()
+    )
     return _impl
 
 
@@ -359,6 +381,7 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         _resource_fn,
         work_wires=inner_decomp._work_wire_spec,
         exact=inner_decomp.exact_resources,
+        name=f"flip_zero_ctrl_values({inner_decomp.name})",
     )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
@@ -374,6 +397,12 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         for w in zero_control_wires:
             qml.PauliX(w)
 
+    base_source = inner_decomp._source
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere inner_decomp is defined as:\n\n"
+        + dedent(base_source).strip()
+    )
     return _impl
 
 
