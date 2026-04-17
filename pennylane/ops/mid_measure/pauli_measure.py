@@ -120,9 +120,9 @@ def _create_pauli_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import QmlPrimitive
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    pauli_measure_p = QmlPrimitive("pauli_measure")
+    pauli_measure_p = QpPrimitive("pauli_measure")
 
     @pauli_measure_p.def_impl
     def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
