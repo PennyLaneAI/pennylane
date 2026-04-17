@@ -176,16 +176,18 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
         list[int]: The preprocessed level input
     """
     # Account for "Before MLIR passes" level
-    max_level = pipeline_len + 1
+    total_levels = pipeline_len + 1
 
     if num_tape_levels > 1:
         # Account for an additional "Before Tape Transforms" level
-        max_level += 1
+        total_levels += 1
 
     if level == "all":
-        return list(range(0, max_level))
+        return list(range(0, total_levels))
     if level == "all-mlir":
-        return list(range(num_tape_levels, max_level))
+        return list(range(num_tape_levels, total_levels))
+    if level == "user":
+        return [total_levels - 1]
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -201,8 +203,11 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
-            if lvl < 0:
-                level[i] = max_level - abs(lvl)
+            if lvl < 0 or lvl >= total_levels:
+                raise ValueError(
+                    "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, "
+                    f"got {lvl}."
+                )
         else:
             raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
 
@@ -212,12 +217,6 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
             "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
             UserWarning,
-        )
-
-    if len(bad_levels := [lvl for lvl in level_sorted if lvl >= max_level or lvl < 0]) > 0:
-        raise ValueError(
-            "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, got "
-            f"{', '.join(str(lvl) for lvl in bad_levels)}."
         )
 
     return level_sorted
