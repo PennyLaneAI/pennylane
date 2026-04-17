@@ -290,11 +290,11 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
-    """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
+    """Test that an error is raised if returning qp.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
-    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
         qml.transforms.dynamic_one_shot(tape)
 
     dev = qml.device("default.qubit", seed=seed)
@@ -306,7 +306,7 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         qml.measure(0, postselect=1)
         return qml.sample(wires=0)
 
-    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
         _ = circuit([0.1, 0.2])
 
 
