@@ -703,3 +703,13 @@ class TestEstimateResources:
         """Test that using symbolic ops works with Allocate and Deallocate"""
         actual_resources = estimate(op, gate_set)
         assert actual_resources == expected_resources
+
+
+class TestMonkeyPatching:
+    """Test that the monkey patching works as expected"""
+
+    def test_qrom(self):
+        """Test that qre.QROM gets monkey patched to qre.LabsQROM"""
+        import pennylane.labs.estimator_beta as new_qre  # pylint: disable=import-outside-toplevel
+
+        assert new_qre.QROM is new_qre.LabsQROM
