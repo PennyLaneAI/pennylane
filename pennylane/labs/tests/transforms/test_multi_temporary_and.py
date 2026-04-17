@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This subpackage contains experimental PennyLane transforms and their building blocks.
-
-.. currentmodule:: pennylane.labs.transforms
-
-.. autosummary::
-    :toctree: api
-
-    ~select_pauli_rot_phase_gradient
-    ~MultiTemporaryAND
-
+Multi target X operation
 """
 
-from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .multi_temporary_and import MultiTemporaryAND
+import pytest
+
+from pennylane.labs.transforms import MultiTemporaryAND
+from pennylane.ops.functions.assert_valid import _check_decomposition_new
+
+
+@pytest.mark.parametrize("n", [2, 3, 5])
+def test_valid_decomp(n):
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
+    as a fixed decomposition and yields the correct resources"""
+    wires = range(n)
+    op = MultiTemporaryAND(wires)
+    _check_decomposition_new(op)
