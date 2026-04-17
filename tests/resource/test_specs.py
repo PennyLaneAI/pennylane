@@ -55,6 +55,7 @@ def test_error_with_bad_key(key):
         ([0, 1], [0, 1], False),
         ([0, 1, 1, 1], [0, 1], True),
         ((0, 1), [0, 1], False),
+        (range(3, 0, -1), [1, 2, 3], True),
         ("foo", [2], False),
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
