@@ -120,9 +120,7 @@ class TestMultiQubitMeasurements:
 
         def circuit():
             return qp.expval(
-                qp.Hamiltonian(
-                    [1.0], [qp.ops.op_math.Prod(*(qp.PauliY(i) for i in range(wires)))]
-                )
+                qp.Hamiltonian([1.0], [qp.ops.op_math.Prod(*(qp.PauliY(i) for i in range(wires)))])
             )
 
         _ = qp.QNode(circuit, dev)()
