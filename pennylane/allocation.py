@@ -40,6 +40,11 @@ class AllocateState(StrEnum):
 
     ZERO = "zero"
     ANY = "any"
+    PHASE_GRAD = "phase-grad"
+
+    def is_phase_gradient(self) -> bool:
+        """Return True if this state represents a phase-gradient allocation request."""
+        return self is AllocateState.PHASE_GRAD
 
 
 if not has_jax:
@@ -51,14 +56,14 @@ else:
 
     @allocate_prim.def_impl
     def _allocate_primitive_impl(
-        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
+        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False, precision=None
     ):
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
 
     # pylint: disable=unused-argument
     @allocate_prim.def_abstract_eval
     def _allocate_primitive_abstract_eval(
-        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
+        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False, precision=None
     ):
         return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
 
@@ -82,16 +87,20 @@ class Allocate(Operator):
         wires (list[DynamicWire]): a list of dynamic wire values.
 
     Keyword Args:
-        state (Literal["any", "zero"]): the state that the wires need to start in.
+        state (Literal["any", "zero", "phase-grad"]): the state that the wires need to start in.
         restored (bool): Whether or not the qubit will be restored to the original state before being deallocated.
+        precision (float | None): For phase-gradient allocations, the target precision.
+            Must be ``None`` for ``"zero"`` and ``"any"`` states.
 
     ..see-also:: :func:`~.allocate`.
 
     """
 
-    def __init__(self, wires, state: AllocateState = AllocateState.ZERO, restored=False):
+    def __init__(
+        self, wires, state: AllocateState = AllocateState.ZERO, restored=False, precision=None
+    ):
         super().__init__(wires=wires)
-        self._hyperparameters = {"state": state, "restored": restored}
+        self._hyperparameters = {"state": state, "restored": restored, "precision": precision}
 
     @property
     def state(self) -> AllocateState:
@@ -103,13 +112,22 @@ class Allocate(Operator):
         """Whether the allocated wires will be restored to their original state before deallocation."""
         return self.hyperparameters["restored"]
 
+    @property
+    def precision(self):
+        """Target precision for phase-gradient allocations, or None."""
+        return self.hyperparameters["precision"]
+
     @classmethod
     def from_num_wires(
-        cls, num_wires: int, state: AllocateState = AllocateState.ZERO, restored=False
+        cls,
+        num_wires: int,
+        state: AllocateState = AllocateState.ZERO,
+        restored=False,
+        precision=None,
     ) -> "Allocate":
         """Initialize an ``Allocate`` op from a number of wires instead of already constructed dynamic wires."""
         wires = tuple(DynamicWire() for _ in range(num_wires))
-        return cls(wires=wires, state=state, restored=restored)
+        return cls(wires=wires, state=state, restored=restored, precision=precision)
 
 
 class Deallocate(Operator):
@@ -203,8 +221,9 @@ class DynamicRegister(Wires):
 
 def allocate(
     num_wires: int,
-    state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
+    state: Literal["any", "zero", "phase-grad"] | AllocateState = AllocateState.ZERO,
     restored: bool = False,
+    precision: float | None = None,
 ) -> DynamicRegister:
     """Dynamically allocates new wires in-line,
     or as a context manager which also safely deallocates the new wires upon exiting the context.
@@ -370,10 +389,12 @@ def allocate(
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )
-        wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
+        wires = allocate_prim.bind(
+            num_wires=num_wires, state=state, restored=restored, precision=precision
+        )
     else:
         wires = [DynamicWire() for _ in range(num_wires)]
     reg = DynamicRegister(wires)
     if not capture_enabled():
-        Allocate(reg, state=state, restored=restored)
+        Allocate(reg, state=state, restored=restored, precision=precision)
     return reg

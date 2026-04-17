@@ -37,6 +37,12 @@ class _WireManager:
 
     def _retrieval_method(self, state: AllocateState):
         _retrieval_map = {AllocateState.ZERO: self._get_zeroed, AllocateState.ANY: self._get_any}
+        if state is AllocateState.PHASE_GRAD:
+            raise AllocationError(
+                "Phase-gradient allocation resolution is not yet implemented. "
+                "Concrete preparation and wire scheduling for 'phase-grad' state "
+                "will be added in a follow-up change."
+            )
         return _retrieval_map[state]
 
     @property
@@ -75,8 +81,13 @@ class _WireManager:
         self._loaned[w] = AllocateState.ZERO if restored else AllocateState.ANY
         return w, []
 
-    def get_wire(self, state: AllocateState, restored):
-        """Retrieve a concrete wire label from available registers."""
+    def get_wire(self, state: AllocateState, restored, **_kwargs):
+        """Retrieve a concrete wire label from available registers.
+
+        Extra keyword arguments (e.g. ``precision``) are accepted but not yet used.
+        This is compatibility plumbing for non-wire allocation metadata passed via
+        ``**op.hyperparameters`` from ``_new_ops``.
+        """
         if not self._zeroed and not self._any_state:
             self._add_new_wire()
         return self._retrieval_method(state)(restored)
