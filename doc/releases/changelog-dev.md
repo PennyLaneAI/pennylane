@@ -942,6 +942,9 @@ The following classes have been ported over:
 
 <h3>Documentation 📝</h3>
 
+* Fix the documentation example in `SumOfSlatersPrep` to prevent stochastic zeros from showing up.
+  [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
+
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
 
