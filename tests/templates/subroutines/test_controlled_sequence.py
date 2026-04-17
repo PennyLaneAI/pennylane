@@ -68,15 +68,9 @@ class TestProperties:
 
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
         op1 = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])  # identical
-        op2 = qp.ControlledSequence(
-            qp.RX(0.25, wires=4), control=[0, 1, 2]
-        )  # different base wire
-        op3 = qp.ControlledSequence(
-            qp.RX(0.35, wires=3), control=[0, 1, 2]
-        )  # different base param
-        op4 = qp.ControlledSequence(
-            qp.RY(0.25, wires=3), control=[0, 1, 2]
-        )  # different base class
+        op2 = qp.ControlledSequence(qp.RX(0.25, wires=4), control=[0, 1, 2])  # different base wire
+        op3 = qp.ControlledSequence(qp.RX(0.35, wires=3), control=[0, 1, 2])  # different base param
+        op4 = qp.ControlledSequence(qp.RY(0.25, wires=3), control=[0, 1, 2])  # different base class
         op5 = qp.ControlledSequence(
             qp.RX(0.25, wires=3), control=[0, 1, 4]
         )  # different control wires

@@ -199,9 +199,7 @@ class TestInputs:
 
         @qp.qnode(dev)
         def circuit(x=None):
-            qp.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=None, normalize=False
-            )
+            qp.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=None, normalize=False)
             return [qp.expval(qp.PauliZ(i)) for i in range(n_qubits)]
 
         with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
@@ -240,9 +238,7 @@ class TestInputs:
 
         @qp.qnode(dev)
         def circuit(x=None):
-            qp.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=None, normalize=False
-            )
+            qp.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=None, normalize=False)
             return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="State must be of length"):

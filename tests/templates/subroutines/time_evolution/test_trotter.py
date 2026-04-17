@@ -40,9 +40,7 @@ test_hamiltonians = (
     qp.dot(
         [1.23, -0.45], [qp.s_prod(0.1, qp.PauliX(0)), qp.prod(qp.PauliX(0), qp.PauliZ(1))]
     ),  # op arith
-    qp.dot(
-        [1, -0.5, 0.5], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(0)]
-    ),  # H = Identity
+    qp.dot([1, -0.5, 0.5], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(0)]),  # H = Identity
     qp.dot([2.0, 2.0, 2.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
 )
 
@@ -478,9 +476,7 @@ class TestInitialization:
     @pytest.mark.parametrize("time", (0.5, 1.2))
     def test_convention_approx_time_evolv(self, time, n):
         """Test that TrotterProduct matches ApproxTimeEvolution"""
-        hamiltonian = qp.Hamiltonian(
-            [1.23, -0.45, 6], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
-        )
+        hamiltonian = qp.Hamiltonian([1.23, -0.45, 6], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)])
         op1 = qp.TrotterProduct(hamiltonian, time, order=1, n=n)
         op2 = qp.adjoint(qp.ApproxTimeEvolution(hamiltonian, time, n=n))
 

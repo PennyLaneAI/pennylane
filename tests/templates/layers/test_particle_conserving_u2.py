@@ -159,9 +159,7 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
 
         n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
 
-        exp_gates = (
-            [qp.RZ] * qubits + ([qp.CNOT] + [qp.CRX] + [qp.CNOT]) * (qubits - 1)
-        ) * layers
+        exp_gates = ([qp.RZ] * qubits + ([qp.CNOT] + [qp.CRX] + [qp.CNOT]) * (qubits - 1)) * layers
 
         op = qp.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
         queue = _get_queue(op, system)

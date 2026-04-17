@@ -175,9 +175,7 @@ class TestDecomposition:
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         hamiltonian = qp.Hamiltonian([1, 1, 1], [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)])
-        hamiltonian2 = qp.Hamiltonian(
-            [1, 1, 1], [qp.PauliX("z"), qp.PauliX("a"), qp.PauliX("k")]
-        )
+        hamiltonian2 = qp.Hamiltonian([1, 1, 1], [qp.PauliX("z"), qp.PauliX("a"), qp.PauliX("k")])
 
         dev = qp.device("default.qubit", wires=3)
         dev2 = qp.device("default.qubit", wires=["z", "a", "k"])

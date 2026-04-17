@@ -118,9 +118,7 @@ class TestMultiplier:
 
         op_list.append(qp.QFT(wires=wires_aux))
         op_list.append(
-            qp.ControlledSequence(
-                qp.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires
-            )
+            qp.ControlledSequence(qp.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
         )
         op_list.append(qp.adjoint(qp.QFT(wires=wires_aux)))
 

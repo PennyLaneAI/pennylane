@@ -103,9 +103,7 @@ def test_standard_validity(lcu, control):
             [
                 qp.Reflection(qp.I(1), 3.141592653589793),
                 qp.PrepSelPrep(
-                    qp.ops.LinearCombination(
-                        np.array([-1.0, 1.0]), [qp.PauliX(0), qp.PauliZ(0)]
-                    ),
+                    qp.ops.LinearCombination(np.array([-1.0, 1.0]), [qp.PauliX(0), qp.PauliZ(0)]),
                     control=[1],
                 ),
             ],

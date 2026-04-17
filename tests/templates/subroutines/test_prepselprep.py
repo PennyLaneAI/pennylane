@@ -184,9 +184,7 @@ class TestPrepSelPrep:
 
         coeffs, _ = _get_new_terms(lcu)
         normalization_factor = qp.math.sum(coeffs)
-        block_encoding = qp.matrix(prepselprep_circuit, wire_order=wire_order)(
-            lcu, control=control
-        )
+        block_encoding = qp.matrix(prepselprep_circuit, wire_order=wire_order)(lcu, control=control)
 
         assert qp.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
