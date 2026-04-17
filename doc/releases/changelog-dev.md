@@ -22,16 +22,9 @@
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
   [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
 
-<<<<<<< HEAD
-* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
-  It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and
-  reversible bit encodings. For now, only classical preprocessing required to implement the
-  template is added.
-=======
 * A new state preparation method called :class:`~.SumOfSlatersPrep` is now available.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and
   reversible bit encodings.
->>>>>>> main
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
@@ -90,13 +83,8 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-<<<<<<< HEAD
-  logarithm of its input and casts the result to an ``int``. It is equivalent to
-  ``int(np.ceil(np.log2(n)))``.
-=======
   logarithm of its input and casts the result to an ``int``. It is equivalent
   to ``int(np.ceil(np.log2(n)))``.
->>>>>>> main
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
@@ -154,11 +142,7 @@ The following classes have been ported over:
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
-<<<<<<< HEAD
-* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
-=======
 * Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
->>>>>>> main
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
 
@@ -326,11 +310,7 @@ The following classes have been ported over:
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
 
-<<<<<<< HEAD
-* When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
-=======
 * When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
->>>>>>> main
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
   Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless
   of how many markers are present.
