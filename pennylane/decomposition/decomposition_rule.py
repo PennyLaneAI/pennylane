@@ -25,9 +25,12 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
+import pennylane as qml
+from pennylane import queuing
 from pennylane.operation import Operator
 
-from .resources import Resources, auto_wrap
+from .reconstruct import get_decomp_kwargs
+from .resources import Resources, auto_wrap, resource_rep
 from .utils import to_name
 
 
@@ -745,6 +748,71 @@ def local_decomps():
         yield
     finally:
         _decompositions_var.reset(token)
+
+
+def show_decomps(op: Operator, *rules: str | DecompositionRule):
+    """Display the decomposition rules of an operator."""
+
+    rules_to_display = []
+    stock_collection = list_decomps(op)
+    if not rules:
+        rules_to_display = stock_collection
+    for rule in rules:
+        rules_to_display.append(stock_collection[rule] if isinstance(rule, str) else rule)
+
+    if len(rules) == 1:
+        rule = rules_to_display[0]
+        print(f"Name: {rule.name}\n{_inspect_decomp(op, rule)}")
+        return
+
+    decomp_strings = []
+    for i, rule in enumerate(rules_to_display):
+        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{_inspect_decomp(op, rule)}")
+    print("\n\n".join(decomp_strings))
+
+
+def _inspect_decomp(op: Operator, rule: DecompositionRule) -> str:
+    kwargs = get_decomp_kwargs(op)
+    if not rule.is_applicable(**op.resource_params):
+        return "Not applicable to the provided operator instance!"
+    circuit_drawing = qml.draw(rule)(*op.data, wires=op.wires, **kwargs)
+    estimated_gate_counts = rule.compute_resources(**op.resource_params).gate_counts
+    actual_gate_counts, allocations = _count_gates(op, rule)
+    gate_count_str = _get_gate_count_str(estimated_gate_counts, actual_gate_counts)
+    result = circuit_drawing + "\n" + gate_count_str
+    if allocations:
+        result += f"\nWire Allocations: {allocations}"
+    return result
+
+
+def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
+    """Count the gates that a decomposition rule produced."""
+
+    kwargs = get_decomp_kwargs(op)
+    with queuing.AnnotatedQueue() as q:
+        rule(*op.data, wires=op.wires, **kwargs)
+
+    actual_gate_counts = defaultdict(int)
+    allocations = defaultdict(int)
+    for _op in q.queue:
+        if isinstance(_op, qml.ops.Conditional):
+            _op = _op.base
+        if isinstance(_op, qml.allocation.Allocate):
+            allocations[str(_op.state)] += 1
+            continue
+        if isinstance(_op, qml.allocation.Deallocate):
+            continue
+        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        actual_gate_counts[op_rep] += 1
+
+    return dict(actual_gate_counts), dict(allocations)
+
+
+def _get_gate_count_str(estimated_count, actual_count) -> str:
+    estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+    if estimated_count == actual_count:
+        return f"Gate Count: {estimated_count}"
+    return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
 
 
 @register_resources({})
