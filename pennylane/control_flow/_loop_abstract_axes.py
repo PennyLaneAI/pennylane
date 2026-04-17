@@ -164,7 +164,7 @@ def validate_no_resizing_returns(
                     "Detected dynamically shaped arrays being resized independently. "
                     f"\nReturned variables at {loc0.arg_idx} and {compare_loc.arg_idx} must keep the same size "
                     "with allow_array_resizing=False."
-                    f"\nPlease specify allow_array_resizing=True to `qml.{name}` to allow "
+                    f"\nPlease specify allow_array_resizing=True to `qp.{name}` to allow "
                     "dynamically shaped arrays to be reshaped independently. "
                 )
 
@@ -197,7 +197,7 @@ def handle_jaxpr_error(
         else:
             msg = (
                 "Detected an attempt to combine arrays with two different dynamic shapes. "
-                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qml.{name}`."
+                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qp.{name}`."
             )
         raise ValueError(msg) from e
     raise e
