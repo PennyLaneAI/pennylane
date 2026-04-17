@@ -498,7 +498,7 @@ The following classes have been ported over:
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 
-* The :func:`~pennylane.list_decomps` now returns a new ``DecompCollection`` that supports both index-based and name-based access of the decomposition rules that it contains.
+* The :func:`~pennylane.list_decomps` now returns a new ``DecompCollection`` that allows users to access decomposition rules by index or by name.
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
   ```pycon
