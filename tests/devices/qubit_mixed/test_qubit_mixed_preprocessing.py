@@ -202,16 +202,12 @@ class TestPreprocessing:
             ),
             # LinearCombination with all invalid ops
             (
-                qp.Hamiltonian(
-                    [1.0, 0.5], [qp.Snapshot(), qp.DepolarizingChannel(0.4, wires=0)]
-                ),
+                qp.Hamiltonian([1.0, 0.5], [qp.Snapshot(), qp.DepolarizingChannel(0.4, wires=0)]),
                 False,
             ),
             # Complex LinearCombination
             (
-                qp.Hamiltonian(
-                    [0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]
-                ),
+                qp.Hamiltonian([0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]),
                 True,
             ),
         ],

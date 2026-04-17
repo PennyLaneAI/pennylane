@@ -924,9 +924,7 @@ class TestPreprocessingIntegration:
                 return m0.measurements
 
         tape = qp.tape.QuantumScript([MyOp(0)])
-        config = qp.devices.ExecutionConfig(
-            mcm_config=qp.devices.MCMConfig(mcm_method="deferred")
-        )
+        config = qp.devices.ExecutionConfig(mcm_config=qp.devices.MCMConfig(mcm_method="deferred"))
 
         prog = DefaultQubit().preprocess_transforms(config)
 
@@ -1111,9 +1109,7 @@ class TestAdjointDiffTapeValidation:
         qs = qp.tape.QuantumScript(
             ops=[
                 prep_op,
-                qp.Rot(
-                    qp.numpy.array(0.1), qp.numpy.array(0.2), qp.numpy.array(0.3), wires=[0]
-                ),
+                qp.Rot(qp.numpy.array(0.1), qp.numpy.array(0.2), qp.numpy.array(0.3), wires=[0]),
             ],
             measurements=[qp.expval(qp.PauliZ(0))],
         )

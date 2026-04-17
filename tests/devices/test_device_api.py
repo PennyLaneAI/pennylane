@@ -61,13 +61,19 @@ schema = 3
 
 """
 
-EXAMPLE_TOML_FILE_ONE_SHOT = EXAMPLE_TOML_FILE + """
+EXAMPLE_TOML_FILE_ONE_SHOT = (
+    EXAMPLE_TOML_FILE
+    + """
 supported_mcm_methods = [ "one-shot" ]
 """
+)
 
-EXAMPLE_TOML_FILE_ALL_SUPPORT = EXAMPLE_TOML_FILE + """
+EXAMPLE_TOML_FILE_ALL_SUPPORT = (
+    EXAMPLE_TOML_FILE
+    + """
 supported_mcm_methods = [ "device", "one-shot" ]
 """
+)
 
 
 class TestDeviceCapabilities:

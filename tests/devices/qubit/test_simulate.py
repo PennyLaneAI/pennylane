@@ -696,9 +696,7 @@ class TestSampleMeasurements:
             qp.probs(wires=[0]),
             qp.probs(wires=[0, 1]),
             qp.sample(wires=[0, 1]),
-            qp.expval(
-                qp.Hamiltonian([1.0, 2.0, 3.0], [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(1)])
-            ),
+            qp.expval(qp.Hamiltonian([1.0, 2.0, 3.0], [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(1)])),
             qp.expval(qp.sum(qp.PauliX(0), qp.PauliZ(1), qp.PauliY(1))),
             qp.expval(qp.s_prod(2.0, qp.PauliX(0))),
             qp.expval(qp.prod(qp.PauliX(0), qp.PauliY(1))),
@@ -1231,9 +1229,7 @@ class TestQInfoMeasurements:
 
         grad2_real = grad_tape.jacobian(result2_real, phi)
         grad2_imag = grad_tape.jacobian(result2_imag, phi)
-        assert qp.math.allclose(
-            np.array(grad2_real) + 1j * np.array(grad2_imag), expected_grads[2]
-        )
+        assert qp.math.allclose(np.array(grad2_real) + 1j * np.array(grad2_imag), expected_grads[2])
 
         grad3 = grad_tape.jacobian(results[3], phi)
         assert qp.math.allclose(grad3, expected_grads[3])
@@ -1363,9 +1359,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
-    @pytest.mark.parametrize(
-        "meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
-    )
+    @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
