@@ -133,9 +133,7 @@ class TestSimplifyQNodes:
         @qp.qnode(dev)
         def qnode():
             qp.prod(qp.prod(qp.PauliX(0) ** 1, qp.PauliX(0)), qp.PauliZ(1))
-            return qp.expval(
-                op=qp.prod(qp.prod(qp.PauliX(0) ** 1, qp.PauliX(0)), qp.PauliZ(1))
-            )
+            return qp.expval(op=qp.prod(qp.prod(qp.PauliX(0) ** 1, qp.PauliX(0)), qp.PauliZ(1)))
 
         simplified_tape_op = qp.PauliZ(1)
 

@@ -347,9 +347,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         with pytest.warns(
             UserWarning, match="Decomposition may be inefficient for this large of a matrix."
         ):
-            qp.Hermitian.compute_decomposition(
-                qp.matrix(observable), wires=list(range(num_wires))
-            )
+            qp.Hermitian.compute_decomposition(qp.matrix(observable), wires=list(range(num_wires)))
 
     @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
     def test_hermitian_decomposition(self, observable):

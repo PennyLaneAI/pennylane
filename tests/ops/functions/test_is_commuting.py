@@ -489,9 +489,7 @@ class TestCommutingFunction:
     )
     def test_rot_y_simplified(self, wires, res):
         """Commutation between Rot(0, 0.1, 0) and PauliY."""
-        commutation = qp.is_commuting(
-            qp.Rot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1])
-        )
+        commutation = qp.is_commuting(qp.Rot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1]))
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -559,9 +557,7 @@ class TestCommutingFunction:
     )
     def test_crot_y_simplified(self, wires, res):
         """Commutation between CRot(0, 0.1, 0) and PauliY."""
-        commutation = qp.is_commuting(
-            qp.CRot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1])
-        )
+        commutation = qp.is_commuting(qp.CRot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1]))
         assert commutation == res
 
     @pytest.mark.parametrize(

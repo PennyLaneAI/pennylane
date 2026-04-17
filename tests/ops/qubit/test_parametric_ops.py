@@ -719,9 +719,7 @@ class TestDecompositions:
     def test_pcphase_decomposition_graph(self):
         """Tests that the PCPhase can be decomposed all the way down."""
 
-        tape = qp.tape.QuantumScript(
-            [qp.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], []
-        )
+        tape = qp.tape.QuantumScript([qp.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
 
         [decomp], _ = qp.transforms.decompose(
@@ -783,9 +781,7 @@ class TestMatrix:
         eye = np.eye(2**n_wires)
         eye2 = np.eye(2)
         # test identity for theta=0
-        assert np.allclose(
-            qp.GlobalPhase.compute_matrix(0, n_wires=n_wires), eye, atol=tol, rtol=0
-        )
+        assert np.allclose(qp.GlobalPhase.compute_matrix(0, n_wires=n_wires), eye, atol=tol, rtol=0)
         assert np.allclose(qp.GlobalPhase.compute_matrix(0), eye2, atol=tol, rtol=0)
         assert np.allclose(qp.GlobalPhase(0).matrix(wire_order=wires), eye, atol=tol, rtol=0)
 
@@ -808,9 +804,7 @@ class TestMatrix:
             qp.GlobalPhase.compute_matrix(phi, n_wires=n_wires), expected, atol=tol, rtol=0
         )
         assert np.allclose(qp.GlobalPhase.compute_matrix(phi), expected2, atol=tol, rtol=0)
-        assert np.allclose(
-            qp.GlobalPhase(phi).matrix(wire_order=wires), expected, atol=tol, rtol=0
-        )
+        assert np.allclose(qp.GlobalPhase(phi).matrix(wire_order=wires), expected, atol=tol, rtol=0)
 
     def test_identity(self, tol):
         """Test Identity matrix is correct with no wires"""

@@ -703,9 +703,7 @@ class TestMatrix:
         y = qp.numpy.array([0.4, 0.5, 0.6])
         op = prod(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [
-            prod(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)
-        ]
+        sum_list = [prod(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
@@ -1093,9 +1091,7 @@ class TestProperties:
             qp.prod(
                 qp.s_prod(
                     -2j,
-                    qp.prod(
-                        qp.s_prod(0.5, qp.PauliX(wires=0)), qp.s_prod(2, qp.PauliZ(wires=1))
-                    ),
+                    qp.prod(qp.s_prod(0.5, qp.PauliX(wires=0)), qp.s_prod(2, qp.PauliZ(wires=1))),
                 ),
                 qp.s_prod(3, qp.PauliY(wires=0)),
             ),
@@ -1255,14 +1251,7 @@ class TestSimplify:
         """Test that equal Pauli operators, creating global phase contributions, are simplified
         correctly on two wires."""
         prod_op = qp.prod(
-            qp.X(0)
-            @ qp.Z("a")
-            @ qp.Y(0)
-            @ qp.Z(0)
-            @ qp.X("a")
-            @ qp.Y("a")
-            @ qp.H(0)
-            @ qp.H("a")
+            qp.X(0) @ qp.Z("a") @ qp.Y(0) @ qp.Z(0) @ qp.X("a") @ qp.Y("a") @ qp.H(0) @ qp.H("a")
         )
         final_op = qp.simplify(-1 * qp.H(0) @ qp.H("a"))
         simplified_op = prod_op.simplify()

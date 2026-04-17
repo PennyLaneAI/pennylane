@@ -273,9 +273,7 @@ class TestPrefactorReturn:
     def test_hamiltonian_with_same_term(self):
         """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
         coefficient."""
-        gen, prefactor = qp.generator(HamiltonianOpSameCoeff, format="prefactor")(
-            0.5, wires=[0, 1]
-        )
+        gen, prefactor = qp.generator(HamiltonianOpSameCoeff, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 0.5
         assert isinstance(gen, Sum)
         for op in gen:

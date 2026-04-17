@@ -541,9 +541,7 @@ class TestQubitUnitary:
             (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.TrotterProduct(qp.X(0) + 0.3 * qp.Y(1), time=1, n=5))),  # 0 cnots
-            (
-                qp.matrix(qp.TrotterProduct(qp.X(0) @ qp.Z(1) - 0.3 * qp.Y(1), time=1))
-            ),  # 2 cnots
+            (qp.matrix(qp.TrotterProduct(qp.X(0) @ qp.Z(1) - 0.3 * qp.Y(1), time=1))),  # 2 cnots
             (qp.matrix(qp.CRY(1, wires=[0, 1]))),  # 2 cnots
             (qp.matrix(qp.QFT(wires=[0, 1]))),  # 3 cnots
             (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.QFT(wires=[0, 1]))),  # 3 cnots

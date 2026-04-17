@@ -216,10 +216,7 @@ class TestControlledDecompositionZYZ:
                 ],
             ),
             (
-                (
-                    qp.s_prod(1 / np.sqrt(2), qp.PauliX(0))
-                    + qp.s_prod(1 / np.sqrt(2), qp.PauliX(0))
-                ),
+                (qp.s_prod(1 / np.sqrt(2), qp.PauliX(0)) + qp.s_prod(1 / np.sqrt(2), qp.PauliX(0))),
                 [
                     qp.RZ(np.pi / 2, wires=0),
                     qp.RY(np.pi / 2, wires=0),

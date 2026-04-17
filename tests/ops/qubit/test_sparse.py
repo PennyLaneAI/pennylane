@@ -174,9 +174,7 @@ class TestSparse:
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = int(np.log2(len(sparse_hamiltonian[0])))
         sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
-        res_dynamic = qp.SparseHamiltonian(
-            sparse_hamiltonian_csr, range(num_wires)
-        ).sparse_matrix()
+        res_dynamic = qp.SparseHamiltonian(sparse_hamiltonian_csr, range(num_wires)).sparse_matrix()
         res_static = qp.SparseHamiltonian.compute_sparse_matrix(sparse_hamiltonian_csr)
         assert isinstance(res_dynamic, csr_matrix)
         assert isinstance(res_static, csr_matrix)

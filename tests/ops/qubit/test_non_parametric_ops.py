@@ -1346,9 +1346,7 @@ class TestHadamardAlias:
         assert qp.H is qp.Hadamard, "qp.H should be an alias for qp.Hadamard"
 
         # Verify that an instance of qp.H is treated as qp.Hadamard
-        assert isinstance(
-            qp.H(0), qp.Hadamard
-        ), "qp.H(0) should create an instance of qp.Hadamard"
+        assert isinstance(qp.H(0), qp.Hadamard), "qp.H(0) should create an instance of qp.Hadamard"
 
 
 class TestPauliRep:

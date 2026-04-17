@@ -134,9 +134,7 @@ class TestInitialization:
     def test_init_sum_op_with_sum_summands(self, sum_method):
         """Test the initialization of a Sum operator which contains a summand that is another
         Sum operator."""
-        sum_op = sum_method(
-            Sum(qp.PauliX(wires=0), qp.RZ(0.23, wires="a")), qp.RX(9.87, wires=0)
-        )
+        sum_op = sum_method(Sum(qp.PauliX(wires=0), qp.RZ(0.23, wires="a")), qp.RX(9.87, wires=0))
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
@@ -1336,9 +1334,7 @@ class TestGrouping:
         op_ac = qp.ops.Sum(qp.X(0), qp.Y(1), grouping_type="anticommuting")
         assert op_ac.grouping_indices == ((0,), (1,))
         with pytest.raises(ValueError, match=r"cannot be specified at the same time."):
-            qp.ops.Sum(
-                qp.X(0), qp.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]]
-            )
+            qp.ops.Sum(qp.X(0), qp.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]])
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""
@@ -1514,9 +1510,7 @@ class TestSupportsBroadcasting:
         y = qp.numpy.array([0.4, 0.5, 0.6])
         op = Sum(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [
-            Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)
-        ]
+        sum_list = [Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)

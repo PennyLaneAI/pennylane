@@ -154,43 +154,25 @@ PARAMETRIZED_MEASUREMENTS = [
     qp.classical_shadow(wires=[0, 1]),
     qp.classical_shadow(wires=[1, 0]),
     qp.shadow_expval(
-        H=qp.Hamiltonian(
-            [1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]
-        ),
+        H=qp.Hamiltonian([1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]),
         k=2,
     ),
     qp.shadow_expval(
-        H=qp.Hamiltonian(
-            [1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]
-        )
+        H=qp.Hamiltonian([1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)])
     ),
     qp.shadow_expval(
-        H=qp.Hamiltonian(
-            [1.0, 1.0], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(0) @ qp.PauliZ(1)]
-        ),
+        H=qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(0) @ qp.PauliZ(1)]),
         k=3,
     ),
     qp.shadow_expval(
-        H=[
-            qp.Hamiltonian(
-                [1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]
-            )
-        ],
+        H=[qp.Hamiltonian([1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)])],
         k=2,
     ),
     qp.shadow_expval(
-        H=[
-            qp.Hamiltonian(
-                [1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]
-            )
-        ]
+        H=[qp.Hamiltonian([1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)])]
     ),
     qp.shadow_expval(
-        H=[
-            qp.Hamiltonian(
-                [1.0, 1.0], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(0) @ qp.PauliZ(1)]
-            )
-        ],
+        H=[qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(0) @ qp.PauliZ(1)])],
         k=3,
     ),
     ExpectationMP(eigvals=[1, -1]),
@@ -215,9 +197,7 @@ equal_hamiltonians = [
         True,
     ),
     (
-        qp.Hamiltonian(
-            [1, 1, 1], [qp.PauliX(0) @ qp.Identity(1), qp.PauliZ(0), qp.Identity(1)]
-        ),
+        qp.Hamiltonian([1, 1, 1], [qp.PauliX(0) @ qp.Identity(1), qp.PauliZ(0), qp.Identity(1)]),
         qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliZ(0)]),
         False,
     ),

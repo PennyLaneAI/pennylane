@@ -206,9 +206,7 @@ class TestGetOneParameterGenerators:
         for i, (theta, pauli_mat) in enumerate(zip(torch.eye(d, requires_grad=True), basis)):
             Omegas = self.get_one_parameter_generators(theta, n, "torch")
             assert Omegas.shape == (d, 2**n, 2**n)
-            assert all(
-                qp.math.allclose(qp.math.conj(qp.math.T(O)), -O, atol=3e-8) for O in Omegas
-            )
+            assert all(qp.math.allclose(qp.math.conj(qp.math.T(O)), -O, atol=3e-8) for O in Omegas)
             assert qp.math.allclose(Omegas[i], 1j * pauli_mat)
 
     def test_raises_autograd(self):
@@ -873,9 +871,7 @@ class TestSpecialUnitaryIntegration:
 
         dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.QNode(
-            self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots
-        )
+        qnode = qp.QNode(self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots)
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)

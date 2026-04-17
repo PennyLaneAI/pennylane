@@ -212,22 +212,16 @@ class TestGeneralizedAmplitudeDamping:
             [
                 qp.math.sqrt(1 - p)
                 * qp.math.array([[0, 0], [0, -1 / (2 * qp.math.sqrt(1 - gamma))]]),
-                qp.math.sqrt(1 - p)
-                * qp.math.array([[0, 1 / (2 * qp.math.sqrt(gamma))], [0, 0]]),
-                qp.math.sqrt(p)
-                * qp.math.array([[-1 / (2 * qp.math.sqrt(1 - gamma)), 0], [0, 0]]),
+                qp.math.sqrt(1 - p) * qp.math.array([[0, 1 / (2 * qp.math.sqrt(gamma))], [0, 0]]),
+                qp.math.sqrt(p) * qp.math.array([[-1 / (2 * qp.math.sqrt(1 - gamma)), 0], [0, 0]]),
                 qp.math.sqrt(p) * qp.math.array([[0, 0], [1 / (2 * qp.math.sqrt(gamma)), 0]]),
             ],
             [
                 -1
                 / (2 * qp.math.sqrt(1 - p))
                 * qp.math.array([[1, 0], [0, qp.math.sqrt(1 - gamma)]]),
-                -1
-                / (2 * qp.math.sqrt(1 - p))
-                * qp.math.array([[0, qp.math.sqrt(gamma)], [0, 0]]),
-                1
-                / (2 * qp.math.sqrt(p))
-                * qp.math.array([[qp.math.sqrt(1 - gamma), 0], [0, 1]]),
+                -1 / (2 * qp.math.sqrt(1 - p)) * qp.math.array([[0, qp.math.sqrt(gamma)], [0, 0]]),
+                1 / (2 * qp.math.sqrt(p)) * qp.math.array([[qp.math.sqrt(1 - gamma), 0], [0, 1]]),
                 1 / (2 * qp.math.sqrt(p)) * qp.math.array([[0, 0], [qp.math.sqrt(gamma), 0]]),
             ],
         )
@@ -558,15 +552,11 @@ class TestDepolarizingChannel:
 
     @staticmethod
     def kraus_fn_real(x):
-        return qp.math.real(
-            qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
+        return qp.math.real(qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
 
     @staticmethod
     def kraus_fn_imag(x):
-        return qp.math.imag(
-            qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
+        return qp.math.imag(qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):

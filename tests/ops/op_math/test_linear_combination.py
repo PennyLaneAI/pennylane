@@ -212,12 +212,8 @@ add_LinearCombinations = [
     ),
     (
         qp.ops.LinearCombination([1, 1], [X(0), qp.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qp.ops.LinearCombination(
-            [0.5, 0.5], [X(0), qp.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qp.ops.LinearCombination(
-            [1.5, 1.5], [X(0), qp.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qp.ops.LinearCombination([0.5, 0.5], [X(0), qp.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qp.ops.LinearCombination([1.5, 1.5], [X(0), qp.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
         qp.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
@@ -909,9 +905,7 @@ class TestLinearCombination:
         assert len(LC.overlapping_ops[0]) > 1  # will use one branch
         assert len(LC.overlapping_ops[1]) == 1  # will use the other branch
 
-        SUM = qp.sum(
-            qp.s_prod(1.1, qp.X(0)), qp.s_prod(2.2, qp.Z(0)), qp.s_prod(3.3, qp.Y(1))
-        )
+        SUM = qp.sum(qp.s_prod(1.1, qp.X(0)), qp.s_prod(2.2, qp.Z(0)), qp.s_prod(3.3, qp.Y(1)))
 
         assert np.all(LC.eigvals() == SUM.eigvals())
 

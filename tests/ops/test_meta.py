@@ -277,9 +277,7 @@ class TestSnapshot:
         op = qp.Snapshot()
         assert op.hyperparameters["shots"] == qp.measurements.Shots(None)
 
-    @pytest.mark.parametrize(
-        "mp", (qp.expval(qp.Z(0)), qp.measurements.StateMP(wires=(2, 1, 0)))
-    )
+    @pytest.mark.parametrize("mp", (qp.expval(qp.Z(0)), qp.measurements.StateMP(wires=(2, 1, 0))))
     def test_map_wires(self, mp):
         """Test that the wires of the measurement are mapped"""
         op = Snapshot(measurement=mp, tag="my tag")
