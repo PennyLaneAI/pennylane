@@ -470,7 +470,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         with pytest.raises(
             TransformError,
-            match=" AmplitudeEmbedding after operators with dynamic wires.",
+            match="AmplitudeEmbedding after operators with dynamic wires.",
         ):
             _ = jax.make_jaxpr(f)(2)
 
