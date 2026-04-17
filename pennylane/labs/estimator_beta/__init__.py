@@ -55,7 +55,7 @@ Resource Operators
 .. autosummary::
     :toctree: api
 
-    ~QROM
+    ~LabsQROM
 
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,8 +95,8 @@ from .resource_config import LabsResourceConfig
 
 from .templates import (
     selectpaulirot_controlled_resource_decomp,
-    QROM,
-)  # Note QROM overrides estimator.QROM
+    LabsQROM,
+)
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
@@ -125,3 +125,7 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+
+## Monkey Patching:
+QROM = LabsQROM

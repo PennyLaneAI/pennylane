@@ -33,7 +33,7 @@ from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
+# pylint: disable= no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -703,3 +703,13 @@ class TestEstimateResources:
         """Test that using symbolic ops works with Allocate and Deallocate"""
         actual_resources = estimate(op, gate_set)
         assert actual_resources == expected_resources
+
+
+class TestMonkeyPatching:
+    """Test that the monkey patching works as expected"""
+
+    def test_qrom(self):
+        """Test that qre.QROM gets monkey patched to qre.LabsQROM"""
+        import pennylane.labs.estimator_beta as new_qre  # pylint: disable=import-outside-toplevel
+
+        assert new_qre.QROM is new_qre.LabsQROM
