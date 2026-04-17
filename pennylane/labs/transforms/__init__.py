@@ -33,17 +33,8 @@ Custom decomposition rules
     ~make_rz_to_phase_gradient_decomp
     ~make_selectpaulirot_to_phase_gradient_decomp
 
-Custom operators
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~MultiX
-
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
 from .decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 from .decomp_selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
-from .multix import MultiX

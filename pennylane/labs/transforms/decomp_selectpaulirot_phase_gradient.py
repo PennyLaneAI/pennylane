@@ -186,7 +186,12 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
-        semi_adder_rep = resource_rep(qp.SemiAdder, num_y_wires=len(phase_grad_wires))
+        semi_adder_rep = resource_rep(
+            qp.SemiAdder,
+            num_x_wires=len(angle_wires),
+            num_y_wires=len(phase_grad_wires),
+            num_work_wires=len(work_wires),
+        )
 
         # 5. change_op_basis(compute_op, target_op)
         #    compute_op = prod (the QROM + ctrl-X product)
