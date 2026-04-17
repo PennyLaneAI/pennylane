@@ -123,6 +123,7 @@ class Select(Operation):
 
     **Example**
 
+    >>> import pennylane as qp
     >>> dev = qp.device('default.qubit', wires=4)
     >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2, 3])]
     >>> @qp.qnode(dev)

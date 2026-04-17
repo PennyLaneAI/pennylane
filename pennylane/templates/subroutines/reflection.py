@@ -59,6 +59,8 @@ class Reflection(Operation):
 
     .. code-block:: python
 
+        import pennylane as qp
+
         U = qp.Hadamard(wires=0)
         dev = qp.device('default.qubit')
 
