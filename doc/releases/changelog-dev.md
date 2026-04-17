@@ -517,6 +517,7 @@ The following classes have been ported over:
   >>> print(qml.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+
   ```
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
