@@ -489,7 +489,7 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -510,7 +510,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -617,14 +617,13 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires >= 6)},
+    work_wires={"zeroed": 2},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
-    is_small_mcx = (len(wires) - 1) < 6
-    with allocation.allocate(2 - is_small_mcx, state="zero", restored=True) as work_wires:
+    with allocation.allocate(2, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -632,15 +631,14 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
 decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_work_wires, num_control_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
-    work_wires=lambda num_control_wires, **_: {"borrowed": 2 - (num_control_wires < 6)},
+    work_wires={"borrowed": 2},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
-    is_small_mcx = (len(wires) - 1) < 6
-    with allocation.allocate(2 - is_small_mcx, state="any", restored=True) as work_wires:
+    with allocation.allocate(2, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_two_workers(wires, **kwargs)
 
