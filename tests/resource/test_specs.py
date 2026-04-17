@@ -483,7 +483,9 @@ class TestSpecsTransform:
             ],
         }
 
-        assert str(specs_output) == """Device: default.qubit
+        assert (
+            str(specs_output)
+            == """Device: default.qubit
 Device wires: None
 Shots: Shots(total=None)
 Level: 2
@@ -523,6 +525,7 @@ Batched tape c:
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Depth: 5"""
+        )
 
     @pytest.mark.parametrize(
         "device,num_wires",

@@ -40,9 +40,7 @@ def test_tracking_execute():
     dev = DummyDev()
 
     tape1 = qp.tape.QuantumScript([qp.X(0)], [qp.expval(qp.X(0)), qp.expval(qp.Y(0))])
-    tape2 = qp.tape.QuantumScript(
-        [qp.S(0), qp.T(1)], [qp.expval(qp.X(0) + qp.Y(0))], shots=50
-    )
+    tape2 = qp.tape.QuantumScript([qp.S(0), qp.T(1)], [qp.expval(qp.X(0) + qp.Y(0))], shots=50)
     with dev.tracker:
         out = dev.execute((tape1, tape2))
 
@@ -95,9 +93,7 @@ def test_tracking_execute_and_compute_derivatives():
         ):
             return 0.0, 0.0
 
-    t = qp.tape.QuantumScript(
-        [qp.RX(1.2, wires=0)], [qp.expval(qp.X(0)), qp.probs(wires=(0, 1))]
-    )
+    t = qp.tape.QuantumScript([qp.RX(1.2, wires=0)], [qp.expval(qp.X(0)), qp.probs(wires=(0, 1))])
     dev = DummyDev()
     with dev.tracker:
         out = dev.execute_and_compute_derivatives((t, t, t))
@@ -149,9 +145,7 @@ def test_tracking_execute_and_compute_jvp():
         ):
             return 0.0, 0.0
 
-    t = qp.tape.QuantumScript(
-        [qp.RX(1.2, wires=0)], [qp.expval(qp.X(0)), qp.probs(wires=(0, 1))]
-    )
+    t = qp.tape.QuantumScript([qp.RX(1.2, wires=0)], [qp.expval(qp.X(0)), qp.probs(wires=(0, 1))])
     dev = DummyDev()
     with dev.tracker:
         out = dev.execute_and_compute_jvp((t, t, t), (1, 1, 1))

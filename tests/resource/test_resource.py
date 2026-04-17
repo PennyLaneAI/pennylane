@@ -978,7 +978,9 @@ class TestCircuitSpecs:
         """Test the tabular string representation of a CircuitSpecs instance."""
 
         r = self.example_specs_result_multi()
-        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
+        assert [x.strip() for x in str(r).split()] == [
+            x.strip()
+            for x in """Device: default.qubit
 Device wires: 5
 Shots: Shots(total=1000)
 Levels:
@@ -994,7 +996,8 @@ Gate counts:     |
 - CNOT           |    2 |    1 |    1
 Measurements:    |
 - expval(PauliX) |    1 |    1 |    0
-- expval(PauliZ) |    1 |    0 |    1""".split()]
+- expval(PauliZ) |    1 |    0 |    1""".split()
+        ]
 
     def test_str_multi_non_tabular(self):
         """Test the non-tabular string representation of a CircuitSpecs instance."""

@@ -636,9 +636,7 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [qp.expval(qp.PauliZ(wires=[0]))]
-        qs = QuantumScript(
-            [qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1]
-        )
+        qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
@@ -677,9 +675,7 @@ class TestAdjointVJP:
             qp.expval(qp.PauliY(wires=[1])),
             qp.expval(qp.PauliX(wires=[0])),
         ]
-        qs = QuantumScript(
-            [qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1]
-        )
+        qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
@@ -706,9 +702,7 @@ class TestAdjointVJP:
             qp.expval(qp.PauliY(wires=[1])),
             qp.expval(qp.PauliX(wires=[0])),
         ]
-        qs = QuantumScript(
-            [qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1]
-        )
+        qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
@@ -790,9 +784,7 @@ class TestAdjointVJP:
         y = np.array(1.221 + 0j)
 
         obs = [qp.state()]
-        qs = QuantumScript(
-            [qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1]
-        )
+        qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)

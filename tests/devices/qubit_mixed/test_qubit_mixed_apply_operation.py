@@ -775,9 +775,7 @@ class TestSnapshot:
             assert math.allclose(debugger.snapshots[tag], expected_value)
         else:
             assert debugger.snapshots[tag].shape == (2,)
-            expected_values = measure(
-                qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True
-            )
+            expected_values = measure(qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True)
             assert math.allclose(debugger.snapshots[tag], expected_values)
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

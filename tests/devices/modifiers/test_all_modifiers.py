@@ -70,9 +70,7 @@ class TestModifierDefaultBeahviour:
         @modifier
         class DummyDev(qp.devices.Device):
 
-            def execute(
-                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
                 return 0.0
 
         assert DummyDev._applied_modifiers == [modifier]
@@ -82,9 +80,7 @@ class TestModifierDefaultBeahviour:
 
             _applied_modifiers = [None]  # some existing value
 
-            def execute(
-                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
                 return 0.0
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -95,9 +91,7 @@ class TestModifierDefaultBeahviour:
         @modifier
         class DummyDev(qp.devices.Device):
 
-            def execute(
-                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
                 return 0.0
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives
