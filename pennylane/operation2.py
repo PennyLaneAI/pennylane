@@ -226,11 +226,11 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         for w in cls.wire_argnames:
             cur_wires = args_dict[w]
             if isinstance(cur_wires, array_types) and cur_wires.shape == ():
-                all_wires.append(jax.numpy.array([cur_wires]))
+                all_wires.append(jax.numpy.array([cur_wires], dtype=int))
             elif isinstance(cur_wires, iterable_wires_types):
-                all_wires.append(jax.numpy.array(cur_wires))
+                all_wires.append(jax.numpy.array(cur_wires, dtype=int))
             else:
-                all_wires.append(jax.numpy.array([cur_wires]))
+                all_wires.append(jax.numpy.array([cur_wires], dtype=int))
 
         static_args = {}
         for s in cls.static_argnames:
