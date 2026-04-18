@@ -372,7 +372,8 @@ def _add_measurement(
     if m.mv is not None:
         return _add_cwire_measurement(m, layer_str, config)
 
-    layer_str = _add_grouping_symbols(m.wires, layer_str, config)
+    if type(m) not in (StateMP, DensityMatrixMP):
+        layer_str = _add_grouping_symbols(m.wires, layer_str, config)
 
     if m.obs is None:
         obs_label = None
