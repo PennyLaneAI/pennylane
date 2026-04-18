@@ -568,6 +568,41 @@ class TestDecompositionGraph:
         solution = graph.solve(num_work_wires=None, minimize_work_wires=True)
         assert solution.decomposition(AnotherOp(0), num_work_wires=None) == _yet_another_decomp
 
+    def test_min_work_wires_unreacheable_rule(self, _):
+        """Tests that unrecheable rules are excluded when computing minimum work wires."""
+
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+            """A simple operation that does not depend on work wires."""
+
+        @qml.register_resources({qml.X: 4})
+        def _simple_decomp(_):
+            raise NotImplementedError
+
+        @qml.register_resources({SimpleOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 1})
+        def _custom_decomp(_):
+            raise NotImplementedError
+
+        # This decomposition rule isn't actually reacheable for the target gate set because it requires `qml.H`, therefore, the minimum number of
+        # work wires required to decompose `AnotherOp` should be 4, not 3
+        @qml.register_resources({CustomOp: 1, qml.H: 4}, work_wires={"zeroed": 2})
+        def _another_decomp(_):
+            raise NotImplementedError
+
+        @qml.register_resources({SimpleOp: 3, qml.CNOT: 4}, work_wires={"zeroed": 4})
+        def _yet_another_decomp(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0)],
+            gate_set={qml.X, qml.CNOT},
+            alt_decomps={
+                SimpleOp: [_simple_decomp],
+                CustomOp: [_custom_decomp],
+                AnotherOp: [_another_decomp, _yet_another_decomp],
+            },
+        )
+        assert graph._min_work_wires == 4
+
 
 @pytest.mark.unit
 @patch(
