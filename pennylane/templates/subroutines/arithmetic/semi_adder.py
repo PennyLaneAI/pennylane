@@ -216,7 +216,9 @@ class SemiAdder(Operation):
 
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
-                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+                raise ValueError(
+                    f"At least {len(y_wires)-1} work_wires should be provided, got {len(work_wires)}"
+                )
             if work_wires.intersection(x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if work_wires.intersection(y_wires):

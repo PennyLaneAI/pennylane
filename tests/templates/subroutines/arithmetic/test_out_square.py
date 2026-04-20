@@ -15,6 +15,8 @@
 Tests for the OutSquare template.
 """
 
+from itertools import product
+
 import pytest
 
 import pennylane as qml
@@ -35,42 +37,91 @@ def test_standard_validity_out_square(zeroed_output_wires):
     qml.ops.functions.assert_valid(op)
 
 
+def _test_square_correctness(all_wires, rule, seed, zeroed_output_wires, use_jit):
+    """Test the correctness of a decomposition rule for ``OutSquare``."""
+    if use_jit:
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+    x_wires, output_wires, work_wires = all_wires
+
+    dev = qml.device("lightning.qubit")
+
+    @qml.set_shots(10)
+    @qml.qnode(dev)
+    def circuit(x, b):
+        qml.BasisEmbedding(x, wires=x_wires)
+        qml.BasisEmbedding(b, wires=output_wires)
+        rule(x_wires, output_wires, work_wires, zeroed_output_wires)
+        return (
+            qml.sample(wires=x_wires),
+            qml.sample(wires=output_wires),
+            qml.sample(wires=(work_wires or None)),
+        )
+
+    if use_jit:
+        circuit = jax.jit(circuit)
+
+    mod = 2 ** len(output_wires)
+    rng = np.random.default_rng(seed)
+    num_x = 2 ** len(x_wires)
+    xs = rng.choice(num_x, size=min(num_x, 5))
+    if zeroed_output_wires:
+        bs = [0]
+    else:
+        bs = [0, mod // 2 + 1, mod - 1]
+
+    for x, b in product(xs, bs):
+        output = circuit(x, b)
+        assert len(output) == 3
+        out_ints = [int("".join(map(str, out[0])), 2) for out in output]
+        expected = [int(x), int((b + x**2) % mod), 0]
+
+        n = len(x_wires)
+        tmp_exp_out = ((2 * x**2 + 2 ** (2 * n) - (2**n - x) - 2 * x * 2**n) // 2) % mod
+        tmp_exp_out = ((2 * x**2 - 2 * x * 2**n) // 2) % mod
+        print(f"{tmp_exp_out=}")
+        if len(work_wires) > 0:
+            assert (
+                out_ints == expected
+            ), f"{(out_ints[1], tmp_exp_out)}\n{out_ints}\n{expected} ({b=})"
+        else:
+            # Skip work wire check
+            assert out_ints[:-1] == expected[:-1], f"\n{out_ints[:-1]}\n{expected[:-1]} ({b=})"
+
+
 class TestOutSquare:
     """Test the OutSquare template."""
 
     @pytest.mark.parametrize("zeroed_output_wires", [False, True])
     @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "work_wires", "x_values"),
+        ("x_wires", "output_wires", "work_wires"),
         [
             (
                 [0, 1],
                 [3, 4, 5],
                 [6, 7, 8],
-                [0, 1, 2, 3],
             ),
             (
                 [0, 1, 2],
                 [3, 4, 5, 6, 7],
                 [8, 9, 10, 11, 12],
-                [0, 1, 3, 4, 5],
             ),
             (
                 [0, 1, 2],
                 [3, 4, 5, 6, 7, 8, 9],
                 [10, 11, 12, 13, 14, 15, 16],
-                [0, 1, 3, 6],
             ),
             (
                 [0, 1, 2, 3],
                 [4, 5, 6, 7, 8],
                 [9, 10, 11, 12, 13],
-                [0, 2, 5, 9, 13],
             ),
             (
                 [0, 1, 2, 3],
                 [4, 5, 6, 7],
                 [9, 10, 11, 12, 13],
-                [0, 2, 5, 9, 13],
             ),
         ],
     )
@@ -80,43 +131,15 @@ class TestOutSquare:
         x_wires,
         output_wires,
         work_wires,
-        x_values,
         zeroed_output_wires,
         use_jit,
+        seed,
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutSquare template output."""
-        if use_jit:
-            import jax
-
-            jax.config.update("jax_enable_x64", True)
-
-        dev = qml.device("lightning.qubit")
-
-        mod = 2 ** len(output_wires)
-        if zeroed_output_wires:
-            z = 0
-        else:
-            z = mod - 2  # Some number close to causing overflows
-
-        @qml.set_shots(1)
-        @qml.qnode(dev)
-        def circuit(x, z):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(z, wires=output_wires)
-            OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
-            return (
-                qml.sample(wires=x_wires),
-                qml.sample(wires=output_wires),
-                qml.sample(wires=work_wires),
-            )
-
-        if use_jit:
-            circuit = jax.jit(circuit)
-
-        for x in x_values:
-            output = circuit(x, z)
-            out_ints = [int("".join(map(str, out[0])), 2) for out in output]
-            assert np.allclose(out_ints, [x, (z + x**2) % mod, 0])
+        all_wires = (x_wires, output_wires, work_wires)
+        _test_square_correctness(
+            all_wires, OutSquare.compute_decomposition, seed, zeroed_output_wires, use_jit
+        )
 
     @pytest.mark.catalyst
     @pytest.mark.external
@@ -124,10 +147,6 @@ class TestOutSquare:
     @pytest.mark.parametrize("zeroed_output_wires", [False, True])
     def test_qjit_dynamic_wires(self, zeroed_output_wires):
         """Test the OutSquare template with dynamic wires."""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-
         x_wires = np.array([0, 1, 2, 3])
         output_wires = np.array([4, 5, 6, 7, 8])
         work_wires = np.array([9, 10, 11, 12, 13, 14, 15])
@@ -265,20 +284,43 @@ class TestOutSquare:
         assert decomp == expected
 
     @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "work_wires", "zeroed_output_wires"),
+        ("x_wires", "output_wires", "work_wires", "zeroed_output_wires", "applicable_rules"),
         [
-            ([0, 1, 2], [3, 5], [9, 10], False),
-            ([0, 1, 2], [3, 5], [9, 10], True),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12], False),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True),
-            ([0, 1, 2], [3, 4, 5, 6], [9, 10, 11, 12], False),
-            ([0, 1, 2], [3, 4, 5, 6], [9, 10, 11, 12], True),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], True, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [0, 1]),
+            ([0, 1], [3, 5], [9, 10], True, [0]),
+            ([0, 1], [3, 5], [9, 10], False, [0]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 1]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], False, [0, 1]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True, [0]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [0]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [0, 1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11], True, [0]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [0]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
         ],
     )
+    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
     def test_decomposition_new(
-        self, x_wires, output_wires, work_wires, zeroed_output_wires
+        self,
+        x_wires,
+        output_wires,
+        work_wires,
+        zeroed_output_wires,
+        applicable_rules,
+        use_jit,
+        seed,
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
-        for rule in qml.list_decomps(OutSquare):
+        for j, rule in enumerate(qml.list_decomps(OutSquare)):
+            applicable = rule.is_applicable(**op.resource_params)
+            assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+            if applicable:
+                all_wires = (x_wires, output_wires, work_wires)
+                _test_square_correctness(all_wires, rule, seed, zeroed_output_wires, use_jit)
