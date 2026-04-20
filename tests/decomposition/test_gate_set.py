@@ -117,11 +117,20 @@ class TestGateSet:
         gates = list(gate_set)
         assert gates == ["RX", "RY", "CNOT"]
 
+    def test_gate_set_str(self):
+        """Tests the __str__ of gate sets."""
+
+        gate_set = GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: 2})
+        assert str(gate_set) == "{RX, RY, CNOT}"
+
+        gate_set.name = "ROTATIONS_PLUS_CNOT"
+        assert str(gate_set) == "ROTATIONS_PLUS_CNOT"
+
     def test_gate_set_repr(self):
         """Tests the __repr__ of gate sets."""
 
         gate_set = GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: 2})
-        assert repr(gate_set) == "{RX, RY, CNOT}"
+        assert repr(gate_set) == "GateSet({RX, RY, CNOT})"
 
         gate_set.name = "ROTATIONS_PLUS_CNOT"
-        assert repr(gate_set) == "ROTATIONS_PLUS_CNOT"
+        assert repr(gate_set) == "GateSet({RX, RY, CNOT}, name='ROTATIONS_PLUS_CNOT')"

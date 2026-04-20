@@ -351,7 +351,7 @@ class DefaultClifford(Device):
         >>> circuit(basis_states[0])
         array(0.5)
         >>> circuit(basis_states[1])
-        array(0.)        
+        array(0.)
         >>> circuit(basis_states[2])
         array(0.)
 
