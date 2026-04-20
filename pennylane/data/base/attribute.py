@@ -39,7 +39,7 @@ class AttributeInfo(MutableMapping):
             or numpy array
     """
 
-    attrs_namespace: ClassVar[str] = "qml.data"
+    attrs_namespace: ClassVar[str] = "qp.data"
     attrs_bind: MutableMapping[str, Any]
     """The HDF5 attrs dict that this instance is bound to,
         or any mutable mapping
@@ -94,10 +94,10 @@ class AttributeInfo(MutableMapping):
         self["doc"] = doc
 
     def __len__(self) -> int:
-        return self.attrs_bind.get("qml.__data_len__", 0)
+        return self.attrs_bind.get("qp.__data_len__", 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind["qml.__data_len__"] = len(self) + inc
+        self.attrs_bind["qp.__data_len__"] = len(self) + inc
 
     def __setitem__(self, __name: str, __value: Any):
         key = self.bind_key(__name)
@@ -413,12 +413,12 @@ def attribute(val: T, doc: str | None = None, **kwargs: Any) -> DatasetAttribute
 
     **Example**
 
-    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
-    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
-    >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
+    >>> hamiltonian = qp.Hamiltonian([1., 1.], [qp.Z(0), qp.Z(1)])
+    >>> eigvals, eigvecs = np.linalg.eigh(qp.matrix(hamiltonian))
+    >>> dataset = qp.data.Dataset(hamiltonian = qp.data.attribute(
     ...     hamiltonian,
     ...     doc="The hamiltonian of the system"))
-    >>> dataset.eigen = qml.data.attribute(
+    >>> dataset.eigen = qp.data.attribute(
     ...     {"eigvals": eigvals, "eigvecs": eigvecs},
     ...     doc="Eigenvalues and eigenvectors of the hamiltonian")
 
