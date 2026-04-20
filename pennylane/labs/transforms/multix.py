@@ -107,33 +107,72 @@ class MultiX(qp.operation.Operator):
 
     .. code-block:: python
 
+        n = 4
+        control = list(range(n))
+        wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n, 3 * n -1))
+
+        all_wires = control + wires + work_wires
+
+        @qp.qjit(capture=False)
         @qp.transforms.decompose(
             gate_set={
-                "TemporaryAND": 1,
-                "Adjoint(TemporaryAND)": 1,
-                "CNOT": 1,
-                "Toffoli": 10000,
-            },
-            num_work_wires=4,
+                "StatePrep",
+                "TemporaryAND",
+                "Adjoint(TemporaryAND)",
+                "CNOT",
+            }
         )
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("null.qubit", wires=all_wires))
+        def qnode():
+            qp.ctrl(MultiX(wires), control=control, work_wires=work_wires)
+            return qp.state()
+
+
+    >>> print(qp.draw(qnode)())
+     0: ─╭●────────────────────────────●╮─┤  State
+     1: ─├●────────────────────────────●┤─┤  State
+     2: ─│──╭●─────────────────────●╮───│─┤  State
+     3: ─│──│──╭●──────────────●╮───│───│─┤  State
+     4: ─│──│──│──╭X────────────│───│───│─┤  State
+     5: ─│──│──│──│──╭X─────────│───│───│─┤  State
+     6: ─│──│──│──│──│──╭X──────│───│───│─┤  State
+     7: ─│──│──│──│──│──│──╭X───│───│───│─┤  State
+     8: ─╰⊕─├●─│──│──│──│──│────│──●┤──⊕╯─┤  State
+     9: ────╰⊕─├●─│──│──│──│───●┤──⊕╯─────┤  State
+    10: ───────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────────┤  State
+
+    In the previous example, we explicitly provided the required ``work_wires``, but we can also let
+    the decompose transform automatically assign the necessary amount of additional work wires.
+
+    .. code-block:: python
+
+        @qp.transforms.decompose(
+            gate_set={
+                "TemporaryAND",
+                "Adjoint(TemporaryAND)",
+                "CNOT",
+            },
+            num_work_wires=n-1,
+        )
+        @qp.qnode(qp.device("default.qubit", wires=all_wires))
         def circuit_with_work():
             qp.ctrl(MultiX(wires), control=control)
             return qp.state()
 
 
     >>> print(qp.draw(circuit_with_work)())
-    <DynamicWire>: ─╭Allocate─╭⊕─╭●─────────────────────●╮──⊕╮─╭Deallocate─┤  State
-    <DynamicWire>: ─├Allocate─│──├⊕─╭●──────────────●╮──⊕┤───│─├Deallocate─┤  State
-    <DynamicWire>: ─╰Allocate─│──│──├⊕─╭●─╭●─╭●─╭●──⊕┤───│───│─╰Deallocate─┤  State
-               c0: ───────────├●─│──│──│──│──│──│────│───│──●┤─────────────┤  State
-               c1: ───────────╰●─│──│──│──│──│──│────│───│──●╯─────────────┤  State
-               c2: ──────────────╰●─│──│──│──│──│────│──●╯─────────────────┤  State
-               c3: ─────────────────╰●─│──│──│──│───●╯─────────────────────┤  State
-                0: ────────────────────╰X─│──│──│──────────────────────────┤  State
-                1: ───────────────────────╰X─│──│──────────────────────────┤  State
-                2: ──────────────────────────╰X─│──────────────────────────┤  State
-                3: ─────────────────────────────╰X─────────────────────────┤  State
+                0: ───────────╭●────────────────────────────●╮─────────────┤  State
+                1: ───────────├●────────────────────────────●┤─────────────┤  State
+                2: ───────────│──╭●─────────────────────●╮───│─────────────┤  State
+                3: ───────────│──│──╭●──────────────●╮───│───│─────────────┤  State
+                4: ───────────│──│──│──╭X────────────│───│───│─────────────┤  State
+                5: ───────────│──│──│──│──╭X─────────│───│───│─────────────┤  State
+                6: ───────────│──│──│──│──│──╭X──────│───│───│─────────────┤  State
+                7: ───────────│──│──│──│──│──│──╭X───│───│───│─────────────┤  State
+    <DynamicWire>: ─╭Allocate─╰⊕─├●─│──│──│──│──│────│──●┤──⊕╯─╭Deallocate─┤  State
+    <DynamicWire>: ─├Allocate────╰⊕─├●─│──│──│──│───●┤──⊕╯─────├Deallocate─┤  State
+    <DynamicWire>: ─╰Allocate───────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────────╰Deallocate─┤  State
     """
 
     num_params = 0
