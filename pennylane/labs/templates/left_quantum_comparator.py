@@ -187,7 +187,9 @@ class LeftQuantumComparator(Operation):
         """
 
         with AnnotatedQueue() as q:
-            _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
+            _left_quantum_comparator(
+                x_wires, y_wires, target_wire, work_wires, comparator=comparator
+            )
 
         if QueuingManager.recording():
             for o in q.queue:
@@ -218,20 +220,10 @@ def _left_quantum_comparator(
     x_wires = x_wires[::-1]
     y_wires = y_wires[::-1]
 
-    @cond(math.logical_or(comparator == "<", comparator == ">="))
-    def _swap(x_wires, y_wires):
-        return y_wires, x_wires
-
-    @_swap.otherwise
-    def _swap(x_wires, y_wires):
-        return x_wires, y_wires
-
-    x_wires, y_wires = _swap(x_wires, y_wires)
-
-    def _negate_output():
-        X(wires=target_wire)
-
-    cond(math.logical_or(comparator == "<=", comparator == ">="), _negate_output)()
+    if comparator in ("<", ">="):
+        x_wires, y_wires = y_wires, x_wires
+    if comparator in ("<=", ">="):
+        X(target_wire)
 
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
