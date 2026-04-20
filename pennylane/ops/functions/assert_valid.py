@@ -223,11 +223,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
         op_matrix = op.matrix(wire_order=all_wires)
         decomp_matrix = qml.matrix(tape, wire_order=all_wires)
-        assert qml.math.allclose(op_matrix, decomp_matrix), (
-            op_matrix,
-            decomp_matrix,
-            "decomposition must produce the same matrix as the operator.",
-        )
+        assert qml.math.allclose(
+            op_matrix, decomp_matrix
+        ), "decomposition must produce the same matrix as the operator."
 
 
 def _check_matrix(op):
