@@ -34,15 +34,16 @@ class LeftQuantumComparator(Operation):
 
         \text{LeftQuantumComparator}(comparator) |x\rangle |y\rangle |0\rangle =
         \begin{cases}
-        |x\rangle |y\rangle |x < y\rangle & \text{if } comparator = '<' \\
-        |x\rangle |y\rangle |x \leq y\rangle & \text{if } comparator = '<=' \\
-        |x\rangle |y\rangle |x \geq y\rangle & \text{if } comparator = '>=' \\
-        |x\rangle |y\rangle |x > y\rangle & \text{if } comparator = '>'
+        |x\rangle |y\rangle |x < y\rangle  \\
+        |x\rangle |y\rangle |x \leq y\rangle \\
+        |x\rangle |y\rangle |x \geq y\rangle \\
+        |x\rangle |y\rangle |x > y\rangle
         \end{cases}
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
     of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires
-    and in order to clean them, we must apply the adjoint of this operator after using the target qubit.
+    and in order to clean them, we must apply the adjoint of this operator via ``Adjoint(LeftQuantumComparator)``
+    after using the target qubit, as shown in the example below.
 
     Args:
             x_wires (WiresLike): The wires that store the integer :math:`x`.
@@ -64,20 +65,21 @@ class LeftQuantumComparator(Operation):
 
         dev = qp.device("lightning.qubit")
 
-        @qp.qjit
         @qp.qnode(dev, shots=1)
-        def circuit(a, b):
+        def circuit(a, comparator, b):
 
-            comparator = ">="
             qp.BasisState(a, wires=[0, 3, 6, 9])
             qp.BasisState(b, wires=[1, 4, 7, 10])
             LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], comparator)
-            return qp.sample(wires=[11])
+            qp.CNOT(wires=[11,12])
+            qp.adjoint(LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], comparator))
+
+            return qp.sample(wires=[12])
 
     .. code-block:: pycon
 
-        >>> output = circuit(3, 2)
-        >>> print(bool(output)) # 3 >= 2
+        output = circuit(3, ">=", 2)
+        print(bool(output))
         True
 
     """
