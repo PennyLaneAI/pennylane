@@ -116,7 +116,7 @@ class AttributeInfo(MutableMapping):
         except KeyError:
             pass
 
-        suffix = f".{__name}"
+        suffix = f".data.{__name}"
         if (
             match := next((v for k, v in self.attrs_bind.items() if k.endswith(suffix)), None)
         ) is not None:
