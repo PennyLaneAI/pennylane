@@ -205,7 +205,7 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
         elif isinstance(lvl, int):
             if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
-                    "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, "
+                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
                     f"got {lvl}."
                 )
         else:
@@ -711,7 +711,7 @@ def specs(
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
-        >>> print(qml.specs(circuit, level="user")(1.23).resources)
+        >>> print(qp.specs(circuit, level="user")(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
