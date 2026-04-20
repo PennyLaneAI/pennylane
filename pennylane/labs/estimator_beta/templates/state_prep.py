@@ -20,8 +20,10 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
+from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ, too-many-arguments
@@ -247,25 +249,22 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane as qp
     >>> import pennylane.labs.estimator_beta as qre
-    >>> num_coeffs = 100
-    >>> condensed_state = qre.QROMStatePreparation(num_state_qubits = qp.math.ceil_log2(num_coeffs))
-    >>> sos_state = qre.ResourceSumOfSlatersPrep(num_coeffs=num_coeffs, num_wires=8, stateprep_op = condensed_state)
+    >>> sos_state = qre.ResourceSumOfSlatersPrep(num_coeffs=100, num_wires=10s)
     >>> print(qre.estimate(sos_state))
     --- Resources: ---
-     Total wires: 71
-       algorithmic wires: 8
-       allocated wires: 63
-         zero state: 63
+     Total wires: 32
+       algorithmic wires: 10
+       allocated wires: 22
+         zero state: 22
          any state: 0
-     Total gates : 2.558E+4
-       'Toffoli': 3.315E+3,
-       'CNOT': 1.016E+4,
-       'X': 2.377E+3,
-       'Z': 32,
-       'S': 64,
-       'Hadamard': 9.636E+3
+     Total gates : 2.877E+4
+       'Toffoli': 949,
+       'T': 2.231E+4,
+       'CNOT': 1.888E+3,
+       'X': 1.107E+3,
+       'Hadamard': 2.520E+3
+
     """
 
     resource_keys = {"num_coeffs", "num_wires", "stateprep_cmpr_op", "select_swap_depth"}
@@ -278,6 +277,8 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
+
+        _dequeue(stateprep_op)
         self.num_coeffs = num_coeffs
         self.num_wires = num_wires
         self.stateprep_cmpr_op = stateprep_op.resource_rep_from_op() if stateprep_op else None
@@ -363,6 +364,8 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         # Step 1: Prepare the condensed state
         condensed_state_qubits = int(np.ceil(np.log2(num_coeffs)))
+
+        gate_list.append(Allocate(condensed_state_qubits))  # enumeration register d
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
                 ResourceMottonenStatePreparation, {"num_wires": condensed_state_qubits}
@@ -384,22 +387,34 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         gate_list.append(GateCount(qrom, 1))
 
-        # Steps 3-4 and 6: Use controlled rotations to prepare the state and uncompute
+        m_max = 2 * condensed_state_qubits - 1
+        r_worst = min(num_coeffs - 1, num_wires)
+
+        identity_encoding = False
+        if r_worst <= m_max:
+            identity_encoding = True
+
+        m = min(r_worst, m_max)
+
+        # Steps 3-4 and 6: Encode/uncompute the identification register using multi-controlled Toffoli and CNOT gates
         # Taking the upper-bound
-        cnot = resource_rep(qre.CNOT)
-        gate_list.append(GateCount(cnot, 2 * num_wires * (2 * condensed_state_qubits - 1)))
+        if not identity_encoding:
+            gate_list.append(Allocate(m))  # identification register
+            cnot = resource_rep(qre.CNOT)
+            gate_list.append(GateCount(cnot, 2 * num_wires * m))
 
         # Step 5: Use identification register to uncompute the enumeration register
         # Taking the upper-bound
 
         x = resource_rep(qre.X)
-        gate_list.append(GateCount(x, num_coeffs * (2 * condensed_state_qubits - 1)))
+        gate_list.append(GateCount(x, num_coeffs * m))
 
-        num_ctrl_wires = 2 * condensed_state_qubits - 1
-        mcx = resource_rep(
-            qre.MultiControlledX, {"num_ctrl_wires": num_ctrl_wires, "num_zero_ctrl": 0}
-        )
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": m, "num_zero_ctrl": 0})
         num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))
+
+        if not identity_encoding:
+            gate_list.append(Deallocate(m))  # deallocate identification register
+        gate_list.append(Deallocate(condensed_state_qubits))  # deallocate enumeration register
 
         return gate_list

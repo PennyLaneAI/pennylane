@@ -14,6 +14,7 @@
 """
 Tests for the state preparation subroutines resource operators.
 """
+
 import pytest
 
 import pennylane.labs.estimator_beta as qre
@@ -129,6 +130,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
+                    qre.Allocate(6),
                     GateCount(
                         resource_rep(qre.ResourceMottonenStatePreparation, {"num_wires": 6}), 1
                     ),
@@ -144,6 +146,7 @@ class TestSumOfSlatersPrep:
                         ),
                         1,
                     ),
+                    qre.Allocate(11),
                     GateCount(resource_rep(qre.CNOT), 352),
                     GateCount(resource_rep(qre.X), 440),
                     GateCount(
@@ -152,6 +155,8 @@ class TestSumOfSlatersPrep:
                         ),
                         39,
                     ),
+                    qre.Deallocate(11),
+                    qre.Deallocate(6),
                 ],
             ),
             (
@@ -160,6 +165,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
+                    qre.Allocate(6),
                     GateCount(
                         resource_rep(qre.ResourceMottonenStatePreparation, {"num_wires": 6}), 1
                     ),
@@ -175,6 +181,7 @@ class TestSumOfSlatersPrep:
                         ),
                         1,
                     ),
+                    qre.Allocate(11),
                     GateCount(resource_rep(qre.CNOT), 440),
                     GateCount(resource_rep(qre.X), 616),
                     GateCount(
@@ -183,6 +190,8 @@ class TestSumOfSlatersPrep:
                         ),
                         55,
                     ),
+                    qre.Deallocate(11),
+                    qre.Deallocate(6),
                 ],
             ),
             (
@@ -191,6 +200,7 @@ class TestSumOfSlatersPrep:
                 resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}),
                 2,
                 [
+                    qre.Allocate(7),
                     GateCount(resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}), 1),
                     GateCount(
                         resource_rep(
@@ -204,14 +214,14 @@ class TestSumOfSlatersPrep:
                         ),
                         1,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 260),
-                    GateCount(resource_rep(qre.X), 1300),
+                    GateCount(resource_rep(qre.X), 1000),
                     GateCount(
                         resource_rep(
-                            qre.MultiControlledX, {"num_ctrl_wires": 13, "num_zero_ctrl": 0}
+                            qre.MultiControlledX, {"num_ctrl_wires": 10, "num_zero_ctrl": 0}
                         ),
                         99,
                     ),
+                    qre.Deallocate(7),
                 ],
             ),
         ],
@@ -220,13 +230,15 @@ class TestSumOfSlatersPrep:
         self, num_coeffs, num_wires, stateprep_op, select_swap_depth, expected_resources
     ):
         """Test that the resources are correct"""
-
-        assert (
-            qre.ResourceSumOfSlatersPrep.resource_decomp(
-                num_coeffs, num_wires, stateprep_op, select_swap_depth
-            )
-            == expected_resources
+        res = qre.ResourceSumOfSlatersPrep.resource_decomp(
+            num_coeffs, num_wires, stateprep_op, select_swap_depth
         )
+
+        for r, e in zip(res, expected_resources):
+            if hasattr(r, "equal"):
+                assert r.equal(e)
+            else:
+                assert r == e
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
