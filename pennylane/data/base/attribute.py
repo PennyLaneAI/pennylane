@@ -111,7 +111,18 @@ class AttributeInfo(MutableMapping):
             self._update_len(1)
 
     def __getitem__(self, __name: str) -> Any:
-        return self.attrs_bind[self.bind_key(__name)]
+        try:
+            return self.attrs_bind[self.bind_key(__name)]
+        except KeyError:
+            pass
+
+        suffix = f".{__name}"
+        if (
+            match := next((v for k, v in self.attrs_bind.items() if k.endswith(suffix)), None)
+        ) is not None:
+            return match
+
+        raise KeyError(__name)
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if __name in self.__class__.__dict__:
@@ -435,7 +446,7 @@ def get_attribute_type(h5_obj: HDF5) -> type[DatasetAttribute[HDF5, Any, Any]]:
     Returns the ``DatasetAttribute`` of the dataset attribute contained
     in ``h5_obj``.
     """
-    type_id = h5_obj.attrs[AttributeInfo.bind_key("type_id")]
+    type_id = AttributeInfo(h5_obj.attrs)["type_id"]
 
     return DatasetAttribute.registry[type_id]
 
