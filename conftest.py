@@ -23,8 +23,6 @@ import numpy as base_numpy
 import scipy as base_scipy
 import pennylane as qp
 
-qp = qml
-
 try:
     import jax
 except ImportError:
