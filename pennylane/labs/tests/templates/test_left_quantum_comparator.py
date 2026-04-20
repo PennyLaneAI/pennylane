@@ -45,29 +45,18 @@ class TestLeftQuantumComparator:
 
     @pytest.mark.catalyst
     @pytest.mark.external
+    @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y", "comparator", "expected"),
+        ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y"),
         [
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, "<", False),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, "<=", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, ">=", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, ">", False),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, "<", False),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, "<=", False),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, ">=", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1, ">", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, "<", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, "<=", True),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, ">=", False),
-            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2, ">", False),
-            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, "<", True),
-            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, "<=", True),
-            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, ">=", False),
-            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5, ">", False),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 2, 1),
+            ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 2),
+            ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, target_wire, work_wires, x, y, comparator, expected
+        self, comparator, x_wires, y_wires, target_wire, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the LeftComparator template output."""
 
@@ -85,6 +74,7 @@ class TestLeftQuantumComparator:
             )()
             return qp.sample(wires=[12])
 
+        expected = {"<": x < y, "<=": x <= y, ">": x > y, ">=": x >= y}[comparator]
         assert bool(circuit()) == expected
 
     @pytest.mark.parametrize(
