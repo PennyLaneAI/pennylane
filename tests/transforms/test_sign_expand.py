@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains unit tests for the ``sign_expand`` transform."""
+
 import numpy as np
 import pytest
 

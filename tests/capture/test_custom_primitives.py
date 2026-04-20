@@ -14,6 +14,7 @@
 """
 Unit tests for PennyLane custom primitives.
 """
+
 # pylint: disable=wrong-import-position
 import pytest
 

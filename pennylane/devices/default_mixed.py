@@ -18,6 +18,7 @@ It implements some built-in qubit :doc:`operations </introduction/operations>`,
 providing a simple mixed-state simulation of qubit-based quantum circuits.
 
 """
+
 import logging
 import warnings
 from collections.abc import Callable, Sequence

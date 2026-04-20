@@ -14,6 +14,7 @@
 """
 Tests for CollectOpsandMeas and plxpr_to_tape
 """
+
 from functools import partial
 
 import pytest

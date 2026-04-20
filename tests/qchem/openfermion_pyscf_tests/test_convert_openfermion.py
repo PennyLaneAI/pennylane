@@ -15,6 +15,7 @@
 Unit tests for functions needed for converting objects obtained from external libraries to a
 PennyLane object.
 """
+
 # pylint: disable=too-many-arguments,protected-access
 import sys
 

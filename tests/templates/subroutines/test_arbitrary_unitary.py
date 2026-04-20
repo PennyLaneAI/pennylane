@@ -14,6 +14,7 @@
 """
 Tests for the ArbitraryUnitary template.
 """
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods

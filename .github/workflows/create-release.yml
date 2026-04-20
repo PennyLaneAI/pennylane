@@ -14,11 +14,10 @@ on:
         description: 'The release notes to use for the GitHub release. "New features since last release..."'
         required: true
         type: string
-      bump_catalyst_lightning:
-        description: 'Whether to bump catalyst and lightning versions in the RC branch. Check box to enable.'
-        required: false
-        type: boolean
-        default: true
+
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   bump_rc_branch:
     name: Update catalyst and lightning in RC branch
@@ -28,6 +27,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
+          ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
@@ -44,15 +44,10 @@ jobs:
         run: |
           uv pip install setuptools wheel twine
 
-      - name: Create PR to bump Catalyst and Lightning versions
-        if: ${{ inputs.bump_catalyst_lightning == true }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+      - name: Change Catalyst, Lightning, and/or Pennylane versions
         run: |
-          bump_branch="bump-lightning-catalyst-$(date +'%Y-%m-%d-%H-%M-%S')"
-          git checkout -b $bump_branch 
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
+          git config --global user.name "ringo-but-quantum"
+          git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
 
           lightning_version=$(python -m pip index versions pennylane-lightning 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
           catalyst_version=$(python -m pip index versions pennylane-catalyst 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
@@ -65,21 +60,21 @@ jobs:
 
           sed -i -E "s/pennylane-lightning>=[0-9.]*/pennylane-lightning>=${lightning_major_minor}/" "pyproject.toml" # Update pyproject.toml
           sed -i -E "s/PL_CATALYST_MIN_VERSION = Version\(\"[0-9.]*\"\)/PL_CATALYST_MIN_VERSION = Version(\"${catalyst_version}\")/" "pennylane/compiler/compiler.py" 
+          sed -i -E "s/[0-9]+\.[0-9]+\.[0-9]+[-A-Za-z0-9]+/${{ inputs.release_version }}/" pennylane/_version.py
 
-          echo "Pushing changes and creating PR..."
-          git add pyproject.toml pennylane/compiler/compiler.py
-          git commit -m "Bump minimum Lightning and Catalyst versions to ${lightning_version} and ${catalyst_version}"
+          echo "Pushing changes..."
+          git add pyproject.toml pennylane/compiler/compiler.py pennylane/_version.py
+          git commit --allow-empty -m "Bump minimum Lightning, Catalyst, and Pennylane versions to ${lightning_version}, ${catalyst_version}, and ${{ inputs.release_version }}"
         
-          git push origin $bump_branch
-          gh pr create --base ${{ inputs.release_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
-          gh pr merge --squash
+          git push 
 
   create_release:
     name: Create the release
     runs-on: ubuntu-latest
     needs: [bump_rc_branch]
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_NOTES: ${{ inputs.release_notes }}
     steps:
       - name: Checkout PennyLane repo
         uses: actions/checkout@v6
@@ -95,12 +90,12 @@ jobs:
 
       - name: Create Release
         run: |
-          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
+          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "$RELEASE_NOTES" --draft
 
   merge-rc-pr:
     name: Create PR to merge RC branch into main
     runs-on: ubuntu-latest
-    needs: [create_release]
+    needs: [create_release,bump_rc_branch]
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -119,4 +114,9 @@ jobs:
 
       - name: Merge RC branch into main
         run: |
-          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head ${{ inputs.release_branch }}
+          git checkout -b merge-${{ inputs.release_branch }}-to-main
+          git fetch origin --quiet
+          git checkout origin/main -- pennylane/_version.py
+          git commit -am "[no ci] Bump version in in rc after release"
+          git push origin merge-${{ inputs.release_branch }}-to-main
+          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head merge-${{ inputs.release_branch }}-to-main

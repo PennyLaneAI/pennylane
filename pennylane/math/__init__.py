@@ -32,6 +32,7 @@ The following frameworks are currently supported:
 * JAX
 
 """
+
 import autoray as ar
 
 from .binary_linalg import (

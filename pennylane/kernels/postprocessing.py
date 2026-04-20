@@ -14,6 +14,7 @@
 """
 This file contains functionalities for postprocessing of kernel matrices.
 """
+
 import numpy as np
 
 

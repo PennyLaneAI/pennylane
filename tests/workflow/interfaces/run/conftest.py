@@ -14,6 +14,7 @@
 """
 Pytest configuration file for the test files in tests/workflow/interfaces/run.
 """
+
 from dataclasses import replace
 
 from param_shift_dev import ParamShiftDerivativesDevice

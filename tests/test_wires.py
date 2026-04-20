@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
+
 from importlib import import_module, util
 
 import numpy as np

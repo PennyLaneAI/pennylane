@@ -14,6 +14,7 @@
 """
 Unit tests for the ParticleConservingU1 template.
 """
+
 from functools import partial
 
 import numpy as np

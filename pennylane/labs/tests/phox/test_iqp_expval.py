@@ -14,6 +14,7 @@
 """
 Tests for the IQP expectation value calculator.
 """
+
 import numpy as np
 import pytest
 
@@ -72,18 +73,18 @@ def _prepare_pennylane_state(n_qubits, init_state_spec):
 
 
 def _prepare_jax_state(init_state_spec):
-    """Convert spec into JAX (X, P) tuple format."""
+    """Convert spec into JAX state elements (X) and amplitudes (P)."""
     if init_state_spec is None:
-        return None
+        return None, None
 
     is_single_bitstring = isinstance(init_state_spec, list) and (
         not init_state_spec or not isinstance(init_state_spec[0], (list, tuple))
     )
 
     if is_single_bitstring:
-        return (jnp.array([init_state_spec]), jnp.array([1.0]))
+        return jnp.array([init_state_spec]), jnp.array([1.0])
 
-    return (jnp.array(init_state_spec[0]), jnp.array(init_state_spec[1]))
+    return jnp.array(init_state_spec[0]), jnp.array(init_state_spec[1])
 
 
 def _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch_ints, init_state):
@@ -170,7 +171,7 @@ class TestIQPExpval:
         # pylint: disable=too-many-arguments
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
-        jax_state = _prepare_jax_state(init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params, obs_batch, pl_state)
 
@@ -186,7 +187,8 @@ class TestIQPExpval:
             n_samples=n_samples,
             key=key,
             n_qubits=n_qubits,
-            init_state=jax_state,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
         )
         expval_func = build_expval_func(config)
         approx_val, _ = expval_func(params_jax)
@@ -224,7 +226,7 @@ class TestIQPExpval:
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
-        jax_state = _prepare_jax_state(init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
 
@@ -238,7 +240,8 @@ class TestIQPExpval:
             n_samples=n_samples,
             key=key,
             n_qubits=n_qubits,
-            init_state=jax_state,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
         )
         expval_func = build_expval_func(config)
         approx_val, _ = expval_func(np.array(params))
@@ -293,7 +296,9 @@ class TestIQPExpval:
         generators_pl = [[0], [1], [0, 1]]
         params = [0.37, 0.95, 0.73]
         pl_state = [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]
-        jax_state = (jnp.array([[0, 0], [1, 1]]), jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)]))
+
+        jax_state_elems = jnp.array([[0, 0], [1, 1]])
+        jax_state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
         n_qubits = 2
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -327,8 +332,9 @@ class TestIQPExpval:
             n_qubits=n_qubits,
             gates=gates,
             observables=obs_batch,
-            init_state=jax_state,
-            phase_layer=compute_phase,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+            phase_fn=compute_phase,
             n_samples=50000,
             key=jax.random.PRNGKey(42),
         )

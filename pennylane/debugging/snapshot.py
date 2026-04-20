@@ -14,6 +14,7 @@
 """
 This file contains the snapshots function which extracts measurements from the qnode.
 """
+
 import warnings
 from functools import partial
 

@@ -14,6 +14,7 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+
 from functools import singledispatch
 
 import numpy as np

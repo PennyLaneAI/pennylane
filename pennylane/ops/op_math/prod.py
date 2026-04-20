@@ -15,6 +15,7 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+
 import itertools
 from collections import Counter
 from copy import copy

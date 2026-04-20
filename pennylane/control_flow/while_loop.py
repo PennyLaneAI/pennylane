@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """While loop."""
+
 import functools
 from collections.abc import Callable
 from typing import Literal
@@ -26,6 +27,7 @@ from ._loop_abstract_axes import (
     get_dummy_arg,
     handle_jaxpr_error,
     loop_determine_abstracted_axes,
+    promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
 
@@ -40,6 +42,14 @@ def _to_bool_cond_fn(cond_fn):
         return jnp.bool(out)
 
     return _new_cond_fn
+
+
+def _body_consts_extracted_cond(cond_fn):
+    # pylint: disable=unused-argument
+    def new_cond_fn(args, body_consts):
+        return cond_fn(*args)
+
+    return new_cond_fn
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
@@ -237,7 +247,20 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim = QmlPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
+
+    def setup_env(tracers, params):
+        tracer_args = tracers[slice(*params["args_slice"])]
+        env = dict(zip(params["jaxpr_body_fn"].invars, tracer_args, strict=True))
+
+        body_consts = tracers[slice(*params["body_slice"])]
+        env.update(dict(zip(params["jaxpr_body_fn"].constvars, body_consts, strict=True)))
+        return env
+
+    register_custom_staging_rule(
+        while_loop_prim,
+        lambda params: params["jaxpr_body_fn"],
+        setup_env=setup_env,
+    )
 
     @while_loop_prim.def_impl
     def _impl(
@@ -303,14 +326,16 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     def _get_jaxprs(self, init_state, allow_array_resizing):
         import jax  # pylint: disable=import-outside-toplevel
 
-        flat_args, in_tree = jax.tree_util.tree_flatten(init_state)
+        body_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
+
+        flat_args, in_tree = jax.tree_util.tree_flatten((init_state, dynamic_consts))
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
 
-        flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
-        flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+        flat_body_fn = FlatFn(body_consts_extracted, in_tree=in_tree)
+        flat_cond_fn = FlatFn(_body_consts_extracted_cond(self.cond_fn), in_tree=in_tree)
         bool_cond_fn = _to_bool_cond_fn(flat_cond_fn)
 
         if abstracted_axes:  # pragma: no cover
@@ -365,16 +390,20 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        # [0] to slice out the consts extracted by promote_consts_to_inputs
+        return jax.tree_util.tree_unflatten(out_tree, results)[0]
 
     def __call__(self, *init_state):
 
         if active_jit := active_compiler():
+            allow_array_resizing = (
+                False if self.allow_array_resizing == "auto" else self.allow_array_resizing
+            )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
-            return ops_loader.while_loop(
-                self.cond_fn, allow_array_resizing=self.allow_array_resizing
-            )(self.body_fn)(*init_state)
+            return ops_loader.while_loop(self.cond_fn, allow_array_resizing=allow_array_resizing)(
+                self.body_fn
+            )(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

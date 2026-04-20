@@ -27,6 +27,7 @@ This module contains the abstractions for defining subroutines.
     ~subroutine_resource_rep
 
 """
+
 import copy
 from collections import defaultdict
 from collections.abc import Callable

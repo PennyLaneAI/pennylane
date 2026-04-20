@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the same output as the default device."""
+
 import numpy as np
 
 # pylint: disable=no-self-use

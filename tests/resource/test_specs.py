@@ -59,6 +59,9 @@ def test_error_with_bad_key(key):
         ("foo", [2], False),
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
+        ("all", [0, 1, 2, 3, 4, 5, 6], False),
+        ("all-mlir", [4, 5, 6], False),
+        ("user", [6], False),
     ],
 )
 def test_preprocess_levels(level, output, expect_warnings):
@@ -106,13 +109,17 @@ def test_preprocess_levels_all(num_tapes, expected):
 
 
 def test_preprocess_levels_invalid():
-    with pytest.raises(
-        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
-    ):
-        _preprocess_level_input(-1, {}, [], 0)
+    with pytest.raises(ValueError, match="out of bounds"):
+        _preprocess_level_input(-10, {}, 5, 0)
+
+    with pytest.raises(ValueError, match="out of bounds"):
+        _preprocess_level_input(10, {}, 5, 0)
+
+    with pytest.raises(ValueError, match="Invalid level"):
+        _preprocess_level_input([1, 2, 3.14], {}, 5, 0)
 
     with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        _preprocess_level_input("foo", {}, [], 0)
+        _preprocess_level_input("foo", {}, 5, 0)
 
 
 def test_get_last_tape_transform_level():
@@ -483,9 +490,7 @@ class TestSpecsTransform:
             ],
         }
 
-        assert (
-            str(specs_output)
-            == """Device: default.qubit
+        assert str(specs_output) == """Device: default.qubit
 Device wires: None
 Shots: Shots(total=None)
 Level: 2
@@ -525,7 +530,6 @@ Batched tape c:
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Depth: 5"""
-        )
 
     @pytest.mark.parametrize(
         "device,num_wires",
