@@ -314,7 +314,7 @@ class TestCatalyst:
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_ctrl_work_wire_type_preserved_in_qjit(self, work_wire_type):
-        """Test that ``work_wire_type`` passed to ``qml.ctrl`` is propagated through the Catalyst 
+        """Test that ``work_wire_type`` passed to ``qml.ctrl`` is propagated through the Catalyst
         compiler"""
         x_wires = [1, 2, 3]
         output = [4, 5, 6]
