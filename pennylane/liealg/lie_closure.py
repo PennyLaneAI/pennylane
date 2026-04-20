@@ -252,7 +252,7 @@ def _lie_closure_matrix(
     .. seealso::
 
         For details on the mathematical definitions, see :func:`~lie_closure` and our
-        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qp/demos/tutorial_liealgebra/>`__.
+        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
