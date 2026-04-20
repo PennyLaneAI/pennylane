@@ -53,6 +53,24 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         gates depend on the number of ones in binary representation of the value we are comparing to. There are also `register_size - 1`
         auxiliary qubits that are allocated in the circuit and are deallocated by its adjoint.
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> comparator = qre.OutOfPlaceIntegerComparator(value=11, register_size=4, geq=False)
+    >>> print(qre.estimate(comparator))
+    --- Resources: ---
+     Total wires: 8
+       algorithmic wires: 5
+       allocated wires: 3
+         zero state: 0
+         any state: 3
+     Total gates : 17
+       'Toffoli': 3,
+       'CNOT': 4,
+       'X': 10
+
     """
 
     resource_keys = {"value", "register_size", "geq"}
@@ -238,13 +256,34 @@ class RegisterEquality(ResourceOperator):
         CNOTs, then checks whether all results are zero via a Toffoli
         cascade. The circuit is represented as:
 
-        0: ─╭●──────────┤
-        1: ─│──╭●───────┤
-        2: ─│──│──╭●────┤
-        3: ─╰X─│──│──╭○─┤
-        4: ────╰X─│──├○─┤
-        5: ───────╰X─├○─┤
-        6: ──────────╰X─┤  <Z>
+        .. code-block:: bash
+
+            0: ─╭●──────────┤
+            1: ─│──╭●───────┤
+            2: ─│──│──╭●────┤
+            3: ─╰X─│──│──╭○─┤
+            4: ────╰X─│──├○─┤
+            5: ───────╰X─├○─┤
+            6: ──────────╰X─┤  <Z>
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> comparator = qre.RegisterEquality(register_size=3)
+    >>> print(qre.estimate(comparator))
+    --- Resources: ---
+     Total wires: 8
+       algorithmic wires: 7
+       allocated wires: 1
+         zero state: 1
+         any state: 0
+     Total gates : 12
+       'Toffoli': 2,
+       'CNOT': 4,
+       'X': 3,
+       'Hadamard': 3
 
     """
 
@@ -304,6 +343,8 @@ class RegisterEquality(ResourceOperator):
             The circuit computes the bitwise XOR of the two registers using
             CNOTs, then checks whether all results are zero via a Toffoli
             cascade. The circuit is represented as:
+
+            :code-block:: bash
 
                 0: ─╭●──────────┤
                 1: ─│──╭●───────┤
