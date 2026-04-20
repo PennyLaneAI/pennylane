@@ -494,6 +494,9 @@ The following classes have been ported over:
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
+* The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
+  [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
+  
 * The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
@@ -1023,6 +1026,10 @@ The following classes have been ported over:
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
+  enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
+  [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
 * Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
   can be interpreted.
