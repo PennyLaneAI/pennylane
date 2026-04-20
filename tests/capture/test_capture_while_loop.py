@@ -557,3 +557,22 @@ class TestCaptureWhileLoopDynamicShapes:
 
         jaxpr = jax.make_jaxpr(w, abstracted_axes={0: "a"})(jnp.array([0, 1, 2]))
         assert len(jaxpr.consts) == 0
+
+    def test_closure_var_has_shape_property_that_isnt_a_shape(self):
+        """Test an edge case that a closure variable can have an attribute shape that isn't a tuple of ints.
+
+        Encountered in benchmarking suite.
+        """
+
+        def w():
+            from jax import numpy as local_np  # pylint: disable=import-outside-toplevel
+
+            @qml.while_loop(lambda i: jnp.sum(i) < 3)
+            def f(i):
+                return local_np.add(i, i)
+
+            return f(jnp.array([1, 1]))
+
+        jaxpr = jax.make_jaxpr(w)()
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        assert jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive.name == "add"

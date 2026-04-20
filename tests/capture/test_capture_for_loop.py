@@ -854,6 +854,26 @@ class TestCaptureCircuitsForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    def test_closure_var_has_shape_property_that_isnt_a_shape(self):
+        """Test an edge case that a closure variable can have an attribute shape that isn't a tuple of ints.
+
+        Encountered in benchmarking suite.
+        """
+
+        def w():
+            from jax import numpy as local_np  # pylint: disable=import-outside-toplevel
+
+            # pylint: disable=unused-argument
+            @qml.for_loop(3)
+            def f(i, x):
+                return local_np.add(x, x)
+
+            return f(jnp.array([1, 1]))
+
+        jaxpr = jax.make_jaxpr(w)()
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        assert jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive.name == "add"
+
 
 def test_pytree_inputs():
     """Test that for_loop works with pytree inputs and outputs."""
