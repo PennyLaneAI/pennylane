@@ -14,6 +14,7 @@
 """
 Tests for quantum algorithmic subroutines resource operators.
 """
+
 import pytest
 
 import pennylane.labs.estimator_beta as qre
@@ -84,8 +85,8 @@ class TestOutOfPlaceIntegerComparator:
                 [
                     Allocate(1),
                     GateCount(resource_rep(qre.TemporaryAND), 1),
-                    GateCount(resource_rep(qre.CNOT), 1),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 2),
+                    GateCount(resource_rep(qre.X), 6),
                     GateCount(resource_rep(qre.X), 1),
                 ],
             ),
@@ -96,8 +97,8 @@ class TestOutOfPlaceIntegerComparator:
                 [
                     Allocate(3),
                     GateCount(resource_rep(qre.TemporaryAND), 3),
-                    GateCount(resource_rep(qre.CNOT), 3),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 4),
+                    GateCount(resource_rep(qre.X), 6),
                     GateCount(resource_rep(qre.X), 1),
                 ],
             ),
@@ -109,8 +110,8 @@ class TestOutOfPlaceIntegerComparator:
                 [
                     Allocate(3),
                     GateCount(resource_rep(qre.TemporaryAND), 3),
-                    GateCount(resource_rep(qre.CNOT), 3),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 4),
+                    GateCount(resource_rep(qre.X), 6),
                 ],
             ),
             (
@@ -120,8 +121,8 @@ class TestOutOfPlaceIntegerComparator:
                 [
                     Allocate(1),
                     GateCount(resource_rep(qre.TemporaryAND), 1),
-                    GateCount(resource_rep(qre.CNOT), 1),
-                    GateCount(resource_rep(qre.X), 3),
+                    GateCount(resource_rep(qre.CNOT), 2),
+                    GateCount(resource_rep(qre.X), 2),
                 ],
             ),
         ),
@@ -150,8 +151,8 @@ class TestOutOfPlaceIntegerComparator:
                         resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
                         1,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 1),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 2),
+                    GateCount(resource_rep(qre.X), 6),
                     GateCount(resource_rep(qre.X), 1),
                     Deallocate(1),
                 ],
@@ -165,8 +166,8 @@ class TestOutOfPlaceIntegerComparator:
                         resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
                         3,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 3),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 4),
+                    GateCount(resource_rep(qre.X), 6),
                     GateCount(resource_rep(qre.X), 1),
                     Deallocate(3),
                 ],
@@ -181,8 +182,8 @@ class TestOutOfPlaceIntegerComparator:
                         resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
                         3,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 3),
-                    GateCount(resource_rep(qre.X), 7),
+                    GateCount(resource_rep(qre.CNOT), 4),
+                    GateCount(resource_rep(qre.X), 6),
                     Deallocate(3),
                 ],
             ),
@@ -195,8 +196,8 @@ class TestOutOfPlaceIntegerComparator:
                         resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
                         1,
                     ),
-                    GateCount(resource_rep(qre.CNOT), 1),
-                    GateCount(resource_rep(qre.X), 3),
+                    GateCount(resource_rep(qre.CNOT), 2),
+                    GateCount(resource_rep(qre.X), 2),
                     Deallocate(1),
                 ],
             ),

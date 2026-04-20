@@ -38,11 +38,10 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
     only (0 Toffoli cost).
 
     Args:
-        value (int): The classical integer :math:`L` to compare against.
-        register_size (int): Number of qubits :math:`n` encoding :math:`x`.
-        geq (bool): If True, compute :math:`x \geq L` instead of
-            :math:`x < L`. This adds a single ``X`` gate on the output qubit
-            (0 Toffoli cost). Default ``False``.
+        value (int): The value :math:`L` that the state’s decimal representation is compared against.
+        register_size (int): size of the register for basis state
+        geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+            ``False``, the comparison made will be :math:`n \lt L`.
         wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
@@ -161,7 +160,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), register_size - 1))
 
         gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
-        gate_lst.append(GateCount(resource_rep(qre.X), 4 * (num_ones - 1) + 2 ))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4 * (num_ones - 1) + 2))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -210,8 +209,8 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
                 register_size - 1,
             )
         )
-        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size - 1))
-        gate_lst.append(GateCount(resource_rep(qre.X), 4 * num_ones - 1))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
+        gate_lst.append(GateCount(resource_rep(qre.X), 4 * (num_ones - 1) + 2))
         if geq:
             gate_lst.append(GateCount(resource_rep(qre.X), 1))
 
@@ -239,14 +238,14 @@ class RegisterEquality(ResourceOperator):
         CNOTs, then checks whether all results are zero via a Toffoli
         cascade. The circuit is represented as:
 
-            0: ─╭●────────────────┤
-            1: ─│──╭●─────────────┤
-            2: ─│──│──╭●──────────┤
-            3: ─╰X─│──│───X─╭●────┤
-            4: ────╰X─│───X─├●────┤
-            5: ───────╰X──X─│──╭●─┤
-            6: ─────────────╰⊕─├●─┤
-            7: ────────────────╰⊕─┤
+            0: ─╭●──────────┤
+            1: ─│──╭●───────┤
+            2: ─│──│──╭●────┤
+            3: ─╰X─│──│──╭○─┤
+            4: ────╰X─│──├○─┤
+            5: ───────╰X─├○─┤
+            6: ──────────├○─┤
+            7: ──────────╰X─┤  <Z>
 
     """
 
@@ -307,14 +306,16 @@ class RegisterEquality(ResourceOperator):
             CNOTs, then checks whether all results are zero via a Toffoli
             cascade. The circuit is represented as:
 
-                0: ─╭●────────────────┤
-                1: ─│──╭●─────────────┤
-                2: ─│──│──╭●──────────┤
-                3: ─╰X─│──│───X─╭●────┤
-                4: ────╰X─│───X─├●────┤
-                5: ───────╰X──X─│──╭●─┤
-                6: ─────────────╰⊕─├●─┤
-                7: ────────────────╰⊕─┤
+                0: ─╭●──────────┤
+                1: ─│──╭●───────┤
+                2: ─│──│──╭●────┤
+                3: ─╰X─│──│──╭○─┤
+                4: ────╰X─│──├○─┤
+                5: ───────╰X─├○─┤
+                6: ──────────├○─┤
+                7: ──────────╰X─┤  <Z>
+
+            Note that the state of the second register is not preserved after this operation and it needs to be uncomputed if it is needed later in the circuit.
 
         Returns:
             list[GateCount]: A list of gate counts representing the resources of the operator.
