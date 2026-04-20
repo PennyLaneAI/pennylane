@@ -76,6 +76,14 @@ def _add_abstract_shapes(f):
     return new_f
 
 
+def _to_bool_if_not(arg):
+    from jax import numpy as jnp  # pylint: disable=import-outside-toplevel
+
+    if getattr(arg, "dtype", None) == jnp.bool:
+        return arg
+    return jnp.bool(arg)
+
+
 def _is_operator_type(fn):
     return isinstance(fn, type) and issubclass(fn, Operator)
 
@@ -316,7 +324,7 @@ class CondCallable:
         for pred, fn in branches:
             if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
-            conditions.append(pred)
+            conditions.append(_to_bool_if_not(pred))
             if fn is None:
                 fn = _empty_return_fn
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)

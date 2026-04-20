@@ -285,6 +285,35 @@ class TestCond:
         ):
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
+    def test_convert_predicate_to_bool(self):
+        """Test that predicates are all converted to bools."""
+
+        def w(pred0, pred1):
+
+            @qml.cond(pred0)
+            def f(i):
+                return i + 1
+
+            @f.else_if(pred1)
+            def _elif(i):
+                return 2 * i
+
+            @f.otherwise
+            def _else(i):
+                return i**2
+
+            return f(0)
+
+        jaxpr = jax.make_jaxpr(w)(0.0, 4)
+
+        assert jaxpr.eqns[0].primitive.name == "convert_element_type"
+        assert jaxpr.eqns[1].primitive.name == "convert_element_type"
+
+        assert jaxpr.eqns[2].primitive == cond_prim
+        # predicates have been converted to bool
+        assert jaxpr.eqns[2].invars[0].aval.dtype == jax.numpy.bool
+        assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
+
 
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
