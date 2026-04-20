@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for executing circuits with mid-circuit measurements"""
+
 # pylint:disable=wrong-import-position, protected-access
 import pytest
 

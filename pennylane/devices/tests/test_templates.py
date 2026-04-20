@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that various templates work correctly on a device."""
+
 # pylint: disable=no-self-use
 
 # Can generate a list of all templates using the following code:

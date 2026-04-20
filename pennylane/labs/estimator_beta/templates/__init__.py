@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains resource operators for basic PennyLane Operators"""
+r"""This module contains resource operators for PennyLane subroutines and templates"""
+
+from .subroutines import selectpaulirot_controlled_resource_decomp
 
 from .state_prep import (
     ResourceCosineWindow,

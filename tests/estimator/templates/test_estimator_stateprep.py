@@ -14,6 +14,7 @@
 """
 Tests for the state preparation subroutines resource operators.
 """
+
 import pytest
 
 import pennylane.estimator as qre

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Multiple dispatch functions"""
+
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import functools
 from collections.abc import Sequence

@@ -14,6 +14,7 @@
 """
 Contains the TemporaryAND template, which also is known as Elbow.
 """
+
 from functools import lru_cache
 
 from pennylane import math, ops

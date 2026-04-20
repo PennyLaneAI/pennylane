@@ -14,6 +14,7 @@
 """
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
+
 import re
 from functools import partial
 

@@ -14,6 +14,7 @@
 """
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
+
 from functools import partial
 
 import numpy as np
@@ -92,7 +93,7 @@ def _real_unitary(unitary, wires):
     @for_loop(len(givens_list))
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
-        (i, j) = givens_ids[idx]
+        i, j = givens_ids[idx]
         theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
@@ -119,7 +120,7 @@ def _complex_unitary(unitary, wires):
     @for_loop(len(givens_matrices))
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
-        (i, j) = givens_ids[idx]
+        i, j = givens_ids[idx]
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])

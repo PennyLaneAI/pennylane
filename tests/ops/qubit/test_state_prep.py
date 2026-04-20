@@ -14,6 +14,7 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+
 # pylint: disable=protected-access
 import numpy as np
 import pytest

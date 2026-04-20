@@ -14,6 +14,7 @@
 """
 Unit tests for the :func:`_cache_transform` transform function.
 """
+
 # pylint: disable=protected-access,redefined-outer-name
 from collections.abc import MutableMapping
 from unittest.mock import MagicMock
