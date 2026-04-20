@@ -311,8 +311,7 @@ class RegisterEquality(ResourceOperator):
                 3: ─╰X─│──│──╭○─┤
                 4: ────╰X─│──├○─┤
                 5: ───────╰X─├○─┤
-                6: ──────────├○─┤
-                7: ──────────╰X─┤  <Z>
+                6: ──────────╰X─┤  <Z>
 
             Note that the state of the second register is not preserved after this operation and it needs to be uncomputed if it is needed later in the circuit.
 
