@@ -20,21 +20,33 @@ import pennylane as qp
 
 class MultiX(qp.operation.Operator):
     r"""
-    Multi target X gate :math:`\bigotimes_i X_i`
+    Multi target X gate :math:`\bigotimes_i X_i`, which can be used to create a fanout operation via :func:`~.ctrl`.
 
-    The main benefit of this gate is that it has eficient controlled operators.
-    In particular, we can use it to create a fanout operation ``qp.ctrl(MultiX(range(4)), control=[f"c{i}" for i in range(4)])``:
+    The main benefit of this gate is that it has efficient controlled operators.
+    In particular, we can use it to create a fanout operation
+
+    .. code-block:: python
+
+        qp.ctrl(MultiX(range(4)),
+                control=["c0, c1, c2, c3"]
+                work_wires=["w0, w1, w2"]
+                )
+
+    with the following decompositions:
 
     .. code-block::
 
-        c0: ─╭●─┤   ─╭●─╭●─╭●─╭●─┤
-        c1: ─├●─┤   ─├●─├●─├●─├●─┤
-        c2: ─├●─┤   ─├●─├●─├●─├●─┤
-        c3: ─├●─┤   ─├●─├●─├●─├●─┤
-         0: ─│X─┤ = ─╰X─│──│──│──┤
-         1: ─│X─┤   ────╰X─│──│──┤
-         2: ─│X─┤   ───────╰X─│──┤
-         3: ─╰X─┤   ──────────╰X─┤
+        c0: ─╭●─┤   ─╭●─╭●─╭●─╭●─┤   ─╭●────────────────────────────●╮─┤
+        c1: ─├●─┤   ─├●─├●─├●─├●─┤   ─├●────────────────────────────●┤─┤
+        c2: ─├●─┤   ─├●─├●─├●─├●─┤   ─│──╭●─────────────────────●╮───│─┤
+        c3: ─├●─┤   ─├●─├●─├●─├●─┤   ─│──│──╭●──────────────●╮───│───│─┤
+         0: ─│X─┤ = ─╰X─│──│──│──┤ = ─│──│──│──╭X────────────│───│───│─┤
+         1: ─│X─┤   ────╰X─│──│──┤   ─│──│──│──│──╭X─────────│───│───│─┤
+         2: ─│X─┤   ───────╰X─│──┤   ─│──│──│──│──│──╭X──────│───│───│─┤
+         3: ─╰X─┤   ──────────╰X─┤   ─│──│──│──│──│──│──╭X───│───│───│─┤
+        w0:                          ─╰⊕─├●─│──│──│──│──│────│──●┤──⊕╯─┤
+        w1:                          ────╰⊕─├●─│──│──│──│───●┤──⊕╯─────┤
+        w2:                          ───────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────────┤
 
     **Details:**
 
