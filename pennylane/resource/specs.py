@@ -636,9 +636,9 @@ def specs(
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
-        * The string ``"all"``: To output information about each user-applied transform and compilation pass
-        * The string ``"all-mlir"``: To output information about each compilation pass at the MLIR level only
-        * The string ``"user"``: To output information after all user-applied compilation passes have been applied
+        * The string ``"all"``: To provide information at each stage of compilation with respect to user-specified transforms
+        * The string ``"all-mlir"``: To provide information at each stage of compilation with respect to user-specified transforms exclusively at the MLIR level
+        * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
