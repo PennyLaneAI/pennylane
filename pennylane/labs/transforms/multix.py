@@ -172,6 +172,39 @@ def _ctrl_work_wires(num_control_wires, **_):
 
 @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
 @qp.register_resources(_ctrl_and_ladder_resources, work_wires=_ctrl_work_wires)
+def ctrl_decomp_with_allocate(
+    *_,
+    control_wires,
+    control_values,
+    base,
+    **__,
+):
+    """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
+    c = len(control_wires)
+    if c == 1:
+        base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+        qp.ctrl(
+            base_op,
+            control=control_wires,
+            control_values=control_values,
+        )
+        return
+
+    base_wires = base.wires
+    num_needed = c - 1
+    with qp.allocation.allocate(num_needed, state="zero", restored=True) as aw:
+        # Forward pass: build AND ladder
+        _fanout(num_needed, base_wires, control_wires, control_values, work_wires=aw)
+
+
+def _enough_work_wires(*_, num_work_wires, num_control_wires, **__):
+    """Declare work wire requirements: (num_control_wires - 1) zeroed wires."""
+    return num_work_wires >= max(0, num_control_wires - 1)
+
+
+@qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+@qp.register_condition(_enough_work_wires)
+@qp.register_resources(_ctrl_and_ladder_resources)
 def ctrl_decomp_with_work_wires(
     *_,
     control_wires,
@@ -192,34 +225,37 @@ def ctrl_decomp_with_work_wires(
         )
         return
 
+    base_wires = base.wires
     num_needed = c - 1
-    with qp.allocation.allocate(num_needed, state="zero", restored=True) as aw:
-        # Forward pass: build AND ladder
+
+    _fanout(num_needed, base_wires, control_wires, control_values, work_wires)
+
+
+def _fanout(num_needed, base_wires, control_wires, control_values, work_wires):
+    qp.TemporaryAND(
+        wires=[control_wires[0], control_wires[1], work_wires[0]],
+        control_values=(control_values[0], control_values[1]),
+    )
+    for i in range(1, num_needed):
         qp.TemporaryAND(
-            wires=[control_wires[0], control_wires[1], aw[0]],
-            control_values=(control_values[0], control_values[1]),
+            wires=[work_wires[i - 1], control_wires[i + 1], work_wires[i]],
+            control_values=(True, control_values[i + 1]),
         )
-        for i in range(1, num_needed):
-            qp.TemporaryAND(
-                wires=[aw[i - 1], control_wires[i + 1], aw[i]],
-                control_values=(True, control_values[i + 1]),
-            )
 
-        # Apply base operation (CNOTs) controlled on last ancilla
-        base_wires = base.wires
-        for w in base_wires:
-            qp.CNOT(wires=[aw[-1], w])
+    # Apply base operation (CNOTs) controlled on last ancilla
+    for w in base_wires:
+        qp.CNOT(wires=[work_wires[-1], w])
 
-        # Reverse pass: uncompute AND ladder
-        for i in range(num_needed - 1, 0, -1):
-            qp.adjoint(qp.TemporaryAND)(
-                wires=[aw[i - 1], control_wires[i + 1], aw[i]],
-                control_values=(True, control_values[i + 1]),
-            )
+    # Reverse pass: uncompute AND ladder
+    for i in range(num_needed - 1, 0, -1):
         qp.adjoint(qp.TemporaryAND)(
-            wires=[control_wires[0], control_wires[1], aw[0]],
-            control_values=(control_values[0], control_values[1]),
+            wires=[work_wires[i - 1], control_wires[i + 1], work_wires[i]],
+            control_values=(True, control_values[i + 1]),
         )
+    qp.adjoint(qp.TemporaryAND)(
+        wires=[control_wires[0], control_wires[1], work_wires[0]],
+        control_values=(control_values[0], control_values[1]),
+    )
 
 
 def _ctrl_no_work_resources(

@@ -20,12 +20,18 @@ import pytest
 
 import pennylane as qp
 from pennylane.labs.transforms.multix import MultiX
-from pennylane.ops.functions.assert_valid import _check_decomposition_new
+from pennylane.ops.functions.assert_valid import _check_decomposition_new, assert_valid
 from pennylane.transforms.decompose import DecomposeInterpreter
 
 
 class TestMultiXDecomp:
     """Test the base MultiX decomposition."""
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 5])
+    def test_assert_valid(self, n):
+        """Standard validity test of operator"""
+        op = MultiX(wires=range(n))
+        assert_valid(op)
 
     @pytest.mark.parametrize("n", [1, 2, 3, 5])
     def test_valid_decomp(self, n):
