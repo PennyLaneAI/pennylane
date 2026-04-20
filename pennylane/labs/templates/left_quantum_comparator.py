@@ -27,7 +27,7 @@ from pennylane.wires import Wires, WiresLike
 
 class LeftQuantumComparator(Operation):
     r"""This operator performs an inequality test between two quantum registers :math:`x` and
-    :math:`y`, storing the result in a target qubit. Depending on the value of the
+    :math:`y`, storing the result in a zeroed target qubit. Depending on the value of the
     ``op`` argument, the operator evaluates one of four possible relations:
 
     .. math::
@@ -48,7 +48,7 @@ class LeftQuantumComparator(Operation):
             x_wires (WiresLike): The wires that store the integer :math:`x`.
             y_wires (WiresLike): The wires that store the integer :math:`y`. The number of ``y_wires`` should be equal to
                 the number of ``x_wires``.
-            target_wire (WiresLike): The wire that stores the value of the inequality test.
+            target_wire (WiresLike): The zeroed target wire that outputs the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
             op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
