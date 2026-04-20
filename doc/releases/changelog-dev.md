@@ -536,6 +536,11 @@ The following classes have been ported over:
   ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created a new :class:`~.labs.transforms.MultiX` operator that can be used to construct
+  multi-controlled fanout operations efficiently. This is a control structure that appears frequently in quantum
+  algorithms.
+  [(#9292)](https://github.com/PennyLaneAI/pennylane/pull/9292)
+
 <h4>Other improvements</h4>
 
 * The source code in PennyLane for Pauli-based computation passes was removed, as it is now
@@ -1001,7 +1006,7 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
   can be interpreted.
   [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
