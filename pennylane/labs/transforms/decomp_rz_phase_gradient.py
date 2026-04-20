@@ -18,6 +18,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 import pennylane as qml
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
+from pennylane.wires import WireError
 
 
 def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
@@ -91,6 +92,15 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤  State
 
     """
+    if len(angle_wires) != len(phase_grad_wires):
+        raise WireError(
+            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires-1)}"
+        )
+    if len(phase_grad_wires) - 1 > len(work_wires):
+        raise WireError(
+            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
+        )
+
     kwargs = {
         "angle_wires": angle_wires,
         "phase_grad_wires": phase_grad_wires,

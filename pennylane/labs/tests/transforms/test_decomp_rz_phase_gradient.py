@@ -16,12 +16,31 @@
 
 import numpy as np
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter, disable=too-many-arguments
 import pytest
 
 import pennylane as qp
 from pennylane.labs.transforms.decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.wires import WireError
+
+
+@pytest.mark.parametrize(
+    "n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match",
+    [
+        [5, 3, 2, "angle_wires and phase_grad wires must be of same size"],
+        [3, 4, 2, "angle_wires and phase_grad wires must be of same size"],
+        [4, 4, 2, "work_wires need to be at least of size phase_grad_wires - 1"],
+    ],
+)
+def test_wires_error(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
+    """Test WireError is raised correctly"""
+    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
+
+    with pytest.raises(WireError, match=msg_match):
+        _ = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
 
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])

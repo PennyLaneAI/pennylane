@@ -27,7 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operator
 from pennylane.ops import Prod
-from pennylane.wires import Wires
+from pennylane.wires import WireError, Wires
 
 
 # pylint: disable=too-many-arguments
@@ -148,6 +148,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     work_1: ─╰QROM(M0)───────────────────╰SemiAdder─────────────╰QROM(M0)─┤  State
 
     """
+    if len(angle_wires) != len(phase_grad_wires):
+        raise WireError(
+            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires-1)}"
+        )
+    if len(phase_grad_wires) - 1 > len(work_wires):
+        raise WireError(
+            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
+        )
 
     def _resource_fn(num_wires, rot_axis):
         # decomposition costs, using information about angle_wires etc from the outer scope
