@@ -448,7 +448,7 @@ which allows the device to be initialized in the following way:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     dev1 = qml.device(short_name, wires=2)
 
 where ``short_name`` is a string that uniquely identifies the device. The ``short_name``
@@ -508,7 +508,7 @@ Users can then import this operator directly from your plugin, and use it when d
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from MyModule.MySubModule import CustomGate
 
     @qnode(dev1)

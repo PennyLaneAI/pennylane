@@ -18,7 +18,7 @@ To add a new style:
 * create a private function that modifies ``plt.rcParams``.
 * add an entry to the private dictionary ``_style_map``.
 * update the docstrings for ``use_style`` and ``draw_mpl``.
-* Add an entry to ``doc/code/qml_drawer.rst``
+* Add an entry to ``doc/code/qp_drawer.rst``
 * Add a test in ``tests/drawer/test_style.py``
 
 Use the decorator ``_needs_mpl`` on style functions to raise appropriate
