@@ -34,10 +34,10 @@ class LeftQuantumComparator(Operation):
 
         \text{LeftQuantumComparator}(op) |x\rangle |y\rangle |0\rangle =
         \begin{cases}
-        |x\rangle |y\rangle |x < y\rangle & \text{if } op = 0 \\
-        |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = 1 \\
-        |x\rangle |y\rangle |x \geq y\rangle & \text{if } op = 2 \\
-        |x\rangle |y\rangle |x > y\rangle & \text{if } op = 3
+        |x\rangle |y\rangle |x < y\rangle & \text{if } op = '<' \\
+        |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = '<=' \\
+        |x\rangle |y\rangle |x \geq y\rangle & \text{if } op = '>=' \\
+        |x\rangle |y\rangle |x > y\rangle & \text{if } op = '>'
         \end{cases}
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
@@ -68,15 +68,11 @@ class LeftQuantumComparator(Operation):
         @qp.qnode(dev, shots=1)
         def circuit(a, b):
 
-            op = 2
+            comparator = ">="
             qp.BasisState(a, wires=[0, 3, 6, 9])
             qp.BasisState(b, wires=[1, 4, 7, 10])
-            LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-            qp.CNOT([11, 12])
-            qp.adjoint(
-                lambda: LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], op)
-            )()
-            return qp.sample(wires=[12])
+            LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], comparator)
+            return qp.sample(wires=[11])
 
     .. code-block:: pycon
 
@@ -88,7 +84,7 @@ class LeftQuantumComparator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_y_wires", "op"}
+    resource_keys = {"num_y_wires", "comparator"}
 
     def __init__(
         self,
@@ -96,7 +92,7 @@ class LeftQuantumComparator(Operation):
         y_wires: WiresLike,
         target_wire: WiresLike,
         work_wires: WiresLike,
-        op=None,
+        comparator: str,
     ):  # pylint: disable=too-many-arguments
 
         target_wire = Wires(target_wire)
@@ -104,8 +100,8 @@ class LeftQuantumComparator(Operation):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires)
 
-        if op not in ["<", "<=", ">=", ">"]:
-            raise ValueError("Allowed values for 'op' are: '<', '<=', '>=' and '>'.")
+        if comparator not in ["<", "<=", ">=", ">"]:
+            raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
 
         if len(work_wires) < len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
@@ -128,7 +124,7 @@ class LeftQuantumComparator(Operation):
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["y_wires"] = y_wires
         self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["op"] = op
+        self.hyperparameters["comparator"] = comparator
 
         all_wires = [x_wires, y_wires, target_wire, work_wires]
         all_wires = Wires.all_wires(all_wires)
@@ -138,7 +134,7 @@ class LeftQuantumComparator(Operation):
     def resource_params(self) -> dict:
         return {
             "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "op": self.hyperparameters["op"],
+            "comparator": self.hyperparameters["comparator"],
         }
 
     @property
@@ -160,7 +156,7 @@ class LeftQuantumComparator(Operation):
             for key in ["x_wires", "y_wires", "target_wire", "work_wires"]
         }
 
-        return LeftQuantumComparator(**new_dict, op=self.hyperparameters["op"])
+        return LeftQuantumComparator(**new_dict, comparator=self.hyperparameters["comparator"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -172,7 +168,7 @@ class LeftQuantumComparator(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, y_wires, target_wire, work_wires, op=None
+        x_wires, y_wires, target_wire, work_wires, comparator
     ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
@@ -182,14 +178,14 @@ class LeftQuantumComparator(Operation):
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` work wires should be provided.
-            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
+            comparator (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
 
         Returns:
             list[.Operator]: Decomposition of the operator
         """
 
         with AnnotatedQueue() as q:
-            _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, op=op)
+            _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
 
         if QueuingManager.recording():
             for o in q.queue:
@@ -198,14 +194,14 @@ class LeftQuantumComparator(Operation):
         return q.queue
 
 
-def _left_quantum_comparator_resources(num_y_wires, op):
+def _left_quantum_comparator_resources(num_y_wires, comparator):
 
     resources = {
         Elbow: num_y_wires,
         CNOT: 2 + 5 * (num_y_wires - 1),
     }
 
-    if op in [">=", "<="]:
+    if comparator in [">=", "<="]:
         resources[X] = 1
 
     return resources
@@ -213,15 +209,14 @@ def _left_quantum_comparator_resources(num_y_wires, op):
 
 @register_resources(_left_quantum_comparator_resources, exact=True)
 def _left_quantum_comparator(
-    x_wires, y_wires, target_wire, work_wires, op, **_
+    x_wires, y_wires, target_wire, work_wires, comparator, **_
 ):  # pylint: disable=too-many-arguments
-    # op = ['<', '<=', '>=', '>']
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
     y_wires = y_wires[::-1]
 
-    @cond(math.logical_or(op == "<", op == ">="))
+    @cond(math.logical_or(comparator == "<", comparator == ">="))
     def _swap(x_wires, y_wires):
         return y_wires, x_wires
 
@@ -234,7 +229,7 @@ def _left_quantum_comparator(
     def _negate_output():
         X(wires=target_wire)
 
-    cond(math.logical_or(op == "<=", op == ">="), _negate_output)()
+    cond(math.logical_or(comparator == "<=", comparator == ">="), _negate_output)()
 
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 

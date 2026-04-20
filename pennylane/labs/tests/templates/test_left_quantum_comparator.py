@@ -28,31 +28,25 @@ def test_standard_validity_left_comparator():
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
     target_wire = 8
-    op = ">="
+    comparator = ">="
 
-    gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op=op)
+    gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
     assert_valid(gate)
 
     assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
     assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
     assert gate.hyperparameters["y_wires"] == qp.wires.Wires([3, 4, 5])
     assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
-    assert gate.hyperparameters["op"] == ">="
+    assert gate.hyperparameters["comparator"] == ">="
 
 
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
 
-    # op:
-    # 0: <
-    # 1: <=
-    # 2: >=
-    # 3: >
-
     @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y", "op", "expected"),
+        ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y", "comparator", "expected"),
         [
             ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, "<", False),
             ([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], 1, 1, "<=", True),
@@ -73,7 +67,7 @@ class TestLeftQuantumComparator:
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, target_wire, work_wires, x, y, op, expected
+        self, x_wires, y_wires, target_wire, work_wires, x, y, comparator, expected
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the LeftComparator template output."""
 
@@ -84,17 +78,17 @@ class TestLeftQuantumComparator:
         def circuit():
             qp.BasisState(x, wires=x_wires)
             qp.BasisState(y, wires=y_wires)
-            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op)
+            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
             qp.adjoint(
-                lambda: LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, op)
+                lambda: LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             )()
             return qp.sample(wires=[12])
 
         assert bool(circuit()) == expected
 
     @pytest.mark.parametrize(
-        ("target_wire", "x_wires", "y_wires", "work_wires", "op", "msg_match"),
+        ("target_wire", "x_wires", "y_wires", "work_wires", "comparator", "msg_match"),
         [
             (
                 8,
@@ -158,7 +152,7 @@ class TestLeftQuantumComparator:
                 [3, 4, 5],
                 [6, 7],
                 "=",
-                "Allowed values for 'op' are:",
+                "Allowed values for 'comparator' are:",
             ),
             (
                 8,
@@ -171,10 +165,10 @@ class TestLeftQuantumComparator:
         ],
     )
     def test_wires_error(
-        self, target_wire, x_wires, y_wires, work_wires, op, msg_match
+        self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.labs.templates.LeftQuantumComparator(
-                x_wires, y_wires, target_wire, work_wires, op=op
+                x_wires, y_wires, target_wire, work_wires, comparator=comparator
             )
