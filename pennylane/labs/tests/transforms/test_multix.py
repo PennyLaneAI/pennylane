@@ -21,10 +21,9 @@ import pytest
 import pennylane as qp
 from pennylane.labs.transforms.multix import MultiX
 from pennylane.ops.functions.assert_valid import _check_decomposition_new, assert_valid
-from pennylane.transforms.decompose import DecomposeInterpreter
 
 
-class TestMultiXDecomp:
+class TestMultiX:
     """Test the base MultiX decomposition."""
 
     @pytest.mark.parametrize("n", [1, 2, 3, 5])
@@ -57,10 +56,10 @@ class TestMultiXDecomp:
         assert np.allclose(state, expected)
 
 
-class TestControlledMultiXNoWorkWires:
-    """Test the controlled MultiX decomposition without work wires."""
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestControlledMultiX:
+    """Test the controlled MultiX decompositions"""
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("n", [2, 3])
     def test_matrix_correctness_no_work_wires(self, n):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
@@ -92,9 +91,8 @@ class TestControlledMultiXNoWorkWires:
 
         assert np.allclose(decomposed(in_state), reference(in_state))
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("capture", [True, False])
-    def test_matrix_correctness_no_work_wires_capture(self, capture):
+    def test_correctness_without_work_wires(self, capture):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
         n = 2
         wires = list(range(n))
@@ -127,17 +125,42 @@ class TestControlledMultiXNoWorkWires:
 
         assert np.allclose(decomposed(in_state), reference(in_state))
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("n", [1, 2, 3, 5])
-    def test_base_decomp_capture(self, n):
-        """Test that MultiX decomposes to X gates via capture + graph."""
-        import jax
+    @pytest.mark.parametrize("n", [1, 5])
+    def test_correctness_with_work_wires(self, n):
+        """Test that the controlled MultiX without work wires produces the correct unitary."""
+        control = list(range(n))
+        wires = list(range(n, 2 * n))
 
-        wires = list(range(n))
+        main_wires = control + wires
 
-        def f():
-            MultiX(wires)
+        work_wires = list(range(2 * n, 3 * n - 1))
 
-        decomposed_f = DecomposeInterpreter(gate_set={"X"})(f)
-        _ = jax.make_jaxpr(decomposed_f)()
-        # If this succeeds without error, the decomposition is capture-compatible
+        all_wires = main_wires + work_wires
+
+        in_state = np.random.rand(2 ** len(main_wires))
+        in_state /= np.linalg.norm(in_state)
+
+        dev = qp.device("lightning.qubit", wires=all_wires)
+
+        @qp.qjit(capture=False)
+        @qp.transforms.decompose(
+            gate_set={
+                "StatePrep",
+                "TemporaryAND",
+                "Adjoint(TemporaryAND)",
+                "CNOT",
+            }
+        )
+        @qp.qnode(dev)
+        def decomposed(in_state):
+            qp.StatePrep(in_state, wires=main_wires)
+            qp.ctrl(MultiX(wires), control=control, work_wires=work_wires)
+            return qp.state()
+
+        @qp.qnode(dev)
+        def reference(in_state):
+            qp.StatePrep(in_state, wires=main_wires)
+            qp.ctrl(MultiX(wires), control=control)
+            return qp.state()
+
+        assert np.allclose(decomposed(in_state), reference(in_state))

@@ -199,7 +199,7 @@ def ctrl_decomp_with_allocate(
 
 def _enough_work_wires(*_, num_work_wires, num_control_wires, **__):
     """Declare work wire requirements: (num_control_wires - 1) zeroed wires."""
-    return num_work_wires >= max(0, num_control_wires - 1)
+    return num_work_wires >= num_control_wires - 1
 
 
 @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
@@ -294,4 +294,6 @@ def ctrl_decomp_no_work_wires(
         qp.ctrl(qp.X(w), control=control_wires, control_values=control_values)
 
 
-qp.add_decomps("C(MultiX)", ctrl_decomp_with_work_wires, ctrl_decomp_no_work_wires)
+qp.add_decomps(
+    "C(MultiX)", ctrl_decomp_with_work_wires, ctrl_decomp_with_allocate, ctrl_decomp_no_work_wires
+)
