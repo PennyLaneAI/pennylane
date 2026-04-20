@@ -130,8 +130,8 @@ def test_as_alt_decomps(phi, p):
 
 def test_integration_multi_wire(seed):
     """
-    Tests that the decomposition correctly realizes the phase gradient decomposition of SelectPauliRot as described in
-    https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations
+    Tests that the decomposition correctly realizes the phase gradient decomposition of RZ as described in
+    https://pennylane.ai/compilation/phase-gradient/b-rotations
     """
 
     with qp.decomposition.toggle_graph_ctx(
