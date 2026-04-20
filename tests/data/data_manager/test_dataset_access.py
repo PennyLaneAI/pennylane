@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 import requests
 
-import pennylane as qp
+import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import _validate_attributes
@@ -108,9 +108,9 @@ def mock_requests_get(request, monkeypatch, mock_get_args):
         mock_get_args(url, *args, **kwargs)
 
         mock_resp = MagicMock()
-        if url == qp.data.data_manager.FOLDERMAP_URL:
+        if url == qml.data.data_manager.FOLDERMAP_URL:
             json_data = _folder_map
-        elif url == qp.data.data_manager.DATA_STRUCT_URL:
+        elif url == qml.data.data_manager.DATA_STRUCT_URL:
             json_data = _data_struct
         else:
             json_data = None
@@ -129,7 +129,7 @@ def mock_requests_get(request, monkeypatch, mock_get_args):
 
         return mock_resp
 
-    monkeypatch.setattr(qp.data.data_manager, "get", mock_get)
+    monkeypatch.setattr(qml.data.data_manager, "get", mock_get)
 
     return mock_get
 
@@ -211,7 +211,7 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     content = os.path.splitext(os.path.basename(filename))[0]
     if content.split("_")[-1] == "full":
         content = {"molecule": content}
-    qp.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
+    qml.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
 # pylint:disable=unused-argument
@@ -222,8 +222,8 @@ def wait_mock_fixture(_futures, return_when=None):
 
 @pytest.fixture
 def mock_load(monkeypatch):
-    mock = MagicMock(return_value=[qp.data.Dataset()])
-    monkeypatch.setattr(qp.data.data_manager, "load", mock)
+    mock = MagicMock(return_value=[qml.data.Dataset()])
+    monkeypatch.setattr(qml.data.data_manager, "load", mock)
 
     return mock
 
@@ -278,7 +278,7 @@ class TestLoadInteractive:
     ):  # pylint:disable=too-many-arguments, redefined-outer-name
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
-        assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
+        assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_load_interactive_without_confirm(
@@ -296,7 +296,7 @@ class TestLoadInteractive:
             PosixPath("/my/path"),
             "n",
         ]
-        assert qp.data.load_interactive() is None
+        assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
@@ -322,7 +322,7 @@ class TestLoadInteractive:
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
-            qp.data.load_interactive()
+            qml.data.load_interactive()
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock_qchem)
     @pytest.mark.parametrize(
@@ -351,7 +351,7 @@ class TestLoadInteractive:
     ):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
-        assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
+        assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
 
 class TestMiscHelpers:
@@ -360,12 +360,12 @@ class TestMiscHelpers:
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_list_data_names(self):
         """Test list_data_names."""
-        assert qp.data.list_data_names() == ["other", "qchem", "qspin"]
+        assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
 
     @patch.object(requests, "get", get_mock)
     def test_list_datasets(self, tmp_path):
         """Test that list_datasets returns either the S3 foldermap, or the local tree."""
-        assert qp.data.list_datasets() == {
+        assert qml.data.list_datasets() == {
             "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
             "qchem": {"H2": {"6-31G": ["0.46", "1.0", "1.16"]}},
         }
@@ -373,7 +373,7 @@ class TestMiscHelpers:
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_list_attributes(self):
         """Test list_attributes."""
-        assert qp.data.list_attributes("qchem") == [
+        assert qml.data.list_attributes("qchem") == [
             "basis_rot_groupings",
             "basis_rot_samples",
             "dipole_op",
@@ -488,7 +488,7 @@ def test_load_other_attributes(tmp_path, data_name, params, attributes):
 @patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
 def test_load_bad_config():
     msg = re.escape(
-        """No datasets exist for the provided configuration.\nPlease check the available datasets by using the ``qp.data.list_datasets()`` function."""
+        """No datasets exist for the provided configuration.\nPlease check the available datasets by using the ``qml.data.list_datasets()`` function."""
     )
     with pytest.raises(ValueError, match=msg):
         pennylane.data.data_manager.load(data_name="qchem", molname="bad_name")
