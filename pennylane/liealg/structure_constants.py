@@ -239,7 +239,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qp/demos/tutorial_liesim/#lie-algebra-basics>`__.
+    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
 
     Args:
         g (np.array): The (dynamical) Lie algebra provided as matrix matrices, as generated from :func:`~lie_closure`.
