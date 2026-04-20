@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import inspect
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -487,8 +487,92 @@ class DecompositionRule:
         self._work_wire_spec = work_wires
 
 
-_decompositions_private = defaultdict(list)
-"""dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
+class DecompCollection:
+    """A collection of decomposition rules.
+
+    The :func:`~pennylane.list_decomps` function returns a ``DecompCollection`` for an operator,
+    which is an ordered sequence of decomposition rules. Individual decomposition rules within a
+    collection can be accessed by index or by name.
+
+    .. seealso:: :func:`~pennylane.list_decomps`
+
+    """
+
+    _decomps: dict[str, DecompositionRule]
+
+    def __init__(
+        self, decomps: dict[str, DecompositionRule] | Sequence[DecompositionRule] | None = None
+    ) -> None:
+        decomps = decomps or {}
+        if not isinstance(decomps, dict):
+            names = [rule.name for rule in decomps]
+            if dup := next((r for i, r in enumerate(names) if r in names[i + 1 :]), None):
+                raise ValueError(
+                    "Decomposition rules in the same collection must have unique names. "
+                    f"Found multiple decompositions with the same name: '{dup}'."
+                )
+            decomps = {rule.name: rule for rule in decomps}
+        self._decomps = decomps.copy()
+
+    def __getitem__(self, arg: int | str) -> DecompositionRule:
+        if isinstance(arg, int):
+            return list(self._decomps.values())[arg]
+        if arg not in self._decomps:
+            raise KeyError(f"Cannot find a decomposition with the given name: {arg}.")
+        return self._decomps[arg]
+
+    def __repr__(self) -> str:
+        rules = ["    " + repr(rule) for rule in self]
+        inner_str = "" if not rules else "\n" + ",\n".join(rules) + "\n"
+        return f"DecompCollection([{inner_str}])"
+
+    def __str__(self) -> str:
+        rules = [f"{i}: {rule.name}" for i, rule in enumerate(self)]
+        return "Available Decomposition Rules:\n" + "\n".join(rules)
+
+    def __iter__(self):
+        return iter(self._decomps.values())
+
+    def __len__(self) -> int:
+        return len(self._decomps)
+
+    def copy(self) -> DecompCollection:
+        """Return a copy of the DecompCollection."""
+        return DecompCollection(self._decomps)
+
+    def __contains__(self, other) -> bool:
+        if isinstance(other, str):
+            return other in self._decomps
+        if isinstance(other, DecompositionRule):
+            return other in self._decomps.values()
+        return False
+
+    def append(self, rule: DecompositionRule):
+        """Add a decomposition rule to the collection."""
+        if rule.name in self._decomps:
+            raise ValueError(f"A decomposition of the name: {rule.name} already exists!")
+        self._decomps[rule.name] = rule
+
+    def extend(self, rules: DecompCollection | Sequence[DecompositionRule]):
+        """Add a sequence of decomposition rules to the collection."""
+        if dup_name := next((rule.name for rule in rules if rule.name in self), None):
+            raise ValueError(f"A decomposition of the name: {dup_name} already exists!")
+        decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
+        self._decomps |= decomps._decomps  # pylint: disable=protected-access
+
+    def __add__(self, other: DecompCollection | Sequence[DecompositionRule]) -> DecompCollection:
+        return DecompCollection(list(self) + list(other))
+
+    def __radd__(self, other: DecompCollection | Sequence[DecompositionRule]) -> DecompCollection:
+        return DecompCollection(list(other) + list(self))
+
+    def __iadd__(self, other) -> DecompCollection:
+        self.extend(other)
+        return self
+
+
+_decompositions_private = defaultdict(DecompCollection)
+"""dict[str, DecompCollection]: A dictionary mapping operator names to decomposition rules."""
 
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
@@ -569,7 +653,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
-def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
+def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -585,16 +669,29 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
             ``"C(RX)"``, etc.
 
     Returns:
-        list[DecompositionRule]: a list of decomposition rules registered for the given operator.
+        DecompCollection: a collection of decomposition rules registered for the given operator.
 
     **Example**
 
     >>> import pennylane as qml
     >>> qml.list_decomps(qml.CRX)
-    [DecompositionRule(name=_crx_to_rx_cz), DecompositionRule(name=_crx_to_rz_ry), DecompositionRule(name=_crx_to_h_crz), DecompositionRule(name=_crx_to_ppr)]
+    DecompCollection([
+        DecompositionRule(name=_crx_to_rx_cz),
+        DecompositionRule(name=_crx_to_rz_ry),
+        DecompositionRule(name=_crx_to_h_crz),
+        DecompositionRule(name=_crx_to_ppr)
+    ])
+    >>> print(qml.list_decomps(qml.CRX))
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
 
-    Each decomposition rule can be inspected:
+    Each decomposition rule can be accessed by name or by index.
 
+    >>> qml.list_decomps(qml.CRX)['_crx_to_ppr']
+    DecompositionRule(name=_crx_to_ppr)
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
     def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
@@ -607,7 +704,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return _decompositions_var.get()[to_name(op)][:]
+    return _decompositions_var.get()[to_name(op)].copy()
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -641,8 +738,9 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    _new_decompositions = defaultdict(list, {k: v[:] for k, v in _decompositions_private.items()})
-    token = _decompositions_var.set(_new_decompositions)
+    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+    _new_decomps = defaultdict(DecompCollection, current_decomps)
+    token = _decompositions_var.set(_new_decomps)
     try:
         yield
     finally:
