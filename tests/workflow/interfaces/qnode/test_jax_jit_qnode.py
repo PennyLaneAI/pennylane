@@ -1081,7 +1081,7 @@ class TestQubitIntegration:
             return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
 
         if interface == "jax-jit":
-            with pytest.raises(NotImplementedError, match="The JAX-JIT interface doesn't support \w+.counts "):
+            with pytest.raises(NotImplementedError, match=r"The JAX-JIT interface doesn't support \w+.counts"):
                 jax.jit(circuit)()
         else:
             res = jax.jit(circuit)()
