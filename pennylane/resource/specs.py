@@ -158,7 +158,7 @@ def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
     return 0
 
 
-def _preprocess_level_input(
+def _preprocess_level_input(  # pylint: disable=too-many-branches
     level: str | int | slice | list[int | str],
     marker_to_level: dict[str, int],
     pipeline_len: int,
@@ -175,14 +175,19 @@ def _preprocess_level_input(
     Returns:
         list[int]: The preprocessed level input
     """
+    # Account for "Before MLIR passes" level
+    total_levels = pipeline_len + 1
 
-    if level == "all" and num_tape_levels > 1:
-        # Account for 2 implicit "Before Tape Transforms" and "Before MLIR passes" levels
-        return list(range(pipeline_len + 2))
+    if num_tape_levels > 1:
+        # Account for an additional "Before Tape Transforms" level
+        total_levels += 1
 
-    if level in ("all", "all-mlir"):
-        # Account for "Before MLIR passes" level
-        return list(range(num_tape_levels, pipeline_len + 1))
+    if level == "all":
+        return list(range(0, total_levels))
+    if level == "all-mlir":
+        return list(range(num_tape_levels, total_levels))
+    if level == "user":
+        return [total_levels - 1]
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -198,11 +203,13 @@ def _preprocess_level_input(
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
-            if lvl < 0:
+            if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes must be non-negative, "
+                    "The 'level' argument to qml.specs for QJIT'd QNodes is out of bounds, "
                     f"got {lvl}."
                 )
+        else:
+            raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
 
     level_sorted = sorted(set(level))
     if level != level_sorted:
@@ -254,8 +261,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
     num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
-    mlir_only = (level == "all-mlir") or num_tape_levels == 0
-    if not mlir_only:
+    if num_tape_levels != 0:
         # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
@@ -266,7 +272,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         marker_to_level[marker] = lvl
 
         # Account for the MLIR lowering pass if necessary
-        if not mlir_only and lvl >= num_tape_levels:
+        if 0 < num_tape_levels <= lvl:
             marker_to_level[marker] += 1
 
     # Multiple markers can correspond to the same level
@@ -290,7 +296,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     resources = {}
 
     # Handle tape transforms
-    if not mlir_only:
+    if len(tape_levels) > 0:
         for tape_level in tape_levels:
             # User transforms always come first, so level and tape_level align correctly
             batch, _ = qp.workflow.construct_batch(original_qnode, level=tape_level)(
@@ -630,8 +636,9 @@ def specs(
         * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` pass
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
-        * The string ``"all"``: To output information about all user-applied transforms and compilation passes
-        * The string ``"all-mlir"``: To output information about all compilation passes at the MLIR level only
+        * The string ``"all"``: To provide information at each stage of compilation with respect to user-specified transforms
+        * The string ``"all-mlir"``: To provide information at each stage of compilation with respect to user-specified transforms exclusively at the MLIR level
+        * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
@@ -691,6 +698,20 @@ def specs(
         Or, equivalently, by using the int level directly:
 
         >>> print(all_specs.resources[all_specs.level[2]])
+        Wire allocations: 3
+        Total gates: 2
+        Gate counts:
+        - RX: 1
+        - CNOT: 1
+        Measurements:
+        - probs(all wires): 1
+        Depth: Not computed
+
+        A shortcut to access the resources after all user-specified transforms and passes have been
+        applied is to use the ``"user"`` level. For example, the following will also return the
+        resources after the ``merge-rotations`` pass:
+
+        >>> print(qml.specs(circuit, level="user")(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
