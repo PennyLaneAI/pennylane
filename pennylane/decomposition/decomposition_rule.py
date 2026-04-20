@@ -751,8 +751,67 @@ def local_decomps():
 
 
 def show_decomps(op: Operator, *rules: str | DecompositionRule):
-    """Display the decomposition rules of an operator."""
+    """Inspect the decomposition rules of an operator.
 
+    The function takes an operator instance and displays how the operator is decomposed
+    using different decomposition rules.
+
+    Args:
+        op (Operator): the operator to inspect the decomposition rules for.
+        *rules (str or DecompositionRule): the decomposition rules to inspect, accepts instances
+            of the ``DecompositionRule`` class or strings that represent the names of decomposition
+            rules. If none is provided, all available rules will be displayed.
+
+    **Example**
+
+    By default, this function displays all available decomposition rules for an operator.
+
+    >>> qml.show_decomps(qml.CRX(0.5, wires=[0, 1]))
+    Decomposition 0 (name: _crx_to_rx_cz)
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+    Gate Count: {RX: 2, CZ: 2}
+    <BLANKLINE>
+    Decomposition 1 (name: _crx_to_rz_ry)
+    0: ─────────────────────╭●────────────╭●────────────┤
+    1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
+    Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+    <BLANKLINE>
+    Decomposition 2 (name: _crx_to_h_crz)
+    0: ────╭●───────────┤
+    1: ──H─╰RZ(0.50)──H─┤
+    Gate Count: {Hadamard: 2, CRZ: 1}
+    <BLANKLINE>
+    Decomposition 3 (name: _crx_to_ppr)
+    0: ───────────╭RZX(-0.25)─┤
+    1: ──RX(0.25)─╰RZX(-0.25)─┤
+    Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+
+    Alternatively, you can inspect a single decomposition rule by passing its name:
+
+    >>> qml.show_decomps(qml.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+    Name: _crx_to_h_crz
+    0: ────╭●───────────┤
+    1: ──H─╰RZ(0.50)──H─┤
+    Gate Count: {Hadamard: 2, CRZ: 1}
+
+    Or use this tool to inspect a custom decomposition rule:
+
+    .. code-block:: python
+
+        @qml.register_resources({qml.CNOT: 1, qml.H: 2})
+        def my_cz(wires):
+            qml.H(wires[1])
+            qml.CNOT(wires)
+            qml.H(wires[1])
+
+    >>> qml.show_decomps(qml.CZ([0, 1]), my_cz)
+    Name: my_cz
+    0: ────╭●────┤
+    1: ──H─╰X──H─┤
+    Gate Count: {CNOT: 1, Hadamard: 2}
+
+    """
     rules_to_display = []
     stock_collection = list_decomps(op)
     if not rules:
