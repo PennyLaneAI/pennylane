@@ -1,2 +1,2 @@
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
-from .stateprep import PrepFirstQuantization
+from .prep_ops import PrepFirstQuantization

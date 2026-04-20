@@ -19,18 +19,25 @@ from pennylane.labs.estimator_beta.compact_hamiltonian import FirstQuantizedHami
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
 from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 from pennylane.math.utils import ceil_log2
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
 class PrepFirstQuantization(ResourceOperator):
     r"""Resource class for preparing the state for first quantization algorithms.
 
     This operator customizes the Prepare circuit based on the structure of the first quantizated Hamiltonian.
 
+    .. note::
+            This decomposition assumes that a phase gradient state of size `selection_precision`
+            is available. Users should ensure that the cost of constructing this state has been accounted for.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+
     Args:
         fq_ham (:class:`~pennylane.labs.estimator_beta.FirstQuantizedHamiltonian`): a first quantized
             Hamiltonian for which the state is being prepared
+        selection_precision (int): The number of bits used to represent the precision for selecting between the T and U+V preparations.
+            The default value is set to ``35`` bits.
         coordinates_precision (int): The number of bits used to represent the precision for loading
-            the nuclear coordinates. The default value is set to ``15`` bits.
+            the nuclear coordinates. The default value is set to ``35`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
@@ -43,18 +50,19 @@ class PrepFirstQuantization(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> fq_ham = qre.FirstQuantizedHamiltonian(num_orbitals, num_particles, num_nuclei, box_length)
-    >>> res = qre.estimate(qre.PrepFirstQuantization(fq_ham, coordinates_precision=15))
+    >>> fq_ham = qre.FirstQuantizedHamiltonian(num_plane_waves=1000, num_electrons=50, omega=3.5, charge=2)
+    >>> res = qre.estimate(qre.PrepFirstQuantization(fq_ham, coordinates_precision=35))
     >>> print(res)
 
     """
 
-    resource_keys = {"thc_ham", "coordinates_precision", "select_swap_depth"}
+    resource_keys = {"fq_ham", "selection_precision", "coordinates_precision", "select_swap_depth"}
 
     def __init__(
         self,
         fq_ham: FirstQuantizedHamiltonian,
-        coordinates_precision: int = 15,
+        selection_precision: int = 35,
+        coordinates_precision: int = 35,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
@@ -71,16 +79,19 @@ class PrepFirstQuantization(ResourceOperator):
             )
 
         self.fq_ham = fq_ham
+        self.selection_precision = selection_precision
         self.coordinates_precision = coordinates_precision
         self.select_swap_depth = select_swap_depth
 
         n_eta = ceil_log2(fq_ham.num_electrons)
         n_p = ceil_log2(fq_ham.num_plane_waves ** (1 / 3) + 1)
+
         lambda_zeta = fq_ham.num_electrons + fq_ham.charge
-        n_eta_lz = ceil_log2(lambda_zeta + 2*lambda_zeta)
+        n_eta_lz = ceil_log2(fq_ham.num_electrons + 2*lambda_zeta)
+
         n_M = ceil_log2(4*fq_ham.num_electrons**2/ fq_ham.omega**(1/3))
         # Total number of wires is obtained based on the Appendix C of `arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_.
-        self.num_wires = n_eta_lz + 2*n_eta + 6*n_p + n_M + 16
+        self.num_wires = n_eta_lz + 2*n_eta + 6*n_p + n_M + 16 + 3*coordinates_precision
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -94,13 +105,16 @@ class PrepFirstQuantization(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * fq_ham (:class:`~.pennylane.estimator.compact_hamiltonian.FirstQuantizedHamiltonian`): a first quantized
                   Hamiltonian for which the state is being prepared
+                * selection_precision (int): The number of bits used to represent the precision for selecting between the T and U+V preparations.
+                  The default value is set to ``35`` bits.
                 * coordinates_precision (int): The number of bits used to represent the precision for loading
-                  the nuclear coordinates. The default value is set to ``15`` bits.
+                  the nuclear coordinates. The default value is set to ``35`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
             "fq_ham": self.fq_ham,
+            "selection_precision": self.selection_precision,
             "coordinates_precision": self.coordinates_precision,
             "select_swap_depth": self.select_swap_depth,
         }
@@ -109,7 +123,8 @@ class PrepFirstQuantization(ResourceOperator):
     def resource_rep(
         cls,
         fq_ham: FirstQuantizedHamiltonian,
-        coordinates_precision: int = 15,
+        selection_precision: int = 35,
+        coordinates_precision: int = 35,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
@@ -118,12 +133,16 @@ class PrepFirstQuantization(ResourceOperator):
         Args:
             fq_ham (:class:`~pennylane.estimator.compact_hamiltonian.FirstQuantizedHamiltonian`): a first quantized
                 Hamiltonian for which the state is being prepared
+            selection_precision (int): The number of bits used to represent the precision for selecting between the T and U+V preparations.
+                The default value is set to ``35`` bits.
             coordinates_precision (int): The number of bits used to represent the precision for loading
-                the nuclear coordinates. The default value is set to ``15`` bits.
+                the nuclear coordinates. The default value is set to ``35`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+
         """
         if not isinstance(fq_ham, FirstQuantizedHamiltonian):
             raise TypeError(
@@ -139,13 +158,14 @@ class PrepFirstQuantization(ResourceOperator):
         n_eta = ceil_log2(fq_ham.num_electrons)
         n_p = ceil_log2(fq_ham.num_plane_waves ** (1 / 3) + 1)
         lambda_zeta = fq_ham.num_electrons + fq_ham.charge
-        n_eta_lz = ceil_log2(lambda_zeta + 2*lambda_zeta)
+        n_eta_lz = ceil_log2(fq_ham.num_electrons + 2*lambda_zeta)
         n_M = ceil_log2(4*fq_ham.num_electrons**2/ fq_ham.omega**(1/3))
         # Total number of wires is obtained based on the Appendix C of `arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_.
-        num_wires = n_eta_lz + 2*n_eta + 6*n_p + n_M + 16
+        num_wires = n_eta_lz + 2*n_eta + 6*n_p + n_M + 16 + 3*coordinates_precision
 
         params = {
             "fq_ham": fq_ham,
+            "selection_precision": selection_precision,
             "coordinates_precision": coordinates_precision,
             "select_swap_depth": select_swap_depth,
         }
@@ -181,13 +201,10 @@ class PrepFirstQuantization(ResourceOperator):
 
         # Forward inequality test
         gate_lst.append(GateCount(ineq, 1))
-
         # Rotation on ancilla
         gate_lst.append(GateCount(toffoli, br - 3))
-
         # CZ
         gate_lst.append(GateCount(cz, 1))
-
         # Inverse rotation
         gate_lst.append(GateCount(toffoli, br - 3))
 
@@ -196,12 +213,11 @@ class PrepFirstQuantization(ResourceOperator):
                     resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}),
                     1,
         ))
-
         # Reflection
         gate_lst.append(GateCount(toffoli, register_size - 1))
-
         # Compute the inequality again
         gate_lst.append(GateCount(ineq, 1))
+        gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 1))
 
         return gate_lst
 
@@ -209,7 +225,8 @@ class PrepFirstQuantization(ResourceOperator):
     def resource_decomp(
         cls,
         fq_ham: FirstQuantizedHamiltonian,
-        coordinates_precision: int = 15,
+        selection_precision: int = 35,
+        coordinates_precision: int = 35,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -218,8 +235,10 @@ class PrepFirstQuantization(ResourceOperator):
         Args:
             fq_ham (:class:`~pennylane.estimator.compact_hamiltonian.FirstQuantizedHamiltonian`): a first quantized
                 Hamiltonian for which the walk operator is being created
+            selection_precision (int): The number of bits used to represent the precision for selecting between the T and U+V preparations.
+                The default value is set to ``35`` bits.
             coordinates_precision (int): The number of bits used to represent the precision for loading
-                the nuclear coordinates. The default value is set to ``15`` bits.
+                the nuclear coordinates. The default value is set to ``35`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
@@ -252,22 +271,21 @@ class PrepFirstQuantization(ResourceOperator):
         n_M = ceil_log2(4*eta**2/ omega**(1/3))
 
         # Step:1: Rotate the ancilla qubit for selecting between T and U+V Preparations
-        gate_list.append(GateCount(resource_rep(qre.RY), 1))
+        # Eq. 61 of arXiv:2105.12767: After removing the cost of step: 4
+        gate_list.append(GateCount(resource_rep(qre.Toffoli), selection_precision-3))
 
         # Step 2a: Prepare an equal superposition over i and j registers
+        gate_list.append(Allocate(br))
         gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
         gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
+        gate_list.append(Deallocate(br))
 
-        # Step 2b and 2c:
+        # Step 2b: Compute the equality test for i and j registers
         eq = resource_rep(qre.RegisterEquality, {"register_size": n_eta})
         gate_list.append(GateCount(eq, 1)) # compute the equality for i and j registers
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": eq}), 1)) # adjoint of equality test
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": eq}), 1)) # uncompute the equality for i and j registers
         toffoli = resource_rep(qre.Toffoli)
-        gate_list.append(GateCount(toffoli, 2)) # Extra toffolis to flag and invert the success of the equality test
-
-        # Step 2d: Invert the superposition over i and j registers
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
-        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
+        gate_list.append(GateCount(toffoli, 1)) # Extra toffolis to flag the success of the equality test
 
         # Step 3: Prepare the superposition over w,r,s registers to use for T part of the select operation
         # Over w register: 3 spatial coordinates
@@ -278,6 +296,7 @@ class PrepFirstQuantization(ResourceOperator):
         gate_list.extend(qre.ch_toffoli_based_resource_decomp() * (2 * (n_p-2)))
 
         # Step 4: Prepare the superposition state for selection between U and V registers
+        # Eq. 58 of arXiv:2105.12767
         n_eta_lz = ceil_log2(eta + 2*lambda_zeta)
         gate_list.extend(cls._superposition_prep_costs(eta + 2*lambda_zeta, n_eta_lz))
         ineq = resource_rep(
@@ -286,6 +305,7 @@ class PrepFirstQuantization(ResourceOperator):
         )
         gate_list.append(GateCount(ineq, 1))
         gate_list.append(GateCount(toffoli, 1))
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 1))
 
         # Step 5: Prepare the superposition over \nu register
         # a) Create a superposition over \mu register
@@ -313,35 +333,102 @@ class PrepFirstQuantization(ResourceOperator):
 
         # e) compute m(\nu_x^2 + \nu_y^2 + \nu_z^2)
         # sum of three squares
-        gate_list.append(qre.Allocate(2*n_p+2))
+        gate_list.append(Allocate(2*n_p+2))
         gate_list.append(GateCount(toffoli, 3*n_p**2 - n_p - 1))
 
 
         # Multiply two numbers of length log(M) and 2*n_p + 2
-        gate_list.append(qre.Allocate(2*max(n_M, 2*n_p + 2))) # Allocate output register for multiplication
+        gate_list.append(Allocate(n_M + 2*n_p + 2)) # Allocate output register for multiplication
         mult = resource_rep(qre.OutMultiplier, {"a_num_wires": n_M, "b_num_wires": 2*n_p + 2})
         gate_list.append(GateCount(mult, 1))
 
         # f) Test inequality
-
         gate_list.append(GateCount(toffoli, 2*n_p + n_M + 2)) # Cost of testing the inequality using Toffolis
-        gate_list.append(Deallocate(1))
-        gate_list.append(Deallocate(2*max(n_M, 2*n_p + 2))) # Deallocate the multiplication ancillas
 
         # g) Toffolis to flag the success
         gate_list.append(Allocate(2))
         gate_list.append(GateCount(toffoli, 3))
         gate_list.append(Deallocate(2))
 
-        # h) uncompute the state prep- rest of the cost is in Cliffords
-        # only the controlled-Hadamards used to prepare \mu and \nu registers need to be uncomputed
-        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * 4 * (n_p-1))
-
-        gate_list.append(qre.Deallocate(2*n_p+2)) # Deallocate the ancilla used for sum of squares
-
         # Step 6: Amplitude loading for T, U and V
-        qrom = resource_rep(qre.QROM, {"num_bitstrings": lambda_zeta, "size_bitstring": coordinates_precision, "select_swap_depth": select_swap_depth})
+        qrom = resource_rep(qre.QROM, {"num_bitstrings": lambda_zeta, "size_bitstring": 3*coordinates_precision, "select_swap_depth": select_swap_depth})
         gate_list.append(GateCount(qrom, 1))
 
         return gate_list
 
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params = None):
+        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters for which the resource decomposition of the adjoint should be computed.
+
+        Resources:
+            The resources are calculated based on Section II A of `arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
+        fq_ham = target_resource_params["fq_ham"]
+        coordinates_precision = target_resource_params["coordinates_precision"]
+        selection_precision = target_resource_params["selection_precision"]
+        select_swap_depth = target_resource_params["select_swap_depth"]
+
+        br = 8
+        eta = fq_ham.num_electrons
+        num_pw = fq_ham.num_plane_waves
+        n_eta = ceil_log2(eta)
+        gate_list = []
+        n_p = ceil_log2(num_pw ** (1 / 3) + 1)
+        lambda_zeta = eta + fq_ham.charge # sum of nuclear charges
+        n_M = ceil_log2(4*eta**2/ fq_ham.omega**(1/3))
+
+        # Step 1: Invert the rotation on the ancilla qubit for selecting between T and U+V Preparations
+        # Eq. 61 of arXiv:2105.12767: After removing the cost of step: 4
+        gate_list.append(GateCount(resource_rep(qre.Toffoli), selection_precision-3))
+
+        # Step 2: Invert the inequality test and the superposition preparation over i and j registers
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.RegisterEquality, {"register_size": n_eta})}), 1)) # adjoint of equality test
+        gate_list.append(GateCount(resource_rep(qre.Toffoli), 1)) # Extra toffoli invert the success of the equality test
+        gate_list.append(Allocate(br)) # Allocate the phase gradient register for the preparation of equal superposition
+        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
+        gate_list.extend(cls._superposition_prep_costs(eta, n_eta))
+        gate_list.append(Deallocate(br)) # Deallocate the phase gradient register after preparing the superposition
+
+
+        # Step 3: Invert the superposition over w,r,s registers to use for T part of the select operation
+        n_w = ceil_log2(3)
+        gate_list.extend(cls._superposition_prep_costs(3, n_w))
+        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * (2 * (n_p-2)))
+
+        # Step 4: Invert the superposition state for selection between U and V registers
+        n_eta_lz = ceil_log2(eta + 2*lambda_zeta)
+        gate_list.extend(cls._superposition_prep_costs(eta + 2*lambda_zeta, n_eta_lz))
+        ineq = resource_rep(
+                qre.OutOfPlaceIntegerComparator,
+                {"value": eta, "register_size": n_eta_lz, "geq": False},
+        )
+        gate_list.append(GateCount(ineq, 1))
+        gate_list.append(GateCount(resource_rep(qre.Toffoli), 1))
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ineq}), 1))
+
+        #Step 5: uncompute the state prep- rest of the cost is in Cliffords
+        # only the controlled-Hadamards used to prepare \mu and \nu registers need to be uncomputed
+        # a and b
+        gate_list.extend(qre.ch_toffoli_based_resource_decomp() * 4 * (n_p-1))
+        gate_list.append(GateCount(resource_rep(qre.Hadamard), 6))
+
+        # Deallocate the ancillas from step-5
+        gate_list.append(Deallocate(2*n_p+2)) # Deallocate the ancilla used for sum of squares
+        gate_list.append(Deallocate(n_M + 2*n_p + 2)) # Deallocate the multiplication ancillas
+        gate_list.append(Deallocate(1)) # Deallocate the ancilla used for inequality testing of sum of squares
+
+        #Step 6: Invert the amplitude loading for T, U and V
+        qrom = resource_rep(qre.QROM, {"num_bitstrings": lambda_zeta, "size_bitstring": 3*coordinates_precision, "select_swap_depth": select_swap_depth})
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom}), 1))
+
+        return gate_list
