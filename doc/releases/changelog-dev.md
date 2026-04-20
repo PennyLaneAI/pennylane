@@ -1008,6 +1008,11 @@ The following classes have been ported over:
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
 
+* Fixed a bug where the ``work_wire_type`` argument of :func:`~.ctrl` was silently dropped when the
+  call was delegated to the active compiler (:func:`~.qjit`). The parameter is now forwarded to the
+  compiler's ``ctrl`` implementation.
+  [(#9328)](https://github.com/PennyLaneAI/pennylane/pull/9328)
+
 * Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
   rather than providing incorrect results.
   [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
