@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import pytest
 
-import pennylane as qp
+import pennylane as qml
 from pennylane.data import Dataset, DatasetPyTree
 from pennylane.pytrees.pytrees import (
     _register_pytree_with_pennylane,
@@ -111,6 +111,6 @@ class TestDatasetPyTree:
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
 def test_quantum_scripts(shots):
     """Test that ``QuantumScript`` can be serialized as Pytrees."""
-    script = qp.tape.QuantumScript([qp.X(0)], shots=shots)
+    script = qml.tape.QuantumScript([qml.X(0)], shots=shots)
 
-    qp.assert_equal(DatasetPyTree(script).get_value(), script)
+    qml.assert_equal(DatasetPyTree(script).get_value(), script)
