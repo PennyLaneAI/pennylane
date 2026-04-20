@@ -266,6 +266,8 @@ class RegisterEquality(ResourceOperator):
             5: ───────╰X─├○─┤
             6: ──────────╰X─┤  <Z>
 
+        Note that the state of the second register is not preserved after this operation and it needs to be uncomputed if it is needed later in the circuit.
+
     **Example**
 
     The resources for this operation are computed using:
@@ -344,7 +346,7 @@ class RegisterEquality(ResourceOperator):
             CNOTs, then checks whether all results are zero via a Toffoli
             cascade. The circuit is represented as:
 
-            :code-block:: bash
+            .. code-block:: bash
 
                 0: ─╭●──────────┤
                 1: ─│──╭●───────┤
