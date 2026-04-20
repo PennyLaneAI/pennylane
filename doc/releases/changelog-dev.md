@@ -28,6 +28,7 @@
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
+  [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
 
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
