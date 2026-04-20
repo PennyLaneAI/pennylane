@@ -246,64 +246,10 @@ def _multi_temporary_and_decomp_with_work_wires(
         )
         ii_ += 1
 
-    # qp.TemporaryAND(
-    #     wires=[work_wires[ii_ - 1], control_wires[ii_ + 1], wires[-1]],
-    #     control_values=(True, control_values[ii_ + 1]),
-    # )
-
-
-# same decomposition but using dynamic allocation
-
-
-def _ctrl_work_wires(*_, num_control_wires, **__):
-    """Declare work wire requirements: (num_control_wires - 1) zeroed wires."""
-    return {"zeroed": max(0, num_control_wires - 1)}
-
-
-@qp.register_resources(_multi_temporary_and_resources, work_wires=_ctrl_work_wires)
-def _multi_temporary_and_decomp_with_work_wires_allocated(
-    wires,
-    control_values,
-    work_wires,
-    **__,
-):
-    """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
-    control_wires = wires[:-1]
-    c = len(control_wires)
-    if c == 1:
-        # essentially, a CNOT, but with potentially different control value
-        qp.ctrl(
-            qp.X(wires[-1]),
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-        )
-        return
-
-    # build AND ladder
-    num_needed = c - 1
-    with qp.allocation.allocate(num_needed, state="zero", restored=True) as aw:
-        qp.TemporaryAND(
-            wires=[control_wires[0], control_wires[1], aw[0]],
-            control_values=(control_values[0], control_values[1]),
-        )
-
-        for i in range(1, num_needed):
-            _wires = (
-                [aw[i - 1], control_wires[i + 1], aw[i]]
-                if i < num_needed - 1
-                else [aw[i - 1], control_wires[i + 1], wires[-1]]
-            )
-            qp.TemporaryAND(
-                wires=_wires,
-                control_values=(True, control_values[i + 1]),
-            )
-
 
 qp.add_decomps(
     MultiTemporaryAND,
     _multi_temporary_and_decomp_with_work_wires,
-    _multi_temporary_and_decomp_with_work_wires_allocated,
 )
 
 # def _ctrl_no_work_resources(
