@@ -23,7 +23,6 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
-from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ, too-many-arguments
@@ -365,7 +364,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         # Step 1: Prepare the condensed state
         condensed_state_qubits = int(np.ceil(np.log2(num_coeffs)))
 
-        gate_list.append(Allocate(condensed_state_qubits))  # enumeration register d
+        gate_list.append(qre.Allocate(condensed_state_qubits))  # enumeration register d
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
                 ResourceMottonenStatePreparation, {"num_wires": condensed_state_qubits}
@@ -399,7 +398,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         # Steps 3-4 and 6: Encode/uncompute the identification register using multi-controlled Toffoli and CNOT gates
         # Taking the upper-bound
         if not identity_encoding:
-            gate_list.append(Allocate(m))  # identification register
+            gate_list.append(qre.Allocate(m))  # identification register
             cnot = resource_rep(qre.CNOT)
             gate_list.append(GateCount(cnot, 2 * num_wires * m))
 
@@ -414,7 +413,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         gate_list.append(GateCount(mcx, num_mcx))
 
         if not identity_encoding:
-            gate_list.append(Deallocate(m))  # deallocate identification register
-        gate_list.append(Deallocate(condensed_state_qubits))  # deallocate enumeration register
+            gate_list.append(qre.Deallocate(m))  # deallocate identification register
+        gate_list.append(qre.Deallocate(condensed_state_qubits))  # deallocate enumeration register
 
         return gate_list
