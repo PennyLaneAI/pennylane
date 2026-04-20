@@ -28,16 +28,16 @@ from pennylane.wires import Wires, WiresLike
 class LeftQuantumComparator(Operation):
     r"""This operator performs an inequality test between two quantum registers :math:`x` and
     :math:`y`, storing the result in a target qubit. Depending on the value of the
-    ``op`` argument, the operator evaluates one of four possible relations:
+    ``comparator`` argument, the operator evaluates one of four possible relations:
 
     .. math::
 
-        \text{LeftQuantumComparator}(op) |x\rangle |y\rangle |0\rangle =
+        \text{LeftQuantumComparator}(comparator) |x\rangle |y\rangle |0\rangle =
         \begin{cases}
-        |x\rangle |y\rangle |x < y\rangle & \text{if } op = '<' \\
-        |x\rangle |y\rangle |x \leq y\rangle & \text{if } op = '<=' \\
-        |x\rangle |y\rangle |x \geq y\rangle & \text{if } op = '>=' \\
-        |x\rangle |y\rangle |x > y\rangle & \text{if } op = '>'
+        |x\rangle |y\rangle |x < y\rangle & \text{if } comparator = '<' \\
+        |x\rangle |y\rangle |x \leq y\rangle & \text{if } comparator = '<=' \\
+        |x\rangle |y\rangle |x \geq y\rangle & \text{if } comparator = '>=' \\
+        |x\rangle |y\rangle |x > y\rangle & \text{if } comparator = '>'
         \end{cases}
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
@@ -51,7 +51,7 @@ class LeftQuantumComparator(Operation):
             target_wire (WiresLike): The wire that stores the value of the inequality test.
             work_wires (WiresLike): The auxiliary wires to use for the addition.
                 At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
-            op (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
+            comparator (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
 
 
     **Example**
