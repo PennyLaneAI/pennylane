@@ -176,6 +176,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
+  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
+
 * With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
   can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
   [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
