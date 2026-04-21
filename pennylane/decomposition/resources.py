@@ -151,13 +151,13 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        if issubclass(self.op_type, qml.ops.Adjoint):
+        if issubclass(self.op_type, qp.ops.Adjoint):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
             return f"Adjoint({repr(base_rep)})"
-        if issubclass(self.op_type, qml.ops.Pow):
+        if issubclass(self.op_type, qp.ops.Pow):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
             return f"Pow({repr(base_rep)}, z={self.params['z']})"
-        if self.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+        if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             params = self.params.copy()
             base_rep = resource_rep(params.pop("base_class"), **params.pop("base_params"))
             param_str = ", " + ", ".join(f"{k}={v}" for k, v in sorted(params.items()))

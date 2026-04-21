@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import queuing
 from pennylane.operation import Operator
 
@@ -766,7 +766,7 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
 
     By default, this function displays all available decomposition rules for an operator.
 
-    >>> qml.show_decomps(qml.CRX(0.5, wires=[0, 1]))
+    >>> qp.show_decomps(qp.CRX(0.5, wires=[0, 1]))
     Decomposition 0 (name: _crx_to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -789,7 +789,7 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
 
     Alternatively, you can inspect a single decomposition rule by passing its name:
 
-    >>> qml.show_decomps(qml.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+    >>> qp.show_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
     Name: _crx_to_h_crz
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
@@ -799,13 +799,13 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
 
     .. code-block:: python
 
-        @qml.register_resources({qml.CNOT: 1, qml.H: 2})
+        @qp.register_resources({qp.CNOT: 1, qp.H: 2})
         def my_cz(wires):
-            qml.H(wires[1])
-            qml.CNOT(wires)
-            qml.H(wires[1])
+            qp.H(wires[1])
+            qp.CNOT(wires)
+            qp.H(wires[1])
 
-    >>> qml.show_decomps(qml.CZ([0, 1]), my_cz)
+    >>> qp.show_decomps(qp.CZ([0, 1]), my_cz)
     Name: my_cz
     0: ────╭●────┤
     1: ──H─╰X──H─┤
@@ -834,7 +834,7 @@ def _inspect_decomp(op: Operator, rule: DecompositionRule) -> str:
     kwargs = get_decomp_kwargs(op)
     if not rule.is_applicable(**op.resource_params):
         return "Not applicable to the provided operator instance!"
-    circuit_drawing = qml.draw(rule)(*op.data, wires=op.wires, **kwargs)
+    circuit_drawing = qp.draw(rule)(*op.data, wires=op.wires, **kwargs)
     estimated_gate_counts = rule.compute_resources(**op.resource_params).gate_counts
     actual_gate_counts, allocations = _count_gates(op, rule)
     gate_count_str = _get_gate_count_str(estimated_gate_counts, actual_gate_counts)
@@ -854,12 +854,12 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
     for _op in q.queue:
-        if isinstance(_op, qml.ops.Conditional):
+        if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        if isinstance(_op, qml.allocation.Allocate):
+        if isinstance(_op, qp.allocation.Allocate):
             allocations[str(_op.state)] += len(_op.wires)
             continue
-        if isinstance(_op, qml.allocation.Deallocate):
+        if isinstance(_op, qp.allocation.Deallocate):
             continue
         op_rep = resource_rep(_op.__class__, **_op.resource_params)
         actual_gate_counts[op_rep] += 1
