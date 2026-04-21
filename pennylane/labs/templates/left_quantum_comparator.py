@@ -68,11 +68,14 @@ class LeftQuantumComparator(Operation):
         @qp.qnode(dev, shots=1)
         def circuit(a, comparator, b):
 
-            qp.BasisState(a, wires=[0, 3, 6, 9])
-            qp.BasisState(b, wires=[1, 4, 7, 10])
-            LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], comparator)
-            qp.CNOT(wires=[11,12])
-            qp.adjoint(LeftQuantumComparator([0, 3, 6, 9], [1, 4, 7, 10], 11, [2, 5, 8], comparator))
+            x_wires = [0, 3, 6, 9]
+            y_wires = [1, 4, 7, 10]
+            work_wires = [2, 5, 8]
+            qp.BasisState(a, wires=x_wires)
+            qp.BasisState(b, wires=y_wires)
+            LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
+            qp.CNOT(wires=[11, 12])
+            qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
 
             return qp.sample(wires=[12])
 
