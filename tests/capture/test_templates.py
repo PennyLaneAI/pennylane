@@ -352,8 +352,13 @@ class TestModifiedTemplates:
 
         state = input_type([1, 0, 0, 0])
         jaxpr = jax.make_jaxpr(qml.StatePrep)(state, wires=[0, 1])
-        assert jaxpr.eqns[0].primitive == qml.StatePrep._primitive
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((4,), float)
+        assert jaxpr.eqns[9].primitive == qml.StatePrep._primitive
+        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), int)
+
+        state = input_type([1.0, 0.0, 0.0, 0.0])
+        jaxpr = jax.make_jaxpr(qml.StatePrep)(state, wires=[0, 1])
+        assert jaxpr.eqns[9].primitive == qml.StatePrep._primitive
+        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), float)
 
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_basis_state_tuple_list_capture(self, input_type):
@@ -361,8 +366,8 @@ class TestModifiedTemplates:
 
         state = input_type([1, 0])
         jaxpr = jax.make_jaxpr(qml.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[0].primitive == qml.BasisState._primitive
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((2,), float)
+        assert jaxpr.eqns[5].primitive == qml.BasisState._primitive
+        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
 
     @pytest.mark.parametrize(
         "template, kwargs",
