@@ -226,6 +226,7 @@ class TestStatePrepIntegration:
         assert np.allclose(result, state)
 
     @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_basis_state_tuple_list_capture(self, input_type):
         """Tests that tuple or list types for 'state' can be used."""
