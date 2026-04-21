@@ -753,14 +753,14 @@ def local_decomps():
 def show_decomps(op: Operator, *rules: str | DecompositionRule):
     """Inspect the decomposition rules of an operator.
 
-    The function takes an operator instance and displays how the operator is decomposed
+    Takes an operator instance and displays how the operator is decomposed
     using different decomposition rules.
 
     Args:
         op (Operator): the operator to inspect the decomposition rules for.
-        *rules (str or DecompositionRule): the decomposition rules to inspect, accepts instances
+        *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
             of the ``DecompositionRule`` class or strings that represent the names of decomposition
-            rules. If none is provided, all available rules will be displayed.
+            rules registered with the type of ``op``. If none are provided, all available rules will be displayed.
 
     **Example**
 
