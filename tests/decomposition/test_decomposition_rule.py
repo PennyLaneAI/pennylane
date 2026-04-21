@@ -601,72 +601,72 @@ class TestShowDecomps:
         """Sets up decomposition rules for CustomOp."""
 
         @register_condition(lambda num_wires: num_wires == 2)
-        @register_resources({qml.RZ: 2, qml.CNOT: 1}, name="simple")
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="simple")
         def two_wires_decomp(theta, wires, **_):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
-        @register_resources(lambda num_wires: {qml.RX: 2, qml.CZ: 2 * (num_wires - 1), qml.H: 1})
+        @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1})
         def general_decomp(theta, wires, **_):
 
-            @qml.for_loop(len(wires) - 1)
+            @qp.for_loop(len(wires) - 1)
             def _loop(i):
-                qml.CZ(wires=[wires[i], wires[i + 1]])
+                qp.CZ(wires=[wires[i], wires[i + 1]])
 
-            @qml.for_loop(len(wires) - 1, 0, -1)
+            @qp.for_loop(len(wires) - 1, 0, -1)
             def _loop_back(i):
-                qml.CZ(wires=[wires[i - 1], wires[i]])
+                qp.CZ(wires=[wires[i - 1], wires[i]])
 
-            qml.RX(theta, wires=wires[0])
+            qp.RX(theta, wires=wires[0])
             _loop()
-            qml.H(wires[-1])
+            qp.H(wires[-1])
             _loop_back()
-            qml.RX(theta, wires=wires[0])
+            qp.RX(theta, wires=wires[0])
 
         @register_condition(lambda num_wires: num_wires > 3)
         @register_resources(
             lambda num_wires: {
-                qml.CZ: 6,
-                qml.Toffoli: 2 * (num_wires - 1),
-                qml.H: 1,
-                qml.RX: 1,
-                qml.ops.MidMeasure: 1,
+                qp.CZ: 6,
+                qp.Toffoli: 2 * (num_wires - 1),
+                qp.H: 1,
+                qp.RX: 1,
+                qp.ops.MidMeasure: 1,
             },
             work_wires={"zeroed": 2},
             name="with-aux",
         )
         def another_decomp(theta, wires, **_):
 
-            @qml.for_loop(len(wires) - 2)
+            @qp.for_loop(len(wires) - 2)
             def _loop(i):
-                qml.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])
+                qp.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])
 
-            @qml.for_loop(len(wires) - 1, 1, -1)
+            @qp.for_loop(len(wires) - 1, 1, -1)
             def _loop_back(i):
-                qml.Toffoli(wires=[wires[i - 2], wires[i - 1], wires[i]])
+                qp.Toffoli(wires=[wires[i - 2], wires[i - 1], wires[i]])
 
-            with qml.allocate(2, "zero") as aux_wires:
-                qml.CZ([wires[0], aux_wires[0]])
-                qml.CZ(aux_wires)
-                qml.CZ([aux_wires[1], wires[0]])
+            with qp.allocate(2, "zero") as aux_wires:
+                qp.CZ([wires[0], aux_wires[0]])
+                qp.CZ(aux_wires)
+                qp.CZ([aux_wires[1], wires[0]])
                 _loop()
-                qml.H(aux_wires[1])
-                m = qml.measure(aux_wires[1])
-                qml.cond(m, qml.RX)(theta, aux_wires[0])
+                qp.H(aux_wires[1])
+                m = qp.measure(aux_wires[1])
+                qp.cond(m, qp.RX)(theta, aux_wires[0])
                 _loop_back()
-                qml.CZ([aux_wires[1], wires[0]])
-                qml.CZ(aux_wires)
-                qml.CZ([wires[0], aux_wires[0]])
+                qp.CZ([aux_wires[1], wires[0]])
+                qp.CZ(aux_wires)
+                qp.CZ([wires[0], aux_wires[0]])
 
-        with qml.decomposition.local_decomps():
-            qml.add_decomps(CustomParametrizedOp, two_wires_decomp, general_decomp, another_decomp)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(CustomParametrizedOp, two_wires_decomp, general_decomp, another_decomp)
             yield
 
     def test_show_all_decomps(self, capsys):
         """Tests showing all decomposition rules associated with an operator."""
 
-        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
         captured = capsys.readouterr()
         assert captured.out == dedent("""
             Decomposition 0 (name: simple)
@@ -683,7 +683,7 @@ class TestShowDecomps:
             Not applicable to the provided operator instance!
             """).lstrip()
 
-        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
         captured = capsys.readouterr()
         assert captured.out == dedent("""
             Decomposition 0 (name: simple)
@@ -714,7 +714,7 @@ class TestShowDecomps:
     def test_show_decomp_by_name(self, capsys):
         """Tests inspecting a particular decomp by name."""
 
-        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
         captured = capsys.readouterr()
         assert captured.out == dedent("""
             Name: simple
@@ -726,8 +726,8 @@ class TestShowDecomps:
     def test_show_decomp_with_rule(self, capsys):
         """Tests inspecting a particular decomposition rule."""
 
-        rule = qml.list_decomps(CustomParametrizedOp)["general_decomp"]
-        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
+        rule = qp.list_decomps(CustomParametrizedOp)["general_decomp"]
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
         captured = capsys.readouterr()
         assert captured.out == dedent("""
             Name: general_decomp
@@ -742,8 +742,8 @@ class TestShowDecomps:
     def test_show_multiple_decomps(self, capsys):
         """Tests showing multiple decomposition rules."""
 
-        rule = qml.list_decomps(CustomParametrizedOp)["general_decomp"]
-        qml.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux")
+        rule = qp.list_decomps(CustomParametrizedOp)["general_decomp"]
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux")
         captured = capsys.readouterr()
         assert captured.out == dedent("""
             Decomposition 0 (name: general_decomp)
@@ -767,3 +767,9 @@ class TestShowDecomps:
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 2}
             """).lstrip()
+
+    def test_type_error(self):
+        """Tests that an informative error is raised when operator type is provided."""
+
+        with pytest.raises(TypeError, match="concrete operator instance as its first argument"):
+            qp.show_decomps(CustomParametrizedOp)

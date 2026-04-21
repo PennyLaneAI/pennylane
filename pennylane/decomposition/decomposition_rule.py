@@ -756,6 +756,15 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
     Takes an operator instance and displays how the operator is decomposed
     using different decomposition rules.
 
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        performing decompositions is generally more resource-efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~.register_resources`.
+
     Args:
         op (Operator): the operator to inspect the decomposition rules for.
         *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
@@ -812,6 +821,12 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
     Gate Count: {CNOT: 1, Hadamard: 2}
 
     """
+    if isinstance(op, type) and issubclass(op, Operator):
+        raise TypeError(
+            "The show_decomps function takes a concrete operator instance as its "
+            "first argument, not an operator type."
+        )
+
     stock_collection = list_decomps(op)
     rules_to_display = (
         stock_collection
