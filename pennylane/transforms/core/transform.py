@@ -38,11 +38,11 @@ from pennylane.typing import ResultBatch
 def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
-        from pennylane.capture.custom_primitives import QmlPrimitive
+        from pennylane.capture.custom_primitives import QpPrimitive
     except ImportError:
         return None
 
-    transform_prim = QmlPrimitive("transform")
+    transform_prim = QpPrimitive("transform")
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 
