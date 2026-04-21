@@ -564,14 +564,23 @@ class TestCaptureWhileLoopDynamicShapes:
         Encountered in benchmarking suite.
         """
 
+        # pylint: disable=too-few-public-methods
+        class ThingWithShape:
+
+            def __init__(self):
+                pass
+
+            def shape(self):  # method not property
+                return 2
+
         def w():
-            from jax import numpy as local_np  # pylint: disable=import-outside-toplevel
+            thing = ThingWithShape()
 
             @qml.while_loop(lambda i: jnp.sum(i) < 3)
             def f(i):
-                return local_np.add(i, i)
+                return i + thing.shape()
 
-            return f(jnp.array([1, 1]))
+            return f(0)
 
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[0].primitive == while_loop_prim

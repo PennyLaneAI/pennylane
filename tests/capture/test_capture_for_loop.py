@@ -860,15 +860,24 @@ class TestCaptureCircuitsForLoop:
         Encountered in benchmarking suite.
         """
 
+        class ThingWithShape:
+
+            def __init__(self):
+                pass
+
+            def shape(self):  # method not property
+                return 2
+
         def w():
-            from jax import numpy as local_np  # pylint: disable=import-outside-toplevel
+
+            thing = ThingWithShape()
 
             # pylint: disable=unused-argument
             @qml.for_loop(3)
             def f(i, x):
-                return local_np.add(x, x)
+                return x + thing.shape()
 
-            return f(jnp.array([1, 1]))
+            return f(2)
 
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[0].primitive == for_loop_prim
