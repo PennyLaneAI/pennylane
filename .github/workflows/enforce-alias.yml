@@ -33,30 +33,10 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     env:
       CORE_MODULES: >-
-        pennylane/operation.py
-        pennylane/qchem
-        pennylane/ops
-        pennylane/_grad
-        pennylane/bose
-        pennylane/capture
-        pennylane/compiler
-        pennylane/concurrency
-        pennylane/control_flow
-        pennylane/debugging
-        pennylane/decomposition
+        pennylane
 
       TEST_MODULES: >-
-        tests/test_operation.py
-        tests/qchem
-        tests/ops
-        tests/_grad
-        tests/bose
-        tests/capture
-        tests/test_compiler.py
-        tests/concurrency
-        tests/control_flow
-        tests/debugging
-        tests/decomposition
+        tests
 
     name: Enforce PennyLane alias as qp
 
