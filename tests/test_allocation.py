@@ -84,7 +84,11 @@ class TestAllocateOp:
 
         op = Allocate.from_num_wires(3, state=AllocateState.ANY, restored=True)
         assert len(op.wires) == 3
-        assert op.hyperparameters == {"state": AllocateState.ANY, "restored": True}
+        assert op.hyperparameters == {
+            "state": AllocateState.ANY,
+            "restored": True,
+            "precision": None,
+        }
         assert op.state == AllocateState.ANY
         assert op.restored
 
@@ -93,7 +97,11 @@ class TestAllocateOp:
         wires = [DynamicWire() for _ in range(5)]
         op = Allocate(wires, state=AllocateState.ANY, restored=True)
         assert op.wires == qml.wires.Wires(wires)
-        assert op.hyperparameters == {"state": AllocateState.ANY, "restored": True}
+        assert op.hyperparameters == {
+            "state": AllocateState.ANY,
+            "restored": True,
+            "precision": None,
+        }
         assert op.state == AllocateState.ANY
         assert op.restored
 
@@ -246,6 +254,7 @@ class TestCaptureIntegration:
             "num_wires": 2,
             "state": AllocateState.ZERO,
             "restored": True,
+            "precision": None,
         }
         assert len(jaxpr.eqns[0].outvars) == 2
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
@@ -281,6 +290,7 @@ class TestCaptureIntegration:
             "num_wires": 1,
             "state": AllocateState.ZERO,
             "restored": False,
+            "precision": None,
         }
         assert len(jaxpr.eqns[0].outvars) == 1
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
@@ -366,3 +376,204 @@ class TestDeviceIntegration:
         atol = 0.05 if mcm_method == "one-shot" else 1e-6
         assert qml.math.allclose(res1, 0, atol=atol)
         assert qml.math.allclose(res2, 0, atol=atol)
+
+
+# ---- Phase-gradient allocation scaffolding tests ----
+
+
+class TestAllocateStatePhaseGrad:
+    """Tests for the PHASE_GRAD member of AllocateState."""
+
+    def test_phase_grad_is_valid_state(self):
+        """Test that 'phase-grad' is a valid AllocateState."""
+        state = AllocateState("phase-grad")
+        assert state is AllocateState.PHASE_GRAD
+
+    def test_is_phase_gradient_true(self):
+        """Test is_phase_gradient returns True for PHASE_GRAD."""
+        assert AllocateState.PHASE_GRAD.is_phase_gradient()
+
+    def test_is_phase_gradient_false_for_zero(self):
+        """Test is_phase_gradient returns False for ZERO."""
+        assert not AllocateState.ZERO.is_phase_gradient()
+
+    def test_is_phase_gradient_false_for_any(self):
+        """Test is_phase_gradient returns False for ANY."""
+        assert not AllocateState.ANY.is_phase_gradient()
+
+
+@pytest.mark.integration
+class TestAllocatePhaseGrad:
+    """Tests for phase-gradient allocation via the allocate function and Allocate op."""
+
+    def test_phase_grad_in_qnode_preserves_metadata(self):
+        """Test that phase-grad allocation inside a QNode preserves state and precision on the tape."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.H(0)
+            with qml.allocate(2, state="phase-grad", precision=1e-6, restored=True) as wires:
+                qml.CNOT((0, wires[0]))
+                qml.CNOT((wires[0], wires[1]))
+            return qml.expval(qml.Z(0))
+
+        # At the user level, the tape should contain the Allocate op with phase-grad metadata
+        tape = qml.workflow.construct_tape(circuit)()
+        alloc_ops = [op for op in tape.operations if isinstance(op, Allocate)]
+        assert len(alloc_ops) == 1
+        assert alloc_ops[0].state is AllocateState.PHASE_GRAD
+        assert alloc_ops[0].precision == 1e-6
+        assert alloc_ops[0].is_phase_gradient
+
+    def test_phase_grad_device_execution_raises(self):
+        """Test that device execution of a phase-grad allocation raises AllocationError.
+
+        Phase-gradient wire resolution is not yet implemented, so lowering to
+        device level should produce a clear error rather than silently miscompiling.
+        The inner AllocationError from resolve_dynamic_wires is wrapped by device
+        preprocessing into a higher-level message.
+        """
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit():
+            with qml.allocate(1, state="phase-grad", precision=1e-6, restored=True) as wires:
+                qml.X(wires[0])
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(qml.exceptions.AllocationError):
+            circuit()
+
+    def test_phase_grad_returns_dynamic_register(self):
+        """Test that allocate with state='phase-grad' returns a DynamicRegister."""
+        with qml.queuing.AnnotatedQueue() as q:
+            wires = allocate(3, state="phase-grad", precision=1e-6)
+        assert isinstance(wires, DynamicRegister)
+        assert len(wires) == 3
+
+        op = q.queue[0]
+        assert isinstance(op, Allocate)
+        assert op.state is AllocateState.PHASE_GRAD
+
+    def test_phase_grad_stores_precision_on_op(self):
+        """Test that precision is stored on the queued Allocate op."""
+        with qml.queuing.AnnotatedQueue() as q:
+            allocate(2, state="phase-grad", precision=1e-6)
+
+        op = q.queue[0]
+        assert op.state is AllocateState.PHASE_GRAD
+        assert op.precision == 1e-6
+        assert op.is_phase_gradient
+
+    def test_phase_grad_precision_required(self):
+        """Test that phase-grad without precision raises ValueError."""
+        with pytest.raises(ValueError, match="precision is required for state='phase-grad'"):
+            allocate(2, state="phase-grad")
+
+    def test_phase_grad_hyperparameters(self):
+        """Test full hyperparameters dict for phase-grad allocation."""
+        with qml.queuing.AnnotatedQueue() as q:
+            allocate(1, state="phase-grad", precision=0.001, restored=True)
+
+        op = q.queue[0]
+        assert op.hyperparameters == {
+            "state": AllocateState.PHASE_GRAD,
+            "restored": True,
+            "precision": 0.001,
+        }
+
+    def test_from_num_wires_phase_grad(self):
+        """Test Allocate.from_num_wires with phase-grad state."""
+        op = Allocate.from_num_wires(
+            4, state=AllocateState.PHASE_GRAD, precision=1e-4, restored=True
+        )
+        assert len(op.wires) == 4
+        assert op.state is AllocateState.PHASE_GRAD
+        assert op.precision == 1e-4
+        assert op.restored
+        assert op.is_phase_gradient
+
+    def test_zero_state_is_not_phase_gradient(self):
+        """Test Allocate.is_phase_gradient is False for zero state."""
+        op = Allocate.from_num_wires(1)
+        assert not op.is_phase_gradient
+
+    def test_any_state_is_not_phase_gradient(self):
+        """Test Allocate.is_phase_gradient is False for any state."""
+        op = Allocate.from_num_wires(1, state=AllocateState.ANY)
+        assert not op.is_phase_gradient
+
+    def test_zero_state_precision_is_none(self):
+        """Test that default zero state has precision=None."""
+        op = Allocate.from_num_wires(1)
+        assert op.precision is None
+
+
+class TestPhaseGradValidation:
+    """Tests for precision validation rules."""
+
+    def test_precision_required_for_phase_grad(self):
+        """Test that phase-grad without precision raises ValueError."""
+        with pytest.raises(ValueError, match="precision is required for state='phase-grad'"):
+            allocate(2, state="phase-grad")
+
+    def test_precision_rejected_for_zero_state(self):
+        """Test that precision raises ValueError for state='zero'."""
+        with pytest.raises(ValueError, match="precision is only valid for state='phase-grad'"):
+            allocate(2, state="zero", precision=1e-3)
+
+    def test_precision_rejected_for_any_state(self):
+        """Test that precision raises ValueError for state='any'."""
+        with pytest.raises(ValueError, match="precision is only valid for state='phase-grad'"):
+            allocate(2, state="any", precision=1e-3)
+
+    def test_non_positive_precision_rejected(self):
+        """Test that non-positive precision raises ValueError."""
+        with pytest.raises(ValueError, match="precision must be positive"):
+            allocate(2, state="phase-grad", precision=0.0)
+
+        with pytest.raises(ValueError, match="precision must be positive"):
+            allocate(2, state="phase-grad", precision=-1e-3)
+
+    def test_invalid_precision_type_rejected(self):
+        """Test that non-numeric precision raises TypeError."""
+        with pytest.raises(TypeError, match="precision must be a positive number"):
+            allocate(2, state="phase-grad", precision="high")
+
+
+@pytest.mark.jax
+@pytest.mark.capture
+class TestPhaseGradCaptureIntegration:
+    """Tests for phase-gradient params in captured JAXPR."""
+
+    def test_capture_phase_grad_state(self):
+        """Test that phase-grad state is captured in JAXPR params."""
+        import jax
+
+        def f():
+            w = allocate(2, state="phase-grad", precision=1e-6, restored=True)
+            deallocate(w)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == allocate_prim
+        assert jaxpr.eqns[0].params == {
+            "num_wires": 2,
+            "state": AllocateState.PHASE_GRAD,
+            "restored": True,
+            "precision": 1e-6,
+        }
+
+    def test_capture_phase_grad_different_precision(self):
+        """Test that different precision values are captured correctly."""
+        import jax
+
+        def f():
+            w = allocate(1, state="phase-grad", precision=0.01)
+            deallocate(w)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].params == {
+            "num_wires": 1,
+            "state": AllocateState.PHASE_GRAD,
+            "restored": False,
+            "precision": 0.01,
+        }

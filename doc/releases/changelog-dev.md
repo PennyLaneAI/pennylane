@@ -174,6 +174,13 @@ The following classes have been ported over:
 * Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
+* Added a ``"phase-grad"`` allocation state to :func:`~.allocate` with required ``precision``
+  metadata, preserved through queuing, capture, and tape construction. This is a frontend
+  scaffold for phase-gradient allocation planning; concrete preparation and lowering are
+  deferred to follow-up changes. :func:`~.transforms.resolve_dynamic_wires` raises an explicit
+  error for unresolved ``"phase-grad"`` allocations.
+  [(#9300)](https://github.com/PennyLaneAI/pennylane/pull/9300)
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.

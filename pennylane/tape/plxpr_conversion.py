@@ -230,12 +230,14 @@ def _qnode_primitive(
 
 
 @CollectOpsandMeas.register_primitive(allocate_prim)
-def _allocate_primitive(self, *, num_wires, state, restored):
+def _allocate_primitive(self, *, num_wires, state, restored, precision=None):
     wires = [DynamicWire() for _ in range(num_wires)]
     num_dynamic_wires = len(self.state["dynamic_wire_map"])
     int_wires = [np.iinfo(np.int32).max - i - num_dynamic_wires for i in range(num_wires)]
     self.state["dynamic_wire_map"].update(dict(zip(int_wires, wires, strict=True)))
-    self.state["ops"].append(Allocate(int_wires, state=state, restored=restored))
+    self.state["ops"].append(
+        Allocate(int_wires, state=state, restored=restored, precision=precision)
+    )
     return int_wires
 
 
