@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.evolve function.
+This module contains the qp.evolve function.
 """
 
 from functools import singledispatch
@@ -54,9 +54,9 @@ def evolve(*args, **kwargs):
 
     **Examples**
 
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
+    We can use ``qp.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.evolve(qml.X(0), coeff=2)
+    >>> op = qp.evolve(qp.X(0), coeff=2)
     >>> op
     Evolution(-2j PauliX)
 
@@ -94,13 +94,13 @@ def evolve(*args, **kwargs):
     .. code-block:: python
 
         coeffs = [lambda p, t: p * t for _ in range(4)]
-        ops = [qml.X(i) for i in range(4)]
+        ops = [qp.X(i) for i in range(4)]
 
         # ParametrizedHamiltonian
-        H = qml.dot(coeffs, ops)
+        H = qp.dot(coeffs, ops)
 
         # ParametrizedEvolution
-        ev = qml.evolve(H)
+        ev = qp.evolve(H)
 
     >>> ev
     ParametrizedEvolution(wires=[0, 1, 2, 3])
@@ -109,7 +109,7 @@ def evolve(*args, **kwargs):
     is evaluated at set parameters. This is done by calling the :class:`.ParametrizedEvolution`, which has the call
     signature ``(p, t)``:
 
-    >>> matrix = qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
+    >>> matrix = qp.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
     >>> print(matrix.shape)
     (16, 16)
 
@@ -131,13 +131,13 @@ def evolve(*args, **kwargs):
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)

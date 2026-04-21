@@ -17,7 +17,7 @@ This module contains the functions for converting between OpenFermion and PennyL
 
 from functools import singledispatch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.ops import LinearCombination, Sum
@@ -58,16 +58,16 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
     **Example**
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from openfermion import FermionOperator, QubitOperator
     >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
-    >>> pl_op = qml.from_openfermion(of_op)
+    >>> pl_op = qp.from_openfermion(of_op)
     >>> print(pl_op)
     0.5 * a⁺(0) a(2)
     + 1.0 * a(0) a⁺(2)
 
     >>> of_op = QubitOperator('X0', 1.2) + QubitOperator('Z1', 2.4)
-    >>> pl_op = qml.from_openfermion(of_op)
+    >>> pl_op = qp.from_openfermion(of_op)
     >>> print(pl_op)
     1.2 * X(0) + 2.4 * Z(1)
     """
@@ -98,7 +98,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
     coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, wires=wires, tol=tol)
 
-    pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
+    pennylane_op = qp.ops.LinearCombination(coeffs, pl_ops)
 
     return pennylane_op
 
@@ -123,17 +123,17 @@ def to_openfermion(
 
     **Example**
 
-    >>> import pennylane as qml
-    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> fermi_s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> of_fermi_op = qml.to_openfermion(fermi_s)
+    >>> import pennylane as qp
+    >>> w1 = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qp.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> fermi_s = qp.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> of_fermi_op = qp.to_openfermion(fermi_s)
     >>> of_fermi_op
     1.2 [0^ 1] +
     3.1 [1^ 2]
 
-    >>> sum_op = 1.2 * qml.X(0) + 2.4 * qml.Z(1)
-    >>> of_qubit_op = qml.to_openfermion(sum_op)
+    >>> sum_op = 1.2 * qp.X(0) + 2.4 * qp.Z(1)
+    >>> of_qubit_op = qp.to_openfermion(sum_op)
     >>> of_qubit_op
     (1.2+0j) [X0] +
     (2.4+0j) [Z1]
@@ -164,7 +164,7 @@ def _(ops: FermiWord, wires=None, tol=1.0e-16):
     if wires:
         raise ValueError("Custom wire mapping is not supported for fermionic operators.")
 
-    return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(ops, of=True))
+    return openfermion.ops.FermionOperator(qp.fermi.fermionic._to_string(ops, of=True))
 
 
 @_to_openfermion_dispatch.register
