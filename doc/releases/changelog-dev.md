@@ -991,7 +991,7 @@ The following classes have been ported over:
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
-* The :mod:`~.transforms` module has been reogranized to allow for
+* The :mod:`pennylane.transforms` module has been reogranized to allow for
   easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
