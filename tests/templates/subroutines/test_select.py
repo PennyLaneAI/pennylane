@@ -369,8 +369,8 @@ class TestSelect:
         import jax.numpy as jnp
 
         def circuit(control_wires):
-            ops = [qml.X(0), qml.Y(0)]
-            qml.Select(ops, control_wires)
+            ops = [qp.X(0), qp.Y(0)]
+            qp.Select(ops, control_wires)
             return True
 
         control_wires = jnp.arange(1, 3)
