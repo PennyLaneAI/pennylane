@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the LeftClassicalComparator template for performing inequality test of two quantum registers."""
+"""Contains the LeftClassicalComparator template for performing inequality test of a quantum register and a classical integer."""
 
 from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.decomposition import (
@@ -55,7 +55,7 @@ class LeftClassicalComparator(Operation):
             At least ``len(x_wires) - 1`` zeroed work wires should be provided.
             They are not returned in the zero state.
         op (str): The operator used in the inequality. Possible values are:
-            '<', '<=', '>=' and '>'.
+            `'<'`, `'<='`, `'>='` and `'>'`.
 
     **Example**
 
@@ -197,7 +197,7 @@ class LeftClassicalComparator(Operation):
 
 
 def _get_specific_bit(L, i):
-    # returns the i-th bit of the binary representation of L
+    # returns the i-th bit of the binary representation of L in little endian convention.
     return (L >> i) & 1
 
 
@@ -211,16 +211,13 @@ def _left_classical_comparator_resources(num_x_wires, L, op):
         X: 0,
     }
 
-    bit_0 = (L >> 0) & 1
+    bit_0 = _get_specific_bit(L, 0)
     if bit_0:
         resources[X] += 2
         resources[CNOT] += 1
 
-    for i in range(1, num_x_wires):
-        bit_i = (L >> i) & 1
-        resources[CNOT] += 1
-        if bit_i:
-            resources[X] += 4
+    resources[CNOT] += num_x_wires - 1
+    resources[X] += 4*(L.bit_count() - L&1)
 
     if op in [">", ">="]:
         resources[X] += 1
