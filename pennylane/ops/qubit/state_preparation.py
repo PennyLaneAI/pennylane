@@ -393,6 +393,12 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            state = qml.math.array(state, like="jax")
+        return super()._primitive_bind_call(state, wires, **kwargs)
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
