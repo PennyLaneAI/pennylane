@@ -16,7 +16,7 @@ corresponding subclasses, are found in ``pennylane/operations.py``.
 
 .. note::
 
-  Check :doc:`/code/qml_measurements` for documentation on how to create new measurements.
+  Check :doc:`/code/qp_measurements` for documentation on how to create new measurements.
 
 Abstraction
 ###########
@@ -134,7 +134,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
 
     class FlipAndRotate(qml.operation.Operation):
@@ -330,7 +330,7 @@ implementations. The onus is on the contributors of new operators to add them to
     The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
     
     Included attributes are listed in the ``Operation``
-    `documentation <https://pennylane.readthedocs.io/en/latest/code/qml_operation.html#operation-attributes>`__.
+    `documentation <https://pennylane.readthedocs.io/en/latest/code/qp_operation.html#operation-attributes>`__.
 
 Adding your new operator to PennyLane
 #####################################

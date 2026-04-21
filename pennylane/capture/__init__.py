@@ -73,26 +73,26 @@ See also:
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
-the switches ``qml.capture.enable`` and ``qml.capture.disable``.
+the switches ``qp.capture.enable`` and ``qp.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
-queried with ``qml.capture.enabled``.
+queried with ``qp.capture.enabled``.
 By default, the mechanism is disabled:
 
 .. code-block:: pycon
 
-    >>> import pennylane as qml
-    >>> qml.capture.enabled()
+    >>> import pennylane as qp
+    >>> qp.capture.enabled()
     False
-    >>> qml.capture.enable()
-    >>> qml.capture.enabled()
+    >>> qp.capture.enable()
+    >>> qp.capture.enabled()
     True
-    >>> qml.capture.disable()
-    >>> qml.capture.enabled()
+    >>> qp.capture.disable()
+    >>> qp.capture.enabled()
     False
 
 .. note::
     To activate program capture when using :func:`~.qjit`, please set `capture=True`
-    instead of using `qml.capture.enable`. By default, `capture=False`.
+    instead of using `qp.capture.enable`. By default, `capture=False`.
 
 
 **Custom Operator Behaviour**
@@ -103,7 +103,7 @@ and any keyword arguments are passed as keyword metadata.
 
 .. code-block:: python
 
-    class MyOp1(qml.operation.Operator):
+    class MyOp1(qp.operation.Operator):
 
         def __init__(self, arg1, wires, key=None):
             super().__init__(arg1, wires=wires)
@@ -111,7 +111,7 @@ and any keyword arguments are passed as keyword metadata.
     def qfunc(a):
         MyOp1(a, wires=(0,1), key="a")
 
-    qml.capture.enable()
+    qp.capture.enable()
     print(jax.make_jaxpr(qfunc)(0.1))
 
 .. code-block::
@@ -131,7 +131,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 .. code-block:: python
 
-    class JustMetadataOp(qml.operation.Operator):
+    class JustMetadataOp(qp.operation.Operator):
 
         def __init__(self, metadata):
             super().__init__(wires=[])
@@ -145,7 +145,7 @@ will be called when constructing a new class instance instead of ``type.__call__
     def qfunc():
         JustMetadataOp("Y")
 
-    qml.capture.enable()
+    qp.capture.enable()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
@@ -160,7 +160,7 @@ If needed, developers can also override the implementation method of the primiti
 
 .. code-block:: python
 
-    class MyCustomOp(qml.operation.Operator):
+    class MyCustomOp(qp.operation.Operator):
         pass
 
     @MyCustomOp._primitive.def_impl
@@ -192,15 +192,15 @@ qnode_prim: "jax.extend.core.Primitive"
 PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
-QmlPrimitive: "Type[jax.extend.core.Primitive]"
+QpPrimitive: "Type[jax.extend.core.Primitive]"
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
-    if key == "QmlPrimitive":
-        from .custom_primitives import QmlPrimitive
+    if key == "QpPrimitive":
+        from .custom_primitives import QpPrimitive
 
-        return QmlPrimitive
+        return QpPrimitive
 
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator
