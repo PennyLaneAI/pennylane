@@ -15,11 +15,9 @@
 from functools import lru_cache, reduce
 
 import numpy as np
-from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation2 import Operation2, Operator2
 from pennylane.templates.core import AbstractArray
 from pennylane.typing import TensorLike
@@ -53,7 +51,14 @@ class Hadamard2(Operation2):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        import jax
+
+        wire = (
+            self.wires[0]
+            if not qml.math.is_abstract(self.wires)
+            and not isinstance(self.wires, jax.core.ShapedArray)
+            else self.wires
+        )
         if isinstance(wire, str):
             return f"H('{wire}')"
         return f"H({wire})"
@@ -152,7 +157,14 @@ class PauliX2(Operation2):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        import jax
+
+        wire = (
+            self.wires[0]
+            if not qml.math.is_abstract(self.wires)
+            and not isinstance(self.wires, jax.core.ShapedArray)
+            else self.wires
+        )
         if isinstance(wire, str):
             return f"X('{wire}')"
         return f"X({wire})"
@@ -226,7 +238,14 @@ class PauliY2(Operation2):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        import jax
+
+        wire = (
+            self.wires[0]
+            if not qml.math.is_abstract(self.wires)
+            and not isinstance(self.wires, jax.core.ShapedArray)
+            else self.wires
+        )
         if isinstance(wire, str):
             return f"Y('{wire}')"
         return f"Y({wire})"
@@ -301,7 +320,14 @@ class PauliZ2(Operation2):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        import jax
+
+        wire = (
+            self.wires[0]
+            if not qml.math.is_abstract(self.wires)
+            and not isinstance(self.wires, jax.core.ShapedArray)
+            else self.wires
+        )
         if isinstance(wire, str):
             return f"Z('{wire}')"
         return f"Z({wire})"

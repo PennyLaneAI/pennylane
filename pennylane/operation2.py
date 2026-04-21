@@ -21,6 +21,7 @@ import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
+from functools import lru_cache
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal, Optional, Union
 
@@ -41,7 +42,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _get_abstract_operator, classproperty
+from pennylane.operation import classproperty
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -60,6 +61,77 @@ except ImportError:
 # =============================================================================
 
 
+@lru_cache  # construct the first time lazily
+def _get_abstract_operator() -> type:
+    """Create an AbstractOperator once in a way protected from lack of a jax install."""
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+
+    class AbstractOperator2(jax.core.AbstractValue):
+        """An operator captured into plxpr."""
+
+        def __init__(self, op_cls=None, args=(), kwargs={}):
+            self.op_cls = op_cls
+            self.args = args
+            self.kwargs = kwargs
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractOperator2)
+
+        def __hash__(self):
+            return hash("AbstractOperator2")
+
+        def __repr__(self):
+            return f"AbstractOperator2({self.op_cls.__name__})"
+
+        @staticmethod
+        def _matmul(*args):
+            return qml.prod(*args)
+
+        @staticmethod
+        def _mul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _rmul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _add(a, b):
+            return qml.sum(a, b)
+
+        @staticmethod
+        def _pow(a, b):
+            return qml.pow(a, b)
+
+        def create_op(self):
+            args_dict = dict(self.kwargs)
+            dyn_argnames = args_dict.pop("dyn_argnames", ())
+            wire_argnames = args_dict.pop("wire_argnames", ())
+
+            for i, name in enumerate(dyn_argnames + wire_argnames):
+                args_dict[name] = self.args[i]
+
+            return type.__call__(self.op_cls, **args_dict)
+
+    return AbstractOperator2
+
+
 def create_operator_primitive(
     operator_type: type["Operator2"],
 ) -> Optional["jax.extend.core.Primitive"]:
@@ -72,7 +144,7 @@ def create_operator_primitive(
     primitive.prototype_op = True
 
     @primitive.def_impl
-    def _impl(*args, dyn_argnames, wire_argnames, **static_args):
+    def _impl(*args, dyn_argnames, wire_argnames, op_cls, **static_args):
         args_dict = dict(static_args)
 
         cur_idx = 0
@@ -89,8 +161,8 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        return abstract_type()
+    def _abstract_eval(*args, op_cls, **kwargs):
+        return abstract_type(op_cls, args, kwargs)
 
     return primitive
 
@@ -145,7 +217,16 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         self._bound_args.apply_defaults()
 
         for n in self.wire_argnames:
-            self._bound_args.arguments[n] = Wires(self._bound_args.arguments[n])
+            w = self._bound_args.arguments[n]
+            if qml.capture.enabled:
+                if math.is_abstract(w) or isinstance(w, jax.core.ShapedArray):
+                    val = w
+                else:
+                    val = jax.numpy.array(w, dtype=int)
+            else:
+                val = Wires(w)
+
+            self._bound_args.arguments[n] = val
 
         self.queue()
 
@@ -211,7 +292,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             range,
             qml.capture.autograph.ag_primitives.PRange,
             set,
-            *array_types,
         )
 
         bound_args = cls._sig.bind(*args, **kwargs)
@@ -225,8 +305,12 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         all_wires = []
         for w in cls.wire_argnames:
             cur_wires = args_dict[w]
-            if isinstance(cur_wires, array_types) and cur_wires.shape == ():
-                all_wires.append(jax.numpy.array([cur_wires], dtype=int))
+            if isinstance(cur_wires, array_types):
+                if "int" not in math.get_dtype_name(cur_wires):
+                    cur_wires = math.cast(cur_wires, int)
+                if cur_wires.shape == ():
+                    cur_wires = math.expand_dims(cur_wires, axis=0)
+                all_wires.append(cur_wires)
             elif isinstance(cur_wires, iterable_wires_types):
                 all_wires.append(jax.numpy.array(cur_wires, dtype=int))
             else:
@@ -234,13 +318,15 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         static_args = {}
         for s in cls.static_argnames:
-            static_args[s] = args_dict[s]
+            val = args_dict[s]
+            static_args[s] = val
 
         prim_args = (*dyn_args, *all_wires)
         prim_kwargs = {
             **static_args,
             "dyn_argnames": cls.dyn_argnames,
             "wire_argnames": cls.wire_argnames,
+            "op_cls": cls,
         }
         return cls._primitive.bind(*prim_args, **prim_kwargs)
 
@@ -596,7 +682,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 dyn_data.append(v)
                 hashable_data.append((k, None))
             else:
-                hashable_data.append(k, v)
+                hashable_data.append((k, v))
 
         return tuple(dyn_data), tuple(hashable_data)
 
