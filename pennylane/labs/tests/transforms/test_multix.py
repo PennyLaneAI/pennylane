@@ -170,3 +170,48 @@ class TestControlledMultiX:
             return qp.state()
 
         assert np.allclose(decomposed(in_state), reference(in_state))
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("n", [5])
+    def test_correctness_with_allocated_work_wires(self, n, seed):
+        """Test that the controlled MultiX with allocated work wires produces the correct unitary."""
+        pytest.importorskip("catalyst")
+
+        control = list(range(n))
+        wires = list(range(n, 2 * n))
+
+        main_wires = control + wires
+
+        work_wires = list(range(2 * n, 3 * n - 1))
+
+        all_wires = main_wires + work_wires
+
+        rng = np.random.default_rng(seed)
+        in_state = rng.random(2 ** len(main_wires))
+        in_state /= np.linalg.norm(in_state)
+
+        dev = qp.device("lightning.qubit", wires=all_wires)
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(
+            gate_set={
+                "StatePrep",
+                "TemporaryAND",
+                "Adjoint(TemporaryAND)",
+                "CNOT",
+            },
+            num_work_wires=n - 1,
+        )
+        @qp.qnode(dev)
+        def decomposed(in_state):
+            qp.StatePrep(in_state, wires=main_wires)
+            qp.ctrl(MultiX(wires), control=control)
+            return qp.state()
+
+        @qp.qnode(dev)
+        def reference(in_state):
+            qp.StatePrep(in_state, wires=main_wires)
+            qp.ctrl(MultiX(wires), control=control)
+            return qp.state()
+
+        assert np.allclose(decomposed(in_state), reference(in_state))
