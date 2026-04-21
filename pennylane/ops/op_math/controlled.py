@@ -155,7 +155,13 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+        return ops_loader.ctrl(
+            op,
+            control,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
     if math.is_abstract(op):
         return Controlled(
             op,
