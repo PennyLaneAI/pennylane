@@ -208,6 +208,38 @@ class TestDecomposition:
 
 
 class TestStatePrepIntegration:
+    @pytest.mark.external
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_state_prep_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+
+        state = input_type([1, 0, 0, 0])
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.StatePrep(state, wires=[0, 1])
+            return qp.state()
+
+        result = circuit()
+        assert np.allclose(result, state)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_basis_state_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+
+        state = input_type([1, 0])
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.BasisState(state, wires=[0, 1])
+            return qp.state()
+
+        result = circuit()
+        # (0,0,1,0) == |10>
+        assert np.allclose(result, (0, 0, 1, 0))
 
     @pytest.mark.parametrize(
         "state, pad_with, expected",
