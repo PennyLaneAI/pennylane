@@ -266,7 +266,9 @@ def _specs_from_analysis_pass(
     level_to_name: dict[int, str],
     *args,
     **kwargs,
-) -> dict[str, SpecsResources | list[SpecsResources]]:
+) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+
     from catalyst import QJIT
 
     new_qnode = copy.deepcopy(original_qnode)
