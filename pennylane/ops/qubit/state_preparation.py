@@ -87,6 +87,8 @@ class BasisState(StatePrepBase):
 
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            state = qml.math.array(state, like="jax")
         return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
