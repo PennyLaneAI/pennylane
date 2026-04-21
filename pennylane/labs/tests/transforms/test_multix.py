@@ -92,7 +92,6 @@ class TestControlledMultiX:
 
         assert np.allclose(decomposed(in_state), reference(in_state))
 
-    @pytest.mark.catalyst
     @pytest.mark.parametrize("capture", [True, False])
     def test_correctness_without_work_wires(self, capture, seed):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
@@ -129,7 +128,6 @@ class TestControlledMultiX:
 
         assert np.allclose(decomposed(in_state), reference(in_state))
 
-    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 5])
     def test_correctness_with_work_wires(self, n, seed):
         """Test that the controlled MultiX without work wires produces the correct unitary."""

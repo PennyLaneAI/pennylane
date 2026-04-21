@@ -234,14 +234,6 @@ def ctrl_decomp_with_allocate(
 ):
     """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
     c = len(control_wires)
-    if c == 1:
-        base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base))
-        qp.ctrl(
-            base_op,
-            control=control_wires,
-            control_values=control_values,
-        )
-        return
 
     base_wires = base.wires
     num_needed = c - 1
@@ -268,15 +260,6 @@ def ctrl_decomp_with_work_wires(
 ):
     """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
     c = len(control_wires)
-    if c == 1:
-        base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base))
-        qp.ctrl(
-            base_op,
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-        )
-        return
 
     base_wires = base.wires
     num_needed = c - 1
