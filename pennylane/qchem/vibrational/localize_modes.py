@@ -120,7 +120,7 @@ def _localization_unitary(qmat):
     nmodes = qmat.shape[2]
     num_params = nmodes * (nmodes - 1) // 2
 
-    rng = qp.math.random.default_rng(1000)
+    rng = qp_math.random.default_rng(1000)
     params = 2 * np.pi * rng.random(num_params)
 
     qnormalized = _normalize_q(qmat)
