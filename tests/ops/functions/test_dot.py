@@ -14,6 +14,7 @@
 """
 Unit tests for the dot function
 """
+
 import pytest
 
 import pennylane as qml

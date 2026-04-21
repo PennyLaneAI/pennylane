@@ -20,6 +20,7 @@ Here, we integrate AutoGraph into PennyLane to improve the UX and allow programm
 Python control flow and other imperative expressions rather than the functional equivalents provided
 by PennyLane.
 """
+
 import copy
 import inspect
 import warnings
@@ -31,7 +32,7 @@ from malt.impl.api import PyToPy
 import pennylane as qml
 from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
-from . import ag_primitives, operator_update
+from . import ag_primitives
 
 
 class PennyLaneTransformer(PyToPy):
@@ -137,20 +138,6 @@ class PennyLaneTransformer(PyToPy):
         )
 
         return new_fn
-
-    def transform_ast(self, node, ctx):
-        """Overload of PyToPy.transform_ast from DiastaticMalt
-        .. note::
-            Once the operator_update interface has been migrated to the
-            DiastaticMalt project, this overload can be deleted."""
-        # The operator_update transform would be more correct if placed with
-        # slices.transform in PyToPy.transform_ast in DiastaticMalt rather than
-        # at the beginning of the transformation. operator_update.transform
-        # should come after the unsupported features check and initial analysis,
-        # but it fails if it does not come before variables.transform.
-        node = operator_update.transform(node, ctx)
-        node = super().transform_ast(node, ctx)
-        return node
 
 
 def run_autograph(fn):

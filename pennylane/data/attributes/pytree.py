@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for PyTree types."""
 
-
 from typing import TypeVar
 
 import numpy as np

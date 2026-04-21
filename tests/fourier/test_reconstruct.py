@@ -14,6 +14,7 @@
 """
 Tests for the Fourier reconstruction transform.
 """
+
 from functools import reduce
 
 # pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items

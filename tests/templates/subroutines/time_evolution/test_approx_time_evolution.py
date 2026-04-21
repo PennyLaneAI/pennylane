@@ -14,6 +14,7 @@
 """
 Tests for the ApproxTimeEvolution template.
 """
+
 import numpy as np
 import pytest
 
@@ -264,6 +265,7 @@ class TestInputs:
         ):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])

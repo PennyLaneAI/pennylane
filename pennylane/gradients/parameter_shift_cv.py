@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a CV-based quantum tape.
 """
+
 import itertools
 import warnings
 from functools import partial

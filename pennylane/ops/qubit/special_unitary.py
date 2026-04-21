@@ -15,6 +15,7 @@
 This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
+
 # pylint: disable=arguments-differ, import-outside-toplevel
 from functools import lru_cache, reduce
 from itertools import product
@@ -685,8 +686,7 @@ class SpecialUnitary(Operation):
 
             # Apply Pauli rotations that yield the Pauli basis derivatives
             paulirots = [
-                TmpPauliRot(zero, word, wires=self.wires, id="SU(N) byproduct")
-                for zero, word in zip(zeros, words)
+                TmpPauliRot(zero, word, wires=self.wires) for zero, word in zip(zeros, words)
             ]
             return paulirots + [SpecialUnitary(detached_theta, wires=self.wires)]
 

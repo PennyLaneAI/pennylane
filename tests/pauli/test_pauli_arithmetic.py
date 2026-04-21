@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
+
 # pylint: disable=too-many-public-methods,too-many-arguments,protected-access
 
 import pickle
@@ -136,6 +137,22 @@ class TestPauliWord:
         assert pw_1.__hash__() == pw_2.__hash__()
         assert pw_1.__hash__() == pw_3.__hash__()
         assert pw_1.__hash__() != pw_4.__hash__()
+
+    # pylint: disable=unnecessary-dunder-call
+    def test_hash_caches(self):
+        """Test that hashes are cached correctly and not recomputed."""
+        pw = PauliWord({0: I, 1: X, 2: Y})
+
+        assert pw._hashval is None  # hash should not be computed until __hash__ is called
+        h = pw.__hash__()
+
+        assert pw._hashval is not None
+        assert h == pw._hashval
+        assert h is pw._hashval  # Ensure the same exact value is returned
+
+        h2 = pw.__hash__()  # should not recompute hash
+        assert h == h2
+        assert h is h2  # Ensure the same exact value is returned
 
     @pytest.mark.parametrize("pw", (pw1, pw2, pw3, pw4))
     def test_copy(self, pw):
@@ -865,6 +882,22 @@ class TestPauliSentence:
         un_simplified_ps.simplify(tol=1e-2)
         assert un_simplified_ps == expected_simplified_ps1
         un_simplified_ps.simplify(tol=1e-1)
+        assert un_simplified_ps == expected_simplified_ps2
+
+    def test_prune(self):
+        """Test that prune removes terms in the PauliSentence with
+        coefficient less than the threshold"""
+        un_simplified_ps = PauliSentence({pw1: 0.001, pw2: 0.05, pw3: 1})
+
+        expected_simplified_ps0 = PauliSentence({pw1: 0.001, pw2: 0.05, pw3: 1})
+        expected_simplified_ps1 = PauliSentence({pw2: 0.05, pw3: 1})
+        expected_simplified_ps2 = PauliSentence({pw3: 1})
+
+        un_simplified_ps.prune()
+        assert un_simplified_ps == expected_simplified_ps0  # default tol = 1e-8
+        un_simplified_ps.prune(tol=1e-2)
+        assert un_simplified_ps == expected_simplified_ps1
+        un_simplified_ps.prune(tol=1e-1)
         assert un_simplified_ps == expected_simplified_ps2
 
     tup_ps_operation = (

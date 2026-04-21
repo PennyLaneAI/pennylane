@@ -66,6 +66,14 @@ def estimate(
 
     Raises:
         TypeError: If the ``workflow`` is of an invalid type.
+        ResourcesUndefinedError: If encountering a ``ResourceOperator`` without a resource decomposition.
+
+    .. note::
+
+        This function does not guarantee that resources can be expressed in terms of the provided ``gate_set``.
+        If an encountered :class:`~.pennylane.estimator.resource_operator.ResourceOperator`
+        is not included in the provided ``gate_set`` and does not have a resource decomposition,
+        PennyLane will raise an error.
 
     **Example**
 

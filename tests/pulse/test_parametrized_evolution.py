@@ -14,6 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
+
 # pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access,possibly-unused-variable
 from functools import reduce
 
@@ -155,7 +156,6 @@ class TestInitialization:
         assert ev.wires == H.wires
         assert ev.num_wires is None
         assert ev.name == "ParametrizedEvolution"
-        assert ev.id is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)

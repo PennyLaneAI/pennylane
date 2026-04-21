@@ -14,6 +14,7 @@
 """
 Unit tests for the Pow arithmetic class of qubit operations
 """
+
 from copy import copy
 
 import pytest
@@ -165,15 +166,13 @@ class TestInitialization:
         """Test pow initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op: Pow = power_method(base=base, z=-4.2, id="something")
+        op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -187,15 +186,13 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op: Pow = power_method(base=base, z=-0.766, id="id")
+        op: Pow = power_method(base=base, z=-0.766)
 
         assert op.base is base
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Rot**-0.766"
-        if power_method.__name__ == Pow.__name__:
-            assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -489,8 +486,8 @@ class TestSimplify:
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
-        final_op = qml.CH([1, 0], id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1), z=3)
+        final_op = qml.CH([1, 0])
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 

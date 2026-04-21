@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains template for QDrift subroutine."""
+
 import copy
 
 from pennylane import math

@@ -14,6 +14,7 @@
 r"""
 Contains the Superposition template.
 """
+
 from collections import Counter
 from functools import reduce
 

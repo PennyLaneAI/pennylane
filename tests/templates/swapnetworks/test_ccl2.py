@@ -279,6 +279,7 @@ class TestInputs:
                 shif=False,
             )
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute can be set."""
         template = qml.templates.TwoLocalSwapNetwork(

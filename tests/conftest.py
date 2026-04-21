@@ -14,10 +14,12 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
+
 # pylint: disable=unused-import
 import os
 import pathlib
 import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -25,6 +27,7 @@ from packaging.version import Version
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -40,6 +43,18 @@ class DummyDevice(DefaultGaussian):
 
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
+
+
+@pytest.fixture
+def ignore_id_deprecation():
+    """Fixture to suppress PennyLaneDeprecationWarning for 'id' tests."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=PennyLaneDeprecationWarning,
+            message="The 'id' argument is deprecated",
+        )
+        yield
 
 
 @pytest.fixture(scope="session")
@@ -302,7 +317,7 @@ def pytest_collection_modifyitems(items, config):
         ):
             item.add_marker(pytest.mark.core)
         if "capture" in markers:
-            item.fixturenames.append("enable_disable_plxpr")
+            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
             if "jax" not in markers:
                 item.add_marker(pytest.mark.jax)
 

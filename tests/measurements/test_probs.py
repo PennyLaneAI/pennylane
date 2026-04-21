@@ -497,9 +497,9 @@ class TestProbs:
             _ = qml.probs(op=[2 * m0, m1])
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_batch_size(self, shots):
+    def test_batch_size(self, shots, seed):
         """Test the probability is correct for a batched input."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1, seed=seed)
 
         @qml.set_shots(shots)
         @qml.qnode(dev)

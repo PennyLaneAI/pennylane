@@ -14,6 +14,7 @@
 """
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the expval module"""
+
 import copy
 
 import numpy as np
@@ -289,7 +290,7 @@ class TestExpval:
     def test_eigvals(self):
         """Test that the eigvals property controls the hash property."""
         m1 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0))
-        m2 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0), id="something")
+        m2 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0))
 
         assert m1.hash == m2.hash
 

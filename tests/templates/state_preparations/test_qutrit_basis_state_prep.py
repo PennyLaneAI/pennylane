@@ -14,6 +14,7 @@
 """
 Unit tests for the QutritBasisStatePreparation template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments
@@ -286,6 +287,7 @@ class TestInputs:
             basis_state = np.array([0, 3])
             circuit(basis_state, obs)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.QutritBasisStatePreparation(np.array([0, 2]), wires=[0, 1], id="a")

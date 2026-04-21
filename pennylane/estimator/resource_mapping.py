@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Mapping PL operations to their associated ResourceOperator."""
+
 from __future__ import annotations
 
 import math
@@ -77,6 +78,40 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
     )
+
+
+_Subroutine_map: dict = {}
+"""A registry for how to calculate the resources from a SubroutineOp."""
+
+
+def _register_subroutine(subroutine: qtemps.Subroutine):
+    """Register a function for calculating the resources of a SubroutineOp using a decorator.
+
+    .. code-block::
+        @_register_subroutine(MySubroutine)
+        def _resources(op: SubroutineOp):
+            return re_estimation_version(...)
+
+    """
+
+    def subroutine_resources_decorator(f):
+        _Subroutine_map[subroutine] = f
+        return f
+
+    return subroutine_resources_decorator
+
+
+@_map_to_resource_op.register
+def _resources_for_subroutine(op: qtemps.SubroutineOp):
+    if op.subroutine in _Subroutine_map:
+        return _Subroutine_map[op.subroutine](op)
+    with QueuingManager.stop_recording():
+        decomp = op.decomposition()
+
+    if len(decomp) == 1:
+        return _map_to_resource_op(decomp[0])
+
+    return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -275,8 +310,8 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_map_to_resource_op.register
-def _(op: qtemps.BasisRotation):
+@_register_subroutine(qtemps.BasisRotation)
+def _handle_basis_rotation(op):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 
@@ -394,12 +429,13 @@ def _(op: qtemps.ControlledSequence):
 @_map_to_resource_op.register
 def _(op: qtemps.QuantumPhaseEstimation):
     res_base = _map_to_resource_op(op.hyperparameters["unitary"])
-    num_estimation_wires = len(op.hyperparameters["estimation_wires"])
+    estimation_wires = op.hyperparameters["estimation_wires"]
+    num_estimation_wires = len(estimation_wires)
     return re_temps.QPE(
         base=res_base,
         num_estimation_wires=num_estimation_wires,
         adj_qft_op=None,
-        wires=op.wires,
+        wires=estimation_wires + res_base.wires,
     )
 
 
@@ -512,3 +548,14 @@ def _(op: Controlled | ControlledOp):
         num_zero_ctrl=num_zero_ctrl,
         wires=ctrl_wires,
     )
+
+
+# Identity Ops: Operations that don't actually change the quantum state!
+@_map_to_resource_op.register
+def _barrier_op(op: qops.Barrier):
+    return re_ops.Identity()
+
+
+@_map_to_resource_op.register
+def _snapshot_op(op: qops.Snapshot):
+    return re_ops.Identity()

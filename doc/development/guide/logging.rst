@@ -8,7 +8,7 @@ To enable logging support in your PennyLane work-flow simply run the following l
 
 .. code:: python
 
-   import pennylane as qml
+   import pennylane as qp
    qml.logging.enable_logging()
 
 
@@ -288,7 +288,7 @@ process, and surrounding operations:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import jax, jax.numpy as jnp
     from jax import jacfwd, jacrev
     import logging
@@ -354,7 +354,7 @@ tie-into the execution pipeline for devices without backprop supports:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import logging
 
     qml.logging.enable_logging()

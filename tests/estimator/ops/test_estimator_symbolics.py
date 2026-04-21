@@ -14,6 +14,7 @@
 """
 Tests for symbolic resource operators.
 """
+
 from collections import defaultdict
 
 import pytest

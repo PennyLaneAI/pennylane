@@ -23,7 +23,8 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy>=2.0"
+    "numpy>=2.0",
+    "gast"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -53,6 +54,7 @@ ci = [
     "build"
 ]
 dev = [
+    "sybil",
     "pre-commit>=2.19.0",
     "pytest>=8.4.1",
     "pytest-cov>=3.0.0",
@@ -61,7 +63,6 @@ dev = [
     "pytest-rng",
     "flaky>=3.7.0",
     "pytest-forked>=1.4.0",
-    "pytest-benchmark",
     "pytest-split",
     "tomlkit~=0.13",
     "rich>=13.7.1",
@@ -69,37 +70,20 @@ dev = [
     "build",
     "pylint~=4.0.0",
     "isort~=7.0.0",
-    "black==25.9.0",
+    "black==26.3.1",
     "matplotlib",
-]
-docker = [
-    "cvxpy~=1.2",
-    "cvxopt~=1.3.0; python_version < '3.14'",
-    "cachetools~=5.3.0", # this should be at least v5.3.0 because qualtran v0.6 (as of 2025/01/14) requires it, no known reason for why it cannot be anything higher.
-    "matplotlib~=3.5",
-    "opt_einsum~=3.3",
-    "tach==0.32.2",
 ]
 upload-reports = [
     "pydantic==2.10.6",
     "pydantic-settings==2.8.0",
-    "requests==2.32.4",
+    "requests==2.33.0",
 ]
-[[project.maintainers]]
-name = "Xanadu Quantum Technologies Inc."
-email = "software@xanadu.ai"
-
-[project.urls]
-repository = "https://github.com/PennyLaneAI/pennylane"
-
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
 docs = [
     "jax==0.7.1",
     "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",
-    # TODO: Remove once galois becomes compatible with latest numpy 
+    # TODO: Remove once galois becomes compatible with latest numpy
     "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
@@ -123,8 +107,58 @@ docs = [
     "sphinx-sitemap",
     "matplotlib==3.10.0",
     "galois",
-    "requests==2.32.4"
+    "requests==2.33.0",
+    "aiohttp",
+    "fsspec",
+    "h5py",
+    "openfermionpyscf"
 ]
+external-libraries = [
+    "pyzx",
+    "stim",
+    "quimb",
+    "optax",
+    "scipy-openblas32>=0.3.26",
+    "qualtran",
+    "openqasm3",
+    "antlr4_python3_runtime",
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+]
+qchem = [
+    "openfermionpyscf",
+    "basis-set-exchange",
+    "geometric",
+    "scikit-learn",
+    "numpy<2.4"
+]
+qcut = [
+    "kahypar==1.3.5",
+    "opt_einsum"
+]
+doctest = [
+    # Tools needed for documentation testing
+    "sybil",
+    "pytest>=8.4.1",
+
+    # Used in docstrings of tested modules
+    "matplotlib",
+    "torch",
+    "pyzx",
+    "jax==0.7.1",
+    "jaxlib==0.7.1",
+    "stim",
+    "quimb",
+]
+
+[[project.maintainers]]
+name = "Xanadu Quantum Technologies Inc."
+email = "software@xanadu.ai"
+
+[project.urls]
+repository = "https://github.com/PennyLaneAI/pennylane"
+
+[project.optional-dependencies]
+kernels = ["cvxpy", "cvxopt"]
 
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"
@@ -153,12 +187,12 @@ py-modules = []
 where = ["."]
 
 [tool.setuptools.dynamic]
-version = {attr = "pennylane._version.__version__"} 
+version = {attr = "pennylane._version.__version__"}
 
 [tool.setuptools_scm]
 
 [tool.setuptools.package-data]
-pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
+pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sign_expand/sign_expand_data.json"]
 
 [tool.black]
 line-length = 100

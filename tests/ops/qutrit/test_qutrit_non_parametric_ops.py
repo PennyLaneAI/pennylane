@@ -14,6 +14,7 @@
 """
 Unit tests for the available non-parametric qutrit operations
 """
+
 import copy
 
 import numpy as np

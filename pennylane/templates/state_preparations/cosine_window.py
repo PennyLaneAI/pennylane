@@ -14,6 +14,7 @@
 r"""
 Contains the CosineWindow template.
 """
+
 import numpy as np
 
 import pennylane as qml
@@ -154,7 +155,7 @@ def _cosine_window_resources(num_wires):
 
 
 @register_resources(_cosine_window_resources)
-def _cosine_window_decomposition(wires):
+def _cosine_window_decomposition(wires, **_):
     qml.Hadamard(wires=wires[-1])
     qml.RZ(np.pi, wires=wires[-1])
     qml.adjoint(qml.QFT)(wires=wires)

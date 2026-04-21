@@ -57,6 +57,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms.disentangle_cnot
+    ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
@@ -300,8 +302,8 @@ Alternatively, multiple transforms can be chained together to create a :class:`~
 >>> pipeline = qml.transforms.cancel_inverses(recursive=True) + qml.transforms.merge_rotations
 >>> print(pipeline)
 CompilePipeline(
-  [0] cancel_inverses(recursive=True),
-  [1] merge_rotations()
+  [1] cancel_inverses(recursive=True),
+  [2] merge_rotations()
 )
 
 The :class:`~.CompilePipeline` can also be applied on a ``QNode``, which will transform the
@@ -391,14 +393,15 @@ Additional information
 ----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qp_gradients>`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qp_transforms>`.
 
 """
 
 # Leave as alias for backwards-compatibility
 from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
+from pennylane._entry_points_utils import _setup_entry_points
 
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, CompilePipeline
@@ -410,14 +413,7 @@ from .compile import compile
 
 from .decompositions import (
     clifford_t_decomposition,
-    commute_ppr,
-    decompose_arbitrary_ppr,
     gridsynth,
-    merge_ppr_ppm,
-    ppm_compilation,
-    ppr_to_ppm,
-    reduce_t_depth,
-    to_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
@@ -470,3 +466,5 @@ from .intermediate_reps import (
     rowcol,
 )
 from .rz_phase_gradient import rz_phase_gradient
+
+__all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.transforms")

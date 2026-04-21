@@ -14,6 +14,7 @@
 """
 Contains the IQP template.
 """
+
 from collections import defaultdict
 from functools import reduce
 

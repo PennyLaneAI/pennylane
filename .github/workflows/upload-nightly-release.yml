@@ -6,15 +6,24 @@ on:
     - cron: "0 5 * * 2-6"
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   setup:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout PennyLane repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: 0.9.17
+        enable-cache: true  
 
     - name: Bump dev version
       run: |
@@ -30,10 +39,9 @@ jobs:
 
     - name: Build wheels
       run: |
-        python -m pip install build
-        python -m build --wheel --outdir dist
+        uv build --wheel --out-dir dist
   
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: nightly-wheels
         path: ./dist/*.whl
@@ -46,7 +54,7 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         name: nightly-wheels
         path: dist

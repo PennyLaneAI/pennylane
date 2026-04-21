@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Riemannian gradient optimizer"""
+
 import warnings
 
 import numpy as np

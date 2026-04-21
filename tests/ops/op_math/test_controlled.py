@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for Controlled"""
+
 from copy import copy
 from functools import partial
 
@@ -128,9 +129,7 @@ class TestControlledInit:
     def test_nonparametric_ops(self):
         """Test pow initialization for a non parameteric operation."""
 
-        op = Controlled(
-            self.temp_op, (0, 1), control_values=[True, False], work_wires="aux", id="something"
-        )
+        op = Controlled(self.temp_op, (0, 1), control_values=[True, False], work_wires="aux")
 
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
@@ -148,7 +147,6 @@ class TestControlledInit:
         assert op.work_wires == Wires("aux")
 
         assert op.name == "C(TempOperator)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison

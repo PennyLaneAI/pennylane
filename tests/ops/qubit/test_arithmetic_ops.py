@@ -14,6 +14,7 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
+
 # pylint: disable=too-many-arguments
 import copy
 import itertools

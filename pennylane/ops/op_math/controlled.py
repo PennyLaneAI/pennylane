@@ -155,7 +155,13 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+        return ops_loader.ctrl(
+            op,
+            control,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
     if math.is_abstract(op):
         return Controlled(
             op,
@@ -446,12 +452,12 @@ class Controlled(SymbolicOp):
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
+    .. seealso:: The :func:`~.ctrl` function is recommended for use over ``Controlled``.
+
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
-
-    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
 
@@ -492,13 +498,14 @@ class Controlled(SymbolicOp):
     Sparse matrices are available if the base class defines either a sparse matrix
     or only a dense matrix.
 
-    >>> np.set_printoptions(precision=4) # easier to read the matrix
-    >>> qml.matrix(op)
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     qml.matrix(op)
     array([[0.8156+0.j    , 0.    -0.5786j, 0.    +0.j    , 0.    +0.j    ],
            [0.    -0.5786j, 0.8156+0.j    , 0.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 1.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
-    >>> qml.eigvals(op)
+    >>> with np.printoptions(precision=4): # easier to read the matrix
+    ...     qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
     >>> print(qml.generator(op, format='observable'))
     Projector(array([0]), wires=[0]) @ (-0.5 * X(1))
@@ -1054,10 +1061,7 @@ class ControlledOp(Controlled, Operation):
     class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
     specific methods and properties.
 
-    When we no longer rely on certain functionality through ``Operation``, we can get rid of this
-    class.
-
-    .. seealso:: :class:`~.Controlled`
+    .. seealso:: This class is mostly for internal use. Please see :class:`~.Controlled` instead.
     """
 
     def __new__(cls, *_, **__):
