@@ -13,6 +13,13 @@
 # limitations under the License.
 """
 This module contains templates, which are pre-coded routines that can be used in a quantum node.
+
+.. currentmodule:: pennylane.labs.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~LeftClassicalComparator
 """
 
 from .left_classical_comparator import LeftClassicalComparator

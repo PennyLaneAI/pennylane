@@ -15,6 +15,7 @@
 Tests for the LeftClassicalComparator template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -28,16 +29,16 @@ def test_standard_validity_left_comparator():
     L = 2
     work_wires = [6, 7]
     target_wire = 8
-    op = ">="
+    comparator = ">="
 
-    gate = LeftClassicalComparator(x_wires, L, target_wire, work_wires, op=op)
+    gate = LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
     assert_valid(gate)
 
     assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
     assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
     assert gate.hyperparameters["L"] == L
     assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
-    assert gate.hyperparameters["op"] == ">="
+    assert gate.hyperparameters["comparator"] == ">="
 
 
 class TestLeftClassicalComparator:
@@ -45,47 +46,45 @@ class TestLeftClassicalComparator:
 
     @pytest.mark.catalyst
     @pytest.mark.external
+    @pytest.mark.parametrize("qjit", [True, False])
+    @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
-        ("x_wires", "L", "target_wire", "work_wires", "x", "op", "expected"),
+        ("x_wires", "L", "target_wire", "work_wires", "x"),
         [
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, "<", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, "<=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, ">=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1, ">", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, "<", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, "<=", False),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, ">=", True),
-            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2, ">", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, "<", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, "<=", True),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, ">=", False),
-            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1, ">", False),
-            ([0, 3, 6], 5, 11, [2, 5], 2, "<", True),
-            ([0, 3, 6], 5, 11, [2, 5], 2, "<=", True),
-            ([0, 3, 6], 5, 11, [2, 5], 2, ">=", False),
-            ([0, 3, 6], 5, 11, [2, 5], 2, ">", False),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1),
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8], 1),
+            ([0, 3, 6], 5, 11, [2, 5], 2),
         ],
     )
     def test_operation_result(
-        self, x_wires, L, target_wire, work_wires, x, op, expected
+        self, x_wires, L, target_wire, work_wires, x, comparator, qjit
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the LeftComparator template output."""
 
         pytest.importorskip("catalyst")
 
-        @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit():
             qp.BasisState(x, wires=x_wires)
-            LeftClassicalComparator(x_wires, L, target_wire, work_wires, op)
+            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
-            qp.adjoint(lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, op))()
-            return qp.sample(wires=[12])
+            qp.adjoint(
+                lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            )()
+            qp.BasisState(x, wires=x_wires)
+            return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
 
-        assert bool(circuit()) == expected
+        if qjit:
+            circuit = qp.qjit(circuit)
+        output = circuit()
+        expected = {"<": x < L, "<=": x <= L, ">": x > L, ">=": x >= L}[comparator]
+        assert bool(output[0]) == expected
+        assert np.isclose(sum(*output[1]), 0)  # work wires are clean
+        assert np.isclose(sum(*output[2]), 0)  # x_wires are not modified
 
     @pytest.mark.parametrize(
-        ("target_wire", "x_wires", "L", "work_wires", "op", "msg_match"),
+        ("target_wire", "x_wires", "L", "work_wires", "comparator", "msg_match"),
         [
             (
                 8,
@@ -122,16 +121,18 @@ class TestLeftClassicalComparator:
             (
                 8,
                 [0, 1, 2],
-                [3, 4, 5],
+                10,
                 [6, 7],
-                "=",
-                "Allowed values for 'op' are:",
+                "<",
+                "L must be less than",
             ),
         ],
     )
     def test_wires_error(
-        self, target_wire, x_wires, L, work_wires, op, msg_match
+        self, target_wire, x_wires, L, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qp.labs.templates.LeftClassicalComparator(x_wires, L, target_wire, work_wires, op=op)
+            qp.labs.templates.LeftClassicalComparator(
+                x_wires, L, target_wire, work_wires, comparator=comparator
+            )

@@ -29,18 +29,13 @@ class LeftClassicalComparator(Operation):
     r"""This operator performs an inequality test between a quantum register :math:`x` and a
     classical integer :math:`L`, storing the result in a target qubit.
 
-    Depending on the value of the ``op`` argument, the operator evaluates one of four
+    Depending on the value of the ``comparator`` argument, the operator evaluates one of four
     possible relations:
 
     .. math::
 
-        \text{LeftClassicalComparator}(op) |x\rangle |0\rangle =
-        \begin{cases}
-        |x\rangle |x < L\rangle & \text{if } op = \text{'<' } \\
-        |x\rangle |x \leq L\rangle & \text{if } op = \text{'<='} \\
-        |x\rangle |x \geq L\rangle & \text{if } op = \text{'>='} \\
-        |x\rangle |x > L\rangle & \text{if } op = \text{'>' }
-        \end{cases}
+        \text{LeftClassicalComparator}_{<} |x\rangle |0\rangle = |x\rangle |x < L\rangle & \text{if } op = \text{'<' }
+
 
     The decomposition is based on the left block in Figure 6 in Appendix E
     of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical
@@ -54,7 +49,7 @@ class LeftClassicalComparator(Operation):
         work_wires (WiresLike): The auxiliary wires to use for the comparison.
             At least ``len(x_wires) - 1`` zeroed work wires should be provided.
             They are not returned in the zero state.
-        op (str): The operator used in the inequality. Possible values are:
+        comparator (str): The operator used in the inequality. Possible values are:
             '<', '<=', '>=' and '>'.
 
     **Example**
@@ -76,7 +71,7 @@ class LeftClassicalComparator(Operation):
                 L=L_val,
                 target_wire=3,
                 work_wires=[4, 5],
-                op='>='
+                comparator='>='
             )
             return qml.sample(wires=3)
 
@@ -90,7 +85,7 @@ class LeftClassicalComparator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "op", "L"}
+    resource_keys = {"num_x_wires", "comparator", "L"}
 
     def __init__(
         self,
@@ -98,15 +93,15 @@ class LeftClassicalComparator(Operation):
         L: int,
         target_wire: WiresLike,
         work_wires: WiresLike,
-        op=None,
+        comparator: str,
     ):  # pylint: disable=too-many-arguments
 
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
         work_wires = Wires(work_wires)
 
-        if op not in ["<", "<=", ">=", ">"]:
-            raise ValueError("Allowed values for 'op' are: '<', '<=', '>=' and '>'.")
+        if comparator not in ["<", "<=", ">=", ">"]:
+            raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
 
         if len(work_wires) < len(x_wires) - 1:
             raise ValueError(f"At least {len(x_wires)-1} work_wires should be provided.")
@@ -116,12 +111,13 @@ class LeftClassicalComparator(Operation):
             raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if x_wires.intersection(target_wire):
             raise ValueError("None of the wires in x_wires should be the target wire.")
-
+        if L >= 2 ** len(x_wires):
+            raise ValueError("L must be less than 2**len(x_wires).")
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["L"] = L
         self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["op"] = op
+        self.hyperparameters["comparator"] = comparator
 
         all_wires = [x_wires, target_wire, work_wires]
         all_wires = Wires.all_wires(all_wires)
@@ -132,7 +128,7 @@ class LeftClassicalComparator(Operation):
         return {
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "L": self.hyperparameters["L"],
-            "op": self.hyperparameters["op"],
+            "comparator": self.hyperparameters["comparator"],
         }
 
     @property
@@ -155,7 +151,7 @@ class LeftClassicalComparator(Operation):
         }
 
         return LeftClassicalComparator(
-            **new_dict, L=self.hyperparameters["L"], op=self.hyperparameters["op"]
+            **new_dict, L=self.hyperparameters["L"], comparator=self.hyperparameters["comparator"]
         )
 
     def decomposition(self):
@@ -168,7 +164,7 @@ class LeftClassicalComparator(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, L, target_wire, work_wires, op=None
+        x_wires, L, target_wire, work_wires, comparator
     ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
@@ -179,7 +175,7 @@ class LeftClassicalComparator(Operation):
             work_wires (WiresLike): The auxiliary wires to use for the comparison.
                 At least ``len(x_wires) - 1`` zeroed work wires should be provided.
                 They are not returned in the zero state.
-            op (str): The operator used in the inequality. Possible values are:
+            comparator (str): The operator used in the inequality. Possible values are:
                 '<', '<=', '>=' and '>'.
 
         Returns:
@@ -187,7 +183,7 @@ class LeftClassicalComparator(Operation):
         """
 
         with AnnotatedQueue() as q:
-            _left_classical_comparator(x_wires, L, target_wire, work_wires, op=op)
+            _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator=comparator)
 
         if QueuingManager.recording():
             for o in q.queue:
@@ -201,8 +197,8 @@ def _get_specific_bit(L, i):
     return (L >> i) & 1
 
 
-def _left_classical_comparator_resources(num_x_wires, L, op):
-    if op in ["<=", ">"]:
+def _left_classical_comparator_resources(num_x_wires, L, comparator):
+    if comparator in ["<=", ">"]:
         L += 1
 
     resources = {
@@ -222,7 +218,7 @@ def _left_classical_comparator_resources(num_x_wires, L, op):
         if bit_i:
             resources[X] += 4
 
-    if op in [">", ">="]:
+    if comparator in [">", ">="]:
         resources[X] += 1
 
     return resources
@@ -230,9 +226,8 @@ def _left_classical_comparator_resources(num_x_wires, L, op):
 
 @register_resources(_left_classical_comparator_resources, exact=True)
 def _left_classical_comparator(
-    x_wires, L, target_wire, work_wires, op, **_
+    x_wires, L, target_wire, work_wires, comparator, **_
 ):  # pylint: disable=too-many-arguments
-    # op = ['<', '<=', '>=', '>']
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -240,18 +235,11 @@ def _left_classical_comparator(
     def _negate_output():
         X(wires=target_wire)
 
-    @cond(math.logical_or(op == "<=", op == ">"))
-    def _add(L):
-        return L + 1
+    if comparator in ["<=", ">"]:
+        L += 1
 
-    @_add.otherwise
-    def _add(L):
-        return L
-
-    L = _add(L)
-
-    cond(op == ">", _negate_output)()
-    cond(op == ">=", _negate_output)()
+    cond(comparator == ">", _negate_output)()
+    cond(comparator == ">=", _negate_output)()
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
     bit = _get_specific_bit(L, 0)
