@@ -873,7 +873,7 @@ class TestCaptureCircuitsForLoop:
             thing = ThingWithShape()
 
             # pylint: disable=unused-argument
-            @qml.for_loop(3)
+            @qp.for_loop(3)
             def f(i, x):
                 return x + thing.shape()
 
