@@ -812,12 +812,12 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
     Gate Count: {CNOT: 1, Hadamard: 2}
 
     """
-    rules_to_display = []
     stock_collection = list_decomps(op)
-    if not rules:
-        rules_to_display = stock_collection
-    for rule in rules:
-        rules_to_display.append(stock_collection[rule] if isinstance(rule, str) else rule)
+    rules_to_display = (
+        stock_collection
+        if not rules
+        else [stock_collection[rule] if isinstance(rule, str) else rule for rule in rules]
+    )
 
     if len(rules) == 1:
         rule = rules_to_display[0]
