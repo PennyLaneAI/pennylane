@@ -168,7 +168,7 @@ class TestDecomposeGraphEnabled:
             TypeError,
             match="The gate_set argument is required when the graph-based decomposition system",
         ):
-            qml.decompose(tape, stopping_condition=lambda op: False)
+            qml.decompose(tape)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
