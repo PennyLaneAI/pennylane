@@ -220,7 +220,7 @@ def _ctrl_and_ladder_resources(
 
 def _ctrl_work_wires(num_control_wires, **_):
     """Declare work wire requirements: (num_control_wires - 1) zeroed wires."""
-    return {"zeroed": max(0, num_control_wires - 1)}
+    return {"zeroed": num_control_wires - 1}
 
 
 @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
