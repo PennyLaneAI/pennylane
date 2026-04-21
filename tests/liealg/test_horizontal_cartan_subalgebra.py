@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
+
 import numpy as np
 
 # pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments

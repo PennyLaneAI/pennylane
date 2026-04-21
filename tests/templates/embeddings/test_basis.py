@@ -14,6 +14,7 @@
 """
 Tests for the BasisEmbedding template.
 """
+
 import numpy as np
 import pytest
 

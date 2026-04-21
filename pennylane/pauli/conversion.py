@@ -14,6 +14,7 @@
 """
 Utility functions to convert between ``~.PauliSentence`` and other PennyLane operators.
 """
+
 from collections import defaultdict
 from functools import reduce, singledispatch
 from itertools import product

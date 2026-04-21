@@ -14,6 +14,7 @@
 """
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
+
 # pylint: disable=protected-access, too-few-public-methods
 import pytest
 

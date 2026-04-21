@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for estimating the complexity of measuring expectation values.
 """
+
 import pytest
 
 import pennylane as qml

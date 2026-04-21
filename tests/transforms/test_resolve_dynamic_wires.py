@@ -14,6 +14,7 @@
 """
 Tests for the `resolve_dynamic_wires` transform.
 """
+
 import pytest
 
 import pennylane as qml

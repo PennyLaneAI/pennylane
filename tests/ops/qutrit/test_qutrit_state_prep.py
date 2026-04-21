@@ -14,6 +14,7 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+
 import pytest
 
 import pennylane as qml

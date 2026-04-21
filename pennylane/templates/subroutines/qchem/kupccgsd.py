@@ -398,7 +398,7 @@ def _kupccgsd_decomposition(
     def layer_loop(layer):
         @for_loop(len(d_wires))
         def double_loop(i):
-            (w1, w2) = d_wires[i]
+            w1, w2 = d_wires[i]
             FermionicDoubleExcitation(weights[layer][len(s_wires) + i], wires1=w1, wires2=w2)
 
         double_loop()  # pylint: disable=no-value-for-parameter

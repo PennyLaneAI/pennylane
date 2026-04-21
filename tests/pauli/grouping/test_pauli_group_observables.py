@@ -14,6 +14,7 @@
 """
 Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``/pauli/grouping/group_observables.py``.
 """
+
 import sys
 
 import numpy as np

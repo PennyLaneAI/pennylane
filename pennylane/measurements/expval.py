@@ -14,6 +14,7 @@
 """
 This module contains the qml.expval measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math

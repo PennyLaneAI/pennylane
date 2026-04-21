@@ -336,6 +336,43 @@ class TestCatalystControlFlow:
         res = qml.qjit(f)(0)
         assert qml.math.allclose(res, 10)
 
+    def test_for_loop_dynamic_shapes(self):
+        """Test that dynamic shapes work with default args."""
+
+        @qml.qjit
+        def f(sz):
+            x = jnp.ones([sz], dtype=float)
+
+            @qml.for_loop(0, 3, 1)
+            def loop(_, a):
+                return a + x
+
+            a2 = loop(x)
+            return a2
+
+        result = f(3)
+        expected = 4 * jnp.ones(3)
+        assert qml.math.allclose(result, expected)
+
+    def test_while_loop_dynamic_shapes(self):
+        """Test that while loops work with default args."""
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=4))
+        def f(sz):
+            x = jnp.ones([sz], dtype=float)
+
+            @qml.while_loop(lambda i, _: i < 3)
+            def loop(i, a):
+                return i + 1, a + x
+
+            _, a2 = loop(1, x)
+            return a2
+
+        result = f(3)
+        expected = 3 * jnp.ones(3)
+        assert qml.math.allclose(result, expected)
+
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)

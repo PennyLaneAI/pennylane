@@ -59,6 +59,7 @@ modifies the output of ``forward`` and the input to ``backward`` to unpack and r
 result object.
 
 """
+
 # pylint: disable=protected-access
 import inspect
 import logging

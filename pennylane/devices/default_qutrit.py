@@ -18,6 +18,7 @@ It implements the :class:`~pennylane.devices._legacy_device.Device` methods as w
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides simple pure state
 simulation of qutrit-based quantum computing.
 """
+
 import functools
 import logging
 
