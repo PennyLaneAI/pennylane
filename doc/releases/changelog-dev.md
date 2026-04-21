@@ -973,6 +973,8 @@ The following classes have been ported over:
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+  [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
+  [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
 

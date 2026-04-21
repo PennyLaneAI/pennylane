@@ -18,7 +18,7 @@ from textwrap import dedent
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -45,15 +45,15 @@ class TestDecompositionRule:
 
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
+                qp.CNOT(wires=(w0, w1))
+            qp.RZ(theta, wires=wires[0])
             for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+                qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources(num_wires):
             return {
-                qml.RZ: 1,
-                qml.CNOT: 2 * (num_wires - 1),
+                qp.RZ: 1,
+                qp.CNOT: 2 * (num_wires - 1),
             }
 
         multi_rz_decomposition = register_resources(
@@ -62,19 +62,19 @@ class TestDecompositionRule:
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             multi_rz_decomposition(0.5, wires=[0, 1, 2])
 
         assert q.queue == [
-            qml.CNOT(wires=[2, 1]),
-            qml.CNOT(wires=[1, 0]),
-            qml.RZ(0.5, wires=[0]),
-            qml.CNOT(wires=[1, 0]),
-            qml.CNOT(wires=[2, 1]),
+            qp.CNOT(wires=[2, 1]),
+            qp.CNOT(wires=[1, 0]),
+            qp.RZ(0.5, wires=[0]),
+            qp.CNOT(wires=[1, 0]),
+            qp.CNOT(wires=[2, 1]),
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -84,40 +84,40 @@ class TestDecompositionRule:
 
         def _multi_rz_resources(num_wires):
             return {
-                qml.RZ: 1,
-                qml.CNOT: 2 * (num_wires - 1),
+                qp.RZ: 1,
+                qp.CNOT: 2 * (num_wires - 1),
             }
 
         @register_resources(_multi_rz_resources, exact=exact_resources)
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
+                qp.CNOT(wires=(w0, w1))
+            qp.RZ(theta, wires=wires[0])
             for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+                qp.CNOT(wires=(w0, w1))
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.exact_resources is exact_resources
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             multi_rz_decomposition(0.5, wires=[0, 1, 2])
 
         assert q.queue == [
-            qml.CNOT(wires=[2, 1]),
-            qml.CNOT(wires=[1, 0]),
-            qml.RZ(0.5, wires=[0]),
-            qml.CNOT(wires=[1, 0]),
-            qml.CNOT(wires=[2, 1]),
+            qp.CNOT(wires=[2, 1]),
+            qp.CNOT(wires=[1, 0]),
+            qp.RZ(0.5, wires=[0]),
+            qp.CNOT(wires=[1, 0]),
+            qp.CNOT(wires=[2, 1]),
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
 
     def test_decomposition_condition(self):
         """Tests that the register_condition works."""
 
-        @register_resources({qml.H: 2, qml.Toffoli: 1})
+        @register_resources({qp.H: 2, qp.Toffoli: 1})
         @register_condition(lambda num_wires: num_wires == 3)
         def rule_1(wires, **__):
             raise NotImplementedError
@@ -127,13 +127,13 @@ class TestDecompositionRule:
         assert not rule_1.is_applicable(num_wires=2)
         assert rule_1.compute_resources(num_wires=3) == Resources(
             {
-                CompressedResourceOp(qml.H): 2,
-                CompressedResourceOp(qml.Toffoli): 1,
+                CompressedResourceOp(qp.H): 2,
+                CompressedResourceOp(qp.Toffoli): 1,
             }
         )
 
         @register_condition(lambda num_wires: num_wires == 3)
-        @register_resources({qml.H: 2, qml.Toffoli: 1})
+        @register_resources({qp.H: 2, qp.Toffoli: 1})
         def rule_2(wires, **__):
             raise NotImplementedError
 
@@ -142,13 +142,13 @@ class TestDecompositionRule:
         assert not rule_2.is_applicable(num_wires=2)
         assert rule_2.compute_resources(num_wires=3) == Resources(
             {
-                CompressedResourceOp(qml.H): 2,
-                CompressedResourceOp(qml.Toffoli): 1,
+                CompressedResourceOp(qp.H): 2,
+                CompressedResourceOp(qp.Toffoli): 1,
             }
         )
 
         def _resource_fn(**_):
-            return {qml.H: 2, qml.Toffoli: 1}
+            return {qp.H: 2, qp.Toffoli: 1}
 
         @register_resources(_resource_fn)
         @register_condition(lambda num_wires: num_wires == 3)
@@ -160,8 +160,8 @@ class TestDecompositionRule:
         assert not rule_3.is_applicable(num_wires=2)
         assert rule_3.compute_resources(num_wires=3) == Resources(
             {
-                CompressedResourceOp(qml.H): 2,
-                CompressedResourceOp(qml.Toffoli): 1,
+                CompressedResourceOp(qp.H): 2,
+                CompressedResourceOp(qp.Toffoli): 1,
             }
         )
 
@@ -169,18 +169,18 @@ class TestDecompositionRule:
     def test_inspect_decomposition_rule(self, exact_resources):
         """Tests that the source code for a decomposition rule can be inspected."""
 
-        @register_resources({qml.H: 2, qml.CNOT: 1}, exact=exact_resources)
+        @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources)
         def my_cz(wires):
-            qml.H(wires[0])
-            qml.CNOT(wires=wires)
-            qml.H(wires[0])
+            qp.H(wires[0])
+            qp.CNOT(wires=wires)
+            qp.H(wires[0])
 
         assert str(my_cz) == dedent("""
-                @register_resources({qml.H: 2, qml.CNOT: 1}, exact=exact_resources)
+                @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources)
                 def my_cz(wires):
-                    qml.H(wires[0])
-                    qml.CNOT(wires=wires)
-                    qml.H(wires[0])
+                    qp.H(wires[0])
+                    qp.CNOT(wires=wires)
+                    qp.H(wires[0])
                 """).strip()
 
     @pytest.mark.parametrize("use_custom_name", [True, False])
@@ -191,11 +191,11 @@ class TestDecompositionRule:
 
         # Test that the name is correctly set when creating a fresh rule.
 
-        @register_resources({qml.H: 2, qml.CNOT: 1}, name=name)
+        @register_resources({qp.H: 2, qp.CNOT: 1}, name=name)
         def my_cz(wires):
-            qml.H(wires[0])
-            qml.CNOT(wires=wires)
-            qml.H(wires[0])
+            qp.H(wires[0])
+            qp.CNOT(wires=wires)
+            qp.H(wires[0])
 
         expected_name = name or "my_cz"
         assert my_cz.name == expected_name
@@ -204,12 +204,12 @@ class TestDecompositionRule:
         # Test that the name is correctly set when decorating an existing
         # rule that was previously created by `register_condition`
 
-        @register_resources({qml.H: 2, qml.CNOT: 1}, name=name)
+        @register_resources({qp.H: 2, qp.CNOT: 1}, name=name)
         @register_condition(lambda **_: True)
         def my_cz_second(wires):
-            qml.H(wires[0])
-            qml.CNOT(wires=wires)
-            qml.H(wires[0])
+            qp.H(wires[0])
+            qp.CNOT(wires=wires)
+            qp.H(wires[0])
 
         expected_name = name or "my_cz_second"
         assert my_cz_second.name == expected_name
@@ -220,10 +220,10 @@ class TestDecompositionRule:
 
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
+                qp.CNOT(wires=(w0, w1))
+            qp.RZ(theta, wires=wires[0])
             for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+                qp.CNOT(wires=(w0, w1))
 
         multi_rz_decomposition = register_resources(None, multi_rz_decomposition)
 
@@ -236,49 +236,49 @@ class TestDecompositionRule:
         class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not qml.decomposition.has_decomp(SomeOtherOp)
+        assert not qp.decomposition.has_decomp(SomeOtherOp)
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(theta, wires, **__):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
-        @register_resources({qml.RX: 2, qml.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1})
         def custom_decomp2(theta, wires, **__):
-            qml.RX(theta, wires=wires[0])
-            qml.CZ(wires=[wires[0], wires[1]])
-            qml.RX(theta, wires=wires[0])
+            qp.RX(theta, wires=wires[0])
+            qp.CZ(wires=[wires[0], wires[1]])
+            qp.RX(theta, wires=wires[0])
 
-        @register_resources({qml.RY: 2, qml.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1})
         def custom_decomp3(theta, wires, **__):
-            qml.RY(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RY(theta, wires=wires[0])
+            qp.RY(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RY(theta, wires=wires[0])
 
-        qml.add_decomps(SomeOtherOp, custom_decomp)
-        qml.add_decomps(SomeOtherOp, custom_decomp2, custom_decomp3)
+        qp.add_decomps(SomeOtherOp, custom_decomp)
+        qp.add_decomps(SomeOtherOp, custom_decomp2, custom_decomp3)
 
-        assert qml.decomposition.has_decomp(SomeOtherOp)
-        assert qml.decomposition.has_decomp(SomeOtherOp(wires=[0, 1]))
-        assert list(qml.list_decomps(SomeOtherOp)) == [
+        assert qp.decomposition.has_decomp(SomeOtherOp)
+        assert qp.decomposition.has_decomp(SomeOtherOp(wires=[0, 1]))
+        assert list(qp.list_decomps(SomeOtherOp)) == [
             custom_decomp,
             custom_decomp2,
             custom_decomp3,
         ]
-        assert list(qml.list_decomps(SomeOtherOp(wires=[0, 1]))) == [
+        assert list(qp.list_decomps(SomeOtherOp(wires=[0, 1]))) == [
             custom_decomp,
             custom_decomp2,
             custom_decomp3,
         ]
 
         def custom_decomp4(theta, wires, **__):
-            qml.RZ(theta, wires=wires[0])
-            qml.CZ(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CZ(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
-            qml.add_decomps(SomeOtherOp, custom_decomp4)
+            qp.add_decomps(SomeOtherOp, custom_decomp4)
 
         _decompositions_private.pop("SomeOtherOp")  # cleanup
 
@@ -288,82 +288,82 @@ class TestDecompositionRule:
         class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(theta, wires, **_):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
         @register_resources({}, name="custom_decomp")
         def some_decomp(theta, wires, **_):
             raise NotImplementedError
 
         with pytest.raises(ValueError, match="multiple decompositions with the same name"):
-            qml.add_decomps(AnotherOp, custom_decomp, some_decomp)
+            qp.add_decomps(AnotherOp, custom_decomp, some_decomp)
 
-        qml.add_decomps(AnotherOp, custom_decomp)
+        qp.add_decomps(AnotherOp, custom_decomp)
 
         with pytest.raises(ValueError, match="name: custom_decomp already exists"):
-            qml.add_decomps(AnotherOp, some_decomp)
+            qp.add_decomps(AnotherOp, some_decomp)
 
         _decompositions_private.pop("AnotherOp")  # cleanup
 
     def test_local_decomp_context(self):
         """Tests the local context manager for decompositions."""
 
-        assert not qml.decomposition.has_decomp(CustomOp)
+        assert not qp.decomposition.has_decomp(CustomOp)
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(theta, wires, **__):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
-        @register_resources({qml.RX: 2, qml.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1})
         def custom_decomp2(theta, wires, **__):
-            qml.RX(theta, wires=wires[0])
-            qml.CZ(wires=[wires[0], wires[1]])
-            qml.RX(theta, wires=wires[0])
+            qp.RX(theta, wires=wires[0])
+            qp.CZ(wires=[wires[0], wires[1]])
+            qp.RX(theta, wires=wires[0])
 
-        @register_resources({qml.RY: 2, qml.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1})
         def custom_decomp3(theta, wires, **__):
-            qml.RY(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RY(theta, wires=wires[0])
+            qp.RY(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RY(theta, wires=wires[0])
 
-        with qml.decomposition.local_decomps():
+        with qp.decomposition.local_decomps():
 
-            qml.add_decomps(CustomOp, custom_decomp)
-            qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
-            qml.add_decomps(qml.CRX, custom_decomp)
+            qp.add_decomps(CustomOp, custom_decomp)
+            qp.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+            qp.add_decomps(qp.CRX, custom_decomp)
 
-            assert qml.decomposition.has_decomp(CustomOp)
-            assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-            assert list(qml.list_decomps(CustomOp)) == [
+            assert qp.decomposition.has_decomp(CustomOp)
+            assert qp.decomposition.has_decomp(CustomOp(wires=[0, 1]))
+            assert list(qp.list_decomps(CustomOp)) == [
                 custom_decomp,
                 custom_decomp2,
                 custom_decomp3,
             ]
-            assert custom_decomp in qml.list_decomps(qml.CRX)
+            assert custom_decomp in qp.list_decomps(qp.CRX)
 
         # test that the context properly cleans up.
-        assert list(qml.list_decomps(CustomOp)) == []
-        assert not qml.decomposition.has_decomp(CustomOp)
-        assert custom_decomp not in qml.list_decomps(qml.CRX)
+        assert list(qp.list_decomps(CustomOp)) == []
+        assert not qp.decomposition.has_decomp(CustomOp)
+        assert custom_decomp not in qp.list_decomps(qp.CRX)
 
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
 
-        @register_resources({qml.RX: 1, qml.RZ: 1})
+        @register_resources({qp.RX: 1, qp.RZ: 1})
         def my_adjoint_custom_op(theta, wires, **__):
-            qml.RX(theta, wires=wires[0])
-            qml.RZ(theta, wires=wires[1])
+            qp.RX(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[1])
 
-        qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
-        assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert list(qml.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
-        assert qml.decomposition.has_decomp(qml.adjoint(CustomOp(wires=[0, 1])))
-        assert list(qml.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
+        qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
+        assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
+        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
+        assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
+        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
@@ -414,7 +414,7 @@ class TestDecompositionRule:
         """Tests that a decomposition can register work wire requirements"""
 
         @register_resources(
-            {qml.CNOT: 3}, work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4}
+            {qp.CNOT: 3}, work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4}
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
@@ -422,7 +422,7 @@ class TestDecompositionRule:
         assert custom_decomp.get_work_wire_spec() == WorkWireSpec(1, 3, 4, 2)
 
         @register_resources(
-            lambda num_wires: {qml.CNOT: num_wires},
+            lambda num_wires: {qp.CNOT: num_wires},
             work_wires=lambda num_wires: {
                 "zeroed": num_wires // 2,
                 "borrowed": num_wires - num_wires // 2,
@@ -440,21 +440,21 @@ class TestDecompositionRule:
 
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
+                qp.CNOT(wires=(w0, w1))
+            qp.RZ(theta, wires=wires[0])
             for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+                qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources_old(num_wires):
             return {
-                qml.RZ: 500,
-                qml.CNOT: 2 * (num_wires - 1),
+                qp.RZ: 500,
+                qp.CNOT: 2 * (num_wires - 1),
             }
 
         def _multi_rz_resources_new(num_wires):
             return {
-                qml.RZ: 1,
-                qml.CNOT: 2 * (num_wires - 1),
+                qp.RZ: 1,
+                qp.CNOT: 2 * (num_wires - 1),
             }
 
         multi_rz_decomposition = register_resources(
@@ -463,7 +463,7 @@ class TestDecompositionRule:
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 500, CompressedResourceOp(qml.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -473,7 +473,7 @@ class TestDecompositionRule:
         )
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
 
@@ -485,32 +485,32 @@ class TestDecompCollection:
     def setup(self):
         """Sets up decomposition rules for CustomOp."""
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(theta, wires, **_):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
 
-        @register_resources({qml.RX: 2, qml.CZ: 1}, name="custom2")
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom2")
         def custom_decomp2(theta, wires, **_):
-            qml.RX(theta, wires=wires[0])
-            qml.CZ(wires=[wires[0], wires[1]])
-            qml.RX(theta, wires=wires[0])
+            qp.RX(theta, wires=wires[0])
+            qp.CZ(wires=[wires[0], wires[1]])
+            qp.RX(theta, wires=wires[0])
 
-        @register_resources({qml.RY: 2, qml.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1})
         def custom_decomp3(theta, wires, **_):
-            qml.RY(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RY(theta, wires=wires[0])
+            qp.RY(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RY(theta, wires=wires[0])
 
-        with qml.decomposition.local_decomps():
-            qml.add_decomps(CustomOp, custom_decomp, custom_decomp2, custom_decomp3)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(CustomOp, custom_decomp, custom_decomp2, custom_decomp3)
             yield
 
     def test_list_decomps_return_collection(self):
         """Tests that list_decomps returns a DecompCollection."""
 
-        collection = qml.list_decomps(CustomOp)
+        collection = qp.list_decomps(CustomOp)
         assert isinstance(collection, DecompCollection)
         assert len(collection) == 3
         assert repr(collection) == dedent("""
@@ -530,7 +530,7 @@ class TestDecompCollection:
     def test_decomp_collection_access(self):
         """Tests that decomposition rules are accessible by name or index."""
 
-        collection = qml.list_decomps(CustomOp)
+        collection = qp.list_decomps(CustomOp)
         assert collection[0].name == "custom_decomp"
         assert collection["custom_decomp3"].name == "custom_decomp3"
         assert len(collection) == 3
@@ -548,11 +548,11 @@ class TestDecompCollection:
     def test_append(self):
         """Tests the append method."""
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        collection = qml.list_decomps(CustomOp)
+        collection = qp.list_decomps(CustomOp)
         with pytest.raises(ValueError, match="name: custom_decomp already exists!"):
             collection.append(custom_decomp)
 
@@ -564,11 +564,11 @@ class TestDecompCollection:
     def test_concatenate(self):
         """Tests adding DecompCollection objects."""
 
-        @register_resources({qml.RZ: 2, qml.CNOT: 1}, name="custom3")
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom3")
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        collection = qml.list_decomps(CustomOp)
+        collection = qp.list_decomps(CustomOp)
         other = [custom_decomp]
 
         new_collection = collection + other
