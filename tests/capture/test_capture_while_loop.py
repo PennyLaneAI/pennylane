@@ -576,7 +576,7 @@ class TestCaptureWhileLoopDynamicShapes:
         def w():
             thing = ThingWithShape()
 
-            @qml.while_loop(lambda i: jnp.sum(i) < 3)
+            @qp.while_loop(lambda i: jnp.sum(i) < 3)
             def f(i):
                 return i + thing.shape()
 
