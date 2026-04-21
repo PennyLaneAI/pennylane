@@ -22,6 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import partial
 from textwrap import dedent
 from typing import overload
 
@@ -750,7 +751,12 @@ def local_decomps():
         _decompositions_var.reset(token)
 
 
-def show_decomps(op: Operator, *rules: str | DecompositionRule):
+def show_decomps(
+    op: Operator,
+    *rules: str | DecompositionRule,
+    show_not_applicable: bool = True,
+    num_work_wires: int | None = None,
+):
     """Inspect the decomposition rules of an operator.
 
     Takes an operator instance and displays how the operator is decomposed
@@ -759,17 +765,23 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        performing decompositions is generally more resource-efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~.register_resources`.
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This
+        new way of performing decompositions is generally more resource-efficient and accommodates
+        multiple alternative decomposition rules for an operator. In this new system, custom
+        decomposition rules are defined as quantum functions, and it is currently required that
+        every decomposition rule declares its required resources using :func:`~.register_resources`.
 
     Args:
         op (Operator): the operator to inspect the decomposition rules for.
-        *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
+        *rules (str or DecompositionRule): the decomposition rules to inspect, accepts instances
             of the ``DecompositionRule`` class or strings that represent the names of decomposition
-            rules registered with the type of ``op``. If none are provided, all available rules will be displayed.
+            rules registered with the type of ``op``. If none are provided, all available rules
+            will be displayed.
+        show_not_applicable (bool): whether to display decomposition rules not applicable to the
+            given operator instance. Defaults to ``True``.
+        num_work_wires (int or None): the number of available work wires for dynamic allocation.
+            Decomposition rules that allocates more wires than there are available will be marked
+            not applicable (or excluded if ``show_not_applicable=False``).
 
     **Example**
 
@@ -834,21 +846,42 @@ def show_decomps(op: Operator, *rules: str | DecompositionRule):
         else [stock_collection[rule] if isinstance(rule, str) else rule for rule in rules]
     )
 
+    if not show_not_applicable:
+        _filter_fn = partial(_is_applicable, op=op, num_work_wires=num_work_wires)
+        rules_to_display = list(filter(_filter_fn, rules_to_display))
+
+    if len(rules_to_display) == 0:
+        print("No available decomposition rules.")
+        return
+
     if len(rules) == 1:
         rule = rules_to_display[0]
-        print(f"Name: {rule.name}\n{_inspect_decomp(op, rule)}")
+        print(f"Name: {rule.name}\n{_inspect_decomp(op, rule, num_work_wires)}")
         return
 
     decomp_strings = []
     for i, rule in enumerate(rules_to_display):
-        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{_inspect_decomp(op, rule)}")
+        rule_str = _inspect_decomp(op, rule, num_work_wires)
+        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule_str}")
     print("\n\n".join(decomp_strings))
 
 
-def _inspect_decomp(op: Operator, rule: DecompositionRule) -> str:
+def _is_applicable(rule: DecompositionRule, op: Operator, num_work_wires: int | None) -> bool:
+    if not rule.is_applicable(**op.resource_params):
+        return False
+    work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+    if num_work_wires is not None and work_wire_spec.total > num_work_wires:
+        return False
+    return True
+
+
+def _inspect_decomp(op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> str:
     kwargs = get_decomp_kwargs(op)
     if not rule.is_applicable(**op.resource_params):
         return "Not applicable to the provided operator instance!"
+    work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+    if num_work_wires is not None and work_wire_spec.total > num_work_wires:
+        return "Excluded based on the given work wires constraint!"
     circuit_drawing = qp.draw(rule)(*op.data, wires=op.wires, **kwargs)
     estimated_gate_counts = rule.compute_resources(**op.resource_params).gate_counts
     actual_gate_counts, allocations = _count_gates(op, rule)

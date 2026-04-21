@@ -711,6 +711,76 @@ class TestShowDecomps:
             Wire Allocations: {'zero': 2}
             """).lstrip()
 
+    def test_exclude_not_applicable(self, capsys):
+        """Tests that not-applicable rules can be excluded."""
+
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), show_not_applicable=False)
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: simple)
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
+            1: ───────────╰X───────────┤  
+            Gate Count: {RZ: 2, CNOT: 1}
+
+            Decomposition 1 (name: general_decomp)
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
+            1: ───────────╰Z──H─╰Z───────────┤  
+            Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
+            """).lstrip()
+
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), show_not_applicable=False)
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: general_decomp)
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+
+            Decomposition 1 (name: with-aux)
+            <DynamicWire>: ─╭Allocate─╭Z─╭●───────────────────RX(0.50)─────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●──H────────┤↗├──║─────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z─╭●─────────║───║──────────────╭●─╰Z────╰●─────────────┤  
+                        1: ────────────────────├●─╭●──────║───║───────────╭●─├●──────────────────────┤  
+                        2: ────────────────────╰X─├●─╭●───║───║────────╭●─├●─╰X──────────────────────┤  
+                        3: ───────────────────────╰X─├●───║───║────────├●─╰X─────────────────────────┤  
+                        4: ──────────────────────────╰X───║───║────────╰X────────────────────────────┤  
+                                                          ╚═══╝                                         
+            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
+            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
+            Wire Allocations: {'zero': 2}
+            """).lstrip()
+
+    def test_num_work_wires(self, capsys):
+        """Tests that num_work_wires work."""
+
+        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), num_work_wires=1)
+        captured = capsys.readouterr()
+        assert captured.out == dedent("""
+            Decomposition 0 (name: simple)
+            Not applicable to the provided operator instance!
+
+            Decomposition 1 (name: general_decomp)
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+
+            Decomposition 2 (name: with-aux)
+            Excluded based on the given work wires constraint!
+            """).lstrip()
+
+    def test_show_no_decomps(self, capsys):
+        """Tests when no rules are available."""
+
+        qp.show_decomps(CustomOp(0.5, wires=[0, 1]))
+        captured = capsys.readouterr()
+        assert captured.out == "No available decomposition rules.\n"
+
     def test_show_decomp_by_name(self, capsys):
         """Tests inspecting a particular decomp by name."""
 
