@@ -534,12 +534,12 @@ class TestHigherOrderPrimitiveRegistrations:
 
             cond_fn(x)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 1)
+        jaxpr = jax.make_jaxpr(f)(0.5, True)
         assert len(jaxpr.consts) == 0
         assert len(jaxpr.eqns[0].params["jaxpr_branches"][0].constvars) == 0
         assert len(jaxpr.eqns[0].params["jaxpr_branches"][1].constvars) == 0
 
-        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, 1)
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, True)
         assert jaxpr2.consts == [scalar]
         assert len(jaxpr2.eqns[0].params["jaxpr_branches"][0].constvars) == 1
         assert len(jaxpr2.eqns[0].params["jaxpr_branches"][1].constvars) == 0
