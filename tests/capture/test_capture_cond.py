@@ -293,7 +293,7 @@ def test_convert_predicate_to_bool():
 
     def w(pred0, pred1):
 
-        @qml.cond(pred0)
+        @qp.cond(pred0)
         def f(i):
             return i + 1
 
