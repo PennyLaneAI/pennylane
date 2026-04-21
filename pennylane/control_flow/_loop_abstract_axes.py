@@ -41,7 +41,12 @@ def promote_consts_to_inputs(f):
     if getattr(f, "__closure__", None) is not None:
         for ind, cell in enumerate(f.__closure__):
             val = cell.cell_contents
-            if hasattr(val, "shape") and not all(isinstance(s, int) for s in val.shape):
+            # could have shape attribute without that attribute being tuple of ints, like np.shape
+            if (
+                hasattr(val, "shape")
+                and isinstance(val.shape, tuple)
+                and not all(isinstance(s, int) for s in val.shape)
+            ):
                 indices.append(ind)
                 consts.append(val)
 
