@@ -1254,9 +1254,9 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * The `InterfaceEnum` object has been improved to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
-* A `QpPrimitive` class has been added that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` 
+* A `QmlPrimitive` class has been added that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` 
   module. This class contains a `prim_type` property so that we can differentiate between different 
-  sets of PennyLane primitives. Consequently, `QpPrimitive` is now used to define all PennyLane primitives.
+  sets of PennyLane primitives. Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
