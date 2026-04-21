@@ -517,6 +517,36 @@ The following classes have been ported over:
   ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
+  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+
+  ```python
+  
+  import pennylane as qp
+  from pennylane.labs.templates import LeftQuantumComparator
+  
+  dev = qp.device("lightning.qubit")
+
+  @qp.qnode(dev, shots=1)
+  def circuit(a, comparator, b):
+    x_wires = [0, 3, 6, 9]
+    y_wires = [1, 4, 7, 10]
+    work_wires = [2, 5, 8]
+    qp.BasisState(a, wires=x_wires)
+    qp.BasisState(b, wires=y_wires)
+    LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
+    qp.CNOT(wires=[11, 12])
+    qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
+
+    return qp.sample(wires=[12])
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, ">=", 2)
+    >>> print(bool(output))
+    True
+  ```
+
 <h4>Other improvements</h4>
 
 * The source code in PennyLane for Pauli-based computation passes was removed, as it is now

@@ -32,13 +32,7 @@ class LeftQuantumComparator(Operation):
 
     .. math::
 
-        \text{LeftQuantumComparator}(comparator) |x\rangle |y\rangle |0\rangle =
-        \begin{cases}
-        |x\rangle |y\rangle |x < y\rangle  \\
-        |x\rangle |y\rangle |x \leq y\rangle \\
-        |x\rangle |y\rangle |x \geq y\rangle \\
-        |x\rangle |y\rangle |x > y\rangle
-        \end{cases}
+        \text{LeftQuantumComparator}_{<} |x\rangle |y\rangle |0\rangle = |x\rangle |y\rangle |x < y\rangle
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
     of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires

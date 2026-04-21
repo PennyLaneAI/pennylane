@@ -61,7 +61,6 @@ class TestLeftQuantumComparator:
         """Test the correctness of the LeftComparator template output."""
 
         pytest.importorskip("catalyst")
-
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit():
