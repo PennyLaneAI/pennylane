@@ -178,7 +178,7 @@ The following classes have been ported over:
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
 
-  ```python
+  ```pycon
   >>> qp.show_decomps(qp.CRX(0.5, wires=[0, 1]))
   Decomposition 0 (name: _crx_to_rx_cz)
   0: ───────────╭●────────────╭●─┤
