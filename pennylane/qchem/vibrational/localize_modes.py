@@ -18,7 +18,7 @@ import warnings
 import numpy as np
 import scipy
 
-import pennylane as qp
+from pennylane import math as qp_math
 
 # pylint: disable=dangerous-default-value
 
