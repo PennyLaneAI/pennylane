@@ -103,7 +103,7 @@ Compilation passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There is a set of transforms that use
-`ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation/compilation>`
+`ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation/compilation>`_
 to optimize circuits.
 
 .. currentmodule:: pennylane.transforms
