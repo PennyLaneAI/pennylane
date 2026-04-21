@@ -248,6 +248,21 @@ def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: 
         gate_types[gate_name] += count
         gate_sizes[int(gate_size)] += count
 
+    if resources["has_dyn_loop"]:
+        warnings.warn(
+            "Specs was unable to determine the number of loop iterations. "
+            "The results will assume the loop runs only once. "
+            "This may be fixed in some cases by inlining dynamic arguments.",
+            UserWarning,
+        )
+
+    if resources["has_branches"]:
+        warnings.warn(
+            "Specs was unable to determine the branch of a conditional or switch statement."
+            " The results will take the maximum resources across all possible branches.",
+            UserWarning,
+        )
+
     return SpecsResources(
         gate_types=dict(gate_types),
         gate_sizes=dict(gate_sizes),
