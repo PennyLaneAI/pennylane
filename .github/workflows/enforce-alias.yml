@@ -36,6 +36,14 @@ jobs:
         pennylane/operation.py
         pennylane/qchem
         pennylane/ops
+        pennylane/_grad
+        pennylane/bose
+        pennylane/capture
+        pennylane/compiler
+        pennylane/concurrency
+        pennylane/control_flow
+        pennylane/debugging
+        pennylane/decomposition
 
       TEST_MODULES: >-
         tests/test_operation.py
