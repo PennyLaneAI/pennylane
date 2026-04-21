@@ -176,6 +176,9 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
+  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
+
 * With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
   can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
   [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
@@ -883,8 +886,9 @@ The following classes have been ported over:
 * Updated the `diastatic-malt` dependency to version v2.15.3.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
-* Workflow created to sync the `main` branch to `master`.
+* Workflow created to sync the `main` branch to `master`. Workflow deleted after master branch was deleted.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
+  [(#9316)](https://github.com/PennyLaneAI/pennylane/pull/9316)
 
 * Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
@@ -971,7 +975,9 @@ The following classes have been ported over:
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+  [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
+  [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1039,6 +1045,11 @@ The following classes have been ported over:
 * Fixes an issue with Catalyst and `qp.for_loop` and `qp.while_loop`, where it was defaulting
   to `allow_array_resizing=True` instead of `allow_array_resizing=False`.
   [(#9251)](https://github.com/PennyLaneAI/pennylane/pull/9251)
+
+* Fixed a bug where the ``work_wire_type`` argument of :func:`~.ctrl` was silently dropped when the
+  call was delegated to the active compiler (:func:`~.qjit`). The parameter is now forwarded to the
+  compiler's ``ctrl`` implementation.
+  [(#9328)](https://github.com/PennyLaneAI/pennylane/pull/9328)
 
 * Workflows with program capture that involve dynamic device wires will now raise a `NotImplementedError`
   rather than providing incorrect results.
