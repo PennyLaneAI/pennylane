@@ -68,7 +68,11 @@ class LeftQuantumComparator(Operation):
             qp.BasisState(a, wires=x_wires)
             qp.BasisState(b, wires=y_wires)
             LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
+
+            # We copy the output in wire=12
             qp.CNOT(wires=[11, 12])
+
+            # We clean the work wires used in LeftQuantumComparator
             qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
 
             return qp.sample(wires=[12])
