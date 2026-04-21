@@ -448,7 +448,7 @@ class TestControlledDecompBisect:
         assert result.shape == (2, 2)
         assert jax.numpy.iscomplexobj(result)
 
-        sx = qml.PauliX.compute_matrix()
+        sx = qp.PauliX.compute_matrix()
         at = _matrix_adjoint(np.array(result))
         a = np.array(result)
         assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, np.array(U), atol=tol, rtol=tol)
@@ -469,8 +469,8 @@ class TestControlledDecompBisect:
         assert result.shape == (2, 2)
         assert jax.numpy.iscomplexobj(result)
 
-        sx = qml.PauliX.compute_matrix()
-        sh = qml.Hadamard.compute_matrix()
+        sx = qp.PauliX.compute_matrix()
+        sh = qp.Hadamard.compute_matrix()
         bt = _matrix_adjoint(np.array(result))
         b = np.array(result)
         assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, np.array(U), atol=tol, rtol=tol)
@@ -1141,7 +1141,7 @@ class TestMCXDecomposition:
         from catalyst.device.decomposition import catalyst_decompose
 
         jnp = jax.numpy
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
         gate_set = {
             "X",
@@ -1165,17 +1165,17 @@ class TestMCXDecomposition:
         work_wires = jnp.arange(num_control_wires + 1, num_control_wires + 1 + num_work_wires)
         cvals = (0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0)[:num_control_wires]
 
-        @qml.qjit(capture=False, static_argnums=2)
+        @qp.qjit(capture=False, static_argnums=2)
         @catalyst_decompose(capabilities=None, target_gates=gate_set)
-        @qml.qnode(qml.device("lightning.qubit"))
+        @qp.qnode(qp.device("lightning.qubit"))
         def circuit(wires, work_wires, cvals):
-            qml.MultiControlledX(
+            qp.MultiControlledX(
                 wires,
                 work_wires=work_wires,
                 control_values=cvals,
                 work_wire_type="zeroed",
             )
-            return qml.probs(wires=wires)
+            return qp.probs(wires=wires)
 
         result = circuit(wires, work_wires, cvals)
         assert result is not None
