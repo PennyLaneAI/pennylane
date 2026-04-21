@@ -83,7 +83,7 @@ Compilation passes for Clifford+T decomposition and Pauli-based computation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These compilation passes decompose or manipulate quantum circuits in the
-`Clifford+T basis <https://pennylane.ai/compilation/clifford-t-gate-set>` or in the
+`Clifford+T basis <https://pennylane.ai/compilation/clifford-t-gate-set>`_ or in the
 `Pauli-based computation model <https://pennylane.ai/compilation/pauli-based-computation>`__.
 
 .. autosummary::
