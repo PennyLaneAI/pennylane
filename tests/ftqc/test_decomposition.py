@@ -38,6 +38,7 @@ from pennylane.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
     cnot_measurements,
+    ppr_to_mbqc,
     queue_cnot,
     queue_corrections,
     queue_measurements,
@@ -572,3 +573,44 @@ class TestMBQCFormalismConversion:
         # to catch changes that modify the results, and we have to choose here between
         # very slow, or fairly noisy
         assert np.allclose(res, reference_result, atol=0.1)
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+def test_ppr_to_mbqc_conversion_to_mlir():
+    """Test that we can generate MLIR from the captured circuit and that the generated MLIR
+    includes the pass name we are mapping to"""
+
+    pytest.importorskip("catalyst")
+
+    @qml.qjit(target="mlir", capture=True)
+    @ppr_to_mbqc
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    assert "ppr-to-mbqc" in circ.mlir
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+def test_ppr_to_mbqc_without_qjit_raises_error():
+    """Test that trying to apply the transform without QJIT raises an error"""
+
+    pytest.importorskip("catalyst")
+
+    @ppr_to_mbqc
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+        circ()

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 """
+
 # pylint: disable=protected-access,too-many-arguments,too-few-public-methods
 import math
 

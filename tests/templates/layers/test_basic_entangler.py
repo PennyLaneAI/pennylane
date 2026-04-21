@@ -14,6 +14,7 @@
 """
 Unit tests for the BasicEntanglerLayers template.
 """
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods
@@ -160,6 +161,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must have last dimension of length"):
             circuit([[1, 0], [1, 0]])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")

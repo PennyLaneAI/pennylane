@@ -14,6 +14,7 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+
 # pylint: disable=protected-access
 import copy
 import warnings
@@ -200,7 +201,7 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite-shots or differentiation with ``diff_method`` set to ``"backprop"``, ``"adjoint"``, or ``"device"``. `Other differentiation methods <https://docs.pennylane.ai/en/stable/code/qml_gradients.html>`_ such as
+    This device does not currently support finite-shots or differentiation with ``diff_method`` set to ``"backprop"``, ``"adjoint"``, or ``"device"``. `Other differentiation methods <https://docs.pennylane.ai/en/stable/code/qp_gradients.html>`_ such as
     ``parameter-shift`` and ``hadamard_grad`` are compatible with all devices, including ``default.tensor``.
     At present, the supported measurement types are expectation values, variances, and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
@@ -256,7 +257,7 @@ class DefaultTensor(Device):
             return qml.expval(qml.Z(0))
 
     >>> circuit(num_qubits)
-    tensor(-1., requires_grad=True)
+    -1.0
 
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
@@ -317,7 +318,7 @@ class DefaultTensor(Device):
                     ]
 
             >>> circuit(theta, phi, num_qubits)
-            [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
+            [-0.9953..., np.float64(0.0036631...), np.float64(0.9999...)]
 
             After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds on a standard laptop.
             Increasing the number of qubits to 500 brings the execution time to approximately 15 seconds, and for 1000 qubits to around 50 seconds.
@@ -359,7 +360,7 @@ class DefaultTensor(Device):
                     return qml.expval(qml.Z(0))
 
             >>> circuit(phi, depth, num_qubits)
-            -0.9511499466743283
+            -0.9511499...
 
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 

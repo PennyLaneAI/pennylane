@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
+
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled

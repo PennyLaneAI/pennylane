@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in qutrit quantum channels.
 """
+
 import numpy as np
 import pytest
 from numpy.linalg import matrix_power
@@ -481,7 +482,7 @@ class TestQutritChannel:
             np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
         ]
 
-        qutrit_channel = qml.QutritChannel(kraus, 1, id="test")
+        qutrit_channel = qml.QutritChannel(kraus, 1)
         data, metadata = qutrit_channel._flatten()  # pylint: disable=protected-access
         new_op = qml.QutritChannel._unflatten(data, metadata)  # pylint: disable=protected-access
         qml.assert_equal(qutrit_channel, new_op)

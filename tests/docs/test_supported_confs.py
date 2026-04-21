@@ -23,6 +23,7 @@ A configuration is specified by:
 
 A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
+
 # pylint: disable=too-many-arguments
 import pytest
 

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
+
 from textwrap import dedent
 from unittest.mock import Mock
 
@@ -297,8 +298,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit)(1.2, 0.9)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -308,8 +308,7 @@ class TestOpenQasm:
             rz(0.9) q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_measure_qubits_subset_only(self):
@@ -324,17 +323,15 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, measure_all=False)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
-            creg c[2];
+            creg c[1];
             h q[0];
             cx q[0],q[1];
-            measure q[1] -> c[1];
-            """
-        )
+            measure q[1] -> c[0];
+            """)
         assert qasm == expected
 
     def test_rotations_with_expval(self):
@@ -349,8 +346,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, rotations=True)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -363,8 +359,7 @@ class TestOpenQasm:
             h q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_precision(self):
@@ -379,8 +374,7 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, precision=4)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -389,7 +383,65 @@ class TestOpenQasm:
             cx q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert qasm == expected
+
+    def test_to_openqasm_without_measurements(self):
+        """Test unitary circuit without measurements exports to qasm `measure_all=False`
+        does not add classical registers."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg" not in qasm
+
+    def test_final_measurements_with_measure_all_false(self):
+        """Test circuits with terminal measurements still generate classical registers
+        when ``measure_all=False``."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.RX(np.pi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        assert "creg c[1];" in qasm
+
+    def test_mid_circuit_measurements_with_measure_all_false(self):
+        """Test circuits with mid-circuit measurements generate a dedicated classical
+        register for measurement results when `measure_all=False`."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=0)
+            return m
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg c[" not in qasm
+        assert "creg mcms[1];" in qasm
+
+    def test_mid_and_final_measurements_with_measure_all_false(self):
+        """Test circuits with both mid-circuit and terminal measurements generate
+        separate classical registers for each measurement type when `measure_all=False`."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        assert "creg c[1];" in qasm
+        assert "creg mcms[1];" in qasm

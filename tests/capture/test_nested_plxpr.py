@@ -14,6 +14,7 @@
 """
 Tests for capturing nested plxpr.
 """
+
 # pylint: disable=protected-access
 import pytest
 

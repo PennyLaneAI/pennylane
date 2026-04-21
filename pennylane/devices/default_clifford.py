@@ -14,6 +14,7 @@
 """
 This module contains the Clifford simulator using ``stim``.
 """
+
 # pylint: disable=no-member
 
 import concurrent.futures
@@ -183,6 +184,21 @@ def _pl_obs_to_linear_comb(meas_obs):
     return coeffs, paulis
 
 
+def _handle_state_prep(prep, circuit, stim_circuit):
+    """Handles state preparation by either decomposing BasisState or building a Tableau."""
+    if isinstance(prep, ops.BasisState):
+        for op in prep.decomposition():
+            gate, wires = _pl_op_to_stim(op)
+            stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
+    else:
+        stim_tableau = stim.Tableau.from_state_vector(
+            math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+            endian="big",
+        )
+        stim_circuit += stim_tableau.to_circuit()
+    return stim_circuit
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultClifford(Device):
@@ -247,7 +263,7 @@ class DefaultClifford(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    (array(0), array(0), array(0), array(0), array(0))
+    (np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0))
 
     .. details::
         :title: Clifford Tableau
@@ -301,11 +317,10 @@ class DefaultClifford(Device):
 
         .. code-block:: python
 
-            import pennylane as qml
-            import numpy as np
             dev = qml.device("default.clifford")
 
             num_wires = 3
+
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(wires=[0])
@@ -314,7 +329,7 @@ class DefaultClifford(Device):
                 return qml.probs()
 
         >>> circuit()
-        tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
+        array([0.5, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.5])
 
         Once above the limit (or even otherwise), one can obtain the probability
         of a single target basis state by computing the expectation value of the
@@ -324,6 +339,7 @@ class DefaultClifford(Device):
         .. code-block:: python
 
             num_wires = 4
+
             @qml.qnode(dev)
             def circuit(state):
                 qml.Hadamard(wires=[0])
@@ -333,11 +349,11 @@ class DefaultClifford(Device):
 
         >>> basis_states = np.array([[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0]])
         >>> circuit(basis_states[0])
-        tensor(0.5, requires_grad=True)
+        array(0.5)
         >>> circuit(basis_states[1])
-        tensor(0.0, requires_grad=True)
+        array(0.)
         >>> circuit(basis_states[2])
-        tensor(0.0, requires_grad=True)
+        array(0.)
 
     .. details::
         :title: Error Channels
@@ -370,7 +386,7 @@ class DefaultClifford(Device):
                 return qml.counts()
 
         >>> circuit()
-        {'0000': 417, '0100': 95, '1011': 104, '1111': 408}
+        {np.str_('0000'): np.int64(424), np.str_('0100'): np.int64(91), np.str_('1011'): np.int64(94), np.str_('1111'): np.int64(415)}
 
     .. details::
         :title: Tracking
@@ -548,9 +564,8 @@ class DefaultClifford(Device):
 
         >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.Z(0)), qml.state()])
         >>> qml.devices.DefaultClifford().simulate(qs)
-        (array(0),
-         array([[0, 1, 0],
-                [1, 0, 0]]))
+        (np.float64(0.0), array([[0, 1, 0], [1, 0, 0]]))
+
 
         """
 
@@ -569,13 +584,8 @@ class DefaultClifford(Device):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 
-        # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
-            stim_tableau = stim.Tableau.from_state_vector(
-                math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
-                endian="big",
-            )
-            stim_circuit += stim_tableau.to_circuit()
+            stim_circuit = _handle_state_prep(prep, circuit, stim_circuit)
 
         # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
@@ -894,9 +904,7 @@ class DefaultClifford(Device):
             )
         )
 
-        # Use the reduced row echelon form for finding rank efficiently
-        # tapering always come in handy :)
-        rank = math.sum(math.any(math.binary_finite_reduced_row_echelon(partition_mat), axis=1))
+        rank = math.binary_matrix_rank(partition_mat)
 
         # Compute the entropy
         entropy = math.log(2) * (rank - len(wires))

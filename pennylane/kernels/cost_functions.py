@@ -15,6 +15,7 @@
 This file contains functionalities for kernel related costs.
 See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 """
+
 import numpy as np
 
 from pennylane.math import frobenius_inner_product

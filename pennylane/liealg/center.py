@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
+
 from itertools import combinations
 
 import numpy as np

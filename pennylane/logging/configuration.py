@@ -14,6 +14,7 @@
 """
 This module contains support methods for configuring the logging functionality.
 """
+
 import logging
 import logging.config
 import os

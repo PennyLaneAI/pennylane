@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, ParamSpec
 
 import pennylane as qml
 from pennylane.math import Interface
 
 from .resolution import _resolve_execution_config
+
+P = ParamSpec("P")
 
 if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
@@ -28,7 +32,9 @@ if TYPE_CHECKING:
     from .qnode import QNode
 
 
-def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> ExecutionConfig:
+def construct_execution_config(
+    qnode: QNode, resolve: bool | None = True
+) -> Callable[P, ExecutionConfig]:
     """Constructs the execution configuration of a QNode instance.
 
     Args:
@@ -88,7 +94,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
     """
 
     @functools.wraps(qnode)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> ExecutionConfig:
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],

@@ -23,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -40,6 +41,37 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
+
+
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_is_deprecated(test_class):
+    """Tests that the 'id' argument is deprecated."""
+
+    class DummyOp(test_class):
+        """Custom dummy operator."""
+
+    _ = DummyOp(0.5, [0])
+    _ = DummyOp(0.5, [0], id=None)
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = DummyOp(0.5, [0], id="blah")
+
+
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_with_label_is_deprecated(test_class):
+    """Tests that using 'label' with a set 'id' argument gives useful warning."""
+
+    class DummyOp(test_class):
+        """Custom dummy operator."""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        op = DummyOp(0.5, [0], id="blah")
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Using 'id' to add a custom label to your operator is deprecated",
+    ):
+        _ = op.label()
 
 
 class TestOperatorConstruction:
@@ -937,6 +969,7 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
 
@@ -958,7 +991,7 @@ class TestOperationConstruction:
             num_wires = 1
             grad_method = None
 
-        op = DummyOp(1.0, wires=0, id="test")
+        op = DummyOp(1.0, wires=0)
         assert op.control_wires == qml.wires.Wires([])
 
     def test_is_hermitian(self):
@@ -1039,6 +1072,7 @@ class TestObservableConstruction:
         expected = "Z('a')"
         assert str(m) == expected
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
@@ -1307,9 +1341,19 @@ class TestOperatorIntegration:
 
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation with an id"""
-        op = qml.RX(1.344, wires=0, id="test_with_id")
-        assert '"test_with_id"' in op.label()
-        assert '"test_with_id"' in op.label(decimals=2)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            op = qml.RX(1.344, wires=0, id="test_with_id")
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label()
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label(decimals=2)
 
         op = qml.RX(1.344, wires=0)
         assert '"test_with_id"' not in op.label()

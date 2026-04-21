@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RMSPropOptimizer``.
 """
+
 import pytest
 
 from pennylane import numpy as np

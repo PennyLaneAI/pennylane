@@ -14,6 +14,7 @@
 """
 Tests for the FermionicSingleExcitation template.
 """
+
 import numpy as np
 import pytest
 
@@ -204,6 +205,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight=weight)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2], id="a")

@@ -14,6 +14,7 @@
 """
 Unit tests for the StronglyEntanglingLayers template.
 """
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods
@@ -335,6 +336,7 @@ class TestInputs:
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")

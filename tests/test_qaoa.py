@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
+
 import itertools
 
 import networkx as nx

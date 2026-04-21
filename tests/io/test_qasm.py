@@ -51,8 +51,7 @@ class TestToQasmUnitTests:
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = qml.to_openqasm(circuit)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -67,8 +66,7 @@ class TestToQasmUnitTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -81,8 +79,7 @@ class TestToQasmUnitTests:
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = qml.to_openqasm(circuit, wires=Wires([0, 1, 2, 3, 4]))
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[5];
@@ -94,8 +91,7 @@ class TestToQasmUnitTests:
             measure q[2] -> c[2];
             measure q[3] -> c[3];
             measure q[4] -> c[4];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -106,8 +102,7 @@ class TestToQasmUnitTests:
         circuit = qml.tape.QuantumScript([qml.ApproxTimeEvolution(H, 1, n=1)])
         res = qml.to_openqasm(circuit, wires=Wires([0, 1]))
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -117,8 +112,7 @@ class TestToQasmUnitTests:
             cx q[1],q[0];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -137,8 +131,7 @@ class TestToQasmUnitTests:
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = qml.to_openqasm(circuit2, wires=Wires([0, 1]))
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -148,8 +141,7 @@ class TestToQasmUnitTests:
             rz(0.2) q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert qasm1 == expected
         assert qasm1 == qasm2
@@ -171,8 +163,7 @@ class TestToQasmUnitTests:
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = qml.to_openqasm(circuit2, wires=Wires([0, 1]), precision=11)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -187,8 +178,7 @@ class TestToQasmUnitTests:
             gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         # different
         assert qasm1 == expected
@@ -211,8 +201,7 @@ class TestToQasmUnitTests:
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = qml.to_openqasm(circuit2, wires=[0, 1, 2, 3])
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[4];
@@ -224,8 +213,7 @@ class TestToQasmUnitTests:
             measure q[1] -> c[1];
             measure q[2] -> c[2];
             measure q[3] -> c[3];
-            """
-        )
+            """)
 
         assert qasm1 == expected
         assert qasm1 == qasm2
@@ -243,8 +231,7 @@ class TestToQasmUnitTests:
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = qml.to_openqasm(circuit)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -256,8 +243,7 @@ class TestToQasmUnitTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -288,12 +274,11 @@ class TestToQasmUnitTests:
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = qml.to_openqasm(circuit, measure_all=False)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
-            creg c[3];
+            creg c[2];
             rx(0.43) q[0];
             ry(0.35) q[1];
             rz(0.35) q[2];
@@ -302,9 +287,8 @@ class TestToQasmUnitTests:
             cx q[2],q[0];
             x q[1];
             measure q[0] -> c[0];
-            measure q[2] -> c[2];
-            """
-        )
+            measure q[2] -> c[1];
+            """)
 
         assert res == expected
 
@@ -319,15 +303,13 @@ class TestQNodeQasmIntegrationTests:
         tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         res = qml.to_openqasm(tape)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
             creg c[1];
             measure q[0] -> c[0];
-            """
-        )
+            """)
         assert res == expected
 
     def test_native_qasm_gates(self):
@@ -347,8 +329,7 @@ class TestQNodeQasmIntegrationTests:
         )
         res = qml.to_openqasm(tape)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -363,8 +344,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -391,8 +371,7 @@ class TestQNodeQasmIntegrationTests:
         y = np.array([0.2, 0.1])
         res = qml.to_openqasm(qnode)(x, y)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -407,8 +386,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -417,8 +395,7 @@ class TestQNodeQasmIntegrationTests:
         y2 = np.array([0.3, 0.2])
         res = qml.to_openqasm(qnode)(x2, y2)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -433,8 +410,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -459,8 +435,7 @@ class TestQNodeQasmIntegrationTests:
         )
         res = qml.to_openqasm(tape, wires=dev.wires)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[5];
@@ -472,8 +447,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[2] -> c[2];
             measure q[3] -> c[3];
             measure q[4] -> c[4];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -487,8 +461,7 @@ class TestQNodeQasmIntegrationTests:
         )
         res = qml.to_openqasm(tape, wires=dev.wires)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -498,8 +471,7 @@ class TestQNodeQasmIntegrationTests:
             rz(0.2) q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -517,8 +489,7 @@ class TestQNodeQasmIntegrationTests:
         state = np.array([1, -1, -1, 1]) / np.sqrt(4)
         res = qml.to_openqasm(qnode, precision=11)(state=state)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -533,8 +504,7 @@ class TestQNodeQasmIntegrationTests:
             gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -552,8 +522,7 @@ class TestQNodeQasmIntegrationTests:
         state = np.array([1, 0, 1, 1])
         res = qml.to_openqasm(qnode)(state=state)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[4];
@@ -565,8 +534,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[1] -> c[1];
             measure q[2] -> c[2];
             measure q[3] -> c[3];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -582,8 +550,7 @@ class TestQNodeQasmIntegrationTests:
         )
         res = qml.to_openqasm(tape)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -595,8 +562,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -616,8 +582,7 @@ class TestQNodeQasmIntegrationTests:
 
         res = qml.to_openqasm(qnode)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -629,8 +594,7 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -639,16 +603,14 @@ class TestQNodeQasmIntegrationTests:
         tape = qml.tape.QuantumScript([qml.RX(np.pi, 0)], [qml.expval(qml.PauliZ(0))])
         res = qml.to_openqasm(tape, precision=4)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
             creg c[1];
             rx(3.142) q[0];
             measure q[0] -> c[0];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -667,16 +629,14 @@ class TestQNodeQasmIntegrationTests:
 
         res = qml.to_openqasm(qnode)(tf.Variable(1.2))
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
             creg c[1];
             rx(1.2) q[0];
             measure q[0] -> c[0];
-            """
-        )
+            """)
 
         assert res == expected
 
@@ -712,8 +672,7 @@ class TestQNodeQasmIntegrationTests:
             [qml.X(0), *m0.measurements, *m1.measurements, *m2.measurements]
         )
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
                             OPENQASM 2.0;
                             include "qelib1.inc";
                             qreg q[3];
@@ -726,8 +685,7 @@ class TestQNodeQasmIntegrationTests:
                             measure q[0] -> c[0];
                             measure q[1] -> c[1];
                             measure q[2] -> c[2];
-                            """
-        )
+                            """)
         assert expected == qml.to_openqasm(tape)
 
     @pytest.mark.parametrize("precision", (None, 2))
@@ -741,8 +699,7 @@ class TestQNodeQasmIntegrationTests:
         res = qml.to_openqasm(tape, precision=precision)
 
         p = f"{0.123456:.{precision}}" if precision else str(0.123456)
-        expected = dedent(
-            f"""\
+        expected = dedent(f"""\
                     OPENQASM 2.0;
                     include "qelib1.inc";
                     qreg q[1];
@@ -751,8 +708,7 @@ class TestQNodeQasmIntegrationTests:
                     measure q[0] -> mcms[0];
                     if(mcms[0]==1) rx({p}) q[0];
                     measure q[0] -> c[0];
-                    """
-        )
+                    """)
         assert res == expected
 
 

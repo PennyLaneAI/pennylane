@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift_cv module."""
+
 # pylint: disable=protected-access, no-self-use, not-callable, no-value-for-parameter
 
 from unittest import mock

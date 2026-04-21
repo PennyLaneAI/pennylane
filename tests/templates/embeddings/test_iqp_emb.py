@@ -14,6 +14,7 @@
 """
 Tests for the IQPEmbedding template.
 """
+
 import numpy as np
 import pytest
 
@@ -193,6 +194,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")

@@ -201,6 +201,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -418,11 +419,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     to know about wire labels) or ``(*parameters, wires, **hyperparameters)``, where ``parameters``, ``wires``, and
     ``hyperparameters`` are the respective attributes of the operator class.
 
+    .. warning::
+
+        The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
     **Example**
@@ -445,7 +450,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # we request parameter-shift (or "analytic") differentiation.
             grad_method = "A"
 
-            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
+            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
 
                 # checking the inputs --------------
 
@@ -467,7 +472,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 # The parent class expects all trainable parameters to be fed as positional
                 # arguments, and all wires acted on fed as a keyword argument.
                 # The id keyword argument allows users to give their instance a custom name.
-                super().__init__(angle, wires=all_wires, id=id)
+                super().__init__(angle, wires=all_wires)
 
             @property
             def num_params(self):
@@ -1013,7 +1018,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def id(self) -> str:
-        """Custom string to label a specific operator instance."""
+        """Custom string to label a specific operator instance.
+
+        .. warning::
+
+            The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
+        """
+        warnings.warn(
+            "The 'id' argument is deprecated and will be removed in v0.46.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
         return self._id
 
     @name.setter
@@ -1045,15 +1061,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'RX'
         >>> op.label(base_label="my_label")
         'my_label'
-        >>> op = qml.RX(1.23456, wires=0, id="test_data")
+        >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
-        'RX\n("test_data")'
+        'RX'
         >>> op.label(decimals=2)
-        'RX\n(1.23,"test_data")'
+        'RX\n(1.23)'
         >>> op.label(base_label="my_label")
-        'my_label\n("test_data")'
+        'my_label'
         >>> op.label(decimals=2, base_label="my_label")
-        'my_label\n(1.23,"test_data")'
+        'my_label\n(1.23)'
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1079,6 +1095,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         """
         op_label = base_label or self.__class__.__name__
+
+        if self._id is not None:
+            warnings.warn(
+                "Using 'id' to add a custom label to your operator is deprecated. "
+                "Please use 'pennylane.drawer.label' to add a custom label to "
+                "your operator instead. ",
+                PennyLaneDeprecationWarning,
+            )
 
         if len(self.data) == 0:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
@@ -1123,6 +1147,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
+
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
+
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
@@ -1801,11 +1833,15 @@ class Operation(Operator):
     please see the documentation for :class:`~.gradients.param_shift`,
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
+    .. warning::
+
+        The ``id`` argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 

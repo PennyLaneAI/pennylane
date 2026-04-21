@@ -14,6 +14,7 @@
 """
 Unit tests for the ControlledSequence subroutine.
 """
+
 import numpy as np
 import pytest
 
@@ -34,6 +35,7 @@ def test_standard_validity():
 
 class TestInitialization:
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2], id="a")

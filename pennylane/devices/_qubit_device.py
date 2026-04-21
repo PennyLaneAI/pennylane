@@ -15,7 +15,6 @@
 This module contains the :class:`QubitDevice` abstract base class.
 """
 
-
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed,too-many-arguments
@@ -499,7 +498,7 @@ class QubitDevice(Device):
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
-        "RX"
+        'RX'
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
         Wires([0])
         >>> op.parameters # returns a list of parameters

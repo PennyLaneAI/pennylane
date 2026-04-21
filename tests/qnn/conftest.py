@@ -14,6 +14,7 @@
 """
 Common fixtures for the qnn module.
 """
+
 import numpy as np
 import pytest
 

@@ -14,12 +14,14 @@
 """
 Unit tests for the GateFabric template.
 """
+
+from functools import partial
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -36,6 +38,30 @@ def test_standard_validity(include_pi):
     op = qml.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
 
     qml.ops.functions.assert_valid(op)
+
+
+@pytest.mark.parametrize("include_pi", (True, False))
+def test_resources(include_pi):
+    """Test the expected resources for the decomposition rule."""
+
+    rule = qml.list_decomps(qml.GateFabric)[0]
+
+    n_layers = 2
+    n_wires = 3
+    len_wire_pattern = 4
+
+    expected = {
+        qml.resource_rep(qml.BasisEmbedding, num_wires=n_wires): 1,
+        qml.resource_rep(qml.DoubleExcitation): n_layers * len_wire_pattern,
+        qml.resource_rep(qml.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
+    }
+    out = rule.compute_resources(
+        n_layers=n_layers,
+        num_wires=n_wires,
+        len_wire_pattern=len_wire_pattern,
+        include_pi=include_pi,
+    )
+    assert expected == out.gate_counts
 
 
 @pytest.mark.system
@@ -578,9 +604,32 @@ class TestCorrectness:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
+def _get_queue(op, system):
+    if system == "decomp_method":
+        return op.decomposition()
+    if system == "graph_decomp":
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.list_decomps(qml.GateFabric)[0](*op.data, op.wires, **op.hyperparameters)
+        return q.queue
+    jax = pytest.importorskip("jax")
+    qml.capture.enable()
+    try:
+        f = partial(qml.list_decomps(qml.GateFabric)[0], **op.hyperparameters)
+        jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        return tape.circuit
+    finally:
+        qml.capture.disable()
+
+
 class TestDecomposition:  # pylint: disable=too-few-public-methods
     """Tests that the template defines the correct decomposition."""
 
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize(
+        "system",
+        ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),
+    )
     @pytest.mark.parametrize(
         "layers, qubits, init_state, include_pi",
         [
@@ -592,7 +641,7 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
             (2, 8, qml.math.array([1, 1, 1, 1, 0, 0, 0, 0]), True),
         ],
     )
-    def test_operations(self, layers, qubits, init_state, include_pi):
+    def test_operations(self, system, layers, qubits, init_state, include_pi):
         """Test the correctness of the GateFabric template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
@@ -614,13 +663,14 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         op = qml.GateFabric(
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
-        queue = op.decomposition()
+        queue = _get_queue(op, system)
 
         # number of gates
         assert len(queue) == n_gates
 
         # initialization
-        assert isinstance(queue[0], qml.BasisEmbedding)
+        expected = qml.BasisState if system == "capture" else qml.BasisEmbedding
+        assert isinstance(queue[0], expected)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):
@@ -654,23 +704,6 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
 
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
         assert res_wires == exp_wires
-
-    DECOMP_PARAMS = [
-        (qml.math.array([[[-0.080, 2.629]]]), [0, 1, 2, 3], qml.math.array([1, 1, 0, 0]), False),
-        (
-            qml.math.array([[[-0.080, 0.101], [-0.080, 0.101]]]),
-            [0, 1, 2, 3, 4, 5],
-            qml.math.array([0, 1, 0, 1, 0, 1]),
-            True,
-        ),
-    ]
-
-    @pytest.mark.capture
-    @pytest.mark.parametrize(("weights", "wires", "init_state", "include_pi"), DECOMP_PARAMS)
-    def test_decomposition_new(self, weights, wires, init_state, include_pi):
-        op = qml.GateFabric(weights, wires=wires, init_state=init_state, include_pi=include_pi)
-        for rule in qml.list_decomps(qml.GateFabric):
-            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
@@ -748,6 +781,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         init_state = qml.math.array([1, 1, 0, 0])

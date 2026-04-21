@@ -14,6 +14,7 @@
 """
 Unit tests for heuristic Pauli graph colouring functions in ``/pauli/grouping/graph_colouring.py``.
 """
+
 import numpy as np
 import pytest
 
