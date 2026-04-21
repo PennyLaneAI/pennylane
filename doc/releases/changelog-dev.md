@@ -568,6 +568,10 @@ The following classes have been ported over:
 
 <h4>Other improvements</h4>
 
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of type
+  `list` or `tuple` types.
+  [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
+
 * The source code in PennyLane for Pauli-based computation passes was removed, as it is now
   redundant. However, all Pauli-based computation passes can still be accessed from the
   :mod:`pennylane.transforms` module as before (if Catalyst is installed:
