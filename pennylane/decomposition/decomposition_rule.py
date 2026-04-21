@@ -857,7 +857,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
         if isinstance(_op, qml.ops.Conditional):
             _op = _op.base
         if isinstance(_op, qml.allocation.Allocate):
-            allocations[str(_op.state)] += 1
+            allocations[str(_op.state)] += len(_op.wires)
             continue
         if isinstance(_op, qml.allocation.Deallocate):
             continue

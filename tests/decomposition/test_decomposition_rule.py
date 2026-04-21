@@ -708,7 +708,7 @@ class TestShowDecomps:
                                                           ╚═══╝                                         
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
-            Wire Allocations: {'zero': 1}
+            Wire Allocations: {'zero': 2}
             """).lstrip()
 
     def test_show_decomp_by_name(self, capsys):
@@ -765,5 +765,5 @@ class TestShowDecomps:
                                                           ╚═══╝                                         
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
-            Wire Allocations: {'zero': 1}
+            Wire Allocations: {'zero': 2}
             """).lstrip()
