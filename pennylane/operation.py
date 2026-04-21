@@ -339,7 +339,7 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(operator_type.__name__)
+    primitive = capture.QpPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
 
     @primitive.def_impl
