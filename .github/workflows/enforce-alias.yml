@@ -52,7 +52,7 @@ jobs:
         tests/_grad
         tests/bose
         tests/capture
-        tests/compiler
+        tests/test_compiler.py
         tests/concurrency
         tests/control_flow
         tests/debugging
