@@ -19,7 +19,7 @@ from functools import partial
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -39,19 +39,19 @@ class TestErrors:
             return x + y
 
         with pytest.raises(ValueError, match="Differentiating with respect to argnums"):
-            qml.jvp(f, (0.5, 1.2), (1.0, 1.0), argnums=2)
+            qp.jvp(f, (0.5, 1.2), (1.0, 1.0), argnums=2)
 
     def test_error_on_bad_h(self):
         """Test that an error is raised on a bad h value."""
 
         with pytest.raises(ValueError, match="Invalid h value"):
-            qml.jvp(lambda x: x * 2, (0.5,), (1.0,), h="something")
+            qp.jvp(lambda x: x * 2, (0.5,), (1.0,), h="something")
 
     def test_error_on_bad_method(self):
         """Test that an error is raised on a bad method."""
 
         with pytest.raises(ValueError, match="Got unrecognized method"):
-            qml.jvp(lambda x: x**2, (0.5,), (1.0,), method="param-shift")
+            qp.jvp(lambda x: x**2, (0.5,), (1.0,), method="param-shift")
 
     def test_error_wrong_number_tangents(self):
         """Test that an error is raised for the wrong number of tangents."""
@@ -59,36 +59,36 @@ class TestErrors:
         with pytest.raises(
             TypeError, match="number of tangents and number of differentiable parameters"
         ):
-            qml.jvp(lambda x: x**2, (0.5,), (1.0, 1.0))
+            qp.jvp(lambda x: x**2, (0.5,), (1.0, 1.0))
 
     def test_error_wrong_dtype_tangents(self):
         """Test that an error is raised if the tangent is of the wrong dtype."""
 
         with pytest.raises(TypeError, match="dtypes must be equal"):
-            qml.jvp(lambda x: x**2, (0.5,), (1,))
+            qp.jvp(lambda x: x**2, (0.5,), (1,))
 
     def test_error_wrong_shape_tangents(self):
         """Test that an error is raised if the tangent has the wrong shape."""
 
         with pytest.raises(ValueError, match="params and tangent shapes"):
-            qml.jvp(lambda x: x**2, (jnp.array(0.5),), (jnp.array([1.0, 1.0]),))
+            qp.jvp(lambda x: x**2, (jnp.array(0.5),), (jnp.array([1.0, 1.0]),))
 
     def test_error_non_sequence_params(self):
         """Test that an error is raised if the params are not a sequence."""
         with pytest.raises(ValueError, match="params must be a Sequence"):
-            qml.jvp(lambda x: x**2, 2, (1.0,))
+            qp.jvp(lambda x: x**2, 2, (1.0,))
 
     def test_error_non_sequence_tangents(self):
         """Test that an error is raised if the tangents are not a sequence."""
         with pytest.raises(ValueError, match="tangents must be a Sequence"):
-            qml.jvp(lambda x: x**2, (1.0,), 1.0)
+            qp.jvp(lambda x: x**2, (1.0,), 1.0)
 
     @pytest.mark.parametrize("argnums", (4.5, "abc"))
     def test_error_bad_argnums(self, argnums):
         """Test that an error is raised if the argnums is not a collection."""
 
         with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
-            qml.jvp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
+            qp.jvp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
 
 
 class TestCapturingJVP:
@@ -100,7 +100,7 @@ class TestCapturingJVP:
             return jnp.array([2, 1]) * x
 
         def w(x):
-            return qml.jvp(f, (x,), (1.0,))
+            return qp.jvp(f, (x,), (1.0,))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -130,7 +130,7 @@ class TestCapturingJVP:
 
         def w(x, y, argnums):
             dinputs = (dx, dy)
-            return qml.jvp(f, (x, y), (dinputs[argnums],), argnums=argnums)
+            return qp.jvp(f, (x, y), (dinputs[argnums],), argnums=argnums)
 
         for argnums in (0, 1):
 
@@ -147,7 +147,7 @@ class TestCapturingJVP:
             return 2 * x
 
         def w(x):
-            return qml.jvp(f, (x,), (1.0,), h=1e-4)
+            return qp.jvp(f, (x,), (1.0,), h=1e-4)
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -163,7 +163,7 @@ class TestCapturingJVP:
             return 2 * x
 
         def w(x):
-            return qml.jvp(f, (x,), (1.0,), method="fd")
+            return qp.jvp(f, (x,), (1.0,), method="fd")
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -181,7 +181,7 @@ class TestCapturingJVP:
             return y**2, z**3
 
         def w(x, dx):
-            return qml.jvp(f, (x,), (dx,))
+            return qp.jvp(f, (x,), (dx,))
 
         x = jnp.array(0.5)
         dx = jnp.array(2.0)
@@ -205,7 +205,7 @@ class TestCapturingJVP:
             return jnp.sum(x) + jnp.sum(y) + jnp.sum(z)
 
         def w(x, y, z, dx, dz):
-            return qml.jvp(f, (x, y, z), (dx, dz), argnums=[0, 2])
+            return qp.jvp(f, (x, y, z), (dx, dz), argnums=[0, 2])
 
         x = jnp.arange(2, dtype=float)
         y = jnp.arange(3, dtype=float)
@@ -235,7 +235,7 @@ def test_pytrees_in_and_out():
 
     dx = {"a": 5.0, "b": 10.0}
 
-    results, d_results = qml.jvp(f, (x, y), (dx,))
+    results, d_results = qp.jvp(f, (x, y), (dx,))
 
     assert isinstance(results, dict)
     assert jnp.allclose(results["result"], 0.5 * 2 + 3.0 * 1.2)

@@ -27,6 +27,7 @@ from ._loop_abstract_axes import (
     get_dummy_arg,
     handle_jaxpr_error,
     loop_determine_abstracted_axes,
+    promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
 
@@ -41,6 +42,14 @@ def _to_bool_cond_fn(cond_fn):
         return jnp.bool(out)
 
     return _new_cond_fn
+
+
+def _body_consts_extracted_cond(cond_fn):
+    # pylint: disable=unused-argument
+    def new_cond_fn(args, body_consts):
+        return cond_fn(*args)
+
+    return new_cond_fn
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
@@ -87,21 +96,21 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: float):
 
-            @qml.while_loop(lambda x: x < 2.0)
+            @qp.while_loop(lambda x: x < 2.0)
             def loop_rx(x):
                 # perform some work and update (some of) the arguments
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
                 return x ** 2
 
             # apply the while loop
             loop_rx(x)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     >>> circuit(1.6)
     -0.02919952
@@ -110,7 +119,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     :func:`~.qjit` decorator, the while loop will not be unrolled, and instead
     will be captured as-is during compilation and executed during runtime:
 
-    >>> qml.qjit(circuit)(1.6)
+    >>> qp.qjit(circuit)(1.6)
     Array(-0.02919952, dtype=float64)
 
     .. details::
@@ -127,10 +136,10 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
             Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
             which captures the abstract computational graph for the given input and generates the abstract shapes.
-            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+            The resulting JAXPR can then be evaluated using ``qp.capture.eval_jaxpr``:
 
             >>> jaxpr = jax.make_jaxpr(workflow)(arg)
-            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+            >>> qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
@@ -138,7 +147,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         >>> import jax
         >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
-        >>> qml.capture.enable()
+        >>> qp.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
         If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
@@ -149,7 +158,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
             def f(x, y):
                 return jnp.hstack([x, y]), 2*y
 
@@ -167,7 +176,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 return x * y, 2*y
 
@@ -183,7 +192,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
@@ -201,7 +210,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         .. code-block:: python
 
             def w():
-                @qml.while_loop(lambda i, x: i < 5)
+                @qp.while_loop(lambda i, x: i < 5)
                 def f(i, x):
                     return i + 1, jnp.append(x, i)
 
@@ -233,12 +242,25 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QmlPrimitive
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    while_loop_prim = QmlPrimitive("while_loop")
+    while_loop_prim = QpPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
-    register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
+
+    def setup_env(tracers, params):
+        tracer_args = tracers[slice(*params["args_slice"])]
+        env = dict(zip(params["jaxpr_body_fn"].invars, tracer_args, strict=True))
+
+        body_consts = tracers[slice(*params["body_slice"])]
+        env.update(dict(zip(params["jaxpr_body_fn"].constvars, body_consts, strict=True)))
+        return env
+
+    register_custom_staging_rule(
+        while_loop_prim,
+        lambda params: params["jaxpr_body_fn"],
+        setup_env=setup_env,
+    )
 
     @while_loop_prim.def_impl
     def _impl(
@@ -304,14 +326,16 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     def _get_jaxprs(self, init_state, allow_array_resizing):
         import jax  # pylint: disable=import-outside-toplevel
 
-        flat_args, in_tree = jax.tree_util.tree_flatten(init_state)
+        body_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
+
+        flat_args, in_tree = jax.tree_util.tree_flatten((init_state, dynamic_consts))
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
 
-        flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
-        flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+        flat_body_fn = FlatFn(body_consts_extracted, in_tree=in_tree)
+        flat_cond_fn = FlatFn(_body_consts_extracted_cond(self.cond_fn), in_tree=in_tree)
         bool_cond_fn = _to_bool_cond_fn(flat_cond_fn)
 
         if abstracted_axes:  # pragma: no cover
@@ -366,7 +390,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        # [0] to slice out the consts extracted by promote_consts_to_inputs
+        return jax.tree_util.tree_unflatten(out_tree, results)[0]
 
     def __call__(self, *init_state):
 

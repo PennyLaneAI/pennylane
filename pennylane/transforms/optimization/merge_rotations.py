@@ -257,17 +257,22 @@ def merge_rotations(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum transform to combine rotation gates of the same type that act sequentially.
 
-    If the combination of two rotation produces an angle that is close to 0,
+    If the combination of two rotations produces an angle that is close to 0,
     neither gate will be applied.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
+        atol (float):
+            After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations in the
-            `~.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
-            only the operations whose names match those in the list will undergo merging.
+            :attr:`~pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged.
+            Otherwise, only the operations whose names match those in the list will undergo merging.
+
+    .. note::
+        The ``atol`` and ``include_gates`` arguments are not supported within a :func:`~.qjit`
+        workflow.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -296,8 +301,9 @@ def merge_rotations(
     np.float64(0.955...)
 
     .. details::
-        :title: Details on merging ``Rot`` gates
-        :href: details-on-rot
+        :title: Usage Details
+
+        **Merging ``Rot`` gates**
 
         When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
 
@@ -314,8 +320,7 @@ def merge_rotations(
         For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation
         of :func:`~.pennylane.transforms.single_qubit_fusion`.
 
-    .. details::
-        :title: Usage Details
+        **Usage on quantum functions**
 
         You can also apply ``merge_rotations`` to a quantum function.
 
@@ -359,6 +364,60 @@ def merge_rotations(
         0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
         1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
         2: ─╰X─────────H────────╰●───────────────────┤
+
+    .. details::
+        :title: Usage with qjit
+
+        There are two key differences to note when using ``merge_rotations`` with ``qjit``:
+
+        * The ``atol`` and ``include_gates`` arguments are not available with ``merge_rotations``
+          when used with ``qjit``, and an error will be raised if either arguments are specified.
+
+        * Only the following gates can be optimized by ``merge_rotations`` with ``qjit``:
+
+          - :class:`qml.RX <pennylane.RX>`,
+          - :class:`qml.CRX <pennylane.CRX>`,
+          - :class:`qml.RY <pennylane.RY>`,
+          - :class:`qml.CRY <pennylane.CRY>`,
+          - :class:`qml.RZ <pennylane.RZ>`,
+          - :class:`qml.CRZ <pennylane.CRZ>`,
+          - :class:`qml.PhaseShift <pennylane.PhaseShift>`,
+          - :class:`qml.ControlledPhaseShift <pennylane.ControlledPhaseShift>`,
+          - :class:`qml.Rot <pennylane.Rot>`,
+          - :class:`qml.CRot <pennylane.CRot>`,
+          - :class:`qml.MultiRZ <pennylane.MultiRZ>`.
+
+        .. code-block:: python
+
+            dev = qml.device("lightning.qubit", wires=1)
+
+            @qml.qjit(capture=True)
+            @qml.transforms.merge_rotations
+            @qml.qnode(dev)
+            def circuit():
+                qml.RX(0.1, wires=0)
+                qml.RX(0.2, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> print(qml.specs(circuit, level=1)())
+        Device: lightning.qubit
+        Device wires: 1
+        Shots: Shots(total=None)
+        Level: merge-rotations
+        <BLANKLINE>
+        Wire allocations: 1
+        Total gates: 1
+        Gate counts:
+        - RX: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        Additionally, the ``merge_rotations`` transform supports
+        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
+
+        For more technical information on how this transform behaves, consult the Catalyst
+        documentation for :func:`catalyst.passes.merge_rotations`.
 
     """
 
