@@ -631,7 +631,7 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
 decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 
 
-@register_condition(lambda num_work_wires, num_control_wires, **_: not num_work_wires)
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
