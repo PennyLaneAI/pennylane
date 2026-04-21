@@ -568,7 +568,7 @@ The following classes have been ported over:
 
 <h4>Other improvements</h4>
 
-* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of type
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
   `list` or `tuple` types.
   [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
 
