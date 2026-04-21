@@ -182,6 +182,7 @@ The following classes have been ported over:
 * With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
   can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
   [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
+  [(#9335)](https://github.com/PennyLaneAI/pennylane/pull/9335)
 
 * Added another decomposition to `MultiControlledX` with two control wires and at least one zeroed
   work wire that has been passed explicitly. It decomposes into a pair of `TemporaryAND` and a
