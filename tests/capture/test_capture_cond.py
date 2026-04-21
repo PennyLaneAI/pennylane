@@ -268,7 +268,7 @@ class TestCond:
         def false_fn(arg):
             qml.RY(arg, 0)
 
-        # note: can't create the m1 in f because convert_element_type cant handle MeasurementValue
+        # NOTE: can't create the m1 in f because convert_element_type cant handle MeasurementValue
         # but this is basically a legacy test for behaviour we dont care for anymore
         def f(m1, x):
             if decorator:
