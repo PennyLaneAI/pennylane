@@ -54,7 +54,7 @@ def _check_decomposition(op, skip_wire_mapping):
             compute_decomp = type(op).compute_decomposition(
                 *op.data, wires=op.wires, **op.hyperparameters
             )
-        except (qp.operation.DecompositionUndefinedError, TypeError):
+        except (qp.exceptions.DecompositionUndefinedError, TypeError):
             # sometimes decomposition is defined but not compute_decomposition
             # Also  sometimes compute_decomposition can have a different signature
             compute_decomp = decomp
