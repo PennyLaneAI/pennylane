@@ -60,7 +60,7 @@ class TestLeftClassicalComparator:
     def test_operation_result(
         self, x_wires, L, target_wire, work_wires, x, comparator, qjit
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the LeftComparator template output."""
+        """Test the correctness of the LeftClassicalComparator template output."""
 
         pytest.importorskip("catalyst")
 
