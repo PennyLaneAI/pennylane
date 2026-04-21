@@ -90,7 +90,7 @@ class MultiX(qp.operation.Operator):
             qp.ctrl(MultiX(wires), control=control)
             return qp.state()
 
-    This yields a decomposition in terms of :class:`MultiControlledX` gates.
+    This yields a decomposition in terms of :class:`~.MultiControlledX` gates.
 
     >>> print(qp.draw(circuit_no_work)())
     c0: ─╭●─╭●─╭●─╭●─┤  State
@@ -103,8 +103,8 @@ class MultiX(qp.operation.Operator):
      3: ──────────╰X─┤  State
 
     Things get interesting when we allow for additional work wires.
-    This turns the control structure into a :class:`TemporaryAND` ladder
-    and uses :class:`CNOT` operators to distribute the targets clevery from the last work wire, so we do not have
+    This turns the control structure into a :class:`~.TemporaryAND` ladder
+    and uses :class:`~.CNOT` operators to distribute the targets cleverly from the last work wire, so we do not have
     to re-use the control structure multiple times:
 
     .. code-block:: python
@@ -232,7 +232,7 @@ def ctrl_decomp_with_allocate(
     base,
     **__,
 ):
-    """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
+    """Controlled decomposition using TemporaryAND ladder (needs dynamically allocated work wires)."""
     c = len(control_wires)
 
     base_wires = base.wires

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the decomposition rules for MultiX"""
+"""Tests for MultiX"""
 
-# pylint: disable=no-value-for-parameter, import-outside-toplevel
+# pylint: disable=no-value-for-parameter, import-outside-toplevel, undefined-variable
 import numpy as np
 import pytest
 
@@ -93,8 +93,8 @@ class TestControlledMultiX:
         assert np.allclose(decomposed(in_state), reference(in_state))
 
     @pytest.mark.parametrize("capture", [True, False])
-    def test_correctness_without_work_wires(self, capture, seed):
-        """Test that the controlled MultiX without work wires produces the correct unitary."""
+    def test_correctness_without_work_wires_qjit(self, capture):
+        """Test that the controlled MultiX without work wires produces the correct unitary with qjit."""
         pytest.importorskip("catalyst")
         n = 2
         wires = list(range(n))
@@ -129,8 +129,8 @@ class TestControlledMultiX:
         assert np.allclose(decomposed(in_state), reference(in_state))
 
     @pytest.mark.parametrize("n", [1, 5])
-    def test_correctness_with_work_wires(self, n, seed):
-        """Test that the controlled MultiX without work wires produces the correct unitary."""
+    def test_correctness_with_work_wires_qjit(self, n):
+        """Test that the controlled MultiX with work wires produces the correct unitary with qjit."""
         pytest.importorskip("catalyst")
 
         control = list(range(n))
