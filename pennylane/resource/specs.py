@@ -375,11 +375,16 @@ def _specs_from_analysis_pass(
         # TODO: Make sure this file gets removed even on failure
         res_file.unlink()  # Clean up the resource tracking file
 
-        results[level_to_name[curr_level]] = _mlir_resources_to_specs_resources(
-            next(
-                iter(data.values())
-            )  # TODO: Are we guaranteed that the main function is always first?
-        )
+        cur_level_resources = [
+            _mlir_resources_to_specs_resources(res)
+            for res in data.values()
+            if res["qnode"]  # Only include information about qnodes, ignoring any extra functions
+        ]
+
+        if len(cur_level_resources) == 1:
+            cur_level_resources = cur_level_resources[0]
+
+        results[level_to_name[curr_level]] = cur_level_resources
 
     return results
 
