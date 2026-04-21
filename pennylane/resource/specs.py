@@ -23,7 +23,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pennylane as qml
 
@@ -230,9 +230,9 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     return level_sorted
 
 
-def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: no cover
-    # This is function is covered by integration tests within the Catalyst frontend
-    """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
+def _mlir_resources_to_specs_resources(resources: dict[str, Any]) -> SpecsResources:  # pragma: no cover
+    # This function is covered by integration tests within the Catalyst frontend
+    """Helper function to convert the output of resource analysis pass into SpecsResources."""
 
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
@@ -467,31 +467,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
                 **kwargs,
             )
         )
-        # try:
-        #     results = mlir_specs(
-        #         qjit,
-        #         mlir_levels,
-        #         *args,
-        #         **kwargs,
-        #         level_to_markers=mlir_level_to_markers,
-        #         existing_level_names=set(level_to_name.values()),
-        #     )
-        # except ValueError as ve:
-        #     levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
-        #     bad_levels = [str(int(lvl) + num_tape_levels) for lvl in levels[1].split(", ")]
-        #     raise ValueError(
-        #         f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
-        #     ) from ve
-
-        # for lvl, (level_name, result) in zip(mlir_levels, results.items()):
-        #     level_to_name[lvl + num_tape_levels] = level_name
-
-        #     if isinstance(result, list):
-        #         result = [_mlir_resources_to_specs_resources(res) for res in result]
-        #     else:
-        #         result = _mlir_resources_to_specs_resources(result)
-
-        #     resources[level_name] = result
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
@@ -501,7 +476,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     return resources, level_to_name
 
 
-# NOTE: Some information is missing from specs_qjit compared to specs_qnode
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
