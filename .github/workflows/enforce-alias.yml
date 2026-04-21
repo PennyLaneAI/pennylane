@@ -35,10 +35,12 @@ jobs:
       CORE_MODULES: >-
         pennylane/operation.py
         pennylane/qchem
+        pennylane/ops
 
       TEST_MODULES: >-
         tests/test_operation.py
         tests/qchem
+        tests/ops
 
     name: Enforce PennyLane alias as qp
 
