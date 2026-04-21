@@ -521,7 +521,6 @@ The following classes have been ported over:
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
   ```python
-  
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
   
@@ -545,6 +544,7 @@ The following classes have been ported over:
     >>> output = circuit(3, ">=", 2)
     >>> print(bool(output))
     True
+  
   ```
 
 <h4>Other improvements</h4>
