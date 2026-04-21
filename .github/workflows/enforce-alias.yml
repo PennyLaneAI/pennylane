@@ -42,6 +42,7 @@ jobs:
         doc/index.rst
         doc/robots.txt
         pennylane/operation.py
+        pennylane/qchem
 
       TEST_MODULES: >-
         tests/test_operation.py
