@@ -46,6 +46,7 @@ jobs:
 
       TEST_MODULES: >-
         tests/test_operation.py
+        tests/qchem
 
     name: Enforce PennyLane alias as qp
 
