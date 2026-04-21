@@ -238,7 +238,6 @@ def ctrl_decomp_with_allocate(
     base_wires = base.wires
     num_needed = c - 1
     with qp.allocation.allocate(num_needed, state="zero", restored=True) as aw:
-        # Forward pass: build AND ladder
         _fanout(num_needed, base_wires, control_wires, control_values, work_wires=aw)
 
 
