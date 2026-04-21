@@ -21,6 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.qrom import _calculate_n_select_work_wires, _qrom_decomposition
+from pennylane.templates.subroutines.select import _select_decomp_unary
 
 has_jax = True
 try:
@@ -331,6 +333,42 @@ class TestQROM:
         for rule in qp.list_decomps(qp.QROM):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_select_decomposition_unary(self):
+        """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
+
+        bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
+        control_wires = [0, 1, 2]
+        target_wires = [3, 4]
+
+        class SpyRule:
+            """Wraps a DecompositionRule, tracking __call__ invocations."""
+
+            def __init__(self, original):
+                self._original = original
+                self.call_count = 0
+
+            def __call__(self, *args, **kwargs):
+                self.call_count += 1
+                return self._original(*args, **kwargs)
+
+            def __getattr__(self, name):
+                return getattr(self._original, name)
+
+        spy = SpyRule(_select_decomp_unary)
+
+        @qp.transforms.decompose(
+            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", *qp.ops.__all__},
+            fixed_decomps={qp.QROM: _qrom_decomposition, qp.Select: spy},
+        )
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.QROM(bitstrings, control_wires, target_wires, work_wires=[5, 6])
+            return qp.state()
+
+        circuit()
+        assert spy.call_count > 0, "_select_decomp_unary was never called"
+
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
 
@@ -355,27 +393,26 @@ class TestQROM:
         assert qp.math.allclose(output, [0, 0, 1, 0])
 
     @pytest.mark.jax
-    def test_jit_compatible(self):
-        """Test that the template is compatible with the JIT compiler."""
+    def test_traced_wires(self):
+        """Test that QROM construction and decomposition do not raise TracerBoolConversionError
+        when wires are JAX tracers."""
 
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qp.device("default.qubit", wires=4)
+        def build_and_decompose(data, control_wires, target_wires, work_wires):
+            op = qp.QROM(data, control_wires, target_wires, work_wires)
+            op.decomposition()
+            return True
 
-        @jax.jit
-        @qp.qnode(dev)
-        def circuit():
-            qp.QROM(
-                [[1], [0], [0], [1]],
-                control_wires=[0, 1],
-                target_wires=[2],
-                work_wires=[3],
-            )
-            return qp.probs(wires=3)
+        n, m, w = 2, 2, 1
+        data = jnp.array([[1, 0], [0, 1], [1, 1], [0, 0]])
+        control_wires = jnp.arange(0, n)
+        target_wires = jnp.arange(n, n + m)
+        work_wires = jnp.arange(n + m, n + m + w)
 
-        assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
+        jax.make_jaxpr(build_and_decompose)(data, control_wires, target_wires, work_wires)
 
 
 @pytest.mark.parametrize(
@@ -473,3 +510,24 @@ def test_too_many_work_wires_case():
     )
 
     assert gates_clean == expected_gates
+
+
+@pytest.mark.parametrize(
+    ("terms", "n_ctrl", "n_target", "n_work", "expected"),
+    [
+        (16, 4, 1, 3, 2),
+        (16, 4, 10, 5, 5),
+        (7, 3, 2, 2, 2),
+        (14, 4, 2, 10, 4),
+        (256, 8, 2, 10, 8),
+        (4, 2, 1, 1, 0),
+    ],
+)
+def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected):
+    """Test the allocation logic for Select vs Swap work wires."""
+
+    result = _calculate_n_select_work_wires(
+        terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work
+    )
+
+    assert result == expected

@@ -66,7 +66,9 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-def _select_ops(control_wires, depth, target_wires, swap_wires, data):
+def _select_ops(
+    control_wires, depth, target_wires, swap_wires, data, select_work_wires
+):  # pylint:disable=too-many-arguments
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
@@ -74,6 +76,7 @@ def _select_ops(control_wires, depth, target_wires, swap_wires, data):
         Select(
             _new_ops(depth, target_wires, control_wires, swap_wires, data),
             control=control_select_wires,
+            work_wires=select_work_wires,
         )
     else:
         _new_ops(depth, target_wires, control_wires, swap_wires, data)
@@ -156,13 +159,19 @@ class QROM(Operation):
         the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
 
 
-        The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
-        Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
-        Following the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], auxiliary qubits can be used to
-        load more than one bitstring in parallel. Let :math:`\lambda` be
-        the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
-        Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
-        where :math:`l` is the length of the bitstrings.
+        The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
+        operator. These wires are dynamically partitioned into two sets: one for the
+        :class:`~.Select` block and another to facilitate parallel data loading via a
+        `SWAP network <https://pennylane.ai/compilation/swap-network>`__.
+
+        The template determines the depth, :math:`\lambda` (a power of 2),
+        based on the available ``work_wires``. Let :math:`b` be the length of the bitstrings.
+        The number of wires allocated to the SWAP network is :math:`k_{swap} = b \cdot (\lambda - 1)`.
+        The remaining wires, :math:`k_{select}`, are assigned to the :class:`~.Select` block.
+
+        To ensure the decomposition is valid, the template guarantees that
+        :math:`k_{select} \geq c - \log_2(\lambda) - 1`, where :math:`c` is the number of
+        control wires, updating the depth if needed.
 
         The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
         The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
@@ -205,15 +214,22 @@ class QROM(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in control_wires):
-                raise ValueError("Control wires should be different from work wires.")
+        _wires_are_traced = any(
+            pl_math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
+        )
 
-            if any(wire in work_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from work wires.")
+        # Wire overlap validation must be skipped when wires are JAX tracers,
+        # as their concrete values are not available during tracing.
+        if not _wires_are_traced:
+            if len(work_wires) != 0:
+                if any(wire in work_wires for wire in control_wires):
+                    raise ValueError("Control wires should be different from work wires.")
 
-        if any(wire in control_wires for wire in target_wires):
-            raise ValueError("Target wires should be different from control wires.")
+                if any(wire in work_wires for wire in target_wires):
+                    raise ValueError("Target wires should be different from work wires.")
+
+            if any(wire in control_wires for wire in target_wires):
+                raise ValueError("Target wires should be different from control wires.")
 
         if 2 ** len(control_wires) < data.shape[0]:
             raise ValueError(
@@ -392,13 +408,62 @@ class QROM(Operation):
         return self.hyperparameters["clean"]
 
 
+def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
+    """Calculates the number of work wires passes to the select block.
+
+    This utility function determines how many auxiliary wires from the total pool
+    should be allocated to the Select operation versus the SWAP network.
+
+    Args:
+        terms (int): number of bitstrings/entries in the data
+        num_control_wires (int): number of control wires
+        num_target_wires (int): number of target wires (bitstring length)
+        num_work_wires (int): total number of available work wires
+
+    Returns:
+        int: The number of work wires assigned to the Select component.
+    """
+
+    if num_work_wires < num_control_wires - 1:
+        return num_work_wires
+
+    # Initialize available swap space using total work wires
+    n_swap_work_wires = num_work_wires
+    n_swap_wires = num_target_wires + n_swap_work_wires
+
+    # Calculate depth: how many bitstrings we can load in parallel (power of 2)
+    depth = n_swap_wires // num_target_wires
+    depth = int(2 ** np.floor(np.log2(min(depth, terms))))
+
+    # Recalculate actual wires used by SWAP and the remaining for Select
+    n_swap_work_wires = num_target_wires * depth - num_target_wires
+    n_select_work_wires = num_work_wires - n_swap_work_wires
+
+    # Adjust depth if Select doesn't have enough work wires for the required control logic
+    n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+    while n_select_work_wires < n_select_control_wires - 1:
+        depth = depth // 2
+        n_swap_work_wires = num_target_wires * depth - num_target_wires
+        n_select_work_wires = num_work_wires - n_swap_work_wires
+        n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+
+    return n_select_work_wires
+
+
 def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):  # pylint: disable=too-many-branches
+
+    num_work_wires_select = _calculate_n_select_work_wires(
+        num_bitstrings, num_control_wires, num_target_wires, num_work_wires
+    )
+
+    num_work_wires_swap = num_work_wires - num_work_wires_select
+
     if num_control_wires == 0:
         return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 
-    num_swap_wires = num_target_wires + num_work_wires
+    num_swap_wires = num_target_wires + num_work_wires_swap
 
     # number of operators we store per column (power of 2)
     depth = num_swap_wires // num_target_wires
@@ -437,7 +502,7 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 op_reps=tuple(new_ops_reps),
                 partial=False,
-                num_work_wires=0,
+                num_work_wires=num_work_wires_select,
             ): 1
         }
     else:
@@ -486,7 +551,13 @@ def _qrom_decomposition(
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
 
-    swap_wires = target_wires + work_wires
+    n_select_work_wires = _calculate_n_select_work_wires(
+        len(data), len(control_wires), len(target_wires), len(work_wires)
+    )
+
+    select_work_wires = work_wires[:n_select_work_wires]
+    swap_work_wires = work_wires[n_select_work_wires:]
+    swap_wires = target_wires + swap_work_wires
 
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
@@ -494,7 +565,7 @@ def _qrom_decomposition(
     depth = min(depth, data.shape[0])
 
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires, swap_wires, data)
+        _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
@@ -502,7 +573,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qp_ops.Hadamard(wires=w)
             qp_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
-            _select_ops(control_wires, depth, target_wires, swap_wires, data)
+            _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
