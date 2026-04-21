@@ -274,6 +274,41 @@ def pytest_runtest_makereport(item, call):
     return tr
 
 
+@pytest.fixture(autouse=True)
+def restore_global_seed():
+    original_state = np.random.get_state()
+    yield
+    np.random.set_state(original_state)
+
+
+@pytest.fixture
+def seed(request):
+    """An integer random number generator seed
+
+    This fixture overrides the ``seed`` fixture provided by pytest-rng, adding the flexibility
+    of locally getting a new seed for a test case by applying the ``local_salt`` marker. This is
+    useful when the seed from pytest-rng happens to be a bad seed that causes your test to fail.
+
+    .. code_block:: python
+
+        @pytest.mark.local_salt(42)
+        def test_something(seed):
+            ...
+
+    The value passed to ``local_salt`` needs to be an integer.
+
+    """
+
+    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
+    original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
+    original_seed = original_fixture_def.func(request)
+    marker = request.node.get_closest_marker("local_salt")
+    if marker and marker.args:
+        return original_seed + marker.args[0]
+    return original_seed
+
+
 #######################################################################
 # pylint: disable=unused-import,
 try:

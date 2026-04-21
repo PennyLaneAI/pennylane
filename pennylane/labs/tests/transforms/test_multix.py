@@ -61,12 +61,13 @@ class TestControlledMultiX:
     """Test the controlled MultiX decompositions"""
 
     @pytest.mark.parametrize("n", [2, 3])
-    def test_matrix_correctness_no_work_wires(self, n):
+    def test_matrix_correctness_no_work_wires(self, n, seed):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
         wires = range(n)
         control = [f"c{i}" for i in range(n)]
 
-        in_state = np.random.rand(2**n)
+        rng = np.random.default_rng(seed)
+        in_state = rng.random(2**n)
         in_state /= np.linalg.norm(in_state)
 
         @qp.transforms.decompose(
@@ -93,7 +94,7 @@ class TestControlledMultiX:
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("capture", [True, False])
-    def test_correctness_without_work_wires(self, capture):
+    def test_correctness_without_work_wires(self, capture, seed):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
         pytest.importorskip("catalyst")
         n = 2
@@ -102,7 +103,8 @@ class TestControlledMultiX:
 
         all_wires = wires + control
 
-        in_state = np.random.rand(2**n)
+        rng = np.random.default_rng(seed)
+        in_state = rng.random(2**n)
         in_state /= np.linalg.norm(in_state)
 
         @qp.qjit(capture=capture)
@@ -129,7 +131,7 @@ class TestControlledMultiX:
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 5])
-    def test_correctness_with_work_wires(self, n):
+    def test_correctness_with_work_wires(self, n, seed):
         """Test that the controlled MultiX without work wires produces the correct unitary."""
         pytest.importorskip("catalyst")
 
@@ -142,7 +144,8 @@ class TestControlledMultiX:
 
         all_wires = main_wires + work_wires
 
-        in_state = np.random.rand(2 ** len(main_wires))
+        rng = np.random.default_rng(seed)
+        in_state = rng.random(2 ** len(main_wires))
         in_state /= np.linalg.norm(in_state)
 
         dev = qp.device("lightning.qubit", wires=all_wires)

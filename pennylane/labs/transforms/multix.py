@@ -61,6 +61,8 @@ class MultiX(qp.operation.Operator):
 
     On its own, the operator simply applies :class:`~.X` gates to the provided wires.
 
+    >>> import pennylane as qp
+    >>> qp.decomposition.enable_graph()
     >>> n = 4
     >>> wires = range(n)
     >>> @qp.transforms.decompose(gate_set="X")
