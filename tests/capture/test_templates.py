@@ -174,7 +174,7 @@ unmodified_templates_cases = [
     (
         qp.MottonenStatePreparation,
         (jnp.ones(8) / jnp.sqrt(8),),
-        {"wires": [3, 2, 0], "id": "your_id"},
+        {"wires": [3, 2, 0]},
     ),
     pytest.param(
         qp.MottonenStatePreparation,
