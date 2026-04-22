@@ -18,7 +18,7 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
@@ -50,7 +50,7 @@ def _map_indices_apply_channel(**kwargs):
     )
 
 
-def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation_einsum(op: qp.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
 
@@ -97,7 +97,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
 @singledispatch
 def apply_operation(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -151,7 +151,7 @@ def apply_operation(
     tensor([[1., 0., 0.],
             [0., 0., 0.],
             [0., 0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.TShift(0), state)
+    >>> apply_operation(qp.TShift(0), state)
     tensor([[0.+0.j, 0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j, 0.+0.j]], requires_grad=True)
@@ -174,7 +174,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 @apply_operation.register
 def apply_snapshot(
-    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+    op: qp.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Take a snapshot of the mixed state"""
     if debugger and debugger.active:
@@ -185,10 +185,10 @@ def apply_snapshot(
         else:
             shots = op.hyperparameters["shots"]
 
-        if isinstance(measurement, qml.measurements.StateMP) or not shots:
-            snapshot = qml.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
+        if isinstance(measurement, qp.measurements.StateMP) or not shots:
+            snapshot = qp.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
         else:
-            snapshot = qml.devices.qutrit_mixed.measure_with_samples(
+            snapshot = qp.devices.qutrit_mixed.measure_with_samples(
                 measurement,
                 state,
                 shots,
@@ -206,7 +206,7 @@ def apply_snapshot(
 
 
 @apply_operation.register
-def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_identity(op: qp.Identity, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 

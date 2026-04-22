@@ -58,7 +58,7 @@ class VibrationalPES:
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
     >>> pes_onemode = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
     ...                 0.00584504, 0.02881817, 0.08483433, 0.22025702]]
-    >>> vib_pes = qml.qchem.VibrationalPES(freqs=freqs, grid=grid,
+    >>> vib_pes = qp.qchem.VibrationalPES(freqs=freqs, grid=grid,
     ...           gauss_weights=weights, pes_data=[pes_onemode])
     >>> vib_pes.freqs
     array([0.01885397])
@@ -87,7 +87,7 @@ class VibrationalPES:
     >>> localized = True
     >>> dipole_level = 3
     >>>
-    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
+    >>> vib_obj = qp.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
     ...           uloc=uloc, pes_data=[pes_onemode, pes_twomode, pes_threemode],
     ...           dipole_data=[dipole_onemode, dipole_twomode, dipole_threemode],
     ...           localized=True, dipole_level=3)
@@ -209,8 +209,8 @@ def optimize_geometry(molecule, method="rhf"):
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [0.0, 0.0, 1.0]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> eq_geom = qml.qchem.optimize_geometry(mol)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> eq_geom = qp.qchem.optimize_geometry(mol)
     >>> eq_geom
     array([[ 0.        ,  0.        , -0.40277116],
            [ 0.        ,  0.        ,  1.40277116]])

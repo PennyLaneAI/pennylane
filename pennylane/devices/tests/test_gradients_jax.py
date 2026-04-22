@@ -18,7 +18,7 @@ import numpy as np
 # pylint:disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -39,10 +39,10 @@ class TestGradients:
             tol += 0.01
             gradient_kwargs["aux_wire"] = 1
 
-        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         x = jnp.array(0.5)
         res = jax.grad(circuit)(x)
@@ -62,12 +62,12 @@ class TestGradients:
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
-        @qml.qnode(dev, diff_method="backprop", grad_on_execution=True)
+        @qp.qnode(dev, diff_method="backprop", grad_on_execution=True)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         def cost_fn(x, y):
             res = circuit(x, y)
@@ -92,12 +92,12 @@ class TestGradients:
         dev = device(2)
         tol = tol(dev.shots)
 
-        @qml.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
+        @qp.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hamiltonian([1, 1], [qml.Z(0), qml.Y(1)]))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hamiltonian([1, 1], [qp.Z(0), qp.Y(1)]))
 
         res = jax.grad(circuit, argnums=[0, 1])(a, b)
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
@@ -119,12 +119,12 @@ class TestGradients:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[1])
 
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
@@ -161,12 +161,12 @@ class TestGradients:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.probs(wires=[1])
 
         jac = jax.jacobian(circuit, argnums=[0])(x, y)
 
@@ -202,11 +202,11 @@ class TestGradients:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qml.qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.expval(qp.Z(0))
 
         x = jnp.array([1.0, 2.0])
         res = circuit(x)
