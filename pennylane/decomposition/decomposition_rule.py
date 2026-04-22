@@ -17,12 +17,12 @@
 from __future__ import annotations
 
 import inspect
+import warnings
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import partial
 from textwrap import dedent
 from typing import overload
 
@@ -833,40 +833,61 @@ def show_decomps(
     Gate Count: {CNOT: 1, Hadamard: 2}
 
     """
+    print(
+        _show_decomps_str(
+            op,
+            *rules,
+            show_not_applicable=show_not_applicable,
+            num_work_wires=num_work_wires,
+        )
+    )
+
+
+def _show_decomps_str(
+    op: Operator,
+    *rules: str | DecompositionRule,
+    show_not_applicable: bool = True,
+    num_work_wires: int | None = None,
+) -> str:
+
     if isinstance(op, type) and issubclass(op, Operator):
         raise TypeError(
             "The show_decomps function takes a concrete operator instance as its "
             "first argument, not an operator type."
         )
 
-    stock_collection = list_decomps(op)
-    rules_to_display = (
-        stock_collection
-        if not rules
-        else [stock_collection[rule] if isinstance(rule, str) else rule for rule in rules]
-    )
+    if rules and not show_not_applicable:
+        warnings.warn(
+            "show_not_applicable=False is only relevant when qp.show_decomps is "
+            "called on an operator instance alone. If specific decomposition rules "
+            "are explicitly requested, all rules will be displayed."
+        )
+        show_not_applicable = True
 
-    if not show_not_applicable:
-        _filter_fn = partial(_is_applicable, op=op, num_work_wires=num_work_wires)
-        rules_to_display = list(filter(_filter_fn, rules_to_display))
-
-    if len(rules_to_display) == 0:
-        report = "No available decomposition rules."
-        if not show_not_applicable:
-            report = report[:-1] + " (non-applicable rules have been excluded)."
-        print(report)
-        return
+    display_rules = list_decomps(op)
+    if rules:
+        display_rules = [display_rules[rule] if isinstance(rule, str) else rule for rule in rules]
 
     if len(rules) == 1:
-        rule = rules_to_display[0]
-        print(f"Name: {rule.name}\n{_inspect_decomp(op, rule, num_work_wires)}")
-        return
+        rule = display_rules[0]
+        return f"Name: {rule.name}\n{_inspect_decomp(op, rule, num_work_wires)}"
 
+    if len(display_rules) == 0:
+        return "No available decomposition rules."
+
+    num_applicable_rules = 0
     decomp_strings = []
-    for i, rule in enumerate(rules_to_display):
+    for i, rule in enumerate(display_rules):
+        if not show_not_applicable and not _is_applicable(rule, op, num_work_wires):
+            continue
         rule_str = _inspect_decomp(op, rule, num_work_wires)
         decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule_str}")
-    print("\n\n".join(decomp_strings))
+        num_applicable_rules += 1
+
+    if num_applicable_rules == 0:
+        return "No applicable decomposition rules."
+
+    return "\n\n".join(decomp_strings)
 
 
 def _is_applicable(rule: DecompositionRule, op: Operator, num_work_wires: int | None) -> bool:
