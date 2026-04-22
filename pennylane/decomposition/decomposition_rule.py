@@ -875,16 +875,16 @@ def _show_decomps_str(
     if len(display_rules) == 0:
         return "No available decomposition rules."
 
-    num_applicable_rules = 0
+    num_printed_rules = 0
     decomp_strings = []
     for i, rule in enumerate(display_rules):
         if not show_not_applicable and not _is_applicable(rule, op, num_work_wires):
             continue
         rule_str = _inspect_decomp(op, rule, num_work_wires)
         decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule_str}")
-        num_applicable_rules += 1
+        num_printed_rules += 1
 
-    if num_applicable_rules == 0:
+    if num_printed_rules == 0:
         return "No applicable decomposition rules."
 
     return "\n\n".join(decomp_strings)
