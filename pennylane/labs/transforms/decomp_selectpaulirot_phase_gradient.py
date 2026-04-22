@@ -56,14 +56,14 @@ def _select_pauli_rot_phase_gradient(
             binary_int,
             control_wires,
             angle_wires,
-            work_wires=work_wires[: len(control_wires) - 1],
+            work_wires=work_wires[len(angle_wires) - 1 :],
             clean=False,
         )
     ] + cnots
 
     pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires),
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
     )
 
     match rot_axis:
@@ -182,7 +182,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             num_bitstrings=2**num_control_wires,
             num_control_wires=num_control_wires,
             num_target_wires=len(angle_wires),
-            num_work_wires=num_control_wires - 1,
+            num_work_wires=len(work_wires) - len(angle_wires) + 1,
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
@@ -203,7 +203,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SemiAdder,
             num_x_wires=len(angle_wires),
             num_y_wires=len(phase_grad_wires),
-            num_work_wires=len(work_wires),
+            num_work_wires=len(angle_wires) - 1,
         )
 
         # 5. change_op_basis(compute_op, target_op)
