@@ -797,6 +797,13 @@ class TestShowDecomps:
         captured = capsys.readouterr()
         assert captured.out == "No available decomposition rules.\n"
 
+        qp.show_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
+        captured = capsys.readouterr()
+        assert (
+            captured.out
+            == "No available decomposition rules (non-applicable rules have been excluded).\n"
+        )
+
     def test_show_decomp_by_name(self, capsys):
         """Tests inspecting a particular decomp by name."""
 

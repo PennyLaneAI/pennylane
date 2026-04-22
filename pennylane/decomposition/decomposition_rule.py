@@ -851,7 +851,10 @@ def show_decomps(
         rules_to_display = list(filter(_filter_fn, rules_to_display))
 
     if len(rules_to_display) == 0:
-        print("No available decomposition rules.")
+        report = "No available decomposition rules."
+        if not show_not_applicable:
+            report = report[:-1] + " (non-applicable rules have been excluded)."
+        print(report)
         return
 
     if len(rules) == 1:
