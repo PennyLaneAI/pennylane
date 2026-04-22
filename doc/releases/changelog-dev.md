@@ -1055,6 +1055,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+  and return `qml.sample`.
+  [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
+
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
