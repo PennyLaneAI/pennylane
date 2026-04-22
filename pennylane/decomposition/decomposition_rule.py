@@ -780,7 +780,7 @@ def show_decomps(
         show_not_applicable (bool): whether to display decomposition rules not applicable to the
             given operator instance. Defaults to ``True``.
         num_work_wires (int or None): the number of available work wires for dynamic allocation.
-            Decomposition rules that allocates more wires than there are available will be marked
+            Decomposition rules that allocate more wires than there are available will be marked
             not applicable (or excluded if ``show_not_applicable=False``).
 
     **Example**
