@@ -2926,6 +2926,7 @@ class TestPauliRot:
         assert decomp_ops[0].wires == Wires([0])
         assert decomp_ops[0].data[0] == theta
 
+    @pytest.mark.jax
     def test_PauliRot_jax_traced_wires_jit_compatible(self, tol):
         """Validate that ``len(self._wires)`` used by PauliRot works with JAX-traced wires."""
         jax = pytest.importorskip("jax")
