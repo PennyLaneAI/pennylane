@@ -21,12 +21,15 @@ import re
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.drawer.label import LabelledOp
+from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
@@ -1393,19 +1396,17 @@ class TestPauliErrorEqual:
 
     ARGS_ONE = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
     ]
     ARGS_TWO = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
-        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
-        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
-        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
+        ["XYZ", 0.1, (0, 1, 2)],  # different Pauli strs, number of wires
+        ["XZ", 0.1, (0, 1)],  # different Pauli strs
+        ["XY", 0.1, (0, 2)],  # different wire numbers
     ]
-    EQS = [True, True, False, False, False]
+    EQS = [True, False, False, False]
 
     @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
     def test_equality(self, args1, args2, eqs):
@@ -1663,12 +1664,12 @@ class TestMeasurementsEqual:
     def test_pauli_measure(self):
         """Test the equal check of pauli measures."""
 
-        mp = PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")
+        mp = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="test_id")
 
-        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), id="test_id")
-        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), id="test_id")
-        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), id="foo")
-        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, id="test_id")
+        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), meas_uid="test_id")
+        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), meas_uid="test_id")
+        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="foo")
+        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, meas_uid="test_id")
 
         assert qp.equal(mp, mp1) is False
         assert qp.equal(mp, mp2) is False
@@ -2019,7 +2020,10 @@ class TestSymbolicOpComparison:
                 assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
+    @pytest.mark.parametrize(
+        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+    )
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qp.MultiRZ(1.23, [0, 1])
         base2 = qp.MultiRZ(1.23, [0, 1])
@@ -2035,11 +2039,9 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2) is res
 
         if res:
-            assert qml.equal(op1, op2) == res
             assert_equal(op1, op2)
         else:
-            assert qml.equal(op1, op2) is False
-            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+            with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
@@ -2850,10 +2852,10 @@ class TestBasisRotation:
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op1 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat)
-    op2 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=np.array(rotation_mat))
-    op3 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
-    op4 = qp.BasisRotation.operator(wires=range(2, 4), unitary_matrix=rotation_mat)
+    op1 = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qp.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qp.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -2861,7 +2863,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qp.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different data"):
+        with pytest.raises(AssertionError, match="have different data"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2873,7 +2875,10 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qp.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=re.escape("have different wires"),
+        ):
             assert_equal(op, other_op)
 
     @pytest.mark.jax
@@ -2887,7 +2892,7 @@ class TestBasisRotation:
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
         )
-        other_op = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat_jax)
+        other_op = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qp.equal(op, other_op, check_interface=False) is True
         assert_equal(op, other_op, check_interface=False)
         assert qp.equal(op, other_op) is False

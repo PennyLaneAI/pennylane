@@ -14,6 +14,7 @@
 """
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
+
 import numpy as np
 
 from pennylane import capture, math
@@ -105,11 +106,11 @@ class BasisRotation(Operation):
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
         >>> def circuit():
-        ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+        ...    qp.adjoint(qp.BasisRotation(wires=wires, unitary_matrix=umat))
         ...    for idx, eigenval in enumerate(eigen_vals):
-        ...        qml.RZ(eigenval, wires=[idx])
-        ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
-        >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
+        ...        qp.RZ(eigenval, wires=[idx])
+        ...    qp.BasisRotation(wires=wires, unitary_matrix=umat)
+        >>> circ_unitary = qp.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         array([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
                [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
@@ -119,7 +120,7 @@ class BasisRotation(Operation):
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
 
-        >>> print(qml.draw(qml.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
+        >>> print(qp.draw(qp.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
         0: ──Rϕ(-1.52)─╭G(1.38)──Rϕ(-1.62)─┤
         1: ──Rϕ(1.62)──╰G(1.38)────────────┤
 
@@ -128,7 +129,7 @@ class BasisRotation(Operation):
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
+        >>> print(qp.draw(qp.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
         0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
         1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
         2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
@@ -237,13 +238,13 @@ class BasisRotation(Operation):
         :math:`\hat{E}_{k,k+1}=\tfrac{i}{2}(X_k Y_{k+1} - Y_k X_{k+1})`
         (note the additional prefactor of :math:`2` from the mapping):
 
-        >>> qml.generator(qml.SingleExcitation(0.2512, [0, 1]))
+        >>> qp.generator(qp.SingleExcitation(0.2512, [0, 1]))
         (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
 
         Similarly, the ``PhaseShift`` gates have the generators
         :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{I}-Z_j)=i|1\rangle\langle 1|_j`:
 
-        >>> qml.generator(qml.PhaseShift(0.742, [0]))
+        >>> qp.generator(qp.PhaseShift(0.742, [0]))
         (Projector(array([1]), wires=[0]), 1.0)
 
         It turns out that these generators :math:`\hat{E}_{k,k+1}` and :math:`\hat{D}_j`
@@ -435,7 +436,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         @for_loop(len(givens_list))
         def givens_loop(idx):
             grot_mat = givens_matrices[idx]
-            (i, j) = givens_ids[idx]
+            i, j = givens_ids[idx]
             theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
@@ -460,7 +461,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         @for_loop(len(givens_matrices))
         def givens_loop(idx):
             grot_mat = givens_matrices[idx]
-            (i, j) = givens_ids[idx]
+            i, j = givens_ids[idx]
             theta = math.arccos(math.real(grot_mat[1, 1]))
             phi = math.angle(grot_mat[0, 0])
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])

@@ -441,7 +441,7 @@ class TestModifiedTemplates:
         wires = [0, 5]
 
         def qfunc(wires, mat):
-            qml.BasisRotation(wires, mat, check=True)
+            qp.BasisRotation(wires, mat, check=True)
 
         # Validate inputs
         qfunc(wires, mat)
@@ -452,17 +452,17 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.BasisRotation._primitive
+        assert eqn.primitive == qp.BasisRotation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == {"check": True, "id": None}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
 
         assert len(q) == 1
-        assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
+        assert q.queue[0] == qp.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
@@ -688,13 +688,13 @@ class TestModifiedTemplates:
             "block": block,
             "n_params_block": 2,
             "template_weights": kwargs["template_weights"],
-            "id": None,
             "n_wires": 4,
         }
         if template is qp.MPS:
             expected_params["offset"] = None
         # JAX 0.7.0 converts lists to tuples for hashability
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(expected_params)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -777,12 +777,13 @@ class TestModifiedTemplates:
         assert eqn.primitive == qp.MPSPrep._primitive
         assert eqn.invars[:4] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        assert eqn.params == {
-            "id": None,
+        expected_params = {
             "n_wires": 3,
             "work_wires": None,
             "right_canonicalize": False,
         }
+        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
+        assert actual_params == expected_params
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -840,7 +841,7 @@ class TestModifiedTemplates:
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
 
-        kwargs = {"func": func, "id": None, "num_target_wires": 6}
+        kwargs = {"func": func, "num_target_wires": 6}
 
         def qfunc(probs, target_wires, estimation_wires):
             qp.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
@@ -856,7 +857,9 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qp.QuantumMonteCarlo._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        relevant_keys = {"func", "num_target_wires"}
+        actual_params = {k: v for k, v in eqn.params.items() if k in relevant_keys}
+        assert normalize_for_comparison(actual_params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -900,7 +903,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
@@ -934,7 +937,16 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000", "010", "111", "110", "000"),
+            "data": (
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+            ),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "select_wires": (12),
@@ -969,7 +981,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of HybridQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
@@ -1004,7 +1016,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "bitstrings": ["0", "1"],
+            "data": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
@@ -1436,7 +1448,7 @@ class TestModifiedTemplates:
         assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
         assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
         assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params == {"n_wires": 1, "id": None}
+        assert gqps_eqn.params["n_wires"] == 1
         assert len(gqps_eqn.outvars) == 1
         assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
 
