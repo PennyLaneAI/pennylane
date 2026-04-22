@@ -589,7 +589,7 @@ The following classes have been ported over:
   With this breaking change, please note the following:
   
    - Decomposition rules for ``SemiAdder`` now require those arguments.
-   - When registering a resource function (:func:`~.register_resources`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
    
    These changes are relevant only with :func:`~decomposition.enable_graph`.
 
