@@ -34,7 +34,7 @@ from dataclasses import dataclass, replace
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
@@ -173,18 +173,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     calculated by the difference of the sum of the gate counts multiplied by their respective gate
     weights in the decomposition, minus the weight of the operator of the operator node.
 
-    For example, if the graph was initialized with ``{qml.CNOT: 10.0, qml.H: 1.0}`` as the gate set,
+    For example, if the graph was initialized with ``{qp.CNOT: 10.0, qp.H: 1.0}`` as the gate set,
     the edge that connects a ``CNOT`` to the following decomposition rule:
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1})
         def my_cz(wires):
-            qml.H(wires=wires[1])
-            qml.CNOT(wires=wires)
-            qml.H(wires=wires[1])
+            qp.H(wires=wires[1])
+            qp.CNOT(wires=wires)
+            qp.H(wires=wires[1])
 
     will have a weight of (10.0 + 2 * 1.0) - 10.0 = 2, because the decomposition rule contains 2 additional
     ``H`` gates. Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't
@@ -211,14 +211,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         from pennylane.decomposition import DecompositionGraph
 
-        op = qml.CRX(0.5, wires=[0, 1])
+        op = qp.CRX(0.5, wires=[0, 1])
         graph = DecompositionGraph(
             operations=[op],
             gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
         )
         solution = graph.solve()
 
-    >>> with qml.queuing.AnnotatedQueue() as q:
+    >>> with qp.queuing.AnnotatedQueue() as q:
     ...     solution.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
     [RZ(1.5707963267948966, wires=[1]),
@@ -280,7 +280,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
-            if isinstance(op, qml.ops.Conditional):
+            if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
@@ -440,7 +440,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
 
         if (
-            issubclass(op.op_type, qml.ops.Adjoint)
+            issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint not in decomps
             and qjit_compatible_self_adjoint not in decomps
             and adjoint_rotation not in decomps
@@ -454,12 +454,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op, use_reconstructor))
 
-        elif issubclass(op.op_type, qml.ops.Pow):
+        elif issubclass(op.op_type, qp.ops.Pow):
             # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
             # approach we take to decompose powers of operators.
             decomps.extend(self._get_pow_decompositions(op, use_reconstructor))
 
-        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+        elif op.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             decomps.extend(self._get_controlled_decompositions(op, use_reconstructor))
 
         return decomps
@@ -473,7 +473,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         use_reconstructor = decomps_use_reconstructor(base_class, base_params)
 
         # Special case: adjoint of an adjoint cancels out
-        if issubclass(base_class, qml.ops.Adjoint):
+        if issubclass(base_class, qp.ops.Adjoint):
             return [qjit_compatible_cancel_adjoint if use_reconstructor else cancel_adjoint]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
@@ -497,11 +497,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [qjit_compatible_decompose_to_base if use_reconstructor else decompose_to_base]
 
         # Special case: power of a power
-        if issubclass(op.params["base_class"], qml.ops.Pow):
+        if issubclass(op.params["base_class"], qp.ops.Pow):
             return [qjit_compatible_merge_powers if use_reconstructor else merge_powers]
 
         # Special case: power of an adjoint
-        if issubclass(op.params["base_class"], qml.ops.Adjoint):
+        if issubclass(op.params["base_class"], qp.ops.Adjoint):
             return [qjit_compatible_flip_pow_adjoint if use_reconstructor else flip_pow_adjoint]
 
         # General case: repeat the operator z times
@@ -515,14 +515,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         base_class, base_params = op.params["base_class"], op.params["base_params"]
 
         # Special case: control of an adjoint
-        if issubclass(base_class, qml.ops.Adjoint):
+        if issubclass(base_class, qp.ops.Adjoint):
             return [flip_control_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
         # own decomposition, which applies the control on the middle op only. This should
         # always be applied.
-        if base_class in {qml.GlobalPhase, qml.ops.ChangeOpBasis}:
+        if base_class in {qp.GlobalPhase, qp.ops.ChangeOpBasis}:
             return []
 
         # General case: apply control to the base op's decomposition rules.
@@ -608,14 +608,14 @@ class DecompGraphSolution:
 
         from pennylane.decomposition import DecompositionGraph
 
-        op = qml.CRX(0.5, wires=[0, 1])
+        op = qp.CRX(0.5, wires=[0, 1])
         graph = DecompositionGraph(
             operations=[op],
             gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
         )
         solution = graph.solve()
 
-    >>> with qml.queuing.AnnotatedQueue() as q:
+    >>> with qp.queuing.AnnotatedQueue() as q:
     ...     solution.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
     [RZ(1.5707963267948966, wires=[1]),
@@ -713,14 +713,14 @@ class DecompGraphSolution:
 
         .. code-block:: python
 
-            op = qml.CRX(0.5, wires=[0, 1])
+            op = qp.CRX(0.5, wires=[0, 1])
             graph = DecompositionGraph(
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
             solution = graph.solve()
 
-        >>> with qml.queuing.AnnotatedQueue() as q:
+        >>> with qp.queuing.AnnotatedQueue() as q:
         ...     solution.decomposition(op)(0.5, wires=[0, 1])
         >>> q.queue
         [RZ(1.5707963267948966, wires=[1]),
@@ -753,7 +753,7 @@ class DecompGraphSolution:
 
         .. code-block:: python
 
-            op = qml.CRY(0.2, wires=[0, 2])
+            op = qp.CRY(0.2, wires=[0, 2])
             graph = DecompositionGraph(
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
@@ -761,7 +761,7 @@ class DecompGraphSolution:
             solution = graph.solve()
             rule = solution.decomposition(op)
 
-        >>> with qml.queuing.AnnotatedQueue() as q:
+        >>> with qp.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
         [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]

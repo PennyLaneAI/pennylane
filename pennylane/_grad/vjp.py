@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines qml.vjp
+Defines qp.vjp
 """
 
 from functools import lru_cache
@@ -35,7 +35,7 @@ def _get_vjp_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    vjp_prim = capture.QmlPrimitive("vjp")
+    vjp_prim = capture.QpPrimitive("vjp")
     vjp_prim.multiple_results = True
     vjp_prim.prim_type = "higher_order"
 
@@ -68,12 +68,12 @@ def _validate_cotangents(cotangents, out_avals):
     if len(cotangents) != len(out_avals):
         raise ValueError(
             "The length of cotangents must match the number of"
-            " outputs of the function with qml.vjp."
+            " outputs of the function with qp.vjp."
         )
     for p, t in zip(cotangents, out_avals):
         if _dtype(p) != _dtype(t):
             raise TypeError(
-                "function output params and cotangents arguments to qml.vjp do not match; "
+                "function output params and cotangents arguments to qp.vjp do not match; "
                 "dtypes must be equal. "
                 f"Got function output params dtype {_dtype(p)} and expected matching cotangent dtype, "
                 f"but got cotangent dtype {_dtype(t)} instead."
@@ -81,7 +81,7 @@ def _validate_cotangents(cotangents, out_avals):
 
         if get_shape(p) != get_shape(t):
             raise ValueError(
-                "qml.vjp called with different function output params and cotangent "
+                "qp.vjp called with different function output params and cotangent "
                 f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
                 f"{get_shape(t)}"
             )
@@ -167,12 +167,12 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
     .. code-block:: python
 
-        @qml.qjit(static_argnames="argnums")
+        @qp.qjit(static_argnames="argnums")
         def calculate_vjp_qjit(x, y, cotangent, argnums):
           def f(x, y):
               return x * y
 
-          return qml.vjp(f, (x, y), cotangent, argnums=argnums)
+          return qp.vjp(f, (x, y), cotangent, argnums=argnums)
 
     >>> params = (jnp.array([1.0, 2.0]), jnp.array([2.0, 3.0]))
     >>> dy = jnp.array([10.0, 20.0])

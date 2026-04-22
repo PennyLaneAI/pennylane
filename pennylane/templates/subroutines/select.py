@@ -396,10 +396,16 @@ class Select(Operation):
                 + "wires are required."
             )
 
-        if any(
-            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
-        ):
-            raise ValueError("Control wires should be different from operation wires.")
+        _wires_are_traced = any(math.is_abstract(w) for w in control)
+
+        # Wire overlap validation must be skipped when wires are JAX tracers,
+        # as their concrete values are not available during tracing.
+        if not _wires_are_traced:
+            if any(
+                control_wire in Wires.all_wires([op.wires for op in ops])
+                for control_wire in control
+            ):
+                raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
             QueuingManager.remove(op)

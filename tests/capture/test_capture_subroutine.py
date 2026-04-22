@@ -18,7 +18,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 def test_subroutine_no_jax():
@@ -32,7 +32,7 @@ def test_subroutine_no_jax():
         def f(x):
             return x + 1
 
-        assert qml.capture.subroutine(f) is f
+        assert qp.capture.subroutine(f) is f
 
 
 @pytest.mark.capture
@@ -42,11 +42,11 @@ class TestCaptureUse:
 
         import jax
 
-        @qml.capture.subroutine
+        @qp.capture.subroutine
         def f(x):
             return x + 1
 
-        qml.capture.disable()
+        qp.capture.disable()
 
         jaxpr = jax.make_jaxpr(f)(2)
         assert jaxpr.eqns[0].primitive.name == "add"  # not a quantum subroutine
@@ -56,9 +56,9 @@ class TestCaptureUse:
 
         import jax
 
-        @qml.capture.subroutine
+        @qp.capture.subroutine
         def f(x):
-            qml.RX(x, 0)
+            qp.RX(x, 0)
 
         def w(x):
             f(x)
@@ -68,7 +68,7 @@ class TestCaptureUse:
 
         for i in [0, 2]:
             eqn = jaxpr.eqns[i]
-            assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+            assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             assert eqn.params["name"] == "f"
 
         assert jaxpr.eqns[0].params["jaxpr"] is jaxpr.eqns[2].params["jaxpr"]
@@ -79,7 +79,7 @@ class TestCaptureUse:
 
         import jax
 
-        @qml.capture.subroutine
+        @qp.capture.subroutine
         def add_func(x):
             return x + 1
 
@@ -102,12 +102,12 @@ class TestCaptureUse:
 
         import jax
 
-        @partial(qml.capture.subroutine, **static_kwargs)
+        @partial(qp.capture.subroutine, **static_kwargs)
         def some_func(x, op_type):
             if op_type == "RX":
-                qml.RX(x, 0)
+                qp.RX(x, 0)
             else:
-                qml.RY(x, 0)
+                qp.RY(x, 0)
 
         def c(x):
             some_func(x, "RX")
@@ -122,7 +122,7 @@ class TestCaptureUse:
         assert jaxpr0 != jaxpr2
 
         assert len(jaxpr0.eqns) == 1
-        assert jaxpr0.eqns[0].primitive == qml.RX._primitive  # pylint: disable=protected-access
+        assert jaxpr0.eqns[0].primitive == qp.RX._primitive  # pylint: disable=protected-access
 
         assert len(jaxpr2.eqns) == 1
-        assert jaxpr2.eqns[0].primitive == qml.RY._primitive  # pylint: disable=protected-access
+        assert jaxpr2.eqns[0].primitive == qp.RY._primitive  # pylint: disable=protected-access
