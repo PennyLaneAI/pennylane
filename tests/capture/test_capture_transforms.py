@@ -299,6 +299,59 @@ class TestCaptureTransforms:
         assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_qnode_returns_dynamic_shape_consts(self):
+        """ "Test that a qnode that returns dynamic shapes can be transformed."""
+
+        def workflow(shots: int):
+            @qp.transform(pass_name="my_other_pass_name")
+            @qp.transform(pass_name="cancel-inverses")
+            @qp.qnode(qp.device("lightning.qubit", wires=1), shots=shots)
+            def aloha():
+                qp.Hadamard(wires=0)
+                return qp.sample()
+
+            return aloha()
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+
+        j = jaxpr.jaxpr
+        assert j.outvars[0].aval.shape[0] is j.invars[0]
+        assert j.outvars[0].aval.shape[1] == 1
+
+        j2 = j.eqns[0].params["inner_jaxpr"]
+        assert j2.outvars[0].aval.shape[0] is j2.constvars[0]
+        assert j2.outvars[0].aval.shape[1] == 1
+
+        j3 = j2.eqns[0].params["inner_jaxpr"]
+        assert j3.outvars[0].aval.shape[0] is j3.constvars[0]
+        assert j3.outvars[0].aval.shape[1] == 1
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_qnode_return_dynamic_shapes_args(self):
+        """Test that a function that returns a dynamic shape that depends on an argument can be transformed."""
+
+        def workflow(shots: int):
+            @qp.transform(pass_name="my_other_pass_name")
+            def f(inner_shots):
+                @qp.qnode(qp.device("lightning.qubit", wires=1), shots=inner_shots)
+                def aloha():
+                    return qp.sample()
+
+                return aloha()
+
+            return f(shots)
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+
+        j = jaxpr.jaxpr
+        assert j.outvars[0].aval.shape[0] is j.invars[0]
+        assert j.outvars[0].aval.shape[1] == 1
+
+        j2 = j.eqns[0].params["inner_jaxpr"]
+        assert j2.outvars[0].aval.shape[0] is j2.invars[0]
+        assert j2.outvars[0].aval.shape[1] == 1
+
 
 class TestTapeTransformFallback:
     """Unit tests for falling back to tape transforms."""

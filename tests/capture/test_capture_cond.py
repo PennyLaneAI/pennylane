@@ -238,8 +238,9 @@ class TestCond:
             qp.RY(arg, 0)
             return 1
 
-        def f(x):
-            m1 = qp.measure(0)
+        # NOTE: can't create the m1 in f because convert_element_type cant handle MeasurementValue
+        # but this is basically a legacy test for behaviour we dont care for anymore
+        def f(m1, x):
             if decorator:
                 conditional = qp.cond(m1)(true_fn)
                 conditional.otherwise(false_fn)
@@ -248,11 +249,11 @@ class TestCond:
                 qp.cond(m1, true_fn, false_fn)(x)
             return qp.expval(qp.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.23)
+        jaxpr = jax.make_jaxpr(f)(True, 1.23)
         with pytest.raises(
             ConditionalTransformError, match="Only quantum functions without return values"
         ):
-            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, qp.measure(0), 1.23)
 
     def test_mcm_mixed_conds_error(self, decorator):
         """Test that an error is raised if executing a quantum function that uses qp.cond with
@@ -267,8 +268,9 @@ class TestCond:
         def false_fn(arg):
             qp.RY(arg, 0)
 
-        def f(x):
-            m1 = qp.measure(0)
+        # NOTE: can't create the m1 in f because convert_element_type cant handle MeasurementValue
+        # but this is basically a legacy test for behaviour we dont care for anymore
+        def f(m1, x):
             if decorator:
                 conditional = qp.cond(m1)(true_fn)
                 conditional.else_if(x > 1.5)(elif_fn)
@@ -278,12 +280,42 @@ class TestCond:
                 qp.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
             return qp.expval(qp.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.23)
+        jaxpr = jax.make_jaxpr(f)(True, 1.23)
         with pytest.raises(
             ConditionalTransformError,
             match="cond with a combination of mid-circuit measurements",
         ):
-            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, qp.measure(0), 1.23)
+
+
+def test_convert_predicate_to_bool():
+    """Test that predicates are all converted to bools."""
+
+    def w(pred0, pred1):
+
+        @qp.cond(pred0)
+        def f(i):
+            return i + 1
+
+        @f.else_if(pred1)
+        def _elif(i):
+            return 2 * i
+
+        @f.otherwise
+        def _else(i):
+            return i**2
+
+        return f(0)
+
+    jaxpr = jax.make_jaxpr(w)(0.0, 4)
+
+    assert jaxpr.eqns[0].primitive.name == "convert_element_type"
+    assert jaxpr.eqns[1].primitive.name == "convert_element_type"
+
+    assert jaxpr.eqns[2].primitive == cond_prim
+    # predicates have been converted to bool
+    assert jaxpr.eqns[2].invars[0].aval.dtype == jax.numpy.bool
+    assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
 
 
 def test_keyword_argument():
