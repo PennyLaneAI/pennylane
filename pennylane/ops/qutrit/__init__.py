@@ -33,7 +33,7 @@ from .parametric_ops import TRX, TRY, TRZ, validate_subspace
 from .observables import THermitian, GellMann
 from .state_preparation import QutritBasisState
 
-# TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
+# TODO: Change `qp.Identity` for qutrit support or add `qp.TIdentity` for qutrits
 __ops__ = {
     "Identity",
     "QutritUnitary",
