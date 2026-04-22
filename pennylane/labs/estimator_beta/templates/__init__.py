@@ -13,4 +13,6 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane subroutines and templates"""
 
+from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
+
 from .subroutines import selectpaulirot_controlled_resource_decomp

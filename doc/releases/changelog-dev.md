@@ -545,6 +545,10 @@ The following classes have been ported over:
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
+* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
+  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
+  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
+
 * Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
@@ -577,6 +581,17 @@ The following classes have been ported over:
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 <h3>Breaking changes 💔</h3>
+
+* ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
+  :class:`~.SemiAdder`.
+  [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
+  
+  With this breaking change, please note the following:
+  
+   - Decomposition rules for ``SemiAdder`` now require those arguments.
+   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+   
+   These changes are relevant only with :func:`~decomposition.enable_graph`.
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
@@ -838,6 +853,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+  during capture time.
+  [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
+
 * During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
@@ -976,10 +995,12 @@ The following classes have been ported over:
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9312)](https://github.com/PennyLaneAI/pennylane/pull/9312)
+  [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
+  [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1035,6 +1056,10 @@ The following classes have been ported over:
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+  and return `qml.sample`.
+  [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.

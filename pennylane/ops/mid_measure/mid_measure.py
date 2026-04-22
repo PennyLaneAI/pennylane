@@ -57,9 +57,9 @@ def _create_mid_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import QmlPrimitive
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    mid_measure_p = QmlPrimitive("measure")
+    mid_measure_p = QpPrimitive("measure")
 
     @mid_measure_p.def_impl
     def _impl(wires, reset=False, postselect=None):
