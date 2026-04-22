@@ -230,7 +230,7 @@ rule or computing the expectation value of a Hamiltonian term-by-term).
     For examples of built-in transforms that come with PennyLane, see the
     :doc:`/introduction/compiling_circuits` documentation.
 
-Transforms can be applied on ``QNodes`` using the decorator syntax:
+Transforms can be applied on QNodes using the decorator syntax:
 
 .. code-block:: python
 
