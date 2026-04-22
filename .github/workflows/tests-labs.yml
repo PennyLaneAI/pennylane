@@ -71,3 +71,4 @@ jobs:
         geometric h5py basis_set_exchange pyscf
         geometric h5py basis-set-exchange pyscf optax
         ${{ needs.default-dependency-versions.outputs.jax-version }}
+        ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
