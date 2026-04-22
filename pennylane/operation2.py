@@ -144,7 +144,7 @@ def create_operator_primitive(
     primitive.prototype_op = True
 
     @primitive.def_impl
-    def _impl(*args, dyn_argnames, wire_argnames, op_cls, **static_args):
+    def _impl(*args, dyn_argnames, wire_argnames, **static_args):
         args_dict = dict(static_args)
 
         cur_idx = 0
@@ -161,8 +161,8 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _abstract_eval(*args, op_cls, **kwargs):
-        return abstract_type(op_cls, args, kwargs)
+    def _abstract_eval(*args, **kwargs):
+        return abstract_type(operator_type, args, kwargs)
 
     return primitive
 
@@ -190,6 +190,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     num_wires: ClassVar[int | None] = None
     num_params: ClassVar[int] = 0
     ndim_params: ClassVar[tuple] = ()
+    can_be_aot_compiled: ClassVar[bool] = False
 
     # Will be defined by the instance lazily
     _parameters: tuple | None = None
@@ -239,6 +240,13 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         param_names = cls._sig.parameters.keys()
         def_argnames = cls.static_argnames + cls.wire_argnames
         dyn_argnames = []
+
+        if (
+            len(cls.static_argnames) == 0
+            and cls.num_wires is not None
+            and (cls.num_params == 0 or all(ndim == 0 for ndim in cls.ndim_params))
+        ):
+            cls.can_be_aot_compiled = True
 
         for p in param_names:
             if p not in def_argnames:
@@ -326,7 +334,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             **static_args,
             "dyn_argnames": cls.dyn_argnames,
             "wire_argnames": cls.wire_argnames,
-            "op_cls": cls,
         }
         return cls._primitive.bind(*prim_args, **prim_kwargs)
 
