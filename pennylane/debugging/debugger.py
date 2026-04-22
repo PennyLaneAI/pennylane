@@ -426,7 +426,8 @@ def _measure(measurement):
 
     copied_queue.append(measurement)
     qtape = QuantumScript.from_queue(copied_queue)
-    return PLDB._execute((qtape,))  # pylint: disable=protected-access
+    with QueuingManager.stop_recording():
+        return PLDB._execute((qtape,))  # pylint: disable=protected-access
 
 
 def debug_tape():
