@@ -122,7 +122,8 @@ def test_as_fixed_decomps(prec, num_controls):
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
         expected_specs = {
-            "QROM": 2,
+            "QROM": 1,
+            "Adjoint(QROM)": 1,
             "CNOT": 2 * prec,
             "PauliX": 2 * prec,
             "SemiAdder": 1,
