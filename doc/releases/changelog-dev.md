@@ -136,7 +136,7 @@
   ```
 
 The following classes have been ported over:
-- **REVERTED**`qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
+- **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
 * Added a `qp.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
