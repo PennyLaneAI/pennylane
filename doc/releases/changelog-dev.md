@@ -573,6 +573,10 @@ The following classes have been ported over:
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
+* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
+  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
+  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
+
 * Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
