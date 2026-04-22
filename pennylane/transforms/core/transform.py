@@ -38,6 +38,7 @@ from pennylane.typing import ResultBatch
 def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
+        from pennylane.capture import register_custom_staging_rule
         from pennylane.capture.custom_primitives import QpPrimitive
     except ImportError:
         return None
@@ -56,6 +57,19 @@ def _create_transform_primitive():
     @transform_prim.def_abstract_eval
     def _abstract_eval(*_, inner_jaxpr, **__):
         return [out.aval for out in inner_jaxpr.outvars]
+
+    def setup_env(tracers, params):
+        args_tracers = tracers[slice(*params["args_slice"])]
+        args_vars = params["inner_jaxpr"].invars
+        env = dict(zip(args_vars, args_tracers), strict=True)
+
+        consts_tracers = tracers[slice(*params["consts_slice"])]
+        consts_vars = params["inner_jaxpr"].constvars
+        consts_env = dict(zip(consts_vars, consts_tracers, strict=True))
+        env.update(consts_env)
+        return env
+
+    register_custom_staging_rule(transform_prim, lambda params: params["inner_jaxpr"], setup_env)
 
     return transform_prim
 
