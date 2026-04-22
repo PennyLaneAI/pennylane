@@ -577,11 +577,16 @@ The following classes have been ported over:
 
 <h3>Breaking changes 💔</h3>
 
-* Added `num_x_wires` and `num_work_wires` to the `resource_keys` and `resource_params` of
-  :class:`~.SemiAdder`. This requires decomposition rules to take those arguments, and resource
-  functions of decompositions that use `SemiAdder` need to provide its resource representation
-  with the correct values.
+* ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
+  :class:`~.SemiAdder`.
   [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
+  
+  With this breaking change, please note the following:
+  
+   - Decomposition rules for ``SemiAdder`` now require those arguments.
+   - When registering a resource function (:func:`~.register_resources`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+   
+   These changes are relevant only with :func:`~decomposition.enable_graph`.
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
