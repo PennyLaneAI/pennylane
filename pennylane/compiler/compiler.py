@@ -122,7 +122,7 @@ def available_compilers() -> list[str]:
     `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
-    >>> qml.compiler.available_compilers()
+    >>> qp.compiler.available_compilers()
     ['catalyst']
     """
 
@@ -146,12 +146,12 @@ def available(compiler="catalyst") -> bool:
 
     Before installing the ``pennylane-catalyst`` package:
 
-    >>> qml.compiler.available("catalyst")
+    >>> qp.compiler.available("catalyst")
     False
 
     After installing the ``pennylane-catalyst`` package:
 
-    >>> qml.compiler.available("catalyst")
+    >>> qp.compiler.available("catalyst")
     True
     """
 
@@ -185,19 +185,19 @@ def active_compiler() -> str | None:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active_compiler() == "catalyst":
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.Z(0))
+            if qp.compiler.active_compiler() == "catalyst":
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
-    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    >>> qp.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
 
     """
@@ -229,19 +229,19 @@ def active() -> bool:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active():
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.Z(0))
+            if qp.compiler.active():
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
-    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    >>> qp.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
     """
     return active_compiler() is not None

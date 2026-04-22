@@ -83,7 +83,7 @@ Compilation passes for Clifford+T decomposition and Pauli-based computation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These compilation passes decompose or manipulate quantum circuits in the
-`Clifford+T basis <https://pennylane.ai/compilation/clifford-t-gate-set>` or in the
+`Clifford+T basis <https://pennylane.ai/compilation/clifford-t-gate-set>`_ or in the
 `Pauli-based computation model <https://pennylane.ai/compilation/pauli-based-computation>`__.
 
 .. autosummary::
@@ -103,7 +103,7 @@ Compilation passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There is a set of transforms that use
-`ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation/compilation>`
+`ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation/compilation>`_
 to optimize circuits.
 
 .. currentmodule:: pennylane.transforms
