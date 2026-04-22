@@ -17,6 +17,7 @@ Defines a function for converting plxpr to a tape.
 
 from copy import copy
 
+import jax
 import numpy as np
 
 from pennylane import ops, queuing
@@ -255,6 +256,13 @@ def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
     with pause():
         self.state["ops"].append(CollectedSubroutine(name, child.state["ops"]))
     return out
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.convert_element_type_p)
+def _convert_element_type(self, operand, **kwargs):
+    if isinstance(operand, MeasurementValue):
+        return operand
+    return jax.lax.convert_element_type_p.bind(operand, **kwargs)
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

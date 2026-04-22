@@ -870,6 +870,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+  during capture time.
+  [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
+
 * During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 

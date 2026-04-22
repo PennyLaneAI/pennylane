@@ -316,6 +316,8 @@ class CondCallable:
         for pred, fn in branches:
             if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
+            if getattr(pred, "dtype", None) != jax.numpy.bool:
+                pred = jax.numpy.bool(pred)
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
