@@ -14,6 +14,7 @@
 """
 This file contains functionalities that simplify working with kernels.
 """
+
 from itertools import product
 
 from pennylane import math

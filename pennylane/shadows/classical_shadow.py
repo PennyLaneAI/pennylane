@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
+
 # pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable

@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
-
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 

@@ -26,7 +26,7 @@ where it is recommended that you follow general `pytest guidelines <https://docs
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     def test_circuit_expval(self):
         """ Test that the circuit expectation value for PauliX is 0."""

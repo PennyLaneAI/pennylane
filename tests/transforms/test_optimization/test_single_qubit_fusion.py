@@ -14,6 +14,7 @@
 """
 Unit tests for the optimization transform ``single_qubit_fusion``.
 """
+
 import pytest
 from utils import check_matrix_equivalence, compare_operation_lists
 

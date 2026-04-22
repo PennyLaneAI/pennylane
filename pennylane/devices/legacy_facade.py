@@ -15,6 +15,7 @@
 Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
+
 import warnings
 
 # pylint: disable=not-callable
@@ -148,11 +149,12 @@ def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
 @single_tape_support
 class LegacyDeviceFacade(Device):
     """
-    A Facade that converts a device from the old ``qml.Device`` interface into the new interface.
+    A Facade that converts a device from the old ``qp.Device`` interface into the new interface.
 
     Args:
-        device (qml.device.LegacyDevice): a device that follows the legacy device interface.
+        device (qp.device.LegacyDevice): a device that follows the legacy device interface.
 
+    >>> import pennylane as qp
     >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
     >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)
@@ -178,7 +180,7 @@ class LegacyDeviceFacade(Device):
                     executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
     >>> new_dev.shots
     Shots(total_shots=None, shot_vector=())
-    >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
+    >>> tape = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
     array([[0],
        [0],
@@ -195,7 +197,7 @@ class LegacyDeviceFacade(Device):
 
         if not isinstance(device, LegacyDevice):
             raise ValueError(
-                "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
+                "The LegacyDeviceFacade only accepts a device of type qp.devices.LegacyDevice."
             )
 
         self._device = device

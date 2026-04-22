@@ -14,6 +14,7 @@
 """
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
+
 # pylint: disable=no-value-for-parameter
 import warnings
 from collections import Counter

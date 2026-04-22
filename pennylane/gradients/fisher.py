@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
+
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
 

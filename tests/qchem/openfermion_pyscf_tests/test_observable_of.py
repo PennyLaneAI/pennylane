@@ -14,12 +14,13 @@
 """
 Unit tests for the ``observable`` function for openfermion operators.
 """
+
 # pylint: disable=too-many-arguments
 import sys
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")
@@ -140,9 +141,7 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
-    assert qml.qchem.convert._openfermion_pennylane_equivalent(
-        qubit_op, res_obs, wires=custom_wires
-    )
+    assert qp.qchem.convert._openfermion_pennylane_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
 msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"
@@ -173,13 +172,13 @@ def test_import_of(monkeypatch):
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_pyscf._import_of()
+            qp.qchem.openfermion_pyscf._import_of()
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermionpyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_pyscf._import_of()
+            qp.qchem.openfermion_pyscf._import_of()
 
 
 def test_import_pyscf(monkeypatch):
@@ -190,4 +189,4 @@ def test_import_pyscf(monkeypatch):
         m.setitem(sys.modules, "pyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires pyscf"):
-            qml.qchem.openfermion_pyscf._import_pyscf()
+            qp.qchem.openfermion_pyscf._import_pyscf()

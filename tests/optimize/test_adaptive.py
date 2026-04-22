@@ -14,6 +14,7 @@
 """
 Unit tests for the ``AdaptiveOptimizer``.
 """
+
 import copy
 
 import pytest

@@ -120,8 +120,9 @@ to handle a single circuit. See the documentation for each modifier for more det
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
+>>> import pennylane as qp
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
@@ -160,7 +161,6 @@ Qutrit Mixed-State Simulation Tools
 .. automodule:: pennylane.devices.qutrit_mixed
 
 """
-
 
 from .tracker import Tracker
 

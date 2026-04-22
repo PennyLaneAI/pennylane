@@ -15,6 +15,7 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
+
 import functools
 from collections.abc import Callable
 from functools import partial

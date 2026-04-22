@@ -13,7 +13,6 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
-
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -1083,7 +1082,7 @@ class TestQubitIntegration:
 
         if interface == "jax-jit":
             with pytest.raises(
-                NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+                NotImplementedError, match=r"The JAX-JIT interface doesn't support \w+.counts"
             ):
                 jax.jit(circuit)()
         else:

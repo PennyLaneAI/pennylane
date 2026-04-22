@@ -14,6 +14,7 @@
 """
 Tests for the Select template.
 """
+
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
 
@@ -359,6 +360,21 @@ class TestSelect:
         )
 
         assert resources["op_reps"] == op_reps
+
+    @pytest.mark.jax
+    def test_traced_wires(self):
+        """Test that Select construction does not raise TracerBoolConversionError when the control
+        wires are JAX tracers."""
+        import jax
+        import jax.numpy as jnp
+
+        def circuit(control_wires):
+            ops = [qml.X(0), qml.Y(0)]
+            qml.Select(ops, control_wires)
+            return True
+
+        control_wires = jnp.arange(1, 3)
+        jax.make_jaxpr(circuit)(control_wires)
 
 
 class TestErrorMessages:

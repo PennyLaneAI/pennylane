@@ -15,6 +15,7 @@
 Tests for the BasisRotation template.
 """
 
+# pylint: disable=missing-function-docstring, import-outside-toplevel
 import numpy as np
 import pytest
 

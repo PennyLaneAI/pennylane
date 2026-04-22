@@ -14,6 +14,7 @@
 """
 Tests for the IQP expectation value calculator.
 """
+
 import numpy as np
 import pytest
 

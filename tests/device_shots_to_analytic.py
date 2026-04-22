@@ -15,6 +15,7 @@ r"""This device wraps a target device and makes every execution analytic.
 
 It can be used to eliminate flakiness in shot vector tests.
 """
+
 import copy
 from types import MethodType
 

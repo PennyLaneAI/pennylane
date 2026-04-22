@@ -14,6 +14,7 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+
 from itertools import product
 
 from pennylane import math

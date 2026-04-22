@@ -14,6 +14,7 @@
 """
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
+
 import copy
 from collections import defaultdict
 from collections.abc import Iterable

@@ -16,6 +16,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
+
 from abc import ABCMeta
 from inspect import Signature, signature
 
@@ -41,12 +42,12 @@ class CaptureMeta(type):
 
     .. code-block::
 
-        qml.capture.enable()
+        qp.capture.enable()
 
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 
-        class MyObj(metaclass=qml.capture.CaptureMeta):
+        class MyObj(metaclass=qp.capture.CaptureMeta):
 
             primitive = jax.extend.core.Primitive("MyObj")
 

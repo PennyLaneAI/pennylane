@@ -14,12 +14,13 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+
 # pylint: disable=protected-access
 import numpy as np
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -29,7 +30,7 @@ def test_basis_state_input_cast_to_int():
     """Test that the input to BasisState is cast to an int."""
 
     state = np.array([1.0, 0.0], dtype=np.float64)
-    op = qml.BasisState(state, wires=(0, 1))
+    op = qp.BasisState(state, wires=(0, 1))
     assert op.data[0].dtype == np.int64
 
 
@@ -40,9 +41,9 @@ class TestStandardValidityBasisState:
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel
         state = np.array([0, 1])
-        wires = qml.wires.Wires([0, 1])
-        op = qml.BasisState(state, wires=wires)
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        wires = qp.wires.Wires([0, 1])
+        op = qp.BasisState(state, wires=wires)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
     def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
@@ -57,15 +58,15 @@ class TestStandardValidityBasisState:
             if not wires_traced:
                 # Using a closure variable avoids automatic tracing
                 wires = closure_wires
-            assert qml.math.is_abstract(state) == state_traced
-            assert qml.math.is_abstract(wires) == wires_traced
+            assert qp.math.is_abstract(state) == state_traced
+            assert qp.math.is_abstract(wires) == wires_traced
             tapes = []
-            for rule in qml.list_decomps(qml.BasisState):
+            for rule in qp.list_decomps(qp.BasisState):
                 if not rule.is_applicable(num_wires=len(wires)):
                     continue
-                with qml.queuing.AnnotatedQueue() as q:
+                with qp.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
-                tapes.append(qml.tape.QuantumScript.from_queue(q))
+                tapes.append(qp.tape.QuantumScript.from_queue(q))
 
             return tapes
 
@@ -81,7 +82,7 @@ class TestStandardValidityBasisState:
 
         state = np.array([0, 1, 0])
         closure_state = state  # We can use a closure variable to avoid automatic tracing
-        wires = qml.wires.Wires([0, 2, 1])
+        wires = qp.wires.Wires([0, 2, 1])
         closure_wires = wires  # We can use a closure variable to avoid automatic tracing
         if wires_traced:
             wires = jax.numpy.array(wires)
@@ -94,18 +95,18 @@ class TestStandardValidityBasisState:
         for tape in tapes:
             assert len(tape) == 3
             assert all(
-                isinstance(op, qml.ops.Pow) and isinstance(op.base, qml.X) for op in tape.operations
+                isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
             )
 
     @pytest.mark.external
     @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_qjit_compatibility(self, state_traced, wires_traced):
-        """Test compatibility with qml.qjit."""
+        """Test compatibility with qp.qjit."""
         state = np.array([0, 1, 1])
         closure_state = state  # We can use a closure variable to avoid automatic tracing
 
-        wires = qml.wires.Wires([1, 0, 2])
+        wires = qp.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
             import jax  # pylint: disable=import-outside-toplevel
@@ -116,29 +117,29 @@ class TestStandardValidityBasisState:
             state_traced, wires_traced, closure_state, closure_wires
         )
 
-        tapes = qml.qjit(abstract_check)(state, wires)
+        tapes = qp.qjit(abstract_check)(state, wires)
         for tape in tapes:
             assert len(tape) == 1
-            assert isinstance(tape[0], qml.X)
+            assert isinstance(tape[0], qp.X)
 
 
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=[0, 1]),
-        qml.StatePrep(np.array([1.0, 0.0]), wires=0),
-        qml.QubitDensityMatrix(densitymat0, wires=0),
+        qp.BasisState(np.array([0, 1]), wires=[0, 1]),
+        qp.StatePrep(np.array([1.0, 0.0]), wires=0),
+        qp.QubitDensityMatrix(densitymat0, wires=0),
     ],
 )
 def test_adjoint_error_exception(op):
-    with pytest.raises(qml.operation.AdjointUndefinedError):
+    with pytest.raises(qp.operation.AdjointUndefinedError):
         op.adjoint()
 
 
 @pytest.mark.parametrize(
     "op, mat, base",
     [
-        (qml.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
+        (qp.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
     ],
 )
 def test_labelling_matrix_cache(op, mat, base):
@@ -148,7 +149,7 @@ def test_labelling_matrix_cache(op, mat, base):
 
     cache = {"matrices": []}
     assert op.label(cache=cache) == f"{base}\n(M0)"
-    assert qml.math.allclose(cache["matrices"][0], mat)
+    assert qp.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
     assert op.label(cache=cache) == f"{base}\n(M1)"
@@ -161,12 +162,12 @@ class TestDecomposition:
 
         n = np.array([0, 1, 0])
         wires = (0, 1, 2)
-        ops1 = qml.BasisState.compute_decomposition(n, wires)
-        ops2 = qml.BasisState(n, wires=wires).decomposition()
+        ops1 = qp.BasisState.compute_decomposition(n, wires)
+        ops2 = qp.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.X)
-        assert isinstance(ops2[0], qml.X)
+        assert isinstance(ops1[0], qp.X)
+        assert isinstance(ops2[0], qp.X)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -174,36 +175,36 @@ class TestDecomposition:
         U = np.array([1, 0, 0, 0])
         wires = (0, 1)
 
-        ops1 = qml.StatePrep.compute_decomposition(U, wires)
-        ops2 = qml.StatePrep(U, wires=wires).decomposition()
+        ops1 = qp.StatePrep.compute_decomposition(U, wires)
+        ops2 = qp.StatePrep(U, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.MottonenStatePreparation)
-        assert isinstance(ops2[0], qml.MottonenStatePreparation)
+        assert isinstance(ops1[0], qp.MottonenStatePreparation)
+        assert isinstance(ops2[0], qp.MottonenStatePreparation)
 
     def test_stateprep_resources(self):
         """Test the resources for StatePrep"""
 
-        assert qml.StatePrep.resource_keys == frozenset({"num_wires"})
+        assert qp.StatePrep.resource_keys == frozenset({"num_wires"})
 
-        op = qml.StatePrep([0, 0, 0, 1], wires=(0, 1))
+        op = qp.StatePrep([0, 0, 0, 1], wires=(0, 1))
         assert op.resource_params == {"num_wires": 2}
 
     def test_decomposition_rule_stateprep(self):
         """Test that stateprep has a correct decomposition rule registered."""
 
-        decomp = qml.list_decomps(qml.StatePrep)[0]
+        decomp = qp.list_decomps(qp.StatePrep)[0]
 
         resource_obj = decomp.compute_resources(num_wires=2)
         assert resource_obj.num_gates == 1
         assert resource_obj.gate_counts == {
-            qml.resource_rep(qml.MottonenStatePreparation, num_wires=2): 1
+            qp.resource_rep(qp.MottonenStatePreparation, num_wires=2): 1
         }
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             decomp(np.array([0, 0, 0, 1]), wires=(0, 1))
 
-        qml.assert_equal(q.queue[0], qml.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
+        qp.assert_equal(q.queue[0], qp.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
 
 
 class TestStatePrepIntegration:
@@ -222,10 +223,10 @@ class TestStatePrepIntegration:
 
         wires = (0, 1)
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, pad_with=pad_with, wires=wires)
-            return qml.state()
+            qp.StatePrep(state, pad_with=pad_with, wires=wires)
+            return qp.state()
 
         assert np.allclose(circuit(), expected)
 
@@ -242,10 +243,10 @@ class TestStatePrepIntegration:
 
         wires = (0, 1)
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=validate_norm)
-            return qml.state()
+            qp.StatePrep(state, normalize=True, wires=wires, validate_norm=validate_norm)
+            return qp.state()
 
         assert np.allclose(circuit(), state / 2)
 
@@ -255,7 +256,7 @@ class TestStatePrepIntegration:
         U = np.eye(4)[:3]
         wires = (0, 1)
 
-        op = qml.StatePrep(U, wires=wires)
+        op = qp.StatePrep(U, wires=wires)
         assert op.batch_size == 3
 
 
@@ -277,7 +278,7 @@ class TestStateVector:
     )
     def test_StatePrep_state_vector(self, num_wires, wire_order, one_position):
         """Tests that StatePrep state_vector returns kets as expected."""
-        qsv_op = qml.StatePrep([0, 0, 1, 0], wires=[1, 2])  # |10>
+        qsv_op = qp.StatePrep([0, 0, 1, 0], wires=[1, 2])  # |10>
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
@@ -298,7 +299,7 @@ class TestStateVector:
     )
     def test_StatePrep_state_vector_broadcasted(self, num_wires, wire_order, one_positions):
         """Tests that StatePrep state_vector returns kets with broadcasting as expected."""
-        qsv_op = qml.StatePrep([[0, 0, 1, 0], [0, 1, 0, 0]], wires=[1, 2])  # |10>, |01>
+        qsv_op = qp.StatePrep([[0, 0, 1, 0], [0, 1, 0, 0]], wires=[1, 2])  # |10>, |01>
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_positions[0]] == 1 == ket[one_positions[1]]
         ket[one_positions[0]] = ket[one_positions[1]] = 0
@@ -307,7 +308,7 @@ class TestStateVector:
 
     def test_StatePrep_reordering(self):
         """Tests that wires get re-ordered as expected."""
-        qsv_op = qml.StatePrep(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
+        qsv_op = qp.StatePrep(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
         expected = np.zeros((2, 2, 2, 2), dtype=np.complex128)
         expected[0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
@@ -315,7 +316,7 @@ class TestStateVector:
 
     def test_StatePrep_reordering_broadcasted(self):
         """Tests that wires get re-ordered as expected with broadcasting."""
-        qsv_op = qml.StatePrep(np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
+        qsv_op = qp.StatePrep(np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
         expected = np.zeros((2,) * 5, dtype=np.complex128)
         expected[0, 0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
@@ -326,23 +327,23 @@ class TestStateVector:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
-        qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
-        assert qml.math.get_interface(qsv_op.state_vector()) == interface
-        assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
+        qsv_op = qp.StatePrep(qp.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
+        assert qp.math.get_interface(qsv_op.state_vector()) == interface
+        assert qp.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
-        qsv_op = qml.StatePrep(
-            qml.math.array([[0, 0, 0, 1], [1, 0, 0, 0]], like=interface), wires=[1, 2]
+        qsv_op = qp.StatePrep(
+            qp.math.array([[0, 0, 0, 1], [1, 0, 0, 0]], like=interface), wires=[1, 2]
         )
-        assert qml.math.get_interface(qsv_op.state_vector()) == interface
-        assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
+        assert qp.math.get_interface(qsv_op.state_vector()) == interface
+        assert qp.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     def test_StatePrep_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        qsv_op = qml.StatePrep([0, 0, 0, 1], wires=[0, 1])
+        qsv_op = qp.StatePrep([0, 0, 0, 1], wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all StatePrep wires"):
             qsv_op.state_vector(wire_order=[1, 2])
 
@@ -351,12 +352,12 @@ class TestStateVector:
         """Tests that the state-vector provided must have norm equal to 1."""
 
         with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
-            _ = qml.StatePrep(vec, wires=[0, 1], validate_norm=True)
+            _ = qp.StatePrep(vec, wires=[0, 1], validate_norm=True)
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
         with pytest.raises(ValueError, match="State must be of length"):
-            _ = qml.StatePrep([0, 1], wires=[0, 1])
+            _ = qp.StatePrep([0, 1], wires=[0, 1])
 
     @pytest.mark.torch
     def test_StatePrep_torch_differentiable(self):
@@ -364,14 +365,14 @@ class TestStateVector:
         import torch
 
         def QuantumLayer():
-            @qml.qnode(qml.device("default.qubit"), interface="torch")
+            @qp.qnode(qp.device("default.qubit"), interface="torch")
             def qlayer(inputs, weights):
-                qml.StatePrep(inputs, wires=[1, 2, 3])
-                qml.RY(phi=weights, wires=[0])
-                return qml.expval(qml.PauliZ(wires=0))
+                qp.StatePrep(inputs, wires=[1, 2, 3])
+                qp.RY(phi=weights, wires=[0])
+                return qp.expval(qp.PauliZ(wires=0))
 
             weight_shapes = {"weights": (1)}
-            return qml.qnn.TorchLayer(qlayer, weight_shapes)
+            return qp.qnn.TorchLayer(qlayer, weight_shapes)
 
         class SimpleQuantumModel(torch.nn.Module):  # pylint:disable=too-few-public-methods
             def __init__(self):
@@ -387,20 +388,20 @@ class TestStateVector:
             requires_grad=True,
         )
         result = model(features)
-        assert qml.math.get_interface(result) == "torch"
-        assert qml.math.shape(result) == (2,)
+        assert qp.math.get_interface(result) == "torch"
+        assert qp.math.shape(result) == (2,)
 
     def test_StatePrep_backprop_autograd(self):
         """Test backprop with autograd"""
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
         def circuit(state):
-            qml.StatePrep(state, wires=(0,))
-            qml.S(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.StatePrep(state, wires=(0,))
+            qp.S(1)
+            return qp.expval(qp.PauliZ(0))
 
-        state = qml.numpy.array([1.0, 0.0])
-        grad = qml.jacobian(circuit)(state)
+        state = qp.numpy.array([1.0, 0.0])
+        grad = qp.jacobian(circuit)(state)
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.torch
@@ -408,17 +409,17 @@ class TestStateVector:
         """Test backprop with torch, getting state.grad"""
         import torch
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
         def circuit(state):
-            qml.StatePrep(state, wires=(0,))
-            qml.S(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.StatePrep(state, wires=(0,))
+            qp.S(1)
+            return qp.expval(qp.PauliZ(0))
 
         state = torch.tensor([1.0, 0.0], requires_grad=True)
         res = circuit(state)
         res.backward()
         grad = state.grad
-        assert qml.math.get_interface(grad) == "torch"
+        assert qp.math.get_interface(grad) == "torch"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.jax
@@ -426,15 +427,15 @@ class TestStateVector:
         """Test backprop with jax"""
         import jax
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
         def circuit(state):
-            qml.StatePrep(state, wires=(0,))
-            qml.S(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.StatePrep(state, wires=(0,))
+            qp.S(1)
+            return qp.expval(qp.PauliZ(0))
 
         state = jax.numpy.array([1.0, 0.0])
         grad = jax.jacobian(circuit)(state)
-        assert qml.math.get_interface(grad) == "jax"
+        assert qp.math.get_interface(grad) == "jax"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.tf
@@ -442,18 +443,18 @@ class TestStateVector:
         """Test backprop with tf"""
         import tensorflow as tf
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
         def circuit(state):
-            qml.StatePrep(state, wires=(0,))
-            qml.S(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.StatePrep(state, wires=(0,))
+            qp.S(1)
+            return qp.expval(qp.PauliZ(0))
 
         state = tf.Variable([1.0, 0.0])
         with tf.GradientTape() as tape:
             res = circuit(state)
 
         grad = tape.jacobian(res, state)
-        assert qml.math.get_interface(grad) == "tensorflow"
+        assert qp.math.get_interface(grad) == "tensorflow"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.parametrize(
@@ -470,9 +471,9 @@ class TestStateVector:
     )
     def test_BasisState_state_vector(self, num_wires, wire_order, one_position):
         """Tests that BasisState state_vector returns kets as expected."""
-        basis_op = qml.BasisState([0, 1], wires=[1, 2])
+        basis_op = qp.BasisState([0, 1], wires=[1, 2])
         ket = basis_op.state_vector(wire_order=wire_order)
-        assert qml.math.shape(ket) == (2,) * num_wires
+        assert qp.math.shape(ket) == (2,) * num_wires
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
         assert np.allclose(np.zeros((2,) * num_wires), ket)
@@ -490,7 +491,7 @@ class TestStateVector:
     @pytest.mark.parametrize("op_wires", [[0, 1], [1, 0], [2, 0]])
     def test_BasisState_state_vector_computed(self, state, device_wires, op_wires):
         """Test BasisState initialization on a subset of device wires."""
-        basis_op = qml.BasisState(state, wires=op_wires)
+        basis_op = qp.BasisState(state, wires=op_wires)
         basis_state = basis_op.state_vector(wire_order=list(range(device_wires)))
 
         one_index = [0] * device_wires
@@ -508,14 +509,14 @@ class TestStateVector:
     @pytest.mark.parametrize("dtype_like", [0, 0.0])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""
-        basis_state = qml.math.cast_like(qml.math.asarray([0, 1], like=interface), dtype_like)
-        basis_op = qml.BasisState(basis_state, wires=[1, 2])
-        assert qml.math.get_interface(basis_op.state_vector()) == interface
-        assert qml.math.get_interface(basis_op.state_vector(wire_order=[0, 1, 2])) == interface
+        basis_state = qp.math.cast_like(qp.math.asarray([0, 1], like=interface), dtype_like)
+        basis_op = qp.BasisState(basis_state, wires=[1, 2])
+        assert qp.math.get_interface(basis_op.state_vector()) == interface
+        assert qp.math.get_interface(basis_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     def test_BasisState_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        basis_op = qml.BasisState([0, 1], wires=[0, 1])
+        basis_op = qp.BasisState([0, 1], wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
@@ -524,7 +525,7 @@ class TestStateVector:
         with pytest.raises(
             ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
         ):
-            _ = qml.BasisState([0], wires=[0, 1])
+            _ = qp.BasisState([0], wires=[0, 1])
 
 
 class TestSparseStateVector:
@@ -533,7 +534,7 @@ class TestSparseStateVector:
     def test_sparse_state_convert_to_csr(self):
         """Test that the sparse_state_vector() method returns a csr_matrix."""
         sp_vec = sp.sparse.coo_matrix([0, 0, 1, 0])
-        qsv_op = qml.StatePrep(sp_vec, wires=[0, 1])
+        qsv_op = qp.StatePrep(sp_vec, wires=[0, 1])
         assert qsv_op.batch_size is None
         ket = qsv_op.state_vector()
         assert sp.sparse.issparse(ket), "Output is not sparse type"
@@ -554,7 +555,7 @@ class TestSparseStateVector:
     def test_StatePrep_sparse_state_vector(self, num_wires, wire_order, one_position):
         """Tests that StatePrep sparse_state_vector returns kets as expected."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
-        qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+        qsv_op = qp.StatePrep(init_state, wires=[1, 2])
         assert qsv_op.batch_size is None
         ket = qsv_op.state_vector(wire_order=wire_order)
         # Convert one position from binary to integer
@@ -568,18 +569,16 @@ class TestSparseStateVector:
         """Test that state prep operations can be created with a 1D sparse array."""
 
         state = sp.sparse.csr_array([1, 0, 0, 0])
-        op = qml.StatePrep(state, wires=(0, 1))
+        op = qp.StatePrep(state, wires=(0, 1))
         assert op.batch_size is None
         expected = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        assert qml.math.allclose(op.state_vector([0, 1, 2]).todense(), expected)
+        assert qp.math.allclose(op.state_vector([0, 1, 2]).todense(), expected)
 
     def test_preprocess_nonzero_padding_unsupported(self):
         """Test that sparse_state_vector does not support padding with nonzero values."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         with pytest.raises(ValueError, match="Non-zero Padding is not supported"):
-            qml.StatePrep(
-                init_state, wires=[1, 2], pad_with=1, normalize=False, validate_norm=False
-            )
+            qp.StatePrep(init_state, wires=[1, 2], pad_with=1, normalize=False, validate_norm=False)
 
     def test_preprocess_one_dimensional_tensor(self):
         """Test that the state tensor is one-dimensional."""
@@ -587,7 +586,7 @@ class TestSparseStateVector:
         with pytest.raises(
             NotImplementedError, match="does not yet support parameter broadcasting"
         ):
-            qml.StatePrep(
+            qp.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -595,7 +594,7 @@ class TestSparseStateVector:
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0, 1])
         with pytest.raises(ValueError, match="State must be of length"):
-            qml.StatePrep(
+            qp.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -603,7 +602,7 @@ class TestSparseStateVector:
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([0, 0, 2])
         with pytest.warns(UserWarning, match="Automatically padding with zeros"):
-            state = qml.StatePrep._preprocess_csr(
+            state = qp.StatePrep._preprocess_csr(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
             assert state.shape == (1, 4), f"Expected shape (1, 4), got {state.shape}"
@@ -612,21 +611,21 @@ class TestSparseStateVector:
         """Test that the state tensor is normalized to one if normalize is False."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0])
         with pytest.raises(ValueError, match="The state must be a vector of norm 1.0; got norm"):
-            qml.StatePrep(
+            qp.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=True
             )
 
     def test_preprocess_normalize_true(self):
         """Test that the state tensor is normalized if normalize is True."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0])
-        processed_state = qml.StatePrep._preprocess_csr(
+        processed_state = qp.StatePrep._preprocess_csr(
             init_state, wires=[1, 2], pad_with=None, normalize=True, validate_norm=True
         )
         norm = sp.sparse.linalg.norm(processed_state)
-        assert qml.math.allclose(norm, 1.0)
+        assert qp.math.allclose(norm, 1.0)
 
     def test_StatePrep_sparse_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        qsv_op = qml.StatePrep(sp.sparse.csr_matrix([0, 0, 0, 1]), wires=[0, 1])
+        qsv_op = qp.StatePrep(sp.sparse.csr_matrix([0, 0, 0, 1]), wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all wires"):
             qsv_op.state_vector(wire_order=[1, 2])

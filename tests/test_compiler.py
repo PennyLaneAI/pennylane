@@ -312,6 +312,35 @@ class TestCatalyst:
             workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.03661165, 0.46338835])
         )
 
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_ctrl_work_wire_type_preserved_in_qjit(self, work_wire_type):
+        """Test that ``work_wire_type`` passed to ``qml.ctrl`` is propagated through the Catalyst
+        compiler"""
+        x_wires = [1, 2, 3]
+        output = [4, 5, 6]
+        work_wires_add = [7, 8]
+        control_wire = [0]
+        work_wires_ctrl = [9]
+
+        @qml.qjit
+        def func():
+            return qml.ctrl(
+                qml.SemiAdder(
+                    x_wires=x_wires,
+                    y_wires=output,
+                    work_wires=work_wires_add,
+                ),
+                control=control_wire,
+                work_wires=work_wires_ctrl,
+                work_wire_type=work_wire_type,
+            )
+
+        op = func()
+        assert op.hyperparameters["work_wire_type"] == work_wire_type
+        assert op.work_wire_type == work_wire_type
+        assert op.control_wires == qml.wires.Wires(control_wire)
+        assert op.work_wires == qml.wires.Wires(work_wires_ctrl)
+
 
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
@@ -335,6 +364,43 @@ class TestCatalystControlFlow:
 
         res = qml.qjit(f)(0)
         assert qml.math.allclose(res, 10)
+
+    def test_for_loop_dynamic_shapes(self):
+        """Test that dynamic shapes work with default args."""
+
+        @qml.qjit
+        def f(sz):
+            x = jnp.ones([sz], dtype=float)
+
+            @qml.for_loop(0, 3, 1)
+            def loop(_, a):
+                return a + x
+
+            a2 = loop(x)
+            return a2
+
+        result = f(3)
+        expected = 4 * jnp.ones(3)
+        assert qml.math.allclose(result, expected)
+
+    def test_while_loop_dynamic_shapes(self):
+        """Test that while loops work with default args."""
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=4))
+        def f(sz):
+            x = jnp.ones([sz], dtype=float)
+
+            @qml.while_loop(lambda i, _: i < 3)
+            def loop(i, a):
+                return i + 1, a + x
+
+            _, a2 = loop(1, x)
+            return a2
+
+        result = f(3)
+        expected = 3 * jnp.ones(3)
+        assert qml.math.allclose(result, expected)
 
     def test_alternating_while_loop(self):
         """Test simple while loop."""

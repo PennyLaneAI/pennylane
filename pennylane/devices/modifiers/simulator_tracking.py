@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the ``simulator_tracking`` device modifier."""
+
 from functools import wraps
 
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
@@ -204,19 +205,21 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
         @simulator_tracking
         @single_tape_support
-        class MyDevice(qml.devices.Device):
+        class MyDevice(qp.devices.Device):
 
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for c in circuits)
 
     >>> dev = MyDevice()
-    >>> ops = [qml.S(0)]
-    >>> measurements = [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
-    >>> t = qml.tape.QuantumScript(ops, measurements,shots=50)
+    >>> ops = [qp.S(0)]
+    >>> measurements = [qp.expval(qp.X(0)), qp.expval(qp.Z(0))]
+    >>> t = qp.tape.QuantumScript(ops, measurements,shots=50)
     >>> with dev.tracker:
     ...     dev.execute((t, ) )
     (0.0,)

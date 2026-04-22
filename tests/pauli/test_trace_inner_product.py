@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/pauli/dla/dense_util.py functionality"""
+
 import numpy as np
 import pytest
 

@@ -15,6 +15,7 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
+
 import functools
 import warnings
 from functools import partial

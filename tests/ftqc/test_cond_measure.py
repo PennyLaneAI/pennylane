@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the cond_measure function"""
+
 from functools import partial
 
 import numpy as np
@@ -188,7 +189,7 @@ class TestValidation:
 
         plxpr = jax.make_jaxpr(func)()
 
-        cond_eq = plxpr.eqns[1]
+        cond_eq = plxpr.eqns[2]
         assert "cond" in str(cond_eq)
         cond_branches = cond_eq.params["jaxpr_branches"]
         assert len(cond_branches) == 2
@@ -258,7 +259,7 @@ class TestWorkflows:
 
             return qml.expval(qml.Z(2)), qml.expval(qml.Z(3))
 
-        (x, y) = 1.23, 3.45
+        x, y = 1.23, 3.45
 
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude

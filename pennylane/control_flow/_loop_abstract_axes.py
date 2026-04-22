@@ -29,6 +29,49 @@ from pennylane.typing import TensorLike
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
 
 
+def promote_consts_to_inputs(f):
+    """This function extracts any closure variables with dynamic shapes from f.__closure__
+    and promotes them to being normal arguments. This produces a new function that
+    takes the original args and the new consts as explicit inputs. It also returns
+    the extracted consts.
+    """
+    indices = []
+    consts = []
+
+    if getattr(f, "__closure__", None) is not None:
+        for ind, cell in enumerate(f.__closure__):
+            val = cell.cell_contents
+            # could have shape attribute without that attribute being tuple of ints, like np.shape
+            if (
+                hasattr(val, "shape")
+                and isinstance(val.shape, tuple)
+                and not all(isinstance(s, int) for s in val.shape)
+            ):
+                indices.append(ind)
+                consts.append(val)
+
+    def new_f(args, new_consts):
+        """A version of f where the consts with dynamic shapes have been promoted to inputs."""
+
+        # even deepcopy does not actually copy the closure for a function
+        # we don't have a way to produce a new function with independent closure
+        # so therefore we just need to make sure to clean up after ourselves after
+        # in-place modifying the closure contents.
+
+        try:
+            for ind, c in zip(indices, new_consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+            f_results = f(*args)
+        finally:
+            for ind, c in zip(indices, consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+        return f_results, new_consts
+
+    return new_f, consts
+
+
 def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):  # pragma: no cover
     """Add the abstract shapes at the specified locations to the output of f.
 
@@ -92,6 +135,8 @@ def get_dummy_arg(arg):  # pragma: no cover
     We use numpy instead of jax so the creation of the array will not show up in the jaxpr.
 
     """
+    if not hasattr(arg, "shape"):  # like an int
+        return arg
     if all(isinstance(s, int) for s in arg.shape):
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
@@ -124,7 +169,7 @@ def validate_no_resizing_returns(
                     "Detected dynamically shaped arrays being resized independently. "
                     f"\nReturned variables at {loc0.arg_idx} and {compare_loc.arg_idx} must keep the same size "
                     "with allow_array_resizing=False."
-                    f"\nPlease specify allow_array_resizing=True to `qml.{name}` to allow "
+                    f"\nPlease specify allow_array_resizing=True to `qp.{name}` to allow "
                     "dynamically shaped arrays to be reshaped independently. "
                 )
 
@@ -157,7 +202,7 @@ def handle_jaxpr_error(
         else:
             msg = (
                 "Detected an attempt to combine arrays with two different dynamic shapes. "
-                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qml.{name}`."
+                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qp.{name}`."
             )
         raise ValueError(msg) from e
     raise e
