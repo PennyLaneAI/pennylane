@@ -853,6 +853,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
+  as a result.
+  [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
+
 * During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
   during capture time.
   [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
