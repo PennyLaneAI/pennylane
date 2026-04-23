@@ -140,23 +140,23 @@ def shadow_state(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the reconstructed state in the form of a tensor.
 
     **Example**
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots=10000)
-        @qml.shadows.shadow_state(wires=[0, 1], diffable=True)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=10000)
+        @qp.shadows.shadow_state(wires=[0, 1], diffable=True)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x, wires=0)
-            return qml.classical_shadow(wires=[0, 1])
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.RX(x, wires=0)
+            return qp.classical_shadow(wires=[0, 1])
 
     >>> x = np.array(1.2)
     >>> circuit(x)
@@ -164,7 +164,7 @@ def shadow_state(
        [-0.01215   -0.2241j ,  0.1528    +0.j     ,  0.16919999-0.0036j , -0.00285   -0.22065j],
        [-0.00465   -0.237j  ,  0.16919999+0.0036j ,  0.17529999+0.j     ,  0.0099    -0.2358j ],
        [ 0.35504997+0.01755j, -0.00285   +0.22065j,  0.0099    +0.2358j ,  0.33355   +0.j     ]], dtype=complex64)
-    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x)
+    >>> qp.jacobian(lambda x: np.real(circuit(x)))(x)
     array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
            [-0.005325,  0.235275,  0.2358  , -0.004275],
            [ 0.004275,  0.2358  ,  0.244875, -0.002175],
