@@ -152,27 +152,45 @@ class TestSnapshotGeneral:
     def test_sample_measurement_with_analytical_device_fails(self, dev):
         @qp.qnode(dev)
         def circuit():
+            if isinstance(dev, qp.devices.QutritDevice):
+                qp.THadamard(wires=0)
+                qp.Snapshot(measurement=qp.sample())
+                return qp.expval(qp.GellMann(0, index=6))
+
             qp.Hadamard(0)
             qp.Snapshot(measurement=qp.sample())
             return qp.expval(qp.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(DeviceError):
-            qp.snapshots(circuit)()
+        if isinstance(dev, qp.devices.QutritDevice):
+            with pytest.raises(QuantumFunctionError, match="shots has to be explicitly set"):
+                qp.snapshots(circuit)()
+        else:
+            with pytest.raises(DeviceError, match=r"sample\(.*\) not accepted for analytic"):
+                qp.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
         @qp.set_shots(shots=200)
         @qp.qnode(dev)
         def circuit():
+            if isinstance(dev, qp.devices.QutritDevice):
+                qp.THadamard(wires=0)
+                qp.Snapshot(measurement=qp.mutual_info(0, 1))
+                return qp.expval(qp.GellMann(0, index=6))
+
             qp.Hadamard(0)
             qp.Snapshot(measurement=qp.mutual_info(0, 1))
             return qp.expval(qp.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(DeviceError):
-            qp.snapshots(circuit)()
+        if isinstance(dev, qp.devices.QutritDevice):
+            with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
+                qp.snapshots(circuit)()
+        else:
+            with pytest.raises(DeviceError, match=r"not accepted with finite shots"):
+                qp.snapshots(circuit)()
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
         if "lightning" in dev.name or "mixed" in dev.name:
