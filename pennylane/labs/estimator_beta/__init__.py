@@ -76,7 +76,7 @@ Alternate Decompositions
     ~mcx_many_clean_aux_resource_decomp
 
 """
-
+import pennylane.estimator as pl_qre
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 
@@ -129,3 +129,4 @@ def _(action: Deallocate):
 
 ## Monkey Patching:
 QROM = LabsQROM
+pl_qre.QROM = LabsQROM

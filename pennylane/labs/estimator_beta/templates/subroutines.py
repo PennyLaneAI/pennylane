@@ -240,6 +240,7 @@ class LabsQROM(ResourceOperator):
         num_bit_flips: int | None = None,
         borrow_qubits: bool = True,
         select_swap_depth: int | None = None,
+        **kwargs,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -260,6 +261,10 @@ class LabsQROM(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        # TODO: @Jaybsoni to remove once restored deprecated:
+        if "restored" in kwargs:
+            borrow_qubits = kwargs["restored"]
+
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
 
@@ -294,6 +299,7 @@ class LabsQROM(ResourceOperator):
         num_bit_flips: int | None = None,
         borrow_qubits: bool = True,
         select_swap_depth: int | None = None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list of ``GateCount`` objects representing the operator's resources.
 
@@ -330,6 +336,10 @@ class LabsQROM(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        # TODO: @Jaybsoni to remove once restored deprecated:
+        if "restored" in kwargs:
+            borrow_qubits = kwargs["restored"]
+        
         if select_swap_depth:
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
@@ -396,8 +406,13 @@ class LabsQROM(ResourceOperator):
         num_bit_flips: int | None = None,
         select_swap_depth: int | None = None,
         borrow_qubits: bool = True,
+        **kwargs,
     ):
         r"""The resource decomposition for LabsQROM controlled on a single wire."""
+        # TODO: @Jaybsoni to remove once restored deprecated:
+        if "restored" in kwargs:
+            borrow_qubits = kwargs["restored"]
+
         if select_swap_depth:
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
@@ -500,7 +515,11 @@ class LabsQROM(ResourceOperator):
         size_bitstring = target_resource_params["size_bitstring"]
         num_bit_flips = target_resource_params.get("num_bit_flips", None)
         select_swap_depth = target_resource_params.get("select_swap_depth", None)
-        borrow_qubits = target_resource_params.get("borrow_qubits", True)
+
+        # TODO: @Jaybsoni to remove once restored deprecated:
+        borrow_qubits_key = "restored" if "restored" in target_resource_params else "borrow_qubits"
+        borrow_qubits = target_resource_params.get(borrow_qubits_key, True)
+        
         gate_cost = []
         if num_zero_ctrl:
             x = qre.X.resource_rep()

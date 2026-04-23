@@ -749,6 +749,21 @@ class Prod(ResourceOperator):
         """
         return [GateCount(cmpr_op, count) for cmpr_op, count in cmpr_factors_and_counts]
 
+    @staticmethod
+    def tracking_name(
+        cmpr_factors_and_counts, 
+        num_wires: int
+    ) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        factors = []
+        for cmpr_op, count in cmpr_factors_and_counts:
+            count_str = "" if count == 1 else f" x{count}"
+            cmpr_op_str = cmpr_op.name
+            factors.append(cmpr_op_str + count_str)
+        
+        prod_str = ", ".join(factors)
+        return f"Π({prod_str})"
+
 
 class ChangeOpBasis(ResourceOperator):
     r"""Change of Basis resource operator.
