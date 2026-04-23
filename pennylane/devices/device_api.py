@@ -109,16 +109,17 @@ class Device(abc.ABC):
         If an arbitrary, non-preprocessed circuit is provided, :meth:`~.execute` has no responsibility to perform any
         validation or provide clearer error messages.
 
-        >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
-        >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
+        >>> import pennylane as qp
+        >>> op = qp.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> circuit = qp.tape.QuantumScript([op], [qp.state()])
         >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         Traceback (most recent call last):
         ...
         pennylane.exceptions.MatrixUndefinedError
-        >>> angles = qml.numpy.array([1.2, 2.3, 3.4])
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(*angles, 0)], [qml.expval(qml.Z(0))])
+        >>> angles = qp.numpy.array([1.2, 2.3, 3.4])
+        >>> circuit = qp.tape.QuantumScript([qp.Rot(*angles, 0)], [qp.expval(qp.Z(0))])
         >>> config = ExecutionConfig(gradient_method="adjoint")
         >>> dev.compute_derivatives(circuit, config)  # the result will be incorrect
         (array(0.), array(0.), array(0.))
@@ -310,8 +311,8 @@ class Device(abc.ABC):
                 from pennylane.tape import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
-                @qml.transform
-                def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+                @qp.transform
+                def my_preprocessing_transform(tape: qp.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                     def blank_processing_fn(results):
@@ -413,8 +414,8 @@ class Device(abc.ABC):
             from pennylane.tape import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
-            @qml.transform
-            def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            @qp.transform
+            def my_preprocessing_transform(tape: qp.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                 def blank_processing_fn(results):
@@ -605,7 +606,7 @@ class Device(abc.ABC):
             measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-            >>> tape = qml.tape.QuantumScript(measurements=[qml.expval(qml.Z(0))])
+            >>> tape = qp.tape.QuantumScript(measurements=[qp.expval(qp.Z(0))])
             >>> dev.execute(tape)
             np.float64(1.0)
 
@@ -618,7 +619,7 @@ class Device(abc.ABC):
 
             If the script has multiple measurements, then the device should return a tuple of measurements.
 
-            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
+            >>> tape = qp.tape.QuantumTape(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
             >>> dev.execute(tape)
             (np.float64(1.0), array([1., 0., 0., 0.]))
 
@@ -662,10 +663,10 @@ class Device(abc.ABC):
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)  # doctest: +SKIP
         True
-        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=None)
+        >>> circuit_analytic = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.Z(0))], shots=None)
         >>> dev.supports_derivatives(config, circuit=circuit_analytic)  # doctest: +SKIP
         True
-        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=10)
+        >>> circuit_finite_shots = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.Z(0))], shots=10)
         >>> dev.supports_derivatives(config, circuit = circuit_finite_shots)  # doctest: +SKIP
         False
 
@@ -678,7 +679,7 @@ class Device(abc.ABC):
         :meth:`~.Device.preprocess`, then ``supports_derivatives`` should return False.
 
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
-        >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
+        >>> circuit = qp.tape.QuantumScript([qp.RX(2.0, wires=0)], [qp.probs(wires=(0,1))])
         >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         False
 
@@ -689,7 +690,7 @@ class Device(abc.ABC):
         and validation steps performed by :meth:`~.Device.preprocess`.
 
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.Z(0))])
+        >>> circuit = qp.tape.QuantumScript([qp.Rot(1.2, 2.3, 3.4, wires=0)], [qp.expval(qp.Z(0))])
         >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         True
 
@@ -982,19 +983,19 @@ class Device(abc.ABC):
         Returns:
             Sequence[TensorLike], Sequence[TensorLike]: the results and jacobian vector products
 
-        >>> qml.capture.enable()
+        >>> qp.capture.enable()
         >>> import jax
         >>> closure_var = jax.numpy.array(0.5)
         >>> def f(x):
-        ...     qml.RX(closure_var, 0)
-        ...     qml.RX(x, 1)
-        ...     return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        ...     qp.RX(closure_var, 0)
+        ...     qp.RX(x, 1)
+        ...     return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
         >>> jaxpr = jax.make_jaxpr(f)(1.2)
         >>> args = (closure_var, 1.2)
         >>> zero = jax.interpreters.ad.Zero(jax.core.ShapedArray((), float))
         >>> tangents = (zero, 1.0)
-        >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-        >>> dev = qml.device('default.qubit', wires=2)
+        >>> config = qp.devices.ExecutionConfig(gradient_method="adjoint")
+        >>> dev = qp.device('default.qubit', wires=2)
         >>> res, jvps = dev.jaxpr_jvp(jaxpr.jaxpr, args, tangents, execution_config=config)
         >>> res
         [Array(0.87758256, dtype=float64), Array(0.36235775, dtype=float64)]
