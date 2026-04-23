@@ -16,34 +16,6 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
-Custom transforms
------------------
-
-``qp.transform`` can be used to define custom transformations that work with PennyLane QNodes and
-quantum functions; such transformations can map a circuit to one or many new circuits alongside
-associated classical post-processing.
-
-.. note::
-
-    The ``transform`` function is for defining tape-based transforms only, which are generally not
-    compatible with :func:`~.qjit` and program capture (``@qjit(capture=True)``).
-
-.. autosummary::
-    :toctree: api
-
-    ~transform
-
-Chaining circuit transforms together
-------------------------------------
-
-Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms`
-for more details.
-
-.. autosummary::
-    :toctree: api
-
-    ~CompilePipeline
-
 .. _transform_library:
 
 Transforms for circuit optimization
@@ -202,6 +174,34 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
+Chaining circuit transforms together
+------------------------------------
+
+Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms`
+for more details.
+
+.. autosummary::
+    :toctree: api
+
+    ~CompilePipeline
+
+Custom transforms
+-----------------
+
+``qp.transform`` can be used to define custom transformations that work with PennyLane QNodes and
+quantum functions; such transformations can map a circuit to one or many new circuits alongside
+associated classical post-processing. See :ref:`custom_transforms` for more details.
+
+.. note::
+
+    The ``transform`` function is for defining tape-based transforms only, which are generally not
+    compatible with :func:`~.qjit` and program capture (``@qjit(capture=True)``).
+
+.. autosummary::
+    :toctree: api
+
+    ~transform
+
 Transforms developer classes
 ----------------------------
 
@@ -327,6 +327,8 @@ circuit with each pass within the pipeline sequentially.
         qp.RX(x, wires=0)
         qp.RX(y, wires=0)
         return qp.expval(qp.Z(0))
+
+.. _custom_transforms:
 
 Creating your own transform
 ---------------------------
