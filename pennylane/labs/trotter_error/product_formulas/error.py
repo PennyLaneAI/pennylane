@@ -251,8 +251,8 @@ def perturbation_error(
 
             errors.append(
                 {
-                    order: (1j * timestep) ** order * expectation
-                    for order, expectation in expectations.items()
+                    order: (1j * timestep) ** order * exp
+                    for order, exp in expectations.items()
                 }
             )
 
