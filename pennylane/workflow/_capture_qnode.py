@@ -91,7 +91,7 @@ except (ImportError, NameError) as e:  # pragma: no cover
 
 import pennylane as qml
 from pennylane import math
-from pennylane.capture import FlatFn, QmlPrimitive
+from pennylane.capture import FlatFn, QpPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
 from pennylane.measurements import Shots
@@ -177,7 +177,7 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
     return shapes
 
 
-qnode_prim = QmlPrimitive("qnode")
+qnode_prim = QpPrimitive("qnode")
 qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 

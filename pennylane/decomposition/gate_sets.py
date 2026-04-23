@@ -126,7 +126,7 @@ MBQC_GATES = _MBQC_GATES | IDENTITY | _MID_MEASURE
 MBQC_GATES.name = "MBQC"
 
 ALL_QUBIT_OPS = GateSet(ops.qubit.__all__, name="All Qubit Gates")
-"""The gate set that contains all operators defined in ``qml.ops.qubit``."""
+"""The gate set that contains all operators defined in ``qp.ops.qubit``."""
 
 ALL_OPS = GateSet(ops.__all__, name="All PennyLane Gates")
-"""The gate set that contains all operators defined in ``qml.ops``."""
+"""The gate set that contains all operators defined in ``qp.ops``."""
