@@ -14,10 +14,12 @@
 """Transform to diagonalize measurements on a tape, assuming all measurements are commuting."""
 
 from copy import copy
-from functools import singledispatch
+from functools import partial, singledispatch
+from typing import Iterable, Optional
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.operation import Operator
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -29,6 +31,67 @@ from pennylane.transforms.core import transform
 # pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
+_obs_name_map = {
+    "PauliX": qml.PauliX,
+    "PauliY": qml.PauliY,
+    "PauliZ": qml.PauliZ,
+    "Hadamard": qml.Hadamard,
+    "Identity": qml.Identity,
+}
+
+
+def diagonalize_final_measurements_setup_inputs(
+    supported_base_obs: Optional[Iterable[Operator]] = _default_supported_obs,
+    to_eigvals: bool = False,
+):
+    """The ``setup_inputs`` function for the ``diagonalize_measurements`` transform, which corresponds
+    to the ``diagonalize_measurements`` tape transform or the ``diagonalize-final-measurements`` xDSL
+    compilation pass.
+
+    Args:
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
+        Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
+        Z and Identity are always treated as supported, regardless of input. Defaults to (``qml.Z``,
+        ``qml.Identity``).
+        to_eigvals (bool): Whether the diagonalization should create measurements using
+            eigenvalues and wires rather than observables. Defaults to ``False``.
+
+    .. warning::
+
+        An error will be raised if non-commuting terms are encountered.
+
+
+    .. warning::
+        Transform with ``to_eigvals=True`` is not supported for now in the xDSL pass. An ``ValueError`` would be
+        raised when applying the xDSL pass if ``to_eigvals`` is set as ``True``.
+
+    """
+    allowed_obs_inputs = set(_obs_name_map.values())
+    bad_obs_input = [o for o in supported_base_obs if o not in allowed_obs_inputs]
+    # We need to add the following safety checks as this setup_input func is called several
+    # times and the first call would turn ``supported_base_obs`` into a tuple[str]. The logic
+    # below would allow the subsequent calls can go through, otherwise an ValueError would raise
+    # due to data type mismatch.
+    # NOTE: This logic would allow users to pass a tuple[str] to the ``supported_base_obs``
+    allowed_obs_name_inputs = set(_obs_name_map.keys())
+    bad_obs_name_input = [o for o in supported_base_obs if o not in allowed_obs_name_inputs]
+
+    if bad_obs_input and bad_obs_name_input:
+        bad_input = bad_obs_input + bad_obs_name_input
+        raise ValueError(
+            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
+            f"but received {(bad_input)}"
+        )
+
+    # The following logic convert Operator classes into hashable strings to
+    # ensure the kwargs work with the corresponding xDSL pass. Hence, we have
+    # to map the strings back to the Operators in the tape transform logic due
+    # to the changes in the `supported_base_obs` data type
+    inverted_obs_map = {v: k for k, v in _obs_name_map.items()}
+
+    supported_base_obs_name = tuple(inverted_obs_map.get(obs, obs) for obs in supported_base_obs)
+
+    return (), {"supported_base_obs": supported_base_obs_name, "to_eigvals": to_eigvals}
 
 
 def null_postprocessing(results):
@@ -38,9 +101,13 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(
+    transform,
+    pass_name="diagonalize-final-measurements",
+    setup_inputs=diagonalize_final_measurements_setup_inputs,
+)
 def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
-    """Diagonalize a set of measurements into the standard basis. Raises an error if the
+    """Diagonalize a set of measurements into the ``Z`` basis. Raises an error if the
     measurements do not commute.
 
     See the usage details for more information on which measurements are supported.
@@ -57,6 +124,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
+
         An error will be raised if non-commuting terms are encountered. To avoid non-commuting
         terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
         transform can be applied.
@@ -147,18 +215,35 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
         >>> tapes[0].measurements
         [expval(X(0) + Z(1)), expval(X(0) + 0.2 * Z(1)), var(Y(2) + X(0))]
+
+    .. details::
+        :title: Usage with Catalyst
+
+        This transform is compatible with ``qjit``, where it will be applied as an MLIR pass rather than a tape-level transform.
+        However, when using the MLIR pass, the ``to_eigvals`` option is not supported. A ``ValueError`` would be raised if ``to_eigvals`` is set as ``True``.
+
+        .. code-block:: python
+
+            @qml.qjit
+            @qml.transforms.diagonalize_measurements(supported_base_obs=[qml.PauliX])
+            @qml.qnode(qml.device("lightning.qubit", wires=1))
+            def circuit():
+                qml.Hadamard(0)
+                qml.RZ(1.1, 0)
+                qml.PhaseShift(0.22, 0)
+                return qml.expval(qml.Y(0))
+
+            expected_substr = 'transform.apply_registered_pass "diagonalize-final-measurements" with options = {"supported-base-obs" = ["PauliX"], "to-eigvals" = false}'
+
+        >>> expected_substr in circuit.mlir # doctest: +SKIP
+        True
+        >>> circuit() # doctest: +SKIP
+        0.9687151001182651
+
     """
-
-    bad_obs_input = [
-        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-    ]
-
-    if bad_obs_input:
-        raise ValueError(
-            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
-            f"but received {list(bad_obs_input)}"
-        )
-
+    # To map the strings back to the Operators in the tape transform logic due
+    # to the changes in the `supported_base_obs` made in the `setup_inputs`.`
+    supported_base_obs = list(_obs_name_map.get(obs, obs) for obs in supported_base_obs)
     diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
 
     if to_eigvals and not diagonalize_all:
