@@ -390,6 +390,8 @@ def _specs_from_analysis_pass(
     finally:
         # Ensure all files get cleaned up even if something goes wrong during compilation or file reading
         for res_file in fname_to_level.keys():
+            res_file = Path(res_file)
+
             if res_file.exists():
                 res_file.unlink()  # Clean up the resource tracking file
 
