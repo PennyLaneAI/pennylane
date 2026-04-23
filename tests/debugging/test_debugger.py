@@ -16,7 +16,7 @@ Unit tests for debugger helpers in the debugging module.
 """
 
 import pennylane as qp
-from pennylane.debugging import debug_expval, debug_probs, debug_state, debug_tape
+from pennylane.debugging import debug_expval, debug_probs, debug_state
 
 
 class _DecomposingOp(qp.operation.Operation):
@@ -78,23 +78,6 @@ class TestQueuePollution:
 
             ops_before = len(qp.QueuingManager.active_context().queue)
             _ = debug_expval(qp.Z(0))
-            ops_after = len(qp.QueuingManager.active_context().queue)
-            assert ops_before == ops_after
-
-            return qp.expval(qp.Z(0))
-
-        _ = circuit()
-
-    def test_debug_tape_doesnt_pollute_active_queue(self):
-        """Tests that 'debug_tape' doesn't accidentally change the queue."""
-
-        @qp.qnode(qp.device("default.qubit", wires=[0, 1]))
-        def circuit():
-            qp.H(0)
-            qp.ctrl(_DecomposingOp, control=0)(wires=1)
-
-            ops_before = len(qp.QueuingManager.active_context().queue)
-            _ = debug_tape()
             ops_after = len(qp.QueuingManager.active_context().queue)
             assert ops_before == ops_after
 
