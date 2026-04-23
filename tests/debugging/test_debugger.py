@@ -15,6 +15,8 @@
 Unit tests for debugger helpers in the debugging module.
 """
 
+import numpy as np
+
 import pennylane as qp
 from pennylane.debugging import debug_expval, debug_probs, debug_state
 
@@ -34,6 +36,18 @@ class _DecomposingOp(qp.operation.Operation):
 class TestQueuePollution:
     """Tests that the 'debug_*' helpers don't pollute the queue. Regression tests for issue #9343."""
 
+    @staticmethod
+    def _create_circuit():
+        """Creates the ground truth circuit."""
+
+        @qp.qnode(qp.device("default.qubit", wires=[0, 1]))
+        def correct_circuit():
+            qp.H(0)
+            qp.ctrl(_DecomposingOp, control=0)(wires=1)
+            return qp.expval(qp.Z(0))
+
+        return correct_circuit
+
     def test_debug_state_doesnt_pollute_active_queue(self):
         """Tests that 'debug_state' doesn't accidentally change the queue."""
 
@@ -49,7 +63,8 @@ class TestQueuePollution:
 
             return qp.expval(qp.Z(0))
 
-        _ = circuit()
+        expected = self._create_circuit()
+        assert np.allclose(circuit(), expected())
 
     def test_debug_probs_doesnt_pollute_active_queue(self):
         """Tests that 'debug_probs' doesn't accidentally change the queue."""
@@ -66,7 +81,8 @@ class TestQueuePollution:
 
             return qp.expval(qp.Z(0))
 
-        _ = circuit()
+        expected = self._create_circuit()
+        assert np.allclose(circuit(), expected())
 
     def test_debug_expval_doesnt_pollute_active_queue(self):
         """Tests that 'debug_expval' doesn't accidentally change the queue."""
@@ -83,4 +99,5 @@ class TestQueuePollution:
 
             return qp.expval(qp.Z(0))
 
-        _ = circuit()
+        expected = self._create_circuit()
+        assert np.allclose(circuit(), expected())
