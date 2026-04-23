@@ -330,5 +330,7 @@ def ctrl_decomp_no_work_wires(
 
 
 qp.add_decomps(
-    "C(MultiX)", ctrl_decomp_with_work_wires, ctrl_decomp_with_allocate, ctrl_decomp_no_work_wires
+    "C(MultiX)",
+    ctrl_decomp_with_work_wires,
+    ctrl_decomp_with_allocate,  # , ctrl_decomp_no_work_wires
 )
