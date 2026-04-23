@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
@@ -66,11 +66,11 @@ def _expand_fn(
     postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
-            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "Returning qp.sample is not supported when postselecting mid-circuit "
             "measurements with broadcasting"
         )
 
-    return qml.transforms.broadcast_expand(tape)
+    return qp.transforms.broadcast_expand(tape)
 
 
 def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> PostprocessingFn:
@@ -88,11 +88,11 @@ def dynamic_one_shot(
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     This transform enables the ``"one-shot"`` mid-circuit measurement method. The ``"one-shot"`` method prompts the
-    device to perform a series of one-shot executions, where in each execution, the ``qml.measure``
+    device to perform a series of one-shot executions, where in each execution, the ``qp.measure``
     operation applies a probabilistic mid-circuit measurement to the circuit.
-    This is in contrast with ``qml.defer_measurement``, which instead introduces an extra
+    This is in contrast with ``qp.defer_measurement``, which instead introduces an extra
     wire for each mid-circuit measurement. The ``"one-shot"`` method is favourable in the few-shots
-    and several-mid-circuit-measurements limit, whereas ``qml.defer_measurements`` is favourable in
+    and several-mid-circuit-measurements limit, whereas ``qp.defer_measurements`` is favourable in
     the opposite limit.
 
     .. warning::
@@ -106,27 +106,27 @@ def dynamic_one_shot(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
         This circuit will provide the results of a dynamic execution.
 
     **Example**
 
     Most devices that support mid-circuit measurements will include this transform in its
     preprocessing automatically when applicable. The recommended way to use dynamic one
-    shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
+    shot is to specify ``mcm_method="one-shot"`` in the ``qp.qnode`` decorator.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         params = np.pi / 4 * np.ones(2)
 
-        @qml.set_shots(100)
-        @qml.qnode(dev, mcm_method="one-shot")
+        @qp.set_shots(100)
+        @qp.qnode(dev, mcm_method="one-shot")
         def func(x, y):
-            qml.RX(x, wires=0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.RY)(y, wires=1)
-            return qml.expval(op=m0)
+            qp.RX(x, wires=0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.RY)(y, wires=1)
+            return qp.expval(op=m0)
 
     ..details::
         :title: Usage with Catalyst (qjit)
@@ -137,17 +137,17 @@ def dynamic_one_shot(
 
         - Shot vectors or broadcasting are not supported
         - Workflows involving gradients are not supported
-        - ``qml.var()`` on observables (non-MCM) are unsupported
+        - ``qp.var()`` on observables (non-MCM) are unsupported
 
-        To apply the MLIR pass version simply decorate your ``QNode`` with ``@qml.qjit``:
+        To apply the MLIR pass version simply decorate your ``QNode`` with ``@qp.qjit``:
 
         .. code-block:: python
 
-            @qml.qjit
-            @qml.set_shots(10)
-            @qml.qnode(qml.device("lightning.qubit", wires=2), mcm_method="one-shot")
+            @qp.qjit
+            @qp.set_shots(10)
+            @qp.qnode(qp.device("lightning.qubit", wires=2), mcm_method="one-shot")
             def circ():
-                return qml.expval(qml.X(0)+2*qml.Y(1))
+                return qp.expval(qp.X(0)+2*qp.Y(1))
 
         >>> circ() # doctest: +SKIP
         Array(0.4, dtype=float64)
@@ -187,14 +187,14 @@ def dynamic_one_shot(
 
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
-    assert isinstance(dev, qml.devices.LegacyDeviceFacade)
+    assert isinstance(dev, qp.devices.LegacyDeviceFacade)
     return dev.target_device.capabilities()
 
 
-def _supports_one_shot(dev: "qml.devices.Device"):
+def _supports_one_shot(dev: "qp.devices.Device"):
     """Checks whether a device supports one-shot."""
 
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qp.devices.LegacyDevice):
         return get_legacy_capabilities(dev).get("supports_mid_measure", False)
 
     return dev.name in ("default.qubit", "lightning.qubit") or (
@@ -211,7 +211,7 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     )
 
 
-def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
+def init_auxiliary_tape(circuit: qp.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
     Measurements are replaced by SampleMP measurements on wires and observables found in the
@@ -232,10 +232,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(m)
     for op in circuit.operations:
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
-            new_measurements.append(qml.sample(op.out_classical_tracers[0]))
+            new_measurements.append(qp.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasure):
-            new_measurements.append(qml.sample(MeasurementValue([op])))
-    return qml.tape.QuantumScript(
+            new_measurements.append(qp.sample(MeasurementValue([op])))
+    return qp.tape.QuantumScript(
         circuit.operations,
         new_measurements,
         shots=[1] * circuit.shots.total_shots,
@@ -269,7 +269,7 @@ def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
 
 
 def parse_native_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript,
+    circuit: qp.tape.QuantumScript,
     _removed_arg=None,  # need to not break catalyst
     results: None | TensorLike = None,
     postselect_mode=None,
@@ -302,7 +302,7 @@ def parse_native_mid_circuit_measurements(
     mcm_samples_map = {mcm: mcm_samples[:, i : i + 1] for i, mcm in enumerate(all_mcms)}
     normalized_meas, m_count = [], 0
 
-    handler = _handle_measurement_qjit if qml.compiler.active() else _handle_measurement
+    handler = _handle_measurement_qjit if qp.compiler.active() else _handle_measurement
     for m in circuit.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise TypeError(
@@ -524,7 +524,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
 
     interface = math.get_deep_interface(is_valid)
     mv = measurement.mv
-    # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
+    # The following block handles measurement value lists, like ``qp.counts(op=[mcm0, mcm1, mcm2])``.
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         mcm_samples = [m.concretize(samples) for m in mv]
         mcm_samples = math.concatenate(mcm_samples, axis=1)
