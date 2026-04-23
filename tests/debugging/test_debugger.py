@@ -21,6 +21,7 @@ import pennylane as qp
 from pennylane.debugging import debug_expval, debug_probs, debug_state
 
 
+# pylint: disable=too-few-public-methods
 class _DecomposingOp(qp.operation.Operation):
     """Define a minimal operator whose decomposition creates multiple gates.
 
