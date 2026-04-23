@@ -20,7 +20,7 @@ from itertools import combinations, product
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
@@ -431,7 +431,7 @@ class TestSumOfSlatersPrep:
         assert_valid(op, skip_differentiation=True)
 
     def test_old_decomposition_system_disabled(self):
-        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        """We are using ``qp.allocate`` in the decomposition, so the validation for
         decomposition in the old system breaks. Hence we manually deactivated the fallback
         of compute_decomposition to the new decomp system."""
         num_wires = 5
@@ -521,13 +521,13 @@ class TestSumOfSlatersPrep:
 
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qml.qnode(qml.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit"))
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
-                qml.Identity(range(num_wires))
+                qp.Identity(range(num_wires))
                 rule(coefficients, wires=range(num_wires), indices=indices)
-                return qml.state()
+                return qp.state()
 
             out_state = func()
 
@@ -583,13 +583,13 @@ class TestSumOfSlatersPrep:
         # Currently just one rule is implemented, but this test should pass for all decompositions
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qml.qnode(qml.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit"))
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
-                qml.Identity(range(num_wires))
+                qp.Identity(range(num_wires))
                 rule(coefficients, wires=range(num_wires), indices=indices)
-                return qml.state()
+                return qp.state()
 
             out_state = func()
 
