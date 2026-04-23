@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
-# Used for MLIR analysis pass resource tracking
+# Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "__qml_specs_analysis_pass_level_"
 
 
