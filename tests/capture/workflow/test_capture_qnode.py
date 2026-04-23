@@ -625,13 +625,13 @@ class TestUserTransforms:
         assert jnp.allclose(res, expected)
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
     """Integration tests for preprocessing and executing qnodes with program capture."""
 
-    def test_non_native_ops_execution(self, dev_name, seed):
+    def test_non_native_ops_execution(self, seed):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
-        dev = qp.device(dev_name, wires=2, seed=seed)
+
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         @qp.qnode(dev)
         def circuit():
@@ -643,11 +643,11 @@ class TestDevicePreprocessing:
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])
-    def test_mcms_execution_deferred(self, dev_name, mcm_method, shots, seed):
+    def test_mcms_execution_deferred(self, mcm_method, shots, seed):
         """Test that defer_measurements is reflected in the execution results of a device."""
 
-        dev = qp.device(dev_name, wires=3, seed=seed)
-        postselect = 1 if dev_name == "default.qubit" else None
+        dev = qp.device("default.qubit", wires=3, seed=seed)
+        postselect = 1
 
         @qp.qnode(dev, mcm_method=mcm_method, shots=shots)
         def circuit():
@@ -680,12 +680,12 @@ class TestDevicePreprocessing:
                 assert qp.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
-    def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method, seed):
+    def test_mcm_execution_deferred_fill_shots(self, mcm_method, seed):
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
 
         shots = 1000
-        dev = qp.device(dev_name, wires=3, seed=seed)
-        postselect = 1 if dev_name == "default.qubit" else None
+        dev = qp.device("default.qubit", wires=3, seed=seed)
+        postselect = 1
 
         @qp.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots", shots=shots)
         def circuit():
@@ -712,12 +712,12 @@ class TestDevicePreprocessing:
             assert qp.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
-    def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method, seed):
+    def test_mcm_execution_deferred_hw_like(self, mcm_method, seed):
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
         shots = 1000
-        dev = qp.device(dev_name, wires=2, seed=seed)
-        postselect = 1 if dev_name == "default.qubit" else None
+        dev = qp.device("default.qubit", wires=2, seed=seed)
+        postselect = 1
         n_postselects = 3
 
         @qp.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like", shots=shots)
@@ -746,11 +746,11 @@ class TestDevicePreprocessing:
             counts = qp.numpy.bincount(qp.math.squeeze(res))
             assert qp.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
-    def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
+    def test_mcms_execution_single_branch_statistics(self, seed):
         """Test that single-branch-statistics works as expected."""
 
         shots = 1000
-        dev = qp.device(dev_name, wires=2, seed=seed)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         @qp.qnode(dev, mcm_method="single-branch-statistics", shots=shots)
         def circuit():
@@ -807,43 +807,6 @@ class TestDifferentiation:
         xt = -0.6
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qp.math.allclose(jvp, (qp.math.cos(x), -qp.math.sin(x) * xt))
-
-    def test_jvp_lightning(self):
-        """Test that JAX can compute the JVP of the QNode primitive via a registered rule on lightning.qubit."""
-
-        @qp.qnode(qp.device("lightning.qubit", wires=2))
-        def circuit(x):
-            qp.RX(x, 0)
-            return qp.expval(qp.Z(0))
-
-        x = 0.9
-        xt = -0.6
-        jvp = jax.jvp(circuit, (x,), (xt,))
-        assert qp.math.allclose(jvp, (qp.math.cos(x), -qp.math.sin(x) * xt))
-
-    def test_grad_lightning(self):
-        """Test that JAX can compute the gradient of the QNode primitive via a registered rule on lightning.qubit."""
-
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
-        def circuit(x):
-            qp.RX(x, 0)
-            return qp.expval(qp.Z(0))
-
-        grad = jax.grad(circuit)(0.9)
-        assert qp.math.allclose(grad, -qp.math.sin(0.9))
-
-    def test_jacobian_lightning(self):
-        """Test that JAX can compute the Jacobian of the QNode primitive via a registered rule on lightning.qubit."""
-
-        @qp.qnode(qp.device("lightning.qubit", wires=2))
-        def circuit(x):
-            qp.RX(x[0], 0)
-            qp.RY(x[1], 1)
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        x = jnp.array([0.9, -0.6])
-        jac = jax.jacobian(circuit)(x)
-        assert qp.math.allclose(jac, [[-qp.math.sin(0.9), 0], [0, -qp.math.sin(-0.6)]])
 
 
 def test_qnode_jit():

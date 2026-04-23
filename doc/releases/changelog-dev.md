@@ -314,6 +314,7 @@ The following classes have been ported over:
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
+  [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
 
 * When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -527,6 +528,9 @@ The following classes have been ported over:
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
   ```
+
+* Applied stricter conditions on some decomposition rules for ``MultiControlledX`` to avoid duplication of equivalent decomposition rules for ``MultiControlledX`` on less than 6 wires.
+  [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -853,6 +857,10 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
+  as a result.
+  [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
+
 * During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
   during capture time.
   [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
@@ -995,6 +1003,7 @@ The following classes have been ported over:
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9315)](https://github.com/PennyLaneAI/pennylane/pull/9315)
+  [(#9314)](https://github.com/PennyLaneAI/pennylane/pull/9314)
   [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
