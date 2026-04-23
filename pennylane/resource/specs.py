@@ -230,7 +230,9 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     return level_sorted
 
 
-def _mlir_resources_to_specs_resources(resources: dict[str, Any]) -> SpecsResources:  # pragma: no cover
+def _mlir_resources_to_specs_resources(
+    resources: dict[str, Any],
+) -> SpecsResources:  # pragma: no cover
     # This function is covered by integration tests within the Catalyst frontend
     """Helper function to convert the output of resource analysis pass into SpecsResources."""
 
@@ -316,7 +318,7 @@ def _specs_from_analysis_pass(
             if num_tape_levels in level_to_markers
             else "Before MLIR Passes"
         )
-        new_compile_pipeline += qml.transform(pass_name="resource-tracker")(
+        new_compile_pipeline += qml.transform(pass_name="resource-analysis")(
             output_json=True, output_fname=fname
         )
 
@@ -334,7 +336,7 @@ def _specs_from_analysis_pass(
             level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
             fname_to_level[fname] = i
             level_to_name[i] = level_name
-            new_compile_pipeline += qml.transform(pass_name="resource-tracker")(
+            new_compile_pipeline += qml.transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
 
