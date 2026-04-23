@@ -593,7 +593,7 @@ class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-class TestShowDecomps:
+class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
 
     @pytest.fixture(autouse=True, scope="class")
@@ -663,12 +663,11 @@ class TestShowDecomps:
             qp.add_decomps(CustomParametrizedOp, two_wires_decomp, general_decomp, another_decomp)
             yield
 
-    def test_show_all_decomps(self, capsys):
+    def test_show_all_decomps(self):
         """Tests showing all decomposition rules associated with an operator."""
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
+        assert result == dedent("""
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
@@ -681,11 +680,10 @@ class TestShowDecomps:
 
             Decomposition 2 (name: with-aux)
             Not applicable to the provided operator instance!
-            """).lstrip()
+            """).strip()
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
+        assert result == dedent("""
             Decomposition 0 (name: simple)
             Not applicable to the provided operator instance!
 
@@ -709,14 +707,15 @@ class TestShowDecomps:
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 2}
-            """).lstrip()
+            """).strip()
 
-    def test_exclude_not_applicable(self, capsys):
+    def test_exclude_not_applicable(self):
         """Tests that not-applicable rules can be excluded."""
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), show_not_applicable=False)
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(
+            CustomParametrizedOp(0.5, wires=[0, 1]), show_not_applicable=False
+        )
+        assert result == dedent("""
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
@@ -726,11 +725,12 @@ class TestShowDecomps:
             0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
             1: ───────────╰Z──H─╰Z───────────┤  
             Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
-            """).lstrip()
+            """).strip()
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), show_not_applicable=False)
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(
+            CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), show_not_applicable=False
+        )
+        assert result == dedent("""
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -751,14 +751,15 @@ class TestShowDecomps:
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 2}
-            """).lstrip()
+            """).strip()
 
-    def test_num_work_wires(self, capsys):
+    def test_num_work_wires(self):
         """Tests that num_work_wires work."""
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), num_work_wires=1)
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(
+            CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), num_work_wires=1
+        )
+        assert result == dedent("""
             Decomposition 0 (name: simple)
             Not applicable to the provided operator instance!
 
@@ -772,15 +773,14 @@ class TestShowDecomps:
 
             Decomposition 2 (name: with-aux)
             Excluded based on the given work wires constraint!
-            """).lstrip()
+            """).strip()
 
-        qp.show_decomps(
+        result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]),
             num_work_wires=1,
             show_not_applicable=False,
         )
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        assert result == dedent("""
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -788,14 +788,13 @@ class TestShowDecomps:
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
-            """).lstrip()
+            """).strip()
 
-    def test_show_no_decomps(self, capsys):
+    def test_show_no_decomps(self):
         """Tests when no rules are available."""
 
-        qp.show_decomps(CustomOp(0.5, wires=[0, 1]))
-        captured = capsys.readouterr()
-        assert captured.out == "No available decomposition rules.\n"
+        result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
+        assert result == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
         @qp.register_resources({})
@@ -804,30 +803,27 @@ class TestShowDecomps:
 
         with qp.decomposition.local_decomps():
             qp.add_decomps(CustomOp, invalid_rule)
-            qp.show_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
+            result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
 
-        captured = capsys.readouterr()
-        assert captured.out == "No applicable decomposition rules.\n"
+        assert result == "No applicable decomposition rules."
 
-    def test_show_decomp_by_name(self, capsys):
+    def test_show_decomp_by_name(self):
         """Tests inspecting a particular decomp by name."""
 
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
+        assert result == dedent("""
             Name: simple
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
             Gate Count: {RZ: 2, CNOT: 1}
-            """).lstrip()
+            """).strip()
 
-    def test_show_decomp_with_rule(self, capsys):
+    def test_show_decomp_with_rule(self):
         """Tests inspecting a particular decomposition rule."""
 
         rule = qp.list_decomps(CustomParametrizedOp)["general_decomp"]
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
+        assert result == dedent("""
             Name: general_decomp
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -835,20 +831,21 @@ class TestShowDecomps:
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
-            """).lstrip()
+            """).strip()
 
         with pytest.warns(UserWarning, match="show_not_applicable=False is only relevant when"):
-            qp.show_decomps(
+            qp.inspect_decomps(
                 CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, show_not_applicable=False
             )
 
-    def test_show_multiple_decomps(self, capsys):
+    def test_show_multiple_decomps(self):
         """Tests showing multiple decomposition rules."""
 
         rule = qp.list_decomps(CustomParametrizedOp)["general_decomp"]
-        qp.show_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux")
-        captured = capsys.readouterr()
-        assert captured.out == dedent("""
+        result = qp.inspect_decomps(
+            CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux"
+        )
+        assert result == dedent("""
             Decomposition 0 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -869,10 +866,10 @@ class TestShowDecomps:
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 2}
-            """).lstrip()
+            """).strip()
 
     def test_type_error(self):
         """Tests that an informative error is raised when operator type is provided."""
 
         with pytest.raises(TypeError, match="concrete operator instance as its first argument"):
-            qp.show_decomps(CustomParametrizedOp)
+            qp.inspect_decomps(CustomParametrizedOp)

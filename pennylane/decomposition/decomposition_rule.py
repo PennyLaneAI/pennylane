@@ -751,12 +751,12 @@ def local_decomps():
         _decompositions_var.reset(token)
 
 
-def show_decomps(
+def inspect_decomps(
     op: Operator,
     *rules: str | DecompositionRule,
     show_not_applicable: bool = True,
     num_work_wires: int | None = None,
-):
+) -> str:
     """Inspect the decomposition rules of an operator.
 
     Takes an operator instance and displays how the operator is decomposed
@@ -783,11 +783,14 @@ def show_decomps(
             Decomposition rules that allocate more wires than there are available will be marked
             not applicable (or excluded if ``show_not_applicable=False``).
 
+    Returns:
+        str: The string that displays how the operator is decomposed.
+
     **Example**
 
     By default, this function displays all available decomposition rules for an operator.
 
-    >>> qp.show_decomps(qp.CRX(0.5, wires=[0, 1]))
+    >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1])))
     Decomposition 0 (name: _crx_to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -810,7 +813,7 @@ def show_decomps(
 
     Alternatively, you can inspect a single decomposition rule by passing its name:
 
-    >>> qp.show_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+    >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz"))
     Name: _crx_to_h_crz
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
@@ -826,39 +829,23 @@ def show_decomps(
             qp.CNOT(wires)
             qp.H(wires[1])
 
-    >>> qp.show_decomps(qp.CZ([0, 1]), my_cz)
+    >>> print(qp.inspect_decomps(qp.CZ([0, 1]), my_cz))
     Name: my_cz
     0: ────╭●────┤
     1: ──H─╰X──H─┤
     Gate Count: {CNOT: 1, Hadamard: 2}
 
     """
-    print(
-        _show_decomps_str(
-            op,
-            *rules,
-            show_not_applicable=show_not_applicable,
-            num_work_wires=num_work_wires,
-        )
-    )
-
-
-def _show_decomps_str(
-    op: Operator,
-    *rules: str | DecompositionRule,
-    show_not_applicable: bool = True,
-    num_work_wires: int | None = None,
-) -> str:
 
     if isinstance(op, type) and issubclass(op, Operator):
         raise TypeError(
-            "The show_decomps function takes a concrete operator instance as its "
+            "The inspect_decomps function takes a concrete operator instance as its "
             "first argument, not an operator type."
         )
 
     if rules and not show_not_applicable:
         warnings.warn(
-            "show_not_applicable=False is only relevant when qp.show_decomps is "
+            "show_not_applicable=False is only relevant when qp.inspect_decomps is "
             "called on an operator instance alone. If specific decomposition rules "
             "are explicitly requested, all rules will be displayed."
         )
