@@ -293,44 +293,8 @@ def _fanout(num_needed, base_wires, control_wires, control_values, work_wires):
     )
 
 
-def _ctrl_no_work_resources(
-    *_,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    work_wire_type,
-    **__,
-):
-    num_wires = base_params["num_wires"]
-    return {
-        qp.decomposition.controlled_resource_rep(
-            qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=0,
-            work_wire_type=work_wire_type,
-        ): num_wires,
-    }
-
-
-@qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
-@qp.register_resources(_ctrl_no_work_resources)
-def ctrl_decomp_no_work_wires(
-    *_,
-    control_wires,
-    control_values,
-    base,
-    **__,
-):
-    """Controlled decomposition without work wires — emits multicontrolled X gates."""
-    base_wires = base.wires
-    for w in base_wires:
-        qp.ctrl(qp.X(w), control=control_wires, control_values=control_values)
-
-
 qp.add_decomps(
     "C(MultiX)",
     ctrl_decomp_with_work_wires,
-    ctrl_decomp_with_allocate,  # , ctrl_decomp_no_work_wires
+    ctrl_decomp_with_allocate,
 )
