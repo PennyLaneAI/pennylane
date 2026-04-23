@@ -109,7 +109,7 @@ def _get_abstract_measurement():
 
 
 def create_measurement_obs_primitive(
-    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qp.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator.
 
@@ -146,7 +146,7 @@ def create_measurement_obs_primitive(
 
 
 def create_measurement_mcm_primitive(
-    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qp.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
     mid circuit measurement results.
