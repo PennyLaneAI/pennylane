@@ -125,7 +125,11 @@ def _get_abstract_operator() -> type:
             wire_argnames = args_dict.pop("wire_argnames", ())
 
             for i, name in enumerate(dyn_argnames + wire_argnames):
-                args_dict[name] = self.args[i]
+                if isinstance(self.args[i], AbstractOperator2):
+                    val = self.args[i].create_op()
+                else:
+                    val = self.args[i]
+                args_dict[name] = val
 
             return type.__call__(self.op_cls, **args_dict)
 
@@ -538,10 +542,18 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
+        wires = (
+            self.wires.tolist()
+            if not qml.math.is_abstract(self.wires)
+            and not isinstance(self.wires, jax.core.ShapedArray)
+            else self.wires
+        )
+
         if self._bound_args.arguments:
             params = ", ".join([repr(self._bound_args.arguments[d]) for d in self.dyn_argnames])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+            return f"{self.name}({params}, wires={wires})"
+
+        return f"{self.name}(wires={wires})"
 
     @property
     def wires(self) -> Wires:
