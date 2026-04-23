@@ -189,7 +189,7 @@ class TestValidation:
 
         plxpr = jax.make_jaxpr(func)()
 
-        cond_eq = plxpr.eqns[1]
+        cond_eq = plxpr.eqns[2]
         assert "cond" in str(cond_eq)
         cond_branches = cond_eq.params["jaxpr_branches"]
         assert len(cond_branches) == 2
