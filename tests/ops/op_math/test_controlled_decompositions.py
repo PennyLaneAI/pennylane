@@ -1135,7 +1135,8 @@ class TestMCXDecomposition:
         "num_control_wires, num_work_wires",
         [(4, 1), (4, 2)],
     )
-    def test_mcx_qjit(self, num_control_wires, num_work_wires):
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
         jax = pytest.importorskip("jax")
         from catalyst.device.decomposition import catalyst_decompose
@@ -1173,7 +1174,7 @@ class TestMCXDecomposition:
                 wires,
                 work_wires=work_wires,
                 control_values=cvals,
-                work_wire_type="zeroed",
+                work_wire_type=work_wire_type,
             )
             return qp.probs(wires=wires)
 
