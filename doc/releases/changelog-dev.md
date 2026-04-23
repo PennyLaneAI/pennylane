@@ -1055,6 +1055,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `debug_state`, `debug_probs` and `debug_expval` all mutated the circuit they participated in
+  causing results to be incorrect.
+  [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
+
 * Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
   and return `qml.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
