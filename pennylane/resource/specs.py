@@ -289,7 +289,7 @@ def _execute_analysis_pass(
     """
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel,protected-access
     from catalyst import QJIT
 
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
@@ -331,25 +331,23 @@ def _specs_from_analysis_pass(
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline
-    max_level = max(level) if isinstance(level, (list, tuple)) else level
+    new_compile_pipeline = qml.CompilePipeline()
 
+    max_level = max(level) if isinstance(level, (list, tuple)) else level
     max_legal_level = len(iter_pipeline)
+    fname_to_level = {}
+
     if num_tape_levels > 0:
         # Account for the inserted lowering pass which comes after all tape transforms
         max_legal_level += 1
 
+        # Add all tape transforms first, which come before any MLIR passes
+        new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
+        iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
+
     if max_level > max_legal_level:
         bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
         raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
-
-    fname_to_level = {}
-
-    new_compile_pipeline = qml.CompilePipeline()
-    if num_tape_levels > 0:
-        new_compile_pipeline += iter_pipeline[
-            : num_tape_levels - 1
-        ]  # Add all tape transforms first, which come before any MLIR passes
-        iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
 
     if num_tape_levels in level:
         fname = f"{_RESOURCE_ANALYSIS_PREFIX}before.json"
