@@ -314,6 +314,7 @@ The following classes have been ported over:
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
+  [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
 
 * When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -527,6 +528,9 @@ The following classes have been ported over:
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
   ```
+
+* Applied stricter conditions on some decomposition rules for ``MultiControlledX`` to avoid duplication of equivalent decomposition rules for ``MultiControlledX`` on less than 6 wires.
+  [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
