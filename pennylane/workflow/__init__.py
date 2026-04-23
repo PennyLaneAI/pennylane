@@ -64,3 +64,17 @@ from .resolution import (
 )
 from .run import run
 from .set_shots import set_shots
+
+__all__ = [
+    "construct_batch",
+    "get_transform_program",
+    "marker",
+    "construct_tape",
+    "construct_execution_config",
+    "execute",
+    "get_best_diff_method",
+    "QNode",
+    "qnode",
+    "set_shots",
+    "run",
+]

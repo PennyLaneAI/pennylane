@@ -32,8 +32,7 @@ from pennylane.registers import registers
 from pennylane.tape import make_qscript
 from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.wires import WiresLike
-from pennylane.workflow import construct_tape
-from pennylane.workflow.qnode import QNode
+from pennylane.workflow import QNode, construct_tape
 
 try:
     import cirq
