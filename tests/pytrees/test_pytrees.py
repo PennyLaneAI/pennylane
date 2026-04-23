@@ -19,15 +19,15 @@ import re
 
 import pytest
 
-import pennylane as qp
+import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
 
 
 def test_structure_repr_str():
     """Test the repr of the structure class."""
-    op = qp.RX(0.1, wires=0)
-    _, structure = qp.pytrees.flatten(op)
+    op = qml.RX(0.1, wires=0)
+    _, structure = qml.pytrees.flatten(op)
     expected = "PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),))"
     assert repr(structure) == expected
     expected_str = "PyTree(RX, (Wires([0]), ()), (Leaf,))"
@@ -109,9 +109,9 @@ def test_dict():
 def test_nested_pl_object():
     """Test that we can flatten and unflatten nested pennylane object."""
 
-    tape = qp.tape.QuantumScript(
-        [qp.adjoint(qp.RX(0.1, wires=0))],
-        [qp.expval(2 * qp.X(0))],
+    tape = qml.tape.QuantumScript(
+        [qml.adjoint(qml.RX(0.1, wires=0))],
+        [qml.expval(2 * qml.X(0))],
         shots=50,
         trainable_params=(0, 1),
     )
@@ -119,21 +119,21 @@ def test_nested_pl_object():
     data, structure = flatten(tape)
     assert data == [0.1, 2, None]
 
-    wires0 = qp.wires.Wires(0)
+    wires0 = qml.wires.Wires(0)
     op_structure = PyTreeStructure(
-        tape[0].__class__, (), (PyTreeStructure(qp.RX, (wires0, ()), (leaf,)),)
+        tape[0].__class__, (), (PyTreeStructure(qml.RX, (wires0, ()), (leaf,)),)
     )
     list_op_struct = PyTreeStructure(list, None, (op_structure,))
 
     sprod_structure = PyTreeStructure(
-        qp.ops.SProd, (), (leaf, PyTreeStructure(qp.X, (wires0, ()), ()))
+        qml.ops.SProd, (), (leaf, PyTreeStructure(qml.X, (wires0, ()), ()))
     )
     meas_structure = PyTreeStructure(
-        qp.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
+        qml.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
     )
     list_meas_struct = PyTreeStructure(list, None, (meas_structure,))
     tape_structure = PyTreeStructure(
-        qp.tape.QuantumScript,
+        qml.tape.QuantumScript,
         (tape.shots, tape.trainable_params),
         (list_op_struct, list_meas_struct),
     )
@@ -141,16 +141,18 @@ def test_nested_pl_object():
     assert structure == tape_structure
 
     new_tape = unflatten([3, 4, None], structure)
-    expected_new_tape = qp.tape.QuantumScript(
-        [qp.adjoint(qp.RX(3, wires=0))],
-        [qp.expval(4 * qp.X(0))],
+    expected_new_tape = qml.tape.QuantumScript(
+        [qml.adjoint(qml.RX(3, wires=0))],
+        [qml.expval(4 * qml.X(0))],
         shots=50,
         trainable_params=(0, 1),
     )
-    qp.assert_equal(new_tape, expected_new_tape)
+    qml.assert_equal(new_tape, expected_new_tape)
 
 
-@pytest.mark.parametrize("type_,typename", [(list, "builtins.list"), (qp.Hadamard, "qp.Hadamard")])
+@pytest.mark.parametrize(
+    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+)
 def test_get_typename(type_, typename):
     """Test for ``get_typename()``."""
 
@@ -165,7 +167,9 @@ def test_get_typename_invalid():
         get_typename(int)
 
 
-@pytest.mark.parametrize("type_,typename", [(list, "builtins.list"), (qp.Hadamard, "qp.Hadamard")])
+@pytest.mark.parametrize(
+    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+)
 def test_get_typename_type(type_, typename):
     """Tests for ``get_typename_type()``."""
     assert get_typename_type(typename) is type_
