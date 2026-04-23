@@ -751,6 +751,53 @@ def local_decomps():
         _decompositions_var.reset(token)
 
 
+class _DecompInfo:
+    """A data structure that stores a decomposition rule and an operator for inspectability."""
+
+    def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
+        self._op = op
+        self._rule = rule
+        self._is_applicable = rule.is_applicable(**op.resource_params)
+        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        self._is_feasible = num_work_wires is None or self._work_wire_spec.total <= num_work_wires
+        self._num_work_wires = num_work_wires
+
+    def __str__(self) -> str:
+        if not self._is_applicable:
+            return "Not applicable to the provided operator instance!"
+        if not self._is_feasible:
+            return f"Excluded based on the given work wires constraint! {self._num_work_wires} (available) < {self._work_wire_spec.total} (required)"
+        return self.circuit_drawing + "\n" + self.gate_counts_and_allocations
+
+    @property
+    def circuit_drawing(self) -> str:
+        """The circuit drawing of this decomposition rule."""
+        assert self._is_applicable and self._is_feasible
+        kwargs = get_decomp_kwargs(self._op)
+        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **kwargs)
+
+    @property
+    def name(self) -> str:
+        """The name of the decomposition rule."""
+        return self._rule.name
+
+    @property
+    def gate_counts_and_allocations(self) -> str:
+        """The actual and estimated gate counts of this rule."""
+        assert self._is_applicable and self._is_feasible
+        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        actual_count, allocations = _count_gates(self._op, self._rule)
+        gate_count_str = _get_gate_count_str(estimated_count, actual_count)
+        if allocations:
+            gate_count_str += f"\nWire Allocations: {allocations}"
+        return gate_count_str
+
+    @property
+    def is_usable(self) -> bool:
+        """Whether the decomposition rule is usable."""
+        return self._is_applicable and self._is_feasible
+
+
 def inspect_decomps(
     op: Operator,
     *rules: str | DecompositionRule,
@@ -855,52 +902,27 @@ def inspect_decomps(
     if rules:
         display_rules = [display_rules[rule] if isinstance(rule, str) else rule for rule in rules]
 
-    if len(rules) == 1:
-        rule = display_rules[0]
-        return f"Name: {rule.name}\n{_inspect_decomp(op, rule, num_work_wires)}"
+    rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
 
-    if len(display_rules) == 0:
+    if len(rules) == 1:
+        rule = rule_infos[0]
+        return f"Name: {rule.name}\n{rule}"
+
+    if len(rule_infos) == 0:
         return "No available decomposition rules."
 
     num_printed_rules = 0
     decomp_strings = []
-    for i, rule in enumerate(display_rules):
-        if not show_not_applicable and not _is_applicable(rule, op, num_work_wires):
+    for i, rule in enumerate(rule_infos):
+        if not show_not_applicable and not rule.is_usable:
             continue
-        rule_str = _inspect_decomp(op, rule, num_work_wires)
-        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule_str}")
+        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule}")
         num_printed_rules += 1
 
     if num_printed_rules == 0:
         return "No applicable decomposition rules."
 
     return "\n\n".join(decomp_strings)
-
-
-def _is_applicable(rule: DecompositionRule, op: Operator, num_work_wires: int | None) -> bool:
-    if not rule.is_applicable(**op.resource_params):
-        return False
-    work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
-    if num_work_wires is not None and work_wire_spec.total > num_work_wires:
-        return False
-    return True
-
-
-def _inspect_decomp(op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> str:
-    kwargs = get_decomp_kwargs(op)
-    if not rule.is_applicable(**op.resource_params):
-        return "Not applicable to the provided operator instance!"
-    work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
-    if num_work_wires is not None and work_wire_spec.total > num_work_wires:
-        return "Excluded based on the given work wires constraint!"
-    circuit_drawing = qp.draw(rule)(*op.data, wires=op.wires, **kwargs)
-    estimated_gate_counts = rule.compute_resources(**op.resource_params).gate_counts
-    actual_gate_counts, allocations = _count_gates(op, rule)
-    gate_count_str = _get_gate_count_str(estimated_gate_counts, actual_gate_counts)
-    result = circuit_drawing + "\n" + gate_count_str
-    if allocations:
-        result += f"\nWire Allocations: {allocations}"
-    return result
 
 
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
