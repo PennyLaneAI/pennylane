@@ -134,9 +134,9 @@
   0: ──MyTemplate(0.10,0.20)─┤  State
 
   ```
-
-The following classes have been ported over:
-- `qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+  
+  The following classes have been ported over:
+  - `qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
 
 * Added a `qp.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
@@ -197,7 +197,7 @@ The following classes have been ported over:
   generator expressions. These operators are now much faster for large Pauli strings.
   [(#9271)](https://github.com/PennyLaneAI/pennylane/pull/9271)
 
-* Operations using ``PauliSentence`` are now much faster due to additional memoization in ``PauliWord.__hash__``
+* Operations using ``PauliSentence`` are now much faster due to additional memorization in ``PauliWord.__hash__``
   [(#9261)](https://github.com/PennyLaneAI/pennylane/pull/9261)
 
 * The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
@@ -219,7 +219,7 @@ The following classes have been ported over:
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
 * `Callables` defining quantum operations can now be passed to the
-  `compute_op`, `target_op` and `uncompute_op` arguments of `qp.change_op_basis`.
+  `compute_op`, `target_op` and `uncompute_op` arguments of :func:`~.change_op_basis`.
   [(#9163)](https://github.com/PennyLaneAI/pennylane/pull/9163)
 
 * The `default.qubit` device now supports parameter-broadcasted global phases.
@@ -386,7 +386,7 @@ The following classes have been ported over:
 * The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
 
-* `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
@@ -459,7 +459,7 @@ The following classes have been ported over:
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
 
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
-  transform no longer raise duplicate warnings about operators that cannot be decomposed.
+  transform no longer raises duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
 * No unnecessary classical registers will be created now when using `qp.to_openqasm` with `measure_all=False`.
@@ -533,7 +533,7 @@ The following classes have been ported over:
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
   module. Users can now directly access a more stable version of this functionality using the
   `estimator` module. All experimental development of resource estimation
-  will be added to `.labs.estimator_beta`
+  will be added to `labs.estimator_beta`.
   [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
 * The integration test for computing perturbation error of a compressed double-factorized (CDF)
@@ -566,8 +566,8 @@ The following classes have been ported over:
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
 
-* Created a new ``~.labs.estimator_beta.estimate()`` function which extends the functionality of
-  ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
+* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 <h4>Other improvements</h4>
@@ -753,8 +753,8 @@ The following classes have been ported over:
   to better match Catalyst and JAX.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-* Access to the following functions and classes from the `~pennylane.resources` module has
-  been removed. Instead, these functions must be imported from the `~pennylane.estimator` module.
+* Access to the following functions and classes from the `pennylane.resources` module has
+  been removed. Instead, these functions must be imported from the `pennylane.estimator` module.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
     - `qp.estimator.estimate_shots` in favor of `qp.resources.estimate_shots`
