@@ -274,6 +274,47 @@ def _mlir_resources_to_specs_resources(
     )
 
 
+def _execute_analysis_pass(
+    new_qnode,
+    compile_options,
+    *args,
+    **kwargs,
+):  # pragma: no cover
+    """
+    Helper function to compile the QNode with the resource analysis pass inserted, which will output
+    the necessary JSON files for MLIR analysis.
+
+    This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
+    compilation strategy.
+    """
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+
+    # pylint: disable=import-outside-toplevel
+    from catalyst import QJIT
+
+    new_qjit = QJIT(new_qnode, compile_options=compile_options)
+
+    # Force a compilation, which will output the necessary JSON files
+    # This code snippet is adapted from the source code of `QJIT.jit_compile`
+    if new_qjit.mlir_module is None:
+        new_qjit.workspace = new_qjit._get_workspace()
+        new_qjit.jaxed_function = None
+        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+            new_qjit.compiled_function.shared_object.close()
+
+        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
+            args, **kwargs
+        )
+
+        new_qjit.mlir_module = new_qjit.generate_ir()
+
+    # Force resolution of this property to finish going through all MLIR passes
+    if new_qjit.mlir_opt is None:
+        raise ValueError(
+            "Specs failed to compile the QNode with the specified passes for MLIR analysis."
+        )
+
+
 def _specs_from_analysis_pass(
     qjit,
     original_qnode,
@@ -286,9 +327,7 @@ def _specs_from_analysis_pass(
 ) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
-    # pylint: disable=import-outside-toplevel,protected-access
-
-    from catalyst import QJIT
+    # pylint: disable=protected-access
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline
@@ -352,27 +391,8 @@ def _specs_from_analysis_pass(
         compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
 
     try:
-        new_qjit = QJIT(new_qnode, compile_options=compile_options)
-
-        # Force a compilation, which will output the necessary JSON files
-        # This code snippet is adapted from the source code of `QJIT.jit_compile`
-        if new_qjit.mlir_module is None:
-            new_qjit.workspace = new_qjit._get_workspace()
-            new_qjit.jaxed_function = None
-            if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
-                new_qjit.compiled_function.shared_object.close()
-
-            new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = (
-                new_qjit.capture(args, **kwargs)
-            )
-
-            new_qjit.mlir_module = new_qjit.generate_ir()
-
-        # Force resolution of this property to finish going through all MLIR passes
-        if new_qjit.mlir_opt is None:
-            raise ValueError(
-                "Specs failed to compile the QNode with the specified passes for MLIR analysis."
-            )
+        # Partially compile the QNode, producing JSON data with resource info
+        _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
 
         results = {}
 
