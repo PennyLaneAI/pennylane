@@ -24,7 +24,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -135,7 +135,7 @@ operations = {
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels
 
 
-def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+def observable_stopping_condition(obs: qp.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQubitMixed."""
     if obs.name in {"Prod", "Sum"}:
         return all(observable_stopping_condition(observable) for observable in obs.operands)
@@ -147,15 +147,15 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     return obs.name in observables
 
 
-def stopping_condition(op: qml.operation.Operator) -> bool:
+def stopping_condition(op: qp.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
     return op.name in DEFAULT_MIXED_GATES
 
 
-@qml.transform
+@qp.transform
 def warn_readout_error_state(
-    tape: qml.tape.QuantumTape,
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    tape: qp.tape.QuantumTape,
+) -> tuple[Sequence[qp.tape.QuantumTape], Callable]:
     """If a measurement in the QNode is an analytic state or density_matrix, warn that readout error will not be applied.
 
     Args:
@@ -167,7 +167,7 @@ def warn_readout_error_state(
     """
     if not tape.shots:
         for m in tape.measurements:
-            if isinstance(m, qml.measurements.StateMP):
+            if isinstance(m, qp.measurements.StateMP):
                 warnings.warn(f"Measurement {m} is not affected by readout error.")
 
     return (tape,), null_postprocessing
@@ -230,13 +230,13 @@ class DefaultMixed(Device):
         super().__init__(wires=wires, shots=shots)
 
         # Seed setting
-        seed = qml.math.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax":
+        seed = qp.math.random.randint(0, high=10000000) if seed == "global" else seed
+        if qp.math.get_interface(seed) == "jax":
             self._prng_key = seed
-            self._rng = qml.math.random.default_rng(None)
+            self._rng = qp.math.random.default_rng(None)
         else:
             self._prng_key = None
-            self._rng = qml.math.random.default_rng(seed)
+            self._rng = qp.math.random.default_rng(seed)
 
         self._debugger = None
 
@@ -344,7 +344,7 @@ class DefaultMixed(Device):
         compile_pileline = CompilePipeline()
 
         # Defer first since it addes wires to the device
-        compile_pileline.add_transform(qml.defer_measurements, allow_postselect=False)
+        compile_pileline.add_transform(qp.defer_measurements, allow_postselect=False)
         compile_pileline.add_transform(
             decompose,
             target_gates=DEFAULT_MIXED_GATES,
@@ -365,8 +365,8 @@ class DefaultMixed(Device):
         compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
         compile_pileline.add_transform(
             validate_measurements,
-            analytic_measurements=qml.devices.default_qubit.accepted_analytic_measurement,
-            sample_measurements=qml.devices.default_qubit.accepted_sample_measurement,
+            analytic_measurements=qp.devices.default_qubit.accepted_analytic_measurement,
+            sample_measurements=qp.devices.default_qubit.accepted_sample_measurement,
             name=self.name,
         )
         compile_pileline.add_transform(
