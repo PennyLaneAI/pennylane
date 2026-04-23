@@ -79,7 +79,7 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
     unmapped_states = []  # Will collect non-fixed point states
     unmapped_ints = {i: None for i in range(m)}  # Will remove fixed point states
     # Map fixed-point states to themselves and collect states and target ints still to be paired
-    for b_int, state in zip(basis_ints, basis_states):
+    for b_int, state in zip(basis_ints, basis_states, strict=True):
         if b_int < m:
             state_map[state] = state
             unmapped_ints.pop(b_int)
@@ -87,7 +87,7 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
             unmapped_states.append(state)
 
     # Map non-fixed point states
-    for state, new_b_int in zip(unmapped_states, unmapped_ints):
+    for state, new_b_int in zip(unmapped_states, unmapped_ints, strict=True):
         # Convert the index of the state to be mapped into a state itself
         state_map[state] = tuple(map(int, f"{new_b_int:0{length}b}"))
 
@@ -328,7 +328,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(bases, coeffs))
+        dic_state = dict(zip(bases, coeffs, strict=False))
         perms = order_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
@@ -424,7 +424,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 def _superposition_decomposition(
     coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
 ):
-    dic_state = dict(zip(bases, coeffs))
+    dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 

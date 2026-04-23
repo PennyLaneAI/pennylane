@@ -42,7 +42,9 @@ def _get_new_terms(lcu):
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
     # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
+    new_ops = [
+        prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops, strict=True)
+    ]
 
     return math.abs(coeffs), new_ops
 
