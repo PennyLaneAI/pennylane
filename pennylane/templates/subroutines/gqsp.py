@@ -64,20 +64,20 @@ class GQSP(Operation):
         # P(x) = 0.1 + 0.2j x + 0.3 x^2
         poly = [0.1, 0.2j, 0.3]
 
-        angles = qml.poly_to_angles(poly, "GQSP")
+        angles = qp.poly_to_angles(poly, "GQSP")
 
-        @qml.prod # transforms the qfunc into an Operator
+        @qp.prod # transforms the qfunc into an Operator
         def unitary(wires):
-            qml.RX(0.3, wires)
+            qp.RX(0.3, wires)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(angles):
-            qml.GQSP(unitary(wires = 1), angles, control = 0)
-            return qml.state()
+            qp.GQSP(unitary(wires = 1), angles, control = 0)
+            return qp.state()
 
-        matrix = qml.matrix(circuit, wire_order=[0, 1])(angles)
+        matrix = qp.matrix(circuit, wire_order=[0, 1])(angles)
 
     .. code-block:: pycon
 
@@ -157,7 +157,7 @@ class GQSP(Operation):
 
         op_list = []
 
-        # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
+        # These four gates adapt PennyLane's qp.U3 to the chosen U3 format in the GQSP paper.
         op_list.append(ops.X(control))
         op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
         op_list.append(ops.X(control))

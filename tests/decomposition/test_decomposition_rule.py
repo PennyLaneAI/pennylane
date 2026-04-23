@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
     DecompositionRule,
     WorkWireSpec,
     _decompositions_private,
@@ -28,6 +29,10 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 from pennylane.operation import Operator
+
+
+class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+    pass
 
 
 @pytest.mark.unit
@@ -228,10 +233,10 @@ class TestDecompositionRule:
     def test_decomposition_dictionary(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+        class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not qp.decomposition.has_decomp(CustomOp)
+        assert not qp.decomposition.has_decomp(SomeOtherOp)
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
         def custom_decomp(theta, wires, **__):
@@ -251,13 +256,17 @@ class TestDecompositionRule:
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RY(theta, wires=wires[0])
 
-        qp.add_decomps(CustomOp, custom_decomp)
-        qp.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+        qp.add_decomps(SomeOtherOp, custom_decomp)
+        qp.add_decomps(SomeOtherOp, custom_decomp2, custom_decomp3)
 
-        assert qp.decomposition.has_decomp(CustomOp)
-        assert qp.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-        assert qp.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
-        assert qp.list_decomps(CustomOp(wires=[0, 1])) == [
+        assert qp.decomposition.has_decomp(SomeOtherOp)
+        assert qp.decomposition.has_decomp(SomeOtherOp(wires=[0, 1]))
+        assert list(qp.list_decomps(SomeOtherOp)) == [
+            custom_decomp,
+            custom_decomp2,
+            custom_decomp3,
+        ]
+        assert list(qp.list_decomps(SomeOtherOp(wires=[0, 1]))) == [
             custom_decomp,
             custom_decomp2,
             custom_decomp3,
@@ -269,15 +278,38 @@ class TestDecompositionRule:
             qp.RZ(theta, wires=wires[0])
 
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
-            qp.add_decomps(CustomOp, custom_decomp4)
+            qp.add_decomps(SomeOtherOp, custom_decomp4)
 
-        _decompositions_private.pop("CustomOp")  # cleanup
+        _decompositions_private.pop("SomeOtherOp")  # cleanup
+
+    def test_add_decomp_duplicate_names(self):
+        """Tests that you cannot add decomposition rules with duplicate names."""
+
+        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def custom_decomp(theta, wires, **_):
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
+
+        @register_resources({}, name="custom_decomp")
+        def some_decomp(theta, wires, **_):
+            raise NotImplementedError
+
+        with pytest.raises(ValueError, match="multiple decompositions with the same name"):
+            qp.add_decomps(AnotherOp, custom_decomp, some_decomp)
+
+        qp.add_decomps(AnotherOp, custom_decomp)
+
+        with pytest.raises(ValueError, match="name: custom_decomp already exists"):
+            qp.add_decomps(AnotherOp, some_decomp)
+
+        _decompositions_private.pop("AnotherOp")  # cleanup
 
     def test_local_decomp_context(self):
         """Tests the local context manager for decompositions."""
-
-        class CustomOp(Operator):  # pylint: disable=too-few-public-methods
-            pass
 
         assert not qp.decomposition.has_decomp(CustomOp)
 
@@ -307,19 +339,20 @@ class TestDecompositionRule:
 
             assert qp.decomposition.has_decomp(CustomOp)
             assert qp.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-            assert qp.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+            assert list(qp.list_decomps(CustomOp)) == [
+                custom_decomp,
+                custom_decomp2,
+                custom_decomp3,
+            ]
             assert custom_decomp in qp.list_decomps(qp.CRX)
 
         # test that the context properly cleans up.
-        assert qp.list_decomps(CustomOp) == []
+        assert list(qp.list_decomps(CustomOp)) == []
         assert not qp.decomposition.has_decomp(CustomOp)
         assert custom_decomp not in qp.list_decomps(qp.CRX)
 
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
-
-        class CustomOp(Operator):  # pylint: disable=too-few-public-methods
-            pass
 
         @register_resources({qp.RX: 1, qp.RZ: 1})
         def my_adjoint_custom_op(theta, wires, **__):
@@ -328,9 +361,9 @@ class TestDecompositionRule:
 
         qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
         assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert qp.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
+        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
         assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
-        assert qp.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
+        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
@@ -443,3 +476,105 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
+
+
+class TestDecompCollection:
+    """Tests the DecompCollection class."""
+
+    @pytest.fixture(autouse=True, scope="class")
+    def setup(self):
+        """Sets up decomposition rules for CustomOp."""
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def custom_decomp(theta, wires, **_):
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
+
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom2")
+        def custom_decomp2(theta, wires, **_):
+            qp.RX(theta, wires=wires[0])
+            qp.CZ(wires=[wires[0], wires[1]])
+            qp.RX(theta, wires=wires[0])
+
+        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        def custom_decomp3(theta, wires, **_):
+            qp.RY(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RY(theta, wires=wires[0])
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(CustomOp, custom_decomp, custom_decomp2, custom_decomp3)
+            yield
+
+    def test_list_decomps_return_collection(self):
+        """Tests that list_decomps returns a DecompCollection."""
+
+        collection = qp.list_decomps(CustomOp)
+        assert isinstance(collection, DecompCollection)
+        assert len(collection) == 3
+        assert repr(collection) == dedent("""
+            DecompCollection([
+                DecompositionRule(name=custom_decomp),
+                DecompositionRule(name=custom2),
+                DecompositionRule(name=custom_decomp3)
+            ])
+            """).strip()
+        assert str(collection) == dedent("""
+            Available Decomposition Rules:
+            0: custom_decomp
+            1: custom2
+            2: custom_decomp3
+            """).strip()
+
+    def test_decomp_collection_access(self):
+        """Tests that decomposition rules are accessible by name or index."""
+
+        collection = qp.list_decomps(CustomOp)
+        assert collection[0].name == "custom_decomp"
+        assert collection["custom_decomp3"].name == "custom_decomp3"
+        assert len(collection) == 3
+        assert all(isinstance(rule, DecompositionRule) for rule in collection)
+        assert [r.name for r in collection] == ["custom_decomp", "custom2", "custom_decomp3"]
+
+        assert collection[0] in collection
+        assert "custom_decomp" in collection
+        assert "hello" not in collection
+        assert 42 not in collection
+
+        with pytest.raises(KeyError, match="Cannot find a decomposition with the given name: abc"):
+            collection["abc"]  # pylint: disable=pointless-statement
+
+    def test_append(self):
+        """Tests the append method."""
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        collection = qp.list_decomps(CustomOp)
+        with pytest.raises(ValueError, match="name: custom_decomp already exists!"):
+            collection.append(custom_decomp)
+
+        custom_decomp.name = "custom3"
+        collection.append(custom_decomp)
+        assert "custom3" in collection
+        assert len(collection) == 4
+
+    def test_concatenate(self):
+        """Tests adding DecompCollection objects."""
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom3")
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        collection = qp.list_decomps(CustomOp)
+        other = [custom_decomp]
+
+        new_collection = collection + other
+        assert len(new_collection) == 4
+        assert "custom3" in new_collection
+
+        collection += other  # uses iadd
+        assert len(collection) == 4
+        assert "custom3" in collection
