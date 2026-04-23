@@ -349,44 +349,49 @@ def _specs_from_analysis_pass(
         # by limiting which passes are applied to just the necessary ones
         compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
 
-    new_qjit = QJIT(new_qnode, compile_options=compile_options)
+    try:
+        new_qjit = QJIT(new_qnode, compile_options=compile_options)
 
-    # Force a compilation, which will output the necessary JSON files
-    # This code snippet is adapted from the source code of `QJIT.jit_compile`
-    if new_qjit.mlir_module is None:
-        new_qjit.workspace = new_qjit._get_workspace()
-        new_qjit.jaxed_function = None
-        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
-            new_qjit.compiled_function.shared_object.close()
+        # Force a compilation, which will output the necessary JSON files
+        # This code snippet is adapted from the source code of `QJIT.jit_compile`
+        if new_qjit.mlir_module is None:
+            new_qjit.workspace = new_qjit._get_workspace()
+            new_qjit.jaxed_function = None
+            if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+                new_qjit.compiled_function.shared_object.close()
 
-        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
-            args, **kwargs
-        )
+            new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = (
+                new_qjit.capture(args, **kwargs)
+            )
 
-        new_qjit.mlir_module = new_qjit.generate_ir()
+            new_qjit.mlir_module = new_qjit.generate_ir()
 
-    new_qjit.mlir_opt  # Force resolution of this property to finish going through all MLIR passes
+        new_qjit.mlir_opt  # Force resolution of this property to finish going through all MLIR passes
 
-    results = {}
+        results = {}
 
-    for res_file, curr_level in fname_to_level.items():
-        res_file = Path(res_file)
-        with res_file.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+        for res_file, curr_level in fname_to_level.items():
+            res_file = Path(res_file)
+            with res_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
 
-        # TODO: Make sure this file gets removed even on failure
-        res_file.unlink()  # Clean up the resource tracking file
+            cur_level_resources = [
+                _mlir_resources_to_specs_resources(res)
+                for res in data.values()
+                if res[
+                    "qnode"
+                ]  # Only include information about qnodes, ignoring any extra functions
+            ]
 
-        cur_level_resources = [
-            _mlir_resources_to_specs_resources(res)
-            for res in data.values()
-            if res["qnode"]  # Only include information about qnodes, ignoring any extra functions
-        ]
+            if len(cur_level_resources) == 1:
+                cur_level_resources = cur_level_resources[0]
 
-        if len(cur_level_resources) == 1:
-            cur_level_resources = cur_level_resources[0]
-
-        results[level_to_name[curr_level]] = cur_level_resources
+            results[level_to_name[curr_level]] = cur_level_resources
+    finally:
+        # Ensure all files get cleaned up even if something goes wrong during compilation or file reading
+        for res_file in fname_to_level.keys():
+            if res_file.exists():
+                res_file.unlink()  # Clean up the resource tracking file
 
     return results
 
@@ -395,8 +400,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
-    # pylint: disable=import-outside-toplevel,too-many-branches,too-many-statements
-    from catalyst.python_interface.inspection import mlir_specs
+    # pylint: disable=too-many-branches,too-many-statements
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
