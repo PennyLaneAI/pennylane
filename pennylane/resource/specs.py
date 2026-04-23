@@ -286,6 +286,8 @@ def _specs_from_analysis_pass(
 ) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
+    # pylint: disable=import-outside-toplevel,protected-access
+
     from catalyst import QJIT
 
     new_qnode = copy.deepcopy(original_qnode)
@@ -366,7 +368,11 @@ def _specs_from_analysis_pass(
 
             new_qjit.mlir_module = new_qjit.generate_ir()
 
-        new_qjit.mlir_opt  # Force resolution of this property to finish going through all MLIR passes
+        # Force resolution of this property to finish going through all MLIR passes
+        if new_qjit.mlir_opt is None:
+            raise ValueError(
+                "Specs failed to compile the QNode with the specified passes for MLIR analysis."
+            )
 
         results = {}
 
@@ -389,7 +395,7 @@ def _specs_from_analysis_pass(
             results[level_to_name[curr_level]] = cur_level_resources
     finally:
         # Ensure all files get cleaned up even if something goes wrong during compilation or file reading
-        for res_file in fname_to_level.keys():
+        for res_file in fname_to_level:
             res_file = Path(res_file)
 
             if res_file.exists():
