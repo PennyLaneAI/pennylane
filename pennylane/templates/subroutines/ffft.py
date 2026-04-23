@@ -1,0 +1,104 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
+by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
+
+from pennylane import WiresLike, add_decomps, math, register_resources, resource_rep
+from pennylane.decomposition import pow_resource_rep
+from pennylane.operation import Operator
+from pennylane.ops import PauliZ, pow
+
+
+class TwoQubitFermionicFourierTransform(Operator):
+    num_wires = 2
+    num_params = 0
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires, id=None)
+
+    def compute_matrix(self):
+        return math.array(
+            [
+                [1, 0, 0, 0],
+                [0, 2 ** -(1 / 2), 2 ** -(1 / 2), 0],
+                [0, 2 ** -(1 / 2), -(2 ** -(1 / 2)), 0],
+                [0, 0, 0, -1],
+            ]
+        )
+
+
+class FFFT(Operator):
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, wires: WiresLike):
+        if len(wires) <= 1:
+            raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
+        if wires % 2 != 0:
+            raise NotImplementedError("FFFT is not yet implemented for odd numbers of wires.")
+
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+
+def _fast_fermionic_fourier_transform_resources(num_wires):
+    resources = {}
+
+    def _count_two_recursive(wires, two_qubit_gates):
+        two_qubit_gates += wires // 2
+        if wires > 2:
+            two_qubit_gates += _count_two_recursive(wires // 2) * 2
+        return two_qubit_gates
+
+    two_qubit_gates = _count_two_recursive(num_wires, 0)
+    resources[resource_rep(TwoQubitFermionicFourierTransform)] = two_qubit_gates
+
+    def _count_one_recursive(wires, resources):
+        if wires > 2:
+            for mode in range(wires // 2):
+                resources[pow_resource_rep(PauliZ, {}, z=2 * mode / wires)] += 1
+            resources = _count_one_recursive(wires // 2, resources)
+            resources = _count_one_recursive(wires // 2, resources)
+        return resources
+
+    resources = _count_one_recursive(num_wires, resources)
+
+    return resources
+
+
+@register_resources(_fast_fermionic_fourier_transform_resources)
+def _fast_fermionic_fourier_transform_decomposition(wires: WiresLike):
+    _recursive_decompose(wires)
+
+
+def _recursive_decompose(wires: WiresLike):
+    # base case is that we have two wires
+    if len(wires) == 2:
+        TwoQubitFermionicFourierTransform(wires)
+    else:
+        _recursive_decompose(wires[: len(wires) // 2])
+        _recursive_decompose(wires[len(wires) // 2 :])
+
+        for mode in range(len(wires) // 2):
+            pow(PauliZ(wires[len(wires) // 2 + mode]), z=2 * mode / len(wires))
+
+        for i in range(len(wires) // 2):
+            TwoQubitFermionicFourierTransform(wires[i] + wires[len(wires // 2) + i])
+
+
+add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
