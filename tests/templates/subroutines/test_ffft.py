@@ -42,6 +42,7 @@ def test_raises(wires, error_type, error_msg):
         FFFT(wires)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "wires, expected_circuit",
     [

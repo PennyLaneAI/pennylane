@@ -17,7 +17,7 @@ by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
 from collections import defaultdict
 
-from pennylane import add_decomps, math, register_resources, resource_rep
+from pennylane import add_decomps, math, register_resources, resource_rep, for_loop
 from pennylane.decomposition import pow_resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
@@ -86,6 +86,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
 def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
+    wires = math.array(wires)
     _recursive_decompose(wires)
 
 
@@ -97,11 +98,17 @@ def _recursive_decompose(wires: WiresLike):
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
 
-        for mode in range(len(wires) // 2):
+        @for_loop(len(wires) // 2)
+        def twiddle(mode):
             pow(PauliZ(wires[len(wires) // 2 + mode]), z=2 * mode / len(wires))
 
-        for i in range(len(wires) // 2):
+        twiddle()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(wires) // 2)
+        def fouriers(i):
             TwoQubitFermionicFourierTransform(Wires([wires[i], wires[len(wires) // 2 + i]]))
+
+        fouriers()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
