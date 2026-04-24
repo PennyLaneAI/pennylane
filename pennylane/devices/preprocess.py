@@ -39,6 +39,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (
     diagonalize_measurements,
@@ -405,28 +406,29 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
 
-    try:
-        new_ops = [
-            final_op
-            for op in tape.operations[len(prep_op) :]
-            for final_op in _operator_decomposition_gen(
-                op,
-                stopping_condition,
-                num_work_wires=num_available_work_wires,
-                graph_solution=graph_solution,
-                custom_decomposer=decomposer,
-                strict=True,
-            )
-        ]
-    except RecursionError as e:
-        raise error(
-            "Reached recursion limit trying to decompose operations. "
-            "Operator decomposition may have entered an infinite loop."
-        ) from e
+    with QueuingManager.stop_recording():
+        try:
+            new_ops = [
+                final_op
+                for op in tape.operations[len(prep_op) :]
+                for final_op in _operator_decomposition_gen(
+                    op,
+                    stopping_condition,
+                    num_work_wires=num_available_work_wires,
+                    graph_solution=graph_solution,
+                    custom_decomposer=decomposer,
+                    strict=True,
+                )
+            ]
+        except RecursionError as e:
+            raise error(
+                "Reached recursion limit trying to decompose operations. "
+                "Operator decomposition may have entered an infinite loop."
+            ) from e
 
-    except DecompositionUndefinedError as e:
-        message = str(e).replace("not supported", f"not supported with {name}")
-        raise error(message) from e
+        except DecompositionUndefinedError as e:
+            message = str(e).replace("not supported", f"not supported with {name}")
+            raise error(message) from e
 
     tape = tape.copy(operations=prep_op + new_ops)
 
