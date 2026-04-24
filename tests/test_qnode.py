@@ -702,7 +702,7 @@ class TestTapeConstruction:
         jitted_qnode2 = jax.jit(circuit2)
 
         with pytest.raises(
-            NotImplementedError, match="The JAX-JIT interface doesn't support qp.counts."
+            NotImplementedError, match=r"The JAX-JIT interface doesn't support \w+.counts."
         ):
             jitted_qnode2(0.123)
 
