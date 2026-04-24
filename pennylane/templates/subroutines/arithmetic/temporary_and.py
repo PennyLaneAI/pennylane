@@ -150,7 +150,7 @@ class TemporaryAND(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # # pylint: disable=too-many-arguments,too-many-positional-arguments
     # @classmethod
     # def _primitive_bind_call(
     #     cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
@@ -186,9 +186,9 @@ class TemporaryAND(ControlledOp):
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
-        base = type.__call__(X, wires=target_wires)
+        # base = type.__call__(X, wires=target_wires)
         super().__init__(
-            base,
+            X(target_wires),
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
