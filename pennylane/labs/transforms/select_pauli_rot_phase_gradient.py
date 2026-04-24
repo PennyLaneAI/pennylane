@@ -15,7 +15,7 @@ r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -59,7 +59,7 @@ def select_pauli_rot_phase_gradient(
             Needs to be at least :math:`b-1` wires.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -78,8 +78,8 @@ def select_pauli_rot_phase_gradient(
         def phase_gradient(wires):
             # prepare phase gradient state
             for i, w in enumerate(wires):
-                qml.H(w)
-                qml.PhaseShift(-np.pi / 2**i, w)
+                qp.H(w)
+                qp.PhaseShift(-np.pi / 2**i, w)
 
         @partial(
             select_pauli_rot_phase_gradient,
@@ -87,16 +87,16 @@ def select_pauli_rot_phase_gradient(
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
         )
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def select_pauli_rot_circ(phis, control_wires, target_wire):
             phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
             for wire in control_wires:
-                qml.Hadamard(wire)
+                qp.Hadamard(wire)
 
-            qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
+            qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
 
-            return qml.probs(target_wire)
+            return qp.probs(target_wire)
 
         phis = [
             (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
@@ -121,7 +121,7 @@ def select_pauli_rot_phase_gradient(
 
     operations = []
     for op in tape.operations:
-        if isinstance(op, qml.SelectPauliRot):
+        if isinstance(op, qp.SelectPauliRot):
             control_wires = op.wires[:-1]
             target_wire = op.wires[-1]
             rot_axis = op.hyperparameters["rot_axis"]
