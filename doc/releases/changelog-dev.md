@@ -1003,6 +1003,7 @@ The following classes have been ported over:
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
+  
   [(#9320)](https://github.com/PennyLaneAI/pennylane/pull/9320)
   [(#9315)](https://github.com/PennyLaneAI/pennylane/pull/9315)
   [(#9312)](https://github.com/PennyLaneAI/pennylane/pull/9312)
@@ -1017,6 +1018,7 @@ The following classes have been ported over:
   [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
   [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
+  [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
