@@ -393,7 +393,7 @@ the form of a decorator in order to turn the custom function into a quantum tran
         new_tape = tape.copy(operations=operations)
 
         def sum_postprocessing(results):
-            return sum(results)
+            return qp.sum(results)
 
         return [tape, new_tape], sum_postprocessing
 
