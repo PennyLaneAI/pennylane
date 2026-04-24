@@ -85,7 +85,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(num_wires, wires: WiresLike):
+def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     _recursive_decompose(wires)
 
 
