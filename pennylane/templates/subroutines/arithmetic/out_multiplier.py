@@ -153,11 +153,8 @@ class OutMultiplier(Operation):
                 qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
-        >>> out = circuit()
-        >>> print(out)
-        {np.str_('0011'): np.int64(1)}
-        >>> print(int(list(out.keys())[0], 2))
-        3
+        >>> print(circuit())
+        [[0 0 1 1]]
 
         The result :math:`(0011)_2`, is the binary representation of
         :math:`(1 + 2 \cdot 7)\; \text{modulo} \; 12 = 3`:

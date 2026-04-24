@@ -325,11 +325,15 @@ class TestOutMultiplier:
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
-            # Don't test QFT based decomposition for correctness, because it does not differ
-            # between zeroed_output_wires = True/False and it is expensive
-            if applicable and j > 0:
-                all_wires = (x_wires, y_wires, output_wires, work_wires)
-                _test_mult_correctness(all_wires, mod, rule, seed)
+            if applicable:
+                # Don't test QFT based decomposition for correctness, because it does not differ
+                # between zeroed_output_wires = True/False and it is expensive
+                if j > 0:
+                    all_wires = (x_wires, y_wires, output_wires, work_wires)
+                    _test_mult_correctness(all_wires, mod, rule, seed)
+                else:
+                    # Assert the ordering did not just change but we actually skipped the QFT rule
+                    assert rule.name == "_out_multiplier_with_qft"
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
