@@ -272,9 +272,7 @@ class TestAnnotatedQueue:
 
 test_observables = [
     qp.PauliZ(0) @ qp.PauliZ(1),
-    qp.Hamiltonian(
-        [0.1, 0.2, 0.3], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliY(1), qp.Identity(2)]
-    ),
+    qp.Hamiltonian([0.1, 0.2, 0.3], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliY(1), qp.Identity(2)]),
 ]
 
 
@@ -414,9 +412,7 @@ class TestApplyOp:
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
 
-    @pytest.mark.parametrize(
-        "obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")]
-    )
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
     def test_wrapped_obj_init(self, obj):
         """Test that ``WrappedObj`` is initialized correctly"""
         wo = WrappedObj(obj)
@@ -444,9 +440,7 @@ class TestWrappedObj:
         op = qp.PauliX(0)
         assert WrappedObj(op) == WrappedObj(op)
 
-    @pytest.mark.parametrize(
-        "obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")]
-    )
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
     def test_wrapped_obj_hash(self, obj):
         """Test that ``WrappedObj.__hash__`` is the object id."""
         wo = WrappedObj(obj)

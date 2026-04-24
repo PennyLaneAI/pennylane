@@ -1522,9 +1522,7 @@ class TestCompilePipelineIntegration:
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            return (
-                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
-            ), null_postprocessing
+            return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @just_pauli_x_out
         @qp.qnode(dev, interface=None, diff_method=None)
@@ -1580,9 +1578,7 @@ class TestCompilePipelineIntegration:
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            return (
-                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
-            ), null_postprocessing
+            return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
         def repeat_operations(

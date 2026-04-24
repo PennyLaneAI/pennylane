@@ -131,9 +131,7 @@ class TestIntegrationSingleReturn:
 
         def circuit(x):
             func(x)
-            return qp.var(
-                qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-            )
+            return qp.var(qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)

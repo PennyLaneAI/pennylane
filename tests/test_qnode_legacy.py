@@ -1107,9 +1107,7 @@ class TestCompilePipelineIntegration:
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            return (
-                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
-            ), null_postprocessing
+            return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @just_pauli_x_out
         @qp.qnode(dev, interface=None, diff_method=None)
@@ -1165,9 +1163,7 @@ class TestCompilePipelineIntegration:
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            return (
-                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
-            ), null_postprocessing
+            return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
         def repeat_operations(
@@ -1708,9 +1704,7 @@ class TestDefaultQubitLegacySeeding:
         dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
 
         # Create a simple tape for execution
-        tape = qp.tape.QuantumScript(
-            [qp.Hadamard(0)], [qp.classical_shadow(wires=[0], seed=seed)]
-        )
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)], [qp.classical_shadow(wires=[0], seed=seed)])
 
         # First execution
         result1 = dev.execute(tape)

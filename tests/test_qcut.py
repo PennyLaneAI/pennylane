@@ -452,11 +452,7 @@ class TestTapeToGraph:
             ),
             (
                 qp.Hamiltonian([1, 2], [qp.PauliZ(1), qp.PauliZ(2) @ qp.PauliX(0)]),
-                [
-                    qp.expval(
-                        qp.Hamiltonian([1, 2], [qp.PauliZ(1), qp.PauliZ(2) @ qp.PauliX(0)])
-                    )
-                ],
+                [qp.expval(qp.Hamiltonian([1, 2], [qp.PauliZ(1), qp.PauliZ(2) @ qp.PauliX(0)]))],
             ),
             (
                 qp.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0]),
@@ -944,9 +940,7 @@ class TestFragmentGraph:
             sub_3_expected_nodes,
         ]
 
-        sub_0_expected_edges = [
-            (qp.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})
-        ]
+        sub_0_expected_edges = [(qp.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})]
         sub_1_expected_edges = [
             (qcut.PrepareNode(wires=[0]), qp.CNOT(wires=[0, "a"]), {"wire": 0}),
             (qp.RZ(0.24, wires=[0]), qp.expval(qp.PauliZ(wires=[0])), {"wire": 0}),
@@ -985,9 +979,7 @@ class TestFragmentGraph:
         correct nodes and edges. Focuses on the case where fragmentation results in two fragments
         that are disconnected from the final measurements.
         """
-        tape = qp.tape.QuantumScript(
-            multi_cut_tape.operations, [qp.expval(qp.PauliZ(wires=[0]))]
-        )
+        tape = qp.tape.QuantumScript(multi_cut_tape.operations, [qp.expval(qp.PauliZ(wires=[0]))])
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, _ = qcut.fragment_graph(g)
@@ -1011,9 +1003,7 @@ class TestFragmentGraph:
             sub_1_expected_nodes,
         ]
 
-        sub_0_expected_edges = [
-            (qp.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})
-        ]
+        sub_0_expected_edges = [(qp.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})]
         sub_1_expected_edges = [
             (qcut.PrepareNode(wires=[0]), qp.CNOT(wires=[0, "a"]), {"wire": 0}),
             (qp.RZ(0.24, wires=[0]), qp.expval(qp.PauliZ(wires=[0])), {"wire": 0}),
@@ -1093,9 +1083,7 @@ class TestFragmentGraph:
             sub_3_expected_nodes,
         ]
 
-        sub_0_expected_edges = [
-            (qcut.PrepareNode(wires=[0]), qp.RX(0.432, wires=[0]), {"wire": 0})
-        ]
+        sub_0_expected_edges = [(qcut.PrepareNode(wires=[0]), qp.RX(0.432, wires=[0]), {"wire": 0})]
         sub_1_expected_edges = [
             (qp.RY(0.543, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"})
         ]
