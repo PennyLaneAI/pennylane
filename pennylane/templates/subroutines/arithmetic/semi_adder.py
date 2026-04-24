@@ -27,25 +27,25 @@ from pennylane.wires import Wires, WiresLike
 from .temporary_and import TemporaryAND
 
 
-def _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
+def _left_ladder(x_wires, y_wires, work_wires):
     """Implement a ladder formed from the left block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
-        x_wires_pl (WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
-            Must be in PennyLane ordering, i.e., big endian.
-        y_wires_pl (WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
-            Must be in PennyLane ordering, i.e., big endian.
-        work_wires_pl (WiresLike): Work wires for the addition.
+        x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        work_wires(WiresLike): Work wires for the addition.
     """
-    num_x_wires = len(x_wires_pl)
-    num_y_wires = len(y_wires_pl)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
 
-    TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
+    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
     crossover = min(num_y_wires - 1, num_x_wires)
 
     for i in range(1, crossover):
         # Add the bit of x as well as the previous carry to the bit of y, and compute the next carry
-        ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
+        ck, ik, tk, aux = [work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]]
         CNOT([ck, ik])
         CNOT([ck, tk])
         TemporaryAND([ik, tk, aux])
@@ -53,59 +53,64 @@ def _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
 
     # From here on, we don't have any bits in x left, so we just need to propagate the carry over y
     for i in range(crossover, num_y_wires - 1):
-        ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
+        ck, tk, aux = [work_wires[i - 1], y_wires[i], work_wires[i]]
         CNOT([ck, tk])
         TemporaryAND([ck, tk, aux])
         CNOT([ck, aux])
 
 
-def _right_ladder(x_wires_pl, y_wires_pl, work_wires_pl):
+def _right_ladder(x_wires, y_wires, work_wires):
     """Implement a ladder formed from the right block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
-        x_wires_pl (WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
-            Must be in PennyLane ordering, i.e., big endian.
-        y_wires_pl (WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
-            Must be in PennyLane ordering, i.e., big endian.
-        work_wires_pl (WiresLike): Work wires for the addition.
+        x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        work_wires(WiresLike): Work wires for the addition.
     """
-    num_x_wires = len(x_wires_pl)
-    num_y_wires = len(y_wires_pl)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
     crossover = min(num_y_wires - 1, num_x_wires)
     # For these bits, we don't have any bits in x, we only need to uncompute the carry propagation
     for i in range(num_y_wires - 2, crossover - 1, -1):
-        ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
+        ck, tk, aux = [work_wires[i - 1], y_wires[i], work_wires[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ck, tk, aux]))
 
     for i in range(crossover - 1, 0, -1):
         # Uncompute the carry and the addition of the bit of x and the next less-significant carry
         # into the bit of y.
-        ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
+        ck, ik, tk, aux = [work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ik, tk, aux]))
         CNOT([ck, ik])
         CNOT([ik, tk])
 
-    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-    CNOT([x_wires_pl[0], y_wires_pl[0]])
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    CNOT([x_wires[0], y_wires[0]])
 
 
-def _controlled_right_ladder(x_wires_pl, y_wires_pl, work_wires_pl, **ctrl_kwargs):
+def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwargs):
     """Implement a ladder formed from the right block in figure 4, https://arxiv.org/pdf/1709.06648.
 
     Args:
-        x_wires_pl (WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
-            Must be in PennyLane ordering, i.e., big endian.
-        y_wires_pl (WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
-            Must be in PennyLane ordering, i.e., big endian.
-        work_wires_pl (WiresLike): Work wires for the addition.
+        x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
+            Must be in non-PennyLane ordering, i.e., little endian.
+        work_wires(WiresLike): Work wires for the addition.
     """
-    num_x_wires = len(x_wires_pl)
-    num_y_wires = len(y_wires_pl)
+    # We need to use a different name for this variable in the function signature because
+    # work_wires is a key in ctrl_kwargs. This allows us to keep passing ctrl_kwargs around as
+    # a convenient variable. Here we rename the variable passed to the function to work_wires,
+    # in order to be more consistent with `_left_ladder` and `_right_ladder`.
+    work_wires = non_ctrl_work_wires
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
     crossover = min(num_y_wires - 1, num_x_wires)
-    for i in range(len(y_wires_pl) - 2, crossover - 1, -1):
-        ck, tk, aux = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
+    for i in range(len(y_wires) - 2, crossover - 1, -1):
+        ck, tk, aux = [work_wires[i - 1], y_wires[i], work_wires[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ck, tk, aux]))
         ctrl(CNOT(wires=[ck, tk]), **ctrl_kwargs)
@@ -113,15 +118,15 @@ def _controlled_right_ladder(x_wires_pl, y_wires_pl, work_wires_pl, **ctrl_kwarg
 
     for i in range(crossover - 1, 0, -1):
 
-        ck, ik, tk, aux = [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
+        ck, ik, tk, aux = [work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]]
         CNOT([ck, aux])
         adjoint(TemporaryAND([ik, tk, aux]))
         ctrl(CNOT(wires=[ik, tk]), **ctrl_kwargs)
         CNOT([ck, tk])
         CNOT([ck, ik])
 
-    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-    ctrl(CNOT([x_wires_pl[0], y_wires_pl[0]]), **ctrl_kwargs)
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    ctrl(CNOT([x_wires[0], y_wires[0]]), **ctrl_kwargs)
 
 
 class SemiAdder(Operation):
@@ -153,17 +158,17 @@ class SemiAdder(Operation):
         x = 3
         y = 4
 
-        wires = qml.registers({"x":3, "y":6, "work":5})
+        wires = qp.registers({"x":3, "y":6, "work":5})
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=wires["x"])
-            qml.BasisEmbedding(y, wires=wires["y"])
-            qml.SemiAdder(wires["x"], wires["y"], wires["work"])
-            return qml.sample(wires=wires["y"])
+            qp.BasisEmbedding(x, wires=wires["x"])
+            qp.BasisEmbedding(y, wires=wires["y"])
+            qp.SemiAdder(wires["x"], wires["y"], wires["work"])
+            return qp.sample(wires=wires["y"])
 
     .. code-block:: pycon
 
@@ -179,17 +184,17 @@ class SemiAdder(Operation):
         x = 3
         y = 1
 
-        wires = qml.registers({"x":3, "y":2, "work":1})
+        wires = qp.registers({"x":3, "y":2, "work":1})
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=wires["x"])
-            qml.BasisEmbedding(y, wires=wires["y"])
-            qml.SemiAdder(wires["x"], wires["y"], wires["work"])
-            return qml.sample(wires=wires["y"])
+            qp.BasisEmbedding(x, wires=wires["x"])
+            qp.BasisEmbedding(y, wires=wires["y"])
+            qp.SemiAdder(wires["x"], wires["y"], wires["work"])
+            return qp.sample(wires=wires["y"])
 
     >>> print(circuit())
     [[0 0]]
@@ -321,18 +326,20 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
         CNOT([x_wires[-1], y_wires[0]])
         return
 
-    x_wires_pl = x_wires[::-1][:num_y_wires]
-    y_wires_pl = y_wires[::-1]
-    work_wires_pl = work_wires[: num_y_wires - 1][::-1]
+    # Turn wires from big endian to little endian
+    # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
+    x_wires = x_wires[::-1][:num_y_wires]
+    y_wires = y_wires[::-1]
+    work_wires = work_wires[: num_y_wires - 1][::-1]
 
-    _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl)
+    _left_ladder(x_wires, y_wires, work_wires)
 
-    CNOT([work_wires_pl[-1], y_wires_pl[-1]])
+    CNOT([work_wires[-1], y_wires[-1]])
 
     if num_x_wires >= num_y_wires:
-        CNOT([x_wires_pl[-1], y_wires_pl[-1]])
+        CNOT([x_wires[-1], y_wires[-1]])
 
-    _right_ladder(x_wires_pl, y_wires_pl, work_wires_pl)
+    _right_ladder(x_wires, y_wires, work_wires)
 
 
 add_decomps(SemiAdder, _semiadder)
@@ -392,17 +399,19 @@ def _controlled_semi_adder(
         ctrl(CNOT([x_wires[-1], y_wires[0]]), **ctrl_kwargs)
         return
 
-    x_wires_pl = x_wires[::-1][:num_y_wires]
-    y_wires_pl = y_wires[::-1]
-    work_wires_pl = base_work_wires[::-1]
+    # Turn wires from big endian to little endian
+    # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
+    x_wires = x_wires[::-1][:num_y_wires]
+    y_wires = y_wires[::-1]
+    work_wires = base_work_wires[::-1]
 
-    _left_ladder(x_wires_pl, y_wires_pl, work_wires_pl)
+    _left_ladder(x_wires, y_wires, work_wires)
 
-    ctrl(CNOT([work_wires_pl[-1], y_wires_pl[-1]]), **ctrl_kwargs)
+    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
     if num_x_wires >= num_y_wires:
-        ctrl(CNOT([x_wires_pl[-1], y_wires_pl[-1]]), **ctrl_kwargs)
+        ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
 
-    _controlled_right_ladder(x_wires_pl, y_wires_pl, work_wires_pl, **ctrl_kwargs)
+    _controlled_right_ladder(x_wires, y_wires, work_wires, **ctrl_kwargs)
 
 
 add_decomps("C(SemiAdder)", _controlled_semi_adder)
