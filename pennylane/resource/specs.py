@@ -340,6 +340,29 @@ def _specs_from_analysis_pass(
     **kwargs,
 ) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+    """
+    Helper function to get specs information from MLIR analysis passes inserted at the specified
+    levels.
+
+    It works by creating a new compile pipeline with extra resources analysis passes inserted at
+    the appropriate levels, then compiles the QNode with this pipeline to get the resource
+    information from the output JSON files.
+
+    Args:
+        qjit (:class:`~catalyst.QJIT`): the QNode to calculate the specifications for.
+        original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
+        level (int | tuple[int] | list[int]): the levels at which to insert resource analysis passes
+            for resource counting
+        num_tape_levels (int): the number of tape transform levels in the compile pipeline
+        level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
+        level_to_name (dict[int, str]): mapping from level number to the name to use for that level
+            in the output. Note that this argument is mutated by this function
+        *args: the arguments to pass to the QNode when compiling
+        **kwargs: the keyword arguments to pass to the QNode when compiling
+    Returns:
+        dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
+            corresponding resource information.
+    """
 
     # pylint: disable=protected-access,too-many-arguments
 
