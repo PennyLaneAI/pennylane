@@ -856,8 +856,8 @@ def specs(
         Wire allocations: 3
         Total gates: 2
         Gate counts:
-        - RX: 1
         - CNOT: 1
+        - RX: 1
         Measurements:
         - probs(all wires): 1
         Depth: Not computed
@@ -868,8 +868,8 @@ def specs(
         Wire allocations: 3
         Total gates: 2
         Gate counts:
-        - RX: 1
         - CNOT: 1
+        - RX: 1
         Measurements:
         - probs(all wires): 1
         Depth: Not computed
@@ -882,8 +882,8 @@ def specs(
         Wire allocations: 3
         Total gates: 2
         Gate counts:
-        - RX: 1
         - CNOT: 1
+        - RX: 1
         Measurements:
         - probs(all wires): 1
         Depth: Not computed
