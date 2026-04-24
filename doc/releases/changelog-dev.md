@@ -176,7 +176,8 @@ The following classes have been ported over:
 
 <h3>Improvements 🛠</h3>
 
-* When using :func:`~.specs` with qjit-compiled workflows in pass-by-pass mode, the source of truth has been updated to use the new Catalyst resource analysis pass. This results in significantly faster processing time for large workflows with many gates and/or measurements.
+* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
+  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
 
 * :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.

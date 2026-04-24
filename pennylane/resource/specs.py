@@ -261,7 +261,7 @@ def _mlir_resources_to_specs_resources(
     if resources["has_branches"]:
         warnings.warn(
             "Specs was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches.",
+            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
             UserWarning,
         )
 
