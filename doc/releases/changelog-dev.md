@@ -1063,6 +1063,10 @@ The following classes have been ported over:
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
+* The :mod:`pennylane.transforms` module has been reorganized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
+
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
