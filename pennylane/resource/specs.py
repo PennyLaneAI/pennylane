@@ -290,7 +290,13 @@ def _execute_analysis_pass(
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
     # pylint: disable=import-outside-toplevel,protected-access
-    from catalyst import QJIT
+    try:
+        from catalyst import QJIT
+    except ImportError as e:
+        raise ImportError(
+            "Catalyst must be installed to use qml.specs with QJIT-compiled QNodes. "
+            "Please install Catalyst and try again."
+        ) from e
 
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
 
@@ -327,7 +333,7 @@ def _specs_from_analysis_pass(
 ) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access,too-many-arguments
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline
