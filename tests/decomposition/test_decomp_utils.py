@@ -18,7 +18,7 @@ Unit tests for utility functions in the ``decomposition`` module.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.utils import translate_op_alias
 
 
@@ -26,42 +26,42 @@ from pennylane.decomposition.utils import translate_op_alias
 def test_toggle_graph_decomposition():
     """Test the toggling of the graph-based decomposition system."""
 
-    assert not qml.decomposition.enabled_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_graph_ctx():
     """Tests the context manager for toggling graph."""
 
-    original_status = qml.decomposition.enabled_graph()
+    original_status = qp.decomposition.enabled_graph()
 
-    with qml.decomposition.toggle_graph_ctx(True):
-        assert qml.decomposition.enabled_graph()
+    with qp.decomposition.toggle_graph_ctx(True):
+        assert qp.decomposition.enabled_graph()
 
-    assert qml.decomposition.enabled_graph() == original_status
+    assert qp.decomposition.enabled_graph() == original_status
 
-    with qml.decomposition.toggle_graph_ctx(False):
-        assert not qml.decomposition.enabled_graph()
+    with qp.decomposition.toggle_graph_ctx(False):
+        assert not qp.decomposition.enabled_graph()
 
-    assert qml.decomposition.enabled_graph() == original_status
+    assert qp.decomposition.enabled_graph() == original_status
 
 
 @pytest.mark.unit

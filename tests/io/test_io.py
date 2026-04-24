@@ -14,13 +14,14 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
+
 from textwrap import dedent
 from unittest.mock import Mock
 
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import queuing
 from pennylane.measurements import MeasurementValue
 from pennylane.ops import RX
@@ -81,7 +82,7 @@ def mock_plugin_converters_fixture(monkeypatch):
     mock_plugin_converter_dict = {
         entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
     }
-    monkeypatch.setattr(qml.io.io, "plugin_converters", mock_plugin_converter_dict)
+    monkeypatch.setattr(qp.io.io, "plugin_converters", mock_plugin_converter_dict)
 
     yield mock_plugin_converter_dict
 
@@ -92,9 +93,9 @@ class TestLoad:
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [
-            (qml.from_qiskit, "qiskit"),
-            (qml.from_qiskit_op, "qiskit_op"),
-            (qml.from_qiskit_noise, "qiskit_noise"),
+            (qp.from_qiskit, "qiskit"),
+            (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_does_not_exist(self, monkeypatch, method, entry_point_name):
@@ -106,7 +107,7 @@ class TestLoad:
             entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
         }
         del mock_plugin_converter_dict[entry_point_name]
-        monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+        monkeypatch.setattr(qp.io, "plugin_converters", mock_plugin_converter_dict)
 
         # Check that the specific RuntimeError is raised as opposed to a generic ValueError.
         with pytest.raises(RuntimeError, match=r"Conversion from Qiskit requires..."):
@@ -115,9 +116,9 @@ class TestLoad:
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [
-            (qml.from_qiskit, "qiskit"),
-            (qml.from_qiskit_op, "qiskit_op"),
-            (qml.from_qiskit_noise, "qiskit_noise"),
+            (qp.from_qiskit, "qiskit"),
+            (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_load_fails(self, monkeypatch, method, entry_point_name):
@@ -128,7 +129,7 @@ class TestLoad:
         mock_plugin_converter.mock_loader.side_effect = ValueError("Some Other Error")
 
         mock_plugin_converter_dict = {entry_point_name: mock_plugin_converter}
-        monkeypatch.setattr(qml.io.io, "plugin_converters", mock_plugin_converter_dict)
+        monkeypatch.setattr(qp.io.io, "plugin_converters", mock_plugin_converter_dict)
 
         with pytest.raises(ValueError, match=r"Some Other Error"):
             method("Test")
@@ -136,12 +137,12 @@ class TestLoad:
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [
-            (qml.from_qiskit, "qiskit"),
-            (qml.from_qiskit_op, "qiskit_op"),
-            (qml.from_qiskit_noise, "qiskit_noise"),
-            (qml.from_pyquil, "pyquil_program"),
-            (qml.from_quil, "quil"),
-            (qml.from_quil_file, "quil_file"),
+            (qp.from_qiskit, "qiskit"),
+            (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
+            (qp.from_pyquil, "pyquil_program"),
+            (qp.from_quil, "quil"),
+            (qp.from_quil_file, "quil_file"),
         ],
     )
     def test_convenience_functions(self, method, entry_point_name, mock_plugin_converters):
@@ -162,7 +163,7 @@ class TestLoad:
     def test_from_qasm(self, mock_plugin_converters):
         """Tests that the correct entry point is called for from_qasm."""
 
-        qml.from_qasm("Test")
+        qp.from_qasm("Test")
         assert mock_plugin_converters["qasm"].called
         assert mock_plugin_converters["qasm"].last_args == ("Test",)
 
@@ -173,10 +174,10 @@ class TestLoad:
     @pytest.mark.parametrize(
         "method, entry_point_name, args, kwargs",
         [
-            (qml.from_qiskit, "qiskit", ("Circuit",), {"measurements": []}),
-            (qml.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
+            (qp.from_qiskit, "qiskit", ("Circuit",), {"measurements": []}),
+            (qp.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
             (
-                qml.from_qasm,
+                qp.from_qasm,
                 "qasm",
                 ("Circuit",),
                 {"measurements": []},
@@ -212,9 +213,9 @@ class TestLoad:
 
 @pytest.mark.external
 class TestOpenQasm:
-    """Test the qml.to_openqasm and qml.from_qasm3 functions."""
+    """Test the qp.to_openqasm and qp.from_qasm3 functions."""
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_return_from_qasm3(self):
@@ -287,18 +288,17 @@ class TestOpenQasm:
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""
 
-        @qml.set_shots(100)
-        @qml.qnode(self.dev)
+        @qp.set_shots(100)
+        @qp.qnode(self.dev)
         def circuit(theta, phi):
-            qml.RX(theta, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(phi, wires=1)
-            return qml.sample()
+            qp.RX(theta, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.RZ(phi, wires=1)
+            return qp.sample()
 
-        qasm = qml.to_openqasm(circuit)(1.2, 0.9)
+        qasm = qp.to_openqasm(circuit)(1.2, 0.9)
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -308,24 +308,22 @@ class TestOpenQasm:
             rz(0.9) q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_measure_qubits_subset_only(self):
         """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
 
-        @qml.set_shots(100)
-        @qml.qnode(self.dev)
+        @qp.set_shots(100)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(wires=1)
+            qp.Hadamard(0)
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(wires=1)
 
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        qasm = qp.to_openqasm(circuit, measure_all=False)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -333,24 +331,22 @@ class TestOpenQasm:
             h q[0];
             cx q[0],q[1];
             measure q[1] -> c[0];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_rotations_with_expval(self):
         """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
 
-        @qml.set_shots(100)
-        @qml.qnode(self.dev)
+        @qp.set_shots(100)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+            qp.Hadamard(0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliX(0) @ qp.PauliY(1))
 
-        qasm = qml.to_openqasm(circuit, rotations=True)()
+        qasm = qp.to_openqasm(circuit, rotations=True)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -363,24 +359,22 @@ class TestOpenQasm:
             h q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
         assert qasm == expected
 
     def test_precision(self):
         """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
 
-        @qml.set_shots(100)
-        @qml.qnode(self.dev)
+        @qp.set_shots(100)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.RX(np.pi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.RX(np.pi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        qasm = qml.to_openqasm(circuit, precision=4)()
+        qasm = qp.to_openqasm(circuit, precision=4)()
 
-        expected = dedent(
-            """\
+        expected = dedent("""\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -389,8 +383,7 @@ class TestOpenQasm:
             cx q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
-            """
-        )
+            """)
 
         assert qasm == expected
 
@@ -398,13 +391,13 @@ class TestOpenQasm:
         """Test unitary circuit without measurements exports to qasm `measure_all=False`
         does not add classical registers."""
 
-        @qml.qnode(self.dev)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        qasm = qp.to_openqasm(circuit, measure_all=False)()
 
         assert "creg" not in qasm
 
@@ -412,27 +405,27 @@ class TestOpenQasm:
         """Test circuits with terminal measurements still generate classical registers
         when ``measure_all=False``."""
 
-        @qml.qnode(self.dev)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.RX(np.pi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(np.pi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        qasm = qp.to_openqasm(circuit, measure_all=False)()
         assert "creg c[1];" in qasm
 
     def test_mid_circuit_measurements_with_measure_all_false(self):
         """Test circuits with mid-circuit measurements generate a dedicated classical
         register for measurement results when `measure_all=False`."""
 
-        @qml.qnode(self.dev)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=0)
+            qp.Hadamard(wires=0)
+            m = qp.measure(0)
+            qp.cond(m, qp.PauliX)(wires=0)
             return m
 
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        qasm = qp.to_openqasm(circuit, measure_all=False)()
 
         assert "creg c[" not in qasm
         assert "creg mcms[1];" in qasm
@@ -441,14 +434,14 @@ class TestOpenQasm:
         """Test circuits with both mid-circuit and terminal measurements generate
         separate classical registers for each measurement type when `measure_all=False`."""
 
-        @qml.qnode(self.dev)
+        @qp.qnode(self.dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            m = qp.measure(0)
+            qp.cond(m, qp.PauliX)(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
+        qasm = qp.to_openqasm(circuit, measure_all=False)()
 
         assert "creg c[1];" in qasm
         assert "creg mcms[1];" in qasm

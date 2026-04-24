@@ -13,10 +13,9 @@
 # limitations under the License.
 """Tests for parity_synth (not implemented with tape)."""
 
-
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.intermediate_reps import parity_synth
 
 
@@ -28,7 +27,7 @@ class TestParitySynth:
         """Test that NotImplementedError is raised when trying to use ``parity_synth``
         on a tape."""
 
-        tape = qml.tape.QuantumScript([qml.CNOT(wires=[0, 1]), qml.RZ(0.1, wires=0)])
+        tape = qp.tape.QuantumScript([qp.CNOT(wires=[0, 1]), qp.RZ(0.1, wires=0)])
 
         with pytest.raises(
             NotImplementedError,

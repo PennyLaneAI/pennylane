@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for binary linear algebra functions in qml.math"""
+"""Unit tests for binary linear algebra functions in qp.math"""
+
 import numpy as np
 import pytest
 
 from pennylane import math
+
+jnp = pytest.importorskip("jax.numpy")
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -121,6 +124,86 @@ class TestIntToBinary:
         assert _is_binary(out)
         assert out.shape == (*x.shape, n)
         assert np.allclose(out, expected)
+
+
+class TestBinaryDecimals:
+    """Test ``qp.math.binary_decimals``."""
+
+    @pytest.mark.parametrize(
+        "phi, p, expected, unit",
+        [
+            (1 / 2, 2, [1, 0], 1),
+            (1 / 2 * 4 * np.pi, 2, [1, 0], 4 * np.pi),
+            (1 / 2, 3, [1, 0, 0], 1.0),
+            (1 / 2 * 7.0, 3, [1, 0, 0], 7.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 2, [1, 1], 1.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 3, [1, 1, 0], 1.0),
+            ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32), 5, [1, 0, 1, 1, 1], 1.0),
+        ],
+    )
+    def test_binary_decimals_scalar(self, phi, p, expected, unit):
+        """Test that the binary representation or approximation of the angle is correct"""
+
+        assert np.array_equal(expected, math.binary_decimals(phi, p, unit))
+
+    @pytest.mark.parametrize(
+        "phi, p, expected",
+        [
+            (np.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]), 2, [[1, 0], [1, 1], [0, 1]]),
+            (np.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]), 3, [[1, 0, 0], [0, 0, 1], [0, 1, 1]]),
+            (
+                np.array(
+                    [
+                        1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32,
+                        1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
+                        1 / 2 + 0 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
+                        0 / 2 + 1 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
+                        0 / 2 + 0 / 4 + 0 / 8 + 0 / 16 + 1 / 32,
+                        1 / 2 + 0 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
+                    ]
+                ),
+                2,
+                [[1, 1], [0, 0], [1, 1], [1, 0], [0, 0], [1, 1]],
+            ),
+        ],
+    )
+    def test_binary_decimals_array(self, phi, p, expected):
+        """Test that the binary representation or approximation of the angle is correct"""
+        out = math.binary_decimals(phi, p)
+        assert np.array_equal(expected, out), f"\n{expected}\n{out}"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "phi, p, expected",
+        [
+            (jnp.array([1 / 2, 1 / 2 + 1 / 4, 1 / 4]), 2, jnp.array([[1, 0], [1, 1], [0, 1]])),
+            (
+                jnp.array([1 / 2, 1 / 8, 1 / 4 + 1 / 8]),
+                3,
+                jnp.array([[1, 0, 0], [0, 0, 1], [0, 1, 1]]),
+            ),
+            (
+                jnp.array(
+                    [
+                        1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32,
+                        1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
+                        1 / 2 + 0 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
+                        0 / 2 + 1 / 4 + 1 / 8 + 0 / 16 + 1 / 32,
+                        0 / 2 + 0 / 4 + 0 / 8 + 0 / 16 + 1 / 32,
+                        1 / 2 + 0 / 4 + 1 / 8 + 1 / 16 + 1 / 32,
+                    ]
+                ),
+                2,
+                jnp.array([[1, 1], [0, 0], [1, 1], [1, 0], [0, 0], [1, 1]]),
+            ),
+        ],
+    )
+    def test_binary_decimals_jax(self, phi, p, expected):
+        """Test that the binary representation or approximation of the angle is correct for jax arrays"""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        out = jax.jit(math.binary_decimals, static_argnums=[1])(phi, p, unit=1.0)
+        assert jnp.array_equal(expected, out), f"\n{expected}\n{out}"
 
 
 class TestBinaryFiniteReducedRowEchelon:

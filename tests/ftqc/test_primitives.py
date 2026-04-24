@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the custom capture primitives for the ftqc module"""
+
 import pytest
 
 pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.custom_primitives import QmlPrimitive
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.ftqc.primitives import measure_in_basis_prim
 
 
@@ -25,4 +26,4 @@ def test_importing_primitive():
     """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
     This is mostly for CodeCov."""
 
-    assert isinstance(measure_in_basis_prim, QmlPrimitive)
+    assert isinstance(measure_in_basis_prim, QpPrimitive)

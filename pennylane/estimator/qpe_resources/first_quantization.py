@@ -15,6 +15,7 @@
 This module contains the functions needed for estimating the number of logical qubits and
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
+
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy as np
 import scipy as sp
@@ -51,7 +52,7 @@ class FirstQuantization(Operation):
     >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
-    >>> algo = qml.estimator.FirstQuantization(n, eta, vectors=vectors)
+    >>> algo = qp.estimator.FirstQuantization(n, eta, vectors=vectors)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
     np.float64(649912.4804278888)
     >>> f"{algo.gates:.1e}" # estimated number of non-Clifford gates
@@ -204,7 +205,7 @@ class FirstQuantization(Operation):
 
         >>> n = 3
         >>> br = 8
-        >>> qml.estimator.FirstQuantization.success_prob(n, br)
+        >>> qp.estimator.FirstQuantization.success_prob(n, br)
         np.float64(0.9999928850303523)
         """
         if n <= 0:
@@ -249,7 +250,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.001
-        >>> qml.estimator.FirstQuantization.norm(n, eta, omega, error)
+        >>> qp.estimator.FirstQuantization.norm(n, eta, omega, error)
         np.float64(281053.7561251118)
 
         .. details::
@@ -407,7 +408,7 @@ class FirstQuantization(Operation):
         **Example**
 
         >>> lz = 100
-        >>> qml.estimator.FirstQuantization._cost_qrom(lz)
+        >>> qp.estimator.FirstQuantization._cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, (int, np.integer)):
@@ -446,7 +447,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.estimator.FirstQuantization.unitary_cost(n, eta, omega, error)
+        >>> qp.estimator.FirstQuantization.unitary_cost(n, eta, omega, error)
         17033
         """
         if n <= 0:
@@ -534,7 +535,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.01
-        >>> qml.estimator.FirstQuantization.estimation_cost(n, eta, omega, error)
+        >>> qp.estimator.FirstQuantization.estimation_cost(n, eta, omega, error)
         102133985
         """
         if error <= 0.0:
@@ -582,7 +583,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.estimator.FirstQuantization.gate_cost(n, eta, omega, error)
+        >>> qp.estimator.FirstQuantization.gate_cost(n, eta, omega, error)
         3676557345574
         """
         if n <= 0:
@@ -641,7 +642,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.estimator.FirstQuantization.qubit_cost(n, eta, omega, error)
+        >>> qp.estimator.FirstQuantization.qubit_cost(n, eta, omega, error)
         4377
         """
         if n <= 0:

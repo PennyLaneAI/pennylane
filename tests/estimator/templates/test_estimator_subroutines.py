@@ -14,12 +14,13 @@
 """
 Tests for quantum algorithmic subroutines resource operators.
 """
+
 import math
 
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
@@ -303,10 +304,10 @@ class TestHybridQRAM:
         )
         assert decomp == expected_res
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.decompose(max_expansion=1)
-        @qml.qnode(dev)
+        @qp.transforms.decompose(max_expansion=1)
+        @qp.qnode(dev)
         def circuit():
             HybridQRAM(
                 data=data,
@@ -322,7 +323,7 @@ class TestHybridQRAM:
                 k=num_select_wires,
             )
 
-        specs = qml.specs(circuit)()
+        specs = qp.specs(circuit)()
 
         def _match_controlled(name, op):
             if (
@@ -520,10 +521,10 @@ class TestSelectOnlyQRAM:
             == expected
         )
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.decompose
-        @qml.qnode(dev)
+        @qp.transforms.decompose
+        @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
                 data=data,
@@ -536,7 +537,7 @@ class TestSelectOnlyQRAM:
                 select_value=select_value,
             )
 
-        specs = qml.specs(circuit)()
+        specs = qp.specs(circuit)()
 
         for ty, count in specs.resources.gate_types.items():
             found = False
@@ -814,17 +815,14 @@ class TestResourceOutMultiplier:
         a_register_size = 5
         b_register_size = 3
 
-        toff = resource_rep(qre.Toffoli)
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
-        num_elbows = 12
-        num_toff = 1
+        num_elbows = 25
 
         expected = [
             GateCount(l_elbow, num_elbows),
             GateCount(r_elbow, num_elbows),
-            GateCount(toff, num_toff),
         ]
         assert qre.OutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
 
@@ -1851,7 +1849,7 @@ class TestResourceSelect:
     def test_select_factor_errors(self):
         """Test that the correct error is raised when invalid ops are provided."""
         with pytest.raises(ValueError, match="All factors of the Select must be instances of"):
-            qre.Select(ops=[qml.X(0), qre.Y(), qre.Z()])
+            qre.Select(ops=[qp.X(0), qre.Y(), qre.Z()])
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
@@ -2014,7 +2012,7 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
-        expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
+        expected_num_wires = size_data_points + qp.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
             qre.QROM,
             expected_num_wires,
@@ -2915,7 +2913,7 @@ class TestResourceUnaryIterationQPE:
     )
     def test_resource_rep(self, walk_operator_cmpr, n_iter, adj_qft_cmpr):
         """Test the resource_rep method"""
-        num_estimation_wires = qml.math.ceil_log2(n_iter + 1)
+        num_estimation_wires = qp.math.ceil_log2(n_iter + 1)
         expected_num_wires = walk_operator_cmpr.num_wires + num_estimation_wires
 
         expected = qre.CompressedResourceOp(
@@ -3345,7 +3343,7 @@ class TestResourceQubitization:
         sel = qre.Select([qre.X(wires=1), qre.Z(wires=1)], wires=[0])
         op = qre.Qubitization(prep, sel)
 
-        assert op.wires == qml.wires.Wires([0, 1])
+        assert op.wires == qp.wires.Wires([0, 1])
         assert op.num_wires == 2
 
     @pytest.mark.parametrize(

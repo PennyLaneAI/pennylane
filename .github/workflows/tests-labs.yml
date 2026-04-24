@@ -5,7 +5,7 @@ on:
       - main
 
 concurrency:
-  group: qml-labs-${{ github.workflow }}-${{ github.ref }}
+  group: qp-labs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -14,12 +14,12 @@ jobs:
   # Instead, this workflow will run on all pull requests, but if `pennylane/labs/*` was not touched within the PR, it will
   # exit early with a successful status (no tests will get run).
   determine_if_workflow_should_run:
-    name: Determine if QML Labs Unit-Tests need to run
+    name: Determine if QP Labs Unit-Tests need to run
     runs-on: ubuntu-24.04
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Assess changed files
         id: changed-files

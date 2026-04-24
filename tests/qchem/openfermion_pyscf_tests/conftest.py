@@ -14,11 +14,12 @@
 """
 Pytest configuration file for PennyLane quantum chemistry open fermion test suite.
 """
+
 import shutil
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 def cmd_exists(cmd):
@@ -37,7 +38,7 @@ def tol():
     scope="module",
     params=[
         None,
-        qml.wires.Wires(
+        qp.wires.Wires(
             list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
         ),
         list(range(100, 120)),

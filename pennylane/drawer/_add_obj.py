@@ -44,10 +44,13 @@ from pennylane.ops import (
     Controlled,
     GlobalPhase,
     Identity,
+    MeasurementValue,
     MidMeasure,
     PauliMeasure,
 )
+from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
+from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import TemporaryAND
 
 
@@ -124,6 +127,32 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
     for b in range(n_wires, bit):
         filler = " " if layer_str[b][-1] == " " else "═"
         layer_str[b] += f"{filler}║"
+
+    return layer_str
+
+
+def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-measure operators"""
+    mcms = []
+    for mv in flatten(op.output)[0]:
+        if isinstance(mv, MeasurementValue):
+            mcms += mv.measurements
+
+    if not any(mcm in config.bit_map for mcm in mcms):
+        return layer_str
+
+    n_wires = len(config.wire_map)
+    mapped_wire = max(config.wire_map[w] for w in op.wires)
+    bits = [config.bit_map[mcm] + n_wires for mcm in mcms if mcm in config.bit_map]
+    for bit in bits:
+        layer_str[bit] += "╚" if bit == max(bits) else "╠"
+
+    for w in range(mapped_wire + 1, n_wires):
+        layer_str[w] += "║"
+
+    for b in range(n_wires, max(bits)):
+        if b not in bits:
+            layer_str[b] += "║"
 
     return layer_str
 
@@ -230,6 +259,15 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
     return layer_str
 
 
+@_add_obj.register
+def _add_subroutine(
+    obj: SubroutineOp, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation."""
+    layer_str = _add_subroutine_mcm_grouping_symbols(obj, layer_str, config)
+    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
+
+
 @_add_obj.register(Identity)
 @_add_obj.register(GlobalPhase)
 def _add_global_op(
@@ -255,7 +293,7 @@ def _add_mid_measure_op(
     op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
+    ``qp.ops.MidMeasure`` or a ``qp.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
     layer_str = _add_grouping_symbols(op.wires, layer_str, config)
     label_kwargs = {"decimals": config.decimals, "cache": config.cache}

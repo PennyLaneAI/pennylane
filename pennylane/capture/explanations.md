@@ -1,4 +1,4 @@
-This documentation explains the principles behind `qml.capture.CaptureMeta` and higher order primitives.
+This documentation explains the principles behind `qp.capture.CaptureMeta` and higher order primitives.
 
 
 ```python
@@ -520,7 +520,7 @@ that just repeats the chain rule:
 (Array(1.9375, dtype=float32, weak_type=True), Array(0., dtype=float32, weak_type=True), Array(498., dtype=float32, weak_type=True))
 ```
 
-In addition to the differentiation primitives for `qml.jacobian` and `qml.grad`, quantum operators
+In addition to the differentiation primitives for `qp.jacobian` and `qp.grad`, quantum operators
 have non-interpreted primitives as well. This is because their differentiation is performed
 by the surrounding QNode primitive rather than through the standard chain rule that acts
 "locally" (in the circuit). In short, we only want gates to store their tracers (which will help

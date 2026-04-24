@@ -36,10 +36,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -58,46 +58,35 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e .
-
-      - name: Install testing packages
-        run: |
-          pip install sybil pytest
-
-      - name: Install additional packages
-        run: |
-          pip install "jax==0.7.1" "jaxlib==0.7.1" torch pyzx matplotlib
+          pip install --group doctest -e . 
 
       - name: Print Dependencies
         run: |
-          python -c "import pennylane as qml; qml.about()"
+          python -c "import pennylane as qp; qp.about()"
           python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
-      - name: Run documentation tests
+      - name: Test 'pennylane' folder
         run: |
-          IGNORE_OPTS_CLOSED="
+          WONT_FIX="
           --ignore=pennylane/labs
-          "
-          IGNORE_OPTS_CORE="
           --ignore=pennylane/workflow/interfaces/tensorflow.py
+          --ignore=pennylane/devices/_legacy_device.py
+          --ignore=pennylane/devices/_qubit_device.py
+          --ignore=pennylane/devices/_qutrit_device.py
+          "
+
+          TO_DO="
+          --ignore=pennylane/pauli/pauli_sparse_matrices.md
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
-          --ignore=pennylane/measurements
-          --ignore=pennylane/ops/qubit
-          --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
-          --ignore=pennylane/devices
-          "
-          IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
-          "
-          IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/io
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
@@ -108,11 +97,51 @@ jobs:
           --ignore=pennylane/qchem
           "
 
-          IGNORE_OPTS="
-          ${IGNORE_OPTS_CLOSED}
-          ${IGNORE_OPTS_CORE}
-          ${IGNORE_OPTS_AUXILIARY}
-          ${IGNORE_OPTS_TERTIARY}
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
           "
 
-          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+          pytest pennylane $IGNORE --ignore-glob='*tests*'
+
+      - name: Test 'doc' folder
+        if: always()
+        run: |
+          WONT_FIX="
+          --ignore=doc/code
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
+          "
+          TO_DO="
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/circuits.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/interfaces
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest doc ${IGNORE}
+
+      - name: Test `changelog-dev.md` file
+        if: always()
+        run: |
+          pytest doc/releases/changelog-dev.md

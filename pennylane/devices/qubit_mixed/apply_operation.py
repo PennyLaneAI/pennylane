@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply operations to a qubit mixed state."""
+
 # pylint: disable=unused-argument
 
 from functools import singledispatch
@@ -19,7 +20,7 @@ from string import ascii_letters as alphabet
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel, Operator
@@ -64,90 +65,51 @@ def _get_slice(index, axis, num_axes):
 
 def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     """
-    Applies a phase shift operation to a density matrix along a specified axis.
+    Applies a phase factor to the ``|1⟩`` component along a single axis of a density matrix.
 
-    This function implements a phase shift operation on a mixed quantum state (density matrix).
-    For a given axis, it applies the phase shift by conjugating the density matrix with the
-    phase shift operator: ρ -> U ρ U†, where U is the phase shift operator. This implementation
-    is specific to single-qubit operations without broadcasting.
+    This is a low-level helper that multiplies the ``|1⟩`` slice of ``state`` along
+    ``axis`` by ``phase_factor``.  It does **not** perform the full unitary conjugation
+    ρ → U ρ U†.  Callers that need the complete transformation must invoke this
+    function twice: once on the bra axis with ``phase_factor`` and once on the
+    corresponding ket axis (offset by ``num_wires``) with ``conj(phase_factor)``.
 
     Args:
-        state (array-like): The density matrix to transform, with shape (2^n, 2^n) where n is
-            the number of qubits.
-        axis (int): The target qubit axis (0-based indexing) where the phase shift is applied.
-        phase_factor (complex, optional): The complex phase to apply. Common values include:
-            * -1 for Pauli-Z gate
-            * 1j for S gate (π/2 phase)
-            * exp(1j * π/4) for T gate (π/4 phase)
-        debugger (callable, optional): A debug function for operation verification.
-            Defaults to None.
+        state (array-like): The density matrix in tensor form, e.g. shape ``(2,) * 2n``
+            for an ``n``-qubit system (with an optional leading batch dimension).
+        axis (int): The axis along which the phase is applied.
+        phase_factor (complex, optional): The phase to multiply onto the ``|1⟩`` slice.
+            Defaults to ``-1``.
+        debugger: Unused.
         **_: Additional unused keyword arguments.
 
     Returns:
-        array-like: The transformed density matrix with the same shape as the input.
+        array-like: The state with the phase applied along the given axis.
 
-    Raises:
-        ValueError: If axis is invalid for the given density matrix dimension.
-        ValueError: If the input state is not a valid density matrix (not square or
-            incorrect dimensions).
+    **Example**
 
-    Example:
-        >>> import numpy as np
-        >>> # Single-qubit case: density matrix for |+⟩⟨+|
-        >>> plus_state = np.array([[0.5, 0.5],
-        ...                       [0.5, 0.5]])
-        >>> # Apply Pauli-Z (phase_factor=-1)
-        >>> z_applied = _phase_shift(plus_state, axis=0)
-        >>> print(z_applied)
-        [[0.5, -0.5],
-         [-0.5, 0.5]]
+    Applying a full Pauli-Z to |+⟩⟨+| requires two calls:
 
-        >>> # Two-qubit case: density matrix for |0⟩⟨0| ⊗ |+⟩⟨+|
-        >>> two_qubit_state = np.array([
-        ...     [0.5, 0.5, 0, 0],
-        ...     [0.5, 0.5, 0, 0],
-        ...     [0, 0, 0, 0],
-        ...     [0, 0, 0, 0]
-        ... ]).reshape(2,2,2,2)
-        >>> # Apply phase shift on second qubit (axis=1)
-        >>> z_on_second = _phase_shift(two_qubit_state, axis=1)
-        >>> print(z_on_second)
-        ... [[[[ 0.5  0.5]
-        ...    [ 0.   0. ]]
+    >>> import numpy as np
+    >>> rho = np.array([[0.5, 0.5],
+    ...                 [0.5, 0.5]])
+    >>> # bra side (axis 0)
+    >>> rho = _phase_shift(rho, axis=0)
+    >>> # ket side (axis 1, conjugate phase — same for Z since conj(-1) = -1)
+    >>> rho = _phase_shift(rho, axis=1)
+    >>> print(rho)
+    [[ 0.5 -0.5]
+     [-0.5  0.5]]
 
-        ...   [[-0.5 -0.5]
-        ...    [-0.  -0. ]]]
+    .. note::
 
-
-        ...  [[[ 0.   0. ]
-        ...    [ 0.   0. ]]
-
-        ...   [[-0.  -0. ]
-        ...    [-0.  -0. ]]]]
-
-        >>> # Apply phase shift on first qubit (axis=1)
-        >>> z_on_first = _phase_shift(two_qubit_state, axis=0)
-        >>> print(z_on_first)
-        ... [[[[ 0.5  0.5]
-        ...    [ 0.   0. ]]
-
-        ...   [[ 0.5  0.5]
-        ...    [ 0.   0. ]]]
-
-
-        ...  [[[-0.  -0. ]
-        ...    [-0.  -0. ]]
-
-        ...   [[-0.  -0. ]
-        ...    [-0.  -0. ]]]]
-
-    Notes:
         - The operation is performed in-place for computational efficiency
         - The function assumes the density matrix is in the computational basis
         - For an n-qubit system, the axis should be in range [0, n-1]
         - The phase shift operator U for single-qubit case is:
-          U = [[1, 0],
-               [0, phase_factor]]
+
+          .. code-block:: py
+              U = [[1, 0],
+                   [0, phase_factor]]
 
     """
     n_dim = math.ndim(state)
@@ -159,7 +121,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
 
 def _get_dagger_symmetric_real_op(op, num_wires):
     """Get the conjugate transpose of an operation by shifting num_wires. Should only be used for real, symmetric operations."""
-    return qml.map_wires(op, {w: w + num_wires for w in op.wires})
+    return qp.map_wires(op, {w: w + num_wires for w in op.wires})
 
 
 def _get_num_wires(state, is_state_batched):
@@ -167,7 +129,7 @@ def _get_num_wires(state, is_state_batched):
     For density matrix, we need to infer the number of wires from the state.
     """
 
-    shape = qml.math.shape(state)
+    shape = qp.math.shape(state)
     batch_size = shape[0] if is_state_batched else 1
     total_dim = math.prod(shape) // batch_size
 
@@ -191,7 +153,7 @@ def _conjugate_state_with(k, state, axes_left, axes_right):
 
 
 def apply_operation_einsum(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -242,7 +204,7 @@ def apply_operation_einsum(
 
 
 def apply_operation_tensordot(
-    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None, **_
+    op: qp.operation.Operator, state, is_state_batched: bool = False, debugger=None, **_
 ):
     """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
@@ -295,7 +257,7 @@ def apply_operation_tensordot(
 
 @singledispatch
 def apply_operation(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -337,7 +299,7 @@ def apply_operation(
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
 
-    .. code-block:: python
+    .. code-block:: py
 
         @apply_operation.register
         def _(op: type_op, state, is_state_batched=False, **kwargs):
@@ -356,7 +318,7 @@ def apply_operation(
              [0., 0.]],
             [[0., 0.],
              [0., 0.]]]])
-    >>> apply_operation(qml.PauliX(0), state)
+    >>> apply_operation(qp.PauliX(0), state)
     array([[[[0., 0.],
              [0., 0.]],
             [[0., 0.],
@@ -389,14 +351,14 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
 
 
 @apply_operation.register
-def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_identity(op: qp.Identity, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
 
 @apply_operation.register
 def apply_global_phase(
-    op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
+    op: qp.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
 ):
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
     # Note: the global phase is a scalar, so we can just multiply the
@@ -407,7 +369,7 @@ def apply_global_phase(
 
 
 @apply_operation.register
-def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_paulix(op: qp.X, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliX` operation by multiplying the state by the Pauli-X matrix."""
     # PauliX is basically a bit flip, so we can just apply the X gate to the state
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
@@ -418,7 +380,7 @@ def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_pauliz(op: qp.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliZ` operation by multiplying the state by the Pauli-Z matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
@@ -440,7 +402,7 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
 
 
 @apply_operation.register
-def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_T(op: qp.T, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.T` operation by multiplying the state by the T matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
@@ -462,7 +424,7 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
 
 
 @apply_operation.register
-def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_S(op: qp.S, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.S` operation by multiplying the state by the S matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
@@ -484,7 +446,7 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
 
 
 @apply_operation.register
-def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_phaseshift(op: qp.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Phaseshift` operation by multiplying the state by the Phaseshift matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
@@ -547,18 +509,18 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
 SYMMETRIC_REAL_OPS = (
-    qml.CNOT,
-    qml.MultiControlledX,
-    qml.Toffoli,
-    qml.SWAP,
-    qml.CSWAP,
-    qml.CZ,
-    qml.CH,
+    qp.CNOT,
+    qp.MultiControlledX,
+    qp.Toffoli,
+    qp.SWAP,
+    qp.CSWAP,
+    qp.CZ,
+    qp.CH,
 )
 
 
 def apply_symmetric_real_op(
-    op: qml.CNOT | qml.MultiControlledX | qml.Toffoli | qml.SWAP | qml.CSWAP | qml.CZ | qml.CH,
+    op: qp.CNOT | qp.MultiControlledX | qp.Toffoli | qp.SWAP | qp.CSWAP | qp.CZ | qp.CH,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -593,10 +555,10 @@ def apply_symmetric_real_op(
     if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
         return _apply_operation_default(op, state, is_state_batched, debugger)
 
-    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
+    state = qp.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
 
     op_dagger = _get_dagger_symmetric_real_op(op, num_wires)
-    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
+    state = qp.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
     return state
 
 
@@ -609,7 +571,7 @@ for op_class in SYMMETRIC_REAL_OPS:
 
 @apply_operation.register
 def apply_grover(
-    op: qml.GroverOperator,
+    op: qp.GroverOperator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -630,7 +592,7 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
     """Apply a diagonal unitary operation to the density matrix state using its eigenvalues.
 
     Args:
-        op (qml.Operation): The diagonal unitary operation to apply.
+        op (qp.Operation): The diagonal unitary operation to apply.
         state (TensorLike): The density matrix state to apply the operation to.
         is_state_batched (bool, optional): Whether the state has a batch dimension. Defaults to False.
 
@@ -675,12 +637,12 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
 
 @apply_operation.register
 def apply_snapshot(
-    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+    op: qp.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Take a snapshot of the mixed state
 
     Args:
-        op (qml.Snapshot): the snapshot operation
+        op (qp.Snapshot): the snapshot operation
         state (array): current quantum state
         is_state_batched (bool): whether the state is batched
         debugger: the debugger instance for storing snapshots
@@ -696,10 +658,10 @@ def apply_snapshot(
         else:
             shots = op.hyperparameters["shots"]
 
-        if isinstance(measurement, qml.measurements.StateMP) or not shots:
-            snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
+        if isinstance(measurement, qp.measurements.StateMP) or not shots:
+            snapshot = qp.devices.qubit_mixed.measure(measurement, state, is_state_batched)
         else:
-            snapshot = qml.devices.qubit_mixed.measure_with_samples(
+            snapshot = qp.devices.qubit_mixed.measure_with_samples(
                 [measurement],
                 state,
                 shots,
@@ -719,7 +681,7 @@ def apply_snapshot(
 
 @apply_operation.register
 def apply_density_matrix(
-    op: qml.QubitDensityMatrix,
+    op: qp.QubitDensityMatrix,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -736,7 +698,7 @@ def apply_density_matrix(
       3. Reshape to the correct final shape and return.
 
     Args:
-        op (qml.QubitDensityMatrix): The QubitDensityMatrix operation.
+        op (qp.QubitDensityMatrix): The QubitDensityMatrix operation.
         state (array-like): The current quantum state.
         is_state_batched (bool): Whether the state is batched.
         debugger: A debugger instance for diagnostics.
@@ -786,7 +748,7 @@ def apply_density_matrix(
     else:
         state_2d = math.reshape(state, (state_dim, state_dim))
 
-    sigma = qml.math.partial_trace(state_2d, indices=op_wires)
+    sigma = qp.math.partial_trace(state_2d, indices=op_wires)
     # sigma now has shape:
     # (batch_size, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
 

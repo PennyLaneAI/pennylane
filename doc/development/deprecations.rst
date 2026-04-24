@@ -3,7 +3,7 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qp.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
@@ -52,10 +52,10 @@ Pending deprecations
   .. code-block:: python
 
     # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="my-rx")
+    qp.RX(0.5, wires=0, id="my-rx")
 
     # New method:
-    qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+    qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
 
   Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
@@ -63,10 +63,10 @@ Pending deprecations
   .. code-block:: python
 
     # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="x0")
+    qp.RX(0.5, wires=0, id="x0")
 
     # New method:
-    qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+    qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
@@ -83,13 +83,13 @@ Pending deprecations
   - Will be removed in v0.46
 
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>`
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
   function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
   - Deprecated in v0.45
@@ -101,8 +101,8 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46

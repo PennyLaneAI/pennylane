@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 
-
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -27,7 +26,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -36,13 +35,13 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     .. code-block:: python
 
         @remove_barrier
-        @qml.qnode(qml.device('default.qubit'))
+        @qp.qnode(qp.device('default.qubit'))
         def circuit(x, y):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Barrier(wires=[0,1])
+            qp.X(0)
+            return qp.expval(qp.Z(0))
 
     The barrier is then removed before execution.
 
@@ -54,17 +53,17 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         .. code-block:: python
 
             def qfunc(x, y):
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=1)
-                qml.Barrier(wires=[0,1])
-                qml.X(0)
-                return qml.expval(qml.Z(0))
+                qp.Hadamard(wires=0)
+                qp.Hadamard(wires=1)
+                qp.Barrier(wires=[0,1])
+                qp.X(0)
+                return qp.expval(qp.Z(0))
 
         The circuit before optimization:
 
-        >>> dev = qml.device('default.qubit')
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)(1, 2))
+        >>> dev = qp.device('default.qubit')
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)(1, 2))
         0: ──H─╭||──X─┤  <Z>
         1: ──H─╰||────┤
 
@@ -72,8 +71,8 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         We can remove the Barrier by running the ``remove_barrier`` transform:
 
         >>> optimized_qfunc = remove_barrier(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)(1, 2))
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)(1, 2))
         0: ──H──X─┤  <Z>
         1: ──H────┤
 

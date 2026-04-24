@@ -14,6 +14,7 @@
 """
 Contains the TemporaryAND template, which also is known as Elbow.
 """
+
 from functools import lru_cache
 
 from pennylane import math, ops
@@ -63,21 +64,21 @@ class TemporaryAND(Operation):
 
     .. code-block:: python
 
-        @qml.set_shots(1)
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.set_shots(1)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
             # |0000⟩
-            qml.X(0) # |1000⟩
-            qml.X(1) # |1100⟩
+            qp.X(0) # |1000⟩
+            qp.X(1) # |1100⟩
             # The target wire is in state |0>, so we can apply TemporaryAND
-            qml.TemporaryAND([0,1,2]) # |1110⟩
-            qml.CNOT([2,3]) # |1111⟩
+            qp.TemporaryAND([0,1,2]) # |1110⟩
+            qp.CNOT([2,3]) # |1111⟩
             # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied,
             # so we can apply adjoint(TemporaryAND)
-            qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
-            return qml.sample(wires=[0,1,2,3])
+            qp.adjoint(qp.TemporaryAND([0,1,2])) # |1101⟩
+            return qp.sample(wires=[0,1,2,3])
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──X─╭●─────●╮─┤ ╭Sample
     1: ──X─├●─────●┤─┤ ├Sample
     2: ────╰⊕─╭●──⊕╯─┤ ├Sample
@@ -132,7 +133,7 @@ class TemporaryAND(Operation):
 
         **Example**
 
-        >>> print(qml.TemporaryAND.compute_matrix(control_values = (1,1)))
+        >>> print(qp.TemporaryAND.compute_matrix(control_values = (1,1)))
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -195,10 +196,8 @@ def _temporary_and_resources():
 def _temporary_and(wires: WiresLike, **kwargs):
 
     control_values = kwargs["control_values"]
-    if control_values[0] == 0:
-        ops.X(wires[0])
-    if control_values[1] == 0:
-        ops.X(wires[1])
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
     ops.change_op_basis(
         ops.prod(
@@ -218,10 +217,8 @@ def _temporary_and(wires: WiresLike, **kwargs):
 
     ops.adjoint(ops.S(wires=wires[2]))
 
-    if control_values[0] == 0:
-        ops.X(wires[0])
-    if control_values[1] == 0:
-        ops.X(wires[1])
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
 add_decomps(TemporaryAND, _temporary_and)

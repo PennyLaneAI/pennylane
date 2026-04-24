@@ -32,9 +32,11 @@ The following frameworks are currently supported:
 * JAX
 
 """
+
 import autoray as ar
 
 from .binary_linalg import (
+    binary_decimals,
     binary_finite_reduced_row_echelon,
     binary_is_independent,
     binary_matrix_rank,
@@ -141,7 +143,7 @@ def get_dtype_name(x) -> str:
     """An interface independent way of getting the name of the datatype.
 
     >>> x = tf.Variable(0.1)
-    >>> qml.math.get_dtype_name(tf.Variable(0.1))
+    >>> qp.math.get_dtype_name(tf.Variable(0.1))
     'float32'
     """
     return ar.get_dtype_name(x)
@@ -160,19 +162,19 @@ def is_real_obj_or_close(obj):
         ``"complex"`` and returning the negated result of this.
 
     >>> x = jnp.array(0.4)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     True
 
     >>> x = tf.Variable(0.4+0.2j)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     False
 
     >>> x = torch.tensor(0.4+1e-13j)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     True
 
     Default absolute and relative tolerances of
-    ``qml.math.allclose`` are used to determine whether the
+    ``qp.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
     if (
@@ -215,6 +217,7 @@ __all__ = [
     "binary_finite_reduced_row_echelon",
     "binary_is_independent",
     "binary_matrix_rank",
+    "binary_decimals",
     "binary_select_basis",
     "binary_solve_linear_system",
     "block_diag",

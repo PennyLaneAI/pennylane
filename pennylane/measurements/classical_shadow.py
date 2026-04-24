@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.classical_shadow measurement.
+This module contains the qp.classical_shadow measurement.
 """
+
 import copy
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from string import ascii_letters
 
 import numpy as np
@@ -452,7 +453,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def __init__(
         self,
-        H: Operator | Sequence,
+        H: Operator | Sequence[Operator],
         seed: int | None = None,
         k: int = 1,
         id: str | None = None,
@@ -555,7 +556,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if isinstance(self.H, Iterable):
+        if isinstance(self.H, Sequence):
             return Wires.all_wires([h.wires for h in self.H])
 
         return self.H.wires
@@ -563,10 +564,10 @@ class ShadowExpvalMP(MeasurementTransform):
     def queue(self, context=QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
-        # A CompositeOp is also an Iterable, but we should consider it to be a single observable
+        # A CompositeOp is also an Sequence, but we should consider it to be a single observable
         Hs = (
             self.H
-            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
             else [self.H]
         )
         for H in Hs:
@@ -576,10 +577,10 @@ class ShadowExpvalMP(MeasurementTransform):
         return self
 
     def __copy__(self):
-        # A CompositeOp is also an Iterable, we do not want to copy each operand of the op.
+        # A CompositeOp is also an Sequence, we do not want to copy each operand of the op.
         H_copy = (
             [copy.copy(H) for H in self.H]
-            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
             else copy.copy(self.H)
         )
         return self.__class__(
@@ -589,64 +590,112 @@ class ShadowExpvalMP(MeasurementTransform):
         )
 
 
-def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
-    r"""Compute expectation values using classical shadows in a differentiable manner.
+def shadow_expval(
+    H: Operator | Sequence[Operator], k: int = 1, seed: int | None = None
+) -> ShadowExpvalMP:
+    r"""Estimate expectation values using Classical Shadows with full differentiability support.
 
-    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
-    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
+    The Classical Shadows protocol provide a way to estimate a large number of expectation values
+    (even non-commuting ones) using a single set of random Pauli measurements.
+    See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal and theoretical details.
 
     Args:
-        H (Union[Iterable[Operator], Operator]): Observable or
-            iterable of observables to compute the expectation value over.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
-        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
-            classical shadows protocol. If None, a random seed will be generated. If a tape with
-            a ``shadow_expval`` measurement is copied, the seed will also be copied.
-            Different seeds are still generated for different constructed tapes.
+        H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
+            Provide a single observable or a sequence to estimate the expectation values of multiple
+            observables from the same classical shadows data.
+        k (int): Number of equal parts for which to split the shadow's measurements in order to compute the median of means.
+            The default is ``k=1``, which simply computes the mean of all measurements.
+            ``k>1`` provides no expected advantage for Pauli measurements and Pauli observables.
+        seed (int | None): Optional seed for the random Pauli measurement basis in the
+            classical shadows protocol. This controls which bases (X, Y or Z) each qubit is measured
+            in per shot. If ``None``, a random seed will be generated.
+
+            .. note::
+
+                The ``seed`` argument only controls the measurement basis choice.
+                The ``seed`` of a simulator device separately controls the sampling outcomes.
+                For fully reproducible results, you must seed both the device and the measurement.
+
+                .. code-block:: python
+
+                    dev = qp.device("default.qubit", seed=42, shots=100)
+
+                    @qp.qnode(dev)
+                    def circuit():
+                        qp.H(0)
+                        return qp.shadow_expval(qp.Z(0), seed=99)
 
     Returns:
         ShadowExpvalMP: Measurement process instance
 
-    .. note::
+    .. seealso::
 
-        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and the class :class:`~.pennylane.ClassicalShadow` for post-processing
-        internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
-        you need to use this measurement.
+        This measurement internally relies on the measurement :func:`~.pennylane.classical_shadow` and the class
+        :class:`~.pennylane.ClassicalShadow` for post-processing in order to compute expectation values.
 
     **Example**
 
-    .. code-block:: python3
+    With the standard :func:`~.pennylane.expval` measurement, each group of non-commuting
+    observables requires its own separate circuit execution. However, with ``shadow_expval``
+    we can reuse the shadow data generated from the circuit executions to estimate all expectation values simultaneously.
 
-        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+    Let's say we want to estimate the expectation values of all three (non-commuting) single qubit Paulis
+    (:class:`~.X`, :class:`~.Y`, :class:`~.Z`) on a :math:`| + \rangle` state.
+    Theoretically, we would expect that :math:`\langle X \rangle = 1`, :math:`\langle Y \rangle = \langle Z \rangle = 0`.
 
-        dev = qml.device("default.qubit", wires=range(2))
+    .. code-block:: python
 
-        @qml.set_shots(shots=10000)
-        @qml.qnode(dev)
-        def circuit(x, obs):
-            qml.Hadamard(0)
-            qml.CNOT((0,1))
-            qml.RX(x, wires=0)
-            return qml.shadow_expval(obs)
+        device = qp.device("default.qubit", seed=42)
 
-        x = np.array(0.5, requires_grad=True)
+        @qp.set_shots(1_000)
+        @qp.qnode(device)
+        def circuit():
+            qp.H(0) # Create |+> state
+            return qp.shadow_expval((qp.X(0), qp.Y(0), qp.Z(0)), seed=99)
 
-    We can compute the expectation value of H as well as its gradient in the usual way.
+    >>> print(circuit())
+    [0.984 0.    0.03 ]
 
-    >>> circuit(x, H)
-    array(1.8774)
-    >>> qml.grad(circuit)(x, H)
-    -0.44999999999999984
+    This is very close to their expected values!
 
-    In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
-    to include all observables that you want to estimate from a single measurement in the same execution.
+    .. details::
+        :title: Differentiability
 
-    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
-    >>> circuit(x, Hs)
-    array([ 1.881 , -0.0312, -0.0027, -0.0087])
-    >>> qml.jacobian(circuit)(x, Hs)
-    array([-0.4518,  0.0174, -0.0216, -0.0063])
+        Consider the following observable,
+
+        >>> H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.X(1)])
+
+        We can estimate its expectation value with the classical shadows protocol:
+
+        .. code-block:: python
+
+            dev = qp.device("default.qubit", seed=42, wires=range(2))
+
+            @qp.set_shots(shots=10_000)
+            @qp.qnode(dev)
+            def circuit(x, obs):
+                qp.Hadamard(0)
+                qp.CNOT((0,1))
+                qp.RX(x, wires=0)
+                return qp.shadow_expval(obs, seed=99)
+
+            x = pnp.array(0.5, requires_grad=True)
+
+        >>> print(circuit(x, H))
+        1.8891
+        >>> print(qp.grad(circuit)(x, H))
+        -0.4653...
+
+        In ``shadow_expval``, we can also pass a list of observables to estimate them
+        all from the same shadow data.
+        Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
+
+        >>> Hs = [H, qp.X(0), qp.Y(0), qp.Z(0)]
+        >>> print(circuit(x, Hs))
+        [ 1.8783  0.0096 -0.0174  0.0138]
+        >>> print(qp.jacobian(circuit)(x, Hs))
+        [-0.4851 -0.0063 -0.0099  0.0006]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
@@ -686,32 +735,32 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
     Consider the following QNode that prepares a Bell state and performs a classical
     shadow measurement:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", seed=42, wires=2)
 
-        @qml.set_shots(shots=5)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=5)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.classical_shadow(wires=[0, 1])
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.classical_shadow(wires=[0, 1], seed=42)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
     >>> bits, recipes = circuit()
     >>> bits
-    tensor([[0, 0],
-            [1, 0],
-            [1, 0],
-            [0, 0],
-            [0, 1]], dtype=uint8, requires_grad=True)
+    array([[1, 1],
+           [0, 0],
+           [1, 1],
+           [1, 0],
+           [0, 0]], dtype=int8)
     >>> recipes
-    tensor([[2, 2],
-            [0, 2],
-            [1, 0],
-            [0, 2],
-            [0, 2]], dtype=uint8, requires_grad=True)
+    array([[2, 0],
+           [2, 2],
+           [0, 0],
+           [2, 1],
+           [2, 2]], dtype=int8)
 
     .. details::
         :title: Usage Details
@@ -721,54 +770,54 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         >>> bits, recipes = circuit()
         >>> bits
-        tensor([[0, 1],
-                [0, 1],
-                [0, 0],
-                [0, 1],
-                [1, 1]], dtype=uint8, requires_grad=True)
+        array([[0, 0],
+           [1, 1],
+           [1, 1],
+           [1, 1],
+           [0, 0]], dtype=int8)
         >>> recipes
-        tensor([[1, 0],
-                [2, 1],
-                [2, 2],
-                [1, 0],
-                [0, 0]], dtype=uint8, requires_grad=True)
+        array([[2, 0],
+           [2, 2],
+           [0, 0],
+           [2, 1],
+           [2, 2]], dtype=int8)
 
         To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
         interface should be used instead:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
-            measurements = [qml.classical_shadow(wires=(0,1))]
-            tape = qml.tape.QuantumTape(ops, measurements, shots=5)
+            ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
+            measurements = [qp.classical_shadow(wires=(0,1))]
+            tape = qp.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
-        >>> np.all(recipes1 == recipes2)
+        >>> bits1, recipes1 = qp.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qp.execute([tape], device=dev, diff_method=None)[0]
+        >>> print(np.all(recipes1 == recipes2))
         True
-        >>> np.all(bits1 == bits2)
+        >>> print(np.all(bits1 == bits2))
         False
 
         If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
         different seeds should be used for the classical shadow:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qml.tape.QuantumTape(ops, measurements1, shots=5)
+            measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
+            tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
 
-            measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
+            measurements2 = [qp.classical_shadow(wires=(0,1), seed=15)]
+            tape2 = qp.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
-        >>> np.all(recipes1 == recipes2)
+        >>> bits1, recipes1 = qp.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qp.execute([tape2], device=dev, diff_method=None)[0]
+        >>> print(np.all(recipes1 == recipes2))
         False
-        >>> np.all(bits1 == bits2)
+        >>> print(np.all(bits1 == bits2))
         False
     """
     wires = Wires(wires)

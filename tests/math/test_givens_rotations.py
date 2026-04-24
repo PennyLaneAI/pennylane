@@ -15,10 +15,11 @@
 Unit tests for functions needed for performing givens decomposition of a unitary.
 """
 
+import numpy as onp
 import pytest
 from scipy.stats import ortho_group, unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
@@ -143,18 +144,34 @@ def test_givens_decomposition(shape, seed):
     assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize("shape", [2, 3, 7])
-@pytest.mark.parametrize("jit", [False, True])
-def test_givens_decomposition_jax(shape, jit, seed):
+@pytest.mark.parametrize(
+    "compiler",
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
+)
+@pytest.mark.jax
+@pytest.mark.external
+def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
     import jax
     from jax import numpy as jnp
 
     matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
-    func = jax.jit(givens_decomposition) if jit else givens_decomposition
+    if compiler == "jit":
+        func = jax.jit(givens_decomposition)
+    elif compiler == "qjit":
+        catalyst = pytest.importorskip("catalyst")
+        func = catalyst.qjit(givens_decomposition)
+    else:
+        func = givens_decomposition
 
+    copied_matrix = matrix.copy()
     phase_mat, ordered_rotations = func(matrix)
+    assert qp.math.allclose(copied_matrix, matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -183,6 +200,8 @@ def test_givens_decomposition_real_valued(shape, dtype, seed):
 
     for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=dtype)
+        if dtype is np.float64:
+            grot_mat = grot_mat.real
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
 
@@ -215,6 +234,8 @@ def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
 
     for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=dtype)
+        if dtype is np.float64:
+            grot_mat = grot_mat.real
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
 
@@ -280,51 +301,182 @@ def test_givens_matrix_jaxpr():
 
 # pylint:disable = too-many-arguments
 @pytest.mark.parametrize(
-    ("jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
+    ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
-        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, None, np.array([[5, 0], [0, 1]])),
-        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", np.array([[5, 0], [0, 1]])),
+        (False, onp.array([[1, 0], [0, 1]]), (0, 0), 5, None, onp.array([[5, 0], [0, 1]])),
+        (False, onp.array([[1.0, 0], [0, 1]]), (0, 0), 5, "numpy", onp.array([[5.0, 0], [0, 1]])),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
+            onp.array([[1, 0], [0, 1]]),
             (0, Ellipsis),
             [1, 2],
             None,
-            np.array([[1, 2], [0, 1]]),
+            onp.array([[1, 2], [0, 1]]),
         ),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
+            onp.array([[1, 0], [0.0, 1]]),
             (0, Ellipsis),
             [1, 2],
             "numpy",
-            np.array([[1, 2], [0, 1]]),
+            onp.array([[1, 2.0], [0, 1]]),
         ),
-        (False, np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, np.array([[1, 0], [1, 2]])),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
-            (1, [0, 1]),
+            onp.array([[1, 0], [0, 1]]),
+            (1, (0, 1)),
             [1, 2],
-            "numpy",
-            np.array([[1, 0], [1, 2]]),
+            None,
+            onp.array([[1, 0], [1, 2]]),
         ),
-        (True, [[1, 0], [0, 1]], (0, 0), 5, None, [[5, 0], [0, 1]]),
-        (True, [[1, 0], [0, 1]], (0, 0), 5, "jax", [[5, 0], [0, 1]]),
+        (
+            False,
+            onp.array([[1, 0.0], [0, 1]]),
+            (1, (0, 1)),
+            [1, 2 + 1e-17j],
+            "numpy",
+            onp.array([[1, 0.0], [1, 2]]),
+        ),
+        (True, [[1, 0.0], [0, 1]], (0, 0), 5 + 0j, None, [[5.0, 0], [0, 1]]),
+        (True, [[1.0, 0], [0, 1]], (0, 0), 5, "jax", [[5, 0.0], [0, 1]]),
         (True, [[1, 0], [0, 1]], (0, Ellipsis), [1, 2], None, [[1, 2], [0, 1]]),
         (True, [[1, 0], [0, 1]], (0, Ellipsis), [1, 2], "jax", [[1, 2], [0, 1]]),
-        (True, [[1, 0], [0, 1]], (1, [0, 1]), [1, 2], None, [[1, 0], [1, 2]]),
-        (True, [[1, 0], [0, 1]], (1, [0, 1]), [1, 2], "jax", [[1, 0], [1, 2]]),
+        (True, [[1, 0], [0, 1]], (1, (0, 1)), [1, 2], None, [[1, 0], [1, 2]]),
+        (True, [[1.0, 0.0], [0.0, 1.0]], (1, (0, 1)), [1 + 0j, 2.0], None, [[1, 0], [1, 2]]),
+        (True, [[1.0, 0.0], [0.0, 1.0]], (1, (0, 1)), [1.0, 2 - 0j], "jax", [[1, 0], [1, 2]]),
     ],
 )
+@pytest.mark.parametrize(
+    "compiler",
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+)
 @pytest.mark.jax
-def test_set_unitary_matrix(jax, unitary_matrix, index, value, like, expected_matrix):
-    """Test the _set_unitary function on different interfaces."""
+def test_set_unitary_matrix_real(
+    use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
+):
+    """Test the _set_unitary function on different interfaces with real-valued matrices."""
+    if like == "numpy" and compiler is not None:
+        pytest.skip(reason="Can't use numpy interface with jit compilation.")
+    import jax
     import jax.numpy as jnp
 
-    if jax:
+    if use_jax:
         unitary_matrix = jnp.array(unitary_matrix)
-        expected_matrix = jnp.array(expected_matrix)
+        value = jnp.array(value)
+    else:
+        value = onp.array(value)
 
-    new_unitary_matrix = _set_unitary_matrix(unitary_matrix, index, value, like)
-    assert qml.math.allclose(new_unitary_matrix, expected_matrix)
+    if compiler == "jit":
+        fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+    elif compiler == "qjit":
+        catalyst = pytest.importorskip("catalyst")
+        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+    else:
+        fn = _set_unitary_matrix
+    copied_matrix = unitary_matrix.copy()
+    new_unitary_matrix = fn(unitary_matrix, index, value, like, True)
+    if compiler is not None:
+        # If we are not compiling, we are handling matrix copying further up in
+        # givens_decomposition, so modifying the matrix with _set_unitary_matrix is okay.
+        assert qp.math.allclose(unitary_matrix, copied_matrix)
+    assert qp.math.allclose(new_unitary_matrix, expected_matrix)
+    assert new_unitary_matrix.dtype == unitary_matrix.dtype
+
+
+# pylint:disable = too-many-arguments
+@pytest.mark.parametrize(
+    ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
+    [
+        (False, onp.array([[1j, 0], [0, 1]]), (0, 0), 0.5j, None, onp.array([[0.5j, 0], [0, 1]])),
+        (False, onp.array([[1, 0j], [0, 1]]), (0, 0), 5, "numpy", onp.array([[5, 0j], [0, 1]])),
+        (
+            False,
+            onp.array([[1, 0], [0, 1j]]),
+            (0, Ellipsis),
+            [1, 2j],
+            None,
+            onp.array([[1, 2j], [0, 1j]]),
+        ),
+        (
+            False,
+            onp.array([[0.1j, 0], [0, 1]]),
+            (0, Ellipsis),
+            [1, 2],
+            "numpy",
+            onp.array([[1.0, 2], [0j, 1]]),
+        ),
+        (
+            False,
+            onp.array([[1j, 0], [0, 1]]),
+            (1, (0, 1)),
+            [1, 2],
+            None,
+            onp.array([[1j, 0], [1, 2]]),
+        ),
+        (
+            False,
+            onp.array([[1, 0], [0j, 1]]),
+            (1, (0, 1)),
+            [1, 2 + 1e-17j],
+            "numpy",
+            onp.array([[1, 0], [1, 2 + 1e-17j]]),
+        ),
+        (True, [[1, 0], [0j, 1]], (0, 0), 5, None, [[5, 0], [0j, 1]]),
+        (True, [[1 + 1j, 0], [0, 1]], (0, 0), 5, "jax", [[5 + 0j, 0], [0, 1]]),
+        (True, [[1, 0 + 0.2j], [0, 1]], (0, Ellipsis), [1, 2], None, [[1.0, 2 + 0j], [0, 1]]),
+        (True, [[0.1j, 0], [0j, 1]], (0, Ellipsis), [1j, 0.22], "jax", [[1j, 0.22], [0.0, 1]]),
+        (True, [[1j, 0], [0, 1j]], (1, (0, 1)), [1, 2], None, [[1j, 0], [1, 2]]),
+        (
+            True,
+            [[1.0 + 0j, 0.0], [0.0, 1.0]],
+            (1, (0, 1)),
+            [1 + 0j, 2.0],
+            None,
+            [[1, 0], [1 + 0j, 2]],
+        ),
+        (
+            True,
+            [[1.0, 0j], [0.0, 1.0]],
+            (1, (0, 1)),
+            [1.0, 2 - 0.2j],
+            "jax",
+            [[1, 0], [1, 2 - 0.2j]],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "compiler",
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+)
+@pytest.mark.jax
+def test_set_unitary_matrix_complex(
+    use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
+):
+    """Test the _set_unitary function on different interfaces with complex-valued matrices."""
+    if like == "numpy" and compiler is not None:
+        pytest.skip(reason="Can't use numpy interface with jit compilation.")
+
+    import jax
+    import jax.numpy as jnp
+
+    if use_jax:
+        unitary_matrix = jnp.array(unitary_matrix)
+        value = jnp.array(value)
+    else:
+        value = onp.array(value)
+
+    if compiler == "jit":
+        fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+    elif compiler == "qjit":
+        catalyst = pytest.importorskip("catalyst")
+        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+    else:
+        fn = _set_unitary_matrix
+    copied_matrix = unitary_matrix.copy()
+    new_unitary_matrix = fn(unitary_matrix, index, value, like, False)
+    if compiler is not None:
+        # If we are not compiling, we are handling matrix copying further up in
+        # givens_decomposition, so modifying the matrix with _set_unitary_matrix is okay.
+        assert qp.math.allclose(unitary_matrix, copied_matrix)
+    assert qp.math.allclose(new_unitary_matrix, expected_matrix)
+    assert new_unitary_matrix.dtype == np.complex128

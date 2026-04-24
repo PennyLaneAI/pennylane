@@ -62,23 +62,23 @@ class PrepSelPrep(Operation):
 
     We define an operator and a block-encoding circuit as:
 
-    >>> lcu = qml.dot([0.3, -0.1], [qml.X(2), qml.Z(2)])
+    >>> lcu = qp.dot([0.3, -0.1], [qp.X(2), qp.Z(2)])
     >>> control = [0, 1]
-    >>> @qml.qnode(qml.device("default.qubit"))
+    >>> @qp.qnode(qp.device("default.qubit"))
     ... def circuit(lcu, control):
-    ...     qml.PrepSelPrep(lcu, control)
-    ...     return qml.state()
+    ...     qp.PrepSelPrep(lcu, control)
+    ...     return qp.state()
 
     We can see that the operator matrix, up to a normalization constant, is block encoded in the
     circuit matrix:
 
-    >>> matrix_psp = qml.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
+    >>> matrix_psp = qp.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
     >>> print(matrix_psp.real[0:2, 0:2])
     [[-0.25  0.75]
      [ 0.75  0.25]]
 
-    >>> matrix_lcu = qml.matrix(lcu)
-    >>> print(qml.matrix(lcu).real / sum(abs(np.array(lcu.terms()[0]))))
+    >>> matrix_lcu = qp.matrix(lcu)
+    >>> print(qp.matrix(lcu).real / sum(abs(np.array(lcu.terms()[0]))))
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """

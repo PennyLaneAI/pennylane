@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains different PennyLane types."""
+
 import contextlib
 
 # pylint: disable=import-outside-toplevel,too-few-public-methods
@@ -53,7 +54,7 @@ TensorLike = Union[
 """A type for all tensor-like data.
 
 TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qml.numpy.array`` is tensor-like.
+including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
 **Examples**
 

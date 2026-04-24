@@ -14,6 +14,7 @@
 """
 This file contains functionalities for postprocessing of kernel matrices.
 """
+
 import numpy as np
 
 
@@ -39,7 +40,7 @@ def threshold_matrix(K):
 
     We then can threshold/truncate the eigenvalues of the matrix via
 
-    >>> K_thresh = qml.kernels.threshold_matrix(K)
+    >>> K_thresh = qp.kernels.threshold_matrix(K)
     >>> np.linalg.eigvalsh(K_thresh)
     array([0.,  1.,  2.])
 
@@ -81,7 +82,7 @@ def displace_matrix(K):
     multiplied with the absolute value of the smallest (the most negative, that is)
     eigenvalue:
 
-    >>> K_displaced = qml.kernels.displace_matrix(K)
+    >>> K_displaced = qp.kernels.displace_matrix(K)
     >>> np.linalg.eigvalsh(K_displaced)
     array([0.,  2.,  3.])
 
@@ -122,7 +123,7 @@ def flip_matrix(K):
     We then can invert the sign of all negative eigenvalues of the matrix, obtaining
     non-negative eigenvalues only:
 
-    >>> K_flipped = qml.kernels.flip_matrix(K)
+    >>> K_flipped = qp.kernels.flip_matrix(K)
     >>> np.linalg.eigvalsh(K_flipped)
     array([1.,  1.,  2.])
 
@@ -175,19 +176,19 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
     invariant norm is then given by the matrix with the eigenvalues thresholded at 0,
     as computed by :func:`~.kernels.threshold_matrix`:
 
-    >>> K_psd = qml.kernels.closest_psd_matrix(K)
+    >>> K_psd = qp.kernels.closest_psd_matrix(K)
     >>> K_psd
     array([[0.95, 0.95],
             [0.95, 0.95]])
     >>> np.linalg.eigvalsh(K_psd)
     array([0. , 1.9])
-    >>> np.allclose(K_psd, qml.kernels.threshold_matrix(K))
+    >>> np.allclose(K_psd, qp.kernels.threshold_matrix(K))
     True
 
     However, for quantum kernel matrices we may want to restore the value 1 on the
     diagonal:
 
-    >>> K_psd = qml.kernels.closest_psd_matrix(K, fix_diagonal=True) # doctest: +SKIP
+    >>> K_psd = qp.kernels.closest_psd_matrix(K, fix_diagonal=True) # doctest: +SKIP
     >>> K_psd # doctest: +SKIP
     array([[1.        , 0.99998008],
             [0.99998008, 1.        ]])
@@ -250,7 +251,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     **Example:**
 
     For an example usage of ``mitigate_depolarizing_noise`` please refer to the
-    `PennyLane demo on the kernel module <https://github.com/PennyLaneAI/qml/tree/main/demonstrations/tutorial_kernel_based_training.py>`_ or `the postprocessing demo for arXiv:2105.02276 <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
+    `PennyLane demo on the kernel module <https://github.com/PennyLaneAI/demos/tree/master/demonstrations_v2/tutorial_kernel_based_training/demo.py>`_ or `the postprocessing demo for arXiv:2105.02276 <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
     """
     dim = 2**num_wires
 
