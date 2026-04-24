@@ -18,7 +18,7 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -43,17 +43,17 @@ except ImportError:
 
 def _iqp_probs_pennylane(generators, params, n_qubits):
     """Return the exact output probability vector of an IQP circuit."""
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qp.device("default.qubit", wires=n_qubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
         for param, gen in zip(params, generators):
-            qml.MultiRZ(2.0 * -param, wires=gen)
+            qp.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
-            qml.Hadamard(i)
-        return qml.probs()
+            qp.Hadamard(i)
+        return qp.probs()
 
     return np.asarray(circuit(), dtype=np.float64)
 
@@ -63,21 +63,21 @@ def _iqp_expval_pennylane(generators, params, obs_ints, n_qubits):
 
     ``obs_ints`` uses the convention I=0, X=1, Y=2, Z=3 per qubit.
     """
-    pauli_map = {0: qml.Identity, 1: qml.X, 2: qml.Y, 3: qml.Z}
+    pauli_map = {0: qp.Identity, 1: qp.X, 2: qp.Y, 3: qp.Z}
     ops = [pauli_map[o](i) for i, o in enumerate(obs_ints)]
-    observable = qml.prod(*ops) if len(ops) > 1 else ops[0]
+    observable = qp.prod(*ops) if len(ops) > 1 else ops[0]
 
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qp.device("default.qubit", wires=n_qubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
         for param, gen in zip(params, generators):
-            qml.MultiRZ(2.0 * -param, wires=gen)
+            qp.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
-            qml.Hadamard(i)
-        return qml.expval(observable)
+            qp.Hadamard(i)
+        return qp.expval(observable)
 
     return float(circuit())
 
