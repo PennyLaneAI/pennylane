@@ -232,7 +232,7 @@ class SpecialUnitary(Operation):
     .. seealso::
 
         For more details on using this operator in applications, see the
-        `SU(N) gate demo <demos/tutorial_here_comes_the_sun>`__.
+        `SU(N) gate demo <https://pennylane.ai/qml/demos/tutorial_here_comes_the_sun>`__.
 
     .. warning::
 
