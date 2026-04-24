@@ -294,9 +294,9 @@ The following classes have been ported over:
   Wire allocations   |  2 |  2 |  2
   Total gates        |  5 |  3 |  2
   Gate counts:       |
-  - RX               |  2 |  2 |  1
-  - PauliX           |  1 |  1 |  1
   - Hadamard         |  2 |  0 |  0
+  - PauliX           |  1 |  1 |  1
+  - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
 
@@ -417,9 +417,9 @@ The following classes have been ported over:
   Total gates: 11
   Gate counts:
   - GlobalPhase: 3
+  - PPM-w1: 1
   - PPR-pi/4-w1: 5
   - PPR-pi/4-w2: 1
-  - PPM-w1: 1
   - PPR-pi/8-w1: 1
   Measurements:
   - expval(PauliZ): 1
@@ -593,12 +593,12 @@ The following classes have been ported over:
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
   :class:`~.SemiAdder`.
   [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
-  
+
   With this breaking change, please note the following:
-  
+
    - Decomposition rules for ``SemiAdder`` now require those arguments.
    - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
-   
+
    These changes are relevant only with :func:`~decomposition.enable_graph`.
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
@@ -861,7 +861,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
+* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant
   as a result.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
 
