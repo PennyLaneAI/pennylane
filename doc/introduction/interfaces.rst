@@ -182,7 +182,7 @@ TensorFlow
 
 .. warning::
 
-    Maintenance support for using TensorFlow with PennyLane has been terminated as of Pennylane v0.44.
+    As of PennyLane v0.44, TensorFlow support is no longer maintained.
     We recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
     machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
     a comprehensive guide on JAX and PyTorch: 
