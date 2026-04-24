@@ -236,11 +236,19 @@ def _mlir_resources_to_specs_resources(
     # This function is covered by integration tests within the Catalyst frontend
     """Helper function to convert the output of resource analysis pass into SpecsResources."""
 
+    # Sort the gate and measurement dictionaries by key to ensure consistent ordering, which is helpful for testing and readability of results
+    resources["operations"] = {
+        k: resources["operations"][k] for k in sorted(resources["operations"].keys())
+    }
+    resources["measurements"] = {
+        k: resources["measurements"][k] for k in sorted(resources["measurements"].keys())
+    }
+
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
 
     for res_name, count in resources["operations"].items():
-        match = re.match(r"(.+)\((\d+)\)", res_name)
+        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
         gate_name, gate_size = match.groups() if match else (res_name, 0)
 
         if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
