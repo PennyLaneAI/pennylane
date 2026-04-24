@@ -1010,6 +1010,7 @@ The following classes have been ported over:
   [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
+  [(#9331)](https://github.com/PennyLaneAI/pennylane/pull/9331)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
   [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
