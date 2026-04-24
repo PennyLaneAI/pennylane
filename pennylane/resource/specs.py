@@ -916,15 +916,15 @@ def specs(
         - 2: Before MLIR Passes
         - 3: cancel-inverses
         <BLANKLINE>
-        ↓Metric   Level→ |    0 |  1-a |  1-b |    2 |    3
-        ---------------------------------------------------
-        Wire allocations |    1 |    1 |    1 |    6 |    6
-        Total gates      |    2 |    2 |    2 |    4 |    0
+        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  2-c |  3-a |  3-b |  3-c
+        -------------------------------------------------------------------------------
+        Wire allocations |    1 |    1 |    1 |    0 |    3 |    3 |    0 |    3 |    3
+        Total gates      |    2 |    2 |    2 |    0 |    2 |    2 |    0 |    0 |    0
         Gate counts:     |
-        - PauliX         |    2 |    2 |    2 |    4 |    0
+        - PauliX         |    2 |    2 |    2 |    0 |    2 |    2 |    0 |    0 |    0
         Measurements:    |
-        - expval(PauliX) |    1 |    0 |    1 |    1 |    1
-        - expval(PauliZ) |    1 |    1 |    0 |    1 |    1
+        - expval(PauliZ) |    1 |    1 |    0 |    0 |    1 |    0 |    0 |    1 |    0
+        - expval(PauliX) |    1 |    0 |    1 |    0 |    0 |    1 |    0 |    0 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
         ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
