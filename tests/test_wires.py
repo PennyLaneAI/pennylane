@@ -20,7 +20,7 @@ from importlib import import_module, util
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.wires import Wires
 
@@ -51,12 +51,12 @@ class TestWires:
     @pytest.mark.parametrize(
         "iterable",
         [
-            [qml.RX, qml.RY],
-            [qml.PauliX],
-            (None, qml.expval),
+            [qp.RX, qp.RY],
+            [qp.PauliX],
+            (None, qp.expval),
             (
-                qml.device("default.qubit", wires=range(3)),
-                qml.device("default.gaussian", wires=[qml.RX, 3]),
+                qp.device("default.qubit", wires=range(3)),
+                qp.device("default.gaussian", wires=[qp.RX, 3]),
             ),
         ],
     )
