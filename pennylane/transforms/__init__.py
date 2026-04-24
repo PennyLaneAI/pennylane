@@ -16,36 +16,16 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
-Custom transforms
------------------
-
-``qp.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
-functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
-
-.. autosummary::
-    :toctree: api
-
-    ~transform
-
-Compile Pipeline
-----------------
-
-Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms` for more details.
-
-.. autosummary::
-    :toctree: api
-
-    ~CompilePipeline
-
 .. _transform_library:
 
-Transforms library
-------------------
+Transforms for circuit optimization
+-----------------------------------
 
-A collection of ready-to-use transforms are available in PennyLane.
+A collection of ready-to-use compilation passes are available in PennyLane that optimize the
+circuit, be it by reducing gate counts, interchanging operations for other operations, or more.
 
-Transforms for circuit compilation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Basic circuit compilation tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A set of transforms to perform basic circuit compilation tasks.
 
@@ -71,55 +51,12 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.unitary_to_rot
     ~transforms.rz_phase_gradient
 
-Compilation transforms using ZX calculus
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Compilation passes for Clifford+T decomposition and Pauli-based computation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There is a set of transforms that use ZX calculus to optimize circuits.
-
-.. currentmodule:: pennylane.transforms
-.. autosummary::
-    :toctree: api
-
-    zx.optimize_t_count
-    zx.push_hadamards
-    zx.reduce_non_clifford
-    zx.todd
-
-The following utility functions assist when working explicitly with ZX diagrams,
-for example when writing custom ZX compilation passes. Also see the section
-on intermediate representations below.
-
-.. currentmodule:: pennylane
-.. autosummary::
-    :toctree: api
-
-    ~transforms.to_zx
-    ~transforms.from_zx
-
-Other compilation utilities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are additional utility functions and decompositions available that assist with
-both transforms and decompositions within the larger PennyLane codebase.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.pattern_matching
-
-There are also utility functions that take a circuit and return a DAG.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.commutation_dag
-    ~transforms.CommutationDAG
-    ~transforms.CommutationDAGNode
-
-Transforms for Clifford+T decomposition and Pauli-based computation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum circuits and decomposes them to the Clifford+T basis.
+These compilation passes decompose or manipulate quantum circuits in the
+`Clifford+T basis <https://pennylane.ai/compilation/clifford-t-gate-set>`_ or in the
+`Pauli-based computation model <https://pennylane.ai/compilation/pauli-based-computation>`__.
 
 .. autosummary::
     :toctree: api
@@ -134,36 +71,39 @@ These transforms accept quantum circuits and decomposes them to the Clifford+T b
     ~transforms.reduce_t_depth
     ~transforms.decompose_arbitrary_ppr
 
+Compilation passes using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Other transforms
-~~~~~~~~~~~~~~~~
+There is a set of transforms that use
+`ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation/compilation>`_
+to optimize circuits.
 
-These are additional transforms that are useful for multiple purposes such as
-circuit preprocessing, getting information from a circuit, and more.
-
+.. currentmodule:: pennylane.transforms
 .. autosummary::
     :toctree: api
 
-    ~batch_params
-    ~batch_input
-    ~transforms.broadcast_expand
-    ~transforms.sign_expand
-    ~transforms.convert_to_numpy_parameters
-    ~defer_measurements
-    ~transforms.diagonalize_measurements
-    ~transforms.split_non_commuting
-    ~transforms.split_to_single_terms
-    ~apply_controlled_Q
-    ~quantum_monte_carlo
-    ~transforms.resolve_dynamic_wires
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
 
-Transforms for intermediate representations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The following utility functions assist when working explicitly with ZX diagrams, for example when
+writing custom ZX compilation passes. Also see the section on intermediate representations below.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    ~transforms.to_zx
+    ~transforms.from_zx
+
+Compilation passes for other intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Intermediate representations (IRs) are alternative representations of quantum circuits, typically
-offering a more efficient classical description for special classes of circuits.
-The following functions produce intermediate representations of quantum circuits, or
-use them internally to produce a new quantum circuit:
+offering a more efficient classical description for special classes of circuits. The following
+functions produce intermediate representations of quantum circuits, or use them internally to
+produce a new quantum circuit:
 
 .. autosummary::
     :toctree: api
@@ -182,22 +122,88 @@ In addition, there are the following utility functions to traverse a graph:
     intermediate_reps.postorder_traverse
     intermediate_reps.preorder_traverse
 
-Transforms that act only on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for circuit pre/post-processing and other utilities
+--------------------------------------------------------------
 
-These transforms only accept QNodes, and return new transformed functions
-that compute the desired quantity.
+The following transforms are useful for multiple purposes such as circuit preprocessing, getting
+information from a circuit, and more.
 
 .. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
+    ~batch_params
     ~batch_partial
+    ~batch_input
+    ~transforms.broadcast_expand
+    ~transforms.sign_expand
+    ~transforms.convert_to_numpy_parameters
+    ~defer_measurements
+    ~transforms.diagonalize_measurements
+    ~transforms.split_non_commuting
+    ~transforms.split_to_single_terms
+    ~apply_controlled_Q
+    ~quantum_monte_carlo
+    ~transforms.resolve_dynamic_wires
+
+The following transforms only accept QNodes, and return new transformed functions that compute the
+desired quantity.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
     ~draw
     ~draw_mpl
+    ~draw_graph
+
+There are additional utility functions and decompositions available that assist with both transforms
+and decompositions within the larger PennyLane codebase.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.pattern_matching
+
+There are also utility functions that take a circuit and return a DAG.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.commutation_dag
+    ~transforms.CommutationDAG
+    ~transforms.CommutationDAGNode
+
+Chaining circuit transforms together
+------------------------------------
+
+Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms`
+for more details.
+
+.. autosummary::
+    :toctree: api
+
+    ~CompilePipeline
+
+Custom transforms
+-----------------
+
+``qp.transform`` can be used to define custom transformations that work with PennyLane QNodes and
+quantum functions; such transformations can map a circuit to one or many new circuits alongside
+associated classical post-processing. See :ref:`custom_transforms` for more details.
+
+.. note::
+
+    The ``transform`` function is for defining tape-based transforms only, which are generally not
+    compatible with :func:`~.qjit` and program capture (``@qjit(capture=True)``).
+
+.. autosummary::
+    :toctree: api
+
+    ~transform
 
 Transforms developer classes
-------------------------------
+----------------------------
 
 .. currentmodule:: pennylane
 .. autosummary::
@@ -208,8 +214,8 @@ Transforms developer classes
 
 .. _transforms:
 
-Transforming circuits
----------------------
+Transforming circuits in PennyLane
+----------------------------------
 
 A quantum transform is a crucial concept in PennyLane, and refers to mapping a quantum
 circuit to one or more circuits, alongside a classical post-processing function.
@@ -224,7 +230,7 @@ rule or computing the expectation value of a Hamiltonian term-by-term).
     For examples of built-in transforms that come with PennyLane, see the
     :doc:`/introduction/compiling_circuits` documentation.
 
-Transforms can be applied on ``QNodes`` using the decorator syntax:
+Transforms can be applied on QNodes using the decorator syntax:
 
 .. code-block:: python
 
@@ -243,7 +249,7 @@ Transforms can be applied on ``QNodes`` using the decorator syntax:
         ]
 
 Passing arguments to transforms
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We can pass additional arguments to a transform that accepts them, which binds them with
 the transform, creating a :class:`~pennylane.transforms.core.BoundTransform`, which can
@@ -270,7 +276,7 @@ a circuit into tapes measuring groups of commuting observables.
 .. _composing_transforms:
 
 Composability of transforms
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Transforms are inherently composable on a :class:`~.QNode`, meaning that transforms
 with compatible post-processing functions can be successively applied to QNodes. For
@@ -321,6 +327,8 @@ circuit with each pass within the pipeline sequentially.
         qp.RX(x, wires=0)
         qp.RX(y, wires=0)
         return qp.expval(qp.Z(0))
+
+.. _custom_transforms:
 
 Creating your own transform
 ---------------------------
@@ -392,9 +400,11 @@ the form of a decorator in order to turn the custom function into a quantum tran
 Additional information
 ----------------------
 
-Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qp_gradients>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qp_transforms>`.
+Explore practical examples of transforms focused on compiling circuits in the
+:doc:`compiling circuits documentation </introduction/compiling_circuits>`. For gradient transforms,
+refer to the examples in the :doc:`gradients documentation <../code/qp_gradients>`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the
+:doc:`summary above <../code/qp_transforms>`.
 
 """
 
