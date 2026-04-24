@@ -797,6 +797,7 @@ def decompose(
     return (tape,), null_postprocessing
 
 
+@queuing.QueuingManager.stop_recording()
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
