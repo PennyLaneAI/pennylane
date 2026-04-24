@@ -89,9 +89,9 @@ def horizontal_cartan_subalgebra(
 
     where :math:`\mathfrak{a})` is the CSA and :math:`\tilde{\mathfrak{m}}` is the remainder of the horizontal subspace :math:`\mathfrak{m}`.
 
-    .. seealso:: 
+    .. seealso::
         :func:`~cartan_decomp`,
-        :func:`~structure_constants`, 
+        :func:`~structure_constants`,
         :doc:`The KAK decomposition in theory (demo) <demo:demos/tutorial_kak_decomposition>`,
         :doc:`The KAK decomposition in practice (demo) <demo:demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 

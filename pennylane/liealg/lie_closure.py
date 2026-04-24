@@ -68,8 +68,8 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
         :class:`~.Operator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
 
-    .. seealso:: 
-        :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, 
+    .. seealso::
+        :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`,
         and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
