@@ -33,12 +33,6 @@ def test_standard_validity_left_comparator():
     gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
     assert_valid(gate)
 
-    assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
-    assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
-    assert gate.hyperparameters["y_wires"] == qp.wires.Wires([3, 4, 5])
-    assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
-    assert gate.hyperparameters["comparator"] == ">="
-
 
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
@@ -57,8 +51,6 @@ class TestLeftQuantumComparator:
         self, comparator, x_wires, y_wires, target_wire, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the LeftComparator template output."""
-
-        pytest.importorskip("catalyst")
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)

@@ -27,7 +27,7 @@ from pennylane.wires import Wires, WiresLike
 
 class LeftQuantumComparator(Operation):
     r"""Perform an inequality test :math:`|x\rangle|y\rangle|0\rangle \mapsto |x\rangle |y\rangle|x \leq y\rangle` between two states in separate quantum registers.
-    
+
     This operator performs an inequality test between two quantum registers :math:`x` and
     :math:`y`, storing the result in a zeroed target qubit. The
     ``comparator`` argument can be one of four possible string values ``"<", "<=", ">", ">="`` to determine the type of inequality test. For example, choosing ``comparator="<"`` we have the following operation:
@@ -53,6 +53,9 @@ class LeftQuantumComparator(Operation):
 
     **Example**
 
+    In this example, we will use the ``LeftQuantumOperator``, generating the output on wire :math:`11`. After this,
+    we will copy the result to wire :math:`12` using a ``CNOT`` gate, and then apply the ``adjoint(LeftQuantumOperator)``
+     to clean up the auxiliary qubits used.
 
     .. code-block:: python
 
