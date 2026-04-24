@@ -406,6 +406,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
 
+    # NOTE: Stop recording to prevent these new operators
+    # from being queued into the active context.
     with QueuingManager.stop_recording():
         try:
             new_ops = [
