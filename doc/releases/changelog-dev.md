@@ -1013,6 +1013,7 @@ The following classes have been ported over:
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
   [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
   [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
+  [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
