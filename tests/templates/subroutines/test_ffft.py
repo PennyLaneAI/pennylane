@@ -33,7 +33,8 @@ def test_ffft_decomposition_new(wires):
     "wires, error_type, error_msg",
     [
         (tuple(), ValueError, "The number of wires must be at least 2"),
-        ((0, 1, 2), NotImplementedError, "odd numbers of wires"),
+        ((0, 1, 2), NotImplementedError, "powers of two"),
+        ((0, 1, 2, 3, 4, 5), NotImplementedError, "powers of two"),
     ],
 )
 def test_raises(wires, error_type, error_msg):

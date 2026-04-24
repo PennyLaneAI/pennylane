@@ -49,8 +49,8 @@ class FFFT(Operator):
     def __init__(self, wires: WiresLike):
         if len(wires) <= 1:
             raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
-        if len(wires) % 2 != 0:
-            raise NotImplementedError("FFFT is not yet implemented for odd numbers of wires.")
+        if not math.log2(len(wires)).is_integer():
+            raise NotImplementedError("FFFT is currently only implemented for numbers of wires that are powers of two.")
 
         super().__init__(wires=wires)
 
