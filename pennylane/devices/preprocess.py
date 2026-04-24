@@ -407,7 +407,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         return (tape,), null_postprocessing
 
     # NOTE: Stop recording to prevent these new operators
-    # from being queued into the active context.
+    # from being queued into a potentially active context.
     with QueuingManager.stop_recording():
         try:
             new_ops = [
