@@ -835,9 +835,9 @@ def specs(
         Wire allocations   |  3 |  3 |  3
         Total gates        |  5 |  3 |  2
         Gate counts:       |
-        - RX               |  2 |  2 |  1
-        - PauliX           |  2 |  0 |  0
         - CNOT             |  1 |  1 |  1
+        - PauliX           |  2 |  0 |  0
+        - RX               |  2 |  2 |  1
         Measurements:      |
         - probs(all wires) |  1 |  1 |  1
 
@@ -923,8 +923,8 @@ def specs(
         Gate counts:     |
         - PauliX         |    2 |    2 |    2 |    4 |    0
         Measurements:    |
-        - expval(PauliZ) |    1 |    1 |    0 |    1 |    1
         - expval(PauliX) |    1 |    0 |    1 |    1 |    1
+        - expval(PauliZ) |    1 |    1 |    0 |    1 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
         ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
