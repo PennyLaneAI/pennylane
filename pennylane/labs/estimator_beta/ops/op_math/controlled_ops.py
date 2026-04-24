@@ -74,7 +74,7 @@ def ch_toffoli_based_resource_decomp() -> list[GateCount | qre.Allocate | qre.De
 
     .. note::
 
-        This operation assumes a `catalytic T state <https://pennylane.ai/qml/demos/tutorial_magic_state_distillation>`_ is available.
+        This operation assumes a :doc:`catalytic T state <demo:demos/tutorial_magic_state_distillation>` is available.
         Users should ensure the cost of constructing such a state has been accounted for.
 
     Resources:

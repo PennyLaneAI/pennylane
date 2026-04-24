@@ -81,7 +81,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa>`__.
+    You can also find a walkthrough of the implementation in this :doc:`tutorial <demo:demos/qnspsa>`.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
