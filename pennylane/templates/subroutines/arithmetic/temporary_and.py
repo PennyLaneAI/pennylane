@@ -28,9 +28,8 @@ from pennylane.decomposition import (
 )
 from pennylane.ops.op_math import adjoint
 from pennylane.ops.op_math.controlled import ControlledOp
-from pennylane.ops.op_math.controlled_ops import _check_and_convert_control_values
 from pennylane.ops.qubit import X
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
 
 
 class TemporaryAND(ControlledOp):
@@ -85,15 +84,15 @@ class TemporaryAND(ControlledOp):
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            # |0000>
-            qp.X(0) # |1000>
-            qp.X(1) # |1100>
-            # The target wire is in state |0>, so we can apply TemporaryAND
-            qp.TemporaryAND([0,1,2]) # |1110>
-            qp.CNOT([2,3]) # |1111>
-            # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied,
+            # |0000⟩
+            qp.X(0) # |1000⟩
+            qp.X(1) # |1100⟩
+            # The target wire is in state |0⟩, so we can apply TemporaryAND
+            qp.TemporaryAND([0,1,2]) # |1110⟩
+            qp.CNOT([2,3]) # |1111⟩
+            # The target wire will be in state |0⟩ after adjoint(TemporaryAND) gate is applied,
             # so we can apply adjoint(TemporaryAND)
-            qp.adjoint(qp.TemporaryAND([0,1,2])) # |1101>
+            qp.adjoint(qp.TemporaryAND([0,1,2])) # |1101⟩
             return qp.sample(wires=[0,1,2,3])
 
     >>> print(qp.draw(circuit)())
@@ -101,6 +100,8 @@ class TemporaryAND(ControlledOp):
     1: ──X─├●─────●┤─┤ ├Sample
     2: ────╰⊕─╭●──⊕╯─┤ ├Sample
     3: ───────╰X─────┤ ╰Sample
+    >>> print(circuit())
+    [[1 1 0 1]]
 
     Multi-wire case (more than 2 controls, with ``work_wires``):
 
@@ -171,9 +172,6 @@ class TemporaryAND(ControlledOp):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         id=None,
     ):
-        wires = Wires(() if wires is None else wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
         if len(wires) < 3:
             raise ValueError(
                 f"TemporaryAND: wrong number of wires. {len(wires)} wire(s) given. "
@@ -183,7 +181,8 @@ class TemporaryAND(ControlledOp):
         control_wires = wires[:-1]
         target_wires = wires[-1:]
 
-        control_values = _check_and_convert_control_values(control_values, control_wires)
+        if control_values is None:
+            control_values = [1] * len(control_wires)
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
