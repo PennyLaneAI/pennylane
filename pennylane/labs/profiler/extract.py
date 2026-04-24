@@ -122,7 +122,8 @@ def _profile_from_qfunc(
 
 def _extract_gate_counts_from_compressed_res_op(
     comp_res_op: CompressedResourceOp,
-    scalar: int = 1,
+    local_scalar: int = 1,
+    cumulative_scalar: int = 1,
     gate_set: set[str] | None = None,
     config: LabsResourceConfig | None = None,
 ):
@@ -134,11 +135,11 @@ def _extract_gate_counts_from_compressed_res_op(
         config = LabsResourceConfig()
 
     # Initialize ProfileNode:
-    leaf_node = ProfileNode(comp_res_op, scalar)
+    leaf_node = ProfileNode(comp_res_op, local_scalar)
 
     # If its already in the gateset: 
     if comp_res_op.name in gate_set:
-        leaf_node.gate_data[comp_res_op] += scalar
+        leaf_node.gate_data[comp_res_op] += cumulative_scalar
         return leaf_node
     
     # Else decompose: 
@@ -147,10 +148,16 @@ def _extract_gate_counts_from_compressed_res_op(
     for action in resource_decomp:
         if isinstance(action, GateCount):
             child_node = _extract_gate_counts_from_compressed_res_op(
-                action.gate, scalar=action.count, gate_set=gate_set, config=config,
+                action.gate,
+                local_scalar = action.count,
+                cumulative_scalar = action.count * cumulative_scalar,
+                gate_set = gate_set,
+                config = config,
             )
             leaf_node.children.append(child_node)
-            scaled_gate_counts = mul_dict(child_node.gate_data, scalar)
-            add_dicts(leaf_node.gate_data, scaled_gate_counts)   # Updates base dict inplace
+            add_dicts(leaf_node.gate_data, child_node.gate_data)   # Updates base dict inplace
+
+            # scaled_gate_counts = mul_dict(child_node.gate_data, scalar)
+            # add_dicts(leaf_node.gate_data, scaled_gate_counts)   # Updates base dict inplace
 
     return leaf_node
