@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for qml.grad and qml.jacobian
+Unit tests for qp.grad and qp.jacobian
 """
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 def test_informative_error_on_bad_shape():
@@ -27,4 +27,4 @@ def test_informative_error_on_bad_shape():
         return (2 * x,)
 
     with pytest.raises(ValueError, match="autograd can only differentiate with"):
-        qml.jacobian(f)(qml.numpy.array(2.0))
+        qp.jacobian(f)(qp.numpy.array(2.0))

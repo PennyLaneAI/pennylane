@@ -314,6 +314,7 @@ The following classes have been ported over:
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
+  [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
 
 * When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -527,6 +528,9 @@ The following classes have been ported over:
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
   ```
+
+* Applied stricter conditions on some decomposition rules for ``MultiControlledX`` to avoid duplication of equivalent decomposition rules for ``MultiControlledX`` on less than 6 wires.
+  [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -998,13 +1002,22 @@ The following classes have been ported over:
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+  [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
+  [(#9320)](https://github.com/PennyLaneAI/pennylane/pull/9320)
+  [(#9315)](https://github.com/PennyLaneAI/pennylane/pull/9315)
+  [(#9312)](https://github.com/PennyLaneAI/pennylane/pull/9312)
   [(#9314)](https://github.com/PennyLaneAI/pennylane/pull/9314)
   [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
+  [(#9331)](https://github.com/PennyLaneAI/pennylane/pull/9331)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
   [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
+  [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
+  [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
+  [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
+  [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1050,6 +1063,10 @@ The following classes have been ported over:
   :doc:`documentation development guide <../development/guide/documentation>` under the section
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
+
+* The :mod:`pennylane.transforms` module has been reorganized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
