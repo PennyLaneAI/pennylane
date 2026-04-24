@@ -1019,6 +1019,7 @@ The following classes have been ported over:
   [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
   [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
   [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
+  [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1064,6 +1065,10 @@ The following classes have been ported over:
   :doc:`documentation development guide <../development/guide/documentation>` under the section
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
+
+* The :mod:`pennylane.transforms` module has been reorganized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
