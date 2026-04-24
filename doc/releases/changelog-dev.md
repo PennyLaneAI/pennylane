@@ -64,7 +64,7 @@
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
   [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
 
-<h4>QSVT Angle Solver</h4>
+<h4>QSVT Angle Solver 📐</h4>
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qp.qsvt` and
@@ -155,6 +155,45 @@
 
   ```
 
+* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+  [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
+
+  ```python
+  @qp.qjit(target="mlir")
+  @qp.transforms.to_ppr
+  @qp.qnode(qp.device("null.qubit", wires=2))
+  def circuit():
+      qp.H(0)
+      qp.CNOT([0, 1])
+      m = qp.measure(0)
+      qp.T(0)
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(circuit, level=1)())
+  Device: null.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: to-ppr
+  <BLANKLINE>
+  Wire allocations: 2
+  Total gates: 11
+  Gate counts:
+  - GlobalPhase: 3
+  - PPR-pi/4-w1: 5
+  - PPR-pi/4-w2: 1
+  - PPM-w1: 1
+  - PPR-pi/8-w1: 1
+  Measurements:
+  - expval(PauliZ): 1
+  Depth: Not computed
+
+  ```
+
+* :func:`~.specs` can now return measurement information for :func:`~.qjit` workloads when using ``level="device"``.
+  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
+
 <h4>Compilation Pipelines and Markers ✒️</h4>
 
 * Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
@@ -210,42 +249,6 @@
   0: ──X──H──H─┤  Probs
   >>> print(qp.draw(circuit, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
-
-  ```
-
-* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
-  [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
-
-  ```python
-  @qp.qjit(target="mlir")
-  @qp.transforms.to_ppr
-  @qp.qnode(qp.device("null.qubit", wires=2))
-  def circuit():
-      qp.H(0)
-      qp.CNOT([0, 1])
-      m = qp.measure(0)
-      qp.T(0)
-      return qp.expval(qp.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qp.specs(circuit, level=1)())
-  Device: null.qubit
-  Device wires: 2
-  Shots: Shots(total=None)
-  Level: to-ppr
-  <BLANKLINE>
-  Wire allocations: 2
-  Total gates: 11
-  Gate counts:
-  - GlobalPhase: 3
-  - PPR-pi/4-w1: 5
-  - PPR-pi/4-w2: 1
-  - PPM-w1: 1
-  - PPR-pi/8-w1: 1
-  Measurements:
-  - expval(PauliZ): 1
-  Depth: Not computed
 
   ```
 
@@ -455,9 +458,6 @@
 
 * No unnecessary classical registers will be created now when using `qp.to_openqasm` with `measure_all=False`.
   [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
-
-* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
-  [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
 * `Callables` defining quantum operations can now be passed to the
   `compute_op`, `target_op` and `uncompute_op` arguments of :func:`~.change_op_basis`.
@@ -869,6 +869,26 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
+  [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
+
+* Add documentation tests for various modules.
+  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
+  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
+  [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
+  [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
+
+* Pass-by-pass :func:`~.specs` now uses ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
+  Additionally, several internal comments have been updated to bring ``specs`` in line with the new ``CompilePipeline`` class.
+  [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
+
+* When using :func:`~.specs` with Catalyst and with multiple levels,
+  with the ``split-non-commuting`` MLIR pass applied,
+  the returned :class:`.resource.CircuitSpecs` object will include
+  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
+  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
+
 * Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
   as a result.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
@@ -877,7 +897,7 @@
   during capture time.
   [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
 
-* During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+* During program capture, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
 * With program capture, arrays dynamic shapes with `qp.for_loop` and `qp.while_loop` can now be combined
@@ -893,9 +913,6 @@
 * Remove requirements file from docs folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
-* Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
-  [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
-
 * `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
   program capture.
   [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
@@ -909,12 +926,6 @@
 * The output of the `qp.while_loop` condition is now automatically converted
   to a bool.
   [(#9184)](https://github.com/PennyLaneAI/pennylane/pull/9184)
-
-* When using :func:`~.specs` with Catalyst and with multiple levels,
-  with the ``split-non-commuting`` MLIR pass applied,
-  the returned :class:`.resource.CircuitSpecs` object will include
-  a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
-  [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
 * Upper bound `pyzx<0.10` dependency to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
@@ -941,33 +952,16 @@
 * Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
-* Update pennylane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
+* Update PennyLane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
   [(#9218)](https://github.com/PennyLaneAI/pennylane/pull/9218)
-
-* A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
-  [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
 * `qp.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
-
-* Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
-  Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
-  [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
-
-* Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
-  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
-
-* Add documentation tests for various modules.
-  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
-  [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
-  [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
-  [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
-  [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -1000,7 +994,7 @@
   and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
-* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the `default.qubit` device.
+* Added specialized gate kernels for `RX`, `RY`, `RZ`, and `Hadamard` in the `default.qubit` device.
   These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
   states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
@@ -1030,9 +1024,22 @@
   [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
 
+* A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
+  [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
+
+* The :mod:`pennylane.transforms` module has been reorganized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
+
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+
+* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
+  [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
+
+* The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
+  [(#9244)](https://github.com/PennyLaneAI/pennylane/pull/9244)
 
 * A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
   [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
@@ -1048,9 +1055,6 @@
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
   a resource decomposition defined and is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
-
-* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
-  [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
 * Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
@@ -1074,10 +1078,6 @@
   :doc:`documentation development guide <../development/guide/documentation>` under the section
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
-
-* The :mod:`pennylane.transforms` module has been reorganized to allow for
-  easier indexing through available transforms in PennyLane.
-  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
