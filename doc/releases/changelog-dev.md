@@ -711,6 +711,10 @@ The following classes have been ported over:
   documentation still resided in the PennyLane repository.
   [(#9116)](https://github.com/PennyLaneAI/pennylane/pull/9116)
 
+* Corrected documentation links to external tutorials by adding the missing
+  `https://pennylane.ai/qml/` prefix.
+  [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
 
 <h3>Bug fixes 🐛</h3>
 
@@ -800,6 +804,7 @@ Sengthai Heng,
 Christina Lee,
 Mudit Pandey,
 Andrija Paurevic,
+Alex Preciado,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
