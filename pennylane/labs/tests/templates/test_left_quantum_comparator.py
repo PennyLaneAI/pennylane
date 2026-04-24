@@ -43,8 +43,6 @@ def test_standard_validity_left_comparator():
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
 
-    @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y"),
