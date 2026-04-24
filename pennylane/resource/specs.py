@@ -398,8 +398,9 @@ def _specs_from_analysis_pass(
     compile_options.target = "mlir"
     compile_options.lower_to_llvm = False
     if compile_options.pipelines is None:
-        # If the user has not explicitly chosen a pipeline, prevent unnecessary work
-        # by limiting which passes are applied to just the necessary ones
+        # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
+        # limiting which passes are applied to just the necessary ones. In this case, only
+        # the set of user-specified transforms (the quantum-compilation-stage) are run
         compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
 
     try:
