@@ -28,6 +28,7 @@
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
+  [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
   [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
 
   Consider a sparse state on five qubits, specified by normalized coefficients and statevector
@@ -1015,6 +1016,7 @@ The following classes have been ported over:
   [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
   [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
   [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
+  [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
