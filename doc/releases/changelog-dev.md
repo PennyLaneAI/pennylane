@@ -1084,10 +1084,9 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-<<<<<<< HEAD
 * Fixed a bug in the decomposition of `Adjoint(TemporaryAND)` where control values were ignored.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
-=======
+
 * Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
   and return `qml.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
@@ -1095,7 +1094,6 @@ The following classes have been ported over:
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
->>>>>>> main
 
 * Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
   can be interpreted.
