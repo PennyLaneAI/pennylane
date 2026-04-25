@@ -204,18 +204,21 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
                 for op, val in actual_gate_counts.items()
                 if op in gate_counts and val != gate_counts[op]
             ]
-            op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
-            miscounts_str = f"{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
-            miscounts_str += "\n".join(
-                f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
-                for op, val0, val1 in miscounts
-            )
+            if miscounts:
+                op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
+                miscounts_str = f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
+                miscounts_str += "\n".join(
+                    f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
+                    for op, val0, val1 in miscounts
+                )
+            else:
+                miscounts_str = ""
             assertion_error_string = (
                 f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
                 f"\nActual gate counts:\n{dict(actual_gate_counts)}"
-                "Numbers are off for following ops:\n\n"
-                f"{miscounts_str}\n"
-                "Missing in gate counts from resource function:\n"
+                "\nThe numbers are off for following ops:"
+                f"{miscounts_str}"
+                "\nMissing in gate counts from resource function:\n"
                 f"{[op for op in actual_gate_counts if op not in gate_counts]}\n"
                 "Missing in actual gate counts:\n"
                 f"{[op for op in gate_counts if op not in actual_gate_counts]}"
