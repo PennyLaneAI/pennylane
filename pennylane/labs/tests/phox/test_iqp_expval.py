@@ -18,7 +18,7 @@ Tests for the IQP expectation value calculator.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -103,32 +103,32 @@ def iqp_circuit_pl(generators, params, obs_ints, init_state):
     expval_ops = []
     for i, op in enumerate(obs_ints):
         if op == 1:
-            expval_ops.append(qml.X(i))
+            expval_ops.append(qp.X(i))
         elif op == 2:
-            expval_ops.append(qml.Y(i))
+            expval_ops.append(qp.Y(i))
         elif op == 3:
-            expval_ops.append(qml.Z(i))
+            expval_ops.append(qp.Z(i))
         elif op == 0:
-            expval_ops.append(qml.Identity(i))
+            expval_ops.append(qp.Identity(i))
 
-    expval_op = qml.prod(*expval_ops)
+    expval_op = qp.prod(*expval_ops)
 
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qp.device("default.qubit", wires=n_qubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.StatePrep(np.array(init_state), wires=range(n_qubits))
+        qp.StatePrep(np.array(init_state), wires=range(n_qubits))
 
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
         for param, gen in zip(params, generators):
-            qml.MultiRZ(2 * -param, wires=gen)
+            qp.MultiRZ(2 * -param, wires=gen)
 
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
-        return qml.expval(expval_op)
+        return qp.expval(expval_op)
 
     return circuit
 
@@ -301,27 +301,27 @@ class TestIQPExpval:
         jax_state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
         n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        expval_ops = [qml.Z(0), qml.Y(1)]
-        expval_op = qml.prod(*expval_ops)
+        expval_ops = [qp.Z(0), qp.Y(1)]
+        expval_op = qp.prod(*expval_ops)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StatePrep(np.array(pl_state), wires=range(n_qubits))
+            qp.StatePrep(np.array(pl_state), wires=range(n_qubits))
 
             for i in range(n_qubits):
-                qml.Hadamard(i)
+                qp.Hadamard(i)
 
             for param, gen in zip(params, generators_pl):
-                qml.MultiRZ(2 * -param, wires=gen)
+                qp.MultiRZ(2 * -param, wires=gen)
 
-            qml.DiagonalQubitUnitary(diagonal, wires=[0, 1])
+            qp.DiagonalQubitUnitary(diagonal, wires=[0, 1])
 
             for i in range(n_qubits):
-                qml.Hadamard(i)
+                qp.Hadamard(i)
 
-            return qml.expval(expval_op)
+            return qp.expval(expval_op)
 
         exact_val = circuit()
 

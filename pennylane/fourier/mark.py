@@ -37,7 +37,7 @@ class MarkedOp(SymbolicOp):
 
     **Example:**
 
-    >>> op = qml.RX(1.23456, wires=0)
+    >>> op = qp.RX(1.23456, wires=0)
     >>> marked_op = MarkedOp(op, "my-rx")
     >>> print(marked_op.marker)
     my-rx
@@ -133,7 +133,7 @@ def mark(op: Operator, marker: str) -> MarkedOp:
 
     **Example:**
 
-    >>> op = qml.X(0)
+    >>> op = qp.X(0)
     >>> marked_op = mark(op, "my-x")
     >>> print(marked_op.marker)
     my-x

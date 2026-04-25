@@ -1,4 +1,4 @@
-This document explains the algorithm behind the decomposition of `qml.PCPhase` gates.
+This document explains the algorithm behind the decomposition of `qp.PCPhase` gates.
 
 # Algorithm description
 
