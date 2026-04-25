@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DeviceError
@@ -41,15 +41,15 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, True],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    [qp.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qp.device("lightning.qubit", wires=5), "adjoint", True, True],
+    [qp.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qp.device("lightning.qubit", wires=5), "adjoint", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
-    [qml.device("reference.qubit"), "parameter-shift", False, False],
+    [qp.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -85,9 +85,9 @@ class TestQNode:
 
         @qnode(dev, **qnode_kwargs)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = torch.tensor(0.1, requires_grad=True)
         res = circuit(a)
@@ -121,16 +121,16 @@ class TestQNode:
 
         @qnode(dev, **qnode_kwargs)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         from pennylane import numpy as anp
 
         a = anp.array(0.1, requires_grad=True)
 
         res1 = circuit(a)
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grad1 = grad_fn(a)
 
         # switch to Torch interface
@@ -159,15 +159,15 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(p1, p2=y, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            qp.RX(p1, wires=0)
+            qp.RY(p2[0] * p2[1], wires=1)
+            qp.RX(kwargs["p3"], wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
-        result = qml.draw(circuit)(p1=x, p3=z)
+        result = qp.draw(circuit)(p1=x, p3=z)
         expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n1: ──RY(0.06)───────────╰X─┤  <Z>"
 
         assert result == expected
@@ -196,10 +196,10 @@ class TestQNode:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         res = circuit(a, b)
 
@@ -256,10 +256,10 @@ class TestQNode:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         res = circuit(a, b)
 
@@ -301,9 +301,9 @@ class TestQNode:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         res = circuit(a)
         res.backward()
@@ -330,10 +330,10 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         res = circuit(a, b)
 
@@ -396,10 +396,10 @@ class TestQNode:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b, c):
-            qml.RY(a * c, wires=0)
-            qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + torch.sin(a), wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a * c, wires=0)
+            qp.RZ(b, wires=0)
+            qp.RX(c + c**2 + torch.sin(a), wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         res = circuit(a, b, c)
 
@@ -427,10 +427,10 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         a = 0.1
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
@@ -484,9 +484,9 @@ class TestQNode:
 
         @qnode(dev, **qnode_kwargs)
         def circuit(U, a):
-            qml.QubitUnitary(U, wires=0)
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.QubitUnitary(U, wires=0)
+            qp.RY(a, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         res = circuit(U, a)
 
@@ -514,7 +514,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class MyU3(qml.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
 
             name = "MyU3"
 
@@ -522,18 +522,18 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
                 return [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
+                    qp.Rot(lam, theta, -lam, wires=wires),
+                    qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qml.decomposition.local_decomps():
+        with qp.decomposition.local_decomps():
 
-            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
             def _decomp(theta, phi, lam, wires):
-                qml.Rot(lam, theta, -lam, wires)
-                qml.PhaseShift(phi + lam, wires)
+                qp.Rot(lam, theta, -lam, wires)
+                qp.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(MyU3, _decomp)
+            qp.add_decomps(MyU3, _decomp)
 
             a = np.array(0.1)
             p_val = [0.1, 0.2, 0.3]
@@ -541,9 +541,9 @@ class TestQNode:
 
             @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
             def circuit(a, p):
-                qml.RX(a, wires=0)
+                qp.RX(a, wires=0)
                 MyU3(p[0], p[1], p[2], wires=0)
-                return qml.expval(qml.PauliX(0))
+                return qp.expval(qp.PauliX(0))
 
             res = circuit(a, p)
 
@@ -587,12 +587,12 @@ class TestShotsIntegration:
         dev = DefaultQubit()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
-        @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
+        @qnode(dev, interface="torch", diff_method=qp.gradients.param_shift)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(wires=(0, 1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(wires=(0, 1))
 
         # execute with device default shots (None)
         with pytest.raises(DeviceError):
@@ -610,15 +610,15 @@ class TestShotsIntegration:
         dev = DefaultQubit()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
-        @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
+        @qnode(dev, interface="torch", diff_method=qp.gradients.param_shift)
         def cost_fn(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliY(1))
 
-        res = jacobian(qml.set_shots(shots=[10000, 10000, 10000])(cost_fn), (a, b))
-        res = qml.math.transpose(torch.stack(res))
+        res = jacobian(qp.set_shots(shots=[10000, 10000, 10000])(cost_fn), (a, b))
+        res = qp.math.transpose(torch.stack(res))
         assert dev.shots is None
         assert len(res) == 3
 
@@ -632,17 +632,17 @@ class TestShotsIntegration:
         weights = torch.tensor([0.543, -0.654], requires_grad=True)
         a, b = weights
 
-        @qnode(DefaultQubit(), interface="torch", diff_method=qml.gradients.param_shift)
+        @qnode(DefaultQubit(), interface="torch", diff_method=qp.gradients.param_shift)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliY(1))
 
         res1 = circuit(*weights)
-        assert qml.math.shape(res1) == ()
+        assert qp.math.shape(res1) == ()
 
-        circuit_shots = qml.set_shots(shots=[(1, 1000)])(circuit)
+        circuit_shots = qp.set_shots(shots=[(1, 1000)])(circuit)
         res2 = circuit_shots(*weights)
         assert len(res2) == 1000
 
@@ -658,13 +658,13 @@ class TestShotsIntegration:
 
         @qnode(dev, interface="torch")
         def cost_fn(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliY(1))
 
         with dev.tracker:
-            cost_fn100 = qml.set_shots(shots=100)(cost_fn)
+            cost_fn100 = qp.set_shots(shots=100)(cost_fn)
             res = cost_fn100(a, b)
             res.backward()
         # since we are using finite shots, use parameter shift
@@ -712,10 +712,10 @@ class TestQubitIntegration:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0]), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[0]), qp.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -772,10 +772,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -824,8 +824,8 @@ class TestQubitIntegration:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit1(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         @qnode(
             dev,
@@ -835,10 +835,10 @@ class TestQubitIntegration:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit2(data, weights):
-            data = qml.math.hstack(data)
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+            data = qp.math.hstack(data)
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qp.expval(qp.PauliX(0))
 
         def cost(weights):
             w1, w2 = weights
@@ -846,8 +846,8 @@ class TestQubitIntegration:
             c2 = circuit2(c1, w2)
             return torch.sum(c2) ** 2
 
-        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
-        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(4, 2))
+        w1 = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        w2 = np.random.random(qp.templates.StronglyEntanglingLayers.shape(4, 2))
 
         w1 = torch.tensor(w1, requires_grad=True)
         w2 = torch.tensor(w2, requires_grad=True)
@@ -878,9 +878,9 @@ class TestQubitIntegration:
             gradient_kwargs=options,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
@@ -935,9 +935,9 @@ class TestQubitIntegration:
             gradient_kwargs=options,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.probs(wires=0)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.probs(wires=0)
 
         x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
@@ -1001,11 +1001,11 @@ class TestQubitIntegration:
             gradient_kwargs=options,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            qml.RY(x[0], wires=1)
-            qml.RX(x[1], wires=1)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            qp.RY(x[0], wires=1)
+            qp.RX(x[1], wires=1)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=1)
 
         def circuit_stack(x):
             return torch.hstack(circuit(x))
@@ -1078,9 +1078,9 @@ class TestQubitIntegration:
             gradient_kwargs=options,
         )
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0))
 
         x = torch.tensor([0.76, -0.87], requires_grad=True, dtype=torch.float64)
 
@@ -1138,10 +1138,10 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         def cost_fn(x, y):
             res = circuit(x, y)
@@ -1191,10 +1191,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.Projector(P, wires=0) @ qp.PauliX(1))
 
         res = circuit(*weights)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
@@ -1222,7 +1222,7 @@ class TestQubitIntegration:
         if dev.name == "reference.qubit":
             pytest.skip("reference.qubit does not support postselection.")
 
-        @qml.qnode(
+        @qp.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -1230,13 +1230,13 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit(phi, theta):
-            qml.RX(phi, wires=0)
-            qml.CNOT([0, 1])
-            qml.measure(wires=0, postselect=1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.RX(phi, wires=0)
+            qp.CNOT([0, 1])
+            qp.measure(wires=0, postselect=1)
+            qp.RX(theta, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
-        @qml.qnode(
+        @qp.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -1244,18 +1244,18 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def expected_circuit(theta):
-            qml.PauliX(1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.PauliX(1)
+            qp.RX(theta, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
         phi = torch.tensor(1.23, requires_grad=True)
         theta = torch.tensor(4.56, requires_grad=True)
 
-        assert qml.math.allclose(circuit(phi, theta), expected_circuit(theta))
+        assert qp.math.allclose(circuit(phi, theta), expected_circuit(theta))
 
         gradient = torch.autograd.grad(circuit(phi, theta), [phi, theta])
         exp_theta_grad = torch.autograd.grad(expected_circuit(theta), theta)[0]
-        assert qml.math.allclose(gradient, [0.0, exp_theta_grad])
+        assert qp.math.allclose(gradient, [0.0, exp_theta_grad])
 
 
 @pytest.mark.parametrize(
@@ -1275,20 +1275,20 @@ class TestTapeExpansion:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
             has_generator = False
 
             def decomposition(self):
-                return [qml.RY(3 * self.data[0], wires=self.wires)]
+                return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qml.decomposition.local_decomps():
+        with qp.decomposition.local_decomps():
 
-            @qml.register_resources({qml.RY: 1})
+            @qp.register_resources({qp.RY: 1})
             def custom_decomposition(param, wires):
-                qml.RY(3 * param, wires=wires)
+                qp.RY(3 * param, wires=wires)
 
-            qml.add_decomps(PhaseShift, custom_decomposition)
+            qp.add_decomps(PhaseShift, custom_decomposition)
 
             @qnode(
                 dev,
@@ -1300,9 +1300,9 @@ class TestTapeExpansion:
                 gradient_kwargs=gradient_kwargs,
             )
             def circuit(x):
-                qml.Hadamard(wires=0)
+                qp.Hadamard(wires=0)
                 PhaseShift(x, wires=0)
-                return qml.expval(qml.PauliX(0))
+                return qp.expval(qp.PauliX(0))
 
             x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
@@ -1332,11 +1332,11 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
-                return [qml.RY(3 * self.data[0], wires=self.wires)]
+                return [qp.RY(3 * self.data[0], wires=self.wires)]
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -1352,10 +1352,10 @@ class TestTapeExpansion:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
             PhaseShift(x, wires=0)
             PhaseShift(2 * y, wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         x = torch.tensor(0.5, requires_grad=True)
         y = torch.tensor(0.7, requires_grad=False)
@@ -1387,14 +1387,14 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
-            return qml.expval(qml.Hamiltonian(coeffs, obs))
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            return qp.expval(qp.Hamiltonian(coeffs, obs))
 
         d = torch.tensor([0.1, 0.2], requires_grad=False, dtype=torch.float64)
         w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
@@ -1473,7 +1473,7 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
 
         @qnode(
             dev,
@@ -1486,17 +1486,17 @@ class TestTapeExpansion:
         )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
-            H = qml.Hamiltonian(coeffs, obs)
-            return qml.expval(H)
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qp.Hamiltonian(coeffs, obs)
+            return qp.expval(H)
 
         d = torch.tensor([0.1, 0.2], requires_grad=False, dtype=torch.float64)
         w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
         c = torch.tensor([-0.6543, 0.24, 0.54], requires_grad=True, dtype=torch.float64)
 
         # wrap circuit with fixed shots
-        circuit_shots = qml.set_shots(shots=50000)(circuit)
+        circuit_shots = qp.set_shots(shots=50000)(circuit)
 
         # test output
         res = circuit_shots(d, w, c)
@@ -1554,12 +1554,12 @@ class TestSample:
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
-        @qml.set_shots(shots=10)
+        @qp.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(qp.PauliZ(0)), qp.sample(qp.PauliX(1))
 
         res = circuit()
 
@@ -1575,12 +1575,12 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
 
-        @qml.set_shots(shots=10)
+        @qp.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
 
         res = circuit()
 
@@ -1595,12 +1595,12 @@ class TestSample:
     def test_counts_expval(self):
         """Test counts works as expected if combined with expectation values"""
 
-        @qml.set_shots(shots=10)
-        @qnode(qml.device("default.qubit"), diff_method="parameter-shift", interface="torch")
+        @qp.set_shots(shots=10)
+        @qnode(qp.device("default.qubit"), diff_method="parameter-shift", interface="torch")
         def circuit():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[0, 1])
+            return qp.counts(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
 
         res = circuit()
 
@@ -1614,12 +1614,12 @@ class TestSample:
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
-        @qml.set_shots(shots=10)
+        @qp.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
-            qml.RX(0.54, wires=0)
+            qp.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+            return qp.sample(qp.PauliZ(0)), qp.expval(qp.PauliX(1)), qp.var(qp.PauliY(2))
 
         result = circuit()
 
@@ -1638,10 +1638,10 @@ class TestSample:
 
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
-            qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0))
+            qp.RX(0.54, wires=0)
+            return qp.sample(qp.PauliZ(0))
 
-        circuit10 = qml.set_shots(shots=10)(circuit)
+        circuit10 = qp.set_shots(shots=10)(circuit)
         result = circuit10()
 
         assert isinstance(result, torch.Tensor)
@@ -1651,10 +1651,10 @@ class TestSample:
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
 
-        @qml.set_shots(shots=10)
+        @qp.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
+            return qp.sample(qp.PauliZ(0)), qp.sample(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))
 
         result = circuit()
 
@@ -1710,13 +1710,13 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = torch.tensor(0.1, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
+        circuit_shots = qp.set_shots(shots=shots)(circuit)
         res = circuit_shots(a)
 
         assert isinstance(res, torch.Tensor)
@@ -1748,14 +1748,14 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
+        circuit_shots = qp.set_shots(shots=shots)(circuit)
         res = circuit_shots(a, b)
 
         # gradient
@@ -1786,13 +1786,13 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
+        circuit_shots = qp.set_shots(shots=shots)(circuit)
         res = circuit_shots(a)
 
         # gradient
@@ -1826,9 +1826,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = torch.tensor(0.1, requires_grad=True)
 
@@ -1860,14 +1860,14 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
+        circuit_shots = qp.set_shots(shots=shots)(circuit)
         jac = jacobian(circuit_shots, (a, b))
 
         assert isinstance(jac, tuple)
@@ -1892,7 +1892,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1902,9 +1902,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -1927,7 +1927,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1938,10 +1938,10 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
 
         jac = jacobian(circuit, (par_0, par_1))
 
@@ -1972,7 +1972,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1982,9 +1982,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -2013,7 +2013,7 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2023,10 +2023,10 @@ class TestReturn:
             grad_on_execution=grad_on_execution,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.var(qp.PauliZ(0))
 
         jac = jacobian(circuit, (par_0, par_1))
 
@@ -2058,7 +2058,7 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2067,9 +2067,9 @@ class TestReturn:
             grad_on_execution=grad_on_execution,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.var(qp.PauliZ(0))
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -2098,7 +2098,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2108,9 +2108,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = torch.tensor(0.1, requires_grad=True)
 
@@ -2138,7 +2138,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2148,9 +2148,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
@@ -2187,7 +2187,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2197,9 +2197,9 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -2231,7 +2231,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2242,10 +2242,10 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         hess = hessian(circuit, (par_0, par_1))
 
@@ -2281,7 +2281,7 @@ class TestReturn:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2292,10 +2292,10 @@ class TestReturn:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         hess = hessian(circuit, params)
 
@@ -2316,7 +2316,7 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
         par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2326,10 +2326,10 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
         hess = hessian(circuit, (par_0, par_1))
 
@@ -2363,7 +2363,7 @@ class TestReturn:
 
         params = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
 
-        @qml.set_shots(shots=shots)
+        @qp.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2373,10 +2373,10 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
         hess = hessian(circuit, params)
 
@@ -2407,13 +2407,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x, y):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x, y))
+            return torch.hstack(qp.set_shots(shots=shots)(circuit)(x, y))
 
         jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
 
@@ -2459,13 +2459,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x))
+            return torch.hstack(qp.set_shots(shots=shots)(circuit)(x))
 
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
@@ -2498,13 +2498,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x, y):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x, y))
+            return torch.hstack(qp.set_shots(shots=shots)(circuit)(x, y))
 
         jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
 
@@ -2550,13 +2550,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x))
+            return torch.hstack(qp.set_shots(shots=shots)(circuit)(x))
 
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
@@ -2570,10 +2570,10 @@ def test_no_ops():
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
 
-    @qml.qnode(DefaultQubit(), interface="torch")
+    @qp.qnode(DefaultQubit(), interface="torch")
     def circuit():
-        qml.Hadamard(wires=0)
-        return qml.state()
+        qp.Hadamard(wires=0)
+        return qp.state()
 
     res = circuit()
     assert isinstance(res, torch.Tensor)
