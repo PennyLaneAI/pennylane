@@ -64,7 +64,7 @@ class OutSquare(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         x = 2
         y = 7
@@ -74,18 +74,18 @@ class OutSquare(Operation):
         output_wires = list(range(3, 9))
         work_wires = list(range(9, 15))
 
-        dev = qml.device("lightning.qubit", wires=15, seed=295)
+        dev = qp.device("lightning.qubit", wires=15, seed=295)
 
-        @qml.qnode(dev, shots=1_000)
+        @qp.qnode(dev, shots=1_000)
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
-            qml.H(x_wires[0]) # Superposition between 0 and 4
-            qml.BasisEmbedding(3, wires=x_wires[1:]) # Add 3, by embedding in lower-precision wires
+            qp.H(x_wires[0]) # Superposition between 0 and 4
+            qp.BasisEmbedding(3, wires=x_wires[1:]) # Add 3, by embedding in lower-precision wires
             # Prepare output state
-            qml.BasisEmbedding(5, wires=output_wires)
+            qp.BasisEmbedding(5, wires=output_wires)
             # Square
-            qml.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires)
-            return qml.counts(wires=output_wires)
+            qp.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires)
+            return qp.counts(wires=output_wires)
 
     >>> counts = circuit(output_wires)
     >>> counts = {int(k, 2):val for k, val in counts.items()}
@@ -144,26 +144,26 @@ class OutSquare(Operation):
             output_wires = list(range(4, 12))
             work_wires = list(range(12, 20))
 
-            dev = qml.device("lightning.qubit", wires=20, seed=295)
+            dev = qp.device("lightning.qubit", wires=20, seed=295)
 
-            @qml.decompose(max_expansion=1) # To see resources easily
-            @qml.qnode(dev, shots=1_000)
+            @qp.decompose(max_expansion=1) # To see resources easily
+            @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qml.BasisEmbedding(x, wires=x_wires)
-                qml.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires=zeroed)
-                return qml.counts(wires=output_wires)
+                qp.BasisEmbedding(x, wires=x_wires)
+                qp.templates.subroutines.arithmetic.OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires=zeroed)
+                return qp.counts(wires=output_wires)
 
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qml.specs(circuit)(False)["resources"].gate_types
+        >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
         >>> print(specs_false)
         {'PauliX': 3, 'CNOT': 8, 'C(SemiAdder)': 4}
 
         When we do pass the information, we save a controlled :class:`~.SemiAdder` and some of
         the other adders become smaller (depending on the register sizes):
 
-        >>> specs_true = qml.specs(circuit)(True)["resources"].gate_types
+        >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
         >>> print(specs_true)
         {'PauliX': 3, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 
@@ -178,7 +178,7 @@ class OutSquare(Operation):
         :math:`13^2`.
         To conclude, we draw the two circuit variants:
 
-        >>> print(qml.draw(circuit)(False))
+        >>> print(qp.draw(circuit)(False))
          0: ──X────╭SemiAdder───────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
          1: ──X────├SemiAdder───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
          2: ───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
@@ -200,7 +200,7 @@ class OutSquare(Operation):
         18: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
         19: ───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
 
-        >>> print(qml.draw(circuit)(True))
+        >>> print(qp.draw(circuit)(True))
          0: ──X──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
          1: ──X───────╭●─│─────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
          2: ───────╭●─│──│──╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
@@ -341,7 +341,7 @@ class OutSquare(Operation):
         **Example**
 
         >>> all_wires = ([0, 1], [2, 3], [4, 5])
-        >>> qml.OutSquare.compute_decomposition(*all_wires, zeroed_output_wires=True)
+        >>> qp.OutSquare.compute_decomposition(*all_wires, zeroed_output_wires=True)
         [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2, 5]), control_wires=[4]), CNOT(wires=[0, 4])]
         """
         with AnnotatedQueue() as q:

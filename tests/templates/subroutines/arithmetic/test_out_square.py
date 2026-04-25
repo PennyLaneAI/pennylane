@@ -19,7 +19,7 @@ from itertools import product
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops import Controlled
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -34,7 +34,7 @@ def test_standard_validity_out_square(zeroed_output_wires):
     output_wires = [4, 5, 6, 7, 8, 9, 10]
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 def _test_square_correctness(all_wires, rule, seed, zeroed_output_wires, use_jit):
@@ -46,18 +46,18 @@ def _test_square_correctness(all_wires, rule, seed, zeroed_output_wires, use_jit
 
     x_wires, output_wires, work_wires = all_wires
 
-    dev = qml.device("lightning.qubit")
+    dev = qp.device("lightning.qubit")
 
-    @qml.set_shots(10)
-    @qml.qnode(dev)
+    @qp.set_shots(10)
+    @qp.qnode(dev)
     def circuit(x, b):
-        qml.BasisEmbedding(x, wires=x_wires)
-        qml.BasisEmbedding(b, wires=output_wires)
+        qp.BasisEmbedding(x, wires=x_wires)
+        qp.BasisEmbedding(b, wires=output_wires)
         rule(x_wires, output_wires, work_wires, zeroed_output_wires)
         return (
-            qml.sample(wires=x_wires),
-            qml.sample(wires=output_wires),
-            qml.sample(wires=(work_wires or None)),
+            qp.sample(wires=x_wires),
+            qp.sample(wires=output_wires),
+            qp.sample(wires=(work_wires or None)),
         )
 
     if use_jit:
@@ -151,7 +151,7 @@ class TestOutSquare:
         output_wires = np.array([4, 5, 6, 7, 8])
         work_wires = np.array([9, 10, 11, 12, 13, 14, 15])
 
-        dev = qml.device("lightning.qubit")
+        dev = qp.device("lightning.qubit")
 
         x = 13
         mod = 2 ** len(output_wires)
@@ -160,20 +160,20 @@ class TestOutSquare:
         else:
             z = mod - 2  # Some number close to causing overflows
 
-        @qml.qjit
-        @qml.set_shots(1)
-        @qml.decompose(
-            max_expansion=2, fixed_decomps={"C(SemiAdder)": qml.list_decomps("C(SemiAdder)")[0]}
+        @qp.qjit
+        @qp.set_shots(1)
+        @qp.decompose(
+            max_expansion=2, fixed_decomps={"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
         )
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(z, wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(z, wires=output_wires)
             OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
             return (
-                qml.sample(wires=x_wires),
-                qml.sample(wires=output_wires),
-                qml.sample(wires=work_wires),
+                qp.sample(wires=x_wires),
+                qp.sample(wires=output_wires),
+                qp.sample(wires=work_wires),
             )
 
         output = circuit(x, z, x_wires, work_wires)
@@ -253,32 +253,32 @@ class TestOutSquare:
         if zeroed_output_wires:
             expected = [
                 # controlled copy
-                qml.CNOT([2, 6]),
-                qml.TemporaryAND([2, 1, 5]),
-                qml.TemporaryAND([2, 0, 4]),
+                qp.CNOT([2, 6]),
+                qp.TemporaryAND([2, 1, 5]),
+                qp.TemporaryAND([2, 0, 4]),
                 # First CNOT-wrapped controlled adder, shifted by 1
-                qml.CNOT([1, 7]),
-                Controlled(qml.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
-                qml.CNOT([1, 7]),
+                qp.CNOT([1, 7]),
+                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
+                qp.CNOT([1, 7]),
                 # Second CNOT-wrapped controlled adder, shifted by 2
-                qml.CNOT([0, 7]),
-                Controlled(qml.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
-                qml.CNOT([0, 7]),
+                qp.CNOT([0, 7]),
+                Controlled(qp.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
+                qp.CNOT([0, 7]),
             ]
         else:
             expected = [
                 # controlled copy (="zeroth" CNOT-wrapped controlled adder)
-                qml.CNOT([2, 7]),
-                Controlled(qml.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]), control_wires=[7]),
-                qml.CNOT([2, 7]),
+                qp.CNOT([2, 7]),
+                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]), control_wires=[7]),
+                qp.CNOT([2, 7]),
                 # First CNOT-wrapped controlled adder, shifted by 1
-                qml.CNOT([1, 7]),
-                Controlled(qml.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
-                qml.CNOT([1, 7]),
+                qp.CNOT([1, 7]),
+                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
+                qp.CNOT([1, 7]),
                 # Second CNOT-wrapped controlled adder, shifted by 2
-                qml.CNOT([0, 7]),
-                Controlled(qml.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
-                qml.CNOT([0, 7]),
+                qp.CNOT([0, 7]),
+                Controlled(qp.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
+                qp.CNOT([0, 7]),
             ]
 
         assert decomp == expected
@@ -317,7 +317,7 @@ class TestOutSquare:
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = OutSquare(x_wires, output_wires, work_wires, zeroed_output_wires)
-        for j, rule in enumerate(qml.list_decomps(OutSquare)):
+        for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
