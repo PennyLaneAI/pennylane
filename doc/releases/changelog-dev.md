@@ -314,6 +314,7 @@ The following classes have been ported over:
   decomposition for traced states without `qjit` to use powers of `X` rather than `RX`.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
+  [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
 
 * When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
@@ -528,6 +529,9 @@ The following classes have been ported over:
 
   ```
 
+* Applied stricter conditions on some decomposition rules for ``MultiControlledX`` to avoid duplication of equivalent decomposition rules for ``MultiControlledX`` on less than 6 wires.
+  [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -581,6 +585,17 @@ The following classes have been ported over:
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 <h3>Breaking changes 💔</h3>
+
+* ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
+  :class:`~.SemiAdder`.
+  [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
+  
+  With this breaking change, please note the following:
+  
+   - Decomposition rules for ``SemiAdder`` now require those arguments.
+   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+   
+   These changes are relevant only with :func:`~decomposition.enable_graph`.
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
@@ -842,6 +857,14 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
+  as a result.
+  [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
+
+* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+  during capture time.
+  [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
+
 * During program, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
@@ -979,11 +1002,23 @@ The following classes have been ported over:
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+  [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
+  [(#9320)](https://github.com/PennyLaneAI/pennylane/pull/9320)
+  [(#9315)](https://github.com/PennyLaneAI/pennylane/pull/9315)
+  [(#9312)](https://github.com/PennyLaneAI/pennylane/pull/9312)
+  [(#9314)](https://github.com/PennyLaneAI/pennylane/pull/9314)
   [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
+  [(#9331)](https://github.com/PennyLaneAI/pennylane/pull/9331)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
+  [(#9327)](https://github.com/PennyLaneAI/pennylane/pull/9327)
+  [(#9330)](https://github.com/PennyLaneAI/pennylane/pull/9330)
+  [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
+  [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
+  [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
+  [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1030,6 +1065,10 @@ The following classes have been ported over:
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
+* The :mod:`pennylane.transforms` module has been reorganized to allow for
+  easier indexing through available transforms in PennyLane.
+  [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
+
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
@@ -1046,6 +1085,10 @@ The following classes have been ported over:
   previously caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear`
   layers.
   [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
+
+* Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+  and return `qml.sample`.
+  [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
