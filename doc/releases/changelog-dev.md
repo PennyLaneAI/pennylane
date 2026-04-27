@@ -100,6 +100,8 @@
   of how many markers are present.
   Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
   pipeline's string representation now shows both transforms and markers.
+  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
@@ -119,8 +121,8 @@
     return qp.probs()
   ```
 
-  The compilation pipeline has a new string representation that can be used to
-  inspect the transforms and markers,
+  The new string representation of `CompilePipeline` allows you to
+  inspect the transforms and markers:
 
   ```pycon
   >>> print(circuit.compile_pipeline)
@@ -210,6 +212,14 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
   [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
+
+<h4>Resource Estimation Templates 📏</h4>
+
+* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
+  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
+  ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
+  [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
+  [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
 
 <h3>Improvements 🛠</h3>
 
@@ -337,15 +347,6 @@
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
 
-<h4>Compilation Pipelines and Markers ✒️</h4>
-
-* Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
-  compile pipeline of a given QNode at a specific level.
-  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
-
-* The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
-  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
-
 <h4>Disentangling Transforms 🧶</h4>
 
 * The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
@@ -353,15 +354,75 @@
   ``CNOT`` and ``SWAP`` gates.
   [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
 
-<h4>Other improvements</h4>
+<h4>Drawing ✏️</h4>
+
+* Catalyst's ``draw_graph`` function is now accessible from PennyLane as :func:`pennylane.draw_graph`.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
 * Added the function :func:`~.drawer.label` to attach custom labels to operator instances
   for circuit drawing.
-  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
-
-* Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+  Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
   for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
   [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)
+
+<h4>Program Capture 📥</h4>
+
+* With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
+  can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
+  [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
+  [(#9335)](https://github.com/PennyLaneAI/pennylane/pull/9335)
+
+* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+  during capture time.
+  [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
+
+* During program capture, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
+
+* With program capture, arrays dynamic shapes with `qp.for_loop` and `qp.while_loop` can now be combined
+  after the loop.
+  [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
+
+* `qp.vjp` and `qp.jvp` can now be captured into plxpr.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+  [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
+  [(#9019)](https://github.com/PennyLaneAI/pennylane/pull/9019)
+
+* Adds a `qp.capture.subroutine` for jitting quantum subroutines with program capture.
+  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
+
+* `qp.counts` of mid circuit measurements can now be captured into jaxpr.
+  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
+
+<h4>Catalyst Compatibility 🤝</h4>
+
+* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
+  program capture.
+  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
+
+* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qp.qjit`.
+  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
+
+* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept
+  their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
+  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
+
+* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
+  redundant. However, all Pauli-based computation passes can still be accessed from the
+  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
+  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
+  source of truth for documentation of a feature if it is desired to be accessible
+  from both PennyLane and Catalyst.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
+* Added the Catalyst version to :func:`~.about`.
+  [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
+
+<h4>Other improvements</h4>
+
+* Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent
@@ -393,25 +454,6 @@
   - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
     of binary column vectors. The result forms a basis for the columnspace of the input. The
     columns that are not selected are returned as well.
-
-* With program capture and `for_loop` and `while_loop`, const closure variables with dynamic shapes
-  can now be combined with explicit inputs with dynamic shapes when they have matching shapes.
-  [(#9275)](https://github.com/PennyLaneAI/pennylane/pull/9275)
-  [(#9335)](https://github.com/PennyLaneAI/pennylane/pull/9335)
-
-* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
-  during capture time.
-  [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
-
-* During program capture, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
-  [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
-
-* With program capture, arrays dynamic shapes with `qp.for_loop` and `qp.while_loop` can now be combined
-  after the loop.
-  [(#9245)](https://github.com/PennyLaneAI/pennylane/pull/9245)
-
-* `qp.counts` of mid circuit measurements can now be captured into jaxpr.
-  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
 * The output of the `qp.while_loop` condition is now automatically converted
   to a bool.
@@ -456,43 +498,15 @@
 * `qp.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
   [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
 
-* The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qp.qjit`.
-  [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
-
-* Catalyst's ``draw_graph`` function is now accessible from PennyLane as :func:`pennylane.draw_graph`.
-  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
-
 * Raises a more informative error if something that is not a measurement process is returned from a
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
-
-* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
-  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
-  ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
-  [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
-  [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
-
-* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept
-  their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
-  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
-
-* `BasisEmbedding` now captures as `BasisState` so it now works with Catalyst and
-  program capture.
-  [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
-
-* `qp.vjp` and `qp.jvp` can now be captured into plxpr.
-  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
-  [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
-  [(#9019)](https://github.com/PennyLaneAI/pennylane/pull/9019)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
 
 * The ``qp.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
-
-* Adds a `qp.capture.subroutine` for jitting quantum subroutines with program capture.
-  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
 
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qp.transform` via `setup_inputs`.
@@ -507,24 +521,8 @@
 * Applying `qp.ctrl` on `Snapshot` no longer produces a `Controlled(Snapshot)`. Instead, it now returns the original `Snapshot`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
-* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
-  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
-  ``pbc.fabricate`` and ``pbc.prepare``.
-  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
-
 * Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter.
   [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
-
-* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
-  redundant. However, all Pauli-based computation passes can still be accessed from the
-  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
-  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
-  source of truth for documentation of a feature if it is desired to be accessible
-  from both PennyLane and Catalyst.
-  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
-
-* Added the Catalyst version to :func:`~.about`.
-  [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1031,6 +1029,11 @@
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+
+* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
+  ``pbc.fabricate`` and ``pbc.prepare``.
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
 * Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
   [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
