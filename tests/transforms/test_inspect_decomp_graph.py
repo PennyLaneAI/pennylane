@@ -14,6 +14,8 @@
 
 """Tests the inspect_decomp_graph transform."""
 
+from textwrap import dedent
+
 import pytest
 
 import pennylane as qp
@@ -85,3 +87,168 @@ class TestInspectDecompGraph:
             "num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type"
             "=borrowed) is decomposed with a dynamic allocation budget of 2."
         )
+
+    def test_work_wire_budget(self):
+        """Tests that the correct output is produced according to the work wire budget."""
+
+        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=0)
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+            return qp.probs()
+
+        inspector = circuit()
+
+        op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+        assert inspector.inspect_decomps(op) == dedent("""
+            Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+            Excluded based on the given work wires constraint! 0 (available) < 1 (required)
+
+            Decomposition 1 (name: to_controlled_qubit_unitary)
+            Not applicable to the provided operator instance!
+
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            0: ─╭X─╭RZ(0.50)─╭X─┤  
+            1: ─├●─│─────────├●─┤  
+            3: ─├●─├●────────├●─┤  
+            4: ─├●─├●────────├●─┤  
+            5: ─╰●─╰●────────╰●─┤  
+            First Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {GlobalPhase: 88, RZ: 136, CNOT: 160, RY: 28, RX: 8}
+            Weighted Cost: 332.0
+            """).strip()
+
+    def test_work_wires_available(self):
+        """Tests that the correct output is produced when there are available work wires."""
+
+        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+            return qp.probs()
+
+        inspector = circuit()
+
+        op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+        assert inspector.inspect_decomps(op, num_work_wires=2) == dedent("""
+            CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+            <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤  
+                        3: ───────────├●─│──────────────├●─────────────┤  
+                        4: ───────────├●─│──────────────├●─────────────┤  
+                        5: ───────────╰●─│──────────────╰●─────────────┤  
+                        0: ──────────────├MultiRZ(0.50)────────────────┤  
+                        1: ──────────────╰MultiRZ(0.50)────────────────┤  
+            First Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+            Wire Allocations: {'zero': 1}
+            Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, MidMeasure: 2, RX: 8}
+            Weighted Cost: 120.0
+
+            Decomposition 1 (name: to_controlled_qubit_unitary)
+            Not applicable to the provided operator instance!
+
+            Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            0: ─╭X─╭RZ(0.50)─╭X─┤  
+            1: ─├●─│─────────├●─┤  
+            3: ─├●─├●────────├●─┤  
+            4: ─├●─├●────────├●─┤  
+            5: ─╰●─╰●────────╰●─┤  
+            First Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {MidMeasure: 4, GlobalPhase: 76, RY: 24, RZ: 80, CNOT: 72, RX: 16}
+            Weighted Cost: 196.0
+            """).strip()
+
+        op = qp.MultiControlledX([0, 1, 2, 3])
+        assert inspector.inspect_decomps(op, num_work_wires=1) == dedent("""
+            Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
+            Not applicable to the provided operator instance!
+
+            Decomposition 1 (name: flip_zero_ctrl_values(_decompose_mcx_with_no_worker))
+            0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤  
+            1: ────├●───────────────────├●──────────────────────├●──────────────────┤  
+            2: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤  
+            3: ──H─╰X──U(M0)─╰X──U(M0)†─╰X──U(M0)─╰X──U(M0)†──H─╰GlobalPhase(-1.57)─┤  
+            M0 = 
+            [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
+             [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
+            First Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, CNOT: 2, MultiControlledX(num_control_wires=2, num_work_wires=1, num_zero_control_values=0, work_wire_type=borrowed): 2, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RY: 10, RZ: 31, RX: 4}
+            Weighted Cost: 69.0
+
+            CHOSEN: Decomposition 2 (name: flip_zero_ctrl_values(_mcx_one_zeroed_worker))
+            <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤  
+                        0: ───────────├●─│───●┤─────────────┤  
+                        1: ───────────╰●─│───●╯─────────────┤  
+                        2: ──────────────├●─────────────────┤  
+                        3: ──────────────╰X─────────────────┤  
+            First Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
+            Wire Allocations: {'zero': 1}
+            Full Expansion Gates: {MidMeasure: 1, GlobalPhase: 23, RY: 7, RZ: 19, CNOT: 10, RX: 4}
+            Weighted Cost: 41.0
+
+            Decomposition 3 (name: flip_zero_ctrl_values(_mcx_one_borrowed_worker))
+            <DynamicWire>: ──Allocate─╭X─╭●─╭X─╭●──Deallocate─┤  
+                        0: ───────────├●─│──├●─│──────────────┤  
+                        1: ───────────╰●─│──╰●─│──────────────┤  
+                        2: ──────────────├●────├●─────────────┤  
+                        3: ──────────────╰X────╰X─────────────┤  
+            First Expansion Gates: {Toffoli: 4}
+            Wire Allocations: {'any': 1}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RZ: 36, RY: 8}
+            Weighted Cost: 68.0
+
+            Decomposition 4 (name: flip_zero_ctrl_values(_mcx_one_worker))
+            Not applicable to the provided operator instance!
+
+            Decomposition 5 (name: flip_zero_ctrl_values(_mcx_two_zeroed_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 6 (name: flip_zero_ctrl_values(_mcx_two_borrowed_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 7 (name: flip_zero_ctrl_values(_mcx_two_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 8 (name: flip_zero_ctrl_values(_mcx_many_zeroed_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 9 (name: flip_zero_ctrl_values(_mcx_many_borrowed_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 10 (name: flip_zero_ctrl_values(_mcx_many_workers))
+            Not applicable to the provided operator instance!
+
+            Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
+            Not applicable to the provided operator instance!
+            """).strip()
+
+    def test_missing_ops(self):
+        """Tests that missing operators are correctly reported."""
+
+        @inspect_decomp_graph(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.PauliRot(0.5, "XYZ", [0, 1, 2])
+            return qp.probs()
+
+        inspector = circuit()
+        op = qp.PauliRot(0.5, "XYZ", [0, 1, 2])
+        assert inspector.inspect_decomps(op) == dedent("""
+            Decomposition 0 (name: _pauli_rot_decomposition)
+            0: ──H────────╭MultiRZ(0.50)──H─────────┤  
+            1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤  
+            2: ───────────╰MultiRZ(0.50)────────────┤  
+            First Expansion Gates: {Hadamard: 2, RX: 2, MultiRZ(num_wires=3): 1}
+            Missing Ops: {Hadamard}
+            """).strip()
+
+        assert inspector.inspect_decomps(qp.H(0)) == dedent("""
+            Decomposition 0 (name: _hadamard_to_rz_ry)
+            0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤  
+            First Expansion Gates: {RZ: 1, RY: 1, GlobalPhase: 1}
+            Missing Ops: {GlobalPhase}
+
+            Decomposition 1 (name: _hadamard_to_rz_rx)
+            0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤  
+            First Expansion Gates: {RZ: 2, RX: 1, GlobalPhase: 1}
+            Missing Ops: {GlobalPhase}
+            """).strip()
