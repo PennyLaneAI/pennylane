@@ -1092,6 +1092,9 @@
 * Fixed the docstring of ``FermiSentence`` that incorrectly claims that it is immutable.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
+* Fixed a typo in the documentation for `qre.SelectPauli`.
+  [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
+
 <h3>Bug fixes 🐛</h3>
 
 * :class:`~.MultiControlledX` is now compatible with ``qjit``.
@@ -1242,6 +1245,7 @@
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1265,6 +1269,7 @@ Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
 Gabriela Sanchez Diaz,
+David D.W. Ren,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
