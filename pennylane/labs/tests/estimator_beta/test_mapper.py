@@ -21,6 +21,8 @@ import pennylane.estimator as pl_qre
 import pennylane.labs.estimator_beta as qre
 from pennylane.templates.subroutines.qrom import QROM
 
+# pylint: disable=protected-access
+
 
 @pytest.mark.parametrize("clean", [True, False])
 def test_qrom_mapping(clean):
