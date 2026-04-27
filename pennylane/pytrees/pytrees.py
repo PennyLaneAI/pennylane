@@ -85,12 +85,25 @@ type_to_typename: dict[type, str] = {
 
 typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typename.items()}
 
+_namespace_aliases = {"qml": "qp", "qp": "qml"}
+
+
+def _alias_typename(typename: str) -> str | None:
+    namespace, separator, name = typename.partition(".")
+    if not separator:
+        return None
+
+    alias = _namespace_aliases.get(namespace)
+    return f"{alias}.{name}" if alias is not None else None
+
 
 def _register_pytree_with_pennylane(
     pytree_type: type, typename: str, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
 ):
     type_to_typename[pytree_type] = typename
     typename_to_type[typename] = pytree_type
+    if (alias := _alias_typename(typename)) is not None:
+        typename_to_type[alias] = pytree_type
 
     flatten_registrations[pytree_type] = flatten_fn
     unflatten_registrations[pytree_type] = unflatten_fn
@@ -174,6 +187,12 @@ def get_typename_type(typename: str) -> type[Any]:
     try:
         return typename_to_type[typename]
     except KeyError as exc:
+        if (alias := _alias_typename(typename)) is not None:
+            try:
+                return typename_to_type[alias]
+            except KeyError:
+                pass
+
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
