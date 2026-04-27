@@ -28,6 +28,11 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import wraps
+from pennylane.decomposition import (
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    resource_rep,
+)
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -499,6 +504,76 @@ def _prod_decomp(*_, wires=None, operands, **__):
 
 
 qp.add_decomps(Prod, _prod_decomp)
+
+
+def _ctrl_prod_resources(
+    *_,
+    num_control_wires,
+    base_params,
+    **__,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    tand_rep = resource_rep(qp.TemporaryAND)  # resource_keys == set()
+
+    resources = {
+        tand_rep: num_control_wires - 1,
+        adjoint_resource_rep(qp.TemporaryAND, tand_rep.params): num_control_wires - 1,
+    }
+
+    # Per-factor single-control fan-out from the last ancilla.
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return resources
+
+
+@qp.register_condition(
+    lambda *_, num_control_wires, num_work_wires, **__: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+)
+@qp.register_resources(_ctrl_prod_resources)
+def _controlled_product_with_work_wires(*_, control_wires, control_values, work_wires, base, **__):
+    target_wire = _multi_temporary_and(control_wires, control_values, work_wires)
+    for op in base.operands:
+        qp.ctrl(op, control=[target_wire])  # was: qp.ctrl(base, ...)
+    qp.adjoint(_multi_temporary_and)(control_wires, control_values, work_wires)
+
+
+qp.add_decomps(
+    "C(Prod)",
+    _controlled_product_with_work_wires,
+)
+
+
+def _multi_temporary_and(
+    control,
+    control_values,
+    work_wires,
+):
+    """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
+
+    c = len(control)
+    num_needed = c - 1
+    qp.TemporaryAND(
+        wires=[control[0], control[1], work_wires[0]],
+        control_values=(control_values[0], control_values[1]),
+    )
+
+    for i in range(1, num_needed):
+        qp.TemporaryAND(
+            wires=[work_wires[i - 1], control[i + 1], work_wires[i]],
+            control_values=(True, control_values[i + 1]),
+        )
+
+    return work_wires[i]
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
