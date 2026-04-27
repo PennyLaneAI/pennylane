@@ -35,6 +35,7 @@ class TwoQubitFermionicFourierTransform(Operator):
             wires, since the cost of simulating interactions between Fermionic modes depends
             on their distance in the encoding.
     """
+
     num_wires = 2
     num_params = 0
 
@@ -59,9 +60,7 @@ class TwoQubitFermionicFourierTransform(Operator):
 
 
 class FFFT(Operator):
-    """
-
-    """
+    """ """
 
     resource_keys = {"num_wires"}
 

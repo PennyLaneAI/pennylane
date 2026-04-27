@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
+
 import pytest
 
 from pennylane import PauliZ, device, list_decomps, probs, qnode, workflow
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFermionicFourierTransform
 from pennylane.wires import Wires
-
 
 dev = device("default.qubit")
 
