@@ -772,7 +772,7 @@ class TestInspectDecomps:
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
 
             Decomposition 2 (name: with-aux)
-            Excluded based on the given work wires constraint! 1 (available) < 2 (required)
+            Insufficient work wires: requires 2 but only 1 available.
             """).strip()
 
         result = qp.inspect_decomps(

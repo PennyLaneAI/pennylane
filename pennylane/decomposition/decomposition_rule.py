@@ -766,7 +766,9 @@ class _DecompInfo:
         if not self._is_applicable:
             return "Not applicable to the provided operator instance!"
         if not self._is_feasible:
-            return f"Excluded based on the given work wires constraint! {self._num_work_wires} (available) < {self._work_wire_spec.total} (required)"
+            req = self._work_wire_spec.total
+            avail = self._num_work_wires
+            return f"Insufficient work wires: requires {req} but only {avail} available."
         return self.circuit_drawing + "\n" + self.gate_counts_and_allocations
 
     @property
@@ -822,12 +824,13 @@ def inspect_decomps(
             of the ``DecompositionRule`` class or rule names (str) that represent the decomposition
             rules registered with the type of ``op``. If none are provided, all available rules
             will be displayed.
-        show_not_applicable (bool): if True (the default), all decomposition rules, including those 
-            that are not applicable to the specific operator instance (e.g., due to wire constraints), are displayed.
+        show_not_applicable (bool): if True (the default), all decomposition rules, including
+            those that are not applicable to the specific operator instance (e.g., due to wire
+            constraints), are displayed.
         num_work_wires (int or None): the number of available work wires for dynamic allocation.
             Decomposition rules that allocate more wires than there are available will be marked
-            not applicable (or excluded if ``show_not_applicable=False``). Defaults to ``None``, which
-            puts no constraint on the maximum number of work wires.
+            not applicable (or excluded if ``show_not_applicable=False``). Defaults to ``None``,
+            which puts no constraint on the maximum number of work wires.
 
     Returns:
         str: The string that displays how the operator is decomposed.
@@ -901,25 +904,25 @@ def inspect_decomps(
     if rules:
         display_rules = [display_rules[rule] if isinstance(rule, str) else rule for rule in rules]
 
-    rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
-
-    if len(rules) == 1:
-        rule = rule_infos[0]
-        return f"Name: {rule.name}\n{rule}"
-
-    if len(rule_infos) == 0:
+    if len(display_rules) == 0:
         return "No available decomposition rules."
 
-    num_printed_rules = 0
-    decomp_strings = []
-    for i, rule in enumerate(rule_infos):
-        if not show_not_applicable and not rule.is_usable:
-            continue
-        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule}")
-        num_printed_rules += 1
+    if len(rules) == 1:
+        rule = _DecompInfo(op, display_rules[0], num_work_wires)
+        return f"Name: {rule.name}\n{rule}"
 
-    if num_printed_rules == 0:
+    rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
+    display_infos = enumerate(rule_infos)
+    if not show_not_applicable:
+        display_infos = filter(lambda entry: entry[1].is_usable, display_infos)
+    display_infos = list(display_infos)
+
+    if len(display_infos) == 0:
         return "No applicable decomposition rules."
+
+    decomp_strings = []
+    for i, rule in display_infos:
+        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule}")
 
     return "\n\n".join(decomp_strings)
 
