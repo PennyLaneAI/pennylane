@@ -1084,8 +1084,8 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where `debug_state`, `debug_probs` and `debug_expval` all mutated the circuit they participated in
-  causing results to be incorrect.
+* Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
+  leading to incorrect results.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
   
 * :class:`~.MultiControlledX` is now compatible with ``qjit``. 
