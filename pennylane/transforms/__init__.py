@@ -181,6 +181,7 @@ decomposition rules for operators in the circuit:
    :toctree: api
 
    ~transforms.inspect_decomp_graph
+   ~transforms.DecompGraphInspector
 
 Chaining circuit transforms together
 ------------------------------------
@@ -484,6 +485,6 @@ from .intermediate_reps import (
     rowcol,
 )
 from .rz_phase_gradient import rz_phase_gradient
-from .inspect_decomp_graph import inspect_decomp_graph
+from .inspect_decomp_graph import inspect_decomp_graph, DecompGraphInspector
 
 __all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.transforms")

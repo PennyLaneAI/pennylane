@@ -95,7 +95,14 @@ class _DecompInGraphInfo(_DecompInfo):
 
 # pylint: disable=protected-access,too-few-public-methods
 class DecompGraphInspector:
-    """Allows inspectability into the decomposition graph."""
+    """Interactive object that queries a solved decomposition graph.
+
+    .. seealso::
+
+        See the documentation for the :func:`~pennylane.transforms.inspect_decomp_graph`
+        transform for how this object is used.
+
+    """
 
     def __init__(self, decomp_graph: DecompositionGraph, solution: DecompGraphSolution) -> None:
         self._decomp_graph = decomp_graph
@@ -105,7 +112,16 @@ class DecompGraphInspector:
         self._max_work_wires = self._solution.num_work_wires
 
     def inspect_decomps(self, op: Operator, num_work_wires: int | None = 0) -> str:
-        """Display all decomposition rules considered for a given operator."""
+        """Display all decomposition rules considered for a given operator.
+
+        Args:
+            op (Operator): the operator instance to inspect the decomposition rules for.
+            num_work_wires (int, optional): the number of work wires available for dynamic allocation.
+
+        Returns:
+            str: a printable string with information about the rules considered by the graph.
+
+        """
 
         op_node = self._find_op_node(op, num_work_wires)
 
@@ -245,7 +261,10 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, MidMeasure: 2, RX: 8}
     Weighted Cost: 120.0
     <BLANKLINE>
-    Decomposition 1 (name: controlled(_multi_rz_decomposition))
+    Decomposition 1 (name: to_controlled_qubit_unitary)
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 2 (name: controlled(_multi_rz_decomposition))
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─├●─│─────────├●─┤
     3: ─├●─├●────────├●─┤
@@ -254,6 +273,72 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
     First Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Full Expansion Gates: {MidMeasure: 4, GlobalPhase: 76, RY: 24, RZ: 80, CNOT: 72, RX: 16}
     Weighted Cost: 196.0
+
+    In addition to the operators at the top level of the circuit, we can also inspect the graph
+    for how intermediate operators (such as the ``MultiControlledX`` produced in the decomposition
+    of the ``MultiRZ``) are decomposed:
+
+    >>> print(inspector.inspect_decomps(qp.MultiControlledX([3, 4, 5, 0]), num_work_wires=1))
+    Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 1 (name: flip_zero_ctrl_values(_decompose_mcx_with_no_worker))
+    0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─╭GlobalPhase(-1.57)─┤
+    3: ────├●────────│──────────├●────────│─────────────├●──────────────────┤
+    4: ────╰●────────│──────────╰●────────│─────────────├●──────────────────┤
+    5: ──────────────╰●───────────────────╰●────────────╰●──────────────────┤
+    M0 =
+    [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
+     [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
+    First Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, CNOT: 2, MultiControlledX(num_control_wires=2, num_work_wires=1, num_zero_control_values=0, work_wire_type=borrowed): 2, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+    Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RY: 10, RZ: 31, RX: 4}
+    Weighted Cost: 69.0
+    <BLANKLINE>
+    CHOSEN: Decomposition 2 (name: flip_zero_ctrl_values(_mcx_one_zeroed_worker))
+    <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
+                3: ───────────├●─│───●┤─────────────┤
+                4: ───────────╰●─│───●╯─────────────┤
+                5: ──────────────├●─────────────────┤
+                0: ──────────────╰X─────────────────┤
+    First Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
+    Wire Allocations: {'zero': 1}
+    Full Expansion Gates: {MidMeasure: 1, GlobalPhase: 23, RY: 7, RZ: 19, CNOT: 10, RX: 4}
+    Weighted Cost: 41.0
+    <BLANKLINE>
+    Decomposition 3 (name: flip_zero_ctrl_values(_mcx_one_borrowed_worker))
+    <DynamicWire>: ──Allocate─╭X─╭●─╭X─╭●──Deallocate─┤
+                3: ───────────├●─│──├●─│──────────────┤
+                4: ───────────╰●─│──╰●─│──────────────┤
+                5: ──────────────├●────├●─────────────┤
+                0: ──────────────╰X────╰X─────────────┤
+    First Expansion Gates: {Toffoli: 4}
+    Wire Allocations: {'any': 1}
+    Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RZ: 36, RY: 8}
+    Weighted Cost: 68.0
+    <BLANKLINE>
+    Decomposition 4 (name: flip_zero_ctrl_values(_mcx_one_worker))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 5 (name: flip_zero_ctrl_values(_mcx_two_zeroed_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 6 (name: flip_zero_ctrl_values(_mcx_two_borrowed_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 7 (name: flip_zero_ctrl_values(_mcx_two_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 8 (name: flip_zero_ctrl_values(_mcx_many_zeroed_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 9 (name: flip_zero_ctrl_values(_mcx_many_borrowed_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 10 (name: flip_zero_ctrl_values(_mcx_many_workers))
+    Not applicable to the provided operator instance!
+    <BLANKLINE>
+    Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
+    Not applicable to the provided operator instance!
 
     """
 

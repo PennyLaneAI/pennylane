@@ -327,11 +327,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         use_reconstructor = decomps_use_reconstructor(op.op_type, op.params)
 
-        rules = [
-            rule
-            for rule in self._get_decompositions(op, use_reconstructor)
-            if rule.is_applicable(**op.params)
-        ]
+        rules = self._get_decompositions(op, use_reconstructor)
 
         # Treat ops that do not have a decomposition as supported if strict=False
         if not rules and not self._strict:
