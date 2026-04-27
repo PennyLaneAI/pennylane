@@ -15,7 +15,6 @@
 """Defines the inspect_decomp_graph transform."""
 
 from functools import partial
-from typing import override
 
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
@@ -81,7 +80,6 @@ class _DecompInGraphInfo(_DecompInfo):
         unsolved_ops = set(map(lambda idx: self._graph[idx].op, unsolved_indices))
         return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
 
-    @override
     def get_gate_count_str(self, estimated_count, actual_count) -> str:
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
