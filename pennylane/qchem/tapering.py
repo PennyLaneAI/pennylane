@@ -27,9 +27,18 @@ from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
+
 # Global Variables
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
 
+#: Maximum absolute imaginary part of a Hamiltonian coefficient below which it is
+#: considered numerically real and cast to a real-value array
+_IMAGINARY_PART_TOLERANCE = 1e-8
+
+
+#: Relative tolerance for determining whether all generator values are numerically
+#: zero, used to skip trivial operations during tapering
+_GENERATOR_ZERO_RTOL = 1e-8
 
 def _kernel(binary_matrix):
     r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
@@ -271,7 +280,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
             *(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True))
         )
     else:
-        if qml.math.all(qml.math.abs(qml.math.imag(coeffs)) <= 1e-8):
+        if qml.math.all(qml.math.abs(qml.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):
             coeffs = qml.math.real(coeffs)
         tapered_ham = qml.simplify(0.0 * qml.Identity(wires=wires_ord) + qml.dot(coeffs, obs))
 
@@ -713,7 +722,7 @@ def taper_operation(
 
         gen_tapered = PauliSentence({})
         if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(
-            list(op_gen.values()), 0.0, rtol=1e-8
+            list(op_gen.values()), 0.0, rtol=_GENERATOR_ZERO_RTOL
         ):
             gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
             gen_tapered = pauli_sentence(gen_tapered)
