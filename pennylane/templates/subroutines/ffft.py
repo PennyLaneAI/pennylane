@@ -28,7 +28,7 @@ from pennylane.wires import Wires, WiresLike
 class TwoQubitFermionicFourierTransform(Operator):
     """
     The two-qubit unitary operator that corresponds to a Fourier transform on
-    Fermions encoded using a Jordan-Wigner Transformation (JWT).
+    Fermions, encoded using a Jordan-Wigner Transformation (JWT).
 
     Args:
         wires (WiresLike): The two wires to apply the operator to. Ideally, they are adjacent
@@ -41,7 +41,7 @@ class TwoQubitFermionicFourierTransform(Operator):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires, id=None)
 
-    def compute_matrix(self, *_, **__):
+    def compute_matrix(self, *_):
         """
         Computes the matrix of the two-site Fourier operator.
 
@@ -59,6 +59,9 @@ class TwoQubitFermionicFourierTransform(Operator):
 
 
 class FFFT(Operator):
+    """
+
+    """
 
     resource_keys = {"num_wires"}
 
