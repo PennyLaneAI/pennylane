@@ -822,7 +822,8 @@ def inspect_decomps(
             of the ``DecompositionRule`` class or rule names (str) that represent the decomposition
             rules registered with the type of ``op``. If none are provided, all available rules
             will be displayed.
-        show_not_applicable (bool): if True (the default), all decomposition rules, including those that are not applicable to the specific operator instance (e.g., due to wire constraints), are displayed.
+        show_not_applicable (bool): if True (the default), all decomposition rules, including those 
+            that are not applicable to the specific operator instance (e.g., due to wire constraints), are displayed.
         num_work_wires (int or None): the number of available work wires for dynamic allocation.
             Decomposition rules that allocate more wires than there are available will be marked
             not applicable (or excluded if ``show_not_applicable=False``). Defaults to ``None``, which
