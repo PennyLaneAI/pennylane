@@ -582,17 +582,17 @@ def _ctrl_prod_resources_with_one_work_wire(
 
 @qp.register_condition(
     lambda *_, num_control_wires, num_work_wires, work_wire_type, **__: num_control_wires >= 2
-    and num_work_wires == 1
+    and num_work_wires >= 1
     and work_wire_type == "zeroed"
 )
 @qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
 def _controlled_product_with_one_work_wire(
     *_, control_wires, control_values, work_wires, base, **__
 ):
-    qp.ctrl(qp.X(work_wires), control=control_wires, control_values=control_values)
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires, control_values=control_values)
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=work_wires)
-    qp.ctrl(qp.X(work_wires), control=control_wires, control_values=control_values)
+        qp.ctrl(op, control=work_wires[:1])
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires, control_values=control_values)
 
 
 qp.add_decomps(
