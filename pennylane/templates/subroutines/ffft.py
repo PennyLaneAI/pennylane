@@ -60,8 +60,7 @@ class TwoQubitFFT(Operator):
 
 
 class FFFT(Operator):
-    """
-    Performs a Fast Fermionic Fourier Transform (FFFT) operation. Assumes
+    """Performs a Fast Fermionic Fourier Transform (FFFT) operation. Assumes
     Fermions are encoded using a Jordan Wigner Transformation (JWT).
 
     The Fermionic Fourier transform over a number of wires n (a power of two)
@@ -82,6 +81,7 @@ class FFFT(Operator):
 
         \sum_{x=0}^{n-1} e^{\frac{2 \pi i k x}{n}} c_x^\dagger = \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'}^\dagger + e^{\frac{2 \pi i k}{n}} \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'+1}^\dagger
 
+
     This is a transform between real and momentum space. The momentum mode is
     :math:``k``, wave number :math:``2 \pi k / n``. :math:``x`` is a site targeted
     by an operator such as the Fermionic creation operator :math:``c_{x}^\dagger``.
@@ -90,7 +90,7 @@ class FFFT(Operator):
     necessary to take into account the twiddle-factor :math:``e^{\frac{2 \pi i k}{n}}``.
 
     Iterating the decomposition :math:``k`` times realizes the full Fourier transform over
-    :math:``2^k`` sites.
+    :math:``2^{k}`` sites.
 
     **Example**
 
@@ -110,13 +110,12 @@ class FFFT(Operator):
             FFFT(wires)
             return state()
 
+
     >>> print(qml.draw(circuit, level="device")(wires))
     0: ─╭TwoQubitFFT───────╭TwoQubitFFT──────────────┤  State
     1: ─╰TwoQubitFFT───────│────────────╭TwoQubitFFT─┤  State
     2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰TwoQubitFFT─│────────────┤  State
-    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State
-
-    """
+    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State"""
 
     resource_keys = {"num_wires"}
 
