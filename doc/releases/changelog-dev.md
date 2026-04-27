@@ -501,7 +501,7 @@ The following classes have been ported over:
 
 * The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
   [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
-  
+
 * The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
@@ -573,6 +573,11 @@ The following classes have been ported over:
 * Created a new ``~.labs.estimator_beta.estimate()`` function which extends the functionality of
   ``qp.estimator.estimate()`` to utilize the advanced qubit management feature for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
+
+* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
+  for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
+  Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
+  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
 <h4>Other improvements</h4>
 
@@ -1018,6 +1023,7 @@ The following classes have been ported over:
   [(#9325)](https://github.com/PennyLaneAI/pennylane/pull/9325)
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
   [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
+  [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
 
 * Documentation has been added to :func:`~.transforms.cancel_inverses` and
   :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
@@ -1081,6 +1087,10 @@ The following classes have been ported over:
 * Fixed a bug where `debug_state`, `debug_probs` and `debug_expval` all mutated the circuit they participated in
   causing results to be incorrect.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
+  
+* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+  Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
+  [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
 * Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
   and return `qml.sample`.
@@ -1090,7 +1100,7 @@ The following classes have been ported over:
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
   can be interpreted.
   [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
@@ -1248,4 +1258,5 @@ Jay Soni,
 Nate Stemen,
 David Wierichs,
 Fuyuan Xia,
-Jake Zaia.
+Jake Zaia,
+Hong-Sheng Zheng.

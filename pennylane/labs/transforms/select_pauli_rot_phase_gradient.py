@@ -15,55 +15,13 @@ r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 
-import numpy as np
-
 import pennylane as qp
-from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-
-def _binary_repr_int(phi, precision):
-    """
-    Reasoning for +1e-10 term:
-    due to the division by pi, we obtain 14.999.. instead of 15 for, e.g., (1, 1, 1, 1) pi
-    at the same time, we want to floor off any additional floats when converting to the desired precision,
-    e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
-    so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
-    """
-    phi = phi % (4 * np.pi)
-    phi_round = np.round(2**precision * phi / (2 * np.pi))
-    return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
-
-
-# pylint: disable=too-many-arguments
-def _select_pauli_rot_phase_gradient(
-    phis: list,
-    control_wires: Wires,
-    target_wire: Wires,
-    angle_wires: Wires,
-    phase_grad_wires: Wires,
-    work_wires: Wires,
-) -> Operator:
-    """Function that transforms the SelectPauliRot gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
-    """
-
-    precision = len(angle_wires)
-    binary_int = [qp.math.binary_decimals(phi, precision, unit=4 * np.pi) for phi in phis]
-
-    ops = [
-        qp.QROM(
-            binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )
-    ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
-
-    return qp.change_op_basis(
-        qp.prod(*ops[::-1]),
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
-    )
+from .decomp_selectpaulirot_phase_gradient import _select_pauli_rot_phase_gradient
 
 
 @transform
@@ -172,6 +130,7 @@ def select_pauli_rot_phase_gradient(
 
             pg_op = _select_pauli_rot_phase_gradient(
                 angles,
+                rot_axis,
                 control_wires=control_wires,
                 target_wire=target_wire,
                 angle_wires=angle_wires,
@@ -179,25 +138,7 @@ def select_pauli_rot_phase_gradient(
                 work_wires=work_wires,
             )
 
-            match rot_axis:
-                case "X":
-                    operations.append(
-                        qp.change_op_basis(
-                            qp.Hadamard(target_wire),
-                            pg_op,
-                            qp.Hadamard(target_wire),
-                        )
-                    )
-                case "Y":
-                    operations.append(
-                        qp.change_op_basis(
-                            qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire)),
-                            pg_op,
-                            qp.S(target_wire) @ qp.Hadamard(target_wire),
-                        )
-                    )
-                case "Z":
-                    operations.append(pg_op)
+            operations.append(pg_op)
 
         else:
             operations.append(op)
