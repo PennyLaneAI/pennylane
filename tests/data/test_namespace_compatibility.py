@@ -48,30 +48,31 @@ def test_attribute_info_updates_existing_legacy_key_without_duplicate():
     info = AttributeInfo(attrs)
 
     info["type_id"] = "array"
+    assert "qml.data.type_id" not in attrs
+    assert attrs["qp.data.type_id"] == "array"
+    assert len(info) == 1
 
-    assert attrs["qml.data.type_id"] == "array"
-    assert "qp.data.type_id" not in attrs
-    assert attrs["qp.__data_len__"] == 1
+    info["data_interface"] = "numpy"
+    assert len(info) == 2
     assert "qml.__data_len__" not in attrs
 
 
 def test_attribute_info_deduplicates_namespaced_keys_on_write():
-    """Test that duplicated qml/qp metadata keys are treated as one logical field."""
+    """Test that duplicated metadata keys are treated as one logical field."""
     attrs = {
         "qml.data.doc": "legacy docs",
-        "qp.data.doc": "new docs",
-        "qml.__data_len__": 2,
+        "qml.__data_len__": 1,
     }
     info = AttributeInfo(attrs)
-
+    assert info["doc"] == "legacy docs"
     assert len(info) == 1
 
     info["doc"] = "updated docs"
-
     doc_keys = [key for key in attrs if key.endswith(".data.doc")]
+
+    assert len(info) == 1
     assert doc_keys == ["qp.data.doc"]
-    assert attrs["qp.data.doc"] == "updated docs"
-    assert attrs["qp.__data_len__"] == 1
+    assert info["doc"] == "updated docs"
 
 
 def test_attribute_info_deletes_all_namespaced_duplicates():

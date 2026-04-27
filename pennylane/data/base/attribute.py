@@ -94,26 +94,29 @@ class AttributeInfo(MutableMapping):
         self["doc"] = doc
 
     def __len__(self) -> int:
-        return sum(1 for _ in self)
+        namespace = self.attrs_namespace.split(".", maxsplit=1)[0]
+        try:
+            return self.attrs_bind[f"{namespace}.__data_len__"]
+        except KeyError:
+            return next(
+                (v for k, v in self.attrs_bind.items() if k.endswith("__data_len__")), 
+                0
+            )
 
-    def _update_len(self):
+    def _update_len(self, inc: int):
+        base_key = self.attrs_namespace.split(".", maxsplit=1)[0] + ".__data_len__"
         for key in tuple(self.attrs_bind):
-            if key != "qp.__data_len__" and key.endswith(".__data_len__"):
-                self.attrs_bind.pop(key, None)
-        self.attrs_bind["qp.__data_len__"] = len(self)
-
-    @staticmethod
-    def _info_name(bind_key: str) -> str | None:
-        _, separator, name = bind_key.partition(".data.")
-        return name if separator else None
+            if key != base_key and key.endswith(".__data_len__"):
+                self.attrs_bind[base_key] = self.attrs_bind.pop(key)
+                break
+        self.attrs_bind[base_key] = len(self) + inc
 
     def _bind_keys(self, __name: str) -> list[str]:
         key = self.bind_key(__name)
         keys = [key] if key in self.attrs_bind else []
         keys.extend(
-            bind_key
-            for bind_key in self.attrs_bind
-            if bind_key != key and self._info_name(bind_key) == __name
+            k for k in self.attrs_bind
+            if k != key and k.endswith(f".data.{__name}")
         )
         return keys
 
@@ -123,14 +126,16 @@ class AttributeInfo(MutableMapping):
             for key in keys:
                 self.attrs_bind.pop(key, None)
             if keys:
-                self._update_len()
+                self._update_len(-1)  # Pass -1 to decrement the counter
             return
 
-        key = keys[0] if keys else self.bind_key(__name)
+        key = self.bind_key(__name)
         self.attrs_bind[key] = __value
-        for duplicate_key in keys[1:]:
-            self.attrs_bind.pop(duplicate_key, None)
-        self._update_len()
+        for k in keys:
+            if k != key:
+                self.attrs_bind.pop(k, None)
+        if not keys:
+            self._update_len(1)
 
     def __getitem__(self, __name: str) -> Any:
         for key in self._bind_keys(__name):
@@ -157,14 +162,14 @@ class AttributeInfo(MutableMapping):
 
         for key in keys:
             self.attrs_bind.pop(key, None)
-        self._update_len()
+        self._update_len(-1)
 
     def __iter__(self) -> Iterator[str]:
-        seen = set()
+        visited = set()
         for key in self.attrs_bind:
-            name = self._info_name(key)
-            if name is not None and name not in seen:
-                seen.add(name)
+            _, separator, name = key.partition(".data.")
+            if separator and name not in visited:
+                visited.add(name)
                 yield name
 
     def __repr__(self) -> str:
