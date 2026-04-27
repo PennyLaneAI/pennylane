@@ -566,6 +566,21 @@
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
+  for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
+  Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
+  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+
+<h4>Other improvements</h4>
+
+* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
+  redundant. However, all Pauli-based computation passes can still be accessed from the
+  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
+  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
+  source of truth for documentation of a feature if it is desired to be accessible
+  from both PennyLane and Catalyst.
+  [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+
 <h3>Breaking changes 💔</h3>
 
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
@@ -1089,6 +1104,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+  Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
+  [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
+
+* Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
 * Fixed a warning of casting complex values to reals within `qp.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
@@ -1260,4 +1280,5 @@ Jay Soni,
 Nate Stemen,
 David Wierichs,
 Fuyuan Xia,
-Jake Zaia.
+Jake Zaia,
+Hong-Sheng Zheng.
