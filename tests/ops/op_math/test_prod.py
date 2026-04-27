@@ -1724,3 +1724,26 @@ class TestDecomposition:
             solution.decomposition(op)(**op.hyperparameters)
 
         assert q.queue == list(op[::-1])
+
+    def test_controlled_prod_basic_validity(self):
+        """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
+        op = qp.ctrl(
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
+            work_wires=[7, 8, 9],
+        )
+        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_prod_decomposition_new(self):
+        """The registered ``C(Prod)`` rule decomposes controlled products."""
+        from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+
+        op = qp.ops.Controlled(
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            control_wires=[4, 5, 6],
+            control_values=[1, 1, 1],
+            work_wires=[7, 8, 9],
+        )
+        for rule in qp.list_decomps("C(Prod)"):
+            _test_decomposition_rule(op, rule)

@@ -515,10 +515,9 @@ def _ctrl_prod_resources(
     factor_reps = base_params["resources"]  # {rep: count} from Prod
     tand_rep = resource_rep(qp.TemporaryAND)  # resource_keys == set()
 
-    resources = {
-        tand_rep: num_control_wires - 1,
-        adjoint_resource_rep(qp.TemporaryAND, tand_rep.params): num_control_wires - 1,
-    }
+    resources = Counter()
+    resources[tand_rep] += num_control_wires - 1
+    resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the last ancilla.
     for rep, count in factor_reps.items():
@@ -532,7 +531,7 @@ def _ctrl_prod_resources(
             )
         ] += count
 
-    return resources
+    return dict(resources)
 
 
 @qp.register_condition(
@@ -542,7 +541,7 @@ def _ctrl_prod_resources(
 @qp.register_resources(_ctrl_prod_resources)
 def _controlled_product_with_work_wires(*_, control_wires, control_values, work_wires, base, **__):
     target_wire = _multi_temporary_and(control_wires, control_values, work_wires)
-    for op in base.operands:
+    for op in base.operands[::-1]:
         qp.ctrl(op, control=[target_wire])  # was: qp.ctrl(base, ...)
     qp.adjoint(_multi_temporary_and)(control_wires, control_values, work_wires)
 
@@ -573,7 +572,7 @@ def _multi_temporary_and(
             control_values=(True, control_values[i + 1]),
         )
 
-    return work_wires[i]
+    return work_wires[num_needed - 1]
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
