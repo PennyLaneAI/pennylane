@@ -19,7 +19,7 @@ from collections import defaultdict
 
 from pennylane import math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import pow_resource_rep, add_decomps, resource_rep, register_resources
+from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
 from pennylane.wires import Wires, WiresLike
@@ -51,7 +51,9 @@ class FFFT(Operator):
         if len(wires) <= 1:
             raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
         if not math.log2(len(wires)).is_integer():
-            raise NotImplementedError("FFFT is currently only implemented for numbers of wires that are powers of two.")
+            raise NotImplementedError(
+                "FFFT is currently only implemented for numbers of wires that are powers of two."
+            )
 
         super().__init__(wires=wires)
 

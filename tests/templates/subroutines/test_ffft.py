@@ -5,12 +5,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFermionicFourierTransform
 from pennylane.wires import Wires
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ImportError:
-    has_jax = False
-
 
 dev = device("default.qubit")
 
@@ -46,12 +40,7 @@ def test_raises(wires, error_type, error_msg):
 @pytest.mark.parametrize(
     "wires, expected_circuit",
     [
-        (
-            (0, 1),
-            [
-                TwoQubitFermionicFourierTransform(Wires([0, 1]))
-            ]
-        ),
+        ((0, 1), [TwoQubitFermionicFourierTransform(Wires([0, 1]))]),
         (
             (0, 1, 2, 3),
             [
@@ -91,9 +80,5 @@ def test_raises(wires, error_type, error_msg):
     ],
 )
 def test_ffft_circuit(wires, expected_circuit):
-
-    if has_jax:
-        wires = math.array(wires)
-
     tape = workflow.construct_tape(ffft, level="device")(wires)
     assert tape.operations == expected_circuit
