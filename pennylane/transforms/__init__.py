@@ -177,7 +177,7 @@ There are also utility functions that take a circuit and return a DAG.
 The following transform allows the user to inspect the decomposition graph and how it chooses
 decomposition rules for operators in the circuit:
 
-.. autosummary
+.. autosummary::
    :toctree: api
 
    ~transforms.inspect_decomp_graph
