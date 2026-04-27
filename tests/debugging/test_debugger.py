@@ -16,9 +16,11 @@ Tests for debugger helpers in the debugging module.
 """
 
 import numpy as np
+import pytest
 
 import pennylane as qp
 from pennylane.debugging import debug_expval, debug_probs, debug_state
+from pennylane.decomposition import add_decomps, register_resources
 
 
 # pylint: disable=too-few-public-methods
@@ -34,6 +36,16 @@ class _DecomposingOp(qp.operation.Operation):
         return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
 
 
+@register_resources({qp.RY: 1, qp.RX: 1})
+def _ry_rx_decompose(wires, **__):
+    qp.RY(0.5, wires=wires)
+    qp.RX(0.5, wires=wires)
+
+
+add_decomps(_DecomposingOp, _ry_rx_decompose)
+
+
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestQueuePollution:
     """Tests that the 'debug_*' helpers don't pollute the queue. Regression tests for issue #9343."""
 
