@@ -267,7 +267,7 @@ class TestLabsQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, borrow):
         """Test that the compressed representation is correct."""
-        expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
+        expected_num_wires = size_data_points + qp.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
             LabsQROM,
             expected_num_wires,

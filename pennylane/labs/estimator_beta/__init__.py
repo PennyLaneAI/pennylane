@@ -47,16 +47,6 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
-Resource Operators
-~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.labs.estimator_beta
-
-.. autosummary::
-    :toctree: api
-
-    ~LabsQROM
-
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -85,6 +75,7 @@ Templates
 
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
+    ~LabsQROM
 
 """
 
