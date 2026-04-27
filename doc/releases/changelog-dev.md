@@ -1228,6 +1228,9 @@ The following classes have been ported over:
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes a typo for `qre.SelectPauli`.
+  [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1249,6 +1252,7 @@ Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
+David D.W. Ren,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
