@@ -557,7 +557,7 @@ def _ctrl_prod_resources_with_one_work_wire(
     multicx_rep = resource_rep(
         qp.MultiControlledX,
         num_control_wires=num_control_wires,
-        num_work_wires=None,
+        num_work_wires=0,
         num_zero_control_values=num_zero_control_values,
         work_wire_type="borrowed",
     )
@@ -583,16 +583,16 @@ def _ctrl_prod_resources_with_one_work_wire(
 @qp.register_condition(
     lambda *_, num_control_wires, num_work_wires, work_wire_type, **__: num_control_wires >= 2
     and num_work_wires == 1
-    and work_wire_type == "clean"
+    and work_wire_type == "zeroed"
 )
 @qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
 def _controlled_product_with_one_work_wire(
     *_, control_wires, control_values, work_wires, base, **__
 ):
-    qp.MultiControlledX(control_wires, control_values)
+    qp.ctrl(qp.X(work_wires), control=control_wires, control_values=control_values)
     for op in base.operands[::-1]:
         qp.ctrl(op, control=work_wires)
-    qp.MultiControlledX(control_wires, control_values)
+    qp.ctrl(qp.X(work_wires), control=control_wires, control_values=control_values)
 
 
 qp.add_decomps(

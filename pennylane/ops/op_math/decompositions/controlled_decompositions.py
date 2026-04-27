@@ -415,6 +415,7 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
 
 
 def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
+    print(num_control_wires, num_work_wires, num_control_wires)
     return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
 
 
