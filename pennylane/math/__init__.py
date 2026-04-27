@@ -201,9 +201,6 @@ class NumpyMimic(ar.autoray.AutoNamespace):
 numpy_mimic = NumpyMimic()
 numpy_fft = ar.autoray.AutoNamespace(submodule="fft")
 
-# small constant for numerical stability that the user can modify
-eps = 1e-14
-
 
 def __getattr__(name):
     return getattr(numpy_mimic, name)
