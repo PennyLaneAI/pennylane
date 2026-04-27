@@ -256,12 +256,6 @@
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
-  following `SymbolicOps` have been re-written.
-
-  - :class:`qp.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
-  - :class:`qp.ops.Adjoint` [(#9190)](https://github.com/PennyLaneAI/pennylane/pull/9190)
-
 * Added a `qp.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
@@ -464,10 +458,6 @@
 
 * The `dynamic_one_shot` and `split_to_single_terms` transforms are now compatible with `qp.qjit`.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
-
-* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
-  be a tuple instead of a list.
-  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
 * Catalyst's ``draw_graph`` function is now accessible from PennyLane as :func:`pennylane.draw_graph`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
@@ -903,6 +893,16 @@
   
   The following classes have been ported over:
   - `qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+
+* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
+  following `SymbolicOps` have been re-written.
+
+  - :class:`qp.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
+  - :class:`qp.ops.Adjoint` [(#9190)](https://github.com/PennyLaneAI/pennylane/pull/9190)
+
+* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+  be a tuple instead of a list.
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
 * Pass-by-pass :func:`~.specs` now uses ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
   Additionally, several internal comments have been updated to bring ``specs`` in line with the new ``CompilePipeline`` class.
