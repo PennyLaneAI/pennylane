@@ -797,9 +797,6 @@ def decompose(
     return (tape,), null_postprocessing
 
 
-# NOTE: Prevents operators in the decomposition from getting queued if
-# we're in an active queuing context
-@queuing.QueuingManager.stop_recording()
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
@@ -829,98 +826,101 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     """
 
-    max_depth_reached = False
-    decomp = []
+    # NOTE: Prevents operators in the decomposition from getting queued if
+    # we're in an active queuing context
+    with queuing.QueuingManager.stop_recording():
+        max_depth_reached = False
+        decomp = []
 
-    if max_expansion is not None and max_expansion <= current_depth:
-        max_depth_reached = True
+        if max_expansion is not None and max_expansion <= current_depth:
+            max_depth_reached = True
 
-    if isinstance(op, (Allocate, Deallocate)):
-        yield op
-
-    elif isinstance(op, Conditional):
-        if acceptance_function(op.base) or max_depth_reached:
+        if isinstance(op, (Allocate, Deallocate)):
             yield op
-        else:
-            yield from (
-                Conditional(op.meas_val, base_op)
-                for base_op in _operator_decomposition_gen(
-                    op.base,
-                    acceptance_function,
-                    max_expansion=max_expansion,
-                    current_depth=current_depth,
-                    graph_solution=graph_solution,
-                    custom_decomposer=custom_decomposer,
-                    strict=strict,
+
+        elif isinstance(op, Conditional):
+            if acceptance_function(op.base) or max_depth_reached:
+                yield op
+            else:
+                yield from (
+                    Conditional(op.meas_val, base_op)
+                    for base_op in _operator_decomposition_gen(
+                        op.base,
+                        acceptance_function,
+                        max_expansion=max_expansion,
+                        current_depth=current_depth,
+                        graph_solution=graph_solution,
+                        custom_decomposer=custom_decomposer,
+                        strict=strict,
+                    )
                 )
+
+        elif acceptance_function(op) or max_depth_reached:
+            yield op
+
+        elif isinstance(op, SubroutineOp):
+            decomp = op.decomposition()
+
+        elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
+            op_rule = graph_solution.decomposition(op, num_work_wires)
+            kwargs = get_decomp_kwargs(op)
+            with queuing.AnnotatedQueue() as decomposed_ops:
+                op_rule(*op.parameters, wires=op.wires, **kwargs)
+            decomp = decomposed_ops.queue
+            if num_work_wires is not None:
+                num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+
+        elif enabled_graph() and isinstance(op, GlobalPhase):
+            warnings.warn(
+                "With qp.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
+                "decomposition. To disable this warning, add GlobalPhase to the gate set, or "
+                "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
+                "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
+                "from pennylane.decomposition, and assign it to GlobalPhase."
             )
+            yield op
 
-    elif acceptance_function(op) or max_depth_reached:
-        yield op
+        elif custom_decomposer is not None:
+            try:
+                decomp = custom_decomposer(op)
+            except DecompositionUndefinedError as e:
+                raise DecompositionUndefinedError(
+                    f"Operator {op} not supported and does not provide a decomposition."
+                ) from e
 
-    elif isinstance(op, SubroutineOp):
-        decomp = op.decomposition()
+        elif op.has_decomposition:
+            decomp = op.decomposition()
 
-    elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
-        op_rule = graph_solution.decomposition(op, num_work_wires)
-        kwargs = get_decomp_kwargs(op)
-        with queuing.AnnotatedQueue() as decomposed_ops:
-            op_rule(*op.parameters, wires=op.wires, **kwargs)
-        decomp = decomposed_ops.queue
-        if num_work_wires is not None:
-            num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
-
-    elif enabled_graph() and isinstance(op, GlobalPhase):
-        warnings.warn(
-            "With qp.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
-            "decomposition. To disable this warning, add GlobalPhase to the gate set, or "
-            "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
-            "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
-            "from pennylane.decomposition, and assign it to GlobalPhase."
-        )
-        yield op
-
-    elif custom_decomposer is not None:
-        try:
-            decomp = custom_decomposer(op)
-        except DecompositionUndefinedError as e:
+        elif strict:
             raise DecompositionUndefinedError(
                 f"Operator {op} not supported and does not provide a decomposition."
-            ) from e
-
-    elif op.has_decomposition:
-        decomp = op.decomposition()
-
-    elif strict:
-        raise DecompositionUndefinedError(
-            f"Operator {op} not supported and does not provide a decomposition."
-        )
-
-    else:
-        if not enabled_graph():
-            # Only warn about this if graph mode is not enabled, because if it is, the
-            # graph would have already raised this warning. There is no need to raise
-            # duplicate warnings.
-            warnings.warn(
-                f"Operator {op.name} does not define a decomposition to the target gate set "
-                "and was not found in the target gate set. To remove this warning, add the "
-                f"operator name ({op.name}) or type ({type(op)}) to the gate set.",
-                UserWarning,
             )
-        yield op
 
-    current_depth += 1
-    for sub_op in decomp:
-        yield from _operator_decomposition_gen(
-            sub_op,
-            acceptance_function,
-            max_expansion=max_expansion,
-            current_depth=current_depth,
-            num_work_wires=num_work_wires,
-            graph_solution=graph_solution,
-            custom_decomposer=custom_decomposer,
-            strict=strict,
-        )
+        else:
+            if not enabled_graph():
+                # Only warn about this if graph mode is not enabled, because if it is, the
+                # graph would have already raised this warning. There is no need to raise
+                # duplicate warnings.
+                warnings.warn(
+                    f"Operator {op.name} does not define a decomposition to the target gate set "
+                    "and was not found in the target gate set. To remove this warning, add the "
+                    f"operator name ({op.name}) or type ({type(op)}) to the gate set.",
+                    UserWarning,
+                )
+            yield op
+
+        current_depth += 1
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+                num_work_wires=num_work_wires,
+                graph_solution=graph_solution,
+                custom_decomposer=custom_decomposer,
+                strict=strict,
+            )
 
 
 def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument

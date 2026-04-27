@@ -69,9 +69,9 @@ class TestQueuePollution:
             qp.H(0)
             qp.ctrl(_DecomposingOp, control=0)(wires=1)
 
-            ops_before = len(qp.QueuingManager.active_context().queue)
+            ops_before = list(qp.QueuingManager.active_context().queue)
             _ = debug_state()
-            ops_after = len(qp.QueuingManager.active_context().queue)
+            ops_after = list(qp.QueuingManager.active_context().queue)
             assert ops_before == ops_after
 
             return qp.expval(qp.Z(0))
@@ -87,9 +87,9 @@ class TestQueuePollution:
             qp.H(0)
             qp.ctrl(_DecomposingOp, control=0)(wires=1)
 
-            ops_before = len(qp.QueuingManager.active_context().queue)
+            ops_before = list(qp.QueuingManager.active_context().queue)
             _ = debug_probs()
-            ops_after = len(qp.QueuingManager.active_context().queue)
+            ops_after = list(qp.QueuingManager.active_context().queue)
             assert ops_before == ops_after
 
             return qp.expval(qp.Z(0))
@@ -105,9 +105,9 @@ class TestQueuePollution:
             qp.H(0)
             qp.ctrl(_DecomposingOp, control=0)(wires=1)
 
-            ops_before = len(qp.QueuingManager.active_context().queue)
+            ops_before = list(qp.QueuingManager.active_context().queue)
             _ = debug_expval(qp.Z(0))
-            ops_after = len(qp.QueuingManager.active_context().queue)
+            ops_after = list(qp.QueuingManager.active_context().queue)
             assert ops_before == ops_after
 
             return qp.expval(qp.Z(0))
