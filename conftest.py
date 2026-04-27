@@ -60,7 +60,7 @@ def reset_pennylane_state(namespace):
     base_numpy.set_printoptions(precision=8)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def local_decomp_context():
     """enable and disable graph-decomposition around each test."""
     with qp.decomposition.local_decomps():
