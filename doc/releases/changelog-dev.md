@@ -174,6 +174,38 @@ The following classes have been ported over:
 * Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
+* ``C(Prod)`` instances now efficiently decompose when at least one ``zeroed`` ``work_wire`` is provided.
+  The control value is loaded onto an auxiliary wire and controlled from there,
+  thereby significantly reducing the Toffoli cost.
+  When enough work wires are available, the control structure decomposes into a ladder of ``TemporaryAND`` operations.
+
+  Take, for example, the naive decomposition of
+  ``qp.ctrl(qp.prod(*(qp.X(i) for i in range(4)), control=["c1", "c1", "c2"], work_wires=["w1", "w2"]))``:
+
+  ```
+   0: ──────────╭X─┤
+   1: ───────╭X─│──┤
+   2: ────╭X─│──│──┤
+   3: ─╭X─│──│──│──┤
+  c1: ─├●─├●─├●─├●─┤
+  c2: ─├●─├●─├●─├●─┤
+  c3: ─╰●─╰●─╰●─╰●─┤
+  ```
+
+  The newly added decomposition rule yields the following instead:
+
+  ```
+   0: ────────────────╭X─────────┤
+   1: ─────────────╭X─│──────────┤
+   2: ──────────╭X─│──│──────────┤
+   3: ───────╭X─│──│──│──────────┤
+  c1: ─╭●────│──│──│──│───────●╮─┤
+  c2: ─├●────│──│──│──│───────●┤─┤
+  c3: ─│──╭●─│──│──│──│───●╮───│─┤
+  w1: ─╰⊕─├●─│──│──│──│───●┤──⊕╯─┤
+  w2: ────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────┤
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
