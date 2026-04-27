@@ -44,6 +44,11 @@ BOHR_TO_ANG = (
 )  # factor to convert bohr to angstrom
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
+#: Maximum imaginary part of a vibrational frequency (in cm^-1) below which a normal mode
+#: is considered physically valid. Modes exceeding this threshold are indicative of imaginary frequencies
+#: from an unstable molecular geometry and are skipped during potential energy surface computation
+_IMAGINARY_FREQUENCY_THRESHOLD = 1e-6
+
 
 def _pes_onemode(
     molecule,
@@ -141,7 +146,7 @@ def _local_pes_onemode(
         ref_dipole = _get_dipole(scf_result, method)
     for mode in range(nmodes):
         vec = vectors[mode]
-        if (freqs[mode].imag) > 1e-6:
+        if (freqs[mode].imag) > _IMAGINARY_FREQUENCY_THRESHOLD:
             continue  # pragma: no cover
 
         for job_idx, job in enumerate(jobs_on_rank):
@@ -345,7 +350,10 @@ def _local_pes_twomode(
 
     for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
 
-        if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
+        if (
+            (freqs[mode_a].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
+            or (freqs[mode_b].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
+        ):
             continue  # pragma: no cover
 
         vec_a = vectors[mode_a]
@@ -514,9 +522,9 @@ def _local_pes_threemode(
     for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
 
         if (
-            (freqs[mode_a].imag) > 1e-6
-            or (freqs[mode_b].imag) > 1e-6
-            or (freqs[mode_c].imag) > 1e-6
+            (freqs[mode_a].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
+            or (freqs[mode_b].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
+            or (freqs[mode_c].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
         ):
             continue  # pragma: no cover
 
