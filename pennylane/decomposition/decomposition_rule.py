@@ -787,12 +787,12 @@ class _DecompInfo:
         assert self._is_applicable and self._is_feasible
         estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
-        gate_count_str = self.get_gate_count_str(estimated_count, actual_count)
+        gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
             gate_count_str += f"\nWire Allocations: {allocations}"
         return gate_count_str
 
-    def get_gate_count_str(self, estimated_count, actual_count) -> str:
+    def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
