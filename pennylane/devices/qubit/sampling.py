@@ -29,6 +29,10 @@ from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 from .measure import flatten_state
 
+#: Maximum absolute deviation of probability array sum from 1.0 before raising
+#: a ValueError during sampling. Account for floating-point accumulation errors in
+#: probability normalisation.
+_PROB_NORMALISATION_TOLERANCE = 1e-6
 
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
@@ -512,10 +516,9 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     rng = np.random.default_rng(rng)
     norm = qml.math.sum(probs, axis=-1)
     norm_err = qml.math.abs(norm - 1.0)
-    cutoff = 1e-06
 
     norm_err = norm_err if is_state_batched else norm_err[..., np.newaxis]
-    if qml.math.any(norm_err > cutoff):
+    if qml.math.any(norm_err > _PROB_NORMALISATION_TOLERANCE):
         raise ValueError("probabilities do not sum to 1")
 
     basis_states = np.arange(2**num_wires)
