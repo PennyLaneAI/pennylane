@@ -15,7 +15,7 @@ r"""Tests for the base classes used when tracking qubits for resource estimation
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
 from pennylane.estimator import GateCount, Resources
@@ -247,10 +247,10 @@ class TestProcessCircuitLst:
             (  # Explicit Wire Labels
                 [
                     qre.Z(wires=0),
-                    qml.Z(wires=1),
+                    qp.Z(wires=1),
                     qre.RZ(wires="a"),
-                    qml.CNOT(wires=[2, "b"]),
-                    qml.RX(1.23, wires="c"),
+                    qp.CNOT(wires=[2, "b"]),
+                    qp.RX(1.23, wires="c"),
                 ],
                 [
                     (qre.Z.resource_rep(), Wires(0)),
@@ -342,11 +342,11 @@ class TestProcessCircuitLst:
                 [
                     qre.CNOT(wires=[0, 1]),
                     qre.QFT(num_wires=5),
-                    qml.CZ(wires=[1, 2]),
+                    qp.CZ(wires=[1, 2]),
                     MarkClean(wires=[0, 1, 2]),
                     qre.MultiControlledX(num_ctrl_wires=3),
                     qre.Z(),
-                    qml.Z(wires=1),
+                    qp.Z(wires=1),
                 ],
                 [
                     (qre.CNOT.resource_rep(), Wires([0, 1])),
@@ -1197,13 +1197,13 @@ class TestEstimateWiresFromCircuit:
                     qre.CNOT(wires=[0, 1]),
                     AllocateOp(Allocate(2)),
                     qre.Z(),
-                    qml.Z(wires=1),
+                    qp.Z(wires=1),
                 ],
                 (3, 5, 0),
             ),
             (
                 [
-                    qml.QFT(wires=[0, 1, 2, 3, 4]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4]),
                     AllocateOp(Allocate(3)),
                     qre.CNOT(),
                     DeallocateOp(Deallocate(2)),
@@ -1219,7 +1219,7 @@ class TestEstimateWiresFromCircuit:
                     DeallocateOp(Deallocate(2)),
                     qre.Z(wires=0),
                     AllocateOp(Allocate(3)),
-                    qml.PhaseShift(1.23, wires=1),
+                    qp.PhaseShift(1.23, wires=1),
                 ],
                 (5, 4, 0),
             ),
@@ -1275,7 +1275,7 @@ class TestEstimateWiresFromCircuit:
         (
             (  # Borrow idle
                 [  # 4 available idle qubits of 6 qubits total
-                    qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
+                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
                     AllocOpFree(
                         num_wires=1, allocate=Allocate(3), op=qre.X(), wires=["busy_wire2"]
                     ),
@@ -1286,7 +1286,7 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # 4 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
-                    qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
+                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
                     AllocOpFree(
                         num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
                     ),
@@ -1298,7 +1298,7 @@ class TestEstimateWiresFromCircuit:
             (  # Borrow + Mark clean
                 [  # 4 + 1 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
-                    qml.CNOT(wires=["busy_wire1", "busy_wire2"]),
+                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
                     MarkClean(wires=["busy_wire1"]),  # busy_wire1 is treated as clean and idle
                     AllocOpFree(
                         num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
@@ -1361,7 +1361,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=2,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1414,7 +1414,7 @@ class TestEstimateWiresFromCircuit:
                     DeallocateOp(Deallocate(2)),
                     qre.Z(wires=0),
                     AllocateOp(Allocate(3)),
-                    qml.PhaseShift(1.23, wires=1),
+                    qp.PhaseShift(1.23, wires=1),
                 ],
                 0,
                 2,
@@ -1428,7 +1428,7 @@ class TestEstimateWiresFromCircuit:
                     DeallocateOp(Deallocate(2)),
                     qre.Z(wires=0),
                     AllocateOp(Allocate(3)),
-                    qml.PhaseShift(1.23, wires=1),
+                    qp.PhaseShift(1.23, wires=1),
                 ],
                 6,
                 0,
@@ -1442,7 +1442,7 @@ class TestEstimateWiresFromCircuit:
                     DeallocateOp(Deallocate(2)),
                     qre.Z(wires=0),
                     AllocateOp(Allocate(3)),
-                    qml.PhaseShift(1.23, wires=1),
+                    qp.PhaseShift(1.23, wires=1),
                 ],
                 6,
                 2,
@@ -1450,7 +1450,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1477,7 +1477,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1504,7 +1504,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1531,7 +1531,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1558,7 +1558,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
@@ -1585,7 +1585,7 @@ class TestEstimateWiresFromCircuit:
             ),
             (
                 [  # Can borrow algorithmic wires and allocated wires from a higher scope
-                    qml.QFT(wires=[0, 1, 2, 3, 4, 5]),
+                    qp.QFT(wires=[0, 1, 2, 3, 4, 5]),
                     AllocOpFree(
                         num_wires=4,
                         allocate=Allocate(4, state=AllocateState.ANY, restored=True),
