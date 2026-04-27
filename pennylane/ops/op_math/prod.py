@@ -546,9 +546,89 @@ def _controlled_product_with_work_wires(*_, control_wires, control_values, work_
     qp.adjoint(_multi_temporary_and)(control_wires, control_values, work_wires)
 
 
+def _ctrl_prod_resources_dirty_work_wires(
+    *_,
+    num_control_wires,
+    num_zero_control_values,
+    base_params,
+    **__,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+
+    resources = Counter()
+    if num_zero_control_values > 0:
+        resources[qp.X] = 2 * num_zero_control_values
+    resources[
+        resource_rep(
+            qp.MultiControlledX,
+            num_work_wires=0,
+            num_control_wires=2,
+            num_zero_control_values=0,
+            work_wire_type="borrowed",
+        )
+    ] += 4 * (num_control_wires - 1)
+
+    # Per-factor single-control fan-out from the last ancilla.
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += (
+            2 * count
+        )
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda *_, num_control_wires, num_work_wires, **__: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+)
+@qp.register_resources(_ctrl_prod_resources_dirty_work_wires)
+def _controlled_product_with_dirty_work_wires(
+    *_, control_wires, control_values, work_wires, base, **__
+):
+    # Control logical, exemplarily for a fanout operation with second control on 0 state
+    #  0: ───────────────╭X───────────────────────────────╭X─────────┤  State
+    #  1: ────────────╭X─│─────────────────────────────╭X─│──────────┤  State
+    #  2: ─────────╭X─│──│──────────────────────────╭X─│──│──────────┤  State
+    #  3: ──────╭X─│──│──│───────────────────────╭X─│──│──│──────────┤  State
+    # c1: ──────│──│──│──│─────╭●───────╭●───────│──│──│──│─────╭●───────╭●─┤  State
+    # c2: ───X──│──│──│──│─────├●───────├●───────│──│──│──│─────├●───────├●──X──┤  State
+    # c3: ──────│──│──│──│──╭●─│──╭●────│────────│──│──│──│──╭●─│──╭●────│──┤  State
+    # w1: ──────│──│──│──│──├●─╰⊕─├●────╰⊕───────│──│──│──│──├●─╰⊕─├●────╰⊕─┤  State
+    # w2: ──────╰●─╰●─╰●─╰●─╰⊕────╰⊕─────────────╰●─╰●─╰●─╰●─╰⊕────╰⊕───────┤  State
+    c = len(control_wires)
+    num_needed = c - 1
+    target_wire = work_wires[num_needed - 1]
+
+    @qp.for_loop(len(control_wires))
+    def X_loop(i):
+        qp.cond(qp.math.allclose(control_values[i], 0), qp.X)(
+            control_wires[i]
+        )  # apply X on 0-controlled wires before and after main body (see example circit above)
+
+    X_loop()  # pylint: disable=no-value-for-parameter
+
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    _multi_toffoli_ladder(control_wires, control_values, work_wires)
+    _multi_toffoli_ladder(control_wires, control_values, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    _multi_toffoli_ladder(control_wires, control_values, work_wires)
+    _multi_toffoli_ladder(control_wires, control_values, work_wires)
+
+    X_loop()  # pylint: disable=no-value-for-parameter
+
+
 qp.add_decomps(
-    "C(Prod)",
-    _controlled_product_with_work_wires,
+    "C(Prod)", _controlled_product_with_work_wires, _controlled_product_with_dirty_work_wires
 )
 
 
@@ -568,6 +648,29 @@ def _multi_temporary_and(
 
     for i in range(1, num_needed):
         qp.TemporaryAND(
+            wires=[work_wires[i - 1], control[i + 1], work_wires[i]],
+            control_values=(True, control_values[i + 1]),
+        )
+
+    return work_wires[num_needed - 1]
+
+
+def _multi_toffoli_ladder(
+    control,
+    control_values,
+    work_wires,
+):
+    """Controlled decomposition using TemporaryAND ladder (needs work wires)."""
+
+    c = len(control)
+    num_needed = c - 1
+    qp.MultiControlledX(
+        wires=[control[0], control[1], work_wires[0]],
+        control_values=(control_values[0], control_values[1]),
+    )
+
+    for i in range(1, num_needed):
+        qp.MultiControlledX(
             wires=[work_wires[i - 1], control[i + 1], work_wires[i]],
             control_values=(True, control_values[i + 1]),
         )
