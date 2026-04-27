@@ -94,7 +94,7 @@ class FFFT(Operator):
 
     **Example**
 
-    i.e. for 4 sites:
+    Consider the FFFT operation performed on 4 wires:
 
     .. code-block:: python
 
