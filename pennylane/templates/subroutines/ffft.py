@@ -25,7 +25,7 @@ from pennylane.ops import PauliZ, pow
 from pennylane.wires import Wires, WiresLike
 
 
-class TwoQubitFermionicFourierTransform(Operator):
+class TwoQubitFFT(Operator):
     """
     The two-qubit unitary operator that corresponds to a Fourier transform on
     Fermions, encoded using a Jordan-Wigner Transformation (JWT).
@@ -60,7 +60,62 @@ class TwoQubitFermionicFourierTransform(Operator):
 
 
 class FFFT(Operator):
-    """ """
+    """
+    Performs a Fast Fermionic Fourier Transform (FFFT) operation. Assumes
+    Fermions are encoded using a Jordan Wigner Transformation (JWT).
+
+    The Fermionic Fourier transform over a number of wires n (a power of two)
+    is decomposed recursively into two parallel Fourier transforms over n/2
+    sites in each stack frame. These parallel FTs are followed by a series of
+    2-site linear gates.
+
+    Args:
+        wires (WiresLike): The wires to apply the FFFT to. Must be a power of 2
+            greater than or equal to 2.
+
+    Raises:
+        ValueError: If ``len(wires)`` is not at least 2.
+        NotImplementedError: If ``len(wires)`` is not a power of 2.
+
+    .. math::
+
+        \sum_{x=0}^{n-1} e^{\frac{2 \pi i k x}{n}} c_x^\dagger = \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'}^\dagger + e^{\frac{2 \pi i k}{n}} \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'+1}^\dagger
+
+    This is a transform between real and momentum space. The momentum mode is
+    :math:`k`, wave number :math:`2 \pi k / n`. :math:`x` is a site targeted
+    by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
+
+    A phase-delay implemented using Pauli Z gates raised to various powers is
+    necessary to take into account the twiddle-factor :math:`e^{\frac{2 \pi i k}{n}}`.
+
+    Iterating the decomposition `k` times realizes the full Fourier transform over
+    :math:`2^k` sites.
+
+    **Example**
+
+    i.e. for 8 sites:
+
+    .. code-block:: python
+
+        from pennylane.templates.subroutines.ffft import FFFT
+        from pennylane import device, state
+
+        dev = device("default.qubit")
+
+        wires = (0, 1, 2, 3, 4, 5, 6, 7)
+
+        @qnode(dev)
+        def circuit(wires):
+            FFFT(wires)
+            return state()
+
+    >>> print(qml.draw(circuit, level="device")(wires))
+    0: ─╭TwoQubitFFT───────╭TwoQubitFFT──────────────┤  State
+    1: ─╰TwoQubitFFT───────│────────────╭TwoQubitFFT─┤  State
+    2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰TwoQubitFFT─│────────────┤  State
+    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State
+
+    """
 
     resource_keys = {"num_wires"}
 
@@ -89,7 +144,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
         return two_qubit_gates
 
     two_qubit_gates = _count_two_recursive(num_wires, 0)
-    resources[resource_rep(TwoQubitFermionicFourierTransform)] = two_qubit_gates
+    resources[resource_rep(TwoQubitFFT)] = two_qubit_gates
 
     def _count_one_recursive(wires, resources):
         if wires > 2:
@@ -113,7 +168,7 @@ def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
 def _recursive_decompose(wires: WiresLike):
     # base case is that we have two wires
     if len(wires) == 2:
-        TwoQubitFermionicFourierTransform(wires)
+        TwoQubitFFT(wires)
     else:
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
@@ -126,7 +181,7 @@ def _recursive_decompose(wires: WiresLike):
 
         @for_loop(len(wires) // 2)
         def fouriers(i):
-            TwoQubitFermionicFourierTransform(Wires([wires[i], wires[len(wires) // 2 + i]]))
+            TwoQubitFFT(Wires([wires[i], wires[len(wires) // 2 + i]]))
 
         fouriers()  # pylint: disable=no-value-for-parameter
 
