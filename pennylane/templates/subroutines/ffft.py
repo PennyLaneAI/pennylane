@@ -70,10 +70,11 @@ class FFFT(Operator):
     2-site linear gates.
 
     Args:
-        wires (WiresLike): The wires to apply the FFFT to. Must be a power of 2
-            greater than or equal to 2.
+
+        wires (WiresLike): The wires to apply the FFFT to. Must be a power of 2 greater than or equal to 2.
 
     Raises:
+
         ValueError: If ``len(wires)`` is not at least 2.
         NotImplementedError: If ``len(wires)`` is not a power of 2.
 
@@ -82,14 +83,14 @@ class FFFT(Operator):
         \sum_{x=0}^{n-1} e^{\frac{2 \pi i k x}{n}} c_x^\dagger = \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'}^\dagger + e^{\frac{2 \pi i k}{n}} \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'+1}^\dagger
 
     This is a transform between real and momentum space. The momentum mode is
-    :math:`k`, wave number :math:`2 \pi k / n`. :math:`x` is a site targeted
-    by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
+    :math:``k``, wave number :math:``2 \pi k / n``. :math:``x`` is a site targeted
+    by an operator such as the Fermionic creation operator :math:``c_{x}^\dagger``.
 
     A phase-delay implemented using Pauli Z gates raised to various powers is
-    necessary to take into account the twiddle-factor :math:`e^{\frac{2 \pi i k}{n}}`.
+    necessary to take into account the twiddle-factor :math:``e^{\frac{2 \pi i k}{n}}``.
 
-    Iterating the decomposition `k` times realizes the full Fourier transform over
-    :math:`2^k` sites.
+    Iterating the decomposition :math:``k`` times realizes the full Fourier transform over
+    :math:``2^k`` sites.
 
     **Example**
 
