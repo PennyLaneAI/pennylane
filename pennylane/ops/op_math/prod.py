@@ -512,14 +512,14 @@ def _ctrl_prod_resources(
     base_params,
     **__,
 ):
-    factor_reps = base_params["resources"]  # {rep: count} from Prod
-    tand_rep = resource_rep(qp.TemporaryAND)  # resource_keys == set()
+    factor_reps = base_params["resources"]
+    tand_rep = resource_rep(qp.TemporaryAND)
 
     resources = Counter()
     resources[tand_rep] += num_control_wires - 1
     resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
 
-    # Per-factor single-control fan-out from the last ancilla.
+    # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
         resources[
             controlled_resource_rep(
@@ -542,13 +542,61 @@ def _ctrl_prod_resources(
 def _controlled_product_with_work_wires(*_, control_wires, control_values, work_wires, base, **__):
     target_wire = _multi_temporary_and(control_wires, control_values, work_wires)
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=[target_wire])  # was: qp.ctrl(base, ...)
+        qp.ctrl(op, control=[target_wire])
     qp.adjoint(_multi_temporary_and)(control_wires, control_values, work_wires)
 
 
+def _ctrl_prod_resources_with_one_work_wire(
+    *_,
+    num_control_wires,
+    base_params,
+    num_zero_control_values,
+    **__,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    multicx_rep = resource_rep(
+        qp.MultiControlledX,
+        num_control_wires=num_control_wires,
+        num_work_wires=None,
+        num_zero_control_values=num_zero_control_values,
+        work_wire_type="borrowed",
+    )
+
+    resources = Counter()
+    resources[multicx_rep] += 2
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda *_, num_control_wires, num_work_wires, work_wire_type, **__: num_control_wires >= 2
+    and num_work_wires == 1
+    and work_wire_type == "clean"
+)
+@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+def _controlled_product_with_one_work_wire(
+    *_, control_wires, control_values, work_wires, base, **__
+):
+    qp.MultiControlledX(control_wires, control_values)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires)
+    qp.MultiControlledX(control_wires, control_values)
+
+
 qp.add_decomps(
-    "C(Prod)",
-    _controlled_product_with_work_wires,
+    "C(Prod)", _controlled_product_with_work_wires, _controlled_product_with_one_work_wire
 )
 
 
