@@ -87,7 +87,7 @@ class FFFT(Operator):
     by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
 
     A phase-delay implemented using Pauli Z gates raised to various powers is
-    necessary to take into account the twiddle-factor :math:``e^{\frac{2 \pi i k}{n}}``.
+    necessary to take into account the twiddle-factor :math:`e^{\frac{2 \pi i k}{n}}`.
 
     Iterating the decomposition :math:`k` times realizes the full Fourier transform over
     :math:`2^{k}` sites.
