@@ -1079,6 +1079,10 @@ The following classes have been ported over:
 
 <h3>Bug fixes 🐛</h3>
 
+* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+  Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
+  [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
+
 * Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
   and return `qml.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
@@ -1245,4 +1249,5 @@ Jay Soni,
 Nate Stemen,
 David Wierichs,
 Fuyuan Xia,
-Jake Zaia.
+Jake Zaia,
+Hong-Sheng Zheng.
