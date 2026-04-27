@@ -211,23 +211,7 @@
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
   [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
 
-<h4>Disentangling Transforms 🧶</h4>
-
-* The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
-  available in PennyLane. These compilation passes simplify rendundant
-  ``CNOT`` and ``SWAP`` gates.
-  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
-
 <h3>Improvements 🛠</h3>
-
-<h4>Compilation Pipelines and Markers ✒️</h4>
-
-* Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
-  compile pipeline of a given QNode at a specific level.
-  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
-
-* The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
-  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
 
 <h4>Decompositions 🍏</h4>
 
@@ -352,6 +336,22 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+<h4>Compilation Pipelines and Markers ✒️</h4>
+
+* Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+
+* The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
+
+<h4>Disentangling Transforms 🧶</h4>
+
+* The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
+  available in PennyLane. These compilation passes simplify rendundant
+  ``CNOT`` and ``SWAP`` gates.
+  [(#9133)](https://github.com/PennyLaneAI/pennylane/pull/9133)
 
 <h4>Other improvements</h4>
 
