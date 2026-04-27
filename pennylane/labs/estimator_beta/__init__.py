@@ -75,6 +75,17 @@ Alternate Decompositions
     ~mcx_one_dirty_aux_resource_decomp
     ~mcx_many_clean_aux_resource_decomp
 
+Templates
+~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~OutOfPlaceIntegerComparator
+    ~RegisterEquality
+
 """
 
 from pennylane.estimator import *
@@ -94,8 +105,10 @@ from .wires_manager.wire_counting import (
 from .resource_config import LabsResourceConfig
 
 from .templates import (
-    selectpaulirot_controlled_resource_decomp,
     LabsQROM,
+    OutOfPlaceIntegerComparator,
+    RegisterEquality,
+    selectpaulirot_controlled_resource_decomp,
 )
 from .ops import (
     ch_resource_decomp,
