@@ -17,18 +17,16 @@ This module contains the template for performing basis transformation defined by
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import Wires, WiresLike
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
+
+def _qjit_or_capture():
+    return compiler.active() or capture.enabled()
 
 
 def _adjust_determinant(matrix):
@@ -106,11 +104,11 @@ class BasisRotation(Operation):
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
         >>> def circuit():
-        ...    qp.adjoint(qp.BasisRotation(wires=wires, unitary_matrix=umat))
+        ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
         ...    for idx, eigenval in enumerate(eigen_vals):
-        ...        qp.RZ(eigenval, wires=[idx])
-        ...    qp.BasisRotation(wires=wires, unitary_matrix=umat)
-        >>> circ_unitary = qp.matrix(circuit, wire_order=wires)()
+        ...        qml.RZ(eigenval, wires=[idx])
+        ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
+        >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         array([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
                [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
@@ -120,7 +118,7 @@ class BasisRotation(Operation):
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
 
-        >>> print(qp.draw(qp.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
+        >>> print(qml.draw(qml.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
         0: ──Rϕ(-1.52)─╭G(1.38)──Rϕ(-1.62)─┤
         1: ──Rϕ(1.62)──╰G(1.38)────────────┤
 
@@ -129,7 +127,7 @@ class BasisRotation(Operation):
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> print(qp.draw(qp.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
+        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
         0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
         1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
         2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
@@ -238,13 +236,13 @@ class BasisRotation(Operation):
         :math:`\hat{E}_{k,k+1}=\tfrac{i}{2}(X_k Y_{k+1} - Y_k X_{k+1})`
         (note the additional prefactor of :math:`2` from the mapping):
 
-        >>> qp.generator(qp.SingleExcitation(0.2512, [0, 1]))
+        >>> qml.generator(qml.SingleExcitation(0.2512, [0, 1]))
         (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
 
         Similarly, the ``PhaseShift`` gates have the generators
         :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{I}-Z_j)=i|1\rangle\langle 1|_j`:
 
-        >>> qp.generator(qp.PhaseShift(0.742, [0]))
+        >>> qml.generator(qml.PhaseShift(0.742, [0]))
         (Projector(array([1]), wires=[0]), 1.0)
 
         It turns out that these generators :math:`\hat{E}_{k,k+1}` and :math:`\hat{D}_j`
@@ -405,33 +403,30 @@ def _basis_rotation_decomp_resources(dim, is_real):
 
 # Not exact because PhaseShift(s) might be skipped
 @register_resources(_basis_rotation_decomp_resources, exact=False)
-def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
+def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
 
     if isinstance(wires, Wires):
         wires = wires.labels
 
-    if has_jax and capture.enabled():
-        unitary_matrix, wires = jnp.array(unitary_matrix), jnp.array(wires)
+    if _qjit_or_capture():
+        matrix, wires = math.array(matrix, like="jax"), math.array(wires, like="jax")
 
     def real_unitary(unitary, wires):
+
         angle, unitary = _adjust_determinant(unitary)
 
-        if has_jax and capture.enabled():
-
-            def shift(a):
-                PhaseShift(a, wires=wires[0])
-
-            cond(jnp.logical_not(jnp.allclose(angle, 0.0)), shift)(angle)
+        if _is_jax_jit(angle):
+            PhaseShift(angle, wires[0])
         else:
-            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
-                PhaseShift(angle, wires=wires[0])
+            cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if has_jax and capture.enabled():
-            givens_ids = jnp.array(givens_ids)
-            givens_matrices = jnp.array(givens_matrices)
+        if _qjit_or_capture():
+            givens_ids = math.array(givens_ids, like="jax")
+            givens_matrices = math.array(givens_matrices, like="jax")
+            wires = math.array(wires, like="jax")
 
         @for_loop(len(givens_list))
         def givens_loop(idx):
@@ -446,10 +441,10 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if has_jax and capture.enabled():
-            phase_list = jnp.array(phase_list)
-            givens_ids = jnp.array(givens_ids)
-            givens_matrices = jnp.array(givens_matrices)
+        if capture.enabled():
+            phase_list = math.array(phase_list, like="jax")
+            givens_ids = math.array(givens_ids, like="jax")
+            givens_matrices = math.array(givens_matrices, like="jax")
 
         @for_loop(len(phase_list))
         def phase_loop(idx):
@@ -465,16 +460,15 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
             theta = math.arccos(math.real(grot_mat[1, 1]))
             phi = math.angle(grot_mat[0, 0])
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-            if has_jax and capture.enabled():
-                cond(jnp.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
+            if _is_jax_jit(phi):
+                PhaseShift(phi, wires[i])
             else:
-                cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+                cond(math.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
 
         givens_loop()  # pylint: disable=no-value-for-parameter
 
-    is_real = math.is_real_obj_or_close(unitary_matrix)
-
-    cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
+    is_real = math.is_real_obj_or_close(matrix)
+    cond(is_real, real_unitary, complex_unitary)(unitary=matrix, wires=wires)
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
@@ -493,3 +487,7 @@ if BasisRotation._primitive is not None:  # pylint: disable=protected-access
         if len(args) != 2:
             args = (args[:-1], args[-1])
         return type.__call__(BasisRotation, *args, **kwargs)
+
+
+def _is_jax_jit(U):
+    return math.is_abstract(U) and not _qjit_or_capture()

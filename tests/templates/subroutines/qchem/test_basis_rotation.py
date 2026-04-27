@@ -15,11 +15,10 @@
 Tests for the BasisRotation template.
 """
 
-# pylint: disable=missing-function-docstring, import-outside-toplevel
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -52,8 +51,8 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 )
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
-    op = qml.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
-    qml.ops.functions.assert_valid(op)
+    op = qp.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -103,12 +102,12 @@ class TestDecomposition:
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in diags + givens[::-1]:
-            g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
+            g_op = qp.PhaseShift if len(indices) == 1 else qp.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(qml.numpy.array(angle))
+            gate_angles.append(qp.numpy.array(angle))
             gate_wires.append(list(indices))
 
-        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
+        op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
@@ -119,7 +118,7 @@ class TestDecomposition:
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
         # Tests the decomposition rule defined with the new system
-        for rule in qml.list_decomps(qml.BasisRotation):
+        for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.capture
@@ -172,16 +171,16 @@ class TestDecomposition:
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in givens[::-1]:
-            g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
+            g_op = qp.PhaseShift if len(indices) == 1 else qp.SingleExcitation
             gate_ops.append(g_op)
-            gate_angles.append(qml.numpy.array(angle))
+            gate_angles.append(qp.numpy.array(angle))
             gate_wires.append(list(indices))
 
-        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
+        op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
-        assert [type(op) for op in queue].count(qml.PhaseShift) <= 1  # at most one phase shift
+        assert [type(op) for op in queue].count(qp.PhaseShift) <= 1  # at most one phase shift
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
@@ -189,7 +188,7 @@ class TestDecomposition:
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
         # Tests the decomposition rule defined with the new system
-        for rule in qml.list_decomps(qml.BasisRotation):
+        for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -211,42 +210,42 @@ class TestDecomposition:
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
-        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
+        op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
 
         # Tests the decomposition rule defined with the new system
-        for rule in qml.list_decomps(qml.BasisRotation):
+        for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
 
-        weights = qml.math.array(
+        weights = qp.math.array(
             [
                 [-0.618452, -0.68369054 - 0.38740723j],
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
         )
 
-        dev = qml.device("default.qubit", wires=2)
-        dev2 = qml.device("default.qubit", wires=["z", "a"])
+        dev = qp.device("default.qubit", wires=2)
+        dev2 = qp.device("default.qubit", wires=["z", "a"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(wires=[0])
-            qml.BasisRotation(
+            qp.PauliX(wires=[0])
+            qp.BasisRotation(
                 wires=range(2),
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity(0)), qml.state()
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.PauliX(wires=["z"])
-            qml.BasisRotation(
+            qp.PauliX(wires=["z"])
+            qp.BasisRotation(
                 wires=["z", "a"],
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity("z")), qml.state()
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -254,29 +253,30 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
             (
-                qml.math.array(
+                qp.math.array(
                     [
                         [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
                         [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
                     ]
                 ),
-                qml.math.array([-1.45183325, 3.47550075]),
-                qml.math.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.43754907 - 0.89919453j]),
+                qp.math.array([-1.45183325, 3.47550075]),
+                qp.math.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.43754907 - 0.89919453j]),
             ),
             (
-                qml.math.array(
+                qp.math.array(
                     [
                         [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
                         [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                         [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
                     ]
                 ),
-                qml.math.array([-5.91470283, 2.16643686, 3.63229049]),
-                qml.math.array(
+                qp.math.array([-5.91470283, 2.16643686, 3.63229049]),
+                qp.math.array(
                     [
                         0.0 + 0.0j,
                         0.0 + 0.0j,
@@ -290,7 +290,7 @@ class TestDecomposition:
                 ),
             ),
             (
-                qml.math.array(
+                qp.math.array(
                     [
                         [
                             -0.4544554 + 0.0j,
@@ -329,8 +329,8 @@ class TestDecomposition:
                         ],
                     ]
                 ),
-                qml.math.array([-7.74725949, -3.90779537, -1.41680735, 2.54903347, 5.60305197]),
-                qml.math.array(
+                qp.math.array([-7.74725949, -3.90779537, -1.41680735, 2.54903347, 5.60305197]),
+                qp.math.array(
                     [
                         0.0 + 0.0j,
                         0.0 + 0.0j,
@@ -373,19 +373,19 @@ class TestDecomposition:
         """Test that the BasisRotation template works correctly asserting the prepared state."""
 
         wires = range(len(unitary_matrix))
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(0)
-            qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix))
+            qp.PauliX(0)
+            qp.PauliX(1)
+            qp.adjoint(qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix))
             for idx, eigenval in enumerate(eigen_values):
-                qml.RZ(-eigenval, wires=[idx])
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
-            return qml.state()
+                qp.RZ(-eigenval, wires=[idx])
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
+            return qp.state()
 
-        assert np.allclose([qml.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
+        assert np.allclose([qp.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
 
 
 class TestInputs:
@@ -426,26 +426,26 @@ class TestInputs:
         """Test that BasisRotation template throws an exception if the parameters have illegal
         shapes, types or values."""
 
-        dev = qml.device("default.qubit", wires=len(wires))
+        dev = qp.device("default.qubit", wires=len(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
-            return qml.expval(qml.PauliZ(0))
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
         with pytest.raises(ValueError, match=msg_match):
-            qml.BasisRotation.compute_decomposition(
+            qp.BasisRotation.compute_decomposition(
                 wires=wires, unitary_matrix=unitary_matrix, check=True
             )
 
     def test_id(self):
         """Test that the id attribute can be set."""
-        template = qml.BasisRotation(
+        template = qp.BasisRotation(
             wires=range(2),
-            unitary_matrix=qml.math.array(
+            unitary_matrix=qp.math.array(
                 [
                     [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
                     [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
@@ -457,30 +457,31 @@ class TestInputs:
 
 
 def circuit_template(unitary_matrix, check=False):
-    qml.BasisState(qml.math.array([1, 1, 0]), wires=[0, 1, 2])
-    qml.BasisRotation(
+    qp.BasisState(qp.math.array([1, 1, 0]), wires=[0, 1, 2])
+    qp.BasisRotation(
         wires=range(3),
         unitary_matrix=unitary_matrix,
         check=check,
     )
-    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
 def circuit_decomposed(weights):
-    qml.BasisState(np.array([1, 1, 0]), wires=[0, 1, 2])
-    qml.PhaseShift(weights[6], wires=[0])
-    qml.PhaseShift(weights[7], wires=[1])
-    qml.PhaseShift(weights[8], wires=[2])
-    qml.SingleExcitation(weights[5], wires=[0, 1])
-    qml.PhaseShift(weights[4], wires=[0])
-    qml.SingleExcitation(weights[3], wires=[1, 2])
-    qml.PhaseShift(weights[2], wires=[1])
-    qml.SingleExcitation(weights[1], wires=[0, 1])
-    qml.PhaseShift(weights[0], wires=[0])
+    qp.BasisState(np.array([1, 1, 0]), wires=[0, 1, 2])
+    qp.PhaseShift(weights[6], wires=[0])
+    qp.PhaseShift(weights[7], wires=[1])
+    qp.PhaseShift(weights[8], wires=[2])
+    qp.SingleExcitation(weights[5], wires=[0, 1])
+    qp.PhaseShift(weights[4], wires=[0])
+    qp.SingleExcitation(weights[3], wires=[1, 2])
+    qp.PhaseShift(weights[2], wires=[1])
+    qp.SingleExcitation(weights[1], wires=[0, 1])
+    qp.PhaseShift(weights[0], wires=[0])
 
-    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""
@@ -489,14 +490,14 @@ class TestInterfaces:
     def test_autograd(self, tol):
         """Test the autograd interface."""
 
-        unitary_matrix = qml.numpy.array(
+        unitary_matrix = qp.numpy.array(
             [
                 [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
                 [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                 [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
             ]
         )
-        weights = qml.numpy.array(
+        weights = qp.numpy.array(
             [
                 2.2707802713289267,  # 0
                 2.9355948424220206,  # 1
@@ -510,47 +511,60 @@ class TestInterfaces:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(unitary_matrix)
 
         assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "unitary",
+        [
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                ]
+            ),  # complex unitary
+            np.array(
+                [
+                    [-0.22081075, -0.29306608, -0.93024453],
+                    [-0.67705210, -0.64047179, 0.36248634],
+                    [-0.70202783, 0.70986489, -0.05699795],
+                ]
+            ),  # real unitary
+        ],
+    )
     @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     @pytest.mark.jax
-    def test_jax_jit(self, device_name, tol):
+    def test_jax_jit(self, unitary, device_name, tol):
         """Test the jax interface."""
 
         import jax
         import jax.numpy as jnp
 
-        unitary_matrix = jnp.array(
-            [
-                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-            ]
-        )
+        unitary_matrix = jnp.array(unitary)
 
-        dev = qml.device(device_name, wires=3)
+        dev = qp.device(device_name, wires=3)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
-        circuit2 = qml.QNode(circuit_template, dev)
+        circuit = jax.jit(qp.QNode(circuit_template, dev), static_argnames="check")
+        circuit2 = qp.QNode(circuit_template, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(unitary_matrix)
-        res3 = circuit2(qml.math.toarray(unitary_matrix))
+        res3 = circuit2(qp.math.toarray(unitary_matrix))
 
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-        assert qml.math.allclose(res, res3, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res3, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(unitary_matrix)
@@ -558,7 +572,56 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(unitary_matrix)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "unitary",
+        [
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                ]
+            ),  # complex unitary
+            np.array(
+                [
+                    [-0.22081075, -0.29306608, -0.93024453],
+                    [-0.67705210, -0.64047179, 0.36248634],
+                    [-0.70202783, 0.70986489, -0.05699795],
+                ]
+            ),  # real unitary
+        ],
+    )
+    @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_qjit(self, unitary, device_name, tol):
+        """Test with qjit interface."""
+        catalyst = pytest.importorskip("catalyst")
+
+        unitary_matrix = qp.math.array(unitary, like="jax")
+
+        dev = qp.device(device_name, wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+
+        # We compute these results with `null.qubit` even though we won't compare them. This
+        # is to test error-free "execution".
+        res = catalyst.qjit(circuit)(unitary_matrix)
+        res2 = circuit(unitary_matrix)
+        res3 = circuit(qp.math.toarray(unitary_matrix))
+
+        if device_name == "lightning.qubit":
+            assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+            assert qp.math.allclose(res, res3, atol=tol, rtol=0)
+
+        gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
+        circuit_dec = qp.decompose(circuit, gate_set=gate_set)
+        specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs2 = qp.specs(circuit_dec, level="device")(unitary_matrix)
+        assert specs["resources"].gate_types == specs2["resources"].gate_types
+        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
 
     @pytest.mark.slow
     @pytest.mark.tf
@@ -588,14 +651,14 @@ class TestInterfaces:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(unitary_matrix)
@@ -632,11 +695,11 @@ class TestInterfaces:
             requires_grad=False,
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
