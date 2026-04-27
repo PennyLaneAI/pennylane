@@ -79,8 +79,10 @@ Templates
 
 """
 
+import pennylane as qp
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
 from .wires_manager.base_classes import (
@@ -129,6 +131,19 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+
+@_map_to_resource_op.register
+def _(op: qp.templates.subroutines.qrom.QROM):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    return LabsQROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        borrow_qubits=not (op.hyperparameters["clean"]),
+        wires=op.wires,
+    )
 
 
 ## Monkey Patching:

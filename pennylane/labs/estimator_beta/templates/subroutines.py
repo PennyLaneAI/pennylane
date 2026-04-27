@@ -860,3 +860,13 @@ class LabsQROM(ResourceOperator):
             represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
+
+    @staticmethod
+    def tracking_name(
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        borrow_qubits: bool = True,
+        select_swap_depth: int | None = None,
+    ):
+        return "QROM"
