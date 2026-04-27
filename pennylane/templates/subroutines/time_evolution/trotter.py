@@ -833,16 +833,19 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
         list: the approximation as a product of exponentials of the Hamiltonian terms
     """
     if order == 1:
+        if reverse:
+            tape_inv = make_qscript(qfunc)(-time, *qfunc_args, wires=wires, **qfunc_kwargs)
+            return [qp_ops.adjoint(op) for op in tape_inv.operations[::-1]]
+
         tape = make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return tape.operations[::-1] if reverse else tape.operations
+        return tape.operations
 
     if order == 2:
         tape = make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return (
-            tape.operations[::-1] + tape.operations
-            if reverse
-            else tape.operations + tape.operations[::-1]
-        )
+        tape_inv = make_qscript(qfunc)(-time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
+        inv_ops = [qp_ops.adjoint(op) for op in tape_inv.operations[::-1]]
+
+        return inv_ops + tape.operations if reverse else tape.operations + inv_ops
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1

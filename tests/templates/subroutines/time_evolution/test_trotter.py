@@ -1706,72 +1706,37 @@ class TestTrotterizedQfuncIntegration:
     def _generate_simple_decomp_trotterize(self, time, order, reverse, args, wires):
         arg1, arg2 = args
 
-        if order == 1:
-            expected_decomp = [
-                qp.RX(time * arg1, wires=wires[0]),
-                qp.RY(time * arg2, wires=wires[0]),
+        def get_ops(t):
+            return [
+                qp.RX(t * arg1, wires=wires[0]),
+                qp.RY(t * arg2, wires=wires[0]),
                 qp.MultiRZ(arg1, wires=wires),
                 qp.CNOT([wires[0], wires[1]]),
-                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
+                qp.ControlledPhaseShift(t * arg2, wires=[wires[1], wires[0]]),
                 qp.CNOT([wires[0], wires[1]]),
                 qp.QFT(wires=wires[1:-1]),
             ]
 
+        if order == 1:
             if reverse:
-                expected_decomp = expected_decomp[::-1]
+                return [qp.adjoint(op) for op in get_ops(-time)[::-1]]
+            return get_ops(time)
 
         if order == 2:
-            expected_decomp = [
-                qp.RX((time / 2) * arg1, wires=wires[0]),
-                qp.RY((time / 2) * arg2, wires=wires[0]),
-                qp.MultiRZ(arg1, wires=wires),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.QFT(wires=wires[1:-1]),
-            ]
-
-            if reverse:
-                expected_decomp = expected_decomp[::-1]
-
-            expected_decomp = expected_decomp + expected_decomp[::-1]
+            ops = get_ops(time / 2)
+            inv_ops = [qp.adjoint(op) for op in get_ops(-time / 2)[::-1]]
+            return (inv_ops + ops) if reverse else (ops + inv_ops)
 
         if order == 4:
-            expected_decomp1 = [
-                qp.RX((p_4 * time / 2) * arg1, wires=wires[0]),
-                qp.RY((p_4 * time / 2) * arg2, wires=wires[0]),
-                qp.MultiRZ(arg1, wires=wires),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.QFT(wires=wires[1:-1]),
-            ]
+            ops1 = get_ops(p_4 * time / 2)
+            inv_ops1 = [qp.adjoint(op) for op in get_ops(-p_4 * time / 2)[::-1]]
+            decomp1 = (inv_ops1 + ops1) if reverse else (ops1 + inv_ops1)
 
-            expected_decomp1 = (
-                expected_decomp1[::-1] + expected_decomp1
-                if reverse
-                else expected_decomp1 + expected_decomp1[::-1]
-            )
+            ops2 = get_ops(p4_comp * time / 2)
+            inv_ops2 = [qp.adjoint(op) for op in get_ops(-p4_comp * time / 2)[::-1]]
+            decomp2 = (inv_ops2 + ops2) if reverse else (ops2 + inv_ops2)
 
-            expected_decomp2 = [
-                qp.RX((p4_comp * time / 2) * arg1, wires=wires[0]),
-                qp.RY((p4_comp * time / 2) * arg2, wires=wires[0]),
-                qp.MultiRZ(arg1, wires=wires),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qp.CNOT([wires[0], wires[1]]),
-                qp.QFT(wires=wires[1:-1]),
-            ]
-
-            expected_decomp2 = (
-                expected_decomp2[::-1] + expected_decomp2
-                if reverse
-                else expected_decomp2 + expected_decomp2[::-1]
-            )
-
-            expected_decomp = expected_decomp1 * 2 + expected_decomp2 + expected_decomp1 * 2
-
-        return expected_decomp
+            return decomp1 * 2 + decomp2 + decomp1 * 2
 
     #   Circuit execution tests:
     @pytest.mark.parametrize("n", (1, 2, 3))

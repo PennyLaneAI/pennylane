@@ -1219,6 +1219,9 @@ The following classes have been ported over:
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes a bug where :func:`~.trotterize` incorrectly reversed the sequence of operations within a ``qfunc``
+  [(#9369)](https://github.com/PennyLaneAI/pennylane/pull/9369)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
