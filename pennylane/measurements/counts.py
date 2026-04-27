@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.counts measurement.
+This module contains the qp.counts measurement.
 """
 
 import warnings
@@ -158,12 +158,12 @@ class CountsMP(SampleMeasurement):
             >>> samples = math.array(samples)
 
             By default, this will return:
-            >>> mp = qml.counts()
+            >>> mp = qp.counts()
             >>> mp._samples_to_counts(samples)
             {np.str_('00'): np.int64(2), np.str_('10'): np.int64(1)}
 
             However, if ``all_outcomes=True``, this will return:
-            >>> mp = qml.counts(all_outcomes=True)
+            >>> mp = qp.counts(all_outcomes=True)
             >>> mp._samples_to_counts(samples)
             {'00': np.int64(2), '01': np.int64(0), '10': np.int64(1), '11': np.int64(0)}
 
@@ -399,15 +399,15 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=43, wires=2)
+        dev = qp.device("default.qubit", seed=43, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.Y(0))
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.counts(qp.Y(0))
 
     Executing this QNode:
 
@@ -421,15 +421,15 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42, wires=2)
+        dev = qp.device("default.qubit", seed=42, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(all_outcomes=True)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.counts(all_outcomes=True)
 
     Executing this QNode:
 
@@ -440,13 +440,13 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42, wires=2)
+        dev = qp.device("default.qubit", seed=42, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.counts()
+            qp.X(0)
+            return qp.counts()
 
     Executing this QNode shows only the observed outcomes:
 
@@ -457,11 +457,11 @@ def counts(
 
     .. code-block:: python
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.counts(all_outcomes=True)
+            qp.X(0)
+            return qp.counts(all_outcomes=True)
 
     Executing this QNode shows counts for all states:
 

@@ -17,7 +17,7 @@ Unit tests for the pennylane.drawer.style` module.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.drawer.style import _set_style
 
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -32,7 +32,7 @@ def reset_style_after_tests():
 def test_available_styles():
     """Assert ``available_styles`` returns tuple of available styles."""
 
-    assert qml.drawer.available_styles() == (
+    assert qp.drawer.available_styles() == (
         "black_white",
         "black_white_dark",
         "sketch",
@@ -184,5 +184,5 @@ def test_default():
 def test_style_none_error():
     """Tests proper error raised when style doesn't exist."""
 
-    with pytest.raises(TypeError, match="style 'none' provided to ``qml.drawer.use_style``"):
-        qml.drawer.use_style("none")
+    with pytest.raises(TypeError, match="style 'none' provided to ``qp.drawer.use_style``"):
+        qp.drawer.use_style("none")
