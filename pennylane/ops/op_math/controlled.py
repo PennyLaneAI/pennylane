@@ -566,8 +566,10 @@ class Controlled(SymbolicOp):
         return new_sig
 
     # pylint: disable=unused-argument
-    def __new__(cls, base, *_, **__):
+    def __new__(cls, *_, base=None, **__):
         """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
+        if base is None:
+            return object.__new__(cls)
         if isinstance(base, Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
