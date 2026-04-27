@@ -501,7 +501,7 @@ The following classes have been ported over:
 
 * The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
   [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
-  
+
 * The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
@@ -589,12 +589,12 @@ The following classes have been ported over:
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
   :class:`~.SemiAdder`.
   [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
-  
+
   With this breaking change, please note the following:
-  
+
    - Decomposition rules for ``SemiAdder`` now require those arguments.
    - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
-   
+
    These changes are relevant only with :func:`~decomposition.enable_graph`.
 
 * All operator classes are now queued by default, unless they implement a custom ``queue``
@@ -857,7 +857,7 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
-* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
+* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant
   as a result.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
 
@@ -1087,7 +1087,7 @@ The following classes have been ported over:
   enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
   can be interpreted.
   [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
@@ -1218,6 +1218,9 @@ The following classes have been ported over:
 * Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
+
+* Made ``base`` argument optional in ``Controlled.__new__``, which fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled.
+  [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
 
