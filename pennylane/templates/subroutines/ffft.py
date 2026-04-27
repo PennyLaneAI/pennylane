@@ -84,7 +84,7 @@ class FFFT(Operator):
 
     This is a transform between real and momentum space. The momentum mode is
     :math:`k`, wave number :math:`2 \pi k / n`. :math:`x` is a site targeted
-    by an operator such as the Fermionic creation operator :math:``c_{x}^\dagger``.
+    by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
 
     A phase-delay implemented using Pauli Z gates raised to various powers is
     necessary to take into account the twiddle-factor :math:``e^{\frac{2 \pi i k}{n}}``.
