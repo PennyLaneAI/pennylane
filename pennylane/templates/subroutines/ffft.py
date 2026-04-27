@@ -17,8 +17,9 @@ by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
 from collections import defaultdict
 
-from pennylane import add_decomps, math, register_resources, resource_rep, for_loop
-from pennylane.decomposition import pow_resource_rep
+from pennylane import math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import pow_resource_rep, add_decomps, resource_rep, register_resources
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
 from pennylane.wires import Wires, WiresLike
