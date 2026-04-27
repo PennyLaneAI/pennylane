@@ -19,7 +19,7 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, ResourceConfig, resource_rep
 
@@ -102,7 +102,7 @@ class TestResourceSelectPauliRot:
         """Test that the controlled resources are correct."""
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.resource_op_precisions[qml.estimator.SelectPauliRot]
+            kwargs = config.resource_op_precisions[qp.estimator.SelectPauliRot]
             assert (
                 qre.selectpaulirot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,

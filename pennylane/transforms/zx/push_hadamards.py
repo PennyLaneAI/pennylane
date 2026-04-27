@@ -56,7 +56,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -68,22 +68,22 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         import pennylane.transforms.zx as zx
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @zx.push_hadamards
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.T(0)
-            qml.Hadamard(0)
-            qml.Hadamard(0)
-            qml.T(1)
-            qml.Hadamard(1)
-            qml.CNOT([1, 2])
-            qml.Hadamard(1)
-            qml.Hadamard(2)
-            return qml.state()
+            qp.T(0)
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.T(1)
+            qp.Hadamard(1)
+            qp.CNOT([1, 2])
+            qp.Hadamard(1)
+            qp.Hadamard(2)
+            return qp.state()
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──T────┤  State
     1: ──T─╭X─┤  State
     2: ──H─╰●─┤  State

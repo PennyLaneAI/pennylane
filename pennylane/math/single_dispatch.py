@@ -33,7 +33,7 @@ def _i(name):
     if name == "tf":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return import_module("tensorflow")
 
-    if name == "qml":
+    if name == "qp":
         return import_module("pennylane")
 
     return import_module(name)
@@ -61,7 +61,7 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+# qp.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "coerce", lambda x: x)
 ar.register_function("scipy", "array", lambda x: x)
@@ -200,7 +200,7 @@ ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x)
 ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 
 # When dispatching to autograd, ensure that autoray will instead call
-# qml.numpy rather than autograd.numpy, to take into account our autograd modification.
+# qp.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))
@@ -226,7 +226,7 @@ ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
 
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
-    _np = _i("qml").numpy
+    _np = _i("qp").numpy
     tensors = [t.reshape((1, len(t))) if len(t.shape) == 1 else t for t in tensors]
     rsizes, csizes = _np.array([t.shape for t in tensors]).T
     all_zeros = [[_np.zeros((rsize, csize)) for csize in csizes] for rsize in rsizes]
@@ -270,7 +270,7 @@ def _scatter_element_add_autograd(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
     assignment, we have to be clever and use ravel_multi_index."""
-    pnp = _i("qml").numpy
+    pnp = _i("qp").numpy
     size = tensor.size
     flat_index = pnp.ravel_multi_index(index, tensor.shape)
     if pnp.isscalar(flat_index):
@@ -287,7 +287,7 @@ ar.register_function("autograd", "scatter_element_add", _scatter_element_add_aut
 
 
 def _take_autograd(tensor, indices, axis=None):
-    indices = _i("qml").numpy.asarray(indices)
+    indices = _i("qp").numpy.asarray(indices)
 
     if axis is None:
         return tensor.flatten()[indices]
@@ -304,7 +304,7 @@ ar.register_function(
     lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x), axis=-1),
 )
 
-ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
+ar.register_function("autograd", "diagonal", lambda x, *args: _i("qp").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
 
 ar.register_function("autograd", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))

@@ -19,7 +19,7 @@ import numpy as onp
 import pytest
 from autoray import numpy as anp
 
-from pennylane import grad as qml_grad
+from pennylane import grad as qp_grad
 from pennylane import math as fn
 from pennylane import numpy as np
 
@@ -186,7 +186,7 @@ def test_dot_autograd():
     assert res.requires_grad
     assert fn.allclose(res, 8)
 
-    assert fn.allclose(qml_grad(fn.dot)(x, y), x)
+    assert fn.allclose(qp_grad(fn.dot)(x, y), x)
 
 
 def test_dot_autograd_with_scalar():
@@ -325,13 +325,13 @@ class TestNorm:
         ],
     )
     def test_autograd_norm_gradient(self, arr):
-        """Test that qml.math.norm has the correct gradient with autograd
+        """Test that qp.math.norm has the correct gradient with autograd
         when the order and axis are not specified."""
         norm = fn.norm(arr)
         expected_norm = onp.linalg.norm(arr)
         assert np.isclose(norm, expected_norm)
 
-        grad = qml_grad(fn.norm)(arr)
+        grad = qp_grad(fn.norm)(arr)
         expected_grad = (norm**-1) * arr.conj()
         assert fn.allclose(grad, expected_grad)
 
