@@ -97,18 +97,14 @@ class FFFT(Operator):
     Consider the FFFT operation performed on 4 wires:
 
     .. code-block:: python
+        import pennylane as qp
 
-        from pennylane.templates.subroutines.ffft import FFFT
-        from pennylane import device, state
+        dev = qp.device("default.qubit")
 
-        dev = device("default.qubit")
-
-        wires = (0, 1, 2, 3)
-
-        @qnode(dev)
-        def circuit(wires):
-            FFFT(wires)
-            return state()
+        @qp.qnode(dev)
+        def circuit():
+            qp.FFFT(wires=(0, 1, 2, 3))
+            return qp.state()
 
 
     >>> print(qml.draw(circuit, level="device")(wires))
