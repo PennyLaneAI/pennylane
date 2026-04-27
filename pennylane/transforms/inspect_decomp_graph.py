@@ -275,70 +275,23 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
     Weighted Cost: 196.0
 
     In addition to the operators at the top level of the circuit, we can also inspect the graph
-    for how intermediate operators (such as the ``MultiControlledX`` produced in the decomposition
-    of the ``MultiRZ``) are decomposed:
+    for how intermediate operators (such as the single-controlled ``MultiRZ`` produced in the
+    decomposition of the controlled ``MultiRZ``) are decomposed:
 
-    >>> print(inspector.inspect_decomps(qp.MultiControlledX([3, 4, 5, 0]), num_work_wires=1))
-    Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
+    >>> print(inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1))
+    Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
     Not applicable to the provided operator instance!
     <BLANKLINE>
-    Decomposition 1 (name: flip_zero_ctrl_values(_decompose_mcx_with_no_worker))
-    0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─╭GlobalPhase(-1.57)─┤
-    3: ────├●────────│──────────├●────────│─────────────├●──────────────────┤
-    4: ────╰●────────│──────────╰●────────│─────────────├●──────────────────┤
-    5: ──────────────╰●───────────────────╰●────────────╰●──────────────────┤
-    M0 =
-    [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
-     [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-    First Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, CNOT: 2, MultiControlledX(num_control_wires=2, num_work_wires=1, num_zero_control_values=0, work_wire_type=borrowed): 2, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-    Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RY: 10, RZ: 31, RX: 4}
-    Weighted Cost: 69.0
-    <BLANKLINE>
-    CHOSEN: Decomposition 2 (name: flip_zero_ctrl_values(_mcx_one_zeroed_worker))
-    <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
-                3: ───────────├●─│───●┤─────────────┤
-                4: ───────────╰●─│───●╯─────────────┤
-                5: ──────────────├●─────────────────┤
-                0: ──────────────╰X─────────────────┤
-    First Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
-    Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {MidMeasure: 1, GlobalPhase: 23, RY: 7, RZ: 19, CNOT: 10, RX: 4}
-    Weighted Cost: 41.0
-    <BLANKLINE>
-    Decomposition 3 (name: flip_zero_ctrl_values(_mcx_one_borrowed_worker))
-    <DynamicWire>: ──Allocate─╭X─╭●─╭X─╭●──Deallocate─┤
-                3: ───────────├●─│──├●─│──────────────┤
-                4: ───────────╰●─│──╰●─│──────────────┤
-                5: ──────────────├●────├●─────────────┤
-                0: ──────────────╰X────╰X─────────────┤
-    First Expansion Gates: {Toffoli: 4}
-    Wire Allocations: {'any': 1}
-    Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RZ: 36, RY: 8}
-    Weighted Cost: 68.0
-    <BLANKLINE>
-    Decomposition 4 (name: flip_zero_ctrl_values(_mcx_one_worker))
+    Decomposition 1 (name: to_controlled_qubit_unitary)
     Not applicable to the provided operator instance!
     <BLANKLINE>
-    Decomposition 5 (name: flip_zero_ctrl_values(_mcx_two_zeroed_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 6 (name: flip_zero_ctrl_values(_mcx_two_borrowed_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 7 (name: flip_zero_ctrl_values(_mcx_two_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 8 (name: flip_zero_ctrl_values(_mcx_many_zeroed_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 9 (name: flip_zero_ctrl_values(_mcx_many_borrowed_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 10 (name: flip_zero_ctrl_values(_mcx_many_workers))
-    Not applicable to the provided operator instance!
-    <BLANKLINE>
-    Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
-    Not applicable to the provided operator instance!
+    CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+    0: ─╭X─╭RZ(0.50)─╭X─┤
+    1: ─├●─│─────────├●─┤
+    2: ─╰●─╰●────────╰●─┤
+    First Expansion Gates: {CRZ: 1, Toffoli: 2}
+    Full Expansion Gates: {RZ: 20, CNOT: 14, GlobalPhase: 18, RY: 4}
+    Weighted Cost: 38.0
 
     """
 
