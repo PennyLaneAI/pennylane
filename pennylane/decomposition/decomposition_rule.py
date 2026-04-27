@@ -821,9 +821,7 @@ def inspect_decomps(
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This
         new way of performing decompositions is generally more resource-efficient and accommodates
-        multiple alternative decomposition rules for an operator. In this new system, custom
-        decomposition rules are defined as quantum functions, and it is currently required that
-        every decomposition rule declares its required resources using :func:`~.register_resources`.
+        multiple alternative decomposition rules for an operator.
 
     Args:
         op (Operator): the operator to inspect the decomposition rules for.
@@ -831,7 +829,7 @@ def inspect_decomps(
             of the ``DecompositionRule`` class or strings that represent the names of decomposition
             rules registered with the type of ``op``. If none are provided, all available rules
             will be displayed.
-        show_not_applicable (bool): whether to display decomposition rules not applicable to the
+        show_not_applicable (bool): whether to display decomposition rules that are not applicable to the
             given operator instance. Defaults to ``True``.
         num_work_wires (int or None): the number of available work wires for dynamic allocation.
             Decomposition rules that allocate more wires than there are available will be marked
