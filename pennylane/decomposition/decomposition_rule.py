@@ -824,13 +824,12 @@ def inspect_decomps(
         multiple alternative decomposition rules for an operator.
 
     Args:
-        op (Operator): the operator to inspect the decomposition rules for.
-        *rules (str or DecompositionRule): the decomposition rules to inspect, accepts instances
-            of the ``DecompositionRule`` class or strings that represent the names of decomposition
+        op (Operator): the operator instance whose decomposition rules will be inspected.
+        *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
+            of the ``DecompositionRule`` class or rule names (str) that represent the decomposition
             rules registered with the type of ``op``. If none are provided, all available rules
             will be displayed.
-        show_not_applicable (bool): whether to display decomposition rules that are not applicable to the
-            given operator instance. Defaults to ``True``.
+        show_not_applicable (bool): if True (the default), all decomposition rules, including those that are not applicable to the specific operator instance (e.g., due to wire constraints), are displayed.
         num_work_wires (int or None): the number of available work wires for dynamic allocation.
             Decomposition rules that allocate more wires than there are available will be marked
             not applicable (or excluded if ``show_not_applicable=False``).
