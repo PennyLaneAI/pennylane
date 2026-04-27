@@ -95,17 +95,17 @@ def get_compile_pipeline(
 
         from pennylane.workflow import get_compile_pipeline
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
         def circuit(angle):
-            qml.RX(angle, wires=0)
-            qml.H(0)
-            qml.H(0)
-            qml.RX(angle, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(angle, wires=0)
+            qp.H(0)
+            qp.H(0)
+            qp.RX(angle, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> args = (3.14,)
     >>> print(get_compile_pipeline(circuit)(*args)) # or level="device"
@@ -130,19 +130,19 @@ def get_compile_pipeline(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.metric_tensor
-            @qml.transforms.merge_rotations
-            @qml.marker("checkpoint")
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            @qp.metric_tensor
+            @qp.transforms.merge_rotations
+            @qp.marker("checkpoint")
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit(x):
-                qml.RX(x, wires=0)
-                qml.H(0)
-                qml.H(0)
-                qml.RX(x, wires=0)
-                return qml.expval(qml.Z(0))
+                qp.RX(x, wires=0)
+                qp.H(0)
+                qp.H(0)
+                qp.RX(x, wires=0)
+                return qp.expval(qp.Z(0))
 
         By default, without specifying a ``level`` we will get the full compile pipeline that is used
         during execution on this device. Note that this can also be retrieved by manually specifying ``level="device"``,
@@ -192,7 +192,7 @@ def get_compile_pipeline(
           [5] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
-        We can also retrieve our compile pipeline up to a specific stage indicated by the name given to a :func:`qml.marker`,
+        We can also retrieve our compile pipeline up to a specific stage indicated by the name given to a :func:`qp.marker`,
         which in our example is indicated by the ``"checkpoint"`` marker,
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))

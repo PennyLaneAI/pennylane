@@ -105,7 +105,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     >>> D = 8
     >>> n = 6
     >>> ids = np.random.choice(2**n, size=D, replace=False)
-    >>> bitstrings = qml.math.int_to_binary(ids, width=n).T
+    >>> bitstrings = qp.math.int_to_binary(ids, width=n).T
     >>> print(bitstrings)
     [[0 0 0 1 0 0 1 0]
      [0 0 0 1 0 1 1 1]
@@ -414,7 +414,7 @@ def compute_sos_encoding(bits):
     Our goal is to encode these bitstrings as new, distinct bitstrings of length ``m=5``:
 
     >>> D = bits.shape[1]
-    >>> m = 2 * qml.math.ceil_log2(D) - 1
+    >>> m = 2 * qp.math.ceil_log2(D) - 1
     >>> print(m)
     5
 
@@ -557,7 +557,7 @@ def compute_sos_encoding(bits):
            linearly independent (and thus form a--likely not orthonormal--basis of
            :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
-           This is implemented in ``qml.math.binary_select_basis``, which returns the basis and
+           This is implemented in ``qp.math.binary_select_basis``, which returns the basis and
            the remaining columns separately. This step will only ever be executed once.
         2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use
            recursion), go to step 3. Else go to step 4.
@@ -648,7 +648,7 @@ class SumOfSlatersPrep(Operation):
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
-        wires (qml.wires.WiresLike): Wires on which to prepare the state. All work wires will be
+        wires (qp.wires.WiresLike): Wires on which to prepare the state. All work wires will be
             allocated dynamically with :func:`~.allocate`.
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
@@ -667,7 +667,7 @@ class SumOfSlatersPrep(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
 
         coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j]) / np.sqrt(8)
@@ -682,18 +682,18 @@ class SumOfSlatersPrep(Operation):
 
     .. code-block:: python
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "StatePrep", "CNOT", "X"}
 
         first_free_wire = max(wires)+1
 
-        @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qml.decompose(gate_set=gate_set, num_work_wires=14)
-        @qml.qnode(qml.device("lightning.qubit", wires=21))
+        @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
+        @qp.decompose(gate_set=gate_set, num_work_wires=14)
+        @qp.qnode(qp.device("lightning.qubit", wires=21))
         def circuit():
-            qml.SumOfSlatersPrep(coefficients, wires, indices)
-            return qml.state()
+            qp.SumOfSlatersPrep(coefficients, wires, indices)
+            return qp.state()
 
     We can check that we prepared the right state:
 
@@ -708,7 +708,7 @@ class SumOfSlatersPrep(Operation):
 
     That looks exactly right! Internally, the state preparation looks like this:
 
-    >>> print(qml.draw(circuit, show_matrices=False, max_length=180)())
+    >>> print(qp.draw(circuit, show_matrices=False, max_length=180)())
      0: ──────╭QROM(M0)─╭●────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ···
      1: ──────├QROM(M0)─│────────╭●───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ···
      2: ──────├QROM(M0)─│──╭●────│──╭●────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ···
@@ -776,12 +776,12 @@ class SumOfSlatersPrep(Operation):
             wires = list(range(5))
             first_free_wire = max(wires)+1
 
-            @qml.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-            @qml.decompose(gate_set=gate_set, num_work_wires=11)
-            @qml.qnode(qml.device("lightning.qubit", wires=16))
+            @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
+            @qp.decompose(gate_set=gate_set, num_work_wires=11)
+            @qp.qnode(qp.device("lightning.qubit", wires=16))
             def circuit():
-                qml.SumOfSlatersPrep(coefficients, wires, indices)
-                return qml.state()
+                qp.SumOfSlatersPrep(coefficients, wires, indices)
+                return qp.state()
 
         In this case, we only require eight work wires, because the encoding blocks can be skipped.
 
@@ -797,7 +797,7 @@ class SumOfSlatersPrep(Operation):
 
         The reduced circuit looks like this:
 
-        >>> print(qml.draw(circuit, show_matrices=False, max_length=190)())
+        >>> print(qp.draw(circuit, show_matrices=False, max_length=190)())
          0: ──────╭QROM(M0)──X─╭●──────────────────────────●╮────╭●──────────────────────────●╮────╭●─────────────────────────────●╮────╭●──────────────────────────●╮──X─╭●─────────────────── ···
          1: ──────├QROM(M0)──X─├●──────────────────────────●┤────├●──────────────────────────●┤──X─├●─────────────────────────────●┤────├●──────────────────────────●┤──X─├●─────────────────── ···
          2: ──────├QROM(M0)──X─│──╭●───────────────────●╮───│──X─│──╭●───────────────────●╮───│────│──╭●──────────────────────●╮───│────│──╭●───────────────────●╮───│──X─│──╭●──────────────── ···
@@ -846,12 +846,12 @@ class SumOfSlatersPrep(Operation):
         then controls :class:`~.CNOT` gates that perform the actual uncomputation.
 
         Note that we guessed the required number of work wires (``num_work_wires``) in
-        :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
+        :func:`~.pennylane.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
         integer wire labels to those dynamically allocated wires. If we want to know
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:
 
-        >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
+        >>> prep_op = qp.SumOfSlatersPrep(coefficients, wires, indices)
         >>> prep_op.required_register_sizes(**prep_op.resource_params)
         {'wires': 5,
          'enumeration_wires': 4,
@@ -880,7 +880,7 @@ class SumOfSlatersPrep(Operation):
 
     @property
     def has_decomposition(self):
-        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        """We are using ``qp.allocate`` in the decomposition, so the validation for
         decomposition in the old system breaks. Hence we manually deactivate the fallback
         of ``compute_decomposition`` to the new decomp system that is implemented in
         ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
@@ -888,7 +888,7 @@ class SumOfSlatersPrep(Operation):
 
     @staticmethod
     def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
-        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        """We are using ``qp.allocate`` in the decomposition, so the validation for
         decomposition in the old system breaks. Hence we manually deactivate the fallback
         of ``compute_decomposition`` to the new decomp system that is implemented in
         ``Operator.compute_decomposition``."""

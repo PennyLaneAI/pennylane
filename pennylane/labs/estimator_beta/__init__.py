@@ -71,6 +71,17 @@ Alternate Decompositions
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
 
+Templates
+~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~OutOfPlaceIntegerComparator
+    ~RegisterEquality
+
 """
 
 from pennylane.estimator import *
@@ -93,7 +104,11 @@ from .templates import (
     ResourceSumOfSlatersPrep,
 )
 
-from .templates import selectpaulirot_controlled_resource_decomp
+from .templates import (
+    OutOfPlaceIntegerComparator,
+    RegisterEquality,
+    selectpaulirot_controlled_resource_decomp,
+)
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
