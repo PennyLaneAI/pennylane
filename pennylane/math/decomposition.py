@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility functions for decompositions are available from ``qml.math.decomposition``."""
+"""Utility functions for decompositions are available from ``qp.math.decomposition``."""
 
 from functools import lru_cache, partial
 

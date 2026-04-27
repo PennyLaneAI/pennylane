@@ -15,7 +15,7 @@
 This file provides a dummy debugger for device tests.
 """
 
-import pennylane as qml
+import pennylane as qp
 
 
 # pylint: disable=too-few-public-methods
@@ -26,7 +26,7 @@ class Debugger:
         # Create a dummy object to act as the device
         # and add a dummy shots attribute to it
         self.device = type("", (), {})()
-        self.device.shots = qml.measurements.Shots(None)
+        self.device.shots = qp.measurements.Shots(None)
 
         self.active = True
         self.snapshots = {}
