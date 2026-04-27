@@ -29,6 +29,9 @@ from pennylane.wires import Wires
 
 
 # Global Variables
+#: Chunk size for splitting large PauliSentence objects during tapering.
+#: Chosen empirically to balance memory usage against processing overhead
+#: on typical hardware. Increase if memory is not a constraint.
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
 
 #: Maximum absolute imaginary part of a Hamiltonian coefficient below which it is

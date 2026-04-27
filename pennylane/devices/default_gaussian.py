@@ -36,8 +36,10 @@ from pennylane.ops import Identity
 
 from ._legacy_device import Device
 
-# tolerance for numerical errors
-tolerance = 1e-10
+#: Threshold below which the displacement vector of a Gaussian state is considered
+#: to be zero. Used in :func:`fock_prob` to select the appropriate partition strategy
+#: for computing photon number detection probabilities
+_DISPLACEMENT_ZERO_THRESHOLD = 1e-10
 
 
 # ========================================================
@@ -150,7 +152,7 @@ def fock_prob(cov, mu, event, hbar=2.0):
     # extend the indices for xp-ordering of the Gaussian state
     ind += [i + N for i in ind]
 
-    if np.linalg.norm(beta) < tolerance:
+    if np.linalg.norm(beta) < _DISPLACEMENT_ZERO_THRESHOLD:
         # state has no displacement
         part = partitions(ind, include_singles=False)
     else:

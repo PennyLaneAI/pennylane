@@ -41,8 +41,9 @@ from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
-# TODO: Remove TOLERANCE as global variable
-TOLERANCE = 1e-10
+#: Numerical tolerance for validating that input state vectors have unit norm.
+#: Used in :class:`StatePrep` to check :math:`\||\psi\rangle\| = 1` during preprocessing.
+_STATE_NORM_TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase):
@@ -557,7 +558,7 @@ class StatePrep(StatePrepBase):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
@@ -616,7 +617,7 @@ class StatePrep(StatePrepBase):
         if normalize:
             state /= norm
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             raise ValueError(
                 f"The state must be a vector of norm 1.0; got norm {norm}. "
                 "Use 'normalize=True' to automatically normalize."

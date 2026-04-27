@@ -22,9 +22,12 @@ import numpy as np
 import pennylane as qml
 
 from .basis_data import atomic_numbers
+from scipy.constants import physical_constants
 
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-BOHR_TO_ANG = 0.529177210903
+#: Conversion facgtor from Bohr radii to Angstroms
+#: Derived from the CODATA 2022 recommended Bohr radius value
+#: See https://physics.nist.gov/cuu/Constants/
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] * 1e10
 
 
 def _import_of():
