@@ -60,7 +60,7 @@ class TwoQubitFFT(Operator):
 
 
 class FFFT(Operator):
-    """Performs a Fast Fermionic Fourier Transform (FFFT) operation. Assumes
+    """Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
     Fermions are encoded using a Jordan Wigner Transformation (JWT).
 
     The Fermionic Fourier transform over a number of wires n (a power of two)
