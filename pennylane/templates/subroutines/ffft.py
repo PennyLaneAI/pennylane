@@ -93,7 +93,7 @@ class FFFT(Operator):
 
     **Example**
 
-    i.e. for 8 sites:
+    i.e. for 4 sites:
 
     .. code-block:: python
 
@@ -102,7 +102,7 @@ class FFFT(Operator):
 
         dev = device("default.qubit")
 
-        wires = (0, 1, 2, 3, 4, 5, 6, 7)
+        wires = (0, 1, 2, 3)
 
         @qnode(dev)
         def circuit(wires):
