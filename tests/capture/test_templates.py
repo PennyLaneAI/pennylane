@@ -351,13 +351,13 @@ class TestModifiedTemplates:
         """Tests that tuple or list types for 'state' can be used."""
 
         state = input_type([1, 0, 0, 0])
-        jaxpr = jax.make_jaxpr(qml.StatePrep)(state, wires=[0, 1])
-        assert jaxpr.eqns[9].primitive == qml.StatePrep._primitive
+        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
+        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
         assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), int)
 
         state = input_type([1.0, 0.0, 0.0, 0.0])
-        jaxpr = jax.make_jaxpr(qml.StatePrep)(state, wires=[0, 1])
-        assert jaxpr.eqns[9].primitive == qml.StatePrep._primitive
+        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
+        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
         assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), float)
 
     @pytest.mark.parametrize("input_type", [tuple, list])
@@ -365,8 +365,8 @@ class TestModifiedTemplates:
         """Tests that tuple or list types for 'state' can be used."""
 
         state = input_type([1, 0])
-        jaxpr = jax.make_jaxpr(qml.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qml.BasisState._primitive
+        jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
+        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
         assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
 
     @pytest.mark.parametrize(
