@@ -35,6 +35,10 @@ from pennylane.pauli import (
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+#: Default tolerance for the linear independence check in :func:`_hermitian_basis`.
+#: Matrices whose orthogonal residual norm falls below this threshold are considered
+#: linearly dependent on the existing basis and are excluded.
+_LINEAR_DEPENDENCE_TOL = 1e-10
 
 def lie_closure(
     generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
@@ -205,7 +209,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     Args:
         matrices (Union[numpy.ndarray, Iterable[numpy.ndarray]]): A list of Hermitian matrices.
-        tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+        tol (float): Tolerance for linear dependence check. Defaults to ``_LINEAR_DEPENDENCE_TOL`` (1e-10).
         subbasis_length (int): The first `subbasis_length` elements in `matrices` are left untouched.
 
     Returns:
@@ -215,7 +219,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
         ValueError: If not all input matrices are (skew-) Hermitian.
     """
     if tol is None:
-        tol = 1e-10
+        tol = _LINEAR_DEPENDENCE_TOL
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
