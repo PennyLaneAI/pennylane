@@ -135,7 +135,7 @@ class DecompGraphInspector:
         for i, d_node_idx in enumerate(decomp_indices):
             rule_info = _DecompInGraphInfo(op, d_node_idx, num_work_wires, self._solution)
             decomp_str = f"Decomposition {i} (name: {rule_info.name})\n{rule_info}"
-            if self._visitor.predecessors[op_node_idx] == d_node_idx:
+            if self._visitor.predecessors.get(op_node_idx, -1) == d_node_idx:
                 decomp_str = "CHOSEN: " + decomp_str
             decomp_strings.append(decomp_str)
         return "\n\n".join(decomp_strings)
@@ -292,6 +292,45 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
     First Expansion Gates: {CRZ: 1, Toffoli: 2}
     Full Expansion Gates: {RZ: 20, CNOT: 14, GlobalPhase: 18, RY: 4}
     Weighted Cost: 38.0
+
+    This can be useful to find out why a circuit cannot be decomposed:
+
+    .. code-block:: python
+
+        qp.decomposition.enable_graph()
+
+        @inspect_decomp_graph(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.PauliRot(0.5, "XYZ", [0, 1, 2])
+            return qp.probs()
+
+        inspector = circuit()
+
+    >>> print(inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2])))
+    Decomposition 0 (name: _pauli_rot_decomposition)
+    0: ──H────────╭MultiRZ(0.50)──H─────────┤
+    1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
+    2: ───────────╰MultiRZ(0.50)────────────┤
+    First Expansion Gates: {Hadamard: 2, RX: 2, MultiRZ(num_wires=3): 1}
+    Missing Ops: {Hadamard}
+
+    The message suggests that the ``PauliRot`` could not be decomposed because the graph was unable
+    to find a decomposition for ``Hadamard``. We can investigate further:
+
+    >>> print(inspector.inspect_decomps(qp.Hadamard(0)))
+    Decomposition 0 (name: _hadamard_to_rz_ry)
+    0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
+    First Expansion Gates: {RZ: 1, RY: 1, GlobalPhase: 1}
+    Missing Ops: {GlobalPhase}
+    <BLANKLINE>
+    Decomposition 1 (name: _hadamard_to_rz_rx)
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
+    First Expansion Gates: {RZ: 2, RX: 1, GlobalPhase: 1}
+    Missing Ops: {GlobalPhase}
+
+    Now it's finally clear that the reason why ``PauliRot`` could not be decomposed was that
+    ``GlobalPhase`` is missing from the target gate set.
 
     """
 
