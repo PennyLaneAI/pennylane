@@ -19,6 +19,10 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
+#: Small additive constant to prevent division by zero when computing
+#: conditional rotation angles in the state preparation algorithm.
+#: See Eq. 5 of `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+_DIVISION_EPS = 1e-15
 
 def _float_to_binary(val, num_bits):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
@@ -186,7 +190,6 @@ class QROMStatePreparation(Operation):
 
         probs = qml.math.abs(state_vector) ** 2
         phases = qml.math.angle(state_vector) % (2 * np.pi)
-        eps = 1e-15  # Small constant to avoid division by zero
 
         decomp_ops = []
         num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
@@ -207,7 +210,7 @@ class QROMStatePreparation(Operation):
                 _float_to_binary(
                     2
                     * qml.math.arccos(
-                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + _DIVISION_EPS))
                     )
                     / np.pi,
                     len(precision_wires),
