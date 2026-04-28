@@ -19,7 +19,7 @@ import os
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 from scipy.constants import physical_constants
@@ -158,20 +158,20 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     # Map the fermionic operator to a qubit operator
     if mapping == "bravyi_kitaev":
-        return qml.qchem.convert.import_operator(
+        return qp.qchem.convert.import_operator(
             openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
         )
 
     if mapping == "parity":
         qubits = openfermion.count_qubits(mb_obs)
         if qubits == 0:
-            return 0.0 * qml.I(0)
+            return 0.0 * qp.I(0)
         binary_code = openfermion.parity_code(qubits)
-        return qml.qchem.convert.import_operator(
+        return qp.qchem.convert.import_operator(
             openfermion.transforms.binary_code_transform(mb_obs, binary_code), wires=wires
         )
 
-    return qml.qchem.convert.import_operator(
+    return qp.qchem.convert.import_operator(
         openfermion.transforms.jordan_wigner(mb_obs), wires=wires
     )
 
@@ -616,7 +616,7 @@ def dipole_of(
         if i not in atomic_numbers:
             raise ValueError(f"Requested element {i} doesn't exist")
 
-    hf_file = qml.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
+    hf_file = qp.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
     hf = openfermion.MolecularData(filename=hf_file.strip())
 
@@ -854,7 +854,7 @@ def _pyscf_integrals(
     two_mo = np.swapaxes(two_mo, 1, 3)
 
     # define the active space and recompute the integrals
-    core, active = qml.qchem.active_space(
+    core, active = qp.qchem.active_space(
         mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
     )
 
@@ -869,8 +869,8 @@ def _pyscf_integrals(
                 for i in core:
                     one_mo[p, q] = one_mo[p, q] + (2 * two_mo[i][p][q][i] - two_mo[i][p][i][q])
 
-        one_mo = one_mo[qml.math.ix_(active, active)]
-        two_mo = two_mo[qml.math.ix_(active, active, active, active)]
+        one_mo = one_mo[qp.math.ix_(active, active)]
+        two_mo = two_mo[qp.math.ix_(active, active, active, active)]
 
     return core_constant, one_mo, two_mo
 
@@ -896,12 +896,12 @@ def _openfermion_hamiltonian(
 
     molecule = openfermion.MolecularData(filename=hf_file)
 
-    core, active = qml.qchem.active_space(
+    core, active = qp.qchem.active_space(
         molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
     )
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
+    h_pl = qp.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
     return h_pl

@@ -105,7 +105,7 @@ class TransformError(Exception):
 
 
 class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
+    """Error for using qp.cond incorrectly"""
 
 
 class QueuingError(Exception):
