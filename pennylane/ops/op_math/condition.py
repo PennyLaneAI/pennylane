@@ -316,6 +316,8 @@ class CondCallable:
         for pred, fn in branches:
             if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
+            if getattr(pred, "dtype", None) != jax.numpy.bool:
+                pred = jax.numpy.bool(pred)
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
@@ -788,9 +790,9 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QmlPrimitive
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    cond_prim = QmlPrimitive("cond")
+    cond_prim = QpPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
 
