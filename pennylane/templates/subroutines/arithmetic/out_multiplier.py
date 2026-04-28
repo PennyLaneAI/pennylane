@@ -733,7 +733,7 @@ def _out_multiplier_with_caddsub(
         _increment(increment_wires, work_wires)
     _ = [X(w) for w in output_wires]
 
-    # Add 2^n y if 2^k > 2^n (otherwise it just vanishes in the modulus)
+    # Add (2^n · y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
     if k > n:
         SemiAdder(y_wires, output_wires[: k - n], work_wires)
 
