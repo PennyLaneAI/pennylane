@@ -857,6 +857,9 @@ The following classes have been ported over:
 
 <h3>Internal changes ⚙️</h3>
 
+* Added permissions to all GitHub Actions workflows.
+[(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
+
 * Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant 
   as a result.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
