@@ -85,25 +85,12 @@ type_to_typename: dict[type, str] = {
 
 typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typename.items()}
 
-_namespace_aliases = {"qml": "qp", "qp": "qml"}
-
-
-def _alias_typename(typename: str) -> str | None:
-    namespace, separator, name = typename.partition(".")
-    if not separator:
-        return None
-
-    alias = _namespace_aliases.get(namespace)
-    return f"{alias}.{name}" if alias is not None else None
-
 
 def _register_pytree_with_pennylane(
     pytree_type: type, typename: str, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
 ):
     type_to_typename[pytree_type] = typename
     typename_to_type[typename] = pytree_type
-    if (alias := _alias_typename(typename)) is not None:
-        typename_to_type[alias] = pytree_type
 
     flatten_registrations[pytree_type] = flatten_fn
     unflatten_registrations[pytree_type] = unflatten_fn
@@ -117,14 +104,14 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
 
 
 def register_pytree(
-    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qml"
+    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qp"
 ):
     """Register a type with all available pytree backends.
 
     Current backends are jax and pennylane.
 
     Args:
-        pytree_type (type): the type to register, such as ``qml.RX``
+        pytree_type (type): the type to register, such as ``qp.RX``
         flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
         unflatten_fn (Callable): a function that reconstructs an object from its leaves and metadata.
         namespace (str): A prefix for the name under which this type will be registered.
@@ -162,7 +149,7 @@ def get_typename(pytree_type: type[Any]) -> str:
     'builtins.list'
     >>> import pennylane
     >>> get_typename(pennylane.PauliX)
-    'qml.PauliX'
+    'qp.PauliX'
     """
 
     try:
@@ -181,18 +168,12 @@ def get_typename_type(typename: str) -> type[Any]:
     >>> import pennylane
     >>> get_typename_type("builtins.list")
     <class 'list'>
-    >>> get_typename_type("qml.PauliX")
+    >>> get_typename_type("qp.PauliX")
     <class 'pennylane.ops.qubit.non_parametric_ops.PauliX'>
     """
     try:
         return typename_to_type[typename]
     except KeyError as exc:
-        if (alias := _alias_typename(typename)) is not None:
-            try:
-                return typename_to_type[alias]
-            except KeyError:
-                pass
-
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
@@ -200,8 +181,8 @@ def get_typename_type(typename: str) -> type[Any]:
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.
 
-    >>> op = qml.adjoint(qml.RX(0.1, 0))
-    >>> data, structure = qml.pytrees.flatten(op)
+    >>> op = qp.adjoint(qp.RX(0.1, 0))
+    >>> data, structure = qp.pytrees.flatten(op)
     >>> structure
     PyTreeStructure(AdjointOperation, (), (PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),)),))
 
@@ -259,7 +240,7 @@ def flatten(
 
     **Example**
 
-    >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
+    >>> op = qp.adjoint(qp.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
     >>> data
     [1.2, 2.3, 3.4]
@@ -299,7 +280,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
 
     **Example**
 
-    >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
+    >>> op = qp.adjoint(qp.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
     >>> unflatten([-2, -3, -4], structure)
     Adjoint(Rot(-2, -3, -4, wires=[0]))
