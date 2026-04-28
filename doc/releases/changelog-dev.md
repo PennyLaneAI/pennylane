@@ -565,6 +565,7 @@
     from a circuit.
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
+
 * Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
