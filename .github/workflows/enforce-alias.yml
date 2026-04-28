@@ -34,6 +34,7 @@ jobs:
     env:
       CORE_MODULES: >-
         pennylane
+        doc
 
       TEST_MODULES: >-
         tests
