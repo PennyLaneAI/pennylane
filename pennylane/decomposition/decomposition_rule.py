@@ -922,9 +922,7 @@ def inspect_decomps(
 
     rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
     display_infos = [
-        (i, rule)
-        for i, rule in enumerate(rule_infos)
-        if (show_not_applicable or rule.is_usable)
+        (i, rule) for i, rule in enumerate(rule_infos) if (show_not_applicable or rule.is_usable)
     ]
 
     if len(display_infos) == 0:

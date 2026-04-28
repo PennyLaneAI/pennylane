@@ -373,6 +373,8 @@
   1: ──RX(0.25)─╰RZX(-0.25)─┤
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
 
+  ```
+
 <h4>Disentangling Transforms 🧶</h4>
 
 * The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are now
