@@ -2,6 +2,8 @@
 # JSON files that store test durations for better load balancing
 
 name: Update Durations
+permissions:
+  contents: read
 on:
   workflow_dispatch:
   # Scheduled trigger every Saturday at 2:47am UTC
@@ -48,6 +50,9 @@ jobs:
           include-hidden-files: true
 
   upload-durations:
+    permissions:
+      pull-request: write
+      contents: write
     needs:
       - update-durations
       - merge-durations-files
