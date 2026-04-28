@@ -679,13 +679,13 @@ class TestInspectDecomps:
             Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
 
             Decomposition 2 (name: with-aux)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
             """).strip()
 
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
         assert result == dedent("""
             Decomposition 0 (name: simple)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
@@ -761,7 +761,7 @@ class TestInspectDecomps:
         )
         assert result == dedent("""
             Decomposition 0 (name: simple)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
@@ -772,7 +772,7 @@ class TestInspectDecomps:
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
 
             Decomposition 2 (name: with-aux)
-            Excluded based on the given work wires constraint! 1 (available) < 2 (required)
+            Insufficient work wires: requires 2 but only 1 available.
             """).strip()
 
         result = qp.inspect_decomps(
