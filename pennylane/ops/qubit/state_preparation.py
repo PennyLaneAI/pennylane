@@ -88,7 +88,10 @@ class BasisState(StatePrepBase):
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
         if isinstance(state, (tuple, list)):
-            state = qp.math.asarray(state)
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
@@ -398,7 +401,10 @@ class StatePrep(StatePrepBase):
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
         if isinstance(state, (tuple, list)):
-            state = qp.math.asarray(state)
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
