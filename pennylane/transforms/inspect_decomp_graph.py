@@ -262,7 +262,7 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
     Weighted Cost: 120.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
-    Not applicable to the provided operator instance!
+    Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
     Decomposition 2 (name: controlled(_multi_rz_decomposition))
     0: ─╭X─╭RZ(0.50)─╭X─┤
@@ -280,10 +280,10 @@ def inspect_decomp_graph(  # pylint: disable=too-many-arguments
 
     >>> print(inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1))
     Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-    Not applicable to the provided operator instance!
+    Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
-    Not applicable to the provided operator instance!
+    Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
     CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
     0: ─╭X─╭RZ(0.50)─╭X─┤
