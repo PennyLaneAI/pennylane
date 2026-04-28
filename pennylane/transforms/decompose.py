@@ -958,11 +958,6 @@ def _resolve_gate_set(
     # a stopping condition. In this case, we assume all PennyLane operations are supported,
     # i.e., we only decompose templates and custom gates defined by the user.
     if gate_set is None and stopping_condition is None:
-        if enabled_graph():
-            raise TypeError(
-                "The gate_set argument is required when the graph-based decomposition system "
-                "is enabled via qml.decomposition.enable_graph()"
-            )
         gate_set = gate_sets.ALL_OPS
         return gate_set, lambda op: op.name in gate_set
 

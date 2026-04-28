@@ -161,14 +161,13 @@ class TestDecomposeGraphEnabled:
         """Tests that a TypeError is raised when decompose is called without gate_set
         while graph-based decomposition is enabled."""
 
-        ops = [qml.Hadamard(0)]
-        tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.Z(0))])
+        tape = qml.tape.QuantumScript([qml.Hadamard(0)], measurements=[qml.expval(qml.Z(0))])
 
         with pytest.raises(
             TypeError,
             match="The gate_set argument is required when the graph-based decomposition system",
         ):
-            qml.decompose(tape)
+            qml.decompose(tape, stopping_condition=lambda op: False)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
