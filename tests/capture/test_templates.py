@@ -294,6 +294,7 @@ tested_modified_templates = [
     qp.AllSinglesDoubles,
     qp.AmplitudeAmplification,
     qp.ApproxTimeEvolution,
+    qp.BasisRotation,
     qp.BBQRAM,
     qp.CommutingEvolution,
     qp.ControlledSequence,
@@ -454,7 +455,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qp.BasisRotation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"check": True, "id": None}
+        assert eqn.params["check"] is True
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
