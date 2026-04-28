@@ -81,12 +81,8 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
         out_ints = [int("".join(map(str, out[0])), 2) for out in output]
         expected = [int(x_sign * num_x + x_u), int((b + (x_u - num_x * x_sign) ** 2) % mod), 0]
 
-        # n = len(x_wires)
-        # tmp_exp_out = ((2 * x**2 + 2 ** (2 * n) - (2**n - x) - 2 * x * 2**n) // 2) % mod
-        # tmp_exp_out = ((2 * x**2 - 2 * x * 2**n) // 2) % mod
         if len(work_wires) > 0:
             assert out_ints == expected, f"\n{out_ints}\n{expected} ({b=})"
-            # {(out_ints[1], tmp_exp_out)}
         else:
             # Skip work wire check
             assert out_ints[:-1] == expected[:-1], f"\n{out_ints[:-1]}\n{expected[:-1]} ({b=})"
@@ -110,14 +106,9 @@ class TestSignedOutSquare:
                 [8, 9, 10, 11, 12],
             ),
             (
-                [0, 1, 2],
-                [3, 4, 5, 6, 7, 8, 9],
-                [10, 11, 12, 13, 14, 15, 16],
-            ),
-            (
-                [0, 1, 2, 3],
-                [4, 5, 6, 7, 8],
-                [9, 10, 11, 12, 13],
+                [0, 1],
+                [3, 4, 5, 6, 7],
+                [10, 11, 12, 13, 16],
             ),
             (
                 [0, 1, 2, 3],
@@ -165,9 +156,9 @@ class TestSignedOutSquare:
 
         @qp.qjit
         @qp.set_shots(1)
-        # @qp.decompose(
-        # gate_set=gate_set, max_expansion=2, fixed_decomps={"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
-        # )
+        @qp.decompose(
+            max_expansion=3, fixed_decomps={"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
+        )
         @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
             qp.BasisEmbedding(x, wires=x_wires)
@@ -180,7 +171,7 @@ class TestSignedOutSquare:
             )
 
         output = circuit(x, z, x_wires, work_wires)
-        out_ints = [int("".join(map(str, out[0])), 2) for out in output]
+        out_ints = [int("".join(map(str, out[:, 0])), 2) for out in output]
         assert np.allclose(out_ints, [x, (z + (x - 16) ** 2) % mod, 0])
 
     @pytest.mark.parametrize(
@@ -253,8 +244,9 @@ class TestSignedOutSquare:
         decomp = SignedOutSquare(
             x_wires, output_wires, work_wires, output_wires_zeroed
         ).decomposition()
+        square_output = [4, 5, 6, 7] if output_wires_zeroed else output_wires
         expected = [
-            qp.OutSquare([1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12], output_wires_zeroed),
+            qp.OutSquare([1, 2], square_output, [8, 9, 10, 11, 12], output_wires_zeroed),
             qp.BasisState([1], [1]),
             qp.X(4),
             qp.X(8),

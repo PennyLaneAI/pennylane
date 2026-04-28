@@ -20,6 +20,7 @@ from itertools import combinations
 
 from pennylane.decomposition import (
     add_decomps,
+    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -385,29 +386,41 @@ def _signed_out_square_resources(
     # pylint: disable=unused-argument
     n = num_x_wires
     m = num_output_wires
-    resources = defaultdict(int)
+
+    x_rep = resource_rep(X)
+    size = min(m, 2 * n - 2) if output_wires_zeroed else m
     square_rep = resource_rep(
         OutSquare,
         num_x_wires=n - 1,
-        num_output_wires=m,
+        num_output_wires=size,
         num_work_wires=num_work_wires,
         output_wires_zeroed=output_wires_zeroed,
     )
-    resources[square_rep] += 1
 
+    resources = defaultdict(int)
+    resources[square_rep] += 1
     # Add (2^n-1-x) + 1
     if n < m:
         if n - 1 > 1:
             resources[resource_rep(BasisState, num_wires=n - 2)] += 2
-
-        resources[resource_rep(X)] += 3
+        resources[x_rep] += 3
         resources[resource_rep(MidMeasure)] += 1
-        size = min(m - (n + 1), n + 1)
-        resources[
-            resource_rep(
-                SemiAdder, num_x_wires=n - 1, num_y_wires=size, num_work_wires=num_work_wires
+        size = min(m - n, n) if output_wires_zeroed else m - n
+        add_base_params = {"num_x_wires": n - 1, "num_y_wires": size, "num_work_wires": size - 1}
+        cadd_params = {
+            "num_control_wires": 1,
+            "num_zero_control_values": 0,
+            "num_work_wires": num_work_wires - size + 1,
+            "work_wire_type": "zeroed",
+        }
+        resources[controlled_resource_rep(SemiAdder, add_base_params, **cadd_params)] += 1
+        if m >= 2 * n - 1:
+            size = min(m - (2 * n - 2), 2) if output_wires_zeroed else m - (2 * n - 2)
+            resources[x_rep] += 2 * size
+            add_rep = resource_rep(
+                SemiAdder, num_x_wires=1, num_y_wires=size, num_work_wires=num_work_wires
             )
-        ] += 1
+            resources[add_rep] += 1
 
     return dict(resources)
 
@@ -423,19 +436,22 @@ def _signed_out_square(
     n = len(x_wires)
     m = len(output_wires)
     # Compute (x_u)^2 into output register
-    OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed=output_wires_zeroed)
+    output_msb = max(0, m - (2 * n - 2)) if output_wires_zeroed else 0
+    OutSquare(
+        x_wires[1:], output_wires[output_msb:], work_wires, output_wires_zeroed=output_wires_zeroed
+    )
     # Add 2^(n+1)(2^(n-1) - x_u)
     if m > n:
-        output_msb = max(0, m - (2 * n + 2))  # redo
+        output_msb = max(0, m - 2 * n) if output_wires_zeroed else 0
         _c_subtract_then_add_one(
             x_wires[0], x_wires[1:], output_wires[output_msb : m - n], work_wires
         )
 
         if m >= 2 * n - 1:
-            output = output_wires[: m - (2 * n - 2)]
+            output = output_wires[output_msb : m - (2 * n - 2)]
             _ = [X(w) for w in output]
             SemiAdder(x_wires[:1], output, work_wires)
             _ = [X(w) for w in output]
 
 
-add_decomps(OutSquare, _signed_out_square)
+add_decomps(SignedOutSquare, _signed_out_square)
