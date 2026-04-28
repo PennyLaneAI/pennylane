@@ -16,13 +16,25 @@ This subpackage contains experimental PennyLane transforms and their building bl
 
 .. currentmodule:: pennylane.labs.transforms
 
+Transforms
+~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
     ~select_pauli_rot_phase_gradient
-    ~MultiTemporaryAND
+
+Custom decomposition rules
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~make_rz_to_phase_gradient_decomp
+    ~make_selectpaulirot_to_phase_gradient_decomp
 
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .multi_temporary_and import MultiTemporaryAND
+from .decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
+from .decomp_selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
