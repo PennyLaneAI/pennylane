@@ -26,8 +26,9 @@ from pennylane.decomposition import (
 from pennylane.ops import X, ctrl
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.controlled_ops import _check_and_convert_control_values
-from pennylane.templates import TemporaryAND
 from pennylane.wires import Wires, WiresLike
+
+from .temporary_and import TemporaryAND
 
 
 class MultiTemporaryAND(ControlledOp):

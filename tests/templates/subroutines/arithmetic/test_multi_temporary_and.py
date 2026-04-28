@@ -15,7 +15,7 @@ Multi target X operation
 
 import pytest
 
-from pennylane.labs.transforms import MultiTemporaryAND
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _check_decomposition_new
 
 
@@ -24,5 +24,14 @@ def test_valid_decomp(n):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
     wires = range(n)
-    op = MultiTemporaryAND(wires)
-    _check_decomposition_new(op, skip_decomp_matrix_check=True)
+    op = qp.MultiTemporaryAND(wires)
+    _check_decomposition_new(op)
+
+
+@pytest.mark.parametrize("n", [3, 4, 5, 6])
+def test_assert_valid(n):
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
+    as a fixed decomposition and yields the correct resources"""
+    wires = range(n)
+    op = qp.MultiTemporaryAND(wires)
+    qp.ops.functions.assert_valid(op)
