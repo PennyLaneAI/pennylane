@@ -37,7 +37,7 @@ class LeftQuantumComparator(Operation):
         \text{LeftQuantumComparator}_{<} |x\rangle |y\rangle |0\rangle = |x\rangle |y\rangle |x < y\rangle
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
-    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires
+    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_ . Note that the decomposition uses auxiliary wires
     and in order to clean them, we must apply the adjoint of this operator via ``Adjoint(LeftQuantumComparator)``
     after using the target qubit, as shown in the example below.
 
@@ -84,8 +84,8 @@ class LeftQuantumComparator(Operation):
 
     .. code-block:: pycon
 
-        output = circuit(3, ">=", 2)
-        print(bool(output))
+        >>> output = circuit(3, ">=", 2)
+        >>> print(bool(output))
         True
 
     """
