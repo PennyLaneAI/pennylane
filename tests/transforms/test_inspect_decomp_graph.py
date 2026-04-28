@@ -252,3 +252,57 @@ class TestInspectDecompGraph:
             First Expansion Gates: {RZ: 2, RX: 1, GlobalPhase: 1}
             Missing Ops: {GlobalPhase}
             """).strip()
+
+    def test_inexact_count(self):
+        """Tests that the output is correct when the gate count is inexact."""
+
+        @inspect_decomp_graph(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.QubitUnitary([[1, 0], [0, 1]], wires=0)
+            return qp.probs()
+
+        inspector = circuit()
+        op = qp.QubitUnitary([[1, 0], [0, 1]], wires=0)
+        assert inspector.inspect_decomps(op) == dedent("""
+            Decomposition 0 (name: multi_qubit_decomp_rule)
+            Not applicable (provided operator instance does not meet all conditions for this rule).
+
+            Decomposition 1 (name: two_qubit_decomp_rule)
+            Not applicable (provided operator instance does not meet all conditions for this rule).
+
+            Decomposition 2 (name: rot)
+            0: ──RZ(0.00)─┤  
+            Estimated First Expansion Gates: {Rot: 1, RZ: 1, GlobalPhase: 1}
+            Actual First Expansion Gates: {RZ: 1}
+            Full Expansion Gates: {GlobalPhase: 1, RZ: 5, RX: 1}
+            Weighted Cost: 7.0
+
+            Decomposition 3 (name: xyx)
+            0: ──RX(0.00)──RY(0.00)──RX(0.00)─┤  
+            Estimated First Expansion Gates: {RX: 2, RY: 1, GlobalPhase: 1}
+            Actual First Expansion Gates: {RX: 2, RY: 1}
+            Full Expansion Gates: {GlobalPhase: 1, RX: 3, RZ: 2}
+            Weighted Cost: 6.0
+
+            CHOSEN: Decomposition 4 (name: xzx)
+            0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
+            Estimated First Expansion Gates: {RX: 2, RZ: 1, GlobalPhase: 1}
+            Actual First Expansion Gates: {RX: 2, RZ: 1}
+            Full Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
+            Weighted Cost: 4.0
+
+            Decomposition 5 (name: zxz)
+            0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  
+            Estimated First Expansion Gates: {RZ: 2, RX: 1, GlobalPhase: 1}
+            Actual First Expansion Gates: {RZ: 2, RX: 1}
+            Full Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
+            Weighted Cost: 4.0
+
+            Decomposition 6 (name: zyz)
+            0: ──RZ(0.00)──RY(0.00)──RZ(0.00)─┤  
+            Estimated First Expansion Gates: {RZ: 2, RY: 1, GlobalPhase: 1}
+            Actual First Expansion Gates: {RZ: 2, RY: 1}
+            Full Expansion Gates: {GlobalPhase: 1, RZ: 4, RX: 1}
+            Weighted Cost: 6.0
+            """).strip()
