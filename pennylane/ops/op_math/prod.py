@@ -542,16 +542,19 @@ def _ctrl_prod_resources(
 def _controlled_product_with_work_wires(*_, control_wires, control_values, work_wires, base, **__):
     target_wire = _multi_temporary_and(control_wires, control_values, work_wires)
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=[target_wire])
-    qp.adjoint(_multi_temporary_and)(control_wires, control_values, work_wires)
+        qp.ops.Controlled(op, control_wires=[target_wire])
+    qp.adjoint(
+        lambda control_wires, control_values, work_wires: _multi_temporary_and(  # pylint: disable=unnecessary-lambda
+            control_wires, control_values, work_wires
+        )
+    )(control_wires, control_values, work_wires)
 
 
 def _ctrl_prod_resources_with_one_work_wire(
-    *_,
     num_control_wires,
     base_params,
     num_zero_control_values,
-    **__,
+    **_,
 ):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
     multicx_rep = resource_rep(
@@ -581,18 +584,20 @@ def _ctrl_prod_resources_with_one_work_wire(
 
 
 @qp.register_condition(
-    lambda *_, num_control_wires, num_work_wires, work_wire_type, **__: num_control_wires >= 2
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
     and num_work_wires >= 1
     and work_wire_type == "zeroed"
 )
 @qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
-def _controlled_product_with_one_work_wire(
-    *_, control_wires, control_values, work_wires, base, **__
-):
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires, control_values=control_values)
+def _controlled_product_with_one_work_wire(control_wires, control_values, work_wires, base, **_):
+    qp.ops.Controlled(
+        qp.X(work_wires[:1]), control_wires=control_wires, control_values=control_values
+    )
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=work_wires[:1])
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires, control_values=control_values)
+        qp.ops.Controlled(op, control_wires=work_wires[:1])
+    qp.ops.Controlled(
+        qp.X(work_wires[:1]), control_wires=control_wires, control_values=control_values
+    )
 
 
 qp.add_decomps(
