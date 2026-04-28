@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Multi target X operation
+Multi TemporaryAND operation
 """
 
 from typing import Literal
 
-import pennylane as qp
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+    resource_rep,
+)
+from pennylane.ops import X, ctrl
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.controlled_ops import _check_and_convert_control_values
+from pennylane.templates import TemporaryAND
 from pennylane.wires import Wires, WiresLike
 
 
@@ -163,7 +170,7 @@ class MultiTemporaryAND(ControlledOp):
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=wires)
+        base = type.__call__(X, wires=wires)
         super().__init__(
             base,
             control_wires=control_wires,
@@ -200,13 +207,13 @@ def _multi_temporary_and_resources(
     num_control_wires,
     **__,
 ):
-    return {qp.resource_rep(qp.TemporaryAND): num_control_wires - 1}
+    return {resource_rep(TemporaryAND): num_control_wires - 1}
 
 
-@qp.register_condition(
+@register_condition(
     lambda *_, num_control_wires, num_work_wires, **__: num_work_wires >= num_control_wires - 1
 )  # and work_wire_type == "zeroed")
-@qp.register_resources(_multi_temporary_and_resources)
+@register_resources(_multi_temporary_and_resources)
 def _multi_temporary_and_decomp_with_work_wires(
     wires,
     control_values,
@@ -218,8 +225,8 @@ def _multi_temporary_and_decomp_with_work_wires(
     c = len(control_wires)
     if c == 1:
         # essentially, a CNOT, but with potentially different control value
-        qp.ctrl(
-            qp.X(wires[-1]),
+        ctrl(
+            X(wires[-1]),
             control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -228,7 +235,7 @@ def _multi_temporary_and_decomp_with_work_wires(
 
     # build AND ladder
     num_needed = c - 1
-    qp.TemporaryAND(
+    TemporaryAND(
         wires=[control_wires[0], control_wires[1], work_wires[0]],
         control_values=(control_values[0], control_values[1]),
     )
@@ -240,14 +247,14 @@ def _multi_temporary_and_decomp_with_work_wires(
             if i < num_needed - 1
             else [work_wires[i - 1], control_wires[i + 1], wires[-1]]
         )
-        qp.TemporaryAND(
+        TemporaryAND(
             wires=_wires,
             control_values=(True, control_values[i + 1]),
         )
         ii_ += 1
 
 
-qp.add_decomps(
+add_decomps(
     MultiTemporaryAND,
     _multi_temporary_and_decomp_with_work_wires,
 )
@@ -262,8 +269,8 @@ qp.add_decomps(
 # ):
 #     num_wires = base_params["num_wires"]
 #     return {
-#         qp.decomposition.controlled_resource_rep(
-#             qp.X,
+#         decomposition.controlled_resource_rep(
+#             X,
 #             {},
 #             num_control_wires=num_control_wires,
 #             num_zero_control_values=num_zero_control_values,
@@ -273,8 +280,8 @@ qp.add_decomps(
 #     }
 
 
-# @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
-# @qp.register_resources(_ctrl_no_work_resources)
+# @register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+# @register_resources(_ctrl_no_work_resources)
 # def ctrl_decomp_no_work_wires(
 #     *_,
 #     control_wires,
@@ -285,4 +292,4 @@ qp.add_decomps(
 #     """Controlled decomposition without work wires — emits multicontrolled X gates."""
 #     base_wires = base.wires
 #     for w in base_wires:
-#         qp.ctrl(qp.X(w), control=control_wires, control_values=control_values)
+#         ctrl(X(w), control=control_wires, control_values=control_values)
