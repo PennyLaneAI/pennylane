@@ -246,6 +246,73 @@ class Resources:
         print(str(self))
 
 
+# Shared CSS for SpecsResources and CircuitSpecs HTML display.
+# Uses CSS custom properties so dark-mode overrides work without JavaScript.
+_SPECS_HTML_STYLE = """
+<style>
+.pl-specs {
+  --pl-header-bg: #f5f5f5;
+  --pl-section-bg: #e8eaf6;
+  --pl-section-border: #9fa8da;
+  --pl-level-bg: #5c6bc0;
+  --pl-level-fg: white;
+  --pl-border: #d0d0d0;
+  --pl-zero: #aaa;
+  --pl-title: #3949ab;
+  --pl-empty: #999;
+  font-family: monospace;
+  font-size: 13px;
+  display: inline-block;
+}
+@media (prefers-color-scheme: dark) {
+  .pl-specs {
+    --pl-header-bg: #2d2d2d;
+    --pl-section-bg: #283593;
+    --pl-section-border: #5c6bc0;
+    --pl-level-bg: #3949ab;
+    --pl-level-fg: #e8eaf6;
+    --pl-border: #555;
+    --pl-zero: #666;
+    --pl-title: #9fa8da;
+    --pl-empty: #777;
+  }
+}
+/* JupyterLab dark theme */
+body[data-jp-theme-light="false"] .pl-specs,
+/* VS Code notebook dark themes */
+body.vscode-dark .pl-specs,
+body.vscode-high-contrast .pl-specs,
+body[data-vscode-theme-kind="vscode-dark"] .pl-specs,
+body[data-vscode-theme-kind="vscode-high-contrast"] .pl-specs {
+  --pl-header-bg: #2d2d2d;
+  --pl-section-bg: #283593;
+  --pl-section-border: #5c6bc0;
+  --pl-level-bg: #3949ab;
+  --pl-level-fg: #e8eaf6;
+  --pl-border: #555;
+  --pl-zero: #666;
+  --pl-title: #9fa8da;
+  --pl-empty: #777;
+}
+.pl-specs table { border-collapse: collapse; }
+.pl-specs .pl-summary-label { padding: 4px 16px 4px 10px; font-weight: bold; background: var(--pl-header-bg); border: 1px solid var(--pl-border); white-space: nowrap; }
+.pl-specs .pl-summary-value { padding: 4px 10px; text-align: right; border: 1px solid var(--pl-border); min-width: 60px; }
+.pl-specs .pl-header-label { padding: 4px 14px 4px 10px; font-weight: bold; background: var(--pl-header-bg); border: 1px solid var(--pl-border); white-space: nowrap; }
+.pl-specs .pl-header-value { padding: 4px 10px; border: 1px solid var(--pl-border); }
+.pl-specs .pl-section { padding: 5px 10px 4px 10px; font-weight: bold; background: var(--pl-section-bg); border: 1px solid var(--pl-border); border-top: 2px solid var(--pl-section-border); letter-spacing: 0.02em; }
+.pl-specs .pl-item-label { padding: 3px 14px 3px 22px; border: 1px solid var(--pl-border); }
+.pl-specs .pl-item-value { padding: 3px 10px; text-align: right; border: 1px solid var(--pl-border); }
+.pl-specs .pl-item-zero { padding: 3px 10px; text-align: right; border: 1px solid var(--pl-border); color: var(--pl-zero); }
+.pl-specs .pl-empty { padding: 3px 10px 3px 22px; color: var(--pl-empty); border: 1px solid var(--pl-border); font-style: italic; }
+.pl-specs .pl-level-th { padding: 6px 10px; text-align: center; background: var(--pl-level-bg); color: var(--pl-level-fg); border: 1px solid var(--pl-border); font-weight: bold; }
+.pl-specs .pl-metric-th { padding: 6px 16px 6px 10px; text-align: left; background: var(--pl-header-bg); border: 1px solid var(--pl-border); font-weight: bold; }
+.pl-specs .pl-title { font-weight: bold; font-size: 15px; color: var(--pl-title); padding: 2px 0 8px 0; }
+.pl-specs .pl-batch-label { font-weight: bold; margin: 10px 0 4px 0; font-size: 13px; }
+.pl-specs .pl-no-res { color: var(--pl-empty); font-style: italic; }
+</style>
+"""
+
+
 # TODO: Would be better to have SpecsResources inherit from Resources directly, but there are too
 # many extra fields that are unwanted. Would be worth refactoring in the future.
 @dataclass(frozen=True)
@@ -391,10 +458,68 @@ class SpecsResources:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
+    def _table_html(self) -> str:  # pragma: no cover
+        """Return the inner <table> HTML for this object (no style block or wrapper div)."""
+        import html as _html
+
+        def summary_row(label, value):
+            return (
+                "<tr>"
+                f'<td class="pl-summary-label">{label}</td>'
+                f'<td class="pl-summary-value">{value}</td>'
+                "</tr>"
+            )
+
+        def section_row(label):
+            return "<tr>" f'<td colspan="2" class="pl-section">{label}</td>' "</tr>"
+
+        def item_row(label, value):
+            return (
+                "<tr>"
+                f'<td class="pl-item-label">{_html.escape(str(label))}</td>'
+                f'<td class="pl-item-value">{_html.escape(str(value))}</td>'
+                "</tr>"
+            )
+
+        def empty_row(msg):
+            return "<tr>" f'<td colspan="2" class="pl-empty">{msg}</td>' "</tr>"
+
+        rows = []
+        rows.append(summary_row("Wire allocations", self.num_allocs))
+        rows.append(summary_row("Total gates", self.num_gates))
+
+        rows.append(section_row("Gate counts"))
+        if not self.gate_types:
+            rows.append(empty_row("No gates."))
+        else:
+            for gate, count in self.gate_types.items():
+                rows.append(item_row(gate, _count_to_str(count)))
+
+        rows.append(section_row("Measurements"))
+        if not self.measurements:
+            rows.append(empty_row("No measurements."))
+        else:
+            for meas, count in self.measurements.items():
+                rows.append(item_row(meas, _count_to_str(count)))
+
+        depth_str = str(self.depth) if self.depth is not None else "Not computed"
+        rows.append(summary_row("Depth", depth_str))
+
+        return "<table>" + "".join(rows) + "</table>"
+
+    def _repr_html_(self) -> str:  # pragma: no cover
+        """Generate an HTML table representation for Jupyter notebook display."""
+        return _SPECS_HTML_STYLE + '<div class="pl-specs">' + self._table_html() + "</div>"
+
     def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
+        """Displays an HTML table in Jupyter notebooks instead of plain text."""
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
+        try:
+            from IPython.display import HTML, display
+
+            display(HTML(self._repr_html_()))
+        except ImportError:
+            print(str(self))
 
 
 @dataclass(frozen=True)
@@ -682,10 +807,126 @@ class CircuitSpecs:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
+    def _to_html_tabular(self) -> str:  # pragma: no cover
+        """Return the inner tabular <table> HTML for dict-type resources (no style block or wrapper div)."""
+        import html as _html
+
+        flat_resources = self._flattened_resources()
+        levels = list(flat_resources.keys())
+        num_cols = len(levels)
+
+        all_gate_types: dict[str, None] = {}
+        all_meas_types: dict[str, None] = {}
+        for res in flat_resources.values():
+            for gate in res.gate_types:
+                all_gate_types[gate] = None
+            for meas in res.measurements:
+                all_meas_types[meas] = None
+
+        rows = []
+        rows.append("<thead><tr>")
+        rows.append('<th class="pl-metric-th">Metric ↓ / Level →</th>')
+        for level in levels:
+            rows.append(f'<th class="pl-level-th">{_html.escape(str(level))}</th>')
+        rows.append("</tr></thead>")
+        rows.append("<tbody>")
+
+        def summary_row(label, values):
+            cells = [f'<td class="pl-summary-label">{label}</td>']
+            for v in values:
+                cells.append(f'<td class="pl-summary-value">{v}</td>')
+            return "<tr>" + "".join(cells) + "</tr>"
+
+        def section_row(label):
+            return f'<tr><td colspan="{num_cols + 1}" class="pl-section">{label}</td></tr>'
+
+        def item_row(label, value_getter):
+            cells = [f'<td class="pl-item-label">{_html.escape(str(label))}</td>']
+            for res in flat_resources.values():
+                val = value_getter(res)
+                if val == 0:
+                    cells.append('<td class="pl-item-zero">0</td>')
+                else:
+                    cells.append(f'<td class="pl-item-value">{_count_to_str(val)}</td>')
+            return "<tr>" + "".join(cells) + "</tr>"
+
+        rows.append(
+            summary_row(
+                "Wire allocations", [_count_to_str(r.num_allocs) for r in flat_resources.values()]
+            )
+        )
+        rows.append(
+            summary_row(
+                "Total gates", [_count_to_str(r.num_gates) for r in flat_resources.values()]
+            )
+        )
+
+        rows.append(section_row("Gate counts"))
+        for gate in all_gate_types:
+            rows.append(item_row(gate, lambda res, g=gate: res.gate_types.get(g, 0)))
+
+        rows.append(section_row("Measurements"))
+        for meas in all_meas_types:
+            rows.append(item_row(meas, lambda res, m=meas: res.measurements.get(m, 0)))
+
+        rows.append("</tbody>")
+        return "<table>" + "".join(rows) + "</table>"
+
+    def _repr_html_(self) -> str:  # pragma: no cover
+        """Generate an HTML representation of the CircuitSpecs object for Jupyter notebook display."""
+        import html as _html
+
+        def header_row(label, value):
+            return (
+                "<tr>"
+                f'<td class="pl-header-label">{label}</td>'
+                f'<td class="pl-header-value">{_html.escape(str(value))}</td>'
+                "</tr>"
+            )
+
+        lines = []
+        lines.append(_SPECS_HTML_STYLE)
+        lines.append('<div class="pl-specs">')
+        lines.append('<div class="pl-title">Circuit Specs</div>')
+
+        lines.append('<table style="margin-bottom:10px;">')
+        lines.append(header_row("Device", self.device_name))
+        lines.append(header_row("Device wires", self.num_device_wires))
+        lines.append(header_row("Shots", self.shots))
+        if isinstance(self.level, dict):
+            levels_str = ", ".join(
+                f"{_html.escape(str(k))}: {_html.escape(str(v))}" for k, v in self.level.items()
+            )
+            lines.append(header_row("Levels", levels_str))
+        else:
+            lines.append(header_row("Level", self.level))
+        lines.append("</table>")
+
+        if self.resources is None:
+            lines.append('<div class="pl-no-res">No resources.</div>')
+        elif isinstance(self.resources, SpecsResources):
+            lines.append(self.resources._table_html())
+        elif isinstance(self.resources, list):
+            for i, r in enumerate(self.resources):
+                lines.append(
+                    f'<div class="pl-batch-label">Batched tape {_batch_num_to_letters(i)}:</div>'
+                )
+                lines.append(r._table_html())
+        elif isinstance(self.resources, dict):
+            lines.append(self._to_html_tabular())
+
+        lines.append("</div>")
+        return "\n".join(lines)
+
     def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
+        """Displays an HTML table in Jupyter notebooks instead of plain text."""
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
+        try:
+            from IPython.display import HTML, display
+
+            display(HTML(self._repr_html_()))
+        except ImportError:
+            print(str(self))
 
 
 class ResourcesOperation(Operation):
