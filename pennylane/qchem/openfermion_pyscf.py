@@ -24,7 +24,7 @@ import pennylane as qml
 from .basis_data import atomic_numbers
 from scipy.constants import physical_constants
 
-#: Conversion facgtor from Bohr radii to Angstroms
+#: Conversion factor from Bohr radii to Angstroms
 #: Derived from the CODATA 2022 recommended Bohr radius value
 #: See https://physics.nist.gov/cuu/Constants/
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] * 1e10
