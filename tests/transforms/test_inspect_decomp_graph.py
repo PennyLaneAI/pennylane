@@ -102,10 +102,10 @@ class TestInspectDecompGraph:
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
         assert inspector.inspect_decomps(op) == dedent("""
             Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-            Excluded based on the given work wires constraint! 0 (available) < 1 (required)
+            Insufficient work wires: requires 1 but only 0 available.
 
             Decomposition 1 (name: to_controlled_qubit_unitary)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭X─╭RZ(0.50)─╭X─┤  
@@ -144,7 +144,7 @@ class TestInspectDecompGraph:
             Weighted Cost: 120.0
 
             Decomposition 1 (name: to_controlled_qubit_unitary)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭X─╭RZ(0.50)─╭X─┤  
@@ -160,7 +160,7 @@ class TestInspectDecompGraph:
         op = qp.MultiControlledX([0, 1, 2, 3])
         assert inspector.inspect_decomps(op, num_work_wires=1) == dedent("""
             Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 1 (name: flip_zero_ctrl_values(_decompose_mcx_with_no_worker))
             0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤  
@@ -197,28 +197,28 @@ class TestInspectDecompGraph:
             Weighted Cost: 68.0
 
             Decomposition 4 (name: flip_zero_ctrl_values(_mcx_one_worker))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 5 (name: flip_zero_ctrl_values(_mcx_two_zeroed_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 6 (name: flip_zero_ctrl_values(_mcx_two_borrowed_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 7 (name: flip_zero_ctrl_values(_mcx_two_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 8 (name: flip_zero_ctrl_values(_mcx_many_zeroed_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 9 (name: flip_zero_ctrl_values(_mcx_many_borrowed_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 10 (name: flip_zero_ctrl_values(_mcx_many_workers))
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
-            Not applicable to the provided operator instance!
+            Not applicable (provided operator instance does not meet all conditions for this rule).
             """).strip()
 
     def test_missing_ops(self):
