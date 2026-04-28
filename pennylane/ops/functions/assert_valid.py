@@ -67,6 +67,13 @@ def _check_decomposition(op, skip_wire_mapping):
         assert op not in decomp, "an operator should not be included in its own decomposition"
 
         for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
+            if isinstance(o1, qp.ops.MidMeasure):
+                for other_op in (o2, o3):
+                    assert isinstance(other_op, qp.ops.MidMeasure)
+                    assert other_op.wires == o1.wires
+                    assert other_op.reset == o1.reset
+                    assert other_op.postselect == o1.postselect
+                continue
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
             assert isinstance(o1, qp.operation.Operator), "decomposition must contain operators"

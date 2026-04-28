@@ -20,12 +20,11 @@ from itertools import combinations
 
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import BasisState, X
+from pennylane.ops import BasisState, X, ctrl
 from pennylane.ops.mid_measure import MidMeasure, measure
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
@@ -237,17 +236,19 @@ class SignedOutSquare(Operation):
         work_wires = Wires(work_wires)
 
         n = len(x_wires)
-        k = len(output_wires)
+        m = len(output_wires)
 
         if output_wires_zeroed:
-            num_required_work_wires = min(n + 1, k)
+            num_required_work_wires = min(n, m)
         else:
-            num_required_work_wires = k
+            num_required_work_wires = m
+        sign_correc_adder = min(m - n, n)
+        num_required_work_wires = max(num_required_work_wires, sign_correc_adder - 1)
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
-                f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {k} output wires "
-                f"and {output_wires_zeroed=}."
+                f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+                f"Got {len(work_wires)} work wires instead."
             )
 
         registers = [
@@ -296,7 +297,7 @@ class SignedOutSquare(Operation):
             for key in ["x_wires", "output_wires", "work_wires"]
         }
 
-        return OutSquare(
+        return SignedOutSquare(
             new_dict["x_wires"],
             new_dict["output_wires"],
             new_dict["work_wires"],
@@ -337,7 +338,7 @@ class SignedOutSquare(Operation):
         **Example**
 
         >>> all_wires = ([0, 1], [2, 3], [4, 5])
-        >>> qp.OutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
+        >>> qp.SignedOutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
         [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2, 5]), control_wires=[4]), CNOT(wires=[0, 4])]
         """
         with AnnotatedQueue() as q:
@@ -350,15 +351,20 @@ class SignedOutSquare(Operation):
         return q.queue
 
 
-def _subtract_then_add_one(x_wires, y_wires, work_wires):
+def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     if len(x_wires) > 1:
         BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
 
-    work_wires = work_wires[: len(y_wires) - 1]
+    m = len(y_wires)
     X(y_wires[-1])
     if work_wires:
-        X(work_wires[-1])
-    SemiAdder(x_wires, y_wires, work_wires)
+        X(work_wires[m - 2])
+    ctrl(
+        SemiAdder(x_wires, y_wires, work_wires[: m - 1]),
+        control=c_wire,
+        work_wires=work_wires[m - 1 :],
+        work_wire_type="zeroed",
+    )
     X(y_wires[-1])
     if work_wires:
         # In principle, we could just apply a bit flip here to reset the work wire.
@@ -367,25 +373,10 @@ def _subtract_then_add_one(x_wires, y_wires, work_wires):
         # In order to obtain a correct behaviour both for unitary decompositions of the right elbow
         # and for its implementation relying on the assumption, we replace the bit flip with
         # a measurement + reset.
-        measure(work_wires[-1], reset=True)
+        measure(work_wires[m - 2], reset=True)
 
     if len(x_wires) > 1:
         BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
-
-
-def _signed_out_square_condition(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
-) -> bool:
-    n = num_x_wires - 1
-    m = num_output_wires
-    if output_wires_zeroed:
-        square_work_wires = min(n + 1, m)
-    else:
-        square_work_wires = m
-    # sign correction adder
-    sign_correc_adder = min(m - (n + 1), n + 1)
-    min_num_work_wires = max(square_work_wires, sign_correc_adder - 1)
-    return num_work_wires >= min_num_work_wires
 
 
 def _signed_out_square_resources(
@@ -421,7 +412,6 @@ def _signed_out_square_resources(
     return dict(resources)
 
 
-@register_condition(_signed_out_square_condition)
 @register_resources(_signed_out_square_resources)
 def _signed_out_square(
     x_wires: WiresLike,
@@ -435,9 +425,17 @@ def _signed_out_square(
     # Compute (x_u)^2 into output register
     OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed=output_wires_zeroed)
     # Add 2^(n+1)(2^(n-1) - x_u)
-    if n < m:
-        output_msb = max(0, m - (2 * n + 2))
-        _subtract_then_add_one(x_wires[1:], output_wires[output_msb : m - (n + 1)], work_wires)
+    if m > n:
+        output_msb = max(0, m - (2 * n + 2))  # redo
+        _c_subtract_then_add_one(
+            x_wires[0], x_wires[1:], output_wires[output_msb : m - n], work_wires
+        )
+
+        if m >= 2 * n - 1:
+            output = output_wires[: m - (2 * n - 2)]
+            _ = [X(w) for w in output]
+            SemiAdder(x_wires[:1], output, work_wires)
+            _ = [X(w) for w in output]
 
 
 add_decomps(OutSquare, _signed_out_square)
