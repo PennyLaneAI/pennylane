@@ -565,15 +565,14 @@
     from a circuit.
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
+* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
+  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 * Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
   for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
-
-* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
-  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
-  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 <h3>Breaking changes 💔</h3>
 
