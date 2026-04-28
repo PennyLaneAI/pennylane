@@ -22,13 +22,7 @@ from pennylane.exceptions import QuantumFunctionError
 
 from .conftest import get_legacy_capabilities
 
-try:
-    import tensorflow as tf
-
-    TF_SUPPORT = True
-
-except ImportError:
-    TF_SUPPORT = False
+TF_SUPPORT = False
 
 try:
     import torch
@@ -168,13 +162,7 @@ class TestCapabilities:
         # without raising an error
 
         if interface == "tf":
-            if TF_SUPPORT:
-                x = tf.Variable(0.1)
-                with tf.GradientTape() as tape:
-                    res = qnode(x)
-                    tape.gradient(res, [x])
-            else:
-                pytest.skip("Cannot import tensorflow.")
+            pytest.skip("Tensorflow testing has been removed.")
 
         if interface == "autograd":
             x = pnp.array(0.1, requires_grad=True)
