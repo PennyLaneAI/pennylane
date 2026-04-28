@@ -230,6 +230,11 @@
 
 <h4>Decompositions 🍏</h4>
 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+  decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
+  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+
 * `qp.transforms.decompose` is now imported top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
@@ -1101,6 +1106,9 @@
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in the decomposition of `Adjoint(TemporaryAND)` where control values were ignored.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.
