@@ -174,7 +174,7 @@ The following classes have been ported over:
 * Added ``PauliSentence.prune`` and ``FermiSentence.prune`` that removes terms with coefficients below a provided threshold.
   [(#9278)](https://github.com/PennyLaneAI/pennylane/pull/9278)
 
-* Added :func:`~.decomposition.inspect_decomps` that allows users to visualize and inspect the available decomposition rules
+* A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
 

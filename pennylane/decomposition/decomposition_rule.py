@@ -764,7 +764,7 @@ class _DecompInfo:
 
     def __str__(self) -> str:
         if not self._is_applicable:
-            return "Not applicable to the provided operator instance!"
+            return "Not applicable (provided operator instance does not meet all conditions for this rule)."
         if not self._is_feasible:
             req = self._work_wire_spec.total
             avail = self._num_work_wires
@@ -825,11 +825,11 @@ def inspect_decomps(
             rules registered with the type of ``op``. If none are provided, all available rules
             will be displayed.
         show_not_applicable (bool): if True (the default), all decomposition rules, including
-            those that are not applicable to the specific operator instance (e.g., due to wire
-            constraints), are displayed.
-        num_work_wires (int or None): the number of available work wires for dynamic allocation.
-            Decomposition rules that allocate more wires than there are available will be marked
-            not applicable (or excluded if ``show_not_applicable=False``). Defaults to ``None``,
+            those that are not applicable to the specific operator instance (e.g., due to constraints
+            on the number of wires), are displayed.
+        num_work_wires (int or None): the maximum number of available work wires for dynamic allocation.
+            Decomposition rules that allocate more wires than are available will be marked as
+            "Not applicable" (and excluded if ``show_not_applicable=False``). Defaults to ``None``,
             which puts no constraint on the maximum number of work wires.
 
     Returns:
@@ -860,7 +860,9 @@ def inspect_decomps(
     1: ──RX(0.25)─╰RZX(-0.25)─┤
     Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
 
-    Alternatively, you can inspect a single decomposition rule by passing its name:
+    Alternatively, you can inspect a single decomposition rule by passing its name.
+    For each decomposition rule, the output includes its name, circuit diagram, gate
+    count, and wire allocation (if any).
 
     >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz"))
     Name: _crx_to_h_crz
@@ -912,10 +914,11 @@ def inspect_decomps(
         return f"Name: {rule.name}\n{rule}"
 
     rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
-    display_infos = enumerate(rule_infos)
-    if not show_not_applicable:
-        display_infos = filter(lambda entry: entry[1].is_usable, display_infos)
-    display_infos = list(display_infos)
+    display_infos = [
+        (i, rule)
+        for i, rule in enumerate(rule_infos)
+        if (show_not_applicable or rule.is_usable)
+    ]
 
     if len(display_infos) == 0:
         return "No applicable decomposition rules."
