@@ -17,7 +17,6 @@ An internal module for serializing and deserializing Pennylane pytrees.
 
 import json
 from collections.abc import Callable
-from functools import lru_cache
 from typing import Any, Literal, overload
 
 from pennylane.measurements.shots import Shots
@@ -155,7 +154,6 @@ def _json_default(obj: Any) -> JSON:
         raise TypeError(f"Could not serialize metadata object: {repr(obj)}") from exc
 
 
-@lru_cache(maxsize=1024)
 def _get_typename_type(typename: str) -> type:
     try:
         return get_typename_type(typename)
