@@ -601,9 +601,11 @@ class CircuitSpecs:
         lines.append(f"**Device wires:** {self.num_device_wires}  ")
         lines.append(f"**Shots:** {self.shots}  ")
         if isinstance(self.level, dict):
-            lines.append("**Levels:**")
+            lines.append("<details>")
+            lines.append("<summary><b>Levels</b></summary><ol start='0'>")
             for level, level_name in self.level.items():
-                lines.append(f"- {level}: {level_name}")
+                lines.append(f"<li>{level_name}</li>")
+            lines.append("</ol></details>")
         else:
             lines.append(f"**Level:** {self.level}")
 
