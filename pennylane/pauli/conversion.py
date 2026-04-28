@@ -32,8 +32,7 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
-#: Maximum elementwise absolute difference between a sparse matrix and its
-#: conjugate transpose for it to be considered Hermitian.
+#: Tolerance for checking if a sparse matrix is Hermitian.
 _HERMITIAN_TOLERANCE = 1e-8
 
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):

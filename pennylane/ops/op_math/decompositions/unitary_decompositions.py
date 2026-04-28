@@ -33,9 +33,7 @@ from pennylane.math.decomposition import (
 )
 from pennylane.wires import Wires
 
-#: Maximum tolerated imaginary residual for a valid real SO(4) decomposition.
-#: If the best error across all candidate decompositions exceeds this threshold,
-#: the 2-CNOT decomposition is considered infeasible and ``None`` is returned.
+#: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5
 
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):

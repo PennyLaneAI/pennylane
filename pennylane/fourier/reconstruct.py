@@ -24,8 +24,7 @@ from pennylane import math
 from pennylane.capture.autograph import wraps
 from pennylane.workflow.qnode import QNode
 
-#: Condition number threshold above which the Fourier transform matrix
-#: is considered numerically ill-conditioned, triggering a user warning.
+#: Threshold for identifying ill-conditioned Fourier transform matrices.
 _ILL_CONDITIONED_THRESHOLD = 1e8
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):

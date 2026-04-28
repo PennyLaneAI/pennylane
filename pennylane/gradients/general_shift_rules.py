@@ -28,10 +28,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
-#: Minimum absolute determinant value below which the sine matrix in the non-equidistant
-#: parameter shift rule is considered numerically singular, triggering a warning
-#: about unstable gradient computation.
-#: See `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`
+#: Threshold for identifying singular matrices in non-equidistant shift rules.
 _SINGULAR_MATRIX_THRESHOLD = 1e-6
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):

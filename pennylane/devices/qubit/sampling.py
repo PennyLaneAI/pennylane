@@ -29,9 +29,7 @@ from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 from .measure import flatten_state
 
-#: Maximum absolute deviation of probability array sum from 1.0 before raising
-#: a ValueError during sampling. Account for floating-point accumulation errors in
-#: probability normalisation.
+#: Tolerance for checking the normalization of probability arrays.
 _PROB_NORMALISATION_TOLERANCE = 1e-6
 
 def jax_random_split(prng_key, num: int = 2):

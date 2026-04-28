@@ -35,9 +35,7 @@ from pennylane.pauli import (
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-#: Default tolerance for the linear independence check in :func:`_hermitian_basis`.
-#: Matrices whose orthogonal residual norm falls below this threshold are considered
-#: linearly dependent on the existing basis and are excluded.
+#: Tolerance for linear independence checks of Hermitian basis matrices.
 _LINEAR_DEPENDENCE_TOL = 1e-10
 
 def lie_closure(

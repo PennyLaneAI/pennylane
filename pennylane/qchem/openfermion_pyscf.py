@@ -17,16 +17,15 @@
 # pylint: disable=consider-using-generator
 import os
 
+from scipy.constants import physical_constants
+
 import numpy as np
 
 import pennylane as qp
 
 from .basis_data import atomic_numbers
-from scipy.constants import physical_constants
 
-#: Conversion factor from Bohr radii to Angstroms
-#: Derived from the CODATA 2022 recommended Bohr radius value
-#: See https://physics.nist.gov/cuu/Constants/
+#: Conversion factor from Bohr radii to Angstroms.
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] * 1e10
 
 

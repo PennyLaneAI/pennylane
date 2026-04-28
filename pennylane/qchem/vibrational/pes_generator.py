@@ -44,9 +44,7 @@ BOHR_TO_ANG = (
 )  # factor to convert bohr to angstrom
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
-#: Maximum imaginary part of a vibrational frequency (in cm^-1) below which a normal mode
-#: is considered physically valid. Modes exceeding this threshold are indicative of imaginary frequencies
-#: from an unstable molecular geometry and are skipped during potential energy surface computation
+#: Maximum imaginary part for a valid vibrational frequency in cm^-1.
 _IMAGINARY_FREQUENCY_THRESHOLD = 1e-6
 
 

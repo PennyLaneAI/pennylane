@@ -19,9 +19,7 @@ import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
-#: Small additive constant to prevent division by zero when computing
-#: conditional rotation angles in the state preparation algorithm.
-#: See Eq. 5 of `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+#: Small constant to prevent division by zero in state preparation.
 _DIVISION_EPS = 1e-15
 
 def _float_to_binary(val, num_bits):

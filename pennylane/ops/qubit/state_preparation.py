@@ -41,8 +41,7 @@ from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
-#: Numerical tolerance for validating that input state vectors have unit norm.
-#: Used in :class:`StatePrep` to check :math:`\||\psi\rangle\| = 1` during preprocessing.
+#: Numerical tolerance for validating unit norm of input state vectors.
 _STATE_NORM_TOLERANCE = 1e-10
 
 

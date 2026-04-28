@@ -30,17 +30,13 @@ from pennylane.wires import Wires
 
 # Global Variables
 #: Chunk size for splitting large PauliSentence objects during tapering.
-#: Chosen empirically to balance memory usage against processing overhead
-#: on typical hardware. Increase if memory is not a constraint.
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
 
-#: Maximum absolute imaginary part of a Hamiltonian coefficient below which it is
-#: considered numerically real and cast to a real-value array
+#: Tolerance for identifying numerically real Hamiltonian coefficients.
 _IMAGINARY_PART_TOLERANCE = 1e-8
 
 
-#: Relative tolerance for determining whether all generator values are numerically
-#: zero, used to skip trivial operations during tapering
+#: Relative tolerance for identifying numerically zero generator values.
 _GENERATOR_ZERO_RTOL = 1e-8
 
 def _kernel(binary_matrix):
@@ -722,13 +718,8 @@ def taper_operation(
         ps_gen = list(map(lambda x: x.pauli_rep, generators))
 
         gen_tapered = PauliSentence({})
-<<<<<<< HEAD
-        if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(
-            list(op_gen.values()), 0.0, rtol=_GENERATOR_ZERO_RTOL
-=======
         if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qp.math.allclose(
-            list(op_gen.values()), 0.0, rtol=1e-8
->>>>>>> upstream/main
+            list(op_gen.values()), 0.0, rtol=_GENERATOR_ZERO_RTOL
         ):
             gen_tapered = qp.taper(op_gen, generators, paulixops, paulix_sector)
             gen_tapered = pauli_sentence(gen_tapered)

@@ -36,9 +36,7 @@ from pennylane.ops import Identity
 
 from ._legacy_device import Device
 
-#: Threshold below which the displacement vector of a Gaussian state is considered
-#: to be zero. Used in :func:`fock_prob` to select the appropriate partition strategy
-#: for computing photon number detection probabilities
+#: Threshold for considering a Gaussian displacement vector to be zero.
 _DISPLACEMENT_ZERO_THRESHOLD = 1e-10
 
 
