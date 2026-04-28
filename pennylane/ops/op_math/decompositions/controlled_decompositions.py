@@ -19,7 +19,7 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qp
-from pennylane import allocation, control_flow, math, ops, queuing
+from pennylane import allocation, compiler, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -458,7 +458,11 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         down_gate = qp.TemporaryAND
         up_gate = ops.adjoint(qp.TemporaryAND)
 
-    @control_flow.for_loop(1, num_work_wires, 1)
+    if compiler.active() or qp.capture.enabled():
+        control_wires = math.array(control_wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
+
+    @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
         up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
@@ -489,7 +493,7 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -510,7 +514,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -617,14 +621,13 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires >= 6)},
+    work_wires={"zeroed": 2},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
-    is_small_mcx = (len(wires) - 1) < 6
-    with allocation.allocate(2 - is_small_mcx, state="zero", restored=True) as work_wires:
+    with allocation.allocate(2, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -633,14 +636,13 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
-    work_wires=lambda num_control_wires, **_: {"borrowed": 2 - (num_control_wires < 6)},
+    work_wires={"borrowed": 2},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
-    is_small_mcx = (len(wires) - 1) < 6
-    with allocation.allocate(2 - is_small_mcx, state="any", restored=True) as work_wires:
+    with allocation.allocate(2, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -907,12 +909,14 @@ def _convert_to_real_diagonal(q):
     return q * math.reshape(math.exp(-1j * exp_angles), (1, 2))
 
 
-def _param_su2(ar, ai, br, bi):
+def _param_su2(ar, ai, br, bi=0):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
+    return math.stack(
+        [math.stack([ar + 1j * ai, -br + 1j * bi]), math.stack([br + 1j * bi, ar + 1j * -ai])]
+    )
 
 
 def _bisect_compute_a(u):
@@ -936,7 +940,10 @@ def _bisect_compute_a(u):
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1),
+        lambda: math.array([[1 + 0j, -1 + 0j], [1 + 0j, 1 + 0j]]) * 2**-0.5,
+        _compute_a,
+        (),
     )
 
 
@@ -954,7 +961,7 @@ def _bisect_compute_b(u):
 
     b = math.cond(
         math.allclose(s, 0),
-        lambda: 0,
+        lambda: 0.0,
         lambda: math.cond(
             math.allclose(t, 0),
             lambda: (1 / 2 - w / 2) * math.sqrt(2 * w + 2) / s,
@@ -968,7 +975,7 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: 0, lambda: math.sqrt(w), ()),
+            lambda: math.cond(w < 0, lambda: 0.0, lambda: math.sqrt(w), ()),
             lambda: math.sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t,
             (),
         ),
@@ -989,13 +996,13 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0, ()),
+            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0.0, ()),
             lambda: math.sqrt(2 - 2 * w) / 2,
             (),
         ),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: 0,
+            lambda: 0.0,
             lambda: -math.sqrt(2) * math.sqrt((1 - w) / (s**2 + t**2)) * math.abs(t) / 2,
             (),
         ),
@@ -1078,6 +1085,11 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
+
+    if compiler.active() or qp.capture.enabled():
+        control_wires_x = math.array(control_wires_x, like="jax")
+        control_wires_y = math.array(control_wires_y, like="jax")
+        target_wires = math.array(target_wires, like="jax")
 
     @control_flow.for_loop(0, len(control_wires_x), 1)
     def loop(i):
