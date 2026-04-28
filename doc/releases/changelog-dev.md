@@ -223,12 +223,12 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>Decompositions 🍏</h4>
+
 * Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
-
-<h4>Decompositions 🍏</h4>
 
 * `qp.transforms.decompose` is now imported top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
