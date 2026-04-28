@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
+"""Unit tests for the `qp.workflow.resolution._setup_transform_program` helper function"""
 
 from dataclasses import replace
 from unittest.mock import MagicMock
 
 from cachetools import LRUCache
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import CompilePipeline
 from pennylane.transforms.core.transform import BoundTransform
@@ -37,7 +37,7 @@ def mock_user_transform(tape):
     return [tape], null_postprocessing
 
 
-@qml.transform
+@qp.transform
 def device_transform(tape):
     """Mock user transform function"""
     return [tape], null_postprocessing
@@ -45,13 +45,13 @@ def device_transform(tape):
 
 def test_gradient_expand_transform():
     """Test if gradient expand transform is added to the full_transform_program."""
-    config = ExecutionConfig(gradient_method=qml.gradients.param_shift)
+    config = ExecutionConfig(gradient_method=qp.gradients.param_shift)
 
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
     full_tp, _ = _setup_transform_program(device, config)
 
-    assert full_tp == CompilePipeline(qml.transform(qml.gradients.param_shift.expand_transform))
+    assert full_tp == CompilePipeline(qp.transform(qp.gradients.param_shift.expand_transform))
 
 
 def test_device_transform_program():
@@ -60,7 +60,7 @@ def test_device_transform_program():
 
     container = BoundTransform(device_transform)
     device_tp = CompilePipeline(container)
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
@@ -79,58 +79,58 @@ def test_device_transform_program():
 def test_interface_data_not_supported():
     """Test that convert_to_numpy_parameters transform is correctly added."""
     config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
     assert not full_tp
-    assert qml.transforms.convert_to_numpy_parameters in inner_tp
+    assert qp.transforms.convert_to_numpy_parameters in inner_tp
 
 
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
     config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    device = qml.device("default.mixed", wires=1)
+    device = qp.device("default.mixed", wires=1)
 
     _, inner_tp = _setup_transform_program(device, config)
 
-    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+    assert qp.transforms.convert_to_numpy_parameters not in inner_tp
 
     config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
     _, inner_tp = _setup_transform_program(device, config)
 
-    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+    assert qp.transforms.convert_to_numpy_parameters not in inner_tp
 
     config = ExecutionConfig(interface=None, gradient_method="backprop")
 
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
     _, inner_tp = _setup_transform_program(device, config)
 
-    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+    assert qp.transforms.convert_to_numpy_parameters not in inner_tp
 
     config = ExecutionConfig(
-        convert_to_numpy=False, interface="jax", gradient_method=qml.gradients.param_shift
+        convert_to_numpy=False, interface="jax", gradient_method=qp.gradients.param_shift
     )
 
     _, inner_tp = _setup_transform_program(device, config)
-    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+    assert qp.transforms.convert_to_numpy_parameters not in inner_tp
 
 
 def test_cache_handling():
     """Test that caching is handled correctly."""
     config = ExecutionConfig()
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=CompilePipeline())
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
     # pylint: disable=protected-access
     assert inner_tp == CompilePipeline(
-        BoundTransform(qml.workflow._cache_transform, kwargs={"cache": LRUCache(maxsize=10000)})
+        BoundTransform(qp.workflow._cache_transform, kwargs={"cache": LRUCache(maxsize=10000)})
     )
     assert not full_tp
 

@@ -81,7 +81,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = qml.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
+        drawer = qp.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
@@ -125,12 +125,12 @@ class MPLDrawer:
     **Formatting**
 
     PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
-    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-    Any available string can then be passed to ``qml.drawer.use_style``.
+    All available styles can be determined by evaluating ``qp.drawer.available_styles()``.
+    Any available string can then be passed to ``qp.drawer.use_style``.
 
     .. code-block:: python
 
-        qml.drawer.use_style('black_white')
+        qp.drawer.use_style('black_white')
 
     .. figure:: ../../_static/drawer/black_white_style.png
             :align: center

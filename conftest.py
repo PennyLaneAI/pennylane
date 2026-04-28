@@ -33,7 +33,6 @@ try:
 except ImportError:
     torch = None
 
-
 namespace = {
     "qp": qp,
     "qml": qp,
