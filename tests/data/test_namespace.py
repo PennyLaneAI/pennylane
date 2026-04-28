@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.data import DatasetList, DatasetPyTree, DatasetScalar
+from pennylane.data.attributes.serialization import _get_typename_type
 from pennylane.data.base.attribute import AttributeInfo
 from pennylane.pytrees.pytrees import get_typename
 
@@ -154,6 +155,39 @@ def test_attribute_info_deletes_all_namespaced_duplicates():
     assert "qml.__data_len__" not in attrs
 
 
+def test_attribute_info_delete_missing_key_raises_key_error():
+    """Test that deleting missing metadata keeps normal mapping behavior."""
+    info = AttributeInfo({})
+
+    with pytest.raises(KeyError, match="doc"):
+        del info["doc"]
+
+
+def test_attribute_info_setting_missing_key_to_none_is_noop():
+    """Test that removing absent metadata does not create namespace bookkeeping."""
+    attrs = {}
+    info = AttributeInfo(attrs)
+
+    info["doc"] = None
+
+    assert attrs == {}
+    assert len(info) == 0
+
+
+def test_attribute_info_setting_existing_key_to_none_removes_metadata():
+    """Test that assigning None removes existing namespaced metadata."""
+    attrs = {"qml.data.doc": "legacy docs", "qml.__data_len__": 1}
+    info = AttributeInfo(attrs)
+
+    info["doc"] = None
+
+    assert "qml.data.doc" not in attrs
+    assert "qp.data.doc" not in attrs
+    assert attrs["qp.__data_len__"] == 0
+    assert "qml.__data_len__" not in attrs
+    assert len(info) == 0
+
+
 def test_dataset_attribute_bind_init_reads_legacy_attribute_metadata():
     """Test that DatasetAttribute bind initialization can read legacy metadata keys."""
     attr = DatasetScalar(1.5)
@@ -213,3 +247,9 @@ def test_dataset_pytree_loads_alternate_namespace_treedef():
     assert isinstance(loaded_value, list)
     qp.assert_equal(loaded_value[0], value[0])
     qp.assert_equal(loaded_value[1], value[1])
+
+
+def test_pytree_typename_fallback_reraises_unresolved_type():
+    """Test that unresolved pytree type names still raise after namespace fallback."""
+    with pytest.raises(ValueError, match="'not.a.typename' is not the name of a Pytree type."):
+        _get_typename_type("not.a.typename")
