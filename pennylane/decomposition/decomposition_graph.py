@@ -814,8 +814,6 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        if d_node_idx not in self.distances:
-            return math.inf
         cost = self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
         return math.inf if math.isnan(cost) else cost
 
