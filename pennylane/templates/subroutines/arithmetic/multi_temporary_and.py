@@ -15,6 +15,7 @@ r"""
 Multi TemporaryAND operation
 """
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments,arguments-differ
 from typing import Literal
 
 from pennylane.decomposition import (
@@ -145,6 +146,22 @@ class MultiTemporaryAND(ControlledOp):
         "work_wire_type",
     }
 
+    name = "MultiTemporaryAND"
+
+    ndim_params = ()
+
+    def _flatten(self):
+        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(
+            wires=metadata[0],
+            control_values=metadata[1],
+            work_wires=metadata[2],
+            work_wire_type=metadata[3],
+        )
+
     def __init__(
         self,
         wires: WiresLike,
@@ -189,6 +206,10 @@ class MultiTemporaryAND(ControlledOp):
             "work_wire_type": self.work_wire_type,
         }
 
+    @property
+    def wires(self):
+        return self.control_wires + self.target_wires
+
     @staticmethod
     def _validate_control_values(control_values):
         if control_values is not None:
@@ -200,6 +221,18 @@ class MultiTemporaryAND(ControlledOp):
                 )
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
+    ):
+        return cls._primitive.bind(
+            *wires,
+            n_wires=len(wires),
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
 
 
 # Add controlled decomposition
