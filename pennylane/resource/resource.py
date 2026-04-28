@@ -594,6 +594,79 @@ class CircuitSpecs:
 
         return max_metric_length, max_column_size, all_gate_types, all_meas_types
 
+    def _repr_markdown_(self) -> str:
+        lines = []
+
+        lines.append(f"**Device:** {self.device_name}  ")
+        lines.append(f"**Device wires:** {self.num_device_wires}  ")
+        lines.append(f"**Shots:** {self.shots}  ")
+        if isinstance(self.level, dict):
+            lines.append("**Levels:**")
+            for level, level_name in self.level.items():
+                lines.append(f"- {level}: {level_name}")
+        else:
+            lines.append(f"**Level:** {self.level}")
+
+        lines.append("")  # Blank line
+
+        flat_resources = self._flattened_resources()
+        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
+            flat_resources
+        )
+
+        num_cols = len(flat_resources)
+        lines.append(
+            "|↓Metric".ljust(max_metric_length - 6)
+            + "Level→"
+            + " |"
+            + " |".join(level.rjust(max_column_size) for level in flat_resources)
+            + "|"
+        )
+        lines.append("|" + "-|" * (num_cols + 1))
+        lines.append(
+            "|Wire allocations".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_allocs).rjust(max_column_size)
+                for res in flat_resources.values()
+            )
+            + "|"
+        )
+        lines.append(
+            "| Total gates".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_gates).rjust(max_column_size)
+                for res in flat_resources.values()
+            )
+            + "|"
+        )
+
+        lines.append("| Gate counts:".ljust(max_metric_length) + " |")
+        for gate in all_gate_types:
+            lines.append(
+                f"| - {gate}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.gate_types.get(gate, 0)).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+                + " |"
+            )
+        lines.append("| Measurements:".ljust(max_metric_length) + " |")
+        for meas in all_meas_types:
+            lines.append(
+                f"| - {meas}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.measurements.get(meas, 0)).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+                + " |"
+            )
+
+        return "\n".join(lines).rstrip("\n")
+
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
         are many levels to display."""
@@ -681,11 +754,6 @@ class CircuitSpecs:
     # Separate str and repr methods for simple and pretty printing
     def __str__(self) -> str:
         return self.to_pretty_str()
-
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
 
 
 class ResourcesOperation(Operation):
