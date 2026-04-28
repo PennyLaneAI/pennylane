@@ -98,10 +98,7 @@ class AttributeInfo(MutableMapping):
         try:
             return self.attrs_bind[f"{namespace}.__data_len__"]
         except KeyError:
-            return next(
-                (v for k, v in self.attrs_bind.items() if k.endswith("__data_len__")), 
-                0
-            )
+            return next((v for k, v in self.attrs_bind.items() if k.endswith("__data_len__")), 0)
 
     def _update_len(self, inc: int):
         base_key = self.attrs_namespace.split(".", maxsplit=1)[0] + ".__data_len__"
@@ -114,10 +111,7 @@ class AttributeInfo(MutableMapping):
     def _bind_keys(self, __name: str) -> list[str]:
         key = self.bind_key(__name)
         keys = [key] if key in self.attrs_bind else []
-        keys.extend(
-            k for k in self.attrs_bind
-            if k != key and k.endswith(f".data.{__name}")
-        )
+        keys.extend(k for k in self.attrs_bind if k != key and k.endswith(f".data.{__name}"))
         return keys
 
     def __setitem__(self, __name: str, __value: Any):

@@ -162,10 +162,7 @@ def _get_typename_type(typename: str) -> type:
     except ValueError:
         _, dot, suffix = typename.partition(".")
         if dot:
-            matches = [
-                name for name in typename_to_type 
-                if name.endswith(f".{suffix}")
-            ]
+            matches = [name for name in typename_to_type if name.endswith(f".{suffix}")]
             if len(matches) == 1:
                 return get_typename_type(matches[0])
         raise
