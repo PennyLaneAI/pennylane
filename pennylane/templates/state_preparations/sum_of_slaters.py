@@ -794,7 +794,6 @@ class SumOfSlatersPrep(Operation):
         [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
           0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
 
-
         The reduced circuit looks like this:
 
         >>> print(qp.draw(circuit, show_matrices=False, max_length=190)())
