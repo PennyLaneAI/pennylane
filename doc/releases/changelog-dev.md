@@ -457,6 +457,10 @@
 
 <h4>Other improvements</h4>
 
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
+  `list` or `tuple` types.
+  [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
+
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent
   to ``int(np.ceil(np.log2(n)))``.
