@@ -286,8 +286,7 @@ def test_unmodified_templates(template, args, kwargs):
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
 tested_modified_templates = [
-    qp.StatePrep,
-    qp.BasisState,
+    qp.AmplitudeEmbedding,
     qp.BasisEmbedding,
     qp.TrotterProduct,
     qp.AllSinglesDoubles,
@@ -344,29 +343,6 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
         assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
         assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
-
-    @pytest.mark.parametrize("input_type", [tuple, list])
-    def test_state_prep_tuple_list_capture(self, input_type):
-        """Tests that tuple or list types for 'state' can be used."""
-
-        state = input_type([1, 0, 0, 0])
-        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
-        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
-        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), int)
-
-        state = input_type([1.0, 0.0, 0.0, 0.0])
-        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
-        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
-        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), float)
-
-    @pytest.mark.parametrize("input_type", [tuple, list])
-    def test_basis_state_tuple_list_capture(self, input_type):
-        """Tests that tuple or list types for 'state' can be used."""
-
-        state = input_type([1, 0])
-        jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
 
     @pytest.mark.parametrize(
         "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
