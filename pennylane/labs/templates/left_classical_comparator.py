@@ -211,7 +211,7 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
         resources[CNOT] += 1
 
     resources[CNOT] += num_x_wires - 1
-    resources[X] += 4*(L.bit_count() - L&1)
+    resources[X] += 4 * (L.bit_count() - L & 1)
 
     if comparator in [">", ">="]:
         resources[X] += 1
