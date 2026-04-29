@@ -351,6 +351,34 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+  
+* A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
+  for a concrete operator instance.
+  [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+
+  ```pycon
+  >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1])))
+  Decomposition 0 (name: _crx_to_rx_cz)
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  Gate Count: {RX: 2, CZ: 2}
+  <BLANKLINE>
+  Decomposition 1 (name: _crx_to_rz_ry)
+  0: ─────────────────────╭●────────────╭●────────────┤
+  1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
+  Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+  <BLANKLINE>
+  Decomposition 2 (name: _crx_to_h_crz)
+  0: ────╭●───────────┤
+  1: ──H─╰RZ(0.50)──H─┤
+  Gate Count: {Hadamard: 2, CRZ: 1}
+  <BLANKLINE>
+  Decomposition 3 (name: _crx_to_ppr)
+  0: ───────────╭RZX(-0.25)─┤
+  1: ──RX(0.25)─╰RZX(-0.25)─┤
+  Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+
+  ```
 
 <h4>Disentangling Transforms 🧶</h4>
 
