@@ -225,6 +225,11 @@
 
 <h4>Decompositions 🍏</h4>
 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+  decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
+  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+
 * `qp.transforms.decompose` is now imported top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
@@ -451,6 +456,10 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 <h4>Other improvements</h4>
+
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
+  `list` or `tuple` types.
+  [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent
@@ -1051,6 +1060,8 @@
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
   [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
   [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
+  [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
+  [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -1124,6 +1135,9 @@
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in the decomposition of `Adjoint(TemporaryAND)` where control values were ignored.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.

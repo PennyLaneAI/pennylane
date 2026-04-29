@@ -867,9 +867,9 @@ def inspect_decomps(
     1: ──RX(0.25)─╰RZX(-0.25)─┤
     Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
 
-    Alternatively, you can inspect a single decomposition rule by passing its name.
     For each decomposition rule, the output includes its name, circuit diagram, gate
-    count, and wire allocation (if any).
+    count, and wire allocation (if any). Alternatively, you can inspect a single
+    decomposition rule by passing its name.
 
     >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz"))
     Name: _crx_to_h_crz
