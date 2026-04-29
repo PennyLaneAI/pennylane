@@ -138,11 +138,14 @@ class FFFT(Operator):
             return qp.state()
 
 
-    >>> print(qml.draw(circuit, level="device")(wires))
+    >>> print(qp.draw(circuit, level="device")())
     0: ─╭TwoQubitFFT───────╭TwoQubitFFT──────────────┤  State
     1: ─╰TwoQubitFFT───────│────────────╭TwoQubitFFT─┤  State
     2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰TwoQubitFFT─│────────────┤  State
-    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State"""
+    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State
+    
+    The FFFT operation is decomposed recursively into :class:`~TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
+    """
 
     resource_keys = {"num_wires"}
 
