@@ -1063,6 +1063,10 @@
   [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
 
+* Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
+  after the transform has been applied as opposed to just the numeric simulation result.
+  [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
