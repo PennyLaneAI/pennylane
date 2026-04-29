@@ -757,15 +757,16 @@ class _DecompInfo:
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._is_applicable = rule.is_applicable(**op.resource_params)
+        self._conditions_met = rule.is_applicable(**op.resource_params)
         self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
-        self._is_feasible = num_work_wires is None or self._work_wire_spec.total <= num_work_wires
+        n_work_wires = self._work_wire_spec.total
+        self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
 
     def __str__(self) -> str:
-        if not self._is_applicable:
+        if not self._conditions_met:
             return "Not applicable (provided operator instance does not meet all conditions for this rule)."
-        if not self._is_feasible:
+        if not self._enough_work_wires:
             req = self._work_wire_spec.total
             avail = self._num_work_wires
             return f"Insufficient work wires: requires {req} but only {avail} available."
@@ -774,7 +775,7 @@ class _DecompInfo:
     @property
     def circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
-        assert self._is_applicable and self._is_feasible
+        assert self._conditions_met and self._enough_work_wires
         kwargs = get_decomp_kwargs(self._op)
         return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **kwargs)
 
@@ -786,7 +787,7 @@ class _DecompInfo:
     @property
     def gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
-        assert self._is_applicable and self._is_feasible
+        assert self._conditions_met and self._enough_work_wires
         estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
@@ -802,9 +803,9 @@ class _DecompInfo:
         return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
 
     @property
-    def is_usable(self) -> bool:
-        """Whether the decomposition rule is usable."""
-        return self._is_applicable and self._is_feasible
+    def is_applicable(self) -> bool:
+        """Whether the decomposition rule is applicable."""
+        return self._conditions_met and self._enough_work_wires
 
 
 def inspect_decomps(
@@ -922,7 +923,9 @@ def inspect_decomps(
 
     rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
     display_infos = [
-        (i, rule) for i, rule in enumerate(rule_infos) if (show_not_applicable or rule.is_usable)
+        (i, rule)
+        for i, rule in enumerate(rule_infos)
+        if (show_not_applicable or rule.is_applicable)
     ]
 
     if len(display_infos) == 0:

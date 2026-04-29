@@ -53,7 +53,7 @@ class _DecompInGraphInfo(_DecompInfo):
 
     def __str__(self) -> str:
         result = super().__str__()
-        if not self.is_usable:
+        if not self.is_applicable:
             return result
         if not self.is_reachable:
             return result + "\n" + self.missing_ops
