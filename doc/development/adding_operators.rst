@@ -27,8 +27,8 @@ serves as the main abstraction of such objects, and all operators (such as gates
 inherit from it.
 
 >>> from jax import numpy as jnp
->>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
->>> isinstance(op, qml.operation.Operator)
+>>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> isinstance(op, qp.operation.Operator)
 True
 
 The basic components of operators are the following:
@@ -64,20 +64,20 @@ The basic components of operators are the following:
 
    * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
 
-     >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+     >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
      >>> op.decomposition()
      [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
    * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
 
-     >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+     >>> op = qp.Hamiltonian([1., 2.], [qp.PauliX(0), qp.PauliZ(0)])
      >>> op.terms()
      ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
    * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
-     >>> op = qml.PauliX(0)
+     >>> op = qp.PauliX(0)
      >>> op.diagonalizing_gates()
      [H(0)]
      >>> op.eigvals()
@@ -86,7 +86,7 @@ The basic components of operators are the following:
    * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
-     >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+     >>> op = qp.PauliRot(0.2, "X", wires=["b"])
      >>> op.matrix(wire_order=["a", "b"])
      [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
       [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
@@ -100,7 +100,7 @@ The basic components of operators are the following:
      >>> col = np.array([1, 0])
      >>> data = np.array([1, -1])
      >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
-     >>> op = qml.SparseHamiltonian(mat, wires=["a"])
+     >>> op = qp.SparseHamiltonian(mat, wires=["a"])
      >>> op.sparse_matrix(wire_order=["a"])
      (0, 1)   1
      (1, 0) - 1
@@ -111,7 +111,7 @@ specific subclasses.
 
 * Operators inheriting from :class:`~.Operator` support addition and scalar multiplication:
 
-  >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
+  >>> op = qp.PauliX(0) + 0.1 * qp.PauliZ(0)
   >>> op.name
   Hamiltonian
   >>> op
@@ -120,7 +120,7 @@ specific subclasses.
 
 * Operators may define a hermitian conjugate:
 
-  >>> qml.RX(1., wires=0).adjoint()
+  >>> qp.RX(1., wires=0).adjoint()
   RX(-1.0, wires=[0])
 
 Creating custom operators
@@ -137,7 +137,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
     import pennylane as qp
 
 
-    class FlipAndRotate(qml.operation.Operation):
+    class FlipAndRotate(qp.operation.Operation):
 
         # This attribute tells PennyLane what differentiation method to use. Here
         # we request parameter-shift (or "analytic") differentiation.
@@ -152,7 +152,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
             # note: we use the framework-agnostic math library since
             # trainable inputs could be tensors of different types
-            shape = qml.math.shape(angle)
+            shape = qp.math.shape(angle)
             if len(shape) > 1:
                 raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
 
@@ -166,7 +166,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
             # we extract all wires that the operator acts on,
             # relying on the Wire class arithmetic
-            all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
+            all_wires = qp.wires.Wires(wire_rot) + qp.wires.Wires(wire_flip)
 
             # The parent class expects all trainable parameters to be fed as positional
             # arguments, and all wires acted on fed as a keyword argument.
@@ -186,8 +186,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # The general signature of this function is (*parameters, wires, **hyperparameters).
             op_list = []
             if do_flip:
-                op_list.append(qml.PauliX(wires=wires[1]))
-            op_list.append(qml.RX(angle, wires=wires[0]))
+                op_list.append(qp.PauliX(wires=wires[1]))
+            op_list.append(qp.RX(angle, wires=wires[0]))
             return op_list
 
         def adjoint(self):
@@ -219,7 +219,7 @@ FlipAndRotate(-0.1, wires=['q3', 'q1'])
 Once the class has been created, you can run a suite of validation checks using :func:`.ops.functions.assert_valid`.
 This function will warn you of some common errors in custom operators.
 
->>> qml.ops.functions.assert_valid(op)
+>>> qp.ops.functions.assert_valid(op)
 
 If the above operator omitted the ``_unflatten`` custom definition, it would raise:
 
@@ -253,12 +253,12 @@ The new gate can be used with PennyLane devices.
 
     from pennylane import numpy as np
 
-    dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
+    dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(angle):
         FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qml.expval(qml.PauliZ("q1"))
+        return qp.expval(qp.PauliZ("q1"))
 
 >>> a = np.array(3.14)
 >>> circuit(a)
@@ -267,7 +267,7 @@ The new gate can be used with PennyLane devices.
 If all gates used in the decomposition have gradient recipes defined,
 we can even compute gradients of circuits that use the new gate without any extra effort.
 
->>> qml.grad(circuit)(a)
+>>> qp.grad(circuit)(a)
 -0.0015926529164868282
 
 .. note::
@@ -278,8 +278,8 @@ we can even compute gradients of circuits that use the new gate without any extr
 
         def FlipAndRotate(angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip:
-                qml.PauliX(wires=wire_flip)
-            qml.RX(angle, wires=wire_rot)
+                qp.PauliX(wires=wire_flip)
+            qp.RX(angle, wires=wire_rot)
 
     and call it in the quantum function *as if it was a gate*.
     However, classes allow much more functionality, such as defining the adjoint gate above,
@@ -308,7 +308,7 @@ For example, we can create a new attribute, ``pauli_ops``, like so:
 
 We can check either a string or an Operation for inclusion in this set:
 
->>> qml.PauliX(0) in pauli_ops
+>>> qp.PauliX(0) in pauli_ops
 True
 >>> "Hadamard" in pauli_ops
 False
