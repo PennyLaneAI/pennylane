@@ -101,7 +101,7 @@ class FFFT(Operator):
 
     Args:
 
-        wires (WiresLike): The wires to apply the FFFT to. Must be a power of 2 greater than or equal to 2.
+        wires (WiresLike): The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or equal to 2.
 
     Raises:
 
