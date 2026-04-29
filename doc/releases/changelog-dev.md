@@ -1043,6 +1043,7 @@
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
+  [(#9346)](https://github.com/PennyLaneAI/pennylane/pull/9346)
   [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
   [(#9320)](https://github.com/PennyLaneAI/pennylane/pull/9320)
   [(#9315)](https://github.com/PennyLaneAI/pennylane/pull/9315)
