@@ -26,7 +26,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class LeftClassicalComparator(Operation):
-    r"""This operator performs an inequality test between a quantum register :math:`x` and a
+    r"""This operator performs an inequality test between a quantum register :math:`\lvert x\rangle` and a
     classical integer :math:`L`, storing the result in a target qubit.
 
     Depending on the value of the ``comparator`` argument, the operator evaluates one of four
@@ -34,8 +34,7 @@ class LeftClassicalComparator(Operation):
 
     .. math::
 
-        \text{LeftClassicalComparator}_{<} |x\rangle |0\rangle = |x\rangle |x < L\rangle & \text{if } op = \text{'<' }
-
+        \text{LeftClassicalComparator}_{<} \lvert x\rangle \lvert 0\rangle = \lvert x\rangle \lvert x < L\rangle \text{ if comparator} = \text{'<'}
 
     The decomposition is based on the left block in Figure 6 in Appendix E
     of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical
@@ -44,14 +43,14 @@ class LeftClassicalComparator(Operation):
 
     Args:
         x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
-        L (int): The classical integer to compare against. It must be smaller than :math:`2^{\text{len(x_wires)}}`.
+        L (int): The classical integer to compare against. It must be smaller than :math:`2^{n}`,
+            where :math:`n` is the number of ``x_wires``.
         target_wire (WiresLike): The wire that stores the value of the inequality test.
         work_wires (WiresLike): The auxiliary wires to use for the comparison.
             At least ``len(x_wires) - 1`` zeroed work wires should be provided.
             They are not returned in the zero state.
         comparator (str): The operator used in the inequality. Possible values are:
-            `'<'`, `'<='`, `'>='` and `'>'`.
-
+            ``'<'``, ``'<='``, ``'>='`` and ``'>'``.
 
     **Example**
 
@@ -60,11 +59,10 @@ class LeftClassicalComparator(Operation):
         import pennylane as qml
         from pennylane.labs.templates import LeftClassicalComparator
 
-        dev = qml.device("lightning.qubit", wires=6, shots = 1)
+        dev = qml.device("lightning.qubit", wires=6, shots=1)
 
         @qml.qnode(dev)
         def circuit(x_val, L_val):
-
             qml.BasisState(x_val, wires=[0, 1, 2])
 
             LeftClassicalComparator(
@@ -81,7 +79,6 @@ class LeftClassicalComparator(Operation):
         >>> output = circuit(3, 2)
         >>> print(bool(output)) # 3 >= 2
         True
-
     """
 
     grad_method = None
