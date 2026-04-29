@@ -796,6 +796,10 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         self._lazy = lazy
         # maps node indices to the optimal resource estimates
         self.distances: dict[int, Resources] = {}
+        # We only mark decomposition rule as discovered if all its incoming edges (from the
+        # operators that it contains) are explored. When we examine each incoming edge, we
+        # accumulate the cost of this decomposition rule in _temp_distances, and when the last
+        # edge is examined, we take the final value in _temp_distances and store it in distances
         self._temp_distances: dict[int, Resources] = {}
         # maps operator nodes to the optimal decomposition nodes
         self.predecessors: dict[int, int] = {}
