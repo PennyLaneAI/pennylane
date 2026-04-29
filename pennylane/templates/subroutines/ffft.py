@@ -61,6 +61,15 @@ class TwoQubitFFT(Operator):
     The two-qubit unitary operator that corresponds to a Fourier transform on
     Fermions, encoded using a Jordan-Wigner Transformation (JWT).
 
+    .. math::
+
+        \hat{F}_2 = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 2^{-\frac{1}{2}} & 2^{-\frac{1}{2}} & 0 \\
+            0 & 2^{-\frac{1}{2}} & -2^{-\frac{1}{2}} & 0 \\
+            0 & 0 & 0 & -1 \\
+        \end{bmatrix}
+
     Args:
         wires (WiresLike): The two wires to apply the operator to. Ideally, they are adjacent
             wires, since the cost of simulating interactions between Fermionic modes depends
