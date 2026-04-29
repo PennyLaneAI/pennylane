@@ -181,17 +181,20 @@ class OutMultiplier(Operation):
           multiplication. For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L = \min(k, n)` adders with usually varying sizes
           :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The concrete :class:`~.Toffoli` count
-          resulting from this is a bit verbose in general.
+          resulting from this is a bit verbose in general. The implementation is shown in
+          Fig. 2a) (for :math:`k=2m=2n`) and Fig. 2c) (for :math:`k=m=n`) in
+          `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
 
         - The third implementation uses controlled addition/subtraction to replace the controlled
-          ``SemiAdder``\ s from the previous implementation, based on
+          ``SemiAdder``\ s from the previous implementation, based on Litinski's
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
           For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L=\min(k, n)` controlled add/subtract operations
           of usually varying size :math:`\min(k + 1 - i, m + 1)` for :math:`0\leq i<L`,
           three ``SemiAdder``\ s of sizes :math:`\min(k + 1 - m, n + 1)`,
           :math:`\min(k + 1 - n, m + 1)` and :math:`k+1`, as well as an incrementer on
-          :math:`\min(k + 1, n + m)` qubits and Pauli gates.
+          :math:`\min(k + 1, n + m)` qubits and Pauli gates. For :math:`n=m` and
+          :math:`k=2n`, this implementation is shown in Fig. 2b), for :math:`k=n=m` in Fig. 2d).
 
     """
 
@@ -459,8 +462,18 @@ def _out_multiplier_with_adder(
     output_wires_zeroed: bool,
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
-    """We add the y register to the output register, controlled by one bit in the x register,
-    and shifted onto the output register by the same shift as the control qubit."""
+    """Implementation of Schoolbook multiplication via controlled adders as sole building block,
+    except for a potential simplification for the very first adder.
+    The j-th building block adds y⋅x_{n-1-j}⋅2^j to the output register, by controlling the
+    addition of y on x_{n-1-j} and shifting the output wires of the addition by j bits.
+    Overall, we thus add
+
+    sum_{j=0}^{n-1} 2^j⋅x_{n-1-j}⋅y = x⋅y
+
+    to the output register. Note that the size of the addition output registers as well as the
+    upper limit of the sum are adjusted depending on the sizes n, m, and k of the three registers
+    x_wires, y_wires, and output_wires.
+    """
     m = len(y_wires)
     k = len(output_wires)
 
@@ -585,6 +598,11 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     the right elbows into measurement + CZ and when using a decomposition into unitary operators.
     This is because we use a measurement with reset rather than a simple bit flip to return
     the last work wire to the state |0>.
+    This circuit is similar to the one shown in Fig. 1c) in
+    `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__, just without the bit flips on the
+    ``x_wires`` before and after the adder. We replace the explicit input carry in that figure
+    by bit flips on the least significant bits of all three registers, handling the clean-up
+    bit flip on the least significant work qubit with measurement+reset.
     """
     work_wires = work_wires[: len(y_wires) - 1]
     X(x_wires[-1])
@@ -643,6 +661,9 @@ def _increment(wires, work_wires):
     aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
 
     We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
+    This circuit is derived, e.g., in
+    `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
+    see "Incrementer from n-2 Zeroed bits".
     """
     wires = wires[::-1]
     if len(wires) > 1:
@@ -661,6 +682,20 @@ def _increment(wires, work_wires):
 
 
 def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
+    r"""Controlled add/subtract operation. If the control wire ``c_wire`` is in the
+    state :math:`|1\rangle`, simply adds :math:`x`, the integer stored in ``x_wires``,
+    to :math:`y`, the value in ``y_wires``. If the control wire is in
+    the state :math:`|0\rangle`, adds :math:`2^n-x` to :math:`y` instead where :math:`n`
+    is the length of ``x_wires``. In short:
+
+    |0>|x>|y>  ->  |0>|x>|y+2^n-x>
+    |1>|x>|y>  ->  |1>|x>|y+x>
+
+    This is shown in Fig. 1f) in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
+    Note that the figure explicitly shows an input carry for the adder, which
+    we do not represent here. Instead, we introduce (controlled) bit flips on the least significant
+    bits of each register that correspond to an input carry being set to one.
+    """
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
@@ -693,8 +728,30 @@ def _out_multiplier_with_caddsub(
     output_wires_zeroed: bool,
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
-    """We add the y register to the output register, controlled by one bit in the x register,
-    and shifted onto the output register by the same shift as the control qubit."""
+    """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
+    combined with some correction steps. After appending a work wire to the output register,
+    effectively multiplying it with two, we first have a bulk computation with n steps (where
+    n is the size of x_wires):
+
+    The j-th building block adds y⋅(2x_{n-1-j}-1)⋅2^j+2^(j+m)⋅(1-x_{n-1-j}) to the output register,
+    by controlling between addition and subtraction of y on x_{n-1-j}, and shifting the output
+    wires of the addition by j bits.
+    Overall, we thus computed (including the initial multiplication with two)
+
+    2⋅z + sum_{j=0}^{n-1} (2^j⋅(2x_{n-1-j}-1)⋅y + 2^{j+m}⋅(1-x_{n-1-j})
+    = 2⋅z + 2⋅x⋅y - (2^n-1)⋅y + 2^{n+m}-2^m⋅(1+x)
+
+    to the output register. Note that the size of the addition output registers as well as the
+    upper limit of the sum are adjusted depending on the sizes n, m, and k of the three registers
+    x_wires, y_wires, and output_wires.
+
+    Afterwards, we correct for the additional terms in three steps:
+    - Add 2^m⋅(x+1)
+    - Subtract 2^{n+m}+y
+    - Add 2^n⋅y
+    We are left with 2⋅(z+x⋅y), an even number, which we can divide by two by splitting off the
+    least significant bit (which is exactly the one we appended initially) from the output register.
+    """
     # We extend our output by one wire because we need to store 2x*y intermediately, instead
     # of x*y. This also multiplies the value stored in output_wires with two.
     output_wires = output_wires + [work_wires[0]]
@@ -729,9 +786,12 @@ def _out_multiplier_with_caddsub(
         _increment(increment_wires, work_wires)
     _ = [X(w) for w in output_wires]
 
-    # Add (2^n · y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
+    # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
     if k > n:
         SemiAdder(y_wires, output_wires[: k - n], work_wires)
+
+    # Note that dividing by two does not have to happen explicitly, because the registers are
+    # not explicit return values.
 
 
 def _out_multiplier_with_cache_condition(
