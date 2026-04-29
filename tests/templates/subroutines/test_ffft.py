@@ -29,7 +29,7 @@ def ffft(wires):
     return probs(wires)
 
 
-@pytest.mark.parametrize("wires", [(0, 1), (0, 1, 2, 3), (0, 1, 2, 3, 4, 5, 6, 7)])
+@pytest.mark.parametrize("wires", [(0, 1), (0, 1, 2, 3), (0, 1, 2, 3, 4, 5, 6, 7), (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)])
 def test_ffft_decomposition_new(wires):
     op = FFFT(wires)
 

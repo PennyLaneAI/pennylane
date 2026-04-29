@@ -208,27 +208,27 @@ def _permute_and_apply(order, wires, operator):
         wires (WiresLike): The wires to permute.
         operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
     """
-    first = order.index(wires[0])
-    second = order.index(wires[1])
+    first = list(order).index(wires.labels[0])
+    second = list(order).index(wires.labels[1])
     second_copy = copy.copy(second)
 
     # permute into adjacency
     @while_loop(lambda s: s > first + 1)
     def permute_in(s):
         s -= 1
-        FermionicSWAP(np.pi, Wires(order[s], order[s + 1]))
+        FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
         return s
 
     second = permute_in(second)  # pylint: disable=no-value-for-parameter
 
     # apply the operator
-    operator(Wires(order[first], order[first + 1]))
+    operator(Wires([order[first], order[first + 1]]))
 
     # permute back
     @while_loop(lambda s: s < second_copy - 1)
     def permute_out(s):
         s += 1
-        FermionicSWAP(np.pi, Wires(order[s], order[s + 1]))
+        FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
         return s
 
     permute_out(second)  # pylint: disable=no-value-for-parameter
