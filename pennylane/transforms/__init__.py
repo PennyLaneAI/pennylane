@@ -174,7 +174,7 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-The following transform allows the user to inspect the decomposition graph and how it chooses
+The following utility functions can be used to inspect the decomposition graph and understand how it chooses
 decomposition rules for operators in the circuit:
 
 .. autosummary::
