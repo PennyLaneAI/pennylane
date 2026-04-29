@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests the inspect_decomp_graph transform."""
+"""Tests the decomp_inspector transform."""
 
 from textwrap import dedent
 
 import pytest
 
 import pennylane as qp
-from pennylane.transforms import inspect_decomp_graph
+from pennylane.transforms import decomp_inspector
 
 
 @pytest.mark.usefixtures("disable_graph_decomposition")
 def test_error_raised_graph_disabled():
     """Tests that an error is raised if graph is disabled."""
 
-    @inspect_decomp_graph
+    @decomp_inspector
     @qp.qnode(qp.device("default.qubit"))
     def circuit():
         qp.CRX(0.5, [0, 1])
@@ -38,12 +38,12 @@ def test_error_raised_graph_disabled():
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestInspectDecompGraph:
-    """Tests the inspect_decomp_graph transform."""
+    """Tests the decomp_inspector transform."""
 
     def test_non_existent_op(self):
         """Tests that the correct message is produced for a non existent op."""
 
-        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
+        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CRX(0.5, wires=[0, 1])
@@ -59,7 +59,7 @@ class TestInspectDecompGraph:
     def test_op_type_error(self):
         """Tests that a proper error is raised when an operator type is provided."""
 
-        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
+        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CRX(0.5, wires=[0, 1])
@@ -72,7 +72,7 @@ class TestInspectDecompGraph:
     def test_work_wire_budget_mismatch(self):
         """Tests that a correct message is produced when the work wire budget is wrong."""
 
-        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=1)
+        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=1)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.MultiControlledX([0, 1, 2, 3, 4])
@@ -91,7 +91,7 @@ class TestInspectDecompGraph:
     def test_work_wire_budget(self):
         """Tests that the correct output is produced according to the work wire budget."""
 
-        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=0)
+        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=0)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
@@ -121,7 +121,7 @@ class TestInspectDecompGraph:
     def test_work_wires_available(self):
         """Tests that the correct output is produced when there are available work wires."""
 
-        @inspect_decomp_graph(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
@@ -224,7 +224,7 @@ class TestInspectDecompGraph:
     def test_missing_ops(self):
         """Tests that missing operators are correctly reported."""
 
-        @inspect_decomp_graph(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -256,7 +256,7 @@ class TestInspectDecompGraph:
     def test_inexact_count(self):
         """Tests that the output is correct when the gate count is inexact."""
 
-        @inspect_decomp_graph(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.QubitUnitary([[1, 0], [0, 1]], wires=0)
