@@ -1179,7 +1179,7 @@
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qp.transforms.sign_expand` in a production
   environment.
-  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
+  [(#9210)](https://github.com/PennyLaneAI/pennylane/pull/9210)
 
 * Fixed a bug where `qp.math.givens_decomposition` modified the input in place when using `qjit`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
