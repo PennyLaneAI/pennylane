@@ -26,7 +26,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class LeftQuantumComparator(Operation):
-    r"""Perform an inequality test :math:`|x\rangle|y\rangle|0\rangle \mapsto |x\rangle |y\rangle|x \leq y\rangle` between two states in separate quantum registers.
+    r"""Perform an inequality test :math:`\lvert x\rangle\lvert y\rangle\lvert 0\rangle \mapsto \lvert x\rangle \lvert y\rangle\lvert x \leq y\rangle` between two states in separate quantum registers.
 
     This operator performs an inequality test between two quantum registers :math:`x` and
     :math:`y`, storing the result in a zeroed target qubit. The
@@ -34,28 +34,27 @@ class LeftQuantumComparator(Operation):
 
     .. math::
 
-        \text{LeftQuantumComparator}_{<} |x\rangle |y\rangle |0\rangle = |x\rangle |y\rangle |x < y\rangle
+        \text{LeftQuantumComparator}_{<} \lvert x\rangle \lvert y\rangle \lvert 0\rangle = \lvert x\rangle \lvert y\rangle \lvert x < y\rangle
 
     The decomposition is defined as the left block in Figure 6 in Appendix E
-    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_ . Note that the decomposition uses auxiliary wires
+    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_. Note that the decomposition uses auxiliary wires
     and in order to clean them, we must apply the adjoint of this operator via ``Adjoint(LeftQuantumComparator)``
     after using the target qubit, as shown in the example below.
 
     Args:
-            x_wires (WiresLike): The wires that store the integer :math:`x`.
-            y_wires (WiresLike): The wires that store the integer :math:`y`. The number of ``y_wires`` should be equal to
-                the number of ``x_wires``.
-            target_wire (WiresLike): The zeroed target wire that outputs the value of the inequality test.
-            work_wires (WiresLike): The auxiliary wires to use for the addition.
-                At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
-            comparator (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
-
+        x_wires (WiresLike): The wires that store the integer :math:`x`.
+        y_wires (WiresLike): The wires that store the integer :math:`y`. The number of ``y_wires`` should be equal to
+            the number of ``x_wires``.
+        target_wire (WiresLike): The zeroed target wire that outputs the value of the inequality test.
+        work_wires (WiresLike): The auxiliary wires to use for the addition.
+            At least ``len(y_wires) - 1`` zeroed work wires should be provided. They are not returned in the zero state.
+        comparator (str): The operator used in the inequality. The value could be '<', '<=', '>=' and '>'.
 
     **Example**
 
-    In this example, we will use the ``LeftQuantumOperator``, generating the output on wire :math:`11`. After this,
-    we will copy the result to wire :math:`12` using a ``CNOT`` gate, and then apply the ``adjoint(LeftQuantumOperator)``
-     to clean up the auxiliary qubits used.
+    In this example, we will use the ``LeftQuantumComparator``, generating the output on wire :math:`11`. After this,
+    we will copy the result to wire :math:`12` using a ``CNOT`` gate, and then apply the ``adjoint(LeftQuantumComparator)``
+    to clean up the auxiliary qubits used.
 
     .. code-block:: python
 
@@ -66,7 +65,6 @@ class LeftQuantumComparator(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit(a, comparator, b):
-
             x_wires = [0, 3, 6, 9]
             y_wires = [1, 4, 7, 10]
             work_wires = [2, 5, 8]
@@ -87,7 +85,6 @@ class LeftQuantumComparator(Operation):
         >>> output = circuit(3, ">=", 2)
         >>> print(bool(output))
         True
-
     """
 
     grad_method = None
