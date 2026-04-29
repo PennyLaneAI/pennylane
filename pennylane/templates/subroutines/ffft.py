@@ -15,45 +15,17 @@
 This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
 by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
+import copy
 from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math, Hadamard, CNOT
+from pennylane import CNOT, FermionicSWAP, Hadamard, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
 from pennylane.wires import Wires, WiresLike
-
-
-class FSWAP(Operator):
-    num_params=0
-    num_wires=2
-
-    def __init__(self, wires: WiresLike):
-        self.exponent = 1
-        super().__init__(wires)
-
-    def compute_decomposition(self, wires):
-        return [
-            Hadamard(wires[0]),
-            CNOT(wires),
-            CNOT(wires[::-1]),
-            Hadamard(wires[1])
-        ]
-
-    def compute_matrix(self):
-        p = math.exp(1j * np.pi)
-        g = math.exp((1j * np.pi) / 2)
-        s = math.sin(np.pi / 2)
-        c = math.cos(np.pi / 2)
-        return math.array([
-            [1, 0, 0, 0],
-            [0, g * c, -1j * g * s, 0],
-            [0, -1j * g * s, g * c, 0],
-            [0, 0, 0, p]
-        ])
 
 
 class TwoQubitFFT(Operator):
@@ -101,7 +73,8 @@ class TwoQubitFFT(Operator):
 
 class FFFT(Operator):
     """Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
-    the fermions are encoded using the Jordan-Wigner transformation.
+    the fermions are encoded using the Jordan-Wigner transformation. Assumes the Fermions are encoded using the ordering
+    of the wires as passed to the FFFT.
 
     The FFFT over a number of wires :math:`n` (a power of two)
     is decomposed recursively into two parallel FFFTs over :math:`\tfrac{n}{2}`
@@ -152,7 +125,7 @@ class FFFT(Operator):
     1: ─╰TwoQubitFFT───────│────────────╭TwoQubitFFT─┤  State
     2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰TwoQubitFFT─│────────────┤  State
     3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State
-    
+
     The FFFT operation is decomposed recursively into :class:`~TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
     """
 
@@ -220,9 +193,36 @@ def _recursive_decompose(wires: WiresLike):
 
         @for_loop(len(wires) // 2)
         def fouriers(i):
-            TwoQubitFFT(Wires([wires[i], wires[len(wires) // 2 + i]]))
+            _permute_and_apply(wires, Wires([wires[i], wires[len(wires) // 2 + i]]), TwoQubitFFT)
 
         fouriers()  # pylint: disable=no-value-for-parameter
+
+
+def _permute_and_apply(order, wires, operator):
+    """
+    Makes the sites in question adjacent in the ordering, applies the given operator,
+    and permutes them back.
+
+    Args:
+        wires (WiresLike): The wires to permute.
+        operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
+    """
+    first = order.index(wires[0])
+    second = order.index(wires[1])
+    second_copy = copy.copy(second)
+
+    # permute into adjacency
+    while second > first + 1:
+        second -= 1
+        FermionicSWAP(np.pi, Wires(order[second], order[second + 1]))
+
+    # apply the operator
+    operator(Wires(order[first], order[first + 1]))
+
+    # permute back
+    while second < second_copy - 1:
+        second += 1
+        FermionicSWAP(np.pi, Wires(order[second], order[second + 1]))
 
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
