@@ -150,13 +150,13 @@ class FFFT(Operator):
 def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
-    def _count_two_recursive(wires, two_qubit_gates):
-        two_qubit_gates += wires // 2
+    def _count_two_recursive(wires,):
+        two_qubit_gates = wires // 2
         if wires > 2:
-            two_qubit_gates += _count_two_recursive(wires // 2, 0) * 2
+            two_qubit_gates += _count_two_recursive(wires // 2) * 2
         return two_qubit_gates
 
-    two_qubit_gates = _count_two_recursive(num_wires, 0)
+    two_qubit_gates = _count_two_recursive(num_wires)
     resources[resource_rep(TwoQubitFFT)] = two_qubit_gates
 
     def _count_one_recursive(wires, resources):
@@ -168,6 +168,15 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
         return resources
 
     resources = _count_one_recursive(num_wires, resources)
+
+    def _count_swaps(wires):
+        swaps = 2 * (wires // 2) * (wires // 2 - 1)
+        if wires > 2:
+            swaps += _count_swaps(wires // 2) * 2
+        return swaps
+
+    if num_wires > 2:
+        resources[resource_rep(FermionicSWAP)] = _count_swaps(num_wires)
 
     return resources
 
@@ -213,24 +222,25 @@ def _permute_and_apply(order, wires, operator):
     second_copy = copy.copy(second)
 
     # permute into adjacency
-    @while_loop(lambda s: s > first + 1)
+    @while_loop(lambda s: s > first + 2)
     def permute_in(s):
         s -= 1
         FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
         return s
 
-    second = permute_in(second)  # pylint: disable=no-value-for-parameter
+    permute_in(second)  # pylint: disable=no-value-for-parameter
 
     # apply the operator
     operator(Wires([order[first], order[first + 1]]))
 
     # permute back
-    @while_loop(lambda s: s < second_copy - 1)
+    @while_loop(lambda s: s < second_copy - 2)
     def permute_out(s):
         s += 1
         FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
         return s
 
-    permute_out(second)  # pylint: disable=no-value-for-parameter
+    permute_out(first + 1)  # pylint: disable=no-value-for-parameter
+
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
