@@ -28,7 +28,7 @@ from typing import Any, ClassVar, Literal, Optional, Union
 import numpy as np
 from scipy.sparse import spmatrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import capture, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -54,6 +54,39 @@ try:
 
 except ImportError:
     has_jax = False
+
+
+def _process_data(op: "Operator2"):
+    from pennylane.templates.core import AbstractArray
+
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qp.math.round(qp.math.real(x) % mod_val, 10)
+
+    # Use qp.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qp.state) requires complex typed inputs.
+    if op.name in ("RX2", "RY2", "RZ2", "PhaseShift2", "Rot2"):
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
+
+    return str(
+        [
+            (
+                id(v)
+                if math.is_abstract(v)
+                else (
+                    (v.shape, v.dtype)
+                    if isinstance(v, AbstractArray)
+                    else _mod_and_round(v, mod_val)
+                )
+            )
+            for k, v in op._bound_args.arguments.items()
+            if k in op.dyn_argnames
+        ]
+    )
 
 
 # =============================================================================
@@ -101,23 +134,23 @@ def _get_abstract_operator() -> type:
 
         @staticmethod
         def _matmul(*args):
-            return qml.prod(*args)
+            return qp.prod(*args)
 
         @staticmethod
         def _mul(a, b):
-            return qml.s_prod(b, a)
+            return qp.s_prod(b, a)
 
         @staticmethod
         def _rmul(a, b):
-            return qml.s_prod(b, a)
+            return qp.s_prod(b, a)
 
         @staticmethod
         def _add(a, b):
-            return qml.sum(a, b)
+            return qp.sum(a, b)
 
         @staticmethod
         def _pow(a, b):
-            return qml.pow(a, b)
+            return qp.pow(a, b)
 
         def create_op(self):
             args_dict = dict(self.kwargs)
@@ -143,7 +176,7 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(operator_type.__name__)
+    primitive = capture.QpPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
     primitive.prototype_op = True
 
@@ -215,7 +248,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     _bound_args: BoundArguments
 
     def __init__(self, *args, **kwargs):
-        self._pauli_rep: qml.pauli.PauliSentence | None = (
+        self._pauli_rep: qp.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
         self._bound_args = self._sig.bind(*args, **kwargs)
@@ -223,7 +256,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         for n in self.wire_argnames:
             w = self._bound_args.arguments[n]
-            if qml.capture.enabled:
+            if capture.enabled():
                 if math.is_abstract(w) or isinstance(w, jax.core.ShapedArray):
                     val = w
                 else:
@@ -300,9 +333,9 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         iterable_wires_types = (
             list,
             tuple,
-            qml.wires.Wires,
+            qp.wires.Wires,
             range,
-            qml.capture.autograph.ag_primitives.PRange,
+            capture.autograph.ag_primitives.PRange,
             set,
         )
 
@@ -344,7 +377,11 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
-        return hash((str(self.name), self._sig, tuple(self._bound_args.arguments.values())))
+        dyn_data = _process_data(self)
+        other_data = tuple(
+            v for k, v in self._bound_args.arguments.items() if k not in self.dyn_argnames
+        )
+        return hash((str(self.name), self._sig, dyn_data, other_data))
 
     def __eq__(self, other) -> bool:
         if type(other) != type(self):
@@ -367,7 +404,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         self._name = value
 
     @property
-    def pauli_rep(self) -> Optional["qml.pauli.PauliSentence"]:
+    def pauli_rep(self) -> Optional["qp.pauli.PauliSentence"]:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
@@ -395,7 +432,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             wire_order is None
             or self.wires == Wires(wire_order)
             or (
-                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                self.name in qp.ops.qubit.attributes.symmetric_over_all_wires
                 and set(self.wires) == set(wire_order)
             )
         ):
@@ -544,8 +581,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """Constructor-call-like representation."""
         wires = (
             self.wires.tolist()
-            if not qml.math.is_abstract(self.wires)
-            and not isinstance(self.wires, jax.core.ShapedArray)
+            if not math.is_abstract(self.wires) and not isinstance(self.wires, jax.core.ShapedArray)
             else self.wires
         )
 
@@ -588,7 +624,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return []
         if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qml.apply(self) for _ in range(z)]
+                return [qp.apply(self) for _ in range(z)]
             return [copy.copy(self) for _ in range(z)]
         raise PowUndefinedError
 
@@ -639,13 +675,13 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __add__(self, other: Union["Operator2", TensorLike]) -> "Operator2":
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator2):
-            return qml.sum(self, other, lazy=False)
+            return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if math.allequal(other, 0):
                 return self
-            return qml.sum(
+            return qp.sum(
                 self,
-                qml.s_prod(scalar=other, operator=qml.Identity(self.wires), lazy=False),
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
                 lazy=False,
             )
         return NotImplemented
@@ -655,7 +691,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __mul__(self, other: Callable | TensorLike) -> "Operator2":
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, TensorLike):
-            return qml.s_prod(scalar=other, operator=self, lazy=False)
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
     def __truediv__(self, other: TensorLike):
@@ -668,12 +704,12 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __matmul__(self, other: "Operator2") -> "Operator2":
         """The product operation between Operator objects."""
-        return qml.prod(self, other, lazy=False) if isinstance(other, Operator2) else NotImplemented
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator2) else NotImplemented
 
     def __sub__(self, other: Union["Operator2", TensorLike]) -> "Operator2":
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator2):
-            return self + qml.s_prod(-1, other, lazy=False)
+            return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (math.multiply(-1, other))
         return NotImplemented
@@ -684,12 +720,12 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.s_prod(scalar=-1, operator=self, lazy=False)
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other: TensorLike) -> "Operator2":
         r"""The power operation of an Operator2 object."""
         if isinstance(other, TensorLike):
-            return qml.pow(self, z=other)
+            return qp.pow(self, z=other)
         return NotImplemented
 
     def _flatten(self) -> FlatPytree:
@@ -787,7 +823,7 @@ class Operation2(Operator2):
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
             try:
-                gen = qml.generator(self, format="observable")
+                gen = qp.generator(self, format="observable")
             except GeneratorUndefinedError as e:
                 raise ParameterFrequenciesUndefinedError(
                     f"Operation {self.name} does not have parameter frequencies defined."
@@ -797,10 +833,10 @@ class Operation2(Operator2):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(gen, k=2 ** len(self.wires))
+                eigvals = qp.eigvals(gen, k=2 ** len(self.wires))
 
             eigvals = tuple(np.round(eigvals, 8))
-            return [qml.gradients.eigvals_to_frequencies(eigvals)]
+            return [qp.gradients.eigvals_to_frequencies(eigvals)]
 
         raise ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
@@ -845,13 +881,11 @@ class StatePrepBase2(Operation2):
 
 def operation_derivative(operation: Operation2) -> TensorLike:
     r"""Calculate the derivative of an operation."""
-    generator = qml.matrix(
-        qml.generator(operation, format="observable"), wire_order=operation.wires
-    )
+    generator = qp.matrix(qp.generator(operation, format="observable"), wire_order=operation.wires)
     return 1j * generator @ operation.matrix()
 
 
-@qml.BooleanFn
+@qp.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``math.requires_grad``.

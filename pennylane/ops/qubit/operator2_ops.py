@@ -98,30 +98,30 @@ class Hadamard2(Operation2):
 H2 = Hadamard2
 
 
-def _hadamard_rz_rx_resources():
+def _hadamard2_rz_rx_resources():
     return {RZ2: 2, RX2: 1, GlobalPhase2: 1}
 
 
-@qml.decomposition.register_resources(_hadamard_rz_rx_resources)
-def _hadamard_to_rz_rx(wires: WiresLike, **__):
+@qml.decomposition.register_resources(_hadamard2_rz_rx_resources)
+def _hadamard2_to_rz_rx(wires: WiresLike, **__):
     RZ2(np.pi / 2, wires=wires)
     RX2(np.pi / 2, wires=wires)
     RZ2(np.pi / 2, wires=wires)
     GlobalPhase2(-np.pi / 2, wires=wires)
 
 
-def _hadamard_rz_ry_resources():
+def _hadamard2_rz_ry_resources():
     return {RZ2: 1, RY2: 1, GlobalPhase2: 1}
 
 
-@qml.decomposition.register_resources(_hadamard_rz_ry_resources)
-def _hadamard_to_rz_ry(wires: WiresLike, **__):
+@qml.decomposition.register_resources(_hadamard2_rz_ry_resources)
+def _hadamard2_to_rz_ry(wires: WiresLike, **__):
     RZ2(np.pi, wires=wires)
     RY2(np.pi / 2, wires=wires)
     GlobalPhase2(-np.pi / 2)
 
 
-qml.decomposition.add_decomps(Hadamard2, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+qml.decomposition.add_decomps(Hadamard2, _hadamard2_to_rz_rx, _hadamard2_to_rz_ry)
 
 
 class PauliX2(Operation2):
@@ -190,7 +190,7 @@ class PauliX2(Operation2):
         return [RX2(np.pi, wires=wires), GlobalPhase2(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliX2":
-        return X(wires=self.wires)
+        return X2(wires=self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # X = RZ2(-\pi/2) RY2(\pi) RZ2(\pi/2)
@@ -200,17 +200,17 @@ class PauliX2(Operation2):
 X2 = PauliX2
 
 
-def _paulix_to_rx_resources(*_, **__):
+def _paulix2_to_rx_resources(*_, **__):
     return {GlobalPhase2: 1, RX2: 1}
 
 
-@qml.decomposition.register_resources(_paulix_to_rx_resources)
-def _paulix_to_rx(wires: WiresLike, **__):
+@qml.decomposition.register_resources(_paulix2_to_rx_resources)
+def _paulix2_to_rx(wires: WiresLike, **__):
     RX2(np.pi, wires=wires)
     GlobalPhase2(-np.pi / 2, wires=wires)
 
 
-qml.decomposition.add_decomps(PauliX2, _paulix_to_rx)
+qml.decomposition.add_decomps(PauliX2, _paulix2_to_rx)
 
 
 class PauliY2(Operation2):
@@ -274,7 +274,7 @@ class PauliY2(Operation2):
         return [RY2(np.pi, wires=wires), GlobalPhase2(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliY2":
-        return Y(wires=self.wires)
+        return Y2(wires=self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # Y = RZ2(0) RY2(\pi) RZ2(0)
@@ -284,17 +284,17 @@ class PauliY2(Operation2):
 Y2 = PauliY2
 
 
-def _pauliy_to_ry_gp_resources(*_, **__):
+def _pauliy2_to_ry_gp_resources(*_, **__):
     return {GlobalPhase2: 1, RY2: 1}
 
 
-@qml.decomposition.register_resources(_pauliy_to_ry_gp_resources)
-def _pauliy_to_ry_gp(wires: WiresLike, **__):
+@qml.decomposition.register_resources(_pauliy2_to_ry_gp_resources)
+def _pauliy2_to_ry_gp(wires: WiresLike, **__):
     RY2(np.pi, wires=wires)
     GlobalPhase2(-np.pi / 2, wires=wires)
 
 
-qml.decomposition.add_decomps(PauliY2, _pauliy_to_ry_gp)
+qml.decomposition.add_decomps(PauliY2, _pauliy2_to_ry_gp)
 
 
 class PauliZ2(Operation2):
@@ -361,7 +361,7 @@ class PauliZ2(Operation2):
         return [PhaseShift2(np.pi, wires=wires)]
 
     def adjoint(self) -> "PauliZ2":
-        return Z(wires=self.wires)
+        return Z2(wires=self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # Z = RZ2(\pi) RY2(0) RZ2(0)
@@ -371,16 +371,16 @@ class PauliZ2(Operation2):
 Z2 = PauliZ2
 
 
-def _pauliz_to_ps_resources(*_, **__):
+def _pauliz2_to_ps_resources(*_, **__):
     return {PhaseShift2: 1}
 
 
-@qml.decomposition.register_resources(_pauliz_to_ps_resources)
-def _pauliz_to_ps(wires: WiresLike, **__):
+@qml.decomposition.register_resources(_pauliz2_to_ps_resources)
+def _pauliz2_to_ps(wires: WiresLike, **__):
     PhaseShift2(np.pi, wires=wires)
 
 
-qml.decomposition.add_decomps(PauliZ2, _pauliz_to_ps)
+qml.decomposition.add_decomps(PauliZ2, _pauliz2_to_ps)
 
 
 class CNOT2(Operation2):
@@ -461,27 +461,27 @@ class RX2(Operation2):
         return [pi_half, self.phi, -pi_half]
 
 
-def _rx_to_rot_resources(*_, **__):
+def _rx2_to_rot_resources(*_, **__):
     return {Rot2: 1}
 
 
-@qml.decomposition.register_resources(_rx_to_rot_resources)
-def _rx_to_rot(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_rx2_to_rot_resources)
+def _rx2_to_rot(phi, wires: WiresLike, **__):
     Rot2(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-def _rx_to_rz_ry_resources(*_, **__):
+def _rx2_to_rz_ry_resources(*_, **__):
     return {RZ2: 2, RY2: 1}
 
 
-@qml.decomposition.register_resources(_rx_to_rz_ry_resources)
-def _rx_to_rz_ry(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_rx2_to_rz_ry_resources)
+def _rx2_to_rz_ry(phi, wires: WiresLike, **__):
     RZ2(np.pi / 2, wires=wires)
     RY2(phi, wires=wires)
     RZ2(-np.pi / 2, wires=wires)
 
 
-qml.decomposition.add_decomps(RX2, _rx_to_rot, _rx_to_rz_ry)
+qml.decomposition.add_decomps(RX2, _rx2_to_rot, _rx2_to_rz_ry)
 
 
 class RY2(Operation2):
@@ -534,27 +534,27 @@ class RY2(Operation2):
         return [0.0, self.phi, 0.0]
 
 
-def _ry_to_rot_resources(*_, **__):
+def _ry2_to_rot_resources(*_, **__):
     return {Rot2: 1}
 
 
-@qml.decomposition.register_resources(_ry_to_rot_resources)
-def _ry_to_rot(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_ry2_to_rot_resources)
+def _ry2_to_rot(phi, wires: WiresLike, **__):
     Rot2(0, phi, 0, wires=wires)
 
 
-def _ry_to_rz_rx_resources(*_, **__):
+def _ry2_to_rz_rx_resources(*_, **__):
     return {RZ2: 2, RX2: 1}
 
 
-@qml.decomposition.register_resources(_ry_to_rz_rx_resources)
-def _ry_to_rz_rx(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_ry2_to_rz_rx_resources)
+def _ry2_to_rz_rx(phi, wires: WiresLike, **__):
     RZ2(-np.pi / 2, wires=wires)
     RX2(phi, wires=wires)
     RZ2(np.pi / 2, wires=wires)
 
 
-qml.decomposition.add_decomps(RY2, _ry_to_rot, _ry_to_rz_rx)
+qml.decomposition.add_decomps(RY2, _ry2_to_rot, _ry2_to_rz_rx)
 
 
 class RZ2(Operation2):
@@ -611,37 +611,37 @@ class RZ2(Operation2):
         return [self.phi, 0.0, 0.0]
 
 
-def _rz_to_ps_resources(*_, **__):
+def _rz2_to_ps_resources(*_, **__):
     return {PhaseShift2: 1, GlobalPhase2: 1}
 
 
-@qml.decomposition.register_resources(_rz_to_ps_resources)
-def _rz_to_ps(phi, wires: WiresLike, **_):
+@qml.decomposition.register_resources(_rz2_to_ps_resources)
+def _rz2_to_ps(phi, wires: WiresLike, **_):
     PhaseShift2(phi, wires)
     GlobalPhase2(phi / 2)
 
 
-def _rz_to_rot_resources(*_, **__):
+def _rz2_to_rot_resources(*_, **__):
     return {Rot2: 1}
 
 
-@qml.decomposition.register_resources(_rz_to_rot_resources)
-def _rz_to_rot(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_rz2_to_rot_resources)
+def _rz2_to_rot(phi, wires: WiresLike, **__):
     Rot2(0, 0, phi, wires=wires)
 
 
-def _rz_to_ry_rx_resources(*_, **__):
+def _rz2_to_ry_rx_resources(*_, **__):
     return {RY2: 2, RX2: 1}
 
 
-@qml.decomposition.register_resources(_rz_to_ry_rx_resources)
-def _rz_to_ry_rx(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_rz2_to_ry_rx_resources)
+def _rz2_to_ry_rx(phi, wires: WiresLike, **__):
     RY2(np.pi / 2, wires=wires)
     RX2(phi, wires=wires)
     RY2(-np.pi / 2, wires=wires)
 
 
-qml.decomposition.add_decomps(RZ2, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx)
+qml.decomposition.add_decomps(RZ2, _rz2_to_ps, _rz2_to_rot, _rz2_to_ry_rx)
 
 
 class PhaseShift2(Operation2):
@@ -709,17 +709,17 @@ class PhaseShift2(Operation2):
         return [self.phi, 0.0, 0.0]
 
 
-def _phaseshift_to_rz_gp_resources(*_, **__):
+def _phaseshift2_to_rz_gp_resources(*_, **__):
     return {RZ2: 1, GlobalPhase2: 1}
 
 
-@qml.decomposition.register_resources(_phaseshift_to_rz_gp_resources)
-def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_phaseshift2_to_rz_gp_resources)
+def _phaseshift2_to_rz_gp(phi, wires: WiresLike, **__):
     RZ2(phi, wires=wires)
     GlobalPhase2(-phi / 2)
 
 
-qml.decomposition.add_decomps(PhaseShift2, _phaseshift_to_rz_gp)
+qml.decomposition.add_decomps(PhaseShift2, _phaseshift2_to_rz_gp)
 
 
 class Rot2(Operation2):
@@ -797,18 +797,18 @@ class Rot2(Operation2):
         return [self.phi, self.theta, self.omega]
 
 
-def _rot_to_rz_ry_rz_resources(*_, **__):
+def _rot2_to_rz_ry_rz_resources(*_, **__):
     return {RZ2: 2, RY2: 1}
 
 
-@qml.decomposition.register_resources(_rot_to_rz_ry_rz_resources)
-def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_rot2_to_rz_ry_rz_resources)
+def _rot2_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
     RZ2(phi, wires=wires)
     RY2(theta, wires=wires)
     RZ2(omega, wires=wires)
 
 
-qml.decomposition.add_decomps(Rot2, _rot_to_rz_ry_rz)
+qml.decomposition.add_decomps(Rot2, _rot2_to_rz_ry_rz)
 
 
 class GlobalPhase2(Operation2):
@@ -966,13 +966,13 @@ class MultiRZ2(Operation2):
         return MultiRZ2(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(theta, wires):
+def _multi_rz2_decomposition_resources(theta, wires):
     num_wires = len(wires)
     return {RZ2: 1, CNOT2: 2 * (num_wires - 1)}
 
 
-@qml.decomposition.register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+@qml.decomposition.register_resources(_multi_rz2_decomposition_resources)
+def _multi_rz2_decomposition(theta: TensorLike, wires: WiresLike, **__):
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
         CNOT2(wires=(wires[i], wires[i - 1]))
@@ -986,7 +986,7 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
     _post_cnot()  # pylint: disable=no-value-for-parameter
 
 
-qml.decomposition.add_decomps(MultiRZ2, _multi_rz_decomposition)
+qml.decomposition.add_decomps(MultiRZ2, _multi_rz2_decomposition)
 
 
 class PauliRot2(Operation2):
@@ -1153,7 +1153,7 @@ class PauliRot2(Operation2):
         return [PauliRot2(self.theta * z, self.pauli_word, wires=self.wires)]
 
 
-def _pauli_rot_resources(theta, pauli_word, wires):
+def _pauli_rot2_resources(theta, pauli_word, wires):
     if set(pauli_word) == {"I"}:
         return {GlobalPhase2: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
@@ -1164,8 +1164,8 @@ def _pauli_rot_resources(theta, pauli_word, wires):
     }
 
 
-@qml.decomposition.register_resources(_pauli_rot_resources)
-def _pauli_rot_decomposition(theta: TensorLike, pauli_word, wires: WiresLike):
+@qml.decomposition.register_resources(_pauli_rot2_resources)
+def _pauli_rot2_decomposition(theta: TensorLike, pauli_word, wires: WiresLike):
     if set(pauli_word) == {"I"}:
         GlobalPhase2(theta / 2, wires=wires[0])
         return
@@ -1189,7 +1189,7 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word, wires: WiresLike):
             RX2(-np.pi / 2, wires=[wire])
 
 
-qml.decomposition.add_decomps(PauliRot2, _pauli_rot_decomposition)
+qml.decomposition.add_decomps(PauliRot2, _pauli_rot2_decomposition)
 
 
 class MidMeasure2(Operator2):
