@@ -20,7 +20,61 @@ Tests for the ``MultiTemporaryAND`` operation.
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _check_decomposition_new
+from pennylane.ops.functions.assert_valid import _check_decomposition_new, assert_valid
+
+
+@pytest.mark.parametrize("n", [3, 4, 5, 6])
+def test_valid_decomp(n):
+    """Test that the registered decomposition rule for ``MultiTemporaryAND`` is
+    consistent with the operator and yields the correct resources."""
+
+    registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
+    target_wire = registers["target_wire"]
+    control_wires = registers["control_wires"]
+    work_wires = registers["work_wires"]
+
+    op = qp.MultiTemporaryAND(
+        control_wires=control_wires,
+        target_wire=target_wire,
+        control_values=None,
+        work_wires=work_wires,
+        work_wire_type="zeroed",
+    )
+    _check_decomposition_new(op)
+
+
+@pytest.mark.parametrize("n", [3, 4, 5, 6])
+def test_assert_valid(n):
+    """Test that ``MultiTemporaryAND`` satisfies the standard operator validation
+    checks (``_flatten``/``_unflatten``, pickling, wire mapping, decomposition, etc.)."""
+    registers = qp.registers({"target_wire": 1, "control_wires": n})
+    target_wire = registers["target_wire"]
+    control_wires = registers["control_wires"]
+
+    op = qp.MultiTemporaryAND(
+        control_wires=control_wires,
+        target_wire=target_wire,
+        control_values=None,
+    )
+    assert_valid(op)
+
+
+@pytest.mark.parametrize("n", [3, 4, 5, 6])
+def test_assert_valid_with_work_wires(n):
+    """Same as ``test_assert_valid`` but with some zeroed work wires provided"""
+    registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
+    target_wire = registers["target_wire"]
+    control_wires = registers["control_wires"]
+    work_wires = registers["work_wires"]
+
+    op = qp.MultiTemporaryAND(
+        control_wires=control_wires,
+        target_wire=target_wire,
+        control_values=None,
+        work_wires=work_wires,
+        work_wire_type="zeroed",
+    )
+    assert_valid(op)
 
 
 class TestConstruction:
@@ -88,60 +142,6 @@ class TestConstruction:
             repr(op2)
             == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[False, True])"
         )
-
-
-@pytest.mark.parametrize("n", [3, 4, 5, 6])
-def test_valid_decomp(n):
-    """Test that the registered decomposition rule for ``MultiTemporaryAND`` is
-    consistent with the operator and yields the correct resources."""
-
-    registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
-    work_wires = registers["work_wires"]
-
-    op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
-        control_values=None,
-        work_wires=work_wires,
-        work_wire_type="zeroed",
-    )
-    _check_decomposition_new(op)
-
-
-@pytest.mark.parametrize("n", [3, 4, 5, 6])
-def test_assert_valid(n):
-    """Test that ``MultiTemporaryAND`` satisfies the standard operator validation
-    checks (``_flatten``/``_unflatten``, pickling, wire mapping, decomposition, etc.)."""
-    registers = qp.registers({"target_wire": 1, "control_wires": n})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
-
-    op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
-        control_values=None,
-    )
-    qp.ops.functions.assert_valid(op)
-
-
-@pytest.mark.parametrize("n", [3, 4, 5, 6])
-def test_assert_valid_with_work_wires(n):
-    """Same as ``test_assert_valid`` but with some zeroed work wires provided"""
-    registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
-    work_wires = registers["work_wires"]
-
-    op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
-        control_values=None,
-        work_wires=work_wires,
-        work_wire_type="zeroed",
-    )
-    qp.ops.functions.assert_valid(op)
 
 
 class TestSerialization:
