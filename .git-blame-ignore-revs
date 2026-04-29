@@ -8,6 +8,26 @@ c73e73b19c8d38e63b41ca4c8039d9f430c55da1
 a565cd69ad025796923f0354d084f9ca7267ab18
 
 # Migration from qml alias to new qp alias
+#   https://github.com/PennyLaneAI/pennylane/pull/9310
+#   https://github.com/PennyLaneAI/pennylane/pull/9317
+#   https://github.com/PennyLaneAI/pennylane/pull/9320
+#   https://github.com/PennyLaneAI/pennylane/pull/9315
+#   https://github.com/PennyLaneAI/pennylane/pull/9312
+#   https://github.com/PennyLaneAI/pennylane/pull/9314
+#   https://github.com/PennyLaneAI/pennylane/pull/9319
+#   https://github.com/PennyLaneAI/pennylane/pull/9313
+#   https://github.com/PennyLaneAI/pennylane/pull/9326
+#   https://github.com/PennyLaneAI/pennylane/pull/9331
+#   https://github.com/PennyLaneAI/pennylane/pull/9329
+#   https://github.com/PennyLaneAI/pennylane/pull/9280
+#   https://github.com/PennyLaneAI/pennylane/pull/9327
+#   https://github.com/PennyLaneAI/pennylane/pull/9330
+#   https://github.com/PennyLaneAI/pennylane/pull/9325
+#   https://github.com/PennyLaneAI/pennylane/pull/9358
+#   https://github.com/PennyLaneAI/pennylane/pull/9281
+#   https://github.com/PennyLaneAI/pennylane/pull/9360
+#   https://github.com/PennyLaneAI/pennylane/pull/9376
+#   https://github.com/PennyLaneAI/pennylane/pull/9375
 6a08713922d3aa69c18fd49f92190c4663676543
 82b1345f7cb6909b7f8dcdd74a3662697f9c7879
 9c7b57f5918d7996b327c37a5b4242057afdff19
