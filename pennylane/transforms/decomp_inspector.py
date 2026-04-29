@@ -57,7 +57,7 @@ class _DecompInGraphInfo(_DecompInfo):
             return result
         if not self.is_reachable:
             return result + "\n" + self.missing_ops
-        return result + "\n" + self.basis_resources
+        return result + "\n" + self.gate_set_resources
 
     @property
     def is_reachable(self) -> bool:
@@ -65,12 +65,12 @@ class _DecompInGraphInfo(_DecompInfo):
         return self._decomp_node_idx in self._solution._visitor.distances
 
     @property
-    def basis_resources(self) -> str:
+    def gate_set_resources(self) -> str:
         """The gate count and weighted cost in terms of the target gate set."""
         assert self.is_reachable
-        basis_resource = self._solution._visitor.distances[self._decomp_node_idx]
-        gate_counts = basis_resource.gate_counts
-        weighted_cost = basis_resource.weighted_cost
+        gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
+        gate_counts = gate_set_resource.gate_counts
+        weighted_cost = gate_set_resource.weighted_cost
         return f"Full Expansion Gates: {gate_counts}\nWeighted Cost: {weighted_cost}"
 
     @property
