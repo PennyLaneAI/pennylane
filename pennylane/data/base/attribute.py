@@ -128,11 +128,14 @@ class AttributeInfo(MutableMapping):
 
         key = self.bind_key(__name)
         self.attrs_bind[key] = __value
+        normalized_keys = any(k != key for k in keys)
         for k in keys:
             if k != key:
                 self.attrs_bind.pop(k, None)
         if not keys:
             self._update_len(1)
+        elif normalized_keys:
+            self._update_len(0)
 
     def __getitem__(self, __name: str) -> Any:
         for key in self._bind_keys(__name):

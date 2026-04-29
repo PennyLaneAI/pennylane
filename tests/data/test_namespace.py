@@ -17,8 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.data import DatasetList, DatasetPyTree, DatasetScalar
+from pennylane.data import Dataset, DatasetList, DatasetPyTree, DatasetScalar, attribute
 from pennylane.data.attributes.serialization import _get_typename_type
+from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo
 from pennylane.pytrees.pytrees import get_typename
 
@@ -43,6 +44,80 @@ def _assert_namespace(attrs, *names):
     for name in names:
         assert f"qml.data.{name}" not in attrs
         assert f"qp.data.{name}" in attrs
+
+
+def _assert_legacy_namespace(attrs, *names):
+    assert "qp.__data_len__" not in attrs
+    for name in names:
+        assert f"qp.data.{name}" not in attrs
+        assert f"qml.data.{name}" in attrs
+
+
+def _legacy_h2_dataset_bind():
+    """Create a hardcoded H2-like dataset using the legacy namespace."""
+    bind = hdf5.create_group()
+    bind.attrs["qml.data.type_id"] = "dataset"
+    bind.attrs["qml.data.data_name"] = "qchem"
+    bind.attrs["qml.data.identifiers"] = np.array(["molname", "basis", "bondlength"], dtype=object)
+    bind.attrs["qml.__data_len__"] = 3
+
+    bind["molname"] = "H2"
+    bind["molname"].attrs["qml.data.type_id"] = "string"
+    bind["molname"].attrs["qml.data.py_type"] = "str"
+    bind["molname"].attrs["qml.data.doc"] = "Name of molecule"
+    bind["molname"].attrs["qml.__data_len__"] = 3
+
+    bind["basis"] = "STO-3G"
+    bind["basis"].attrs["qml.data.type_id"] = "string"
+    bind["basis"].attrs["qml.data.py_type"] = "str"
+    bind["basis"].attrs["qml.data.doc"] = "Basis set for molecule"
+    bind["basis"].attrs["qml.__data_len__"] = 3
+
+    bind["bondlength"] = "0.742"
+    bind["bondlength"].attrs["qml.data.type_id"] = "string"
+    bind["bondlength"].attrs["qml.data.py_type"] = "str"
+    bind["bondlength"].attrs["qml.data.doc"] = "Bond length of molecule"
+    bind["bondlength"].attrs["qml.__data_len__"] = 3
+
+    bind["hf_state"] = np.array([1, 1, 0, 0])
+    bind["hf_state"].attrs["qml.data.type_id"] = "array"
+    bind["hf_state"].attrs["qml.data.py_type"] = "numpy.ndarray"
+    bind["hf_state"].attrs["qml.data.doc"] = "Hartree-Fock state"
+    bind["hf_state"].attrs["qml.data.array_interface"] = "numpy"
+    bind["hf_state"].attrs["qml.__data_len__"] = 4
+
+    bind["fci_energy"] = -1.136189454088
+    bind["fci_energy"].attrs["qml.data.type_id"] = "scalar"
+    bind["fci_energy"].attrs["qml.data.py_type"] = "float"
+    bind["fci_energy"].attrs["qml.data.doc"] = "Ground state energy"
+    bind["fci_energy"].attrs["qml.__data_len__"] = 3
+
+    hamiltonian = bind.create_group("hamiltonian")
+    hamiltonian.attrs["qml.data.type_id"] = "operator"
+    hamiltonian.attrs["qml.data.py_type"] = "pennylane.ops.qubit.hamiltonian.Hamiltonian"
+    hamiltonian.attrs["qml.data.doc"] = "Hamiltonian of the system in the Pauli basis"
+    hamiltonian.attrs["qml.__data_len__"] = 3
+    hamiltonian["op_class_names"] = ["LinearCombination"]
+    hamiltonian["op_wire_labels"] = ["null"]
+
+    terms = hamiltonian.create_group("op_0")
+    terms["hamiltonian_coeffs"] = np.array([1.0, -0.5])
+    terms["op_class_names"] = ["Prod", "Prod"]
+    terms["op_wire_labels"] = ["null", "null"]
+
+    first_product = terms.create_group("op_0")
+    first_product["op_class_names"] = ["PauliZ", "PauliZ"]
+    first_product["op_wire_labels"] = ["[0]", "[1]"]
+    first_product["op_0"] = hdf5.h5py.Empty("f")
+    first_product["op_1"] = hdf5.h5py.Empty("f")
+
+    second_product = terms.create_group("op_1")
+    second_product["op_class_names"] = ["PauliX", "PauliX"]
+    second_product["op_wire_labels"] = ["[0]", "[1]"]
+    second_product["op_0"] = hdf5.h5py.Empty("f")
+    second_product["op_1"] = hdf5.h5py.Empty("f")
+
+    return bind
 
 
 def test_attribute_info_reads_legacy_namespace():
@@ -241,6 +316,52 @@ def test_nested_attribute_reads_legacy_child_metadata():
     assert loaded_attr.copy_value() == [1, "two"]
     assert loaded_attr[0] == 1
     assert loaded_attr[1] == "two"
+
+
+def test_legacy_namespace_qchem_dataset_read_update_and_copy():
+    """Test a hardcoded H2 qchem dataset with legacy namespaced metadata."""
+    loaded = Dataset(_legacy_h2_dataset_bind())
+    _assert_legacy_namespace(loaded.bind.attrs, "type_id", "data_name", "identifiers")
+    assert loaded.data_name == "qchem"
+    assert loaded.identifiers == {
+        "molname": "H2",
+        "basis": "STO-3G",
+        "bondlength": "0.742",
+    }
+    assert np.array_equal(loaded.hf_state, np.array([1, 1, 0, 0]))
+    assert loaded.fci_energy == -1.136189454088
+    qp.assert_equal(
+        loaded.hamiltonian,
+        qp.Hamiltonian([1.0, -0.5], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.X(1)]),
+    )
+    assert loaded.attr_info["hf_state"].doc == "Hartree-Fock state"
+
+    loaded.attr_info["hf_state"].doc = "updated Hartree-Fock state"
+    loaded.vqe_energy = attribute(-1.136, doc="VQE ground-state energy")
+
+    assert loaded.attr_info["hf_state"].doc == "updated Hartree-Fock state"
+    assert loaded.vqe_energy == -1.136
+    _assert_namespace(loaded.bind["hf_state"].attrs, "doc")
+    _assert_namespace(loaded.bind["vqe_energy"].attrs, "type_id", "py_type", "doc")
+
+    copied = Dataset()
+    loaded.write(copied, attributes=["molname", "hf_state", "vqe_energy"])
+
+    _assert_namespace(copied.bind.attrs, "type_id", "data_name", "identifiers")
+    assert set(copied.list_attributes()) == {
+        "molname",
+        "basis",
+        "bondlength",
+        "hf_state",
+        "vqe_energy",
+    }
+    assert copied.molname == "H2"
+    assert np.array_equal(copied.hf_state, np.array([1, 1, 0, 0]))
+    assert copied.attr_info["hf_state"].doc == "updated Hartree-Fock state"
+    assert copied.vqe_energy == -1.136
+
+    copied.attr_info["molname"].doc = "molecule name"
+    _assert_namespace(copied.bind["molname"].attrs, "doc")
 
 
 def test_dataset_pytree_loads_alternate_namespace_treedef():
