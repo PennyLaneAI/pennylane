@@ -20,7 +20,7 @@ operations and observables.
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable, Sequence
 from functools import lru_cache
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal, Optional, Union
@@ -224,10 +224,9 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     batch_size = None
 
     # NOTE: These should all be defined as ClassVars
-    num_wires: ClassVar[int | None] = None
+    num_wires: ClassVar[tuple[int, ...]]
     num_params: ClassVar[int] = 0
     ndim_params: ClassVar[tuple] = ()
-    can_be_aot_compiled: ClassVar[bool] = False
 
     # Will be defined by the instance lazily
     _parameters: tuple | None = None
@@ -248,15 +247,18 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     _bound_args: BoundArguments
 
     def __init__(self, *args, **kwargs):
-        self._pauli_rep: qp.pauli.PauliSentence | None = (
-            None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
-        )
+        from pennylane.templates.core import AbstractArray
+
+        self._pauli_rep: qp.pauli.PauliSentence | None = None
+
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
         for n in self.wire_argnames:
             w = self._bound_args.arguments[n]
-            if capture.enabled():
+            if isinstance(w, AbstractArray):
+                val = w
+            elif capture.enabled():
                 if math.is_abstract(w) or isinstance(w, jax.core.ShapedArray):
                     val = w
                 else:
@@ -265,6 +267,13 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 val = Wires(w)
 
             self._bound_args.arguments[n] = val
+
+        self._is_compressed = True
+        if all(
+            not isinstance(self._bound_args.arguments[k], AbstractArray)
+            for k in self.dyn_argnames + self.wire_argnames
+        ):
+            self._is_compressed = False
 
         self.queue()
 
@@ -278,18 +287,22 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         def_argnames = cls.static_argnames + cls.wire_argnames
         dyn_argnames = []
 
-        if (
-            len(cls.static_argnames) == 0
-            and cls.num_wires is not None
-            and (cls.num_params == 0 or all(ndim == 0 for ndim in cls.ndim_params))
-        ):
-            cls.can_be_aot_compiled = True
-
         for p in param_names:
             if p not in def_argnames:
                 dyn_argnames.append(p)
 
         cls.dyn_argnames = tuple(dyn_argnames)
+
+        if not hasattr(cls, "num_wires"):
+            cls.num_wires = tuple(None for _ in cls.wire_argnames)
+        elif len(cls.wire_argnames) == 1 and not isinstance(cls.num_wires, Sequence):
+            cls.num_wires = (cls.num_wires,)
+
+        if not hasattr(cls, "ndim_params"):
+            cls.ndim_params = tuple(None for _ in cls.dyn_argnames)
+
+        if not hasattr(cls, "num_params"):
+            cls.ndim_params = len(cls.dyn_argnames)
 
     @classproperty
     def resource_keys(cls):
@@ -300,11 +313,8 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         from pennylane.templates.core import AbstractArray
 
         resource_params = {s: self._bound_args.arguments[s] for s in self.static_argnames}
-        if self.num_wires is not None and self.wire_argnames == ("wires",):
-            resource_params["wires"] = AbstractArray((self.num_wires,), int)
-        else:
-            for w in self.wire_argnames:
-                resource_params[w] = AbstractArray((len(self._bound_args.arguments[w]),), int)
+        for w in self.wire_argnames:
+            resource_params[w] = AbstractArray((len(self._bound_args.arguments[w]),), int)
         for d in self.dyn_argnames:
             d_arg = self._bound_args.arguments[d]
             resource_params[d] = AbstractArray(math.shape(d_arg), math.get_dtype_name(d_arg))
@@ -316,6 +326,51 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return cls
 
     params = resource_params
+
+    def compress(self) -> "Operator2":
+        if self.is_compressed:
+            return self
+
+        compressed_op = type.__call__(type(self), **self.resource_params)
+        compressed_op.is_compressed = True
+        return compressed_op
+
+    @property
+    def is_compressed(self) -> bool:
+        return self._is_compressed
+
+    @is_compressed.setter
+    def is_compressed(self, val: bool):
+        self._is_compressed = val
+
+    @classmethod
+    def compress_from_cls(cls, *args, **kwargs):
+        from pennylane.templates.core import AbstractArray
+
+        if args or kwargs:
+            op = type.__call__(cls, *args, **kwargs)
+            return op.compress()
+
+        if any(cls._sig.parameters[s].default == Signature.empty for s in cls.static_argnames):
+            raise ValueError(
+                "Cannot create compressed op without known values for static arguments."
+            )
+        if any(d is None or d != 0 for d in cls.ndim_params):
+            raise ValueError("Cannot create compressed op without known parameter dimensions.")
+        if any(w is None for w in cls.num_wires):
+            raise ValueError("Cannot create compressed op without known wire sizes.")
+
+        args_dict = {}
+        for d in cls.dyn_argnames:
+            args_dict[d] = AbstractArray((), float)
+        for w, n in zip(cls.wire_argnames, cls.num_wires, strict=True):
+            args_dict[w] = AbstractArray((n,), int)
+        for s in cls.static_argnames:
+            args_dict[s] = cls._sig.parameters[s].default
+
+        op = type.__call__(cls, **args_dict)
+        op.is_compressed = True
+        return op
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):

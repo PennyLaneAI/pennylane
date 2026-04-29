@@ -297,9 +297,9 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 
     """
     if isinstance(op_type, type) and issubclass(op_type, Operator2):
-        return op_type(**params)
+        return op_type.compress_from_cls(**params)
     if isinstance(op_type, Operator2):
-        return op_type
+        return op_type.compress()
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -579,8 +579,11 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
 
 def auto_wrap(op_type):
     """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
+    if isinstance(op_type, CompressedResourceOp) or (
+        isinstance(op_type, Operator2) and op_type.is_compressed
+    ):
         return op_type
+
     if not issubclass(op_type, (Operator, Operator2)):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "

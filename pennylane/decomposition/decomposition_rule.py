@@ -453,12 +453,7 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                if (isinstance(op, type) and issubclass(op, Operator2)) or isinstance(
-                    op, Operator2
-                ):
-                    key = op
-                else:
-                    key = auto_wrap(op)
+                key = auto_wrap(op)
                 gate_counter.update({key: count})
         return Resources(dict(gate_counter))
 
