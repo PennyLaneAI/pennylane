@@ -91,8 +91,8 @@ class TwoQubitFFT(Operator):
 
 
 class FFFT(Operator):
-    """Performs a Fast Fermionic Fourier Transform (FFFT) operation. Assumes
-    Fermions are encoded using a Jordan Wigner Transformation (JWT).
+    """Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
+    the fermions are encoded using the Jordan-Wigner transformation.
 
     The Fermionic Fourier transform over a number of wires n (a power of two)
     is decomposed recursively into two parallel Fourier transforms over n/2
@@ -114,32 +114,28 @@ class FFFT(Operator):
 
 
     This is a transform between real and momentum space. The momentum mode is
-    :math:``k``, wave number :math:``2 \pi k / n``. :math:``x`` is a site targeted
-    by an operator such as the Fermionic creation operator :math:``c_{x}^\dagger``.
+    :math:`k`, wave number :math:`2 \pi k / n`. :math:`x` is a site targeted
+    by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
 
     A phase-delay implemented using Pauli Z gates raised to various powers is
-    necessary to take into account the twiddle-factor :math:``e^{\frac{2 \pi i k}{n}}``.
+    necessary to take into account the twiddle-factor :math:`e^{\frac{2 \pi i k}{n}}`.
 
-    Iterating the decomposition :math:``k`` times realizes the full Fourier transform over
-    :math:``2^{k}`` sites.
+    Iterating the decomposition :math:`k` times realizes the full Fourier transform over
+    :math:`2^{k}` sites.
 
     **Example**
 
-    i.e. for 4 sites:
+    Consider the FFFT operation performed on 4 wires:
 
     .. code-block:: python
+        import pennylane as qp
 
-        from pennylane.templates.subroutines.ffft import FFFT
-        from pennylane import device, state
+        dev = qp.device("default.qubit")
 
-        dev = device("default.qubit")
-
-        wires = (0, 1, 2, 3)
-
-        @qnode(dev)
-        def circuit(wires):
-            FFFT(wires)
-            return state()
+        @qp.qnode(dev)
+        def circuit():
+            qp.FFFT(wires=(0, 1, 2, 3))
+            return qp.state()
 
 
     >>> print(qml.draw(circuit, level="device")(wires))
