@@ -20,7 +20,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math
+from pennylane import math, while_loop
 from pennylane.ops import FermionicSWAP
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
@@ -213,17 +213,24 @@ def _permute_and_apply(order, wires, operator):
     second_copy = copy.copy(second)
 
     # permute into adjacency
-    while second > first + 1:
-        second -= 1
-        FermionicSWAP(np.pi, Wires(order[second], order[second + 1]))
+    @while_loop(lambda s: s > first + 1)
+    def permute_in(s):
+        s -= 1
+        FermionicSWAP(np.pi, Wires(order[s], order[s + 1]))
+        return s
+
+    second = permute_in(second)  # pylint: disable=no-value-for-parameter
 
     # apply the operator
     operator(Wires(order[first], order[first + 1]))
 
     # permute back
-    while second < second_copy - 1:
-        second += 1
-        FermionicSWAP(np.pi, Wires(order[second], order[second + 1]))
+    @while_loop(lambda s: s < second_copy - 1)
+    def permute_out(s):
+        s += 1
+        FermionicSWAP(np.pi, Wires(order[s], order[s + 1]))
+        return s
 
+    permute_out(second)  # pylint: disable=no-value-for-parameter
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
