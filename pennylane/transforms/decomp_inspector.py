@@ -258,7 +258,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                 1: ──────────────╰MultiRZ(0.50)────────────────┤
     First Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, MidMeasure: 2, RX: 8}
+    Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
     Weighted Cost: 120.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -271,12 +271,14 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
     First Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-    Full Expansion Gates: {MidMeasure: 4, GlobalPhase: 76, RY: 24, RZ: 80, CNOT: 72, RX: 16}
+    Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
     Weighted Cost: 196.0
 
     In addition to the operators at the top level of the circuit, we can also inspect the graph
     for how intermediate operators (such as the single-controlled ``MultiRZ`` produced in the
-    decomposition of the controlled ``MultiRZ``) are decomposed:
+    decomposition of the controlled ``MultiRZ``) are decomposed (notice how ``num_work_wires``
+    is set to 1 here, since decomposition of the top-level operator already used one of the work
+    wires in the budget, so this inner operator has one fewer work wire available to it):
 
     >>> print(inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1))
     Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
@@ -461,7 +463,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                     6: ─────────────────╰X─────────────────────┤
         First Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
-        Full Expansion Gates: {MidMeasure: 2, GlobalPhase: 37, RY: 12, RZ: 29, CNOT: 14, RX: 8}
+        Full Expansion Gates: {GlobalPhase: 37, RX: 8, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
