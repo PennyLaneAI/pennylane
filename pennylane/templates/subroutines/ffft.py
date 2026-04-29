@@ -17,12 +17,43 @@ by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
 from collections import defaultdict
 
-from pennylane import math
+import numpy as np
+
+from pennylane import math, Hadamard, CNOT
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
 from pennylane.wires import Wires, WiresLike
+
+
+class FSWAP(Operator):
+    num_params=0
+    num_wires=2
+
+    def __init__(self, wires: WiresLike):
+        self.exponent = 1
+        super().__init__(wires)
+
+    def compute_decomposition(self, wires):
+        return [
+            Hadamard(wires[0]),
+            CNOT(wires),
+            CNOT(wires[::-1]),
+            Hadamard(wires[1])
+        ]
+
+    def compute_matrix(self):
+        p = math.exp(1j * np.pi)
+        g = math.exp((1j * np.pi) / 2)
+        s = math.sin(np.pi / 2)
+        c = math.cos(np.pi / 2)
+        return math.array([
+            [1, 0, 0, 0],
+            [0, g * c, -1j * g * s, 0],
+            [0, -1j * g * s, g * c, 0],
+            [0, 0, 0, p]
+        ])
 
 
 class TwoQubitFFT(Operator):
