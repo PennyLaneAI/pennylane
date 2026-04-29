@@ -162,7 +162,7 @@ class TestInspectDecompGraph:
             Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 1 (name: flip_zero_ctrl_values(_decompose_mcx_with_no_worker))
+            Decomposition 1 (name: no_workers)
             0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤  
             1: ────├●───────────────────├●──────────────────────├●──────────────────┤  
             2: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤  
@@ -174,7 +174,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RY: 10, RZ: 31, RX: 4}
             Weighted Cost: 69.0
 
-            CHOSEN: Decomposition 2 (name: flip_zero_ctrl_values(_mcx_one_zeroed_worker))
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤  
                         0: ───────────├●─│───●┤─────────────┤  
                         1: ───────────╰●─│───●╯─────────────┤  
@@ -182,10 +182,10 @@ class TestInspectDecompGraph:
                         3: ──────────────╰X─────────────────┤  
             First Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {MidMeasure: 1, GlobalPhase: 23, RY: 7, RZ: 19, CNOT: 10, RX: 4}
+            Full Expansion Gates: {GlobalPhase: 23, RX: 4, MidMeasure: 1, RY: 7, RZ: 19, CNOT: 10}
             Weighted Cost: 41.0
 
-            Decomposition 3 (name: flip_zero_ctrl_values(_mcx_one_borrowed_worker))
+            Decomposition 3 (name: one_borrowed_worker)
             <DynamicWire>: ──Allocate─╭X─╭●─╭X─╭●──Deallocate─┤  
                         0: ───────────├●─│──├●─│──────────────┤  
                         1: ───────────╰●─│──╰●─│──────────────┤  
@@ -196,25 +196,25 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RZ: 36, RY: 8}
             Weighted Cost: 68.0
 
-            Decomposition 4 (name: flip_zero_ctrl_values(_mcx_one_worker))
+            Decomposition 4 (name: one_explicit_worker)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 5 (name: flip_zero_ctrl_values(_mcx_two_zeroed_workers))
+            Decomposition 5 (name: two_zeroed_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 6 (name: flip_zero_ctrl_values(_mcx_two_borrowed_workers))
+            Decomposition 6 (name: two_borrowed_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 7 (name: flip_zero_ctrl_values(_mcx_two_workers))
+            Decomposition 7 (name: two_explicit_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 8 (name: flip_zero_ctrl_values(_mcx_many_zeroed_workers))
+            Decomposition 8 (name: many_zeroed_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 9 (name: flip_zero_ctrl_values(_mcx_many_borrowed_workers))
+            Decomposition 9 (name: many_borrowed_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 10 (name: flip_zero_ctrl_values(_mcx_many_workers))
+            Decomposition 10 (name: many_explicit_workers)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
