@@ -103,14 +103,14 @@ class FFFT(Operator):
     """Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
     the fermions are encoded using the Jordan-Wigner transformation.
 
-    The Fermionic Fourier transform over a number of wires n (a power of two)
-    is decomposed recursively into two parallel Fourier transforms over n/2
-    sites in each stack frame. These parallel FTs are followed by a series of
+    The FFFT over a number of wires :math:`n` (a power of two)
+    is decomposed recursively into two parallel FFFTs over :math:`\tfrac{n}{2}`
+    sites in each iteration of the recursion. These parallel Fourier transforms are followed by a series of
     2-site linear gates.
 
     Args:
 
-        wires (WiresLike): The wires to apply the FFFT to. Must be a power of 2 greater than or equal to 2.
+        wires (WiresLike): The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or equal to 2.
 
     Raises:
 
@@ -147,11 +147,14 @@ class FFFT(Operator):
             return qp.state()
 
 
-    >>> print(qml.draw(circuit, level="device")(wires))
+    >>> print(qp.draw(circuit, level="device")())
     0: ─╭TwoQubitFFT───────╭TwoQubitFFT──────────────┤  State
     1: ─╰TwoQubitFFT───────│────────────╭TwoQubitFFT─┤  State
     2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰TwoQubitFFT─│────────────┤  State
-    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State"""
+    3: ─╰TwoQubitFFT──Z⁰⋅⁵──────────────╰TwoQubitFFT─┤  State
+    
+    The FFFT operation is decomposed recursively into :class:`~TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
+    """
 
     resource_keys = {"num_wires"}
 
