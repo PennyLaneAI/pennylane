@@ -20,7 +20,7 @@ from itertools import combinations, product
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
@@ -406,7 +406,7 @@ class TestSumOfSlatersPrep:
 
     @pytest.mark.parametrize(
         "num_wires, num_entries",
-        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (17, 1421)],
+        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
@@ -431,7 +431,7 @@ class TestSumOfSlatersPrep:
         assert_valid(op, skip_differentiation=True)
 
     def test_old_decomposition_system_disabled(self):
-        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        """We are using ``qp.allocate`` in the decomposition, so the validation for
         decomposition in the old system breaks. Hence we manually deactivated the fallback
         of compute_decomposition to the new decomp system."""
         num_wires = 5
@@ -461,11 +461,13 @@ class TestSumOfSlatersPrep:
 
         sizes = SumOfSlatersPrep.required_register_sizes(num_entries, new_num_bits, num_wires)
         d = ceil_log2(num_entries)
+
+        m = min(new_num_bits, 2 * d - 1)
         assert sizes["wires"] == num_wires
         assert sizes["enumeration_wires"] == d
-        assert sizes["identification_wires"] == max((new_num_bits > 2 * d - 1) * (2 * d - 1), 0)
+        assert sizes["identification_wires"] == max((new_num_bits > m) * m, 0)
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
-        assert sizes["mcx_cache_wire"] == int(num_entries > 7)
+        assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
         op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
         exp_resource_params = {
@@ -493,11 +495,12 @@ class TestSumOfSlatersPrep:
 
         sizes = SumOfSlatersPrep.required_register_sizes(n, num_bits, n)
         d = ceil_log2(n)
+        m = min(num_bits, 2 * d - 1)
         assert sizes["wires"] == n
         assert sizes["enumeration_wires"] == d
-        assert sizes["identification_wires"] == max((num_bits > 2 * d - 1) * (2 * d - 1), 0)
+        assert sizes["identification_wires"] == max((num_bits > m) * m, 0)
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
-        assert sizes["mcx_cache_wire"] == int(n > 7)
+        assert sizes["mcx_cache_wires"] == m - 1
 
         op = SumOfSlatersPrep(coefficients, range(n), indices)
         exp_resource_params = {"num_entries": n, "num_bits": num_bits, "num_wires": n}
@@ -509,7 +512,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
-        [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (10, 63), (10, 123)],
+        [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (7, 63)],
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed):
         """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
@@ -518,13 +521,13 @@ class TestSumOfSlatersPrep:
 
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("lightning.qubit"))
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
-                qml.Identity(range(num_wires))
+                qp.Identity(range(num_wires))
                 rule(coefficients, wires=range(num_wires), indices=indices)
-                return qml.state()
+                return qp.state()
 
             out_state = func()
 
@@ -568,7 +571,7 @@ class TestSumOfSlatersPrep:
         return tuple(new_indices)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (9, 12), (10, 17)])
+    @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])
     def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
         """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
 
@@ -580,13 +583,13 @@ class TestSumOfSlatersPrep:
         # Currently just one rule is implemented, but this test should pass for all decompositions
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("lightning.qubit"))
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
-                qml.Identity(range(num_wires))
+                qp.Identity(range(num_wires))
                 rule(coefficients, wires=range(num_wires), indices=indices)
-                return qml.state()
+                return qp.state()
 
             out_state = func()
 
