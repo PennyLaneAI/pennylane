@@ -296,7 +296,7 @@ class MultiTemporaryAND(Operation):
         )
 
 
-# ----- decomposition rule ----------------------------------------------------------
+# Decomposition rule:
 
 
 def _multi_temporary_and_resources(num_control_wires, **__):
@@ -307,7 +307,7 @@ def _multi_temporary_and_resources(num_control_wires, **__):
 
 @register_condition(
     lambda num_control_wires, num_work_wires, **_: (
-        num_control_wires == 1 or num_work_wires >= num_control_wires - 1
+        num_control_wires == 1 or num_work_wires >= num_control_wires - 2
     )
 )
 @register_resources(_multi_temporary_and_resources)
