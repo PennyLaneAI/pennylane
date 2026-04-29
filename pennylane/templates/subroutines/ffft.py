@@ -20,9 +20,9 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math, while_loop
+from pennylane import math
 from pennylane.ops import FermionicSWAP
-from pennylane.control_flow import for_loop
+from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import PauliZ, pow
