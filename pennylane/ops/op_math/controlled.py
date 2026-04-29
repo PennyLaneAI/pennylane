@@ -568,10 +568,10 @@ class Controlled(SymbolicOp):
     # pylint: disable=unused-argument
     def __new__(cls, *args, **kwargs):
         """
-        Choose the concrete class to allocate for a controlled operator.
+            Choose the concrete class to allocate for a controlled operator.
 
-    Operation bases should be allocated as ``ControlledOp`` instances, while
-    non-Operation operator bases should remain plain ``Controlled`` instances.
+        Operation bases should be allocated as ``ControlledOp`` instances, while
+        non-Operation operator bases should remain plain ``Controlled`` instances.
         """
         base = args[0] if args else kwargs.get("base")
 
