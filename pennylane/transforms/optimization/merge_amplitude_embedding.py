@@ -336,20 +336,27 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=4)
-
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=4)
 
         @qp.transforms.merge_amplitude_embedding
         @qp.qnode(device=dev)
         def circuit():
             qp.CNOT(wires = [0,1])
-            qp.AmplitudeEmbedding([0,1], wires = 2)
-            qp.AmplitudeEmbedding([0,1], wires = 3)
+            qp.AmplitudeEmbedding([0, 1], wires = 2)
+            qp.AmplitudeEmbedding([0, 1], wires = 3)
             return qp.state()
 
+    >>> print(qp.draw(circuit)())
+    0: ─╭●───┤  State
+    1: ─╰X───┤  State
+    2: ─╭|Ψ⟩─┤  State
+    3: ─╰|Ψ⟩─┤  State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])

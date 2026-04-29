@@ -39,13 +39,15 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=3)
-
-    You can apply the transform directly on a :class:`QNode`
+    You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
 
-        @undo_swaps
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=3)
+
+        @qp.transforms.undo_swaps
         @qp.qnode(device=dev)
         def circuit():
             qp.Hadamard(wires=0)
@@ -54,6 +56,11 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
             qp.SWAP(wires=[0,2])
             qp.Y(0)
             return qp.expval(qp.Z(0))
+
+    >>> print(qp.draw(circuit)())
+    0: ──Y─┤  <Z>
+    1: ──H─┤
+    2: ──X─┤
 
     The SWAP gates are removed before execution.
 

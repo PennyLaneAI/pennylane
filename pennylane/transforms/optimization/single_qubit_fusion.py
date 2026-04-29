@@ -287,11 +287,14 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=1)
 
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=1)
 
         @qp.transforms.single_qubit_fusion
         @qp.qnode(device=dev)
@@ -302,6 +305,9 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             qp.RZ(r1[0], wires=0)
             qp.RZ(r2[0], wires=0)
             return qp.expval(qp.X(0))
+
+    >>> print(qp.draw(qfunc)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+    0: ──Rot(3.57,2.09,2.05)──GlobalPhase(-1.57)─┤  <X>
 
     The single qubit gates are fused before execution.
 
