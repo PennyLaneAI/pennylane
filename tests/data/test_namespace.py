@@ -99,6 +99,23 @@ def test_attribute_info_updates_existing_legacy_key_without_duplicate():
     assert "qml.__data_len__" not in attrs
 
 
+def test_attribute_info_deduplicating_counters():
+    """Test that stale legacy length counters do not overwrite the current counter."""
+    attrs = {
+        "qp.data.type_id": "scalar",
+        "qp.data.py_type": "float",
+        "qp.__data_len__": 2,
+        "qml.__data_len__": 99,
+    }
+    info = AttributeInfo(attrs)
+
+    info["doc"] = "docs"
+
+    assert attrs["qp.__data_len__"] == 3
+    assert "qml.__data_len__" not in attrs
+    assert set(info) == {"type_id", "py_type", "doc"}
+
+
 def test_attribute_info_save_updates_legacy_attrs_without_duplicate_fields():
     """Test that saving extra metadata into legacy attrs preserves logical fields."""
     attrs = {

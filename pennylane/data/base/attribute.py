@@ -102,10 +102,13 @@ class AttributeInfo(MutableMapping):
 
     def _update_len(self, inc: int):
         base_key = self.attrs_namespace.split(".", maxsplit=1)[0] + ".__data_len__"
+        has_base_key = base_key in self.attrs_bind
         for key in tuple(self.attrs_bind):
             if key != base_key and key.endswith(".__data_len__"):
-                self.attrs_bind[base_key] = self.attrs_bind.pop(key)
-                break
+                legacy_value = self.attrs_bind.pop(key)
+                if not has_base_key:
+                    self.attrs_bind[base_key] = legacy_value
+                    has_base_key = True
         self.attrs_bind[base_key] = len(self) + inc
 
     def _bind_keys(self, __name: str) -> list[str]:
