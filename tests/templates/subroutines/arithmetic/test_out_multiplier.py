@@ -38,7 +38,7 @@ def test_standard_validity_out_multiplier():
 
 
 def _test_mult_correctness(
-    all_wires, mod, rule, seed, clean=True, include_xy=None, zeroed_output_wires=False
+    all_wires, mod, rule, seed, clean=True, include_xy=None, output_wires_zeroed=False
 ):
     """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
     # pylint: disable=too-many-arguments
@@ -52,7 +52,7 @@ def _test_mult_correctness(
         qp.BasisEmbedding(x, wires=x_wires)
         qp.BasisEmbedding(y, wires=y_wires)
         qp.BasisEmbedding(z, wires=output_wires)
-        rule(x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires)
+        rule(x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed)
         return (
             qp.counts(wires=x_wires),
             qp.counts(wires=y_wires),
@@ -72,7 +72,7 @@ def _test_mult_correctness(
     if include_xy is not None:
         xys.append(include_xy)
 
-    if zeroed_output_wires:
+    if output_wires_zeroed:
         zs = [0]
     else:
         zs = [0, mod // 2 + 1, mod - 1]
@@ -220,7 +220,7 @@ class TestOutMultiplier:
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             .compute_decomposition(
-                x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires=False
+                x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
             )[0]
             .decomposition()
         )
@@ -273,13 +273,13 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
-    def test_decomposition_new_zeroed_output_wires(
+    def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
-        with zeroed_output_wires=True."""
+        with output_wires_zeroed=True."""
         op = qp.OutMultiplier(
-            x_wires, y_wires, output_wires, mod, work_wires, zeroed_output_wires=True
+            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
         )
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
@@ -287,7 +287,7 @@ class TestOutMultiplier:
             _test_decomposition_rule(op, rule)
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
-                _test_mult_correctness(all_wires, mod, rule, seed, zeroed_output_wires=True)
+                _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=True)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -320,21 +320,15 @@ class TestOutMultiplier:
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
-        with zeroed_output_wires=False (default)."""
+        with output_wires_zeroed=False (default)."""
         op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
-                # Don't test QFT based decomposition for correctness, because it does not differ
-                # between zeroed_output_wires = True/False and it is expensive
-                if j > 0:
-                    all_wires = (x_wires, y_wires, output_wires, work_wires)
-                    _test_mult_correctness(all_wires, mod, rule, seed)
-                else:
-                    # Assert the ordering did not just change but we actually skipped the QFT rule
-                    assert rule.name == "_out_multiplier_with_qft"
+                all_wires = (x_wires, y_wires, output_wires, work_wires)
+                _test_mult_correctness(all_wires, mod, rule, seed)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
