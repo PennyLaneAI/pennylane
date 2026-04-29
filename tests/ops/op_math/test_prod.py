@@ -1763,11 +1763,15 @@ class TestDecomposition:
     @pytest.mark.external
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
-        [(3, 1), (3, 2)],
+        [(3, 1), (3, 2), (4, 1), (5, 3)],
     )
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
-        """Test that the ``C(Prod)`` decomposition is QJIT-compatible with JAX-traced wires.
+        """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.
+
+        Decompositions this test targets:
+        - _controlled_product_with_work_wires
+        - _controlled_product_with_one_work_wire
 
         Mirrors the pattern used in
         ``tests/ops/op_math/test_controlled_decompositions.py::TestMCXDecomposition::test_mcx_qjit``
@@ -1775,37 +1779,31 @@ class TestDecomposition:
         under the Catalyst compiler without ``control_values`` being traced (they
         are treated as static so that ``flip_zero_control`` can branch on them).
         """
-        jax = pytest.importorskip("jax")
+
         from catalyst.device.decomposition import catalyst_decompose
 
-        jnp = jax.numpy
         qp.decomposition.enable_graph()
 
         gate_set = {
-            "X",
-            "CNOT",
-            "Toffoli",
-            "TemporaryAND",
-            "Adjoint(TemporaryAND)",
-            "Cond",
-            "HybridAdjoint",
-            "ForLoop",
-            "S",
-            "T",
-            "Adjoint(S)",
-            "Adjoint(T)",
-            "RZ",
-            "Hadamard",
-            "GlobalPhase",
-            "MultiControlledX",
+            "X": 1,
+            "CNOT": 1,
+            "TemporaryAND": 4,
+            "Adjoint(TemporaryAND)": 1,
+            "Cond": 1,
+            "HybridAdjoint": 1,
+            "ForLoop": 1,
+            "GlobalPhase": 1,
+            "MultiControlledX": 1000,
         }
 
         num_base_wires = 3
-        control_wires = jnp.arange(num_control_wires)
-        base_wires = jnp.arange(num_control_wires, num_control_wires + num_base_wires)
-        work_wires = jnp.arange(
-            num_control_wires + num_base_wires,
-            num_control_wires + num_base_wires + num_work_wires,
+        control_wires = list(range(num_control_wires))
+        base_wires = list(range(num_control_wires, num_control_wires + num_base_wires))
+        work_wires = list(
+            range(
+                num_control_wires + num_base_wires,
+                num_control_wires + num_base_wires + num_work_wires,
+            )
         )
         total_wires = int(num_control_wires + num_base_wires + num_work_wires)
         cvals = (1, 0, 1, 1, 0, 0, 1)[:num_control_wires]
