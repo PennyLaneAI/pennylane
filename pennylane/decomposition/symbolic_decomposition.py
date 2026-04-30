@@ -406,6 +406,190 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
     return _impl
 
 
+# Map from work-wire type (as stored in ``WorkWireSpec``) to the ``(state, restored)``
+# arguments that ``qp.allocate`` expects for that type of wire.
+_WORK_WIRE_ALLOCATE_KWARGS = {
+    "zeroed": {"state": "zero", "restored": True},
+    "borrowed": {"state": "any", "restored": True},
+    "burnable": {"state": "zero", "restored": False},
+    "garbage": {"state": "any", "restored": False},
+}
+
+
+def make_dynamic_work_wires_rule(
+    inner_decomp: DecompositionRule,
+    work_wires,
+    name: str | None = None,
+) -> DecompositionRule:
+    """Wrap a decomposition rule that consumes explicit ``work_wires`` into one that
+    dynamically allocates them via :func:`~pennylane.allocate`.
+
+    The wrapped rule calls ``inner_decomp`` inside a :func:`~pennylane.allocate` context
+    so that the caller does not need to provide work wires up front. The resource and
+    condition functions of the inner rule are automatically re-evaluated with the
+    allocated wire counts substituted in, so the wrapped rule reports identical gate
+    counts to the inner rule and can be registered alongside it.
+
+    Args:
+        inner_decomp (DecompositionRule): a decomposition rule that takes
+            ``work_wires=...`` as a keyword argument (i.e. it expects work wires to
+            be supplied explicitly). Its resource function is expected to depend on
+            ``num_control_wires`` / ``base_params`` but not on ``num_work_wires``
+            or ``work_wire_type`` (the wrapper substitutes those for you).
+        work_wires (dict or Callable): the work-wire requirements to allocate, using
+            the same format accepted by :func:`~pennylane.register_resources`'s
+            ``work_wires`` argument — either a static ``dict`` like
+            ``{"zeroed": 1}`` or a callable ``f(**resource_params) -> dict`` that
+            returns one. Only a single work-wire type is currently supported
+            (``"zeroed"``, ``"borrowed"``, ``"burnable"``, or ``"garbage"``).
+        name (str, optional): custom name for the wrapped rule. If not provided,
+            defaults to ``f"allocate_work_wires({inner_decomp.name})"``.
+
+    Returns:
+        DecompositionRule: a new decomposition rule that dynamically allocates the
+        requested work wires and delegates the body to ``inner_decomp``.
+
+    **Example**
+
+    .. code-block:: python
+
+        def _resources(num_control_wires, base_params, **_):
+            ...
+
+        @qp.register_condition(
+            lambda num_control_wires, num_work_wires, work_wire_type, **_: (
+                num_control_wires >= 2
+                and num_work_wires >= num_control_wires - 1
+                and work_wire_type == "zeroed"
+            )
+        )
+        @qp.register_resources(_resources)
+        def _decomp_with_work_wires(*_, control_wires, work_wires, base, **__):
+            ...
+
+        _decomp_with_allocated_work_wires = make_dynamic_work_wires_rule(
+            _decomp_with_work_wires,
+            work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 1},
+        )
+
+        qp.add_decomps(
+            "C(Prod)",
+            _decomp_with_work_wires,
+            _decomp_with_allocated_work_wires,
+        )
+    """
+    # pylint: disable=protected-access
+
+    def _resolve_spec(resource_params) -> dict:
+        spec = work_wires(**resource_params) if callable(work_wires) else work_wires
+        if not isinstance(spec, dict):
+            raise TypeError(
+                "work_wires must be a dict or a callable returning a dict. "
+                f"Got {type(spec).__name__}."
+            )
+        # Filter out zero-count entries so ``_resolve_type`` does not consider them.
+        return {k: v for k, v in spec.items() if v}
+
+    def _resolve_type(spec) -> tuple[str, int]:
+        """Return the single (work_wire_type, count) pair described by ``spec``.
+
+        ``make_dynamic_work_wires_rule`` currently only supports rules that require
+        a single kind of work wire — the common case. Mixed allocation would require
+        substituting different ``work_wire_type`` values into the inner resource
+        function which is not well-defined.
+        """
+        total = sum(spec.values())
+        if total == 0:
+            # No work wires required — delegate directly without allocating.
+            return "zeroed", 0
+        nonzero = [k for k, v in spec.items() if v]
+        if len(nonzero) > 1:
+            raise NotImplementedError(
+                "make_dynamic_work_wires_rule currently only supports a single "
+                f"work-wire type at a time. Got {spec}."
+            )
+        (ww_type,) = nonzero
+        if ww_type not in _WORK_WIRE_ALLOCATE_KWARGS:
+            raise ValueError(
+                f"Unknown work wire type '{ww_type}'. "
+                f"Expected one of {sorted(_WORK_WIRE_ALLOCATE_KWARGS)}."
+            )
+        return ww_type, total
+
+    def _patched_params(resource_params):
+        """Patch ``num_work_wires`` / ``work_wire_type`` so the inner rule sees the
+        wires the wrapper is about to allocate."""
+        spec = _resolve_spec(resource_params)
+        ww_type, total = _resolve_type(spec)
+        new_params = resource_params.copy()
+        new_params["num_work_wires"] = total
+        new_params["work_wire_type"] = ww_type
+        return new_params
+
+    def _condition_fn(**resource_params):
+        try:
+            return inner_decomp.is_applicable(**_patched_params(resource_params))
+        except (KeyError, TypeError):  # pragma: no cover
+            return False
+
+    def _resource_fn(**resource_params):
+        return inner_decomp.compute_resources(**_patched_params(resource_params)).gate_counts
+
+    @register_condition(_condition_fn)
+    @register_resources(
+        _resource_fn,
+        work_wires=work_wires,
+        exact=inner_decomp.exact_resources,
+        name=name or f"allocate_work_wires({inner_decomp.name})",
+    )
+    def _impl(*params, **kwargs):
+        # ``kwargs`` may contain ``work_wires`` / ``work_wire_type`` from the outer
+        # ``Controlled.hyperparameters`` — drop them so we can substitute the ones
+        # we're about to allocate.
+        resource_params = _infer_resource_params(kwargs)
+        kwargs.pop("work_wires", None)
+        kwargs.pop("work_wire_type", None)
+        spec = _resolve_spec(resource_params)
+        ww_type, total = _resolve_type(spec)
+        if total == 0:
+            inner_decomp(*params, work_wires=(), **kwargs)
+            return
+        allocate_kwargs = _WORK_WIRE_ALLOCATE_KWARGS[ww_type]
+        with allocation.allocate(total, **allocate_kwargs) as allocated_wires:
+            inner_decomp(*params, work_wires=allocated_wires, **kwargs)
+
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere inner_decomp is defined as:\n\n"
+        + dedent(inner_decomp._source).strip()
+    )
+    return _impl
+
+
+def _infer_resource_params(qfunc_kwargs: dict) -> dict:
+    """Derive the ``resource_params`` subset needed by the work-wire spec callable
+    from the kwargs the decomposition qfunc was invoked with.
+
+    When a decomposition qfunc is executed, it receives ``op.hyperparameters``-style
+    kwargs (e.g. ``control_wires``, ``control_values``, ``base``) rather than
+    ``op.resource_params``. We translate the subset that work-wire spec callables
+    typically depend on so users can write a single callable that works for both
+    ``register_resources`` (which receives ``resource_params``) and the wrapper.
+    """
+    params = {}
+    control_wires = qfunc_kwargs.get("control_wires")
+    if control_wires is not None:
+        params["num_control_wires"] = len(control_wires)
+    control_values = qfunc_kwargs.get("control_values")
+    if control_values is not None:
+        params["num_zero_control_values"] = sum(1 for v in control_values if not v)
+    base = qfunc_kwargs.get("base")
+    if base is not None:
+        params["base_class"] = type(base)
+        params["base_params"] = base.resource_params
+    return params
+
+
 def _flip_control_adjoint_resource(
     base_class,
     base_params,
