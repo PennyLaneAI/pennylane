@@ -63,9 +63,11 @@ Alternate Decompositions
     ~hadamard_toffoli_based_controlled_decomp
 
 """
+import pennylane as qp
 
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
 from .wires_manager import (
@@ -78,7 +80,14 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import selectpaulirot_controlled_resource_decomp
+from .templates import selectpaulirot_controlled_resource_decomp, ClassicalOutMultiplier
+
+from .templates import LabsAdder as Adder
+from .templates import LabsModExp as ModExp
+from .templates import LabsMultiplier as Multiplier
+from .templates import LabsOutAdder as OutAdder
+from .templates import LabsPhaseAdder as PhaseAdder
+
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
@@ -104,3 +113,68 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+@_map_to_resource_op.register
+def _(op: qp.Adder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Adder(
+        len(x_wires),
+        mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.OutAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    y_wires = op.hyperparameters["y_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+
+    return OutAdder(
+        len(x_wires),
+        len(y_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + y_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.Multiplier):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Multiplier(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.ModExp):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+    return ModExp(
+        len(x_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.PhaseAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+
+    if mod != 2 ** (len(x_wires)):  # An extra wire was prepended
+        x_wires = x_wires[1:]
+
+    return PhaseAdder(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
