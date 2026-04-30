@@ -56,9 +56,6 @@ def normalize_for_comparison(obj):
 
 
 unmodified_templates_cases = [
-    (qp.AmplitudeEmbedding, (jnp.array([1.0, 0.0]), 2), {}),
-    (qp.AmplitudeEmbedding, (jnp.eye(4)[2], [2, 3]), {"normalize": False}),
-    (qp.AmplitudeEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"pad_with": 1.2, "wires": [0, 3]}),
     (qp.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qp.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qp.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
@@ -289,6 +286,7 @@ def test_unmodified_templates(template, args, kwargs):
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
 tested_modified_templates = [
+    qp.AmplitudeEmbedding,
     qp.BasisEmbedding,
     qp.TrotterProduct,
     qp.AllSinglesDoubles,
@@ -346,6 +344,42 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
         assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
         assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+
+    @pytest.mark.parametrize(
+        "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
+    )
+    @pytest.mark.parametrize(
+        "state, kwargs",
+        (
+            ([1.0, 0.0], {"wires": 2}),
+            ([0, 0, 1, 0], {"wires": [2, 3], "normalize": False}),
+            ([0.3, 0.1, 0.2], {"pad_with": 1.2, "wires": [0, 3]}),
+        ),
+    )
+    def test_amplitude_embedding_capture(self, container, state, kwargs):
+        """Tests that AmplitudeEmbedding can be captured properly."""
+        state_input = container(state)
+
+        def f():
+            return qp.AmplitudeEmbedding(state_input, **kwargs)
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        relevant_eqns = [
+            eqn for eqn in jaxpr.eqns if eqn.primitive == qp.AmplitudeEmbedding._primitive
+        ]
+
+        # Should be only one eqn for AmplitudeEmbedding
+        assert len(relevant_eqns) == 1
+        eqn = relevant_eqns[0]
+
+        # Check kwargs
+        expected_wires = kwargs["wires"] if isinstance(kwargs["wires"], list) else [kwargs["wires"]]
+        assert eqn.params["n_wires"] == len(expected_wires)
+
+        for key in ("normalize", "pad_with"):
+            if key in kwargs:
+                assert eqn.params[key] == kwargs[key]
 
     @pytest.mark.parametrize(
         "template, kwargs",
