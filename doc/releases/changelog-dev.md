@@ -396,16 +396,28 @@
 
   now decomposes as the following:
 
+  ```python
+  @qp.transforms.decompose(
+      gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
+  )
+  @qp.qnode(qp.device("default.qubit"))
+  def qnode():
+      qp.ctrl(qp.X(0) @ qp.X(1) @ qp.X(2) @ qp.X(3), control=["c1", "c2", "c3"], work_wires=["w1", "w2"], work_wire_type="zeroed")
+      return qp.state()
+
+  print(qp.draw(qnode)())
   ```
-   0: ────────────────╭X─────────┤
-   1: ─────────────╭X─│──────────┤
-   2: ──────────╭X─│──│──────────┤
-   3: ───────╭X─│──│──│──────────┤
-  c1: ─╭●────│──│──│──│───────●╮─┤
-  c2: ─├●────│──│──│──│───────●┤─┤
-  c3: ─│──╭●─│──│──│──│───●╮───│─┤
-  w1: ─╰⊕─├●─│──│──│──│───●┤──⊕╯─┤
-  w2: ────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────┤
+
+  ```
+  c1: ─╭●─────────────────────●╮─┤  State
+  c2: ─├●─────────────────────●┤─┤  State
+  w1: ─╰⊕─╭●──────────────●╮──⊕╯─┤  State
+  c3: ────├●──────────────●┤─────┤  State
+  w2: ────╰⊕─╭●─╭●─╭●─╭●──⊕╯─────┤  State
+   3: ───────╰X─│──│──│──────────┤  State
+   2: ──────────╰X─│──│──────────┤  State
+   1: ─────────────╰X─│──────────┤  State
+   0: ────────────────╰X─────────┤  State
 ```
 [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
