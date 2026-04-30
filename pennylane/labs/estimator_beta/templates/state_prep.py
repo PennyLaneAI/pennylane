@@ -28,7 +28,7 @@ from pennylane.wires import WiresLike
 # pylint: disable=arguments-differ, too-many-arguments
 
 
-class ResourceMottonenStatePreparation(ResourceOperator):
+class LabsMottonenStatePreparation(ResourceOperator):
     r"""Resource class for Mottonen state preparation.
 
     Args:
@@ -37,8 +37,8 @@ class ResourceMottonenStatePreparation(ResourceOperator):
 
     Resources:
         Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
-        The resources are defined as :math:`2^{N+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
-        :math:`2^{N+2} - 4N - 4` :class:`~.pennylane.estimator.ops.op_math.CNOT` gates.
+        The resources are defined as :math:`2^{n+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
+        :math:`2^{n+2} - 4n - 4` :class:`~.pennylane.estimator.ops.op_math.CNOT` gates.
 
     **Example**
 
@@ -96,8 +96,8 @@ class ResourceMottonenStatePreparation(ResourceOperator):
 
         Resources:
             Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
-            The resources are defined as :math:`2^{N+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
-            :math:`2^{N+2} - 4N - 4` :class:`~pennylane.estimator.ops.op_math.CNOT` gates.
+            The resources are defined as :math:`2^{n+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
+            :math:`2^{n+2} - 4n - 4` :class:`~.pennylane.estimator.ops.op_math.CNOT` gates.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -119,7 +119,7 @@ class ResourceMottonenStatePreparation(ResourceOperator):
         return gate_lst
 
 
-class ResourceCosineWindow(ResourceOperator):
+class LabsCosineWindow(ResourceOperator):
     r"""Resource class for preparing an initial state with a cosine wave function.
 
     The wave function is defined below where :math:`m` is the number of wires.
@@ -138,7 +138,6 @@ class ResourceCosineWindow(ResourceOperator):
 
     Resources:
         The resources were obtained from Figure 6 in `arXiv:2110.09590 <https://arxiv.org/pdf/2110.09590>`_.
-
 
     .. seealso:: :class:`~.CosineWindow`
 
@@ -196,12 +195,12 @@ class ResourceCosineWindow(ResourceOperator):
             num_wires (int): the number of wires that the operation acts on
 
         Resources:
-            The resources were obtained from Figure 6 in arXiv:2110.09590 `<https://arxiv.org/pdf/2110.09590>`_
+            The resources were obtained from Figure 6 in `arXiv:2110.09590 <https://arxiv.org/pdf/2110.09590>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
 
         hadamard = resource_rep(qre.Hadamard)
@@ -220,7 +219,7 @@ class ResourceCosineWindow(ResourceOperator):
         ]
 
 
-class ResourceSumOfSlatersPrep(ResourceOperator):
+class LabsSumOfSlatersPrep(ResourceOperator):
     r"""Resource class for preparing an initial state with the sum-of-Slaters technique.
 
     The operation prepares an arbitrary state
@@ -229,13 +228,15 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         |\psi\rangle = \sum_{l \in L} c_l |l \rangle
 
-
     Args:
         num_coeffs (int): number of coefficients of the sparse state to prepare.
         num_wires (int): number of wires on which the state is being prepared.
+        num_bits (int | None): number of bits that is sufficient to uniquely identify every Slater determinant in the
+            target state, as defined in Sec. III A of `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
         stateprep_op (ResourceOperator | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
-            is provided, the resources will be computed assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+            is provided, the resources will be computed assuming the condensed state preparation is performed using
+            :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
@@ -249,7 +250,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> sos_state = qre.ResourceSumOfSlatersPrep(num_coeffs=100, num_wires=10s)
+    >>> sos_state = qre.SumOfSlatersPrep(num_coeffs=100, num_wires=10)
     >>> print(qre.estimate(sos_state))
     --- Resources: ---
      Total wires: 32
@@ -266,20 +267,37 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
     """
 
-    resource_keys = {"num_coeffs", "num_wires", "stateprep_cmpr_op", "select_swap_depth"}
+    resource_keys = {
+        "num_coeffs",
+        "num_wires",
+        "num_bits",
+        "stateprep_cmpr_op",
+        "select_swap_depth",
+    }
 
     def __init__(
         self,
         num_coeffs: int,
         num_wires: int,
+        num_bits: int | None = None,
         stateprep_op: ResourceOperator | None = None,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
 
         _dequeue(stateprep_op)
+
+        if num_coeffs > 2**num_wires:
+            raise ValueError(
+                f"Number of coefficients {num_coeffs} cannot be greater than 2^num_wires, {2**num_wires}."
+            )
+
+        if num_bits is not None and num_bits > num_wires:
+            raise ValueError(f"num_bits {num_bits} cannot be greater than num_wires, {num_wires}.")
+
         self.num_coeffs = num_coeffs
         self.num_wires = num_wires
+        self.num_bits = num_bits
         self.stateprep_cmpr_op = stateprep_op.resource_rep_from_op() if stateprep_op else None
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
@@ -292,14 +310,18 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_coeffs(int): number of coefficients of the sparse state to prepare
                 * num_wires (int): the number of wires that the state is being prepared on
+                * num_bits (int | None): number of bits that is sufficient to uniquely identify
+                    every Slater determinant in the target state, as defined in Sec. III A of
+                    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
                 * stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to
                 set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
-                assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
-                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+                assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
         """
         return {
             "num_coeffs": self.num_coeffs,
             "num_wires": self.num_wires,
+            "num_bits": self.num_bits,
             "stateprep_cmpr_op": self.stateprep_cmpr_op,
             "select_swap_depth": self.select_swap_depth,
         }
@@ -309,6 +331,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         cls,
         num_coeffs: int,
         num_wires: int,
+        num_bits: int | None = None,
         stateprep_cmpr_op: CompressedResourceOp | None = None,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
@@ -318,12 +341,21 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if num_coeffs > 2**num_wires:
+            raise ValueError(
+                f"Number of coefficients {num_coeffs} cannot be greater than 2^num_wires, {2**num_wires}."
+            )
+
+        if num_bits is not None and num_bits > num_wires:
+            raise ValueError(f"num_bits {num_bits} cannot be greater than num_wires, {num_wires}.")
+
         return CompressedResourceOp(
             cls,
             num_wires,
             {
                 "num_coeffs": num_coeffs,
                 "num_wires": num_wires,
+                "num_bits": num_bits,
                 "stateprep_cmpr_op": stateprep_cmpr_op,
                 "select_swap_depth": select_swap_depth,
             },
@@ -334,6 +366,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         cls,
         num_coeffs: int,
         num_wires: int,
+        num_bits: int | None = None,
         stateprep_cmpr_op: CompressedResourceOp | None = None,
         select_swap_depth: int | None = None,
     ):
@@ -343,15 +376,18 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
         Args:
             num_coeffs(int): number of coefficients of the sparse state to prepare
             num_wires (int): the number of wires the state is being prepared on
-            stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+            num_bits (int | None): number of bits that is sufficient to uniquely identify every
+                Slater determinant in the target state, as defined in Sec. III A of
+                `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
+            stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to set the subroutine used to
+                perform the condensed state preparation. If :code:`None`
                 is provided, the resources will be computed assuming the condensed state preparation is performed
-                using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.MottonenStatePreparation`.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+                using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
             The resources were obtained from Sec. III A of
             `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
-
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -361,13 +397,19 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         gate_list = []
 
+        if num_coeffs == 1:
+            return [GateCount(resource_rep(qre.BasisState, {"num_wires": num_wires}), 1)]
+
         # Step 1: Prepare the condensed state
         condensed_state_qubits = int(np.ceil(np.log2(num_coeffs)))
+
+        if num_bits is None:
+            num_bits = min(num_wires, 2 * condensed_state_qubits - 1)
 
         gate_list.append(qre.Allocate(condensed_state_qubits))  # enumeration register d
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
-                ResourceMottonenStatePreparation, {"num_wires": condensed_state_qubits}
+                LabsMottonenStatePreparation, {"num_wires": condensed_state_qubits}
             )
 
         gate_list.append(GateCount(stateprep_cmpr_op, 1))
@@ -386,17 +428,11 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         gate_list.append(GateCount(qrom, 1))
 
-        m_max = 2 * condensed_state_qubits - 1
-        r_worst = min(num_coeffs - 1, num_wires)
-
-        identity_encoding = False
-        if r_worst <= m_max:
-            identity_encoding = True
-
-        m = min(r_worst, m_max)
+        m = min(num_bits, 2 * condensed_state_qubits - 1)
+        identity_encoding = num_bits == m
 
         # Steps 3-4 and 6: Encode/uncompute the identification register using multi-controlled Toffoli and CNOT gates
-        # Taking the upper-bound
+        # if identity encoding is True, then the identification register fits inside the system register, so no extra allocation needed
         if not identity_encoding:
             gate_list.append(qre.Allocate(m))  # identification register
             cnot = resource_rep(qre.CNOT)
@@ -407,7 +443,7 @@ class ResourceSumOfSlatersPrep(ResourceOperator):
 
         x = resource_rep(qre.X)
         gate_list.append(GateCount(x, num_coeffs * m))
-
+        print(num_coeffs, m)  # --- IGNORE ---
         mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": m, "num_zero_ctrl": 0})
         num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))

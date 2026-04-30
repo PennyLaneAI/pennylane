@@ -18,7 +18,7 @@ from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
 from .subroutines import selectpaulirot_controlled_resource_decomp
 
 from .state_prep import (
-    ResourceCosineWindow,
-    ResourceMottonenStatePreparation,
-    ResourceSumOfSlatersPrep,
+    LabsCosineWindow,
+    LabsMottonenStatePreparation,
+    LabsSumOfSlatersPrep,
 )

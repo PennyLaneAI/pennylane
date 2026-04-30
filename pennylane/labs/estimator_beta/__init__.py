@@ -52,9 +52,9 @@ State Preparation
 
 .. currentmodule:: pennylane.labs.estimator_beta.templates
 
-    ~ResourceMottonenStatePreparation
-    ~ResourceCosineWindow
-    ~ResourceSumOfSlatersPrep
+    ~LabsMottonenStatePreparation
+    ~LabsCosineWindow
+    ~LabsSumOfSlatersPrep
 
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,11 +98,9 @@ from .wires_manager import (
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
-from .templates import (
-    ResourceMottonenStatePreparation,
-    ResourceCosineWindow,
-    ResourceSumOfSlatersPrep,
-)
+from .templates import LabsCosineWindow as CosineWindow
+from .templates import LabsMottonenStatePreparation as MottonenStatePreparation
+from .templates import LabsSumOfSlatersPrep as SumOfSlatersPrep
 
 from .templates import (
     OutOfPlaceIntegerComparator,
