@@ -682,6 +682,8 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
             """).strip()
 
+        assert repr(result) == str(result)
+
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
         assert str(result) == dedent("""
             Decomposition 0 (name: simple)
