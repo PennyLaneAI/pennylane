@@ -86,9 +86,9 @@
   Wire allocations   |  2 |  2 |  2
   Total gates        |  5 |  3 |  2
   Gate counts:       |
-  - RX               |  2 |  2 |  1
-  - PauliX           |  1 |  1 |  1
   - Hadamard         |  2 |  0 |  0
+  - PauliX           |  1 |  1 |  1
+  - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
 
@@ -187,15 +187,20 @@
   Total gates: 11
   Gate counts:
   - GlobalPhase: 3
+  - PPM-w1: 1
   - PPR-pi/4-w1: 5
   - PPR-pi/4-w2: 1
-  - PPM-w1: 1
   - PPR-pi/8-w1: 1
   Measurements:
   - expval(PauliZ): 1
   Depth: Not computed
 
   ```
+  
+* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
+  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
+  [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
+
 
 <h4>QSVT Angle Solver 📐</h4>
 
@@ -880,6 +885,9 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Added permissions to all GitHub Actions workflows.
+  [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
 
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
