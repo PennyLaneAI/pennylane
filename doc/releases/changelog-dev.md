@@ -86,9 +86,9 @@
   Wire allocations   |  2 |  2 |  2
   Total gates        |  5 |  3 |  2
   Gate counts:       |
-  - RX               |  2 |  2 |  1
-  - PauliX           |  1 |  1 |  1
   - Hadamard         |  2 |  0 |  0
+  - PauliX           |  1 |  1 |  1
+  - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
 
@@ -187,15 +187,20 @@
   Total gates: 11
   Gate counts:
   - GlobalPhase: 3
+  - PPM-w1: 1
   - PPR-pi/4-w1: 5
   - PPR-pi/4-w2: 1
-  - PPM-w1: 1
   - PPR-pi/8-w1: 1
   Measurements:
   - expval(PauliZ): 1
   Depth: Not computed
 
   ```
+  
+* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
+  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
+  [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
+
 
 <h4>QSVT Angle Solver 📐</h4>
 
@@ -456,6 +461,10 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 <h4>Other improvements</h4>
+
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
+  `list` or `tuple` types.
+  [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent
@@ -1056,6 +1065,7 @@
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
   [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
   [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
+  [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
