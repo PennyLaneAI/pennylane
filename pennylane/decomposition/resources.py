@@ -23,6 +23,7 @@ from functools import cached_property
 
 import pennylane as qp
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 
 from .utils import to_name
 
@@ -188,6 +189,13 @@ def _make_hashable(d):
 def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
+    if (
+        isinstance(op_type, type)
+        and issubclass(op_type, Operator2)
+        or isinstance(op_type, Operator2)
+    ):
+        return
+
     if not issubclass(op_type, qp.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
@@ -299,6 +307,10 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
+        return op_type.compress_from_cls(**params)
+    if isinstance(op_type, Operator2):
+        return op_type.compress()
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -578,9 +590,12 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
 
 def auto_wrap(op_type):
     """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
+    if isinstance(op_type, CompressedResourceOp) or (
+        isinstance(op_type, Operator2) and op_type.is_compressed
+    ):
         return op_type
-    if not issubclass(op_type, Operator):
+
+    if not issubclass(op_type, (Operator, Operator2)):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "
             "Operator or a CompressedResourceOp constructed with qp.resource_rep"

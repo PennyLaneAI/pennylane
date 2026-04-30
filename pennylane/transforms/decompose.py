@@ -34,6 +34,7 @@ from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
@@ -863,9 +864,15 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
         elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
             op_rule = graph_solution.decomposition(op, num_work_wires)
-            kwargs = get_decomp_kwargs(op)
-            with queuing.AnnotatedQueue() as decomposed_ops:
-                op_rule(*op.parameters, wires=op.wires, **kwargs)
+            if isinstance(op, Operator):
+                kwargs = get_decomp_kwargs(op)
+                with queuing.AnnotatedQueue() as decomposed_ops:
+                    op_rule(*op.parameters, wires=op.wires, **kwargs)
+
+            else:
+                with queuing.AnnotatedQueue() as decomposed_ops:
+                    op_rule(**op._bound_args.arguments)
+
             decomp = decomposed_ops.queue
             if num_work_wires is not None:
                 num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total

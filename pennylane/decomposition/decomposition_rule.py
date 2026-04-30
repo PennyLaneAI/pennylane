@@ -29,6 +29,7 @@ from typing import overload
 import pennylane as qp
 from pennylane import queuing
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 
 from .reconstruct import get_decomp_kwargs
 from .resources import Resources, auto_wrap, resource_rep
@@ -456,7 +457,8 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
+                key = auto_wrap(op)
+                gate_counter.update({key: count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
