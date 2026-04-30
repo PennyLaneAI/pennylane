@@ -222,10 +222,10 @@ def _permute_and_apply(order, wires, operator):
     second_copy = copy.copy(second)
 
     # permute into adjacency
-    @while_loop(lambda s: s > first + 2)
+    @while_loop(lambda s: s > first + 1)
     def permute_in(s):
+        FermionicSWAP(np.pi, Wires([order[s], order[s - 1]]))
         s -= 1
-        FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
         return s
 
     permute_in(second)  # pylint: disable=no-value-for-parameter
@@ -234,10 +234,10 @@ def _permute_and_apply(order, wires, operator):
     operator(Wires([order[first], order[first + 1]]))
 
     # permute back
-    @while_loop(lambda s: s < second_copy - 2)
+    @while_loop(lambda s: s < second_copy)
     def permute_out(s):
-        s += 1
         FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
+        s += 1
         return s
 
     permute_out(first + 1)  # pylint: disable=no-value-for-parameter

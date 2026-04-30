@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
-
+import numpy as np
 import pytest
 
-from pennylane import PauliZ, device, list_decomps, probs, qnode, workflow
+from pennylane import PauliZ, FermionicSWAP, device, list_decomps, probs, qnode, workflow
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
 from pennylane.wires import Wires
@@ -62,9 +62,13 @@ def test_raises(wires, error_type, error_msg):
                 TwoQubitFFT(wires=[2, 3]),
                 PauliZ(2) ** 0.0,
                 PauliZ(3) ** 0.5,
-                TwoQubitFFT(wires=[0, 2]),
-                TwoQubitFFT(wires=[1, 3]),
-            ],
+                FermionicSWAP(np.pi, wires=[2, 1]),
+                TwoQubitFFT(wires=[0, 1]),
+                FermionicSWAP(np.pi, wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[3, 2]),
+                TwoQubitFFT(wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[2, 3])
+            ]
         ),
         (
             (0, 1, 2, 3, 4, 5, 6, 7),
@@ -73,23 +77,54 @@ def test_raises(wires, error_type, error_msg):
                 TwoQubitFFT(wires=[2, 3]),
                 PauliZ(2) ** 0.0,
                 PauliZ(3) ** 0.5,
-                TwoQubitFFT(wires=[0, 2]),
-                TwoQubitFFT(wires=[1, 3]),
+                FermionicSWAP(np.pi, wires=[2, 1]),
+                TwoQubitFFT(wires=[0, 1]),
+                FermionicSWAP(np.pi, wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[3, 2]),
+                TwoQubitFFT(wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[2, 3]),
                 TwoQubitFFT(wires=[4, 5]),
                 TwoQubitFFT(wires=[6, 7]),
                 PauliZ(6) ** 0.0,
                 PauliZ(7) ** 0.5,
-                TwoQubitFFT(wires=[4, 6]),
-                TwoQubitFFT(wires=[5, 7]),
+                FermionicSWAP(np.pi, wires=[6, 5]),
+                TwoQubitFFT(wires=[4, 5]),
+                FermionicSWAP(np.pi, wires=[5, 6]),
+                FermionicSWAP(np.pi, wires=[7, 6]),
+                TwoQubitFFT(wires=[5, 6]),
+                FermionicSWAP(np.pi, wires=[6, 7]),
                 PauliZ(4) ** 0.0,
                 PauliZ(5) ** 0.25,
                 PauliZ(6) ** 0.5,
                 PauliZ(7) ** 0.75,
-                TwoQubitFFT(wires=[0, 4]),
-                TwoQubitFFT(wires=[1, 5]),
-                TwoQubitFFT(wires=[2, 6]),
-                TwoQubitFFT(wires=[3, 7]),
-            ],
+                FermionicSWAP(np.pi, wires=[4, 3]),
+                FermionicSWAP(np.pi, wires=[3, 2]),
+                FermionicSWAP(np.pi, wires=[2, 1]),
+                TwoQubitFFT(wires=[0, 1]),
+                FermionicSWAP(np.pi, wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[2, 3]),
+                FermionicSWAP(np.pi, wires=[3, 4]),
+                FermionicSWAP(np.pi, wires=[5, 4]),
+                FermionicSWAP(np.pi, wires=[4, 3]),
+                FermionicSWAP(np.pi, wires=[3, 2]),
+                TwoQubitFFT(wires=[1, 2]),
+                FermionicSWAP(np.pi, wires=[2, 3]),
+                FermionicSWAP(np.pi, wires=[3, 4]),
+                FermionicSWAP(np.pi, wires=[4, 5]),
+                FermionicSWAP(np.pi, wires=[6, 5]),
+                FermionicSWAP(np.pi, wires=[5, 4]),
+                FermionicSWAP(np.pi, wires=[4, 3]),
+                TwoQubitFFT(wires=[2, 3]),
+                FermionicSWAP(np.pi, wires=[3, 4]),
+                FermionicSWAP(np.pi, wires=[4, 5]),
+                FermionicSWAP(np.pi, wires=[5, 6]),
+                FermionicSWAP(np.pi, wires=[7, 6]),
+                FermionicSWAP(np.pi, wires=[6, 5]),
+                FermionicSWAP(np.pi, wires=[5, 4]),
+                TwoQubitFFT(wires=[3, 4]),
+                FermionicSWAP(np.pi, wires=[4, 5]),
+                FermionicSWAP(np.pi, wires=[5, 6]),
+                FermionicSWAP(np.pi, wires=[6, 7])]
         ),
     ],
 )
