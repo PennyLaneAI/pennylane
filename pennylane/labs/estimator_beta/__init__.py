@@ -55,15 +55,21 @@ Alternate Decompositions
 .. autosummary::
     :toctree: api
 
-    ~selectpaulirot_controlled_resource_decomp
-    ~paulirot_controlled_resource_decomp
+    ~aqft_resource_decomp
     ~ch_resource_decomp
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
+    ~mcx_many_clean_aux_resource_decomp
     ~mcx_one_clean_aux_resource_decomp
     ~mcx_one_dirty_aux_resource_decomp
-    ~mcx_many_clean_aux_resource_decomp
+    ~paulirot_controlled_resource_decomp
+    ~qft_phase_grad_resource_decomp
+    ~qrom_state_preparation_phase_grad_resource_decomp
+    ~qrom_state_preparation_resource_decomp
+    ~selectpaulirot_controlled_resource_decomp
+    ~select_thc_controlled_resource_decomp
+    ~select_thc_resource_decomp
 
 Templates
 ~~~~~~~~~
@@ -102,6 +108,12 @@ from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
+    aqft_resource_decomp,
+    qft_phase_grad_resource_decomp,
+    qrom_state_preparation_resource_decomp,
+    qrom_state_preparation_phase_grad_resource_decomp,
+    select_thc_resource_decomp,
+    select_thc_controlled_resource_decomp,
 )
 from .ops import (
     ch_resource_decomp,
