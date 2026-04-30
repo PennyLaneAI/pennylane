@@ -901,7 +901,7 @@ def inspect_decomps(
     decomposition rule by passing its name.
 
     >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
-    Name: _crx_to_h_crz
+    Decomposition 0 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
     Gate Count: {Hadamard: 2, CRZ: 1}
@@ -917,7 +917,7 @@ def inspect_decomps(
             qp.H(wires[1])
 
     >>> qp.inspect_decomps(qp.CZ([0, 1]), my_cz)
-    Name: my_cz
+    Decomposition 0 (name: my_cz)
     0: ────╭●────┤
     1: ──H─╰X──H─┤
     Gate Count: {CNOT: 1, Hadamard: 2}

@@ -377,7 +377,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Some decomposition rules make use of dynamically allocated work wires. For example:
 
         >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker")
-        Name: one_zeroed_worker
+        Decomposition 0 (name: one_zeroed_worker)
         <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
                     0: ───────────├●─│───●┤─────────────┤
                     1: ───────────╰●─│───●╯─────────────┤
