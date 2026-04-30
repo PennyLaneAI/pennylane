@@ -886,6 +886,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added permissions to all GitHub Actions workflows.
+  [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
+
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
@@ -937,7 +940,7 @@
   ```
 
   The following classes have been ported over:
-  - `qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+  - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
