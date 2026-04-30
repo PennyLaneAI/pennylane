@@ -88,14 +88,32 @@ class CaptureMeta(type):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
-        # this method is called everytime we want to create an instance of the class.
+        # this method is called every time we want to create an instance of the class.
         # default behavior uses __new__ then __init__
+        from pennylane.operation import Operator
 
+        abstract_op = None
         if enabled():
-            # when tracing is enabled, we want to
-            # use bind to construct the class if we want class construction to add it to the jaxpr
-            return cls._primitive_bind_call(*args, **kwargs)
-        return type.__call__(cls, *args, **kwargs)
+            # handle operators passed as input, we need to delete their equations if they have any
+            for arg in args + tuple(kwargs.values()):
+                if isinstance(arg, Operator) and getattr(arg, "tracer", None) is not None:
+                    frame = arg.tracer._trace.frame
+                    assert frame.auto_dce is False  # eqns are stored differently if this is enabled
+
+                    # for some reason the frame now wraps equations in lambdas
+                    eqn = arg.tracer.parent
+                    frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
+
+                    # delete reference to tracer after its equation has been deleted
+                    arg.tracer = None
+
+            abstract_op = cls._primitive_bind_call(*args, **kwargs)
+            # capture can be enabled while not tracing, then binding also produces a concrete op
+            abstract_op = None if isinstance(abstract_op, Operator) else abstract_op
+
+        concrete_op = type.__call__(cls, *args, **kwargs)
+        concrete_op.tracer = abstract_op
+        return concrete_op
 
 
 # pylint: disable=abstract-method

@@ -339,8 +339,8 @@ class Adjoint(SymbolicOp):
     def _primitive_bind_call(cls, base, **kwargs):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
-            base = pytrees.unflatten(*pytrees.flatten(base))
-        return cls._primitive.bind(base, **kwargs)
+            # base = pytrees.unflatten(*pytrees.flatten(base))
+        return cls._primitive.bind(base=base, **kwargs)
 
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
