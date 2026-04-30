@@ -667,7 +667,7 @@ class TestInspectDecomps:
         """Tests showing all decomposition rules associated with an operator."""
 
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
@@ -683,7 +683,7 @@ class TestInspectDecomps:
             """).strip()
 
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 0 (name: simple)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
@@ -715,7 +715,7 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1]), show_not_applicable=False
         )
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
@@ -730,7 +730,7 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), show_not_applicable=False
         )
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -759,7 +759,7 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), num_work_wires=1
         )
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 0 (name: simple)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
@@ -780,7 +780,7 @@ class TestInspectDecomps:
             num_work_wires=1,
             show_not_applicable=False,
         )
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
@@ -794,7 +794,7 @@ class TestInspectDecomps:
         """Tests when no rules are available."""
 
         result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
-        assert result == "No available decomposition rules."
+        assert str(result) == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
         @qp.register_resources({})
@@ -805,14 +805,16 @@ class TestInspectDecomps:
             qp.add_decomps(CustomOp, invalid_rule)
             result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
 
-        assert result == "No applicable decomposition rules."
+        assert (
+            str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
+        )
 
     def test_show_decomp_by_name(self):
         """Tests inspecting a particular decomp by name."""
 
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
-        assert result == dedent("""
-            Name: simple
+        assert str(result) == dedent("""
+            Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
             Gate Count: {RZ: 2, CNOT: 1}
@@ -823,8 +825,8 @@ class TestInspectDecomps:
 
         rule = qp.list_decomps(CustomParametrizedOp)["general_decomp"]
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
-        assert result == dedent("""
-            Name: general_decomp
+        assert str(result) == dedent("""
+            Decomposition 0 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
@@ -833,11 +835,6 @@ class TestInspectDecomps:
             Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
             """).strip()
 
-        with pytest.warns(UserWarning, match="show_not_applicable=False is only relevant when"):
-            qp.inspect_decomps(
-                CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, show_not_applicable=False
-            )
-
     def test_show_multiple_decomps(self):
         """Tests showing multiple decomposition rules."""
 
@@ -845,7 +842,7 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule, "with-aux"
         )
-        assert result == dedent("""
+        assert str(result) == dedent("""
             Decomposition 0 (name: general_decomp)
             0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
             1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  

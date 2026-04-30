@@ -14,13 +14,14 @@
 
 """Defines the decomp_inspector transform."""
 
+from collections.abc import Sequence
 from functools import partial
 
 from typing_extensions import override
 
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
-from pennylane.decomposition.decomposition_rule import _DecompInfo
+from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -93,6 +94,33 @@ class _DecompInGraphInfo(_DecompInfo):
         )
 
 
+class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=too-few-public-methods
+    """A collection of _DecompInGraphInfo."""
+
+    def __init__(
+        self,
+        rule_infos: Sequence[_DecompInfo],
+        show_not_applicable: bool = True,
+        chosen: int | None = None,
+        override_txt: str | None = None,
+    ) -> None:
+        super().__init__(rule_infos, show_not_applicable)
+        self._chosen_idx = chosen
+        self._override_txt = override_txt
+
+    def __str__(self) -> str:
+        if self._override_txt is not None:
+            return self._override_txt
+        return super().__str__()
+
+    @override
+    def _title(self, index, rule) -> str:
+        title = f"Decomposition {index} (name: {rule.name})"
+        if index == self._chosen_idx:
+            title = "CHOSEN: " + title
+        return title
+
+
 # pylint: disable=protected-access,too-few-public-methods
 class DecompGraphInspector:
     """Interactive object that queries a solved decomposition graph.
@@ -111,34 +139,38 @@ class DecompGraphInspector:
         self._visitor = solution._visitor
         self._max_work_wires = self._solution.num_work_wires
 
-    def inspect_decomps(self, op: Operator, num_work_wires: int | None = 0) -> str:
+    def inspect_decomps(
+        self, op: Operator, *, num_work_wires: int | None = 0, show_not_applicable: bool = True
+    ) -> _DecompInGraphInfoCollection:
         """Display all decomposition rules considered for a given operator.
 
         Args:
             op (Operator): the operator instance to inspect the decomposition rules for.
             num_work_wires (int, optional): the number of work wires available for dynamic allocation.
+            show_not_applicable (bool): if True (the default), all decomposition rules, including
+                those that are not applicable to the specific operator instance (e.g., due to constraints
+                on the number of wires), are displayed.
 
         Returns:
-            str: a printable string with information about the rules considered by the graph.
+            _DecompInGraphInfoCollection: a displayable object with all the information.
 
         """
 
         op_node = self._find_op_node(op, num_work_wires)
 
         if isinstance(op_node, str):
-            return op_node
+            return _DecompInGraphInfoCollection([], override_txt=op_node)
 
         op_node_idx = self._decomp_graph._all_op_indices[op_node]
         decomp_indices = self._raw_graph.predecessor_indices(op_node_idx)
 
-        decomp_strings = []
-        for i, d_node_idx in enumerate(decomp_indices):
-            rule_info = _DecompInGraphInfo(op, d_node_idx, num_work_wires, self._solution)
-            decomp_str = f"Decomposition {i} (name: {rule_info.name})\n{rule_info}"
+        chosen_idx = None
+        rule_infos = []
+        for rule_idx, d_node_idx in enumerate(decomp_indices):
+            rule_infos.append(_DecompInGraphInfo(op, d_node_idx, num_work_wires, self._solution))
             if self._visitor.predecessors.get(op_node_idx, -1) == d_node_idx:
-                decomp_str = "CHOSEN: " + decomp_str
-            decomp_strings.append(decomp_str)
-        return "\n\n".join(decomp_strings)
+                chosen_idx = rule_idx
+        return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
     def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
 
@@ -248,7 +280,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     The inspector object provides an :meth:`~DecompGraphInspector.inspect_decomps` method that shows
     the decomposition rules considered for a given operator.
 
-    >>> print(inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2))
+    >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
     CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
     <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
                 3: ───────────├●─│──────────────├●─────────────┤
@@ -280,7 +312,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     is set to 1 here, since decomposition of the top-level operator already used one of the work
     wires in the budget, so this inner operator has one fewer work wire available to it):
 
-    >>> print(inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1))
+    >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1)
     Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
     Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
@@ -309,7 +341,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         inspector = circuit()
 
-    >>> print(inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2])))
+    >>> inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2]))
     Decomposition 0 (name: _pauli_rot_decomposition)
     0: ──H────────╭MultiRZ(0.50)──H─────────┤
     1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
@@ -320,7 +352,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     The message suggests that the ``PauliRot`` could not be decomposed because the graph was unable
     to find a decomposition for ``Hadamard``. We can investigate further:
 
-    >>> print(inspector.inspect_decomps(qp.Hadamard(0)))
+    >>> inspector.inspect_decomps(qp.Hadamard(0))
     Decomposition 0 (name: _hadamard_to_rz_ry)
     0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
     First Expansion Gates: {RZ: 1, RY: 1, GlobalPhase: 1}
@@ -339,7 +371,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         Some decomposition rules make use of dynamically allocated work wires. For example:
 
-        >>> print(qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker"))
+        >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker")
         Name: one_zeroed_worker
         <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
                     0: ───────────├●─│───●┤─────────────┤
@@ -369,7 +401,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         When calling ``inspect_decomps``, we also need to provide the work wire allocation budget:
 
         >>> op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])
-        >>> print(inspector.inspect_decomps(op, num_work_wires=2))
+        >>> inspector.inspect_decomps(op, num_work_wires=2)
         CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
         <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
                     3: ───────────├●─│──────────────├●─────────────┤
@@ -400,7 +432,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Similarly, for the ``MultiControlledX`` in the circuit:
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])
-        >>> print(inspector.inspect_decomps(op, num_work_wires=2))
+        >>> inspector.inspect_decomps(op, num_work_wires=2)
         Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>
@@ -494,7 +526,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         by changing the ``num_work_wires`` argument:
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])  # concrete wire labels don't matter
-        >>> print(inspector.inspect_decomps(op, num_work_wires=1))
+        >>> inspector.inspect_decomps(op, num_work_wires=1)
         Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>

@@ -50,7 +50,7 @@ class TestInspectDecompGraph:
             return qp.probs()
 
         inspector = circuit()
-        assert inspector.inspect_decomps(qp.CRY(0.5, wires=[0, 1])) == (
+        assert str(inspector.inspect_decomps(qp.CRY(0.5, wires=[0, 1]))) == (
             "This operator is not found in the decomposition graph! This typically "
             "means that this operator was not part of the original circuit, nor is it "
             "produced by any of the operators' decomposition rules."
@@ -79,8 +79,8 @@ class TestInspectDecompGraph:
             return qp.probs()
 
         inspector = circuit()
-        assert inspector.inspect_decomps(
-            qp.MultiControlledX([0, 1, 2, 3, 4]), num_work_wires=2
+        assert str(
+            inspector.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3, 4]), num_work_wires=2)
         ) == (
             "The decomposition graph was solved with 1 work wires available for dynamic "
             "allocation at the top level. There is not a point where a MultiControlledX("
@@ -100,7 +100,7 @@ class TestInspectDecompGraph:
         inspector = circuit()
 
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
-        assert inspector.inspect_decomps(op) == dedent("""
+        assert str(inspector.inspect_decomps(op)) == dedent("""
             Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
             Insufficient work wires: requires 1 but only 0 available.
 
@@ -130,7 +130,7 @@ class TestInspectDecompGraph:
         inspector = circuit()
 
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
-        assert inspector.inspect_decomps(op, num_work_wires=2) == dedent("""
+        assert str(inspector.inspect_decomps(op, num_work_wires=2)) == dedent("""
             CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
             <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤  
                         3: ───────────├●─│──────────────├●─────────────┤  
@@ -158,7 +158,7 @@ class TestInspectDecompGraph:
             """).strip()
 
         op = qp.MultiControlledX([0, 1, 2, 3])
-        assert inspector.inspect_decomps(op, num_work_wires=1) == dedent("""
+        assert str(inspector.inspect_decomps(op, num_work_wires=1)) == dedent("""
             Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
@@ -232,7 +232,7 @@ class TestInspectDecompGraph:
 
         inspector = circuit()
         op = qp.PauliRot(0.5, "XYZ", [0, 1, 2])
-        assert inspector.inspect_decomps(op) == dedent("""
+        assert str(inspector.inspect_decomps(op)) == dedent("""
             Decomposition 0 (name: _pauli_rot_decomposition)
             0: ──H────────╭MultiRZ(0.50)──H─────────┤  
             1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤  
@@ -241,7 +241,7 @@ class TestInspectDecompGraph:
             Missing Ops: {Hadamard}
             """).strip()
 
-        assert inspector.inspect_decomps(qp.H(0)) == dedent("""
+        assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
             Decomposition 0 (name: _hadamard_to_rz_ry)
             0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤  
             First Expansion Gates: {RZ: 1, RY: 1, GlobalPhase: 1}
@@ -264,7 +264,7 @@ class TestInspectDecompGraph:
 
         inspector = circuit()
         op = qp.QubitUnitary([[1, 0], [0, 1]], wires=0)
-        assert inspector.inspect_decomps(op) == dedent("""
+        assert str(inspector.inspect_decomps(op)) == dedent("""
             Decomposition 0 (name: multi_qubit_decomp_rule)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
