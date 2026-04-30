@@ -1,4 +1,6 @@
 name: "Read the Docs check"
+permissions:
+  contents: read
 on:
   merge_group:
     types:

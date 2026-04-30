@@ -6,6 +6,8 @@
 # The workflow utilizes matrix strategies to parallelize the test runs and supports skipping specific jobs on a lightened CI run.
 
 name: Unit Test - All Interfaces
+permissions:
+  contents: read
 on:
   workflow_call:
     secrets:
