@@ -63,6 +63,10 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     1: ──H─╭●─├GlobalPhase(0.76)─┤ ╰<X@Z>
     2: ────╰X─╰GlobalPhase(0.76)─┤
 
+    .. details::
+        :title: Usage with qjit
+
+        CONTROL FLOW AND LBOs!!!
     """
 
     has_global_phase = False
