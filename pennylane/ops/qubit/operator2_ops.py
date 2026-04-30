@@ -19,7 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation2 import Operation2, Operator2
-from pennylane.templates.core import AbstractArray
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1160,7 +1159,7 @@ def _pauli_rot2_resources(theta, pauli_word, wires):
     return {
         Hadamard2: 2 * pauli_word.count("X"),
         RX2: 2 * pauli_word.count("Y"),
-        MultiRZ2(AbstractArray((), float), AbstractArray((num_active_wires,), int)): 1,
+        MultiRZ2(math.AbstractArray((), float), math.AbstractArray((num_active_wires,), int)): 1,
     }
 
 

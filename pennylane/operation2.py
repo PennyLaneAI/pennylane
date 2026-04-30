@@ -57,7 +57,6 @@ except ImportError:
 
 
 def _process_data(op: "Operator2"):
-    from pennylane.templates.core import AbstractArray
 
     def _mod_and_round(x, mod_val):
         if mod_val is None:
@@ -79,7 +78,7 @@ def _process_data(op: "Operator2"):
                 if math.is_abstract(v)
                 else (
                     (v.shape, v.dtype)
-                    if isinstance(v, AbstractArray)
+                    if isinstance(v, math.AbstractArray)
                     else _mod_and_round(v, mod_val)
                 )
             )
@@ -247,7 +246,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
     _bound_args: BoundArguments
 
     def __init__(self, *args, **kwargs):
-        from pennylane.templates.core import AbstractArray
 
         self._pauli_rep: qp.pauli.PauliSentence | None = None
 
@@ -256,7 +254,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         for n in self.wire_argnames:
             w = self._bound_args.arguments[n]
-            if isinstance(w, AbstractArray):
+            if isinstance(w, math.AbstractArray):
                 val = w
             elif capture.enabled():
                 if math.is_abstract(w) or isinstance(w, jax.core.ShapedArray):
@@ -270,7 +268,7 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         self._is_compressed = True
         if all(
-            not isinstance(self._bound_args.arguments[k], AbstractArray)
+            not isinstance(self._bound_args.arguments[k], math.AbstractArray)
             for k in self.dyn_argnames + self.wire_argnames
         ):
             self._is_compressed = False
@@ -310,14 +308,13 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def resource_params(self):
-        from pennylane.templates.core import AbstractArray
 
         resource_params = {s: self._bound_args.arguments[s] for s in self.static_argnames}
         for w in self.wire_argnames:
-            resource_params[w] = AbstractArray((len(self._bound_args.arguments[w]),), int)
+            resource_params[w] = math.AbstractArray((len(self._bound_args.arguments[w]),), int)
         for d in self.dyn_argnames:
             d_arg = self._bound_args.arguments[d]
-            resource_params[d] = AbstractArray(math.shape(d_arg), math.get_dtype_name(d_arg))
+            resource_params[d] = math.AbstractArray(math.shape(d_arg), math.get_dtype_name(d_arg))
 
         return resource_params
 
@@ -345,7 +342,6 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @classmethod
     def compress_from_cls(cls, *args, **kwargs):
-        from pennylane.templates.core import AbstractArray
 
         if args or kwargs:
             op = type.__call__(cls, *args, **kwargs)
@@ -362,9 +358,9 @@ class Operator2(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         args_dict = {}
         for d in cls.dyn_argnames:
-            args_dict[d] = AbstractArray((), float)
+            args_dict[d] = math.AbstractArray((), float)
         for w, n in zip(cls.wire_argnames, cls.num_wires, strict=True):
-            args_dict[w] = AbstractArray((n,), int)
+            args_dict[w] = math.AbstractArray((n,), int)
         for s in cls.static_argnames:
             args_dict[s] = cls._sig.parameters[s].default
 
