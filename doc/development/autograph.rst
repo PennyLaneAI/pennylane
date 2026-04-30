@@ -59,26 +59,26 @@ Python control flow:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=4)
+    dev = qp.device("default.qubit", wires=4)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def cost(weights, data):
 
         for w in dev.wires:
-            qml.X(w)
+            qp.X(w)
 
         for x in weights:
 
             for j, p in enumerate(x):
                 if p > 0:
-                    qml.RX(p, wires=j)
+                    qp.RX(p, wires=j)
                 elif p < 0:
-                    qml.RY(p, wires=j)
+                    qp.RY(p, wires=j)
 
             for j in range(4):
-                qml.CNOT(wires=[j, jnp.mod((j + 1), 4)])
+                qp.CNOT(wires=[j, jnp.mod((j + 1), 4)])
 
-        return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
+        return qp.expval(qp.PauliZ(0) + qp.PauliZ(3))
 
 While this function cannot be captured directly because there is control flow that depends on the values of the function's inputs (the inputs are treated as JAX tracers at capture time, which don't have concrete values) it can be captured by converting to native PennyLane syntax
 via AutoGraph. This is the default behaviour of :func:`~.autograph.make_plxpr`.
@@ -94,40 +94,40 @@ AutoGraph, but instead using :func:`~.cond` and :func:`~.for_loop`:
 
 .. code-block:: python
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def cost(weights, data):
 
-        @qml.for_loop(0, 4, 1)
+        @qp.for_loop(0, 4, 1)
         def initialize_loop(w):
-            qml.X(w)
+            qp.X(w)
 
-        @qml.for_loop(0, jnp.shape(weights)[0], 1)
+        @qp.for_loop(0, jnp.shape(weights)[0], 1)
         def layer_loop(i):
             x = weights[i]
 
-            @qml.for_loop(0, 4, 1)
+            @qp.for_loop(0, 4, 1)
             def wire_loop(j):
 
-                @qml.cond(x[j] > 0)
+                @qp.cond(x[j] > 0)
                 def trainable_gate():
-                    qml.RX(x[j], wires=j)
+                    qp.RX(x[j], wires=j)
 
                 @trainable_gate.else_if(x[j] < 0)
                 def trainable_gate():
-                    qml.RY(x[j], wires=j)
+                    qp.RY(x[j], wires=j)
 
                 trainable_gate()
 
-            @qml.for_loop(0, 4, 1)
+            @qp.for_loop(0, 4, 1)
             def cnot_loop(j):
-                qml.CNOT(wires=[j, jnp.mod((j + 1), 4)])
+                qp.CNOT(wires=[j, jnp.mod((j + 1), 4)])
 
             wire_loop()
             cnot_loop()
 
         initialize_loop()
         layer_loop()
-        return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
+        return qp.expval(qp.PauliZ(0) + qp.PauliZ(3))
 
 Once converted to native PennyLane control flow manually, AutoGraph is no longer needed:
 
@@ -292,13 +292,13 @@ Most ``for`` loop constructs will be properly captured and compiled by AutoGraph
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def f():
         for x in jnp.array([0, 1, 2]):
-            qml.RY(x * jnp.pi / 4, wires=0)
-        return qml.expval(qml.PauliZ(0))
+            qp.RY(x * jnp.pi / 4, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
 >>> plxpr = make_plxpr(f)()
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
@@ -336,12 +336,12 @@ Indexing arrays within a ``for`` loop will generally work, but care must be take
 
 For example, using a ``for`` loop with static bounds to index a JAX array is straightforward:
 
->>> dev = qml.device("default.qubit", wires=3)
-... @qml.qnode(dev)
+>>> dev = qp.device("default.qubit", wires=3)
+... @qp.qnode(dev)
 ... def f(x):
 ...     for i in range(3):
-...         qml.RX(x[i], wires=i)
-...     return qml.expval(qml.PauliZ(0))
+...         qp.RX(x[i], wires=i)
+...     return qp.expval(qp.PauliZ(0))
 >>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> plxpr = make_plxpr(f)(weights)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
@@ -353,12 +353,12 @@ a JAX array or dynamic runtime variable.
 If the array you are indexing within the ``for`` loop is not a JAX array
 or dynamic variable, an error will be raised:
 
->>> @qml.qnode(dev)
+>>> @qp.qnode(dev)
 ... def f():
 ...     x = [0.1, 0.2, 0.3]
 ...     for i in range(3):
-...         qml.RX(x[i], wires=i)
-...     return qml.expval(qml.PauliZ(0))
+...         qp.RX(x[i], wires=i)
+...     return qp.expval(qp.PauliZ(0))
 >>> plxpr = make_plxpr(f)()
 AutoGraphError: Tracing of an AutoGraph converted for loop failed with an exception:
   TracerIntegerConversionError:    The __index__() method was called on traced array with shape int64[]
@@ -367,12 +367,12 @@ AutoGraphError: Tracing of an AutoGraph converted for loop failed with an except
 To allow AutoGraph conversion to work in this case, simply convert the list to
 a JAX array:
 
->>> @qml.qnode(dev)
+>>> @qp.qnode(dev)
 ... def f():
 ...     x = jnp.array([0.1, 0.2, 0.3])
 ...     for i in range(3):
-...         qml.RX(x[i], wires=i)
-...     return qml.expval(qml.PauliZ(0))
+...         qp.RX(x[i], wires=i)
+...     return qp.expval(qp.PauliZ(0))
 >>> plxpr = make_plxpr(f)()
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(0.99500417, dtype=float64)]
@@ -386,12 +386,12 @@ Indexing into arrays where the ``for`` loop has **dynamic bounds** (that is, whe
 the size of the loop is set by a dynamic runtime variable) will also work, as long
 as the object indexed is a JAX array:
 
->>> @qml.qnode(dev)
+>>> @qp.qnode(dev)
 ... def f(n):
 ...     x = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
 ...     for i in range(n):
-...         qml.RY(x[i], wires=0)
-...     return qml.expval(qml.PauliZ(0))
+...         qp.RY(x[i], wires=0)
+...     return qp.expval(qp.PauliZ(0))
 >>> plxpr = make_plxpr(f)(0)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
 Array(0.70710678, dtype=float64)
@@ -464,14 +464,14 @@ Indexing arrays within a ``while`` loop will generally work, but care must be ta
 
 For example, using a ``while`` loop variable to index a JAX array is straightforward:
 
->>> dev = qml.device("default.qubit", wires=3)
-... @qml.qnode(dev)
+>>> dev = qp.device("default.qubit", wires=3)
+... @qp.qnode(dev)
 ... def f(x):
 ...     i = 0
 ...     while i < 3:
-...         qml.RX(x[i], wires=i)
+...         qp.RX(x[i], wires=i)
 ...         i += 1
-...     return qml.expval(qml.PauliZ(0))
+...     return qp.expval(qp.PauliZ(0))
 >>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> plxpr = make_plxpr(f)(weights)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
@@ -480,28 +480,28 @@ For example, using a ``while`` loop variable to index a JAX array is straightfor
 However, indexing within a ``while`` loop with AutoGraph will require that the object indexed is
 a JAX array:
 
->>> @qml.qnode(dev)
+>>> @qp.qnode(dev)
 ... def f():
 ...     x = [0.1, 0.2, 0.3]
 ...     i = 0
 ...     while i < 3:
-...         qml.RX(x[i], wires=i)
+...         qp.RX(x[i], wires=i)
 ...         i += 1
-...     return qml.expval(qml.PauliZ(0))
+...     return qp.expval(qp.PauliZ(0))
 >>> plxpr = make_plxpr(f)()
 TracerIntegerConversionError: The __index__() method was called on traced array with shape int64[].
 The error occurred while tracing the function functional_while at [...]
 
 To allow AutoGraph conversion to work in this case, simply convert the list to a JAX array:
 
->>> @qml.qnode(dev)
+>>> @qp.qnode(dev)
 ... def f():
 ...     x = jnp.array([0.1, 0.2, 0.3])
 ...     i = 0
 ...     while i < 3:
-...         qml.RX(x[i], wires=i)
+...         qp.RX(x[i], wires=i)
 ...         i += 1
-...     return qml.expval(qml.PauliZ(0))
+...     return qp.expval(qp.PauliZ(0))
 >>> plxpr = make_plxpr(f)()
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(0.99500417, dtype=float64)]
@@ -622,7 +622,7 @@ and allows you to view the converted Python code generated by AutoGraph:
 ...         x = x + 1 / k
 ...     return x
 >>> plxpr = make_plxpr(f)(0)
->>> print(qml.capture.autograph.autograph_source(f))
+>>> print(qp.capture.autograph.autograph_source(f))
 def ag__f(n):
     with ag__.FunctionScope('f', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=ag__.Feature.BUILTIN_FUNCTIONS, internal_convert_user_code=True)) as fscope:
         do_return = False

@@ -141,7 +141,7 @@ class TestControlledInheritance:
         ``Controlled`` branch.
         """
         op = Controlled(base, control_wires=[2], work_wires=[3])
-        assert isinstance(op, Controlled)  # check that we're on the non-Operation branch
+        assert isinstance(op, Controlled)
 
         roundtripped = pickle.loads(pickle.dumps(op))
         qp.assert_equal(op, roundtripped)
