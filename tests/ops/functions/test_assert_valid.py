@@ -26,7 +26,7 @@ import pytest
 import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture
+from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
 
 
 class TestDecompositionErrors:
@@ -163,6 +163,47 @@ class TestDecompositionErrors:
                 return mcm.measurements
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
+
+    def test_bad_new_decomposition_rule_exact(self):
+        """Test that an informative error is raised if the
+        claimed-to-be-exact resources of a decomposition rule are not correct."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
+        with pytest.raises(AssertionError, match="The numbers are off"):
+            _test_decomposition_rule(op, rule_wrong_numbers)
+
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
+        with pytest.raises(AssertionError, match="Missing entirely in gate counts"):
+            _test_decomposition_rule(op, rule_wrong_ops)
+
+    def test_bad_new_decomposition_rule_inexact(self):
+        """Test that an informative error is raised if the
+        inexact resources of a decomposition rule are not correct."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
+        op = MyOp([0, 1])
+        with pytest.raises(AssertionError, match="Gate counts expected from"):
+            _test_decomposition_rule(op, rule_wrong_ops)
 
 
 class TestBadMatrix:
