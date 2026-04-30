@@ -72,8 +72,15 @@ Templates
 
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
+    ~LabsAdder
+    ~LabsOutAdder
+    ~LabsMultiplier
+    ~ClassicalOutMultiplier
+    ~LabsModExp
+    ~LabsPhaseAdder
 
 """
+
 import pennylane as qp
 
 from pennylane.estimator import *
@@ -101,7 +108,7 @@ from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
-    ClassicalOutMultiplier
+    ClassicalOutMultiplier,
 )
 
 from .ops import (
@@ -129,6 +136,7 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
 
 @_map_to_resource_op.register
 def _(op: qp.Adder):
