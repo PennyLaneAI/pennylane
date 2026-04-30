@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
+
 import numpy as np
 import pytest
 
-from pennylane import PauliZ, FermionicSWAP, device, list_decomps, probs, qnode, workflow
+from pennylane import FermionicSWAP, PauliZ, device, list_decomps, probs, qnode, workflow
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
 from pennylane.wires import Wires
@@ -29,7 +30,15 @@ def ffft(wires):
     return probs(wires)
 
 
-@pytest.mark.parametrize("wires", [(0, 1), (0, 1, 2, 3), (0, 1, 2, 3, 4, 5, 6, 7), (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)])
+@pytest.mark.parametrize(
+    "wires",
+    [
+        (0, 1),
+        (0, 1, 2, 3),
+        (0, 1, 2, 3, 4, 5, 6, 7),
+        (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
+    ],
+)
 def test_ffft_decomposition_new(wires):
     op = FFFT(wires)
 
@@ -67,8 +76,8 @@ def test_raises(wires, error_type, error_msg):
                 FermionicSWAP(np.pi, wires=[1, 2]),
                 FermionicSWAP(np.pi, wires=[3, 2]),
                 TwoQubitFFT(wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[2, 3])
-            ]
+                FermionicSWAP(np.pi, wires=[2, 3]),
+            ],
         ),
         (
             (0, 1, 2, 3, 4, 5, 6, 7),
@@ -124,7 +133,8 @@ def test_raises(wires, error_type, error_msg):
                 TwoQubitFFT(wires=[3, 4]),
                 FermionicSWAP(np.pi, wires=[4, 5]),
                 FermionicSWAP(np.pi, wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[6, 7])]
+                FermionicSWAP(np.pi, wires=[6, 7]),
+            ],
         ),
     ],
 )

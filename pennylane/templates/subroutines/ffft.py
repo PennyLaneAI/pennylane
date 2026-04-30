@@ -21,11 +21,10 @@ from collections import defaultdict
 import numpy as np
 
 from pennylane import math
-from pennylane.ops import FermionicSWAP
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
-from pennylane.ops import PauliZ, pow
+from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import Wires, WiresLike
 
 
@@ -147,6 +146,10 @@ class FFFT(Operator):
 
         super().__init__(wires=wires)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
@@ -155,7 +158,9 @@ class FFFT(Operator):
 def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
-    def _count_two_recursive(wires,):
+    def _count_two_recursive(
+        wires,
+    ):
         two_qubit_gates = wires // 2
         if wires > 2:
             two_qubit_gates += _count_two_recursive(wires // 2) * 2

@@ -293,6 +293,7 @@ tested_modified_templates = [
     qp.AmplitudeAmplification,
     qp.ApproxTimeEvolution,
     qp.BBQRAM,
+    qp.FFFT,
     qp.CommutingEvolution,
     qp.ControlledSequence,
     qp.FermionicDoubleExcitation,
@@ -609,6 +610,35 @@ class TestModifiedTemplates:
         U = [qp.Hadamard(0), qp.Hadamard(1)]
         V = [qp.RZ(v_params[0], wires=2), qp.RX(v_params[1], wires=3)]
         assert qp.equal(q.queue[0], template(V, U)) is True
+
+    def test_ffft(self):
+        """Test the primitive bind call of FFFT."""
+
+        kwargs = {"wires": (0, 1, 2, 3)}
+
+        def qfunc():
+            qp.FFFT(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qp.FFFT._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qp.assert_equal(q.queue[0], qp.FFFT(**kwargs))
 
     def test_iqp(self):
         """Test the primitive bind call of IQP."""
