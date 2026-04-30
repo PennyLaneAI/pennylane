@@ -940,7 +940,7 @@
   ```
 
   The following classes have been ported over:
-- **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/92
+- **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
