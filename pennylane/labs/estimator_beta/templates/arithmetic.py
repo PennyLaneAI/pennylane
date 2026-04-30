@@ -146,7 +146,7 @@ class LabsPhaseAdder(
             return [GateCount(phase_shift, num_x_wires)]
 
         gate_lst = []
-        gate_lst.append(Allocate(2))
+        gate_lst.append(qre.Allocate(2))
         gate_lst.append(GateCount(phase_shift, num_x_wires + 1))  # Sum(k)
         gate_lst.append(GateCount(phase_shift, num_x_wires + 1))  # Sum(-N)
 
@@ -183,7 +183,7 @@ class LabsPhaseAdder(
         gate_lst.append(  # Sum(-k) QFT^dagger CNOT QFT Sum(k)
             GateCount(change_op_basis_qft_sum_k_cnot)
         )
-        gate_lst.append(Deallocate(2))
+        gate_lst.append(qre.Deallocate(2))
         return gate_lst
 
     @classmethod
@@ -381,7 +381,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
         )
 
         gate_lst.append(GateCount(ultimate_change_op_basis))
-        gate_lst.append(Deallocate(2))
+        gate_lst.append(qre.Deallocate(2))
         return gate_lst
 
     @classmethod

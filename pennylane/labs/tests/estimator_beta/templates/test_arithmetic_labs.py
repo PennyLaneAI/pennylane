@@ -19,8 +19,9 @@ import re
 import pytest
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator import GateCount, resource_rep
+from pennylane.estimator import GateCount
 from pennylane.wires import Wires
+from pennylane.labs.tests.estimator_beta.utils import assert_decomp_equal
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -185,7 +186,7 @@ class TestResourcePhaseAdder:
     )
     def test_resources(self, op, expected_decomp):
         """Test that the resource_decomp produces the expected resources."""
-        assert op.resource_decomp(**op.resource_params) == expected_decomp
+        assert_decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
     @pytest.mark.parametrize(
@@ -419,7 +420,7 @@ class TestResourceAdder:
     )
     def test_resources(self, op, expected_decomp):
         """Test that the resource_decomp produces the expected resources."""
-        assert op.resource_decomp(**op.resource_params) == expected_decomp
+        assert_decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
     @pytest.mark.parametrize(
@@ -916,7 +917,7 @@ class TestResourceMultiplier:
     )
     def test_resources(self, op, expected_decomp):
         """Test that the resource_decomp produces the expected resources."""
-        assert op.resource_decomp(**op.resource_params) == expected_decomp
+        assert_decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
     @pytest.mark.parametrize(
