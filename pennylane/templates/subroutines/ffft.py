@@ -29,7 +29,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class TwoQubitFFT(Operator):
-    """
+    r"""
     The two-qubit unitary operator that corresponds to a Fourier transform on
     Fermions, encoded using a Jordan-Wigner Transformation (JWT).
 
@@ -72,7 +72,7 @@ class TwoQubitFFT(Operator):
 
 
 class FFFT(Operator):
-    """Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
+    r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
     the fermions are encoded using the Jordan-Wigner transformation. Assumes the Fermions are encoded using the ordering
     of the wires as passed to the FFFT.
 
@@ -110,6 +110,7 @@ class FFFT(Operator):
     Consider the FFFT operation performed on 4 wires:
 
     .. code-block:: python
+
         import pennylane as qp
 
         dev = qp.device("default.qubit")
