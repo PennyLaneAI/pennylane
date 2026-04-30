@@ -15,8 +15,6 @@
 Tests for the OutMultiplier template.
 """
 
-from itertools import product
-
 import pytest
 
 import pennylane as qp
@@ -125,85 +123,77 @@ def test_standard_validity_out_multiplier():
     qp.ops.functions.assert_valid(op)
 
 
-def _test_mult_correctness(
-    all_wires, mod, rule, seed, clean=True, include_xy=None, output_wires_zeroed=False
-):
+def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False):
     """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
-    # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, work_wires = all_wires
+    total_wires = x_wires + y_wires + output_wires
+    if work_wires:
+        total_wires += work_wires
 
     dev = qp.device("default.qubit")
 
     @qp.set_shots(10)
     @qp.qnode(dev)
-    def circuit(x, y, z):
-        qp.BasisEmbedding(x, wires=x_wires)
-        qp.BasisEmbedding(y, wires=y_wires)
-        qp.BasisEmbedding(z, wires=output_wires)
+    def circuit(x_state, y_state, z_state, output_state):
+        qp.StatePrep(x_state, x_wires)
+        qp.StatePrep(y_state, y_wires)
+        qp.StatePrep(z_state, output_wires, pad_with=0.0)
         rule(x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed)
-        return (
-            qp.counts(wires=x_wires),
-            qp.counts(wires=y_wires),
-            qp.counts(wires=output_wires),
-            qp.counts(wires=(work_wires or None)),
-        )
+        qp.adjoint(qp.StatePrep)(output_state, x_wires + y_wires + output_wires)
+        return qp.probs(wires=total_wires)
 
     if mod is None:
         mod = 2 ** len(output_wires)
 
     rng = np.random.default_rng(seed)
+
     num_x = 2 ** len(x_wires)
-    xs = rng.choice(num_x, size=min(num_x, 2))
+    x_state = rng.random(num_x) + 1j * rng.random(num_x)
+    x_state /= np.linalg.norm(x_state)
+
     num_y = 2 ** len(y_wires)
-    ys = rng.choice(num_y, size=min(num_y, 2))
-    xys = list(product(xs, ys))
-    if include_xy is not None:
-        xys.append(include_xy)
+    y_state = rng.random(num_y) + 1j * rng.random(num_y)
+    y_state /= np.linalg.norm(y_state)
 
     if output_wires_zeroed:
-        zs = [0]
+        z_state = np.zeros(mod, dtype=complex)
+        z_state[0] = 1.0
     else:
-        zs = [0, mod // 2 + 1, mod - 1]
+        z_state = rng.random(mod) + 1j * rng.random(mod)
+        z_state /= np.linalg.norm(z_state)
 
-    for (x, y), z in product(xys, zs):
-        output = circuit(x, y, z)
-        assert len(output) == 4 and all(len(out) == 1 for out in output)
-        out_ints = tuple(int(list(out.keys())[0], 2) for out in output)
-        expected = (x, y, (z + x * y) % mod, 0)
+    num_z = 2 ** len(output_wires)
+    output_state = np.zeros((num_x, num_y, mod), dtype=complex)
+    for x in range(num_x):
+        for y in range(num_y):
+            output_state[x, y] = x_state[x] * y_state[y] * np.roll(z_state, x * y)
+    output_state = np.concatenate([output_state, np.zeros((num_x, num_y, num_z - mod))], axis=2)
+    output_state = output_state.reshape(-1)
 
-        if clean and len(work_wires) > 0:
-            assert out_ints == expected, f"\n{out_ints}\n{expected} ({z=})"
-        else:
-            # Skip work wire check
-            assert out_ints[:-1] == expected[:-1], f"\n{out_ints[:-1]}\n{expected[:-1]} ({z=})"
+    probs = circuit(x_state, y_state, z_state, output_state)
+    assert np.isclose(probs[0], 1.0)
+    assert np.allclose(probs[1:], 0.0)
 
 
 class TestOutMultiplier:
     """Test the qp.OutMultiplier template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y"),
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
         [
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], 7, [9, 10], 2, 3),
-            ([0, 1], [3, 4, 5], [6, 7, 8, 2], 14, [9, 10], 1, 2),
-            ([0, 1, 2], [3, 4], [5, 6, 7, 8], 8, [9, 10], 3, 3),
-            ([0, 1, 2, 3], [4, 5], [6, 7, 8, 9, 10], 22, [11, 12], 0, 0),
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], None, [9, 10], 1, 3),
-            ([0, 1], [3, 4, 5], [6, 7, 8], None, None, 3, 3),
+            ([0, 1, 2], [3, 4, 5], [6, 7, 8], 7, [9, 10]),
+            ([0, 1], [3, 4, 5], [6, 7, 8, 2], 14, [9, 10]),
+            ([0, 1, 2], [3, 4], [5, 6, 7, 8], 8, [9, 10]),
+            ([0, 1, 2, 3], [4, 5], [6, 7, 8, 9, 10], 22, [11, 12]),
+            ([0, 1, 2], [3, 4, 5], [6, 7, 8], None, [9, 10]),
+            ([0, 1], [3, 4, 5], [6, 7, 8], None, None),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
-        _test_mult_correctness(
-            (x_wires, y_wires, output_wires, work_wires),
-            mod,
-            OutMultiplier.compute_decomposition,
-            seed,
-            clean=False,
-            include_xy=(x, y),
-        )
+        # pylint: disable=too-many-arguments
+        all_wires = (x_wires, y_wires, output_wires, work_wires)
+        _test_mult_correctness(all_wires, mod, OutMultiplier.compute_decomposition, seed)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -423,14 +413,9 @@ class TestOutMultiplier:
         wires = qp.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
-    @pytest.mark.jax
-    def test_jit_compatible(self):
-        """Test that the template is compatible with the JIT compiler."""
-
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-
+    @pytest.mark.external
+    def test_qjit_compatible(self):
+        """Test that the template is compatible with the QJIT compiler."""
         x, y = 2, 3
         x_list = [1, 0]
         y_list = [1, 1]
@@ -439,9 +424,9 @@ class TestOutMultiplier:
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit")
 
-        @jax.jit
+        @qp.qjit
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
@@ -452,6 +437,5 @@ class TestOutMultiplier:
 
         # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]
-        assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod
-        )
+
+        assert np.allclose(2 ** np.arange(3, -1, -1) @ out, (x * y) % mod)
