@@ -22,7 +22,95 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier, _add_plus_one
+
+
+class TestBuildingBlocks:
+
+    @pytest.mark.parametrize(
+        "num_x_wires, num_y_wires, num_work_wires",
+        [(1, 1, 0), (1, 1, 1), (2, 1, 3), (4, 1, 0), (2, 2, 1), (2, 4, 8)],
+    )
+    def test_add_plus_one_arithmetic(self, num_x_wires, num_y_wires, num_work_wires):
+        """Test that the subroutine _add_plus_one computes the correct arithmetic."""
+        x_wires = list(range(num_x_wires))
+        y_wires = list(range(num_x_wires, num_x_wires + num_y_wires))
+        work_wires = list(
+            range(num_x_wires + num_y_wires, num_x_wires + num_y_wires + num_work_wires)
+        )
+
+        @qp.set_shots(10)
+        @qp.qnode(qp.device("default.qubit"))
+        def node(x, y):
+            qp.BasisEmbedding(x, x_wires)
+            qp.BasisEmbedding(y, y_wires)
+            _add_plus_one(x_wires, y_wires, work_wires)
+            if work_wires:
+                return (
+                    qp.counts(wires=x_wires),
+                    qp.counts(wires=y_wires),
+                    qp.counts(wires=work_wires),
+                )
+            return qp.counts(wires=x_wires), qp.counts(wires=y_wires)
+
+        num_x = 2**num_x_wires
+        num_y = 2**num_y_wires
+        for x in range(num_x):
+            for y in range(num_y):
+                output = node(x, y)
+                assert all(len(out) == 1 for out in output)
+                output = tuple(int(list(out.keys())[0], 2) for out in output)
+                if work_wires:
+                    assert output == (x, (x + y + 1) % num_y, 0)
+                else:
+                    assert output == (x, (x + y + 1) % num_y)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("decompose_right_elbow", [False, True])
+    def test_add_plus_one_phase(self, decompose_right_elbow, seed):
+        """Test that the subroutine _add_plus_one does not incur any phases."""
+        x_wires = list(range(3))
+        y_wires = list(range(3, 7))
+        work_wires = list(range(7, 10))
+
+        gate_set = {
+            "StatePrep",
+            "X",
+            "CNOT",
+            "TemporaryAND",
+            "T",
+            "S",
+            "Adjoint(T)",
+            "Adjoint(S)",
+            "MidMeasureMP",
+            "H",
+            "Cond",
+            "CZ",
+            "Adjoint(StatePrep)",
+        }
+        if not decompose_right_elbow:
+            gate_set.add("Adjoint(TemporaryAND)")
+
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("default.qubit"))
+        def node(x_state, y_state, transformed_state):
+            qp.StatePrep(x_state, x_wires)
+            qp.StatePrep(y_state, y_wires)
+            _add_plus_one(x_wires, y_wires, work_wires)
+            qp.adjoint(qp.StatePrep)(transformed_state, x_wires + y_wires)
+            return qp.probs(wires=x_wires + y_wires)
+
+        rng = np.random.default_rng(seed)
+        x_state = rng.random(8) + 1j * rng.random(8)
+        x_state /= np.linalg.norm(x_state)
+        y_state = rng.random(16) + 1j * rng.random(16)
+        y_state /= np.linalg.norm(y_state)
+        transformed_state = np.zeros(128, dtype=complex)
+        for x in range(8):
+            transformed_state[x * 16 : (x + 1) * 16] = np.roll(x_state[x] * y_state, x + 1)
+        probs = node(x_state, y_state, transformed_state)
+        assert np.isclose(probs[0], 1.0)
+        assert np.allclose(probs[1:], 0.0)
 
 
 @pytest.mark.jax

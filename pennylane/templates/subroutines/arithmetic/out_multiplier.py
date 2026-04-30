@@ -31,16 +31,16 @@ from pennylane.ops import (
     CNOT,
     BasisState,
     H,
-    MidMeasure,
     Prod,
     X,
     adjoint,
     change_op_basis,
     ctrl,
-    measure,
     prod,
 )
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
+from pennylane.templates.subroutines.arithmetic.semi_adder import _semiadder, _semiadder_resources
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -511,7 +511,6 @@ def _out_multiplier_with_caddsub_resources(
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
     x_rep = resource_rep(X)
-    meas_rep = resource_rep(MidMeasure)
 
     # Controlled add-subtract loop
     loop_size = min(k, n)
@@ -527,30 +526,25 @@ def _out_multiplier_with_caddsub_resources(
 
     # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
     resources[cnot_on_0_rep] += 2 * loop_size
-    # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
+    # Bit flip on LSB work wire, controlled on |0>: two per ctrl-add-subtract that has work wires
     c_add_subs_with_work_wires = min(n, k - 1)
-    resources[cnot_on_0_rep] += c_add_subs_with_work_wires
-    # Bit reset on LSB work wire: one per ctrl-add-subtract that has work wires
-    resources[meas_rep] += c_add_subs_with_work_wires
+    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
 
-    # SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
+    # Decomposed SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(k - i, m + 1) if output_wires_zeroed else k - i
-        resources[
-            resource_rep(SemiAdder, num_x_wires=m, num_y_wires=size, num_work_wires=size - 1)
-        ] += 1
+        adder_resources = _semiadder_resources(num_x_wires=m, num_y_wires=size)
+        for key, value in adder_resources.items():
+            resources[key] += value
 
     # Add 2^m(x+1)
-    resources[
-        resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k - m, num_work_wires=k - m - 1)
-    ] += 1
+    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=k - m)
+    for key, value in adder_resources.items():
+        resources[key] += value
     # bit flips corresponding to input carry activated. Accounts for the fact that
     # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
     has_work_wires = int(k > m + 1)
-    resources[x_rep] += 4 + has_work_wires
-    # The work wire reset bit flip is done via measurement
-    if has_work_wires:
-        resources[meas_rep] += 1
+    resources[x_rep] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
@@ -563,8 +557,9 @@ def _out_multiplier_with_caddsub_resources(
     # increment 2^(n+m) bit
     size = k - n - m
     if size > 0:
-        resources[resource_rep(TemporaryAND)] += size - 2
-        resources[adjoint_resource_rep(TemporaryAND)] += size - 2
+        if size > 1:
+            resources[resource_rep(TemporaryAND)] += size - 2
+            resources[adjoint_resource_rep(TemporaryAND)] += size - 2
         resources[resource_rep(CNOT)] += size - 1
         resources[x_rep] += 1
 
@@ -607,19 +602,21 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     work_wires = work_wires[: len(y_wires) - 1]
     X(x_wires[-1])
     X(y_wires[-1])
+    with AnnotatedQueue() as q:
+        _semiadder(x_wires, y_wires, work_wires)
+    adder_ops = q.queue
     if work_wires:
-        X(work_wires[-1])
-    SemiAdder(x_wires, y_wires, work_wires)
-    X(x_wires[-1])
+        # We insert work wire bit flips where a carry-in qubit would cause them,
+        # i.e., after the very first left elbow and before the last right elbow
+        with QueuingManager.stop_recording():
+            work_wire_flip = X(work_wires[-1])
+        adder_ops.insert(1, work_wire_flip)
+        adder_ops.insert(-2, work_wire_flip)
+    if QueuingManager.recording():
+        for op in adder_ops:
+            apply(op)
     X(y_wires[-1])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire.
-        # However, the SemiAdder uses a decomposition with a right elbow, which has an assumption
-        # about its output state attached to it, and we violate this assumption here.
-        # In order to obtain a correct behaviour both for unitary decompositions of the right elbow
-        # and for its implementation relying on the assumption, we replace the bit flip with
-        # a measurement + reset.
-        measure(work_wires[-1], reset=True)
+    X(x_wires[-1])
 
 
 def _increment(wires, work_wires):
@@ -701,17 +698,22 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
     work_wires = work_wires[: len(y_wires) - 1]
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+
+    with AnnotatedQueue() as q:
+        _semiadder(x_wires, y_wires, work_wires)
+    adder_ops = q.queue
     if work_wires:
-        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
-    SemiAdder(x_wires, y_wires, work_wires)
+        # We insert controlled work wire bit flips where a carry-in qubit would cause them,
+        # i.e., after the very first left elbow and before the last right elbow
+        with QueuingManager.stop_recording():
+            work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
+        adder_ops.insert(1, work_wire_flip)
+        adder_ops.insert(-2, work_wire_flip)
+    if QueuingManager.recording():
+        for op in adder_ops:
+            apply(op)
+
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire, controlled
-        # on the `c_wire` being in state |0>.
-        # However, as discussed in _add_plus_one, we want to use a measurement+reset instead
-        # for addition + 1. In case `c_wire` is in state |1>, we just add a reset of a work
-        # wire that anyways is returned in state |0> by `SemiAdder`, so there is no harm done.
-        measure(work_wires[-1], reset=True)
 
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])

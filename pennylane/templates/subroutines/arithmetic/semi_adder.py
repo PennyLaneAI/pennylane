@@ -302,6 +302,8 @@ class SemiAdder(Operation):
 
 
 def _semiadder_resources(num_x_wires, num_y_wires, **_):
+    if num_y_wires == 1:
+        return {CNOT: 1}
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
     # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
