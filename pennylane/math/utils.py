@@ -24,6 +24,8 @@ from autoray import numpy as np
 
 from pennylane import math
 
+from .abstract_types import AbstractArray
+
 
 def allequal(tensor1, tensor2, **kwargs):
     """Returns True if two tensors are element-wise equal along a given axis.
@@ -417,6 +419,9 @@ def is_abstract(tensor, like=None):
     Abstract: True
     <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
     """
+    if isinstance(tensor, AbstractArray):
+        return True
+
     interface = like or math.get_interface(tensor)
 
     if interface == "jax":

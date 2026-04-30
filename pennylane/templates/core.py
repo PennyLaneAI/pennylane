@@ -21,7 +21,6 @@ This module contains the abstractions for defining subroutines.
 
     ~Subroutine
     ~SubroutineOp
-    ~AbstractArray
     ~change_op_basis_subroutine_resource_rep
     ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
@@ -32,8 +31,7 @@ import copy
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
-from dataclasses import dataclass
-from functools import lru_cache, reduce, update_wrapper
+from functools import lru_cache, update_wrapper
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
@@ -56,34 +54,6 @@ from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
-
-
-@dataclass(frozen=True)
-class AbstractArray:
-    """An abstract representation of an array that contains the shape and dtype
-    attributes necessary for resource calculations.
-
-    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
-    for specifying abstract information about a :class:`~.Subroutine` for
-    purposes of resource calculations used with graph decompositions.
-
-    Args:
-        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
-        dtype (type): the data type of the array. Defaults to ``np.dtype(int)`` for easier use in specifying
-        wires.
-    """
-
-    shape: tuple[int, ...]
-    dtype: np.dtype = np.dtype(int)
-
-    def __len__(self):
-        return reduce(lambda a, b: a * b, self.shape)
-
-    def __post_init__(self):
-        if math.get_interface(self.dtype) == "torch":
-            dummy = math.array((), dtype=self.dtype, like="torch")
-            object.__setattr__(self, "dtype", dummy.numpy().dtype)
-        object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
 def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
@@ -207,7 +177,8 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.math import AbstractArray
+        from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
@@ -254,12 +225,12 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(AbstractArray(shape=(len(val),), dtype=int))
+            key.append(math.AbstractArray(shape=(len(val),), dtype=int))
         else:
             leaves, struct = flatten(val)
 
             shapes = (
-                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                math.AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
                 for l in leaves
             )
             key.append((struct, tuple(shapes)))
@@ -427,11 +398,11 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     sig = subroutine.signature.bind(*args, **kwargs)
     for arg in subroutine.dynamic_argnames:
         avals, struct = flatten(sig.arguments[arg])
-        if avals and isinstance(avals[0], AbstractArray):
+        if avals and isinstance(avals[0], math.AbstractArray):
             params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
             sig.arguments[arg] = unflatten(params, struct)
     for arg in subroutine.wire_argnames:
-        if isinstance(sig.arguments[arg], AbstractArray):
+        if isinstance(sig.arguments[arg], math.AbstractArray):
             sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
     with queuing.AnnotatedQueue() as q:
         subroutine.definition(**sig.arguments)
@@ -633,7 +604,7 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
 
-    >>> from pennylane.templates import AbstractArray
+    >>> from pennylane.math import AbstractArray
     >>> abstract_params = AbstractArray((10,), float)
     >>> abstract_wires = AbstractArray((10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
@@ -644,7 +615,8 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.math import AbstractArray
+        from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
@@ -918,7 +890,6 @@ if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-acce
 __all__ = [
     "Subroutine",
     "SubroutineOp",
-    "AbstractArray",
     "subroutine_resource_rep",
     "CollectedSubroutine",
     "adjoint_subroutine_resource_rep",
