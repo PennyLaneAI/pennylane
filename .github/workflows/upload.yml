@@ -1,4 +1,6 @@
 name: Upload
+permissions:
+  contents: read
 on:
   release:
     types: [published]
