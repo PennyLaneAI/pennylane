@@ -350,6 +350,34 @@ class TestTemplates:
         H = qp.dot(coeffs, ops)
         assert q.queue[0] == qp.TrotterProduct(H, time=2.4, order=2)
 
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_state_prep_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+
+        state = input_type([1, 0, 0, 0])
+        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
+        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
+        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), int)
+
+        state = input_type([1.0, 0.0, 0.0, 0.0])
+        jaxpr = jax.make_jaxpr(qp.StatePrep)(state, wires=[0, 1])
+        assert jaxpr.eqns[9].primitive == qp.StatePrep._primitive
+        assert jaxpr.eqns[9].invars[0].aval == jax.core.ShapedArray((4,), float)
+
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_basis_state_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+
+        state = input_type([1, 0])
+        jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
+        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
+        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
+
+        state = input_type([1.0, 0.0])
+        jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
+        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
+        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), float)
+
 
 class TestOpmath:
     """Tests for capturing operator arithmetic."""
