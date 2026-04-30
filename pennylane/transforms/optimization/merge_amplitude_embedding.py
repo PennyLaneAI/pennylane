@@ -384,6 +384,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         0: ─╭●───┤  State
         1: ─╰X───┤  State
         2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
         You can also apply this transform on quantum functions:
 
