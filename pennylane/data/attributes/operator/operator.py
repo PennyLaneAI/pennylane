@@ -55,7 +55,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         """Set of supported operators."""
         return frozenset(
             (
-                # pennylane/ops/qubit/arithmetic_qml.py
+                # pennylane/ops/qubit/arithmetic_qp.py
                 qops.QubitCarry,
                 qops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
@@ -67,7 +67,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 # pennylane/ops/qubit/matrix_ops.py
                 qops.QubitUnitary,
                 qops.DiagonalQubitUnitary,
-                # pennylane/ops/qubit/non_parametric_qml.py
+                # pennylane/ops/qubit/non_parametric_qp.py
                 qops.Hadamard,
                 qops.PauliX,
                 qops.PauliY,
