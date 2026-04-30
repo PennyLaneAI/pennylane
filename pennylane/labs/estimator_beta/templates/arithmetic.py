@@ -60,7 +60,7 @@ class LabsPhaseAdder(
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> phase_add = qre.LabsPhaseAdder(5, mod=16)
+    >>> phase_add = qre.PhaseAdder(5, mod=16)
     >>> print(qre.estimate(phase_add))
     --- Resources: ---
      Total wires: 7
@@ -77,7 +77,7 @@ class LabsPhaseAdder(
 
     resource_keys = {"num_x_wires", "mod"}
 
-    def __init__(self, num_x_wires, mod=None, wires=None):
+    def __init__(self, num_x_wires: int, mod: int | None = None, wires: WiresLike | None = None):
         self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
 
@@ -103,7 +103,7 @@ class LabsPhaseAdder(
         return {"num_x_wires": self.num_x_wires, "mod": self.mod}
 
     @classmethod
-    def resource_rep(cls, num_x_wires, mod=None) -> CompressedResourceOp:
+    def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -120,7 +120,7 @@ class LabsPhaseAdder(
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, mod=None) -> list[GateCount]:
+    def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -232,7 +232,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> adder = qre.LabsAdder(5, mod=32)
+    >>> adder = qre.Adder(5, mod=32)
     >>> print(qre.estimate(adder))
     --- Resources: ---
      Total wires: 5
@@ -248,7 +248,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
 
     resource_keys = {"num_x_wires", "mod"}
 
-    def __init__(self, num_x_wires, mod=None, wires=None):
+    def __init__(self, num_x_wires: int, mod: int | None = None, wires: WiresLike | None = None):
         self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
 
@@ -274,7 +274,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
         return {"num_x_wires": self.num_x_wires, "mod": self.mod}
 
     @classmethod
-    def resource_rep(cls, num_x_wires, mod=None) -> CompressedResourceOp:
+    def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -291,7 +291,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, mod=None) -> list[GateCount]:
+    def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -421,6 +421,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
         num_output_wires (int): the number of wires used to store the result of the addition
         mod (int | None): The modulo for performing the addition. If not provided, it will be set to
             its maximum value, :math:`2^{\text{num_output_wires}}`.
+        wires (WiresLike | None): the wires the operator acts on
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.E of
@@ -432,7 +433,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> out_add = qre.LabsOutAdder(3, 3, 5, mod=32)
+    >>> out_add = qre.OutAdder(3, 3, 5, mod=32)
     >>> print(qre.estimate(out_add))
     --- Resources: ---
      Total wires: 11
@@ -448,7 +449,14 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
     resource_keys = {"num_x_wires", "num_y_wires", "num_output_wires", "mod"}
 
-    def __init__(self, num_x_wires, num_y_wires, num_output_wires, mod=None, wires=None):
+    def __init__(
+        self,
+        num_x_wires: int,
+        num_y_wires: int,
+        num_output_wires: int,
+        mod: int | None = None,
+        wires: WiresLike | None = None,
+    ):
         self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_y_wires = num_y_wires
@@ -486,7 +494,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
     @classmethod
     def resource_rep(
-        cls, num_x_wires, num_y_wires, num_output_wires, mod=None
+        cls, num_x_wires: int, num_y_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -512,7 +520,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
     @classmethod
     def resource_decomp(
-        cls, num_x_wires, num_y_wires, num_output_wires, mod=None
+        cls, num_x_wires: int, num_y_wires: int, num_output_wires: int, mod: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -557,6 +565,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
             ),
         ]
 
+
 class ClassicalOutMultiplier(
     ResourceOperator
 ):  # Mult_out(k, N): Out-of-place Quantum-Classical Modular Multiplier
@@ -574,6 +583,7 @@ class ClassicalOutMultiplier(
         num_output_wires (int): the number of wires used to store the result of the multiplication
         mod (int | None): The modulo for performing the multiplication. If not provided, it will be set to
             its maximum value, :math:`2^{\text{num_output_wires}}`.
+        wires (WiresLike | None): the wires the operator acts on
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.F of
@@ -585,7 +595,7 @@ class ClassicalOutMultiplier(
     The resources for this operation are computed using:
 
     >>> import pennylane.labs.estimator_beta as qre
-    >>> mult = qre.ClassicalOutMultiplier(5,6,mod=32)
+    >>> mult = qre.ClassicalOutMultiplier(5, 6, mod=32)
     >>> print(qre.estimate(mult))
     --- Resources: ---
      Total wires: 14
@@ -603,7 +613,13 @@ class ClassicalOutMultiplier(
 
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
 
-    def __init__(self, num_x_wires, num_output_wires, mod=None, wires=None):
+    def __init__(
+        self,
+        num_x_wires: int,
+        num_output_wires: int,
+        mod: int | None = None,
+        wires: WiresLike | None = None,
+    ):
         self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_output_wires = num_output_wires
@@ -637,7 +653,9 @@ class ClassicalOutMultiplier(
         }
 
     @classmethod
-    def resource_rep(cls, num_x_wires, num_output_wires, mod=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -655,7 +673,9 @@ class ClassicalOutMultiplier(
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, num_output_wires, mod=None) -> list[GateCount]:
+    def resource_decomp(
+        cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -705,7 +725,9 @@ class ClassicalOutMultiplier(
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class LabsMultiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical Modular Multiplier
+class LabsMultiplier(
+    ResourceOperator
+):  # Mult_in(k, N): Inplace Quantum-Classical Modular Multiplier
     r"""Resource class for the inplace quantum-classical modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
@@ -719,6 +741,7 @@ class LabsMultiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classi
         num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
         mod (int | None): The modulo for performing the multiplication. If not provided, it will be set to
             its maximum value, :math:`2^{\text{num_x_wires}}`.
+        wires (WiresLike | None): the wires the operator acts on
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in Section V.G of
@@ -746,7 +769,7 @@ class LabsMultiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classi
 
     resource_keys = {"num_x_wires", "mod"}
 
-    def __init__(self, num_x_wires, mod=None, wires=None):
+    def __init__(self, num_x_wires: int, mod: int | None = None, wires: WiresLike | None = None):
         self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
 
@@ -772,7 +795,7 @@ class LabsMultiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classi
         return {"mod": self.mod, "num_x_wires": self.num_x_wires}
 
     @classmethod
-    def resource_rep(cls, num_x_wires, mod=None) -> CompressedResourceOp:
+    def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -789,7 +812,7 @@ class LabsMultiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classi
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, mod=None) -> list[GateCount]:
+    def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -866,6 +889,7 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
         num_output_wires (int): the number of wires used to store the result of the exponentiation
         mod (int | None): The modulo for performing the exponentiation. If not provided, it will be set to
             its maximum value, :math:`2^{\text{num_output_wires}}`.
+        wires (WiresLike | None): the wires the operator acts on
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.J of
@@ -895,7 +919,13 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
 
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
 
-    def __init__(self, num_x_wires, num_output_wires, mod=None, wires=None):
+    def __init__(
+        self,
+        num_x_wires: int,
+        num_output_wires: int,
+        mod: int | None = None,
+        wires: WiresLike | None = None,
+    ):
         self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_output_wires = num_output_wires
@@ -929,7 +959,9 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
         }
 
     @classmethod
-    def resource_rep(cls, num_x_wires, num_output_wires, mod=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -947,7 +979,9 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, num_output_wires, mod=None) -> list[GateCount]:
+    def resource_decomp(
+        cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
