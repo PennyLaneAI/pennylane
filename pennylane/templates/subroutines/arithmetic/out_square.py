@@ -28,10 +28,12 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
-from pennylane.ops.mid_measure import MidMeasure, measure
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.wires import Wires, WiresLike
+
+from .out_multiplier import _add_plus_one, _c_add_sub, _increment
+from .semi_adder import SemiAdder, _semiadder_resources
+from .temporary_and import TemporaryAND
 
 
 class OutSquare(Operation):
@@ -459,17 +461,16 @@ def _out_square_with_caddsub_resources(
 ) -> dict:
     # pylint: disable=unused-argument
     n = num_x_wires
-    k = num_output_wires + 1
+    m = num_output_wires + 1
     resources = defaultdict(int)
 
     cnot_rep = resource_rep(CNOT)
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
     x_rep = resource_rep(X)
-    meas_rep = resource_rep(MidMeasure)
 
     # Controlled add-subtract loop
-    loop_size = min(k, n)
+    loop_size = min(m, n)
     # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if n > 1:
         c_flips = controlled_resource_rep(
@@ -485,20 +486,18 @@ def _out_square_with_caddsub_resources(
     # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
     resources[cnot_on_0_rep] += 2 * loop_size
     # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
-    c_add_subs_with_work_wires = min(n, k - 1)
-    resources[cnot_on_0_rep] += c_add_subs_with_work_wires
-    # Bit reset on LSB work wire: one per ctrl-add-subtract that has work wires
-    resources[meas_rep] += c_add_subs_with_work_wires
+    c_add_subs_with_work_wires = min(n, m - 1)
+    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
 
     # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
-        size = min(k - i, n + 1) if output_wires_zeroed else k - i
-        resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=size, num_work_wires=size - 1)
-        ] += 1
+        size = min(m - i, n + 1) if output_wires_zeroed else m - i
+        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=size)
+        for key, value in adder_resources.items():
+            resources[key] += value
 
     # Subtract 2^(2n)
-    size = k - 2 * n
+    size = m - 2 * n
     if size > 0:
         if size > 1:
             resources[resource_rep(TemporaryAND)] += size - 2
@@ -510,128 +509,18 @@ def _out_square_with_caddsub_resources(
     if n > 1:
         resources[resource_rep(BasisState, num_wires=n - 1)] += 2
 
-    resources[x_rep] += 3
-    resources[meas_rep] += 1
-    resources[resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k, num_work_wires=k - 1)] += 1
+    resources[x_rep] += 6 + 2 * n
+    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
+    for key, value in adder_resources.items():
+        resources[key] += value
 
-    # Add 2^(n+1) x if 2^k > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if k > n + 1:
+    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
+    if m > n + 1:
         resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k - n - 1, num_work_wires=k - n - 2)
+            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=m - n - 1, num_work_wires=m - n - 2)
         ] += 1
 
     return dict(resources)
-
-
-def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
-    if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
-
-    work_wires = work_wires[: len(y_wires) - 1]
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
-    if work_wires:
-        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
-    SemiAdder(x_wires, y_wires, work_wires)
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire, controlled
-        # on the `c_wire` being in state |0>.
-        # However, we want to use a measurement+reset instead for addition + 1.
-        # In case `c_wire` is in state |1>, we just add a reset of a work
-        # wire that anyways is returned in state |0> by `SemiAdder`, so there is no harm done.
-        measure(work_wires[-1], reset=True)
-
-    if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
-
-
-def _subtract_then_add_one(x_wires, y_wires, work_wires):
-    if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
-
-    work_wires = work_wires[: len(y_wires) - 1]
-    X(y_wires[-1])
-    if work_wires:
-        X(work_wires[-1])
-    SemiAdder(x_wires, y_wires, work_wires)
-    X(y_wires[-1])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire.
-        # However, the SemiAdder uses a decomposition with a right elbow, which has an assumption
-        # about its output state attached to it, and we violate this assumption here.
-        # In order to obtain a correct behaviour both for unitary decompositions of the right elbow
-        # and for its implementation relying on the assumption, we replace the bit flip with
-        # a measurement + reset.
-        measure(work_wires[-1], reset=True)
-
-    if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
-
-
-def _increment(wires, work_wires):
-    """Increment the input `wires` by one, using zeroed `work_wires`.
-    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via MCX gates if
-    work wires are available:
-
-    Generic decomposition:
-    0: ─╭X────────────────┤
-    1: ─├●─╭X─────────────┤
-    2: ─├●─├●─╭X──────────┤
-    3: ─├●─├●─├●─╭X───────┤
-    4: ─├●─├●─├●─├●─╭X────┤
-    5: ─╰●─╰●─╰●─╰●─╰●──X─┤
-
-    Decompose all MCX gates into elbows and CNOTs:
-       0: ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
-       1: ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
-       2: ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
-       3: ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
-       4: ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
-
-    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
-       0: ─────────────╭X───────────────────────────────┤
-       1: ──────────╭●─│───●╮─╭X────────────────────────┤
-       2: ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
-       3: ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
-       4: ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
-
-    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
-    This is derived, e.g., by Gidney in
-    `his blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__
-    """
-    wires = wires[::-1]
-    if len(wires) > 1:
-        # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
-        # Forward ladder
-        for k in range(len(wires) - 2):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
-        # Backward ladder
-        for k in range(len(wires) - 3, -1, -1):
-            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
-        # Trailing CNOT
-        CNOT(wires[:2])
-    X(wires[0])
-
-
-def _subtract_two_to_the_two_n(n, output_wires, work_wires):
-    if len(output_wires) > 2 * n:
-        _output = output_wires[: -2 * n]
-        _ = [X(w) for w in _output]
-        _increment(_output, work_wires)
-        _ = [X(w) for w in _output]
 
 
 @register_condition(_out_square_with_caddsub_condition)
@@ -650,25 +539,31 @@ def _out_square_with_caddsub(
     output_wires = output_wires + [work_wires[1]]
     work_wires = work_wires[2:]
     n = len(x_wires)
-    k = len(output_wires)
+    m = len(output_wires)
 
-    for i, x_wire in enumerate(x_wires[::-1][:k]):
-        output_msb = max(0, k - (n + 1 + i)) if output_wires_zeroed else 0
-        output = output_wires[output_msb : k - i]
+    for i, x_wire in enumerate(x_wires[::-1][:m]):
+        output_msb = max(0, m - (n + 1 + i)) if output_wires_zeroed else 0
+        output = output_wires[output_msb : m - i]
         CNOT([x_wire, c_wire])
         _c_add_sub(c_wire, x_wires, output, work_wires)
         CNOT([x_wire, c_wire])
 
     # Corrections - no need for control wire any more
     work_wires = [c_wire] + work_wires
-    # Subtract 2^(2n)
-    _subtract_two_to_the_two_n(n, output_wires, work_wires)
-    # Add (2^n-1-x) + 1
-    _subtract_then_add_one(x_wires, output_wires, work_wires)
 
-    # Add 2^(n+1) x if 2^k > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if k > n + 1:
-        SemiAdder(x_wires, output_wires[: k - n - 1], work_wires[: k - n - 2])
+    # Subtract 2^(2n)
+    if len(output_wires) > 2 * n:
+        _output = output_wires[: m - 2 * n]
+        adjoint(_increment)(_output, work_wires)
+
+    # Add (2^n-1-x) + 1
+    _ = [X(w) for w in x_wires]
+    _add_plus_one(x_wires, output_wires, work_wires)
+    _ = [X(w) for w in x_wires]
+
+    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
+    if m > n + 1:
+        SemiAdder(x_wires, output_wires[: m - n - 1], work_wires[: m - n - 2])
 
 
 add_decomps(OutSquare, _out_square_with_adder, _out_square_with_caddsub)
