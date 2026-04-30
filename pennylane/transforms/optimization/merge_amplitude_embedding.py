@@ -336,7 +336,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
     **Example**
 
-    You can apply the transform directly on :class:`QNode`:
+    You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
 
@@ -364,7 +364,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply the transform on a quantum function:
 
         .. code-block:: python
 
@@ -394,7 +394,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
                qp.AmplitudeEmbedding([0,1], wires = 3)
                return qp.state()
 
-       This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``. 
+       This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
        Using the transformation we can join the different instances into a single one:
 
        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
