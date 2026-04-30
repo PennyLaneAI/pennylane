@@ -25,25 +25,10 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta import Allocate, Deallocate
 from pennylane.labs.estimator_beta.templates import LabsQROM
+from pennylane.labs.tests.estimator_beta.utils import assert_decomp_equal
 from pennylane.math import ceil_log2
 
 # pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
-
-
-def _test_decomp_equal(decomp1, decomp2):
-    if len(decomp1) != len(decomp2):
-        return False
-
-    for op1, op2 in zip(decomp1, decomp2):
-        if isinstance(op1, (qre.Allocate, qre.Deallocate)):
-            ops_equal = op1.equal(op2)
-        else:
-            ops_equal = op1 == op2
-
-        if not ops_equal:
-            return False
-
-    return True
 
 
 class TestLabsSelectPauliRot:
@@ -264,7 +249,7 @@ class TestLabsQFT:
     def test_resources_phasegrad(self, num_wires, expected_res):
         """Test that the resources are correct for phase gradient method."""
         actual_decomp = qre.qft_phase_grad_resource_decomp(num_wires)
-        assert _test_decomp_equal(actual_decomp, expected_res)
+        assert assert_decomp_equal(actual_decomp, expected_res)
 
 
 class TestLabsAQFT:
@@ -365,7 +350,7 @@ class TestLabsAQFT:
     )
     def test_resources(self, order, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert _test_decomp_equal(qre.aqft_resource_decomp(order, num_wires), expected_res)
+        assert assert_decomp_equal(qre.aqft_resource_decomp(order, num_wires), expected_res)
 
 
 class TestLabsSelectTHC:
@@ -1002,7 +987,7 @@ class TestLabsQROMStatePreparation:
                 selswap_depths=selswap_depths,
             )
 
-        assert _test_decomp_equal(actual_resources, expected_res)
+        assert assert_decomp_equal(actual_resources, expected_res)
 
     @pytest.mark.parametrize(
         "num_state_qubits, precision, positive_and_real, selswap_depths, expected_res",
@@ -1432,7 +1417,7 @@ class TestLabsQROMStatePreparation:
                 selswap_depths=selswap_depths,
             )
 
-        assert _test_decomp_equal(actual_resources, expected_res)
+        assert assert_decomp_equal(actual_resources, expected_res)
 
 
 class TestLabsQROM:
@@ -1855,7 +1840,7 @@ class TestLabsQROM:
         expected = [alloc_reg] + base_decomp + [dealloc_reg]
 
         computed = LabsQROM._single_ctrl_swap_cost(reg_size, num_swap_ctrls, repeat)
-        assert _test_decomp_equal(computed, expected)
+        assert assert_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
         "reg_size, num_swap_ctrls, repeat, expected",  # computed by hand
@@ -2013,7 +1998,7 @@ class TestLabsQROM:
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
         computed = LabsQROM.qrom_clean_auxiliary_adjoint_resource_decomp(resource_params)
-        assert _test_decomp_equal(computed, expected)
+        assert assert_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
         "resource_params, alloc_reg, base_decomp",  # computed by hand,
@@ -2062,7 +2047,7 @@ class TestLabsQROM:
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
         computed = LabsQROM.adjoint_resource_decomp(resource_params)
-        assert _test_decomp_equal(computed, expected)
+        assert assert_decomp_equal(computed, expected)
 
     @pytest.mark.parametrize(
         "resource_params, alloc_reg, base_decomp",  # computed by hand,
@@ -2111,7 +2096,7 @@ class TestLabsQROM:
             expected = expected[:1] + [alloc_reg] + expected[1:] + [dealloc_reg]
 
         computed = LabsQROM.qrom_dirty_auxiliary_adjoint_resource_decomp(resource_params)
-        assert _test_decomp_equal(computed, expected)
+        assert assert_decomp_equal(computed, expected)
 
     @staticmethod
     def resources_data(index):
@@ -2196,7 +2181,7 @@ class TestLabsQROM:
             borrow_qubits=borrow,
             select_swap_depth=depth,
         )
-        assert _test_decomp_equal(computed_decomp, expected_decomp)
+        assert assert_decomp_equal(computed_decomp, expected_decomp)
 
     @staticmethod
     def single_ctrl_resources_data(index):
@@ -2257,7 +2242,7 @@ class TestLabsQROM:
             borrow_qubits=borrow,
             select_swap_depth=depth,
         )
-        assert _test_decomp_equal(computed_decomp, expected_decomp)
+        assert assert_decomp_equal(computed_decomp, expected_decomp)
 
     @staticmethod
     def ctrl_resources_data(index):
@@ -2364,4 +2349,4 @@ class TestLabsQROM:
                 "select_swap_depth": depth,
             },
         )
-        assert _test_decomp_equal(computed_decomp, expected_decomp)
+        assert assert_decomp_equal(computed_decomp, expected_decomp)
