@@ -102,7 +102,7 @@ def list_attributes(data_name) -> list[str]:
 
     **Example**
 
-    >>> qml.data.list_attributes(data_name="qchem")
+    >>> qp.data.list_attributes(data_name="qchem")
     ['basis_rot_groupings',
      'basis_rot_samples',
      'dipole_op',
