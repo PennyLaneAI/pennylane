@@ -418,8 +418,8 @@
    2: ──────────╰X─│──│──────────┤  State
    1: ─────────────╰X─│──────────┤  State
    0: ────────────────╰X─────────┤  State
-```
-[(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
+  ```
+  [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
 <h4>Disentangling Transforms 🧶</h4>
 
