@@ -52,6 +52,9 @@ State Preparation
 
 .. currentmodule:: pennylane.labs.estimator_beta.templates
 
+.. autosummary::
+    :toctree: api
+
     ~LabsMottonenStatePreparation
     ~LabsCosineWindow
     ~LabsSumOfSlatersPrep
