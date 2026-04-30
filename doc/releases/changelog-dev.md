@@ -1049,6 +1049,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Update TensorFlow related documentation to clarify that maintenance support has been dropped since
+  PennyLane v0.44.
+  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
+
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
