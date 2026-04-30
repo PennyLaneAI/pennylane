@@ -384,26 +384,27 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         0: ─╭●───┤  State
         1: ─╰X───┤  State
         2: ─╭|Ψ⟩─┤  State
-       You can also apply this transform on quantum functions:
 
-       .. code-block:: python
+        You can also apply this transform on quantum functions:
 
-           def qfunc():
-               qp.CNOT(wires = [0,1])
-               qp.AmplitudeEmbedding([0,1], wires = 2)
-               qp.AmplitudeEmbedding([0,1], wires = 3)
-               return qp.state()
+        .. code-block:: python
 
-       This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
-       Using the transformation we can join the different instances into a single one:
+            def qfunc():
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
 
-       >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
-       >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-       >>> print(qp.draw(optimized_qnode)())
-       0: ─╭●───┤  State
-       1: ─╰X───┤  State
-       2: ─╭|Ψ⟩─┤  State
-       3: ─╰|Ψ⟩─┤  State
+        This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
+        Using the transformation we can join the different instances into a single one:
+
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
     """
     new_operations = []
