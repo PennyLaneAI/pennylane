@@ -506,6 +506,13 @@ def _prod_decomp(*_, wires=None, operands, **__):
 
 qp.add_decomps(Prod, _prod_decomp)
 
+#############################################################################
+### Efficient decompositions for C(Prod) ####################################
+#############################################################################
+
+
+### Efficient decomp for num_work_wires >= num_control_wires -1 #############
+
 
 def _ctrl_prod_resources(
     num_control_wires,
@@ -535,8 +542,9 @@ def _ctrl_prod_resources(
 
 
 @qp.register_condition(
-    lambda num_control_wires, num_work_wires, **_: num_control_wires >= 2
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
     and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
 )
 @qp.register_resources(_ctrl_prod_resources)
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
@@ -549,6 +557,25 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     for op in base.operands[::-1]:
         qp.ctrl(op, control=[target_wire])
     qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+# Same decomposition but with dynamic wire allocation
+def _ctrl_work_wires(num_control_wires, **_):
+    """Declare work wire requirements: (num_control_wires - 1) zeroed wires."""
+    return {"zeroed": num_control_wires - 1}
+
+
+@qp.register_condition(lambda num_control_wires, **_: num_control_wires >= 2)
+@qp.register_resources(_ctrl_prod_resources, work_wires=_ctrl_work_wires)
+def _controlled_product_with_allocated_work_wires(*_, control_wires, base, **__):
+    """Same decomposition as _controlled_product_with_work_wires() but with allocated work wires"""
+    with qp.allocate(1, state="zero", restored=False) as allocated_wires:
+        _controlled_product_with_work_wires(
+            control_wires=control_wires, work_wires=allocated_wires, base=base
+        )
+
+
+### Efficient decomp for num_work_wires >= 1 #############
 
 
 def _ctrl_prod_resources_with_one_work_wire(
@@ -601,10 +628,28 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
     qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
 
 
+# Same decomposition but with dynamic wire allocation
+def _ctrl_single_work_wires(num_control_wires, **_):
+    """Declare work wire requirements of a single zeroed work wire."""
+    return {"zeroed": 1}
+
+
+@qp.register_condition(lambda num_control_wires, **_: num_control_wires >= 2)
+@qp.register_resources(_ctrl_prod_resources_with_one_work_wire, work_wires=_ctrl_single_work_wires)
+def _controlled_product_with_one_allocated_work_wire(*_, control_wires, base, **__):
+    """Same decomposition as _controlled_product_with_one_work_wire() but with dynamically allocated work wires"""
+    with qp.allocate(1, state="zero", restored=False) as allocated_wires:
+        _controlled_product_with_one_work_wire(
+            control_wires=control_wires, work_wires=allocated_wires, base=base
+        )
+
+
 qp.add_decomps(
     "C(Prod)",
     flip_zero_control(_controlled_product_with_work_wires),
+    flip_zero_control(_controlled_product_with_allocated_work_wires),
     flip_zero_control(_controlled_product_with_one_work_wire),
+    flip_zero_control(_controlled_product_with_one_allocated_work_wire),
 )
 
 

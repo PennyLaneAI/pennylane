@@ -382,7 +382,7 @@
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
-  For example, a controlled multi-target-``X`` operation previously decomposed as
+  For example, a controlled multi-target-``X`` operation previously decomposed as the following:
 
   ```
   c1: ─╭●─╭●─╭●─╭●─┤  State
@@ -394,7 +394,7 @@
    0: ──────────╰X─┤  State
   ```
 
-  With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
+  With this improvement, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
 
   ```python
   @qp.transforms.decompose(
