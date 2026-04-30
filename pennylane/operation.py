@@ -317,6 +317,10 @@ def _get_abstract_operator() -> type:
         def _pow(a, b):
             return qp.pow(a, b)
 
+        @staticmethod
+        def _eq(a, b):
+            return id(a) == id(b)
+
     return AbstractOperator
 
 
@@ -1775,7 +1779,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         hashable_hyperparameters = tuple(
             (key, value) for key, value in self.hyperparameters.items()
         )
-        return self.data, (self.wires, hashable_hyperparameters)
+        return self.data, (self.wires, hashable_hyperparameters, getattr(self, "tracer", None))
 
     @classmethod
     def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
@@ -1803,8 +1807,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
-        hyperparameters_dict = dict(metadata[1])
-        return cls(*data, wires=metadata[0], **hyperparameters_dict)
+        wires, hyperparams, tracer = metadata
+        # We need to bypass the metaclass call so that we don't create another primitive for the op
+        # whenever it is unflattened (e.g. when passed into another scope).
+        # Alternatively, we can just do that and then delete the primitive immediately.
+        op = type.__call__(cls, *data, wires=wires, **dict(hyperparams))
+        op.tracer = tracer
+        return op
 
 
 # =============================================================================

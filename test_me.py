@@ -19,10 +19,10 @@ def my_func(phi, op, wires):
     loop()
 
 
-def main():
+def main(theta):
     qp.H(0)
     # see what happens when an operator crosses scopes
-    jax.jit(my_func, static_argnums=1)(0.2, qp.X(0), jax.numpy.array([1, 2, 3]))
+    jax.jit(my_func)(0.2, qp.RX(theta, 0), jax.numpy.array([1, 2, 3]))
 
 
-print(jax.make_jaxpr(main)())
+print(jax.make_jaxpr(main)(0.5))
