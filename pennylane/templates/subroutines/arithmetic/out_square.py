@@ -37,40 +37,43 @@ from pennylane.wires import Wires, WiresLike
 class OutSquare(Operation):
     r"""Performs out-of-place squaring.
 
-    This operator performs the squaring of an integer :math:`x` modulo
-    :math:`2^n` in the computational basis, where ``n=len(output_wires)``:
+    This operator performs the squaring of an :math:`n`-qubit integer :math:`x` modulo
+    :math:`2^m` into an :math:`m`-qubit output register:
 
     .. math::
-        \text{OutSquare} |x \rangle |b \rangle = |x \rangle |(b + x^2) \; \text{mod} \; 2^n \rangle,
+        \text{OutSquare} |x \rangle |y \rangle = |x \rangle |(y + x^2) \; \text{mod} \; 2^m \rangle,
 
-    .. seealso:: :class:`~.SemiAdder`, :class:`~.Multiplier` , and :class:`~.OutMultiplier`.
+    .. seealso:: :class:`~.OutMultiplier`, :class:`~.SemiAdder` , and :class:`~.Multiplier`.
 
     Args:
         x_wires (WiresLike): wires that store the integer :math:`x`.
-        output_wires (WiresLike): wires that store the squaring result. If the
-            register is in a non-zero state :math:`b`, the solution will be added to this value.
+        output_wires (WiresLike): wires that store the squaring result. If the register initially
+            encodes a non-zero value :math:`y`, the solution will be added to this value.
             If the register is guaranteed to be in the zero state, it is recommended to set
             ``output_wires_zeroed=True``.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
-            ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
-            otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
+            :math:`m` work wires are required if ``output_wires_zeroed=False``,
+            otherwise :math:`\min(m, n+1)` work wires are required.
         output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
     **Example**
 
-    Let's compute the square of :math:`x=3` and :math:`x=7` in superposition, added to :math`b=5`
-    modulo :math:`2^n=2^6=64`.
+    Let's compute the square of :math:`x=3` and :math:`x=7` in superposition, added to a
+    :math:`m=6`-qubit register that holds the value :math`y=5` initially.
+    The computation will be modulo :math:`2^m=2^6=64`.
 
     .. code-block:: python
 
         import pennylane as qp
 
-        x_wires = list(range(3))
-        output_wires = list(range(3, 9))
-        work_wires = list(range(9, 15))
+        n = 3
+        m = 6
+        x_wires = list(range(n))
+        output_wires = list(range(n, n + m))
+        work_wires = list(range(n + m, n + 2 * m))
 
-        dev = qp.device("lightning.qubit", wires=15, seed=295)
+        dev = qp.device("lightning.qubit", wires=n + 2 * m, seed=295)
 
         @qp.qnode(dev, shots=1_000)
         def circuit(output_wires):
@@ -88,13 +91,14 @@ class OutSquare(Operation):
     >>> print(counts)
     {14: np.int64(498), 54: np.int64(502)}
 
-    We correctly obtain the squared numbers added to :math:`b=5`, namely
+    We correctly obtain the squared numbers added to :math:`y=5`, namely
     :math:`5+3^2=14` and :math:`5+7^2=54`.
 
     Note that reducing the size of the output register changes the computed numbers via the reduced
     modulus:
 
-    >>> output_wires = list(range(3, 6))
+    >>> m = 3
+    >>> output_wires = list(range(n, n + m))
     >>> counts = circuit(output_wires)
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
@@ -109,43 +113,41 @@ class OutSquare(Operation):
 
         This template takes as input three wire registers.
 
-        The first one is ``x_wires`` which is used to encode the integer :math:`x` in the
-        computational basis. Therefore, ``x_wires`` must contain
-        at least :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
+        The first one is ``x_wires`` which encodes the integer :math:`x` to be squared.
 
-        The second one is ``output_wires``, which is used to encode the integer
-        :math:`b+ x^2 \; \text{mod} \; 2^n` in the computational basis, where :math:`n`
-        denotes the length of ``output_wires``.
+        The second one is ``output_wires``, which encodes the integer
+        :math:`y+ x^2 \; \text{mod} \; 2^m`, where :math:`m` denotes the length of the register.
 
         The third register is ``work_wires``, which consists of the auxiliary qubits used to
-        perform the modular squaring operation. The required number of work wires depends
-        on whether we are guaranteed that :math:`b=0` in the ``output_wires`` before the
+        perform the squaring operation. The required number of work wires depends
+        on whether we are guaranteed that :math:`y=0` in the ``output_wires`` before the
         computation, which needs to be passed via ``output_wires_zeroed`` (see below for an
-        example). If ``output_wires_zeroed=False`` (the default), :math:`n` work wires are
-        required. If ``output_wires_zeroed=True``, :math:`min(n, k+1)` work wires are required,
-        where :math:`k` denotes the length of the first register ``x_wires``.
+        example). If ``output_wires_zeroed=False`` (the default), :math:`m` work wires are
+        required. If ``output_wires_zeroed=True``, :math:`min(m, n+1)` work wires are required,
+        where :math:`n` denotes the length of the first register ``x_wires``.
 
         **Cheaper decomposition for zeroed output state**
 
         If we know that the qubits in ``output_wires`` are in the state
-        :math:`|0\rangle^{\otimes n}` before ``OutSquare`` is applied, we can pass this information
+        :math:`|0\rangle^{\otimes m}` before ``OutSquare`` is applied, we can pass this information
         to the template via ``output_wires_zeroed``, leading to a cheaper decomposition.
         Consider the following example, where we control this information with the ``QNode``
         argument ``zeroed``:
 
         .. code-block:: python
 
-            x_wires = list(range(4))
-            x = 13
-            output_wires = list(range(4, 12))
-            work_wires = list(range(12, 20))
+            n = 4
+            m = 8
+            x_wires = list(range(n))
+            output_wires = list(range(n, n + m))
+            work_wires = list(range(n + m, n + 2 * m))
 
             dev = qp.device("lightning.qubit", wires=20, seed=295)
 
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisEmbedding(x, wires=x_wires)
+                qp.BasisEmbedding(13, wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 
@@ -156,7 +158,8 @@ class OutSquare(Operation):
         >>> print(specs_false)
         {'PauliX': 3, 'CNOT': 8, 'C(SemiAdder)': 4}
 
-        When we do pass the information, we save a controlled :class:`~.SemiAdder` and some of
+        When we do pass the information, we replace one controlled :class:`~.SemiAdder` by
+        some :class:`~.TemporaryAND` gates and some of
         the other adders become smaller (depending on the register sizes):
 
         >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
@@ -170,8 +173,7 @@ class OutSquare(Operation):
         >>> print(circuit(True))
         {np.str_('10101001'): np.int64(1000)}
 
-        Here, :math:`(10101001)_2=128 + 32 + 8 + 1=169` is the expected result of
-        :math:`13^2`.
+        Here, :math:`(10101001)_2=128 + 32 + 8 + 1=169` is the expected result of :math:`13^2`.
         To conclude, we draw the two circuit variants:
 
         >>> print(qp.draw(circuit)(False))
@@ -237,16 +239,13 @@ class OutSquare(Operation):
         work_wires = Wires(work_wires)
 
         n = len(x_wires)
-        k = len(output_wires)
+        m = len(output_wires)
 
-        if output_wires_zeroed:
-            num_required_work_wires = min(n + 1, k)
-        else:
-            num_required_work_wires = k
+        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {k} output wires "
+                f"{n} input wires, {m} output wires "
                 f"and {output_wires_zeroed=}."
             )
 
@@ -321,13 +320,13 @@ class OutSquare(Operation):
 
         Args:
             x_wires (WiresLike): wires that store the integer :math:`x`.
-            output_wires (WiresLike): the wires that store the squaring result. If the register
-                is in a non-zero state :math:`b`, the solution will be added to this value.
-                If the register is guaranteed to be in the zero state, it is recommended to set
-                ``output_wires_zeroed=True``.
+            output_wires (WiresLike): wires that store the squaring result. If the register
+                initially encodes a non-zero value :math:`y`, the solution will be added to this
+                value. If the register is guaranteed to be in the zero state, it is recommended to
+                set ``output_wires_zeroed=True``.
             work_wires (WiresLike): the auxiliary wires to use for the squaring.
-                ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
-                otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
+                :math:`m` work wires are required if ``output_wires_zeroed=False``,
+                otherwise :math:`\min(m, n+1)` work wires are required.
             output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
                 :math:`|0\rangle` initially. Defaults to ``False``.
 
@@ -354,11 +353,8 @@ def _out_square_with_adder_condition(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> bool:
     n = num_x_wires
-    k = num_output_wires
-    if output_wires_zeroed:
-        largest_adder = min(k, n + 1)
-    else:
-        largest_adder = k
+    m = num_output_wires
+    largest_adder = min(m, n + 1) if output_wires_zeroed else m
     # work wires: one for control cache, largest_adder-1 for adder
     min_num_work_wires = 1 + (largest_adder - 1)
     return num_work_wires >= min_num_work_wires
@@ -445,16 +441,16 @@ def _out_square_with_caddsub_condition(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> bool:
     n = num_x_wires
-    k = num_output_wires + 1
-    if output_wires_zeroed:
-        largest_adder = min(k, n + 1)
-    else:
-        largest_adder = k
-    # work wires: one for control cache, one for augmented output, largest_adder-1 for adder
-    min_num_work_wires = 1 + 1 + (largest_adder - 1)
-    largest_correction_adder = k
-    # work wires: one for augmented output, largest_correction_adder-1 for adder
-    min_num_work_wires = max(min_num_work_wires, 1 + (largest_correction_adder - 1))
+    m = num_output_wires + 1
+    # We have a series of controlled adders, each of which has a control cache qubit, an
+    # output augmentation qubit, and (output size - 1) work wires. Note that while the controlled
+    # adder needs one more work wire to decompose Toffolis to elbows, this is not strictly needed
+    # to make the decomposition admissible. The largest output size of the series is
+    # ╭min(m, n+1) if output_wires_zeroed
+    # ╰m           else.
+    # There are multiple correction steps, the largest work wire demand is by the addition of
+    # 2^n-x, which uses an adder of size m+1 and thus needs m work wires.
+    min_num_work_wires = max(min(m, n + 1) + 1, m) if output_wires_zeroed else m + 1
     return num_work_wires >= min_num_work_wires
 
 
