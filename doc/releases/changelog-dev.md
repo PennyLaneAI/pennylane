@@ -289,8 +289,8 @@
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
   ```pycon
-  >>> import pennylane as qml
-  >>> collection = qml.list_decomps(qml.CRX)
+  >>> import pennylane as qp
+  >>> collection = qp.list_decomps(qp.CRX)
   >>> print(collection)
   Available Decomposition Rules:
   0: _crx_to_rx_cz
@@ -301,7 +301,7 @@
   DecompositionRule(name=_crx_to_rx_cz)
   >>> collection['_crx_to_ppr']
   DecompositionRule(name=_crx_to_ppr)
-  >>> print(qml.draw(collection[0])(0.5, wires=[0, 1]))
+  >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
@@ -414,11 +414,11 @@
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
 
-* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+* During program capture, `qp.cond` converts non-boolean predicates to boolean immediately
   during capture time.
   [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
 
-* During program capture, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+* During program capture, `qp.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
 * With program capture, arrays dynamic shapes with `qp.for_loop` and `qp.while_loop` can now be combined
@@ -1157,11 +1157,11 @@
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
-  and return `qml.sample`.
+  and return `qp.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
-  enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
+  enabling `qp.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
 * Fixed an issue with Catalyst and `qp.for_loop` and `qp.while_loop`, where it was defaulting
