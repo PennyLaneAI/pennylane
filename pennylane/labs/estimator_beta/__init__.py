@@ -84,9 +84,13 @@ Templates
 
 """
 
+import numpy as np
+
+import pennylane as qp
 from pennylane.estimator import *
 
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
 from .wires_manager import (
@@ -132,3 +136,24 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+
+@_map_to_resource_op.register
+def _(op: qp.templates.cosine_window.CosineWindow):
+    return CosineWindow(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qp.templates.mottonen.MottonenStatePreparation):
+    return MottonenStatePreparation(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qp.templates.sum_of_slaters.SumOfSlatersPrep):
+    indices = op.hyperparameters["indices"]
+    n = len(op.wires)
+    v_bits = qp.math.int_to_binary(np.array(indices), n).T
+    selector_ids, _ = qp.templates.sum_of_slaters.select_sos_rows(v_bits)
+    return SumOfSlatersPrep(
+        num_coeffs=len(indices), num_wires=len(op.wires), num_bits=len(selector_ids), wires=op.wires
+    )

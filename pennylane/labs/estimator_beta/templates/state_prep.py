@@ -443,7 +443,6 @@ class LabsSumOfSlatersPrep(ResourceOperator):
 
         x = resource_rep(qre.X)
         gate_list.append(GateCount(x, num_coeffs * m))
-        print(num_coeffs, m)  # --- IGNORE ---
         mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": m, "num_zero_ctrl": 0})
         num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))
