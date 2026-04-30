@@ -830,7 +830,7 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
             return "No available decomposition rules."
         if not self._rule_infos:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
-        return "\n\n".join([f"{self._title(i, rule)}\n{rule}" for i, rule in self._rule_infos])
+        return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rule_infos)
 
     def __repr__(self) -> str:
         return self.__str__()
