@@ -535,8 +535,9 @@ def _ctrl_prod_resources(
 
 
 @qp.register_condition(
-    lambda num_control_wires, num_work_wires, **_: num_control_wires >= 2
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
     and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
 )
 @qp.register_resources(_ctrl_prod_resources)
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
