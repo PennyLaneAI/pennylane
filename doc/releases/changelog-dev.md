@@ -1067,6 +1067,7 @@
   [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
   [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
+  [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
