@@ -60,7 +60,6 @@ def _select_pauli_rot_phase_gradient(
             clean=False,
         )
     ] + cnots
-    print(work_wires[len(angle_wires) - 1 :])
 
     pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
