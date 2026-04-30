@@ -360,9 +360,10 @@
 * A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
   ```pycon
-  >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1])))
+  >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
   Decomposition 0 (name: _crx_to_rx_cz)
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -382,6 +383,51 @@
   0: ───────────╭RZX(-0.25)─┤
   1: ──RX(0.25)─╰RZX(-0.25)─┤
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+
+  ```
+
+* A new function :func:`~.transforms.decomp_inspector` that allows users to inspect how the decomposition
+  graph is choosing decomposition rules for each operator in the circuit.
+  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+
+  ```python
+  qp.decomposition.enable_graph()
+
+  @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+  @qp.qnode(qp.device("default.qubit"))
+  def circuit():
+      qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+      return qp.probs()
+
+  inspector = circuit()
+
+  ```
+  ```pycon
+  >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
+  CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+  <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
+              3: ───────────├●─│──────────────├●─────────────┤
+              4: ───────────├●─│──────────────├●─────────────┤
+              5: ───────────╰●─│──────────────╰●─────────────┤
+              0: ──────────────├MultiRZ(0.50)────────────────┤
+              1: ──────────────╰MultiRZ(0.50)────────────────┤
+  First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+  Wire Allocations: {'zero': 1}
+  Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
+  Weighted Cost: 120.0
+  <BLANKLINE>
+  Decomposition 1 (name: to_controlled_qubit_unitary)
+  Not applicable (provided operator instance does not meet all conditions for this rule).
+  <BLANKLINE>
+  Decomposition 2 (name: controlled(_multi_rz_decomposition))
+  0: ─╭X─╭RZ(0.50)─╭X─┤
+  1: ─├●─│─────────├●─┤
+  3: ─├●─├●────────├●─┤
+  4: ─├●─├●────────├●─┤
+  5: ─╰●─╰●────────╰●─┤
+  First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+  Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
+  Weighted Cost: 196.0
 
   ```
 
