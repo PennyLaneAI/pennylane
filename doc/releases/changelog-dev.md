@@ -382,19 +382,19 @@
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
-  For example, `qp.ctrl(X(0) @ X(1) @ X(2) @ X(3), control=["c1", "c2", "c3"], work_wires=["w1", "w2"], work_wire_type="zeroed")` which naively decomposes as
+  For example, a controlled multi-target-``X`` operation previously decomposed as
 
   ```
-   0: ──────────╭X─┤
-   1: ───────╭X─│──┤
-   2: ────╭X─│──│──┤
-   3: ─╭X─│──│──│──┤
-  c1: ─├●─├●─├●─├●─┤
-  c2: ─├●─├●─├●─├●─┤
-  c3: ─╰●─╰●─╰●─╰●─┤
+  c1: ─╭●─╭●─╭●─╭●─┤  State
+  c2: ─├●─├●─├●─├●─┤  State
+  c3: ─├●─├●─├●─├●─┤  State
+   3: ─╰X─│──│──│──┤  State
+   2: ────╰X─│──│──┤  State
+   1: ───────╰X─│──┤  State
+   0: ──────────╰X─┤  State
   ```
 
-  now decomposes as the following:
+  With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
 
   ```python
   @qp.transforms.decompose(
