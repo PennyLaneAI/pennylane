@@ -310,8 +310,8 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_register_subroutine(qtemps.BasisRotation)
-def _handle_basis_rotation(op):
+@_map_to_resource_op.register
+def _handle_basis_rotation(op: qtemps.BasisRotation):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 
