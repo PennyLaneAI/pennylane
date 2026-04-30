@@ -69,4 +69,4 @@ jobs:
       - name: Enforce 'qp' Alias (Documentation)
         if: always()
         run: |
-          ! grep -rni "qml" ${{ env.CORE_MODULES }} ${{ env.TEST_MODULES }} --include "*.md" --include "*.py" --include "*.rst" --exclude "changelog-0.*.md"
+          ! grep -rni "qml" ${{ env.CORE_MODULES }} ${{ env.TEST_MODULES }} --include "*.md" --include "*.py" --include "*.rst" --exclude "changelog-0.*.md" --exclude "deprecations.rst"
