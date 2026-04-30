@@ -310,12 +310,12 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
     The single qubit gates are fused before execution.
 
-   .. note::
+    .. note::
 
         - The fused angles between two sets of rotation angles are not always defined uniquely because Euler angles are not unique for some rotations. ``single_qubit_fusion`` makes a particular choice in this case.
         - The order of the gates resulting from the fusion may be different depending on whether program capture is enabled or not. This only impacts the order of operations that do not share any wires, so the correctness of the circuit is not affected.
 
-   .. warning::
+    .. warning::
 
         - This function is not differentiable everywhere. It has singularities for specific input rotation angles, where the derivative will be ``NaN``.
         - This function is numerically unstable at its singular points. It is recommended to use it with 64-bit floating point precision.
