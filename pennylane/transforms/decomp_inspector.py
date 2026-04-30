@@ -225,7 +225,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
             lead to a more resource-efficient decomposition.
 
     Returns:
-        DecompGraphInspector: an interactive object that can be used to inspect the graph.
+        DecompGraphInspector: An interactive object that can be used to inspect the graph.
 
 
     **Examples**
