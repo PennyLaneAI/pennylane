@@ -54,7 +54,8 @@ class TwoQubitFFT(Operator):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires, id=None)
 
-    def compute_matrix(self, *_):
+    @staticmethod
+    def compute_matrix(*_, **__):
         """
         Computes the matrix of the two-site Fourier operator.
 
