@@ -19,21 +19,21 @@ from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane. This 
+    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane. This
     decorator enables both just-in-time and ahead-of-time compilation, depending on whether
     function argument type hints are provided.
 
     .. note::
 
-        Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a 
-        complete list of supported backend devices, please consult please see 
+        Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a
+        complete list of supported backend devices, please consult please see
         :doc:`catalyst:dev/devices`.
 
     Args:
         fn (Callable): The quantum or classical function.
         compiler (str): Name of the compiler to use for just-in-time compilation. Available
             options include :func:`"catalyst" <catalyst.qjit>` and
-            :func:`"cuda_quantum" <catalyst.third_party.cuda.cudaqjit>` (for integration with CUDA 
+            :func:`"cuda_quantum" <catalyst.third_party.cuda.cudaqjit>` (for integration with CUDA
             Quantum).
         autograph (bool): Experimental support for automatically converting Python control flow
             statements (including ``if`` statements, ``for`` and ``while`` loops) to
