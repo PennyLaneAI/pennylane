@@ -25,7 +25,7 @@ a feature:
        warnings.warn(
            "<name-of-feature> is deprecated and will be removed in version <target-version>. "
            "Instead, please use <name-of-preferred-way-to-achieve-functionality>.",
-           qml.exceptions.PennyLaneDeprecationWarning,
+           qp.exceptions.PennyLaneDeprecationWarning,
        )
 
    If the feature is being relocated, consider rephrasing the warning to discuss relocation as
@@ -48,7 +48,7 @@ a feature:
 
        def test_my_feature_is_deprecated():
            """Test that my_feature is deprecated."""
-           with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning, match="my_feature is deprecated"):
+           with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning, match="my_feature is deprecated"):
                _ = my_feature()
 
 6. Update any tests that specifically cover the deprecated feature to call it inside a

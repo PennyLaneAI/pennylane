@@ -62,6 +62,17 @@ Alternate Decompositions
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
 
+Templates
+~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~OutOfPlaceIntegerComparator
+    ~RegisterEquality
+
 """
 import pennylane as qp
 
@@ -80,13 +91,18 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import selectpaulirot_controlled_resource_decomp, ClassicalOutMultiplier
-
 from .templates import LabsAdder as Adder
 from .templates import LabsModExp as ModExp
 from .templates import LabsMultiplier as Multiplier
 from .templates import LabsOutAdder as OutAdder
 from .templates import LabsPhaseAdder as PhaseAdder
+
+from .templates import (
+    OutOfPlaceIntegerComparator,
+    RegisterEquality,
+    selectpaulirot_controlled_resource_decomp,
+    ClassicalOutMultiplier
+)
 
 from .ops import (
     ch_resource_decomp,
