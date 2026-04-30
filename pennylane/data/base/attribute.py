@@ -94,33 +94,52 @@ class AttributeInfo(MutableMapping):
         self["doc"] = doc
 
     def __len__(self) -> int:
-        return self.attrs_bind.get("qp.__data_len__", 0)
+        namespace = self.attrs_namespace.split(".", maxsplit=1)[0]
+        try:
+            return self.attrs_bind[f"{namespace}.__data_len__"]
+        except KeyError:
+            return next((v for k, v in self.attrs_bind.items() if k.endswith("__data_len__")), 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind["qp.__data_len__"] = len(self) + inc
+        base_key = self.attrs_namespace.split(".", maxsplit=1)[0] + ".__data_len__"
+        has_base_key = base_key in self.attrs_bind
+        for key in tuple(self.attrs_bind):
+            if key != base_key and key.endswith(".__data_len__"):
+                legacy_value = self.attrs_bind.pop(key)
+                if not has_base_key:
+                    self.attrs_bind[base_key] = legacy_value
+                    has_base_key = True
+        self.attrs_bind[base_key] = len(self) + inc
+
+    def _bind_keys(self, __name: str) -> list[str]:
+        key = self.bind_key(__name)
+        keys = [key] if key in self.attrs_bind else []
+        keys.extend(k for k in self.attrs_bind if k != key and k.endswith(f".data.{__name}"))
+        return keys
 
     def __setitem__(self, __name: str, __value: Any):
-        key = self.bind_key(__name)
+        keys = self._bind_keys(__name)
         if __value is None:
-            self.attrs_bind.pop(key, None)
+            for key in keys:
+                self.attrs_bind.pop(key, None)
+            if keys:
+                self._update_len(-1)  # Pass -1 to decrement the counter
             return
 
-        exists = key in self.attrs_bind
+        key = self.bind_key(__name)
         self.attrs_bind[key] = __value
-        if not exists:
+        normalized_keys = any(k != key for k in keys)
+        for k in keys:
+            if k != key:
+                self.attrs_bind.pop(k, None)
+        if not keys:
             self._update_len(1)
+        elif normalized_keys:
+            self._update_len(0)
 
     def __getitem__(self, __name: str) -> Any:
-        try:
-            return self.attrs_bind[self.bind_key(__name)]
-        except KeyError:
-            pass
-
-        suffix = f".data.{__name}"
-        if (
-            match := next((v for k, v in self.attrs_bind.items() if k.endswith(suffix)), None)
-        ) is not None:
-            return match
+        for key in self._bind_keys(__name):
+            return self.attrs_bind[key]
 
         raise KeyError(__name)
 
@@ -137,16 +156,21 @@ class AttributeInfo(MutableMapping):
             return None
 
     def __delitem__(self, __name: str) -> None:
-        del self.attrs_bind[self.bind_key(__name)]
+        keys = self._bind_keys(__name)
+        if not keys:
+            raise KeyError(__name)
+
+        for key in keys:
+            self.attrs_bind.pop(key, None)
         self._update_len(-1)
 
     def __iter__(self) -> Iterator[str]:
-        ns = f"{self.attrs_namespace}."
-
-        return (
-            key.split(ns, maxsplit=1)[1]
-            for key in filter(lambda k: k.startswith(ns), self.attrs_bind)
-        )
+        visited = set()
+        for key in self.attrs_bind:
+            _, separator, name = key.partition(".data.")
+            if separator and name not in visited:
+                visited.add(name)
+                yield name
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({repr(dict(self))})"

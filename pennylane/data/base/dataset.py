@@ -331,6 +331,8 @@ class Dataset(MapperMixin, _DatasetTransform):
         if missing_identifiers:
             hdf5.copy_all(self.bind, dest.bind, *missing_identifiers)
 
+        self.info.save(dest.info)
+
     def _init_bind(self, data_name: str | None = None, identifiers: tuple[str, ...] | None = None):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
