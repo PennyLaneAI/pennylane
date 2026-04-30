@@ -569,7 +569,7 @@ def _ctrl_work_wires(num_control_wires, **_):
 @qp.register_resources(_ctrl_prod_resources, work_wires=_ctrl_work_wires)
 def _controlled_product_with_allocated_work_wires(*_, control_wires, base, **__):
     """Same decomposition as _controlled_product_with_work_wires() but with allocated work wires"""
-    with qp.allocate(1, state="zero", restored=False) as allocated_wires:
+    with qp.allocate(len(control_wires) - 1, state="zero", restored=False) as allocated_wires:
         _controlled_product_with_work_wires(
             control_wires=control_wires, work_wires=allocated_wires, base=base
         )
@@ -584,13 +584,19 @@ def _ctrl_prod_resources_with_one_work_wire(
     **_,
 ):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
-    multicx_rep = resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=num_control_wires,
-        num_work_wires=0,
-        num_zero_control_values=0,
-        work_wire_type="borrowed",
-    )
+    if num_control_wires == 2:
+        # ``qp.ctrl(X, control=[a, b])`` simplifies to ``Toffoli`` on 2 controls;
+        # ``MultiControlledX`` with ``num_control_wires == 2`` is also rewritten
+        # to ``Toffoli`` when dynamic work wires are resolved.
+        multicx_rep = resource_rep(qp.Toffoli)
+    else:
+        multicx_rep = resource_rep(
+            qp.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_work_wires=0,
+            num_zero_control_values=0,
+            work_wire_type="borrowed",
+        )
 
     resources = Counter()
     resources[multicx_rep] += 2
