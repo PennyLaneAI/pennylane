@@ -21,7 +21,7 @@ import pytest
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
-from pennylane.labs.tests.estimator_beta.test_utils import assert_decomp_equal
+from pennylane.labs.tests.estimator_beta.utils import assert_decomp_equal
 
 # pylint: disable=no-self-use,too-many-arguments
 
