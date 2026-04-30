@@ -225,7 +225,7 @@
 
 <h4>Decompositions 🍏</h4>
 
-* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
@@ -351,7 +351,7 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
-  
+
 * A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
@@ -379,6 +379,35 @@
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
 
   ```
+
+* Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
+
+  For example, `qp.ctrl(X(0) @ X(1) @ X(2) @ X(3), control=["c1", "c2", "c3"], work_wires=["w1", "w2"], work_wire_type="zeroed")` which naively decomposes as
+
+  ```
+   0: ──────────╭X─┤
+   1: ───────╭X─│──┤
+   2: ────╭X─│──│──┤
+   3: ─╭X─│──│──│──┤
+  c1: ─├●─├●─├●─├●─┤
+  c2: ─├●─├●─├●─├●─┤
+  c3: ─╰●─╰●─╰●─╰●─┤
+  ```
+
+  now decomposes as the following:
+
+  ```
+   0: ────────────────╭X─────────┤
+   1: ─────────────╭X─│──────────┤
+   2: ──────────╭X─│──│──────────┤
+   3: ───────╭X─│──│──│──────────┤
+  c1: ─╭●────│──│──│──│───────●╮─┤
+  c2: ─├●────│──│──│──│───────●┤─┤
+  c3: ─│──╭●─│──│──│──│───●╮───│─┤
+  w1: ─╰⊕─├●─│──│──│──│───●┤──⊕╯─┤
+  w2: ────╰⊕─╰●─╰●─╰●─╰●──⊕╯─────┤
+```
+[(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
 <h4>Disentangling Transforms 🧶</h4>
 
