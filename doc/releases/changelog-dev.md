@@ -886,6 +886,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added permissions to all GitHub Actions workflows.
+  [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
+
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
