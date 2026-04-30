@@ -139,21 +139,25 @@ def _(action: Deallocate):
 
 
 @_map_to_resource_op.register
-def _(op: qp.templates.cosine_window.CosineWindow):
+def _(op: qp.CosineWindow):
     return CosineWindow(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
-def _(op: qp.templates.mottonen.MottonenStatePreparation):
+def _(op: qp.MottonenStatePreparation):
     return MottonenStatePreparation(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
-def _(op: qp.templates.sum_of_slaters.SumOfSlatersPrep):
+def _(op: qp.SumOfSlatersPrep):
+    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
+        select_sos_rows,
+    )
+
     indices = op.hyperparameters["indices"]
     n = len(op.wires)
     v_bits = qp.math.int_to_binary(np.array(indices), n).T
-    selector_ids, _ = qp.templates.sum_of_slaters.select_sos_rows(v_bits)
+    selector_ids, _ = select_sos_rows(v_bits)
     return SumOfSlatersPrep(
         num_coeffs=len(indices), num_wires=len(op.wires), num_bits=len(selector_ids), wires=op.wires
     )
