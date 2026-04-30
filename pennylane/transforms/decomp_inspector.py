@@ -269,7 +269,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         qp.decomposition.enable_graph()
 
-        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+        @qp.decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
@@ -338,7 +338,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         qp.decomposition.enable_graph()
 
-        @decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -394,7 +394,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         .. code-block:: python
 
-            @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+            @qp.decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
             @qp.qnode(qp.device("default.qubit"))
             def circuit():
                 qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])

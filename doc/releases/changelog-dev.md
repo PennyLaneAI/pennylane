@@ -393,7 +393,7 @@
   ```python
   qp.decomposition.enable_graph()
 
-  @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+  @qp.decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
   @qp.qnode(qp.device("default.qubit"))
   def circuit():
       qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
