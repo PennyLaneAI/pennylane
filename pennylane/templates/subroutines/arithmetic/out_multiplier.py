@@ -39,13 +39,13 @@ from pennylane.ops import (
     prod,
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
-from pennylane.templates.subroutines.arithmetic.semi_adder import _semiadder, _semiadder_resources
-from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
-from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
+from ..controlled_sequence import ControlledSequence
+from ..qft import QFT
 from .phase_adder import PhaseAdder
+from .semi_adder import SemiAdder, _semiadder, _semiadder_resources
+from .temporary_and import TemporaryAND
 
 
 class OutMultiplier(Operation):
@@ -65,23 +65,26 @@ class OutMultiplier(Operation):
 
         To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
 
-    .. seealso:: :class:`~.PhaseAdder` and :class:`~.Multiplier`.
+    .. seealso:: :class:`~.Multiplier`, :class:`~.SemiAdder`, and :class:`~.PhaseAdder`.
 
     Args:
-        x_wires (Sequence[int]): the wires that store the integer :math:`x`
-        y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-            work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise at least two work wires
-            should be provided. Defaults to empty tuple.
+        x_wires (Sequence[int]): wires that store the integer :math:`x`
+        y_wires (Sequence[int]): wires that store the integer :math:`y`
+        output_wires (Sequence[int]): wires that store the multiplication result. If the
+            register is in a non-zero state :math:`b`, the solution will be added to this value
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set
+            to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
+            number of work wires depends on the decomposition, the register sizes and
+            ``output_wires_zeroed``. Defaults to an empty tuple, i.e., no work wires.
         output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
-            :math:`|0\rangle` initially.
+            :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
+            the operation.
 
     **Example**
 
-    This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
-    We'll let :math:`b=0`. See Usage Details for :math:`b \neq 0`.
+    This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo
+    :math:`mod=12`. We'll let :math:`b=0`. See Usage Details for :math:`b \neq 0`.
 
     .. code-block:: python
 
@@ -171,17 +174,18 @@ class OutMultiplier(Operation):
         There are three decompositions, which differ in the required number of work wires and
         gates, and in whether they support ``mod!=2**len(output_wires)``.
 
-        - The first implementation is based on the quantum Fourier transform (QFT) method presented in
-          `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. It requires zero (two) auxiliary
-          wires for ``mod=2**len(output_wires)`` (for other values of ``mod``), and it uses a doubly
-          controlled sequence (a nested :class:`~.ControlledSequence`) and two QFTs. Any value
-          for ``mod`` is supported, subject to the description above.
+        - The first implementation is based on the quantum Fourier transform (QFT) method presented
+          in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. We nest
+          :class:`~.ControlledSequence` around :class:`~.PhaseAdder` to create doubly-controlled
+          in place phase addition in the output register, which is then transformed into
+          addition by a basis change using :class:`~.QFT`\ s. It requires zero (two) auxiliary
+          wires for ``mod=2**len(output_wires)`` (for other values of ``mod``)
+          Any value for ``mod`` is supported, subject to the description above.
 
         - The second implementation uses controlled :class:`~.SemiAdder`\ s to realize the
           multiplication. For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L = \min(k, n)` adders with usually varying sizes
-          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The concrete :class:`~.Toffoli` count
-          resulting from this is a bit verbose in general. The implementation is shown in
+          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The implementation is shown in
           Fig. 2a) (for :math:`k=2m=2n`) and Fig. 2c) (for :math:`k=m=n`) in
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
 
@@ -699,6 +703,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     work_wires = work_wires[: len(y_wires) - 1]
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
 
+    # Create the operator sequence for an adder and insert (controlled) work wire bit flips
     with AnnotatedQueue() as q:
         _semiadder(x_wires, y_wires, work_wires)
     adder_ops = q.queue
