@@ -541,7 +541,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     new_consts_slices = []
     end_const_ind = len(jaxpr_branches)
 
-    for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+    for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
         consts = invals[const_slice]
         new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
         new_jaxprs.append(new_jaxpr.jaxpr)
@@ -761,7 +761,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     conditions = invals[:n_branches]
     args = invals[args_slice]
 
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = invals[const_slice]
         if math.is_abstract(pred):
             raise NotImplementedError(
