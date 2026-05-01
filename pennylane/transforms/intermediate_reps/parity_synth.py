@@ -95,11 +95,6 @@ def parity_synth(tape):
     a phase polynomial operation, so that it forms a boundary for the phase polynomial subcircuits
     that are re-synthesized by the pass.
 
-    .. details::
-        :title: Usage with qjit
-
-
-
     """
     raise NotImplementedError(
         "The parity_synth compilation pass has no tape implementation, and can only be applied "
