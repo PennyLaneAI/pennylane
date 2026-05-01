@@ -164,7 +164,7 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/multiplier.png
 
 .. gallery-item::
-    :description: :doc:`outmultiplier <../code/api/pennylane.outmultiplier>`
+    :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
