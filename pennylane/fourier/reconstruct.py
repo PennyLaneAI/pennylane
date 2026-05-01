@@ -27,6 +27,7 @@ from pennylane.workflow.qnode import QNode
 #: Threshold for identifying ill-conditioned Fourier transform matrices.
 _ILL_CONDITIONED_THRESHOLD = 1e8
 
+
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     r"""Reconstruct a univariate Fourier series with consecutive integer
     frequencies, using trigonometric interpolation and equidistant shifts.

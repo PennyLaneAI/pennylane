@@ -38,6 +38,7 @@ from pennylane.wires import Wires
 #: Tolerance for linear independence checks of Hermitian basis matrices.
 _LINEAR_DEPENDENCE_TOL = 1e-10
 
+
 def lie_closure(
     generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following

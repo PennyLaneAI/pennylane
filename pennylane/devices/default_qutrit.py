@@ -36,6 +36,7 @@ logger.addHandler(logging.NullHandler())
 
 OMEGA = qp.math.exp(2 * np.pi * 1j / 3)
 
+
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
 

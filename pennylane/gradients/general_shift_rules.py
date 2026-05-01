@@ -31,6 +31,7 @@ from pennylane.tape import QuantumScript
 #: Threshold for identifying singular matrices in non-equidistant shift rules.
 _SINGULAR_MATRIX_THRESHOLD = 1e-6
 
+
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     """Utility function to process gradient rules.
 

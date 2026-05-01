@@ -348,10 +348,9 @@ def _local_pes_twomode(
 
     for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
 
-        if (
-            (freqs[mode_a].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
-            or (freqs[mode_b].imag) > _IMAGINARY_FREQUENCY_THRESHOLD
-        ):
+        if (freqs[mode_a].imag) > _IMAGINARY_FREQUENCY_THRESHOLD or (
+            freqs[mode_b].imag
+        ) > _IMAGINARY_FREQUENCY_THRESHOLD:
             continue  # pragma: no cover
 
         vec_a = vectors[mode_a]

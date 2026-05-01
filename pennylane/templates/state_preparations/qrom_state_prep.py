@@ -22,6 +22,7 @@ from pennylane.wires import Wires
 #: Small constant to prevent division by zero in state preparation.
 _DIVISION_EPS = 1e-15
 
+
 def _float_to_binary(val, num_bits):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
 

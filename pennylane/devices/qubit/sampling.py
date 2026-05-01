@@ -32,6 +32,7 @@ from .measure import flatten_state
 #: Tolerance for checking the normalization of probability arrays.
 _PROB_NORMALISATION_TOLERANCE = 1e-6
 
+
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:

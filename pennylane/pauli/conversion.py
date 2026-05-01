@@ -35,6 +35,7 @@ from .utils import is_pauli_word
 #: Tolerance for checking if a sparse matrix is Hermitian.
 _HERMITIAN_TOLERANCE = 1e-8
 
+
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
     """Validate matrix shape and wire order for Pauli decomposition.
 

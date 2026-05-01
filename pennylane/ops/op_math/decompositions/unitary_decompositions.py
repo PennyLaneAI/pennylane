@@ -36,6 +36,7 @@ from pennylane.wires import Wires
 #: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5
 
+
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations.
 

@@ -27,7 +27,6 @@ from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
-
 # Global Variables
 #: Chunk size for splitting large PauliSentence objects during tapering.
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
@@ -38,6 +37,7 @@ _IMAGINARY_PART_TOLERANCE = 1e-8
 
 #: Relative tolerance for identifying numerically zero generator values.
 _GENERATOR_ZERO_RTOL = 1e-8
+
 
 def _kernel(binary_matrix):
     r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
