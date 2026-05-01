@@ -84,7 +84,7 @@ docs = [
     "mistune==0.8.4",
     "m2r2",
     # TODO: Remove once galois becomes compatible with latest numpy
-    "numpy>=2.0,<=2.2",
+    # "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
     "docutils==0.20",
