@@ -123,15 +123,16 @@ class FFFT(Operator):
 
 
     >>> print(qp.draw(circuit, level="device")())
-    0: ─╭TwoQubitFFT────────────────────╭TwoQubitFFT─────────────────────────────────────── ···
-    1: ─╰TwoQubitFFT───────╭fSWAP(3.14)─╰TwoQubitFFT─╭fSWAP(3.14)──────────────╭TwoQubitFFT ···
-    2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰fSWAP(3.14)──────────────╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT ···
-    3: ─╰TwoQubitFFT──Z⁰⋅⁵────────────────────────────────────────╰fSWAP(3.14)───────────── ···
+    0: ─╭fSWAP(3.14)──────────────╭fSWAP(3.14)──────────────╭TwoQubitFFT─────────────────── ···
+    1: ─╰fSWAP(3.14)─╭fSWAP(3.14)─╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT───────╭fSWAP(3.14) ···
+    2: ─╭fSWAP(3.14)─╰fSWAP(3.14)─╭fSWAP(3.14)─╰fSWAP(3.14)─╭TwoQubitFFT──Z⁰⋅⁰─╰fSWAP(3.14) ···
+    3: ─╰fSWAP(3.14)──────────────╰fSWAP(3.14)──────────────╰TwoQubitFFT──Z⁰⋅⁵───────────── ···
     <BLANKLINE>
-    0: ··· ──────────────┤  State
-    1: ··· ──────────────┤  State
-    2: ··· ─╭fSWAP(3.14)─┤  State
-    3: ··· ─╰fSWAP(3.14)─┤  State
+    0: ··· ─╭TwoQubitFFT─────────────────────────────────────────────────────┤  State
+    1: ··· ─╰TwoQubitFFT─╭fSWAP(3.14)──────────────╭TwoQubitFFT──────────────┤  State
+    2: ··· ──────────────╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT─╭fSWAP(3.14)─┤  State
+    3: ··· ───────────────────────────╰fSWAP(3.14)──────────────╰fSWAP(3.14)─┤  State
+
 
     The FFFT operation is decomposed recursively into :class:`~TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
     """
