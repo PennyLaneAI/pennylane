@@ -91,7 +91,7 @@ def _map_indices_apply_channel(
 
     new_state_indices = functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(old_indices, new_indices),
+        zip(old_indices, new_indices, strict=True),
         state_indices,
     )
     # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
