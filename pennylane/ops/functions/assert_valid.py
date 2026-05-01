@@ -193,37 +193,18 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             _op = _op.base
         op_rep = qp.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[op_rep] += 1
+    actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        if non_zero_gate_counts != actual_gate_counts:
-            miscounts = [
-                (op, val, gate_counts[op])
-                for op, val in actual_gate_counts.items()
-                if op in gate_counts and val != gate_counts[op]
-            ]
-            if miscounts:
-                op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
-                miscounts_str = f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
-                miscounts_str += "\n".join(
-                    f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
-                    for op, val0, val1 in miscounts
-                )
-            else:
-                miscounts_str = ""
-            assertion_error_string = (
-                f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
-                f"\nActual gate counts:\n{dict(actual_gate_counts)}"
-                "\nThe numbers are off for following ops:"
-                f"{miscounts_str}"
-                "\nMissing in gate counts from resource function:\n"
-                f"{[op for op in actual_gate_counts if op not in gate_counts]}\n"
-                "Missing in actual gate counts:\n"
-                f"{[op for op in gate_counts if op not in actual_gate_counts]}"
-            )
-            raise AssertionError(assertion_error_string)
+        non_zero_gate_counts = {
+            k: v for k, v in sorted(gate_counts.items(), key=lambda item: str(item[0])) if v > 0
+        }
+        assert non_zero_gate_counts == actual_gate_counts, (
+            f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
+            f"\nActual gate counts:\n{dict(actual_gate_counts)}"
+        )
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.

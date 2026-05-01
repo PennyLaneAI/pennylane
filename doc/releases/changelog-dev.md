@@ -233,6 +233,13 @@
 
 <h4>Decompositions 🍏</h4>
 
+* Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
+  than the existing QFT-based decomposition, at the cost of more auxiliary wires.
+  In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
+  used to indicate ``output_wires`` to be in the :math:`|0\rangle` state, leading to cheaper
+  decompositions.
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 * Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
