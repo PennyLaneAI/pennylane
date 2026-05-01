@@ -27,7 +27,7 @@ from pennylane.labs.estimator_beta import (
     mcx_one_dirty_aux_resource_decomp,
     resource_rep,
 )
-from pennylane.labs.tests.estimator_beta.utils import assert_decomp_equal
+from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
 # pylint: disable= no-self-use
 
@@ -84,7 +84,7 @@ class TestLabsCH:
             Deallocate(1),
         ]
         result = qre.ch_toffoli_based_resource_decomp(**self.op.resource_params)
-        assert assert_decomp_equal(result, expected_resources)
+        assert decomp_equal(result, expected_resources)
 
 
 class TestLabsMultiControlledX:
@@ -139,7 +139,7 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_many_clean_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert assert_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)
 
     @pytest.mark.parametrize(
         "num_ctrl_wires, num_zero_ctrl, base_decomp",
@@ -172,7 +172,7 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_one_clean_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert assert_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)
 
     def test_default_resource_decomp(self):
         """Test the default resource decomp is the decomposition using one clean
@@ -219,4 +219,4 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_one_dirty_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert assert_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)

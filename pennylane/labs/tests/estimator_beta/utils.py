@@ -24,6 +24,8 @@ def decomp_equal(decomp1, decomp2):
         return False
 
     for op1, op2 in zip(decomp1, decomp2):
+        print(op1)
+        print(op2)
         if isinstance(op1, (qre.Allocate, qre.Deallocate)):
             ops_equal = op1.equal(op2)
         else:
