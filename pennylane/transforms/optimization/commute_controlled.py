@@ -438,7 +438,7 @@ def commute_controlled(
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply this transform to quantum functions.
 
         .. code-block:: python
 

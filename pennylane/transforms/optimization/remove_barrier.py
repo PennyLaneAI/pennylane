@@ -49,7 +49,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     0: ──H──X─┤  <Z>
     1: ──H────┤
 
-    The barrier is then removed before execution.
+    The barrier is removed before execution.
 
     .. details::
         :title: Usage Details

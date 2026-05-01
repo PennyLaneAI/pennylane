@@ -1072,7 +1072,7 @@
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
 
 * Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
-  after the transform has been applied as opposed to just the numeric simulation result.
+  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
