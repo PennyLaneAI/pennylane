@@ -599,7 +599,7 @@ def qrom_state_preparation_phase_grad_resource_decomp(
 
         This decomposition assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.pennylane.estimator.PhaseGradient`.
+        See also :class:`~.pennylane.estimator.PhaseGradient`.
 
     Args:
         num_state_qubits (int): number of qubits required to represent the state-vector
@@ -615,7 +615,7 @@ def qrom_state_preparation_phase_grad_resource_decomp(
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
         :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
         load the rotation angles. These rotations gates are implmented using an inplace
-        controlled-adder operation (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_)
+        controlled-adder operation (see Figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_)
         to phase gradient.
 
     Returns:
