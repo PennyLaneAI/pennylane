@@ -911,14 +911,6 @@
   function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` in reversed or standard mode has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
-
-* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
-  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
-
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
