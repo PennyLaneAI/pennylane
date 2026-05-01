@@ -105,12 +105,12 @@ class GQSP(Operation):
         }
 
     def _flatten(self):
-        return (*self.data, self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
+        return (self.data[0], self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         # Data contains (angles, derived_data_from_unitary, unitary)
-        return cls(unitary=data[-1], angles=data[0], control=metadata[0])
+        return cls(angles=data[0], unitary=data[-1], control=metadata[0])
 
     # pylint: disable=arguments-differ
     @classmethod
