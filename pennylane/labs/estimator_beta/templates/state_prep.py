@@ -311,11 +311,11 @@ class LabsSumOfSlatersPrep(ResourceOperator):
                 * num_coeffs(int): number of coefficients of the sparse state to prepare
                 * num_wires (int): the number of wires that the state is being prepared on
                 * num_bits (int | None): number of bits that is sufficient to uniquely identify
-                    every Slater determinant in the target state, as defined in Sec. III A of
-                    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
+                  every Slater determinant in the target state, as defined in Sec. III A of
+                  `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
                 * stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to
-                    set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
-                    assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+                  set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
+                  assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
 
         """
