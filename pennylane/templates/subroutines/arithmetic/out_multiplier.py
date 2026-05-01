@@ -55,7 +55,7 @@ class OutMultiplier(Operation):
     :math:`mod` in the computational basis:
 
     .. math::
-        \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; mod \rangle,
+        \text{OutMultiplier}(mod) |x \rangle |y \rangle |z \rangle = |x \rangle |y \rangle |z + x \cdot y \; \text{mod} \; mod \rangle,
 
     There are three implementations available, which differ in the auxiliary wires
     and in the gate counts they require, and in whether or not they support arbitrary values for
@@ -63,7 +63,7 @@ class OutMultiplier(Operation):
 
     .. note::
 
-        To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
+        To obtain the correct result, :math:`x`, :math:`y` and :math:`z` must be smaller than :math:`mod`.
 
     .. seealso:: :class:`~.Multiplier`, :class:`~.SemiAdder`, and :class:`~.PhaseAdder`.
 
@@ -71,7 +71,7 @@ class OutMultiplier(Operation):
         x_wires (Sequence[int]): wires that store the integer :math:`x`
         y_wires (Sequence[int]): wires that store the integer :math:`y`
         output_wires (Sequence[int]): wires that store the multiplication result. If the
-            register is in a non-zero state :math:`b`, the solution will be added to this value
+            register is in a non-zero state :math:`z`, the solution will be added to this value
         mod (int): the modulo for performing the multiplication. If not provided, it will be set
             to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
@@ -84,7 +84,7 @@ class OutMultiplier(Operation):
     **Example**
 
     This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo
-    :math:`mod=12`. We'll let :math:`b=0`. See Usage Details for :math:`b \neq 0`.
+    :math:`mod=12`. We'll let :math:`z=0`. See Usage Details for :math:`z \neq 0`.
 
     .. code-block:: python
 
@@ -124,9 +124,9 @@ class OutMultiplier(Operation):
         to encode the integer :math:`y < mod` in the computational basis.
 
         The third register is ``output_wires`` which is used
-        to encode the integer :math:`(b+ x \cdot y) \; \text{mod} \; mod` in the computational
+        to encode the integer :math:`(z+ x \cdot y) \; \text{mod} \; mod` in the computational
         basis. Therefore, it will require at least :math:`\lceil \log_2(mod)\rceil` wires
-        Note that these wires can be initialized with any integer :math:`b < mod`.
+        Note that these wires can be initialized with any integer :math:`z < mod`.
 
         The fourth register is ``work_wires`` containing the auxiliary qubits used to
         perform the modular multiplication operation. The number of auxiliary wires determines
@@ -135,11 +135,11 @@ class OutMultiplier(Operation):
         **Initial state of output wires**
 
         As indicated above, the initial state of ``output_wires`` can encode any value
-        :math:`b<mod`. The following is an example for :math:`b = 1`.
+        :math:`z<mod`. The following is an example for :math:`z = 1`.
 
         .. code-block:: python
 
-            b = 1
+            z = 1
             x = 2
             y = 7
             mod = 12
@@ -155,7 +155,7 @@ class OutMultiplier(Operation):
             def circuit():
                 qp.BasisEmbedding(x, wires=x_wires)
                 qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(b, wires=output_wires)
+                qp.BasisEmbedding(z, wires=output_wires)
                 qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
@@ -554,9 +554,8 @@ def _out_multiplier_with_caddsub_resources(
     # First negation
     resources[x_rep] += k
     # Add y
-    resources[
-        resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
-    ] += 1
+    add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
+    resources[add_rep] += 1
 
     # increment 2^(n+m) bit
     size = k - n - m
@@ -593,15 +592,11 @@ def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires
 
 def _add_plus_one(x_wires, y_wires, work_wires):
     """This qfunc implements ``(x, y, 0) -> (x, (x+y+1) % 2**m, 0)`` for ``m`` the number of
-    bits in ``y``. Note that it will produce the right behaviour in a circuit both when decomposing
-    the right elbows into measurement + CZ and when using a decomposition into unitary operators.
-    This is because we use a measurement with reset rather than a simple bit flip to return
-    the last work wire to the state |0>.
-    This circuit is similar to the one shown in Fig. 1c) in
+    bits in ``y``. This circuit is similar to the one shown in Fig. 1c) in
     `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__, just without the bit flips on the
     ``x_wires`` before and after the adder. We replace the explicit input carry in that figure
-    by bit flips on the least significant bits of all three registers, handling the clean-up
-    bit flip on the least significant work qubit with measurement+reset.
+    by bit flips on the least significant bits of all three registers, the bit flip on the work
+    wire occurring after the first left elbow/before the last right elbow.
     """
     work_wires = work_wires[: len(y_wires) - 1]
     X(x_wires[-1])
@@ -695,7 +690,8 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     This is shown in Fig. 1f) in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
     Note that the figure explicitly shows an input carry for the adder, which
     we do not represent here. Instead, we introduce (controlled) bit flips on the least significant
-    bits of each register that correspond to an input carry being set to one.
+    bits of each register that correspond to an input carry being set to one. The bit flips on
+    the least significant work wire occur after the first left elbow/before the last right elbow.
     """
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
