@@ -753,6 +753,9 @@ class LabsQROM(ResourceOperator):
         M = target_resource_params["size_bitstring"]
         num_bit_flips = target_resource_params.get("num_bit_flips", None)
 
+        if num_bit_flips is None:
+            num_bit_flips = (d * M) // 2
+
         # Set optimal Select-Swap depth
         k_approx = math.sqrt(
             d
@@ -810,6 +813,9 @@ class LabsQROM(ResourceOperator):
         d = target_resource_params["num_bitstrings"]
         M = target_resource_params["size_bitstring"]
         num_bit_flips = target_resource_params.get("num_bit_flips", None)
+
+        if num_bit_flips is None:
+            num_bit_flips = (d * M) // 2
 
         # Set optimal Select-Swap depth
         k_approx = math.sqrt(
