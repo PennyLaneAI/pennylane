@@ -28,6 +28,7 @@ from pennylane.labs.estimator_beta import (
     mcx_one_dirty_aux_resource_decomp,
     resource_rep,
 )
+from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
 # pylint: disable= no-self-use
 
@@ -84,11 +85,6 @@ class TestLabsCH:
             Deallocate(1),
         ]
         result = qre.ch_toffoli_based_resource_decomp(**self.op.resource_params)
-        # for r, e in zip(result, expected_resources):
-        #     if hasattr(r, "equal"):
-        #         assert r.equal(e)
-        #     else:
-        #         assert r == e
         assert decomp_equal(result, expected_resources)
 
 

@@ -24,3 +24,9 @@ from .subroutines import (
     select_thc_controlled_resource_decomp,
 )
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
+
+from .state_prep import (
+    LabsCosineWindow,
+    LabsMottonenStatePreparation,
+    LabsSumOfSlatersPrep,
+)

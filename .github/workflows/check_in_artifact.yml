@@ -69,7 +69,9 @@ on:
 jobs:
   check_in_artifact:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout main
         uses: actions/checkout@v6
