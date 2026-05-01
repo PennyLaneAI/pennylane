@@ -296,10 +296,10 @@ class TestFiniteDiff:
 
         assert len(tapes) == tape.num_params
 
-    def test_independent_parameters(self):
+    def test_independent_parameters(self, seed):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         with qp.queuing.AnnotatedQueue() as q1:
             qp.RX(1.0, wires=[0])
@@ -852,10 +852,10 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy):
+    def test_autograd(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -893,10 +893,10 @@ class TestFiniteDiffGradients:
             assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy):
+    def test_autograd_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -931,12 +931,12 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy):
+    def test_tf(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -971,12 +971,12 @@ class TestFiniteDiffGradients:
         assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy):
+    def test_tf_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -1008,12 +1008,12 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy):
+    def test_torch(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
@@ -1048,13 +1048,13 @@ class TestFiniteDiffGradients:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy):
+    def test_jax(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
 
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
