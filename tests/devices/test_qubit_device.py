@@ -1664,7 +1664,7 @@ def test_generate_basis_states():
     assert np.allclose(ints, np.arange(2**num_wires))
 
 
-def test_samples_to_counts_all_outomces():
+def test_samples_to_counts_all_outcomes():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
     class DummyQubitDevice(qp.devices.QubitDevice):

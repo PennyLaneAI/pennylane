@@ -1487,7 +1487,7 @@ class QubitDevice(Device):
 
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: np.int64(0) for k in outcomes}
-        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        outcome_dicts = [base_dict.copy() for _ in range(samples.shape[0])]
         results = [np.unique(batch, return_counts=True) for batch in samples]
         for result, outcome_dict in zip(results, outcome_dicts, strict=True):
             states, counts = result
