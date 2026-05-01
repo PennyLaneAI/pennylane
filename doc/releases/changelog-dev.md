@@ -196,7 +196,7 @@
   Depth: Not computed
 
   ```
-  
+
 * :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
   This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
@@ -230,7 +230,7 @@
 
 <h4>Decompositions 🍏</h4>
 
-* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
@@ -356,7 +356,7 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
-  
+
 * A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
@@ -1130,6 +1130,11 @@
   [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
   [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
+  [(#9397)](https://github.com/PennyLaneAI/pennylane/pull/9397)
+
+* Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
+  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
+  [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -1191,6 +1196,10 @@
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
+* The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
+  to outline what the transform does when used with Catalyst.
+  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
+
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
@@ -1226,8 +1235,8 @@
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
-  
-* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+
+* :class:`~.MultiControlledX` is now compatible with ``qjit``.
   Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
