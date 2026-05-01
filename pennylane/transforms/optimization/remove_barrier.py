@@ -34,6 +34,8 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     .. code-block:: python
 
+        import pennylane as qp
+
         @remove_barrier
         @qp.qnode(qp.device('default.qubit'))
         def circuit(x, y):
@@ -43,7 +45,11 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qp.X(0)
             return qp.expval(qp.Z(0))
 
-    The barrier is then removed before execution.
+    >>> print(qp.draw(circuit)(0.1, 0.2))
+    0: ──H──X─┤  <Z>
+    1: ──H────┤
+
+    The barrier is removed before execution.
 
     .. details::
         :title: Usage Details
