@@ -201,7 +201,7 @@ class LabsQROM(ResourceOperator):
                 )
 
         self.select_swap_depth = select_swap_depth
-        
+
         if wires is not None and len(wires) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {wires}")
         super().__init__(wires=wires)
