@@ -262,7 +262,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     **Examples**
 
-    When the ``decomp_inspector`` transform is applied on a circuit, the circuit will return a
+    Applying the ``decomp_inspector`` transform on a circuit will return a
     :class:`DecompGraphInspector` object constructed from operators in the circuit.
 
     .. code-block:: python
@@ -277,8 +277,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         inspector = circuit()
 
-    The inspector object provides an :meth:`~DecompGraphInspector.inspect_decomps` method that shows
-    the decomposition rules considered for a given operator.
+    The inspector object allows to query a given operator to identify which decomposition rule was
+    "CHOSEN" among those that were considered.
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
     CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
@@ -306,14 +306,13 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
     Weighted Cost: 196.0
 
-    The first-level expansion refers to the operators immediately produced by the decomposition rule,
-    whereas the full expansion refers to the circuit produced by decomposing the operator all the way
-    down to the target gate set. The weighted cost is also computed based on the full expansion. The
-    selected decomposition rule will appear labeled as "CHOSEN".
+    For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
+    whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
+    down to the target gate set. The weighted cost of the decomposition, computed based on the full expansion, is also displayed.
 
     In addition to the operators at the top level of the circuit, we can also inspect the graph
-    for how intermediate operators (such as the single-controlled ``MultiRZ`` produced in the
-    decomposition of the controlled ``MultiRZ``) are decomposed (notice how ``num_work_wires``
+    for how intermediate operators are decomposed. For example, let's look at the single-controlled
+    ``MultiRZ`` produced in the decomposition of the controlled ``MultiRZ`` (notice how ``num_work_wires``
     is set to 1 here, since decomposition of the top-level operator already used one of the work
     wires in the budget, so this inner operator has one fewer work wire available to it):
 
@@ -389,7 +388,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         These rules can only be selected if there are enough unused wires left on the device
         for allocation. In order to account for this, the :func:`~pennylane.transforms.decompose`
         transform takes a ``num_work_wires`` argument which acts as a work wire budget. It
-        ensures that at no more than ``num_work_wires`` number of work wires can be simultaneously
+        ensures that no more than ``num_work_wires`` number of work wires can be simultaneously
         allocated during the decomposition. Consider the following circuit:
 
         .. code-block:: python
