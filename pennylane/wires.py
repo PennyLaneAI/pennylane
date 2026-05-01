@@ -68,6 +68,7 @@ def _process(wires):
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
+
         tuple_of_wires = tuple(wires)
 
     except TypeError:

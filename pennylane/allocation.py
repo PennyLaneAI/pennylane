@@ -19,6 +19,8 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
+from jax.core import AbstractValue
+
 from pennylane.capture import enabled as capture_enabled
 from pennylane.math import is_abstract
 from pennylane.operation import Operator
@@ -42,6 +44,19 @@ class AllocateState(StrEnum):
     ANY = "any"
 
 
+class AbstractQubit(AbstractValue):
+    """An aval representing an allocated qubit"""
+    hash_value = hash("AbstractQubit")
+
+    def __eq__(self, other):
+        return isinstance(other, AbstractQubit)
+
+    def __hash__(self):
+        return self.hash_value
+
+    def _iter(self):
+        return
+
 if not has_jax:
     allocate_prim = None
     deallocate_prim = None
@@ -60,7 +75,8 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        #return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True
