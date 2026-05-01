@@ -911,14 +911,6 @@
   function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` in reversed or standard mode has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
-
-* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
-  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
-
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
@@ -1128,6 +1120,10 @@
   [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
   [(#9397)](https://github.com/PennyLaneAI/pennylane/pull/9397)
 
+* Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
+  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
+  [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
@@ -1264,7 +1260,7 @@
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qp.transforms.sign_expand` in a production
   environment.
-  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
+  [(#9210)](https://github.com/PennyLaneAI/pennylane/pull/9210)
 
 * Fixed a bug where `qp.math.givens_decomposition` modified the input in place when using `qjit`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
