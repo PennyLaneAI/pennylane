@@ -211,7 +211,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .pytrees import register_pytree
+from .pytrees import register_pytree, unflatten
 
 has_jax = True
 try:
@@ -348,6 +348,15 @@ def create_operator_primitive(
 
     @primitive.def_impl
     def _impl(*args, **kwargs):
+        # could special case on adjoint here, but let's try something more general
+        if op_names := kwargs.pop("op_names", None):
+            op_trees, op_leaf_counts = kwargs.pop("op_trees"), kwargs.pop("op_leaf_counts")
+            s = 0
+            for name, tree, count in zip(op_names, op_trees, op_leaf_counts):
+                kwargs[name] = unflatten(args[s : s + count], tree)
+                s += count
+            args = args[s:]
+
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")

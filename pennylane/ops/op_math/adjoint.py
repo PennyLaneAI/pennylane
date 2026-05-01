@@ -341,7 +341,9 @@ class Adjoint(SymbolicOp):
             qp.QueuingManager.remove(base)
             # base = pytrees.unflatten(*pytrees.flatten(base))
         leaves, pytree = pytrees.flatten(base)
-        return cls._primitive.bind(*leaves, base=pytree, **kwargs)
+        return cls._primitive.bind(
+            *leaves, op_names=("base",), op_trees=(pytree,), op_leaf_counts=(1,), **kwargs
+        )
 
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.

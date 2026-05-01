@@ -19,10 +19,12 @@ def my_func(phi, op, wires):
     loop()
 
 
-def main(theta):
+@qp.qjit
+@qp.qnode(qp.device("null.qubit", wires=4))
+def main(theta: float):
     qp.H(0)
     # see what happens when an operator crosses scopes
-    jax.jit(my_func)(0.2, qp.RX(theta, 0), jax.numpy.array([1, 2, 3]))
+    qp.capture.subroutine(my_func)(0.2, qp.RX(theta, 0), jax.numpy.array([1, 2, 3]))
 
 
-print(jax.make_jaxpr(main)(0.5))
+print(main.mlir)
