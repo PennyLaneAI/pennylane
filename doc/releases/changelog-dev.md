@@ -196,7 +196,7 @@
   Depth: Not computed
 
   ```
-  
+
 * :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
   This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
@@ -230,7 +230,7 @@
 
 <h4>Decompositions 🍏</h4>
 
-* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
@@ -356,7 +356,7 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
-  
+
 * A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
@@ -449,13 +449,18 @@
   their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
 
-* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
-  redundant. However, all Pauli-based computation passes can still be accessed from the
-  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
-  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
-  source of truth for documentation of a feature if it is desired to be accessible
-  from both PennyLane and Catalyst.
+* There is now one single source of truth for documentation of Catalyst passes while still
+  maintaining accessibility from both PennyLane and Catalyst. This includes the following
+  transforms: :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+  :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppr_to_ppm`,
+  :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`,
+  :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+  [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+
+  The source code for these passes in PennyLane has been removed as part of this change.  However,
+  all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
+  before (if Catalyst is installed: ``pip install pennylane-catalyst``).
 
 * Added the Catalyst version to :func:`~.about`.
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
@@ -465,7 +470,7 @@
 * Added support to `assert_valid` for decompositions that include mid-circuit measurements and
   added a verification for the length of various compared iterables.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
   `list` or `tuple` types.
   [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
@@ -1154,16 +1159,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
+* Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
-  
+
   - `Pow`
   - `QPE`
   - `GQSP`
   - `estimator.qpe_resources.FirstQuantization`
   - `estimator.qpe_resources.DoubleFactorization`
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
@@ -1176,8 +1181,8 @@
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
-  
-* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+
+* :class:`~.MultiControlledX` is now compatible with ``qjit``.
   Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
