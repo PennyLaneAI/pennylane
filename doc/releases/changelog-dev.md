@@ -1145,8 +1145,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where the Pytree structure of `GQSP` and `QPE` were inconsistent with the strcture
-  of their data.
+* Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
+  structure of their data:
+  
+  - `Pow`
+  - `QPE`
+  - `GQSP`
+  - `estimator.qpe_resources.FirstQuantization`
+  - `estimator.qpe_resources.DoubleFactorization`
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
   
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
