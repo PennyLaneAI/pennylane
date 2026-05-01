@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ, too-many-arguments, undefined-variable
+# pylint: disable=arguments-differ, too-many-arguments
 
 
 class LabsMottonenStatePreparation(ResourceOperator):
@@ -258,10 +258,10 @@ class LabsSumOfSlatersPrep(ResourceOperator):
        allocated wires: 22
          zero state: 22
          any state: 0
-     Total gates : 2.877E+4
+     Total gates : 2.909E+4
        'Toffoli': 949,
        'T': 2.231E+4,
-       'CNOT': 1.888E+3,
+       'CNOT': 2.204E+3,
        'X': 1.107E+3,
        'Hadamard': 2.520E+3
 
