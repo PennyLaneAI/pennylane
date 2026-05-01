@@ -18,6 +18,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.labs.estimator_beta import (
     Allocate,
     Deallocate,
@@ -29,22 +30,6 @@ from pennylane.labs.estimator_beta import (
 )
 
 # pylint: disable= no-self-use
-
-
-def _test_decomp_equal(decomp1, decomp2):
-    if len(decomp1) != len(decomp2):
-        return False
-
-    for op1, op2 in zip(decomp1, decomp2):
-        if isinstance(op1, (Allocate, Deallocate)):
-            ops_equal = op1.equal(op2)
-        else:
-            ops_equal = op1 == op2
-
-        if not ops_equal:
-            return False
-
-    return True
 
 
 class TestLabsCH:
@@ -104,7 +89,7 @@ class TestLabsCH:
         #         assert r.equal(e)
         #     else:
         #         assert r == e
-        assert _test_decomp_equal(result, expected_resources)
+        assert decomp_equal(result, expected_resources)
 
 
 class TestLabsMultiControlledX:
@@ -159,7 +144,7 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_many_clean_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert _test_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)
 
     @pytest.mark.parametrize(
         "num_ctrl_wires, num_zero_ctrl, base_decomp",
@@ -192,7 +177,7 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_one_clean_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert _test_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)
 
     def test_default_resource_decomp(self):
         """Test the default resource decomp is the decomposition using one clean
@@ -239,4 +224,4 @@ class TestLabsMultiControlledX:
             expected_decomp.append(Deallocate(allocated_register=allocated_register))
 
         actual_decomp = mcx_one_dirty_aux_resource_decomp(num_ctrl_wires, num_zero_ctrl)
-        assert _test_decomp_equal(actual_decomp, expected_decomp)
+        assert decomp_equal(actual_decomp, expected_decomp)
