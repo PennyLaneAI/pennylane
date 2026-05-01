@@ -314,8 +314,8 @@ class LabsSumOfSlatersPrep(ResourceOperator):
                     every Slater determinant in the target state, as defined in Sec. III A of
                     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
                 * stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to
-                set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
-                assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+                    set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
+                    assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
 
         """
@@ -407,7 +407,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         if num_bits is None:
             num_bits = min(num_wires, 2 * condensed_state_qubits - 1)
 
-        enumeration_reg = qre.Allocate(condensed_state_qubits, restored=True) 
+        enumeration_reg = qre.Allocate(condensed_state_qubits, restored=True)
         gate_list.append(enumeration_reg)  # enumeration register d
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
