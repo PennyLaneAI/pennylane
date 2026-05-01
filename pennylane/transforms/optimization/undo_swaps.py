@@ -79,8 +79,6 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
                 qp.Y(0)
                 return qp.expval(qp.Z(0))
 
-        The circuit before optimization:
-
         >>> dev = qp.device('default.qubit', wires=3)
         >>> qnode = qp.QNode(qfunc, dev)
         >>> print(qp.draw(qnode)())
@@ -101,13 +99,16 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         gate is a ``Y`` gate, which is left to act on wire ``0``. Next, the right-most SWAP gate
         acting on wires ``(0, 2)`` is removed, and the wires are manually swapped; wire ``2`` now
         becomes wire ``0``, and vice versa. Next, the SWAP gate acting on wires ``(0, 1)`` is
-        removed and the wires are interchanged. Altogether, this affects the wire labels as follows,
-        where the operations to the left of both SWAP gates have their wire labels changed
-        accordingly:
+        removed and the wires are interchanged.
 
-        - wire ``0`` :math:`\rightarrow` ``2`` :math:`\rightarrow` ``1``. This moves the ``H`` gate from wire ``0`` to wire ``1``.
-        - wire ``2`` :math:`\rightarrow` ``0``.
-        - wire ``1`` :math:`\rightarrow` ``2``. This moves the ``X`` gate from wire ``1`` to wire ``2``.
+        Altogether, this affects the wire labels as follows, where the operations to the left of
+        both SWAP gates have their wire labels changed accordingly.
+
+        * wire ``0`` changes to wire ``2`` which changes to wire ``1``. This moves the ``H`` gate from wire ``0`` to wire ``1``.
+
+        * wire ``2`` changes to wire ``0``.
+
+        * wire ``1`` changes to wire ``2``. This moves the ``X`` gate from wire ``1`` to wire ``2``.
 
     """
 
