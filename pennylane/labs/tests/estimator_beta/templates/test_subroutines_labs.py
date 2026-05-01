@@ -28,7 +28,7 @@ from pennylane.labs.estimator_beta.templates import LabsQROM
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.math import ceil_log2
 
-# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
+# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access, undefined-variable, unused-variable
 
 
 class TestLabsSelectPauliRot:
@@ -506,7 +506,7 @@ class TestLabsQROMStatePreparation:
                     GateCount(qre.S.resource_rep(), 32),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
@@ -523,7 +523,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
@@ -540,7 +540,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
@@ -557,7 +557,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
@@ -574,7 +574,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
@@ -591,7 +591,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
@@ -627,7 +627,7 @@ class TestLabsQROMStatePreparation:
                     GateCount(qre.S.resource_rep(), 19),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
@@ -644,7 +644,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
@@ -661,7 +661,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
@@ -678,7 +678,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
@@ -695,7 +695,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
@@ -731,7 +731,7 @@ class TestLabsQROMStatePreparation:
                     GateCount(qre.S.resource_rep(), 15),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -748,7 +748,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -765,7 +765,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -782,7 +782,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -818,7 +818,7 @@ class TestLabsQROMStatePreparation:
                     GateCount(qre.S.resource_rep(), 15),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -835,7 +835,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -852,7 +852,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -888,7 +888,7 @@ class TestLabsQROMStatePreparation:
                     GateCount(qre.S.resource_rep(), 15),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -905,7 +905,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -922,7 +922,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -939,7 +939,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -1001,7 +1001,7 @@ class TestLabsQROMStatePreparation:
                     load := Allocate(32, restored=True),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
@@ -1017,7 +1017,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
@@ -1033,7 +1033,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
@@ -1049,7 +1049,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
@@ -1065,7 +1065,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
@@ -1081,7 +1081,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
@@ -1107,7 +1107,7 @@ class TestLabsQROMStatePreparation:
                     load := Allocate(19, restored=True),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
@@ -1123,7 +1123,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
@@ -1139,7 +1139,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
@@ -1155,7 +1155,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
@@ -1171,7 +1171,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
@@ -1197,7 +1197,7 @@ class TestLabsQROMStatePreparation:
                     load := Allocate(15, restored=True),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1213,7 +1213,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1229,7 +1229,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1245,7 +1245,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -1271,7 +1271,7 @@ class TestLabsQROMStatePreparation:
                     load := Allocate(15, restored=True),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1287,7 +1287,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1303,7 +1303,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1329,7 +1329,7 @@ class TestLabsQROMStatePreparation:
                     load := Allocate(15, restored=True),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1345,7 +1345,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1361,7 +1361,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1377,7 +1377,7 @@ class TestLabsQROMStatePreparation:
                     ),
                     GateCount(
                         qre.ChangeOpBasis.resource_rep(
-                            cmpr_compute_op=qre.QROM.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
