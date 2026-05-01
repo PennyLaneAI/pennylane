@@ -199,8 +199,8 @@ class LabsCosineWindow(ResourceOperator):
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         hadamard = resource_rep(qre.Hadamard)
@@ -317,6 +317,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
                 set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
                 assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+
         """
         return {
             "num_coeffs": self.num_coeffs,
