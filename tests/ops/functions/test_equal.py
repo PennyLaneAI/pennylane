@@ -2852,10 +2852,10 @@ class TestBasisRotation:
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op1 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat)
-    op2 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=np.array(rotation_mat))
-    op3 = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
-    op4 = qp.BasisRotation.operator(wires=range(2, 4), unitary_matrix=rotation_mat)
+    op1 = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qp.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qp.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -2863,7 +2863,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qp.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="has different values"):
+        with pytest.raises(AssertionError, match="have different data"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2877,7 +2877,7 @@ class TestBasisRotation:
 
         with pytest.raises(
             AssertionError,
-            match=re.escape("op1 has value Wires([0, 1]) and op2 has value Wires([2, 3])"),
+            match=re.escape("have different wires"),
         ):
             assert_equal(op, other_op)
 
@@ -2892,12 +2892,12 @@ class TestBasisRotation:
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
         )
-        other_op = qp.BasisRotation.operator(wires=range(2), unitary_matrix=rotation_mat_jax)
+        other_op = qp.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qp.equal(op, other_op, check_interface=False) is True
         assert_equal(op, other_op, check_interface=False)
         assert qp.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match=r"has different interfaces"):
+        with pytest.raises(AssertionError, match=r"have different interfaces"):
             assert_equal(op, other_op)
 
 

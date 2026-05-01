@@ -26,14 +26,14 @@ import pytest
 import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture
+from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
 
 
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
 
     def test_bad_decomposition_output(self):
-        """Test decomposition output must be a list of operators."""
+        """Test that an error is raised if decomposition output is not a list."""
 
         class BadDecomp(Operator):
             @staticmethod
@@ -43,20 +43,79 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match=r"decomposition must be a list"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_bad_decomposition_lengths(self):
+        """Test that an error is raised if decomposition, compute_decomposition and queuing
+        do not have the same number of ops."""
+
+        class BadDecompLength(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.X(wires[0]), qp.Y(wires[1])]
+
+            def decomposition(self):
+                return [qp.X(self.wires[0])]
+
+        with pytest.raises(AssertionError, match="decomposition must match compute_decomposition"):
+            assert_valid(BadDecompLength(wires=[0, 1]), skip_pickle=True)
+
+        class BadDecompQueueLength(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                qp.X(wires[0])
+                return [qp.Y(wires[1])]
+
+        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+            assert_valid(BadDecompQueueLength(wires=[0, 1]), skip_pickle=True)
+
     def test_bad_decomposition_queuing(self):
-        """Test that output must match queued contents."""
+        """Test that an error is raised if decomposition and queuing do not have the same op."""
 
         class BadDecomp(Operator):
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
-                return [qp.RY(2.3, 0)]
+                with qp.QueuingManager.stop_recording():
+                    other_op = qp.RY(2.3, 0)
+                return [other_op]
 
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_bad_decomposition_with_mcm(self):
+        """Test that an error is raised if decomposition and compute_decomposition involve
+        mid-circuit measurements and return different ops."""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                mcm0 = qp.measure(wires[0])
+                mcm1 = qp.measure(wires[1])
+                return mcm0.measurements + mcm1.measurements
+
+            def decomposition(self):
+                mcm0 = qp.measure(self.wires[0])
+                mcm1 = qp.measure(self.wires[1])
+                return mcm1.measurements + mcm0.measurements
+
+        with pytest.raises(AssertionError, match="decomposition must match compute_decomposition"):
+            assert_valid(BadDecomp(wires=[0, 1]), skip_pickle=True)
+
+        class BadDecompQueue(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                """Return other ops than are queued, but the same number of ops."""
+                meas0 = qp.ops.MidMeasure(wires[0], meas_uid=251)
+                qp.ops.MidMeasure(wires[1], meas_uid=252)
+                with qp.QueuingManager.stop_recording():
+                    meas2 = qp.ops.MidMeasure(wires[0], meas_uid=253)
+                return [meas0, meas2]
+
+        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+            assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
+
     def test_decomposition_wires_must_be_mapped(self):
-        """Test that the operators in decomposition have mapped wires after mapping the op."""
+        """Test that an error is raised if the operators in decomposition do not have mapped
+        wires after mapping the op."""
 
         class BadDecompositionWireMap(Operator):
 
@@ -70,8 +129,9 @@ class TestDecompositionErrors:
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
         assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True, skip_wire_mapping=True)
 
-    def test_error_not_raised(self):
-        """Test if has_decomposition is False but decomposition defined."""
+    def test_error_has_decomposition_but_claims_not_to(self):
+        """Test that an error is raised if has_decomposition is False but a decomposition is
+        defined."""
 
         class BadDecomp(Operator):
             @staticmethod
@@ -84,7 +144,8 @@ class TestDecompositionErrors:
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_decomposition_must_not_contain_op(self):
-        """Test that the decomposition of an operator doesn't include the operator itself"""
+        """Test that an error is raised if the decomposition of an operator includes
+        the operator itself"""
 
         class BadDecomp(Operator):
             @staticmethod
@@ -93,6 +154,58 @@ class TestDecompositionErrors:
 
         with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+    def test_mcms_can_be_compared(self):
+        """Tests that decompositions with mid-circuit measurements can be compared correctly."""
+
+        class ValidMCMDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                mcm = qp.measure(wires[0])
+                return mcm.measurements
+
+        assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
+
+    def test_bad_new_decomposition_rule_exact(self):
+        """Test that an informative error is raised if the
+        claimed-to-be-exact resources of a decomposition rule are not correct."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
+        with pytest.raises(AssertionError, match="The numbers are off"):
+            _test_decomposition_rule(op, rule_wrong_numbers)
+
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
+        with pytest.raises(AssertionError, match="Missing entirely in gate counts"):
+            _test_decomposition_rule(op, rule_wrong_ops)
+
+    def test_bad_new_decomposition_rule_inexact(self):
+        """Test that an informative error is raised if the
+        inexact resources of a decomposition rule are not correct."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
+        op = MyOp([0, 1])
+        with pytest.raises(AssertionError, match="Gate counts expected from"):
+            _test_decomposition_rule(op, rule_wrong_ops)
 
 
 class TestBadMatrix:
