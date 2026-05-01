@@ -190,12 +190,51 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     if num_wires > 2:
         resources[resource_rep(FermionicSWAP)] = _count_swaps(num_wires)
 
+    bit_reversal_swaps = 0
+    for i in range(num_wires // 2):
+        left, right, l_end, r_end = i, num_wires - i - 1, num_wires - i - 1, i
+        finished = False
+        while not finished:
+            finished = (left == l_end) and (right == r_end)
+            if left < l_end:
+                bit_reversal_swaps += 1
+                if left + 1 == right:
+                    right -= 1
+                left += 1
+            if right > r_end:
+                bit_reversal_swaps += 1
+                right -= 1
+
+    resources[resource_rep(FermionicSWAP)] += bit_reversal_swaps
+
     return resources
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
 def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     wires = math.array(wires)
+    num_wires = len(wires)
+
+    # bit-reversal permutation
+    @for_loop(num_wires // 2)
+    def swaps(i):
+        @while_loop(lambda finished, _, __, ___, ____: not finished)
+        def fswaps(f, left, right, l_end, r_end):
+            f = (left == l_end) and (right == r_end)
+            if left < l_end:
+                FermionicSWAP(np.pi, Wires([wires[left], wires[left + 1]]))
+                if left + 1 == right:
+                    right -= 1
+                left += 1
+            if right > r_end:
+                FermionicSWAP(np.pi, Wires([wires[right], wires[right - 1]]))
+                right -= 1
+            return f, left, right, l_end, r_end
+
+        fswaps(False, i, num_wires - i - 1, num_wires - i - 1, i)
+
+    swaps()  # pylint: disable=no-value-for-parameter
+
     _recursive_decompose(wires)
 
 
