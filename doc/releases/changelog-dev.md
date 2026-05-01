@@ -613,6 +613,12 @@
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
+* Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
+  :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
+  :class:`~.labs.estimator_beta.templates.LabsModExp`.
+  [(#9390)](https://github.com/PennyLaneAI/pennylane/pull/9390)
+
+
 <h3>Breaking changes 💔</h3>
 
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of

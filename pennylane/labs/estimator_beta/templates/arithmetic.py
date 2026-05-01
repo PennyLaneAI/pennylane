@@ -20,7 +20,6 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    resource_rep,
 )
 from pennylane.wires import WiresLike
 
