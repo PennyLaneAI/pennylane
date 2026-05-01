@@ -109,10 +109,6 @@ from .templates import LabsCosineWindow
 from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
 
-CosineWindow = LabsCosineWindow
-MottonenStatePreparation = LabsMottonenStatePreparation
-SumOfSlatersPrep = LabsSumOfSlatersPrep
-
 from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
@@ -126,6 +122,9 @@ from .ops import (
     paulirot_controlled_resource_decomp,
 )
 
+CosineWindow = LabsCosineWindow
+MottonenStatePreparation = LabsMottonenStatePreparation
+SumOfSlatersPrep = LabsSumOfSlatersPrep
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
