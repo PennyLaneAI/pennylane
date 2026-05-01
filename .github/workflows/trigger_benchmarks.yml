@@ -1,4 +1,7 @@
 name: Trigger Benchmarks
+permissions:
+  contents: read
+  issues: write
 on:
   issue_comment:
     types:

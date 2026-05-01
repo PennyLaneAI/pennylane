@@ -136,11 +136,11 @@ class Pow(ScalarSymbolicOp):
     resource_keys = {"base_class", "base_params", "z"}
 
     def _flatten(self):
-        return (self.base, self.z), tuple()
+        return (self.base,), (self.z,)
 
     @classmethod
-    def _unflatten(cls, data, _):
-        return pow(data[0], z=data[1])
+    def _unflatten(cls, data, metadata):
+        return pow(data[0], z=metadata[0])
 
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
