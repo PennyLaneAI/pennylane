@@ -613,8 +613,8 @@
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
-* Added resource templates for state preparation operators, which include :class:`~.labs.templates.LabsMottonenStatePreparation`, :class:`~.labs.templates.LabsCosineWindow`,
-  and :class:`~.labs.templates.LabsSumOfSlatersPrep`.
+* Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
+  and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
 <h3>Breaking changes 💔</h3>
