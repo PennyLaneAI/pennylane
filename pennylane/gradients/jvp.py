@@ -260,7 +260,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
 
     .. code-block:: python
 
-        import jax
+        import pennyjax5 as jax
 
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
@@ -373,7 +373,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     .. code-block:: python
 
-        import jax
+        import pennyjax5 as jax
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 

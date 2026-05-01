@@ -35,9 +35,9 @@ from pennylane.exceptions import AutoGraphError
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.interpreters.partial_eval import DynamicJaxprTracer
+    import pennyjax5 as jax
+    import pennyjax5.numpy as jnp
+    from pennyjax5.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 

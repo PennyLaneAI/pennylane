@@ -60,7 +60,7 @@ def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 # pylint: disable=import-outside-toplevel
 def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    import jax
+    import pennyjax5 as jax
 
     if argnums is None:
         argnums = 0
@@ -103,7 +103,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     tag = jax.core.TraceTag()
     with jax.core.take_current_trace() as parent_trace:

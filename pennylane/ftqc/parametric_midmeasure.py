@@ -48,7 +48,7 @@ def _create_parametrized_mid_measure_primitive():
 
     """
     # pylint: disable=import-outside-toplevel
-    import jax
+    import pennyjax5 as jax
 
     from pennylane.capture.custom_primitives import QpPrimitive
 

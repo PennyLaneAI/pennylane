@@ -22,7 +22,7 @@ from .autograph import run_autograph
 
 has_jax = True
 try:
-    import jax
+    import pennyjax5 as jax
 except ImportError:  # pragma: no cover
     has_jax = False
 

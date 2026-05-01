@@ -33,7 +33,7 @@ from .cotransform_cache import CotransformCache
 from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
-    import jax
+    import pennyjax5 as jax
 
     from pennylane.workflow import QNode
 
@@ -968,7 +968,7 @@ class CompilePipeline:
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr:
         # pylint: disable=import-outside-toplevel
-        import jax
+        import pennyjax5 as jax
 
         cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
         for container in self:

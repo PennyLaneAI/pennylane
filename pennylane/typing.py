@@ -75,11 +75,11 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    if "jax" in sys.modules:
+    if "pennyjax5" in sys.modules:
         with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
+            from pennyjax5 import Array
+            from pennyjax5.core import Tracer
+            from pennyjax5.numpy import ndarray
 
             JaxTensor = ndarray | Array | Tracer
             check = issubclass if subclass else isinstance

@@ -25,11 +25,11 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("pennyjax5") is not None
 
 
 def _get_shape(x):
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     return getattr(x, "shape", jax.numpy.shape(x))
 
@@ -40,7 +40,7 @@ def _get_jvp_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     jvp_prim = capture.QpPrimitive("jvp")
     jvp_prim.multiple_results = True
@@ -69,7 +69,7 @@ def _get_jvp_prim():
 
 
 def _validate_tangents(params, dparams, argnums):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
+    from pennyjax5._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     if len(dparams) != len(argnums):
         raise TypeError(
@@ -99,8 +99,8 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    from pennyjax5.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):
         raise ValueError(f"params must be a Sequence in qp.jvp. Got type {type(params)}.")

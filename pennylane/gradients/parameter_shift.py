@@ -950,7 +950,7 @@ def param_shift(
 
     .. code-block:: python
 
-        import jax
+        import pennyjax5 as jax
 
         dev = qp.device("default.qubit")
         @qp.qnode(dev, interface="jax", diff_method="parameter-shift")

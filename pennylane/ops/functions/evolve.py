@@ -127,7 +127,7 @@ def evolve(*args, **kwargs):
 
     .. code-block:: python
 
-        import jax
+        import pennyjax5 as jax
 
         jax.config.update("jax_enable_x64", True)
 

@@ -28,9 +28,9 @@ from pennylane.queuing import QueuingManager
 
 is_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.core import ShapedArray
+    import pennyjax5 as jax
+    import pennyjax5.numpy as jnp
+    from pennyjax5.core import ShapedArray
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     is_jax = False
 

@@ -38,8 +38,8 @@ from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
+if util.find_spec("pennyjax5") is not None:
+    jax = import_module("pennyjax5")
     is_jax_available = True
 else:  # pragma: no cover
     is_jax_available = False
@@ -931,7 +931,7 @@ def _qsp_iterate_broadcast(phis, x, interface):
     """
     # pylint: disable=import-outside-toplevel
     try:
-        from jax import vmap
+        from pennyjax5 import vmap
 
         interface = "jax"
         qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
@@ -962,7 +962,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
 
     # pylint: disable=import-outside-toplevel
     try:
-        from jax import jacobian
+        from pennyjax5 import jacobian
 
         interface = "jax"
 
@@ -982,7 +982,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
 
         # pylint: disable=import-outside-toplevel
         try:
-            from jax import jit, vmap
+            from pennyjax5 import jit, vmap
 
             qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
 
@@ -1000,7 +1000,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
         return 1 / len(grid_points) * obj_func
 
     try:
-        from jax import jit
+        from pennyjax5 import jit
 
         obj_function = jit(obj_function)
     except ModuleNotFoundError:
@@ -1081,7 +1081,7 @@ def _obj_function_optax(phi, x, y):
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
     # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
+    import pennyjax5 as jax
 
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
@@ -1092,7 +1092,7 @@ def _obj_function_optax(phi, x, y):
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax."""
     # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
+    import pennyjax5 as jax
     import optax
 
     opt = optax.lbfgs()
@@ -1127,7 +1127,7 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     minimizing the distance between the target and qsp polynomial over the grid.
     """
     # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
+    import pennyjax5 as jax
 
     grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]

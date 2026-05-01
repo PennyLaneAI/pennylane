@@ -31,7 +31,7 @@ from .optimization_utils import find_next_gate
 def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
+        from pennyjax5 import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim

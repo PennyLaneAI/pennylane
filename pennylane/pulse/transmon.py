@@ -353,7 +353,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        import jax
+        import pennyjax5 as jax
 
         jax.config.update("jax_enable_x64", True)
 

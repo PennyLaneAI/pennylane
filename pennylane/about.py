@@ -28,8 +28,8 @@ from sys import version_info
 import numpy
 import scipy
 
-if find_spec("jax"):
-    jax_version = version("jax")
+if find_spec("pennyjax5"):
+    jax_version = version("pennyjax5")
 else:
     jax_version = None  # pragma: no cover
 

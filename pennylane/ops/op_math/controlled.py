@@ -326,7 +326,7 @@ def _get_ctrl_qfunc_prim():
 def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
     """Capture compatible way of performing an ctrl transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     ctrl_prim = _get_ctrl_qfunc_prim()
 

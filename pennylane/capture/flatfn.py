@@ -19,7 +19,7 @@ from functools import update_wrapper
 
 has_jax = True
 try:
-    import jax
+    import pennyjax5 as jax
 except ImportError:
     has_jax = False
 

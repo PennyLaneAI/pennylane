@@ -22,7 +22,7 @@ from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3
 
 is_jax = True
 try:
-    import jax.numpy as jnp
+    import pennyjax5.numpy as jnp
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     is_jax = False
 

@@ -116,7 +116,7 @@ def null_postprocessing(results):
 def _get_plxpr_defer_measurements():
     try:
         # pylint: disable=import-outside-toplevel
-        import jax
+        import pennyjax5 as jax
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import cond_prim, ctrl_transform_prim, measure_prim
@@ -656,7 +656,7 @@ def defer_measurements(
 
             .. code-block:: python
 
-                import jax
+                import pennyjax5 as jax
 
                 qp.capture.enable()
 
@@ -693,8 +693,8 @@ def defer_measurements(
 
           .. code-block:: python
 
-              import jax
-              import jax.numpy as jnp
+              import pennyjax5 as jax
+              import pennyjax5.numpy as jnp
 
               qp.capture.enable()
 

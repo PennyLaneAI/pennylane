@@ -365,8 +365,8 @@ def is_abstract(tensor, like=None):
 
     .. code-block:: python
 
-        import jax
-        from jax import numpy as jnp
+        import pennyjax5 as jax
+        from pennyjax5 import numpy as jnp
 
         def function(x):
             print("Value:", x)
@@ -420,7 +420,7 @@ def is_abstract(tensor, like=None):
     interface = like or math.get_interface(tensor)
 
     if interface == "jax":
-        import jax
+        import pennyjax5 as jax
 
         # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
         # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
@@ -542,7 +542,7 @@ def requires_grad(tensor, interface=None):
         return False
 
     if interface == "jax":
-        import jax
+        import pennyjax5 as jax
 
         return isinstance(tensor, jax.core.Tracer)
 
@@ -587,7 +587,7 @@ def in_backprop(tensor, interface=None):
         return isinstance(tensor, ArrayBox)
 
     if interface == "jax":
-        import jax
+        import pennyjax5 as jax
 
         return isinstance(tensor, jax.core.Tracer)
 

@@ -18,10 +18,10 @@ Pure function implementations for the expectation value functions.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import jax
-import jax.numpy as jnp
+import pennyjax5 as jax
+import pennyjax5.numpy as jnp
 import numpy as np
-from jax.typing import ArrayLike
+from pennyjax5.typing import ArrayLike
 
 
 @dataclass

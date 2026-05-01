@@ -316,9 +316,9 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
     .. code-block::
 
         import pennylane as qp
-        import jax
+        import pennyjax5 as jax
 
-        from jax import make_jaxpr
+        from pennyjax5 import make_jaxpr
         from pennylane.capture.autograph import disable_autograph, run_autograph
 
         qp.capture.enable()

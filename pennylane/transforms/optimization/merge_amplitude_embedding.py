@@ -32,8 +32,8 @@ from pennylane.typing import PostprocessingFn
 def _get_plxpr_merge_amplitude_embedding():
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
-        from jax.extend.core import Jaxpr
+        from pennyjax5 import make_jaxpr
+        from pennyjax5.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr

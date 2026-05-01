@@ -26,7 +26,7 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
+    import pennyjax5 as jax
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive

@@ -77,7 +77,7 @@ def _create_transform_primitive():
 def _create_plxpr_fallback_transform(tape_transform):
     # pylint: disable=import-outside-toplevel
     try:
-        import jax
+        import pennyjax5 as jax
 
         from pennylane.tape import plxpr_to_tape
     except ImportError:
@@ -1065,7 +1065,7 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @autograph.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
+        import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)

@@ -65,7 +65,7 @@ JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 
 has_jax = True
 try:
-    import jax
+    import pennyjax5 as jax
 
     # only do the following if jax is 0.7.x
     jax_version = jax.__version__
@@ -74,17 +74,17 @@ try:
     if version.parse(jax_version) >= version.parse("0.7.0") and version.parse(
         jax_version
     ) < version.parse("0.8.0"):
-        from jax._src import config as jax_config
-        from jax._src import core, pjit, source_info_util
-        from jax._src.core import JaxprEqnContext, Var
-        from jax._src.interpreters import partial_eval as pe
-        from jax._src.interpreters.partial_eval import (
+        from pennyjax5._src import config as jax_config
+        from pennyjax5._src import core, pjit, source_info_util
+        from pennyjax5._src.core import JaxprEqnContext, Var
+        from pennyjax5._src.interpreters import partial_eval as pe
+        from pennyjax5._src.interpreters.partial_eval import (
             DynamicJaxprTracer,
             TracingEqn,
             compute_on,
             xla_metadata_lib,
         )
-        from jax._src.lax import lax
+        from pennyjax5._src.lax import lax
 except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 

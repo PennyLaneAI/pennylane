@@ -295,7 +295,7 @@ class CondCallable:
         return None
 
     def __call_capture_enabled(self, *args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
+        import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
         cond_prim = _get_cond_qfunc_prim()
 
@@ -737,7 +737,7 @@ def _validate_abstract_values(
     outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
         msg = (

@@ -39,8 +39,8 @@ from .switches import enabled
 
 has_jax = True
 try:
-    import jax
-    from jax._src.pjit import jit_p as pjit_p
+    import pennyjax5 as jax
+    from pennyjax5._src.pjit import jit_p as pjit_p
 
     quantum_subroutine_prim = copy.deepcopy(pjit_p)
     quantum_subroutine_prim.name = "quantum_subroutine_prim"

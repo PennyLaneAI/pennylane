@@ -24,7 +24,7 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("pennyjax5") is not None
 
 
 # pylint: disable=unused-argument
@@ -33,7 +33,7 @@ def _get_vjp_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
 
     vjp_prim = capture.QpPrimitive("vjp")
     vjp_prim.multiple_results = True
@@ -59,8 +59,8 @@ def _get_vjp_prim():
 
 
 def _validate_cotangents(cotangents, out_avals):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    from pennyjax5._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
         return getattr(x, "shape", jax.numpy.shape(x))
@@ -89,8 +89,8 @@ def _validate_cotangents(cotangents, out_avals):
 
 # pylint: disable=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    from pennyjax5.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     h = _setup_h(h)
     method = _setup_method(method)

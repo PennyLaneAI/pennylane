@@ -15,9 +15,9 @@
 Compute the jvp of a jaxpr using the adjoint Jacobian method.
 """
 
-import jax
-from jax import numpy as jnp
-from jax.interpreters import ad
+import pennyjax5 as jax
+from pennyjax5 import numpy as jnp
+from pennyjax5.interpreters import ad
 
 from pennylane import adjoint, generator
 from pennylane.capture import pause

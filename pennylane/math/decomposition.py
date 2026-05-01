@@ -22,8 +22,8 @@ from pennylane import math
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
+    import pennyjax5 as jax
+    import pennyjax5.numpy as jnp
 except ModuleNotFoundError:  # pragma: no cover
     has_jax = False
 

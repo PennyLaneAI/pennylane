@@ -32,8 +32,8 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
-        from jax.extend.core import Jaxpr
+        from pennyjax5 import make_jaxpr
+        from pennyjax5.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim

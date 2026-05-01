@@ -15,7 +15,7 @@
 This module contains a class for executing plxpr using default qubit tools.
 """
 
-import jax
+import pennyjax5 as jax
 import numpy as np
 
 from pennylane.capture import pause

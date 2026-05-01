@@ -191,7 +191,7 @@ class DefaultQutritMixed(Device):
 
     .. code-block:: python
 
-        import jax
+        import pennyjax5 as jax
 
         @jax.jit
         def f(x):

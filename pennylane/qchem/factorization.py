@@ -26,10 +26,10 @@ has_jax_optax = True
 try:  # pragma: no cover
 
     import optax
-    from jax import jit
-    from jax import numpy as jnp
-    from jax import scipy as jsp
-    from jax import value_and_grad
+    from pennyjax5 import jit
+    from pennyjax5 import numpy as jnp
+    from pennyjax5 import scipy as jsp
+    from pennyjax5 import value_and_grad
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax_optax = False
 
