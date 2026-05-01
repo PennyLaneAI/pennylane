@@ -407,7 +407,8 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         if num_bits is None:
             num_bits = min(num_wires, 2 * condensed_state_qubits - 1)
 
-        gate_list.append(qre.Allocate(condensed_state_qubits))  # enumeration register d
+        enumeration_reg = qre.Allocate(condensed_state_qubits, restored=True) 
+        gate_list.append(enumeration_reg)  # enumeration register d
         if stateprep_cmpr_op is None:
             stateprep_cmpr_op = resource_rep(
                 LabsMottonenStatePreparation, {"num_wires": condensed_state_qubits}
@@ -435,7 +436,8 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         # Steps 3-4 and 6: Encode/uncompute the identification register using multi-controlled Toffoli and CNOT gates
         # if identity encoding is True, then the identification register fits inside the system register, so no extra allocation needed
         if not identity_encoding:
-            gate_list.append(qre.Allocate(m))  # identification register
+            identification_reg = qre.Allocate(m, restored=True)
+            gate_list.append(identification_reg)  # identification register
             cnot = resource_rep(qre.CNOT)
             gate_list.append(GateCount(cnot, 2 * num_wires * m))
 
@@ -449,7 +451,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         gate_list.append(GateCount(mcx, num_mcx))
 
         if not identity_encoding:
-            gate_list.append(qre.Deallocate(m))  # deallocate identification register
-        gate_list.append(qre.Deallocate(condensed_state_qubits))  # deallocate enumeration register
+            gate_list.append(qre.Deallocate(allocated_register=identification_reg))  # deallocate identification register
+        gate_list.append(qre.Deallocate(allocated_register=enumeration_reg))  # deallocate enumeration register
 
         return gate_list
