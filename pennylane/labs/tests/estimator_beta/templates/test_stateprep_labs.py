@@ -23,7 +23,7 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use,too-many-arguments, undefined-variable, unused-variable
 
 
 class TestMottonenStatePreparation:
@@ -142,7 +142,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
+                    alloc_reg := qre.Allocate(6, state="zero", restored=True),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -157,6 +157,7 @@ class TestSumOfSlatersPrep:
                         1,
                     ),
                     GateCount(resource_rep(qre.X), 320),
+                    GateCount(resource_rep(qre.CNOT), 100),
                     GateCount(
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 8, "num_zero_ctrl": 0}
@@ -173,7 +174,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
+                    alloc_reg := qre.Allocate(6, state="zero", restored=True),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -188,6 +189,7 @@ class TestSumOfSlatersPrep:
                         1,
                     ),
                     GateCount(resource_rep(qre.X), 616),
+                    GateCount(resource_rep(qre.CNOT), 156),
                     GateCount(
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 11, "num_zero_ctrl": 0}
@@ -204,7 +206,7 @@ class TestSumOfSlatersPrep:
                 resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}),
                 2,
                 [
-                    (alloc_reg := qre.Allocate(7, state="zero", restored=True)),
+                    alloc_reg := qre.Allocate(7, state="zero", restored=True),
                     GateCount(resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}), 1),
                     GateCount(
                         resource_rep(
@@ -219,12 +221,48 @@ class TestSumOfSlatersPrep:
                         1,
                     ),
                     GateCount(resource_rep(qre.X), 1000),
+                    GateCount(resource_rep(qre.CNOT), 316),
                     GateCount(
                         resource_rep(
                             qre.MultiControlledX, {"num_ctrl_wires": 10, "num_zero_ctrl": 0}
                         ),
                         99,
                     ),
+                    qre.Deallocate(allocated_register=alloc_reg),
+                ],
+            ),
+            (
+                16,
+                20,
+                15,
+                None,
+                1,
+                [
+                    alloc_reg := qre.Allocate(4, state="zero", restored=True),
+                    GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 4}), 1),
+                    GateCount(
+                        resource_rep(
+                            qre.QROM,
+                            {
+                                "num_bitstrings": 16,
+                                "size_bitstring": 20,
+                                "restored": False,
+                                "select_swap_depth": 1,
+                            },
+                        ),
+                        1,
+                    ),
+                    alloc_reg_2 := qre.Allocate(7, state="zero", restored=True),
+                    GateCount(resource_rep(qre.CNOT), 280),
+                    GateCount(resource_rep(qre.X), 112),
+                    GateCount(resource_rep(qre.CNOT), 32),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX, {"num_ctrl_wires": 7, "num_zero_ctrl": 0}
+                        ),
+                        15,
+                    ),
+                    qre.Deallocate(allocated_register=alloc_reg_2),
                     qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
@@ -237,6 +275,8 @@ class TestSumOfSlatersPrep:
         res = qre.SumOfSlatersPrep.resource_decomp(
             num_coeffs, num_wires, num_bits, stateprep_op, select_swap_depth
         )
+        print(res)
+        print(expected_resources)
         assert decomp_equal(res, expected_resources)
 
     def test_resource_params(self):
