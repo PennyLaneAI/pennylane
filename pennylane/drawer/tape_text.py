@@ -189,12 +189,16 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
         config.wire_filler.join([t, s])
-        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
+        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires], strict=True)
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings
     for j, (bt, s) in enumerate(
-        zip(totals.bit_totals, layer_str[config.n_wires : config.n_wires + config.n_bits])
+        zip(
+            totals.bit_totals,
+            layer_str[config.n_wires : config.n_wires + config.n_bits],
+            strict=True,
+        )
     ):
         totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
