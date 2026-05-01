@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ, too-many-arguments
+# pylint: disable=arguments-differ, too-many-arguments, undefined-variable
 
 
 class LabsMottonenStatePreparation(ResourceOperator):
@@ -446,6 +446,10 @@ class LabsSumOfSlatersPrep(ResourceOperator):
 
         x = resource_rep(qre.X)
         gate_list.append(GateCount(x, num_coeffs * m))
+
+        num_bits_to_unset = int(np.bitwise_count(np.arange(1, num_coeffs)).sum())
+        gate_list.append(GateCount(resource_rep(qre.CNOT), num_bits_to_unset))
+
         mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": m, "num_zero_ctrl": 0})
         num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))
