@@ -334,6 +334,7 @@ class LabsQROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring // 2)
         W_opt = select_swap_depth or cls._t_optimized_select_swap_width(
             num_bitstrings,
             size_bitstring,
