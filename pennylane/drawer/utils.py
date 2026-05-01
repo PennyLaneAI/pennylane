@@ -44,11 +44,9 @@ def wire_extent(layers: list[list], wire_map: dict) -> dict:
             if isinstance(wire, DynamicWire):
                 # unused dynamic wire, just pop
                 unused_dynamic_wires.append(wire)
+                dyn[wire] = (-2, -2)
             else:
                 dyn[wire] = (-1, len(layers))
-
-    for w in unused_dynamic_wires:
-        wire_map.pop(w)
     return {wire_map[w]: value for w, value in dyn.items()}
 
 
