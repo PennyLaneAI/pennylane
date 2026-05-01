@@ -75,42 +75,30 @@ def _recursive_expression(x, order, ops):
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
-
 @QueuingManager.stop_recording()
 def _simplify_trotter_sequence(decomp):
+    """Simplify a list of operations by merging consecutive evolutions with the same base.
+    
+    Args:
+        decomp (list): A list of operations to simplify.
 
-    def _op_key(op):
-        return (
-            type(op),
-            tuple(getattr(op, "wires", ())),
-            getattr(op, "name", None),
-        )
-
+    Returns:
+        list: The simplified list of operations.
+    """
     if not decomp:
         return []
 
     merged = [decomp[0]]
 
     prev = decomp[0]
-    prev_key = _op_key(prev.base) if isinstance(prev, qml_ops.Evolution) else None
 
     for op in decomp[1:]:
         if (
             isinstance(prev, qml_ops.Evolution)
             and isinstance(op, qml_ops.Evolution)
+            and qml.equal(prev.base, op.base)
         ):
-            op_key = _op_key(op.base)
-
-            if op_key == prev_key and prev.wires == op.wires:
-                merged[-1] = qml_ops.Evolution(
-                    prev.base,
-                    prev.param + op.param,
-                )
-                continue
-
-            prev_key = op_key
-        else:
-            prev_key = None
+            merged[-1] = qml_ops.Evolution(op.base, prev.param + op.param)
 
         merged.append(op)
         prev = op
@@ -589,7 +577,6 @@ def _trotter_product_decomposition(*args, **kwargs):
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
-
 
 class TrotterizedQfunc(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation applied to a set of
