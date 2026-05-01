@@ -463,7 +463,7 @@
 <h4>Other improvements</h4>
 
 * Added support to `assert_valid` for decompositions that include mid-circuit measurements and
-  added a cross-verification for the length of returned and queued decompositions.
+  added a verification for the length of various compared iterables.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
   
 * Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
@@ -1145,6 +1145,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the Pytree structure of `GQSP` and `QPE` were inconsistent with the strcture
+  of their data.
+  [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
+  
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
