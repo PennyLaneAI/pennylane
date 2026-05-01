@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a new template :class:`~.OutSquare` for outplace squaring a register into a new register.
+* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
 
 <h4>Sum of Slaters State Preparation 🆘</h4>

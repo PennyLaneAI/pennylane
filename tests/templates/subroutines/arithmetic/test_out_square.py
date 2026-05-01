@@ -15,8 +15,6 @@
 Tests for the OutSquare template.
 """
 
-from itertools import product
-
 import pytest
 
 import pennylane as qp
@@ -38,57 +36,49 @@ def test_standard_validity_out_square(output_wires_zeroed):
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
-    """Test the correctness of a decomposition rule for ``OutSquare``."""
-    if use_jit:
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-
+    """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
     x_wires, output_wires, work_wires = all_wires
+    total_wires = x_wires + output_wires
+    if work_wires:
+        total_wires += work_wires
 
     dev = qp.device("lightning.qubit")
 
-    @qp.set_shots(10)
     @qp.qnode(dev)
-    def circuit(x, y):
-        qp.BasisEmbedding(x, wires=x_wires)
-        qp.BasisEmbedding(y, wires=output_wires)
+    def circuit(x_state, y_state, output_state):
+        qp.StatePrep(x_state, x_wires)
+        qp.StatePrep(y_state, output_wires)
         rule(x_wires, output_wires, work_wires, output_wires_zeroed)
-        return (
-            qp.sample(wires=x_wires),
-            qp.sample(wires=output_wires),
-            qp.sample(wires=(work_wires or None)),
-        )
+        qp.adjoint(qp.StatePrep)(output_state, x_wires + output_wires)
+        return qp.probs(wires=total_wires)
 
     if use_jit:
-        circuit = jax.jit(circuit)
+        fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
+        qp.qjit(qp.decompose(circuit, max_expansion=2, fixed_decomps=fixed_decomps))
 
-    mod = 2 ** len(output_wires)
     rng = np.random.default_rng(seed)
+
     num_x = 2 ** len(x_wires)
-    xs = rng.choice(num_x, size=min(num_x, 5))
+    x_state = rng.random(num_x) + 1j * rng.random(num_x)
+    x_state /= np.linalg.norm(x_state)
+
+    num_y = 2 ** len(output_wires)
+
     if output_wires_zeroed:
-        ys = [0]
+        y_state = np.zeros(num_y, dtype=complex)
+        y_state[0] = 1.0
     else:
-        ys = [0, mod // 2 + 1, mod - 1]
+        y_state = rng.random(num_y) + 1j * rng.random(num_y)
+        y_state /= np.linalg.norm(y_state)
 
-    for x, y in product(xs, ys):
-        output = circuit(x, y)
-        assert len(output) == 3
-        out_ints = [int("".join(map(str, out[0])), 2) for out in output]
-        expected = [int(x), int((y + x**2) % mod), 0]
+    output_state = np.zeros((num_x, num_y), dtype=complex)
+    for x in range(num_x):
+        output_state[x] = x_state[x] * np.roll(y_state, x**2)
+    output_state = output_state.reshape(-1)
 
-        n = len(x_wires)
-        tmp_exp_out = ((2 * x**2 + 2 ** (2 * n) - (2**n - x) - 2 * x * 2**n) // 2) % mod
-        tmp_exp_out = ((2 * x**2 - 2 * x * 2**n) // 2) % mod
-        print(f"{tmp_exp_out=}")
-        if len(work_wires) > 0:
-            assert (
-                out_ints == expected
-            ), f"{(out_ints[1], tmp_exp_out)}\n{out_ints}\n{expected} ({y=})"
-        else:
-            # Skip work wire check
-            assert out_ints[:-1] == expected[:-1], f"\n{out_ints[:-1]}\n{expected[:-1]} ({y=})"
+    probs = circuit(x_state, y_state, output_state)
+    assert np.isclose(probs[0], 1.0)
+    assert np.allclose(probs[1:], 0.0)
 
 
 class TestOutSquare:
@@ -160,11 +150,11 @@ class TestOutSquare:
         else:
             y = mod - 2  # Some number close to causing overflows
 
+        fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
+
         @qp.qjit
         @qp.set_shots(1)
-        @qp.decompose(
-            max_expansion=2, fixed_decomps={"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
-        )
+        @qp.decompose(max_expansion=2, fixed_decomps=fixed_decomps)
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
             qp.BasisEmbedding(x, wires=x_wires)
@@ -258,26 +248,50 @@ class TestOutSquare:
                 qp.TemporaryAND([2, 0, 4]),
                 # First CNOT-wrapped controlled adder, shifted by 1
                 qp.CNOT([1, 7]),
-                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
+                Controlled(
+                    qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
+                    control_wires=[7],
+                    work_wires=[10],
+                    work_wire_type="zeroed",
+                ),
                 qp.CNOT([1, 7]),
                 # Second CNOT-wrapped controlled adder, shifted by 2
                 qp.CNOT([0, 7]),
-                Controlled(qp.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
+                Controlled(
+                    qp.SemiAdder([0, 1, 2], [3, 4], [8]),
+                    control_wires=[7],
+                    work_wires=[9, 10],
+                    work_wire_type="zeroed",
+                ),
                 qp.CNOT([0, 7]),
             ]
         else:
             expected = [
                 # controlled copy (="zeroth" CNOT-wrapped controlled adder)
                 qp.CNOT([2, 7]),
-                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]), control_wires=[7]),
+                Controlled(
+                    qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]),
+                    control_wires=[7],
+                    work_wire_type="zeroed",
+                ),
                 qp.CNOT([2, 7]),
                 # First CNOT-wrapped controlled adder, shifted by 1
                 qp.CNOT([1, 7]),
-                Controlled(qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9, 10]), control_wires=[7]),
+                Controlled(
+                    qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
+                    control_wires=[7],
+                    work_wires=[10],
+                    work_wire_type="zeroed",
+                ),
                 qp.CNOT([1, 7]),
                 # Second CNOT-wrapped controlled adder, shifted by 2
                 qp.CNOT([0, 7]),
-                Controlled(qp.SemiAdder([0, 1, 2], [3, 4], [8, 9, 10]), control_wires=[7]),
+                Controlled(
+                    qp.SemiAdder([0, 1, 2], [3, 4], [8]),
+                    control_wires=[7],
+                    work_wires=[9, 10],
+                    work_wire_type="zeroed",
+                ),
                 qp.CNOT([0, 7]),
             ]
 

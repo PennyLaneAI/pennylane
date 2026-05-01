@@ -287,7 +287,7 @@ class OutSquare(Operation):
         return tuple(), metadata
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, _, metadata):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
@@ -378,19 +378,14 @@ def _out_square_with_adder_resources(
     for i in range(output_wires_zeroed, min(n, m)):
         num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
         resources[resource_rep(CNOT)] += 2
-        resources[
-            controlled_resource_rep(
-                base_class=SemiAdder,
-                base_params={
-                    "num_x_wires": n,
-                    "num_y_wires": num_out,
-                    "num_work_wires": num_out - 1,
-                },
-                num_control_wires=1,
-                num_work_wires=num_work_wires - num_out,
-                work_wire_type="zeroed",
-            )
-        ] += 1
+        add_params = {"num_x_wires": n, "num_y_wires": num_out, "num_work_wires": num_out - 1}
+        ctrl_params = {
+            "num_control_wires": 1,
+            "num_work_wires": num_work_wires - num_out,
+            "work_wire_type": "zeroed",
+        }
+        c_add_rep = controlled_resource_rep(SemiAdder, base_params=add_params, **ctrl_params)
+        resources[c_add_rep] += 1
     return dict(resources)
 
 
@@ -503,12 +498,9 @@ def _out_square_with_caddsub_resources(
             resources[resource_rep(TemporaryAND)] += size - 2
             resources[adjoint_resource_rep(TemporaryAND)] += size - 2
         resources[resource_rep(CNOT)] += size - 1
-        resources[x_rep] += 1 + 2 * size
+        resources[x_rep] += 1
 
     # Add (2^n-1-x) + 1
-    if n > 1:
-        resources[resource_rep(BasisState, num_wires=n - 1)] += 2
-
     resources[x_rep] += 6 + 2 * n
     adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
     for key, value in adder_resources.items():
@@ -554,7 +546,7 @@ def _out_square_with_caddsub(
     # Subtract 2^(2n)
     if len(output_wires) > 2 * n:
         _output = output_wires[: m - 2 * n]
-        adjoint(_increment)(_output, work_wires)
+        adjoint(_increment, lazy=False)(_output, work_wires)
 
     # Add (2^n-1-x) + 1
     _ = [X(w) for w in x_wires]
