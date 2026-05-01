@@ -70,7 +70,7 @@ def _check_decomposition(op, skip_wire_mapping):
         assert len(decomp) == len(compute_decomp), compute_decomp_msg
         assert len(decomp) == len(processed_queue), queue_msg
 
-        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
+        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue, strict=True):
             if isinstance(o1, qp.ops.MidMeasure):
                 for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
                     assert isinstance(other_op, qp.ops.MidMeasure), msg
@@ -78,9 +78,12 @@ def _check_decomposition(op, skip_wire_mapping):
                     assert o1.reset == other_op.reset, msg
                     assert o1.postselect == other_op.postselect, msg
             else:
-                assert o1 == o2, compute_decomp_msg
-                assert o1 == o3, queue_msg
                 assert isinstance(o1, qp.operation.Operator), "decomposition must contain operators"
+                for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
+                    try:
+                        assert_equal(o1, other_op)
+                    except AssertionError as e:
+                        raise AssertionError(msg) from e
 
         if skip_wire_mapping:
             return
@@ -94,7 +97,7 @@ def _check_decomposition(op, skip_wire_mapping):
         if mapped_op.has_decomposition:
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
-            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp, strict=True):
                 assert (
                     mapped_op.wires
                     == qp.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
@@ -177,6 +180,39 @@ def _check_reconstructor(op):
     qp.assert_equal(reconstructed_op, pow_op)
 
 
+def _assert_counts_match(counts_0, counts_1):
+    if counts_0 == counts_1:
+        return
+
+    miscounts = [
+        (op, val, counts_0[op])
+        for op, val in counts_1.items()
+        if op in counts_0 and val != counts_0[op]
+    ]
+    if miscounts:
+        op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
+        miscounts_str = (
+            f"\nThe numbers are off for following ops:"
+            f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
+        )
+        miscounts_str += "\n".join(
+            f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
+            for op, val0, val1 in miscounts
+        )
+    else:
+        miscounts_str = ""
+    assertion_error_string = (
+        f"\nGate counts expected from resource function:\n{counts_0}"
+        f"\nActual gate counts:\n{dict(counts_1)}"
+        f"{miscounts_str}"
+        "\nMissing entirely in gate counts from resource function:\n"
+        f"{[op for op in counts_1 if op not in counts_0]}\n"
+        "Missing entirely in actual gate counts:\n"
+        f"{[op for op in counts_0 if op not in counts_1]}"
+    )
+    raise AssertionError(assertion_error_string)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -209,34 +245,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        if non_zero_gate_counts != actual_gate_counts:
-            miscounts = [
-                (op, val, gate_counts[op])
-                for op, val in actual_gate_counts.items()
-                if op in gate_counts and val != gate_counts[op]
-            ]
-            if miscounts:
-                op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
-                miscounts_str = (
-                    f"\nThe numbers are off for following ops:"
-                    f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
-                )
-                miscounts_str += "\n".join(
-                    f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
-                    for op, val0, val1 in miscounts
-                )
-            else:
-                miscounts_str = ""
-            assertion_error_string = (
-                f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
-                f"\nActual gate counts:\n{dict(actual_gate_counts)}"
-                f"{miscounts_str}"
-                "\nMissing entirely in gate counts from resource function:\n"
-                f"{[op for op in actual_gate_counts if op not in gate_counts]}\n"
-                "Missing entirely in actual gate counts:\n"
-                f"{[op for op in gate_counts if op not in actual_gate_counts]}"
-            )
-            raise AssertionError(assertion_error_string)
+        _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
@@ -334,7 +343,7 @@ def _check_eigendecomposition(op):
             # compute_diagonalizing_gates might also have a different call signature
             compute_dg = dg
 
-        for op1, op2 in zip(dg, compute_dg):
+        for op1, op2 in zip(dg, compute_dg, strict=True):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
         failure_comment = "If has_diagonalizing_gates is False, diagonalizing_gates must raise a DiagGatesUndefinedError"
@@ -432,7 +441,7 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    for d1, d2 in zip(op.data, leaves):
+    for d1, d2 in zip(op.data, leaves, strict=True):
         assert qp.math.allclose(
             d1, d2
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
@@ -487,7 +496,7 @@ def _check_bind_new_parameters(op):
     new_data = [d * 0.0 for d in op.data]
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_data)
     failure_comment = "bind_new_parameters must be able to update the operator with new data."
-    for d1, d2 in zip(new_data_op.data, new_data):
+    for d1, d2 in zip(new_data_op.data, new_data, strict=True):
         assert qp.math.allclose(d1, d2), failure_comment
 
 
@@ -518,7 +527,7 @@ def _check_differentiation(op):
     )
 
     if isinstance(ps, tuple):
-        for actual, expected in zip(ps, expected_bp):
+        for actual, expected in zip(ps, expected_bp, strict=True):
             assert qp.math.allclose(actual, expected), error_msg
     else:
         assert qp.math.allclose(ps, expected_bp), error_msg
@@ -603,7 +612,7 @@ def assert_valid(
 
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
-    for d, p in zip(op.data, op.parameters):
+    for d, p in zip(op.data, op.parameters, strict=True):
         assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
         assert qp.math.allclose(d, p), "data and parameters must match."
 
