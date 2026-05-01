@@ -18,7 +18,7 @@ Shared helpers for testing estimator_beta test_suite
 import pennylane.labs.estimator_beta as qre
 
 
-def assert_decomp_equal(decomp1, decomp2):
+def decomp_equal(decomp1, decomp2):
     """Tests the equality of two decompositions"""
     if len(decomp1) != len(decomp2):
         return False

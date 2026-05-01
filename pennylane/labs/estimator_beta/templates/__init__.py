@@ -15,3 +15,9 @@ r"""This module contains resource operators for PennyLane subroutines and templa
 
 from .subroutines import selectpaulirot_controlled_resource_decomp, LabsQROM
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
+
+from .state_prep import (
+    LabsCosineWindow,
+    LabsMottonenStatePreparation,
+    LabsSumOfSlatersPrep,
+)
