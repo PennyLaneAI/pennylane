@@ -230,6 +230,13 @@
 
 <h4>Decompositions 🍏</h4>
 
+* Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
+  than the existing QFT-based decomposition, at the cost of more auxiliary wires.
+  In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
+  used to indicate ``output_wires`` to be in the :math:`|0\rangle` state, leading to cheaper
+  decompositions.
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 * Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
@@ -615,6 +622,19 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``num_work_wires`` and ``output_wires_zeroed`` were added to the ``resource_keys`` and 
+  ``resource_params`` of :class:`~.OutMultiplier`.
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
+  With this breaking change, please note the following:
+
+   - Decomposition rules for ``OutMultiplier`` now require those arguments.
+   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) 
+     to a decomposition rule of an operator that contains ``OutMultiplier``, the resource 
+     representation of ``OutMultiplier`` must also receive these new arguments.
+
+   These changes are relevant only with :func:`~decomposition.enable_graph`.
+
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
   :class:`~.SemiAdder`.
   [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
@@ -622,7 +642,9 @@
   With this breaking change, please note the following:
 
    - Decomposition rules for ``SemiAdder`` now require those arguments.
-   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`)
+     to a decomposition rule of an operator that contains ``SemiAdder``, the resource 
+     representation of ``SemiAdder`` must also receive these new arguments.
 
    These changes are relevant only with :func:`~decomposition.enable_graph`.
 

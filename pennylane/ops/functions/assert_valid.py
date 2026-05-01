@@ -193,11 +193,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             _op = _op.base
         op_rep = qp.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[op_rep] += 1
+    actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        non_zero_gate_counts = {
+            k: v for k, v in sorted(gate_counts.items(), key=lambda item: str(item[0])) if v > 0
+        }
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
             f"\nActual gate counts:\n{dict(actual_gate_counts)}"
