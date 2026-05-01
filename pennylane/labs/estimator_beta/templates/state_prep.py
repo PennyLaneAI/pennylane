@@ -451,7 +451,11 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         gate_list.append(GateCount(mcx, num_mcx))
 
         if not identity_encoding:
-            gate_list.append(qre.Deallocate(allocated_register=identification_reg))  # deallocate identification register
-        gate_list.append(qre.Deallocate(allocated_register=enumeration_reg))  # deallocate enumeration register
+            gate_list.append(
+                qre.Deallocate(allocated_register=identification_reg)
+            )  # deallocate identification register
+        gate_list.append(
+            qre.Deallocate(allocated_register=enumeration_reg)
+        )  # deallocate enumeration register
 
         return gate_list

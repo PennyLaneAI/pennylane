@@ -43,9 +43,7 @@ class TestMottonenStatePreparation:
 
         expected = [GateCount(rz, r_count), GateCount(cnot, cnot_count)]
 
-        assert decomp_equal(
-            qre.MottonenStatePreparation.resource_decomp(num_wires), expected
-        )
+        assert decomp_equal(qre.MottonenStatePreparation.resource_decomp(num_wires), expected)
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -144,7 +142,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    qre.Allocate(6),
+                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -165,7 +163,7 @@ class TestSumOfSlatersPrep:
                         ),
                         39,
                     ),
-                    qre.Deallocate(6),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
             (
@@ -175,7 +173,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    qre.Allocate(6),
+                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -196,7 +194,7 @@ class TestSumOfSlatersPrep:
                         ),
                         55,
                     ),
-                    qre.Deallocate(6),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
             (
@@ -206,7 +204,7 @@ class TestSumOfSlatersPrep:
                 resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}),
                 2,
                 [
-                    qre.Allocate(7),
+                    (alloc_reg := qre.Allocate(7, state="zero", restored=True)),
                     GateCount(resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}), 1),
                     GateCount(
                         resource_rep(
@@ -227,7 +225,7 @@ class TestSumOfSlatersPrep:
                         ),
                         99,
                     ),
-                    qre.Deallocate(7),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
         ],
