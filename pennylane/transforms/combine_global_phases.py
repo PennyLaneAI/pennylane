@@ -111,7 +111,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         >>> print(qp.draw_graph(circuit)()) # doctest: +SKIP
 
-        .. figure:: ../_static/catalyst-combine-global-phases-example.png
+        .. figure:: ../../_static/catalyst-combine-global-phases-example.png
             :align: left
 
     """
