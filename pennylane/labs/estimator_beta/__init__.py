@@ -156,7 +156,7 @@ def _(action: Deallocate):
 
 
 @_map_to_resource_op.register
-def _(op: qp.templates.subroutines.qrom.QROM):
+def _(op: qp.QROM):
     bitstrings = op.data[0]
     num_bitstrings = bitstrings.shape[0]
     size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0

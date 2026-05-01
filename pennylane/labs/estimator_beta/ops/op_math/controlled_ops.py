@@ -124,7 +124,10 @@ def mcx_many_clean_aux_resource_decomp(
 
         * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
 
-        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` pairs of elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the unary
+          iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+          Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` pairs of elbow gates and
+          a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,

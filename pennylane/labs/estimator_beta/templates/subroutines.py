@@ -201,6 +201,9 @@ class LabsQROM(ResourceOperator):
                 )
 
         self.select_swap_depth = select_swap_depth
+        
+        if wires is not None and len(wires) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {wires}")
         super().__init__(wires=wires)
 
     @property
@@ -242,7 +245,7 @@ class LabsQROM(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -398,7 +401,26 @@ class LabsQROM(ResourceOperator):
         select_swap_depth: int | None = None,
         borrow_qubits: bool = True,
     ):
-        r"""The resource decomposition for LabsQROM controlled on a single wire."""
+        r"""The resource decomposition for LabsQROM controlled on a single wire.
+
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
+                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            borrow_qubits (bool): Determine whether the auxiliary qubits should be borrowed (higher gate
+                cost) or freshly allocated (higher qubit cost). Defaults to :code:`True`.
+            select_swap_depth (int | None): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+                depth that minimizes T-gate count.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         if select_swap_depth:
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
@@ -861,6 +883,9 @@ class LabsQROM(ResourceOperator):
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
+            This is an alternate decomposition for the adjoint of QROM which uses a measurement and phase
+            fixup algorithm. This decomposition requires one clean auxiliary qubit. The resources are
+            based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
