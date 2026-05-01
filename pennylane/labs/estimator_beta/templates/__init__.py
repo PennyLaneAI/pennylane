@@ -16,3 +16,12 @@ r"""This module contains resource operators for PennyLane subroutines and templa
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
 
 from .subroutines import selectpaulirot_controlled_resource_decomp
+
+from .arithmetic import (
+    LabsPhaseAdder,
+    LabsAdder,
+    LabsOutAdder,
+    LabsMultiplier,
+    ClassicalOutMultiplier,
+    LabsModExp,
+)

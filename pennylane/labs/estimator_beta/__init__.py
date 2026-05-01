@@ -72,11 +72,20 @@ Templates
 
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
+    ~LabsAdder
+    ~LabsOutAdder
+    ~LabsMultiplier
+    ~ClassicalOutMultiplier
+    ~LabsModExp
+    ~LabsPhaseAdder
 
 """
 
+import pennylane as qp
+
 from pennylane.estimator import *
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
 from .wires_manager import (
@@ -93,7 +102,14 @@ from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
+    ClassicalOutMultiplier,
+    LabsAdder,
+    LabsModExp,
+    LabsMultiplier,
+    LabsOutAdder,
+    LabsPhaseAdder,
 )
+
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
@@ -102,6 +118,11 @@ from .ops import (
     paulirot_controlled_resource_decomp,
 )
 
+Adder = LabsAdder
+OutAdder = LabsOutAdder
+Multiplier = LabsMultiplier
+ModExp = LabsModExp
+PhaseAdder = LabsPhaseAdder
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
@@ -119,3 +140,69 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+
+@_map_to_resource_op.register
+def _(op: qp.Adder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Adder(
+        len(x_wires),
+        mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.OutAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    y_wires = op.hyperparameters["y_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+
+    return OutAdder(
+        len(x_wires),
+        len(y_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + y_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.Multiplier):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Multiplier(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.ModExp):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+    return ModExp(
+        len(x_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.PhaseAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+
+    if mod != 2 ** (len(x_wires)):  # An extra wire was prepended
+        x_wires = x_wires[1:]
+
+    return PhaseAdder(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
