@@ -87,6 +87,11 @@ class BasisState(StatePrepBase):
 
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
@@ -392,6 +397,15 @@ class StatePrep(StatePrepBase):
 
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
+
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
+        return super()._primitive_bind_call(state, wires, **kwargs)
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

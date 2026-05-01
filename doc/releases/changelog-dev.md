@@ -86,9 +86,9 @@
   Wire allocations   |  2 |  2 |  2
   Total gates        |  5 |  3 |  2
   Gate counts:       |
-  - RX               |  2 |  2 |  1
-  - PauliX           |  1 |  1 |  1
   - Hadamard         |  2 |  0 |  0
+  - PauliX           |  1 |  1 |  1
+  - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
 
@@ -187,15 +187,20 @@
   Total gates: 11
   Gate counts:
   - GlobalPhase: 3
+  - PPM-w1: 1
   - PPR-pi/4-w1: 5
   - PPR-pi/4-w2: 1
-  - PPM-w1: 1
   - PPR-pi/8-w1: 1
   Measurements:
   - expval(PauliZ): 1
   Depth: Not computed
 
   ```
+  
+* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
+  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
+  [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
+
 
 <h4>QSVT Angle Solver 📐</h4>
 
@@ -224,6 +229,11 @@
 <h3>Improvements 🛠</h3>
 
 <h4>Decompositions 🍏</h4>
+
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+  decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
+  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
 * `qp.transforms.decompose` is now imported top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
@@ -279,8 +289,8 @@
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
   ```pycon
-  >>> import pennylane as qml
-  >>> collection = qml.list_decomps(qml.CRX)
+  >>> import pennylane as qp
+  >>> collection = qp.list_decomps(qp.CRX)
   >>> print(collection)
   Available Decomposition Rules:
   0: _crx_to_rx_cz
@@ -291,7 +301,7 @@
   DecompositionRule(name=_crx_to_rx_cz)
   >>> collection['_crx_to_ppr']
   DecompositionRule(name=_crx_to_ppr)
-  >>> print(qml.draw(collection[0])(0.5, wires=[0, 1]))
+  >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
@@ -346,6 +356,34 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+  
+* A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
+  for a concrete operator instance.
+  [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+
+  ```pycon
+  >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1])))
+  Decomposition 0 (name: _crx_to_rx_cz)
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  Gate Count: {RX: 2, CZ: 2}
+  <BLANKLINE>
+  Decomposition 1 (name: _crx_to_rz_ry)
+  0: ─────────────────────╭●────────────╭●────────────┤
+  1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
+  Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+  <BLANKLINE>
+  Decomposition 2 (name: _crx_to_h_crz)
+  0: ────╭●───────────┤
+  1: ──H─╰RZ(0.50)──H─┤
+  Gate Count: {Hadamard: 2, CRZ: 1}
+  <BLANKLINE>
+  Decomposition 3 (name: _crx_to_ppr)
+  0: ───────────╭RZX(-0.25)─┤
+  1: ──RX(0.25)─╰RZX(-0.25)─┤
+  Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+
+  ```
 
 <h4>Disentangling Transforms 🧶</h4>
 
@@ -376,11 +414,11 @@
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
 
-* During program capture, `qml.cond` converts non-boolean predicates to boolean immediately
+* During program capture, `qp.cond` converts non-boolean predicates to boolean immediately
   during capture time.
   [(#9336)](https://github.com/PennyLaneAI/pennylane/pull/9336)
 
-* During program capture, `qml.for_loop` with negative step sizes is now handled immediately during capture time.
+* During program capture, `qp.for_loop` with negative step sizes is now handled immediately during capture time.
   [(#9299)](https://github.com/PennyLaneAI/pennylane/pull/9299)
 
 * With program capture, arrays dynamic shapes with `qp.for_loop` and `qp.while_loop` can now be combined
@@ -423,6 +461,10 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 <h4>Other improvements</h4>
+
+* Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
+  `list` or `tuple` types.
+  [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent
@@ -844,6 +886,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added permissions to all GitHub Actions workflows.
+  [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
+
 * Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
@@ -895,7 +940,7 @@
   ```
 
   The following classes have been ported over:
-  - `qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+  - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
 * Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
   following `SymbolicOps` have been re-written.
@@ -1004,6 +1049,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Update TensorFlow related documentation to clarify that maintenance support has been dropped since
+  PennyLane v0.44.
+  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
+
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
@@ -1014,6 +1063,7 @@
   [(#9319)](https://github.com/PennyLaneAI/pennylane/pull/9319)
   [(#9313)](https://github.com/PennyLaneAI/pennylane/pull/9313)
   [(#9326)](https://github.com/PennyLaneAI/pennylane/pull/9326)
+  [(#9333)](https://github.com/PennyLaneAI/pennylane/pull/9333)
   [(#9331)](https://github.com/PennyLaneAI/pennylane/pull/9331)
   [(#9329)](https://github.com/PennyLaneAI/pennylane/pull/9329)
   [(#9280)](https://github.com/PennyLaneAI/pennylane/pull/9280)
@@ -1023,6 +1073,9 @@
   [(#9358)](https://github.com/PennyLaneAI/pennylane/pull/9358)
   [(#9281)](https://github.com/PennyLaneAI/pennylane/pull/9281)
   [(#9360)](https://github.com/PennyLaneAI/pennylane/pull/9360)
+  [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
+  [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
+  [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -1097,6 +1150,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in the decomposition of `Adjoint(TemporaryAND)` where control values were ignored.
+  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
@@ -1109,11 +1165,11 @@
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
 * Fixed a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
-  and return `qml.sample`.
+  and return `qp.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
 * Fixed wire overlap validation in :class:`~.QROM` and :class:`~.Select` to support JAX-traced wires,
-  enabling `qml.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
+  enabling `qp.QROM` to be used with `qjit` when wires are passed as dynamic arguments.
   [(#9282)](https://github.com/PennyLaneAI/pennylane/pull/9282)
 
 * Fixed an issue with Catalyst and `qp.for_loop` and `qp.while_loop`, where it was defaulting
