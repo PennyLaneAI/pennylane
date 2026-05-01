@@ -98,17 +98,16 @@ from .wires_manager import (
 )
 from .resource_config import LabsResourceConfig
 
-from .templates import LabsAdder as Adder
-from .templates import LabsModExp as ModExp
-from .templates import LabsMultiplier as Multiplier
-from .templates import LabsOutAdder as OutAdder
-from .templates import LabsPhaseAdder as PhaseAdder
-
 from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
     ClassicalOutMultiplier,
+    LabsAdder,
+    LabsModExp,
+    LabsMultiplier,
+    LabsOutAdder,
+    LabsPhaseAdder,
 )
 
 from .ops import (
@@ -119,6 +118,11 @@ from .ops import (
     paulirot_controlled_resource_decomp,
 )
 
+Adder = LabsAdder
+OutAdder = LabsOutAdder
+Multiplier = LabsMultiplier
+ModExp = LabsModExp
+PhaseAdder = LabsPhaseAdder
 
 @apply_controlled.register
 def _(action: Allocate | Deallocate, num_ctrl_wires, num_zero_ctrl):
