@@ -258,10 +258,10 @@ class LabsSumOfSlatersPrep(ResourceOperator):
        allocated wires: 22
          zero state: 22
          any state: 0
-     Total gates : 2.877E+4
+     Total gates : 2.909E+4
        'Toffoli': 949,
        'T': 2.231E+4,
-       'CNOT': 1.888E+3,
+       'CNOT': 2.204E+3,
        'X': 1.107E+3,
        'Hadamard': 2.520E+3
 
@@ -446,6 +446,10 @@ class LabsSumOfSlatersPrep(ResourceOperator):
 
         x = resource_rep(qre.X)
         gate_list.append(GateCount(x, num_coeffs * m))
+
+        num_bits_to_unset = int(np.bitwise_count(np.arange(1, num_coeffs)).sum())
+        gate_list.append(GateCount(resource_rep(qre.CNOT), num_bits_to_unset))
+
         mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": m, "num_zero_ctrl": 0})
         num_mcx = num_coeffs - 1
         gate_list.append(GateCount(mcx, num_mcx))
