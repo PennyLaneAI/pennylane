@@ -462,6 +462,10 @@
 
 <h4>Other improvements</h4>
 
+* Added support to `assert_valid` for decompositions that include mid-circuit measurements and
+  added a verification for the length of various compared iterables.
+  [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
+  
 * Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
   `list` or `tuple` types.
   [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
@@ -1149,6 +1153,22 @@
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
+  structure of their data:
+  
+  - `Pow`
+  - `QPE`
+  - `GQSP`
+  - `estimator.qpe_resources.FirstQuantization`
+  - `estimator.qpe_resources.DoubleFactorization`
+  [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
+  
+* Fixed a bug where `Reflection` did not queue all operators of its decomposition.
+  [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
+
+* Fixed a bug where `Hermitian` did not queue its decomposition.
+  [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
 * Fixed a bug in the decomposition of `Adjoint(TemporaryAND)` where control values were ignored.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
