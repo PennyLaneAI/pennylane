@@ -88,31 +88,26 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         1: ──X─╰SWAP─│────────┤
         2: ──────────╰SWAP────┤
 
-
-        We can remove the SWAP gates by running the ``undo_swap`` transform:
+        We can remove the SWAP gates by running the ``undo_swap`` transform, where the wires
+        involved in the SWAP gates are interchanged:
 
         >>> optimized_qfunc = undo_swaps(qfunc)
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)())
-        0: ──Y─┤  <Z>
+        >>> print(qp.draw(optimized_qfunc)())
+        0: ──Y─┤
         1: ──H─┤
         2: ──X─┤
-       We can remove the SWAP gates by running the ``undo_swap`` transform, where the wires involved in the SWAP gates are interchanged:
 
-       >>> optimized_qfunc = undo_swaps(qfunc)
-       >>> print(qp.draw(optimized_qfunc)())
-       0: ──Y─┤
-       1: ──H─┤
-       2: ──X─┤
-       
-       Gates are iterated through from right to left, where non-SWAP gates are ignored. The first gate is a ``Y`` gate, which is left to act on wire ``0``.
-       Next, the right-most SWAP gate acting on wires ``(0, 2)`` is removed, and the wires are manually 
-       swapped; wire ``2`` now becomes wire ``0``, and vice versa. Next, the SWAP gate acting on wires 
-       ``(0, 1)`` is removed and the wires are interchanged. Altogether, this affects the wire labels as follows, where the operations to the left of both SWAP gates have their wire labels changed accordingly:
-       
-       - wire ``0`` :math:`\rightarrow` ``2`` :math:`\rightarrow` ``1``. This moves the ``H`` gate from wire ``0`` to wire ``1``.
-       - wire ``2`` :math:`\rightarrow` ``0``.
-       - wire ``1`` :math:`\rightarrow` ``2``. This moves the ``X`` gate from wire ``1`` to wire ``2``.
+        Gates are iterated through from right to left, where non-SWAP gates are ignored. The first
+        gate is a ``Y`` gate, which is left to act on wire ``0``. Next, the right-most SWAP gate
+        acting on wires ``(0, 2)`` is removed, and the wires are manually swapped; wire ``2`` now
+        becomes wire ``0``, and vice versa. Next, the SWAP gate acting on wires ``(0, 1)`` is
+        removed and the wires are interchanged. Altogether, this affects the wire labels as follows,
+        where the operations to the left of both SWAP gates have their wire labels changed
+        accordingly:
+
+        - wire ``0`` :math:`\rightarrow` ``2`` :math:`\rightarrow` ``1``. This moves the ``H`` gate from wire ``0`` to wire ``1``.
+        - wire ``2`` :math:`\rightarrow` ``0``.
+        - wire ``1`` :math:`\rightarrow` ``2``. This moves the ``X`` gate from wire ``1`` to wire ``2``.
     """
 
     wire_map = {wire: wire for wire in tape.wires}
