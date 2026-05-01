@@ -27,6 +27,7 @@ benchmark/revisions/
 config.toml
 .envrc
 qml_debug.log
+qp_debug.log
 datasets/*
 .benchmarks/*
 *.h5
