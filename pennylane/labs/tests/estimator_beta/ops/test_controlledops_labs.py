@@ -18,7 +18,6 @@ from collections import defaultdict
 import pytest
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.labs.estimator_beta import (
     Allocate,
     Deallocate,
