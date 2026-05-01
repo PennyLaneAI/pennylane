@@ -272,7 +272,7 @@ class LabsQROM(ResourceOperator):
             exponent = int(math.log2(select_swap_depth))
             if 2**exponent != select_swap_depth:
                 raise ValueError(
-                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got f{select_swap_depth}"
+                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got {select_swap_depth}"
                 )
 
         params = {

@@ -99,11 +99,6 @@ class TestLabsCH:
             Deallocate(1),
         ]
         result = qre.ch_toffoli_based_resource_decomp(**self.op.resource_params)
-        # for r, e in zip(result, expected_resources):
-        #     if hasattr(r, "equal"):
-        #         assert r.equal(e)
-        #     else:
-        #         assert r == e
         assert _test_decomp_equal(result, expected_resources)
 
 
