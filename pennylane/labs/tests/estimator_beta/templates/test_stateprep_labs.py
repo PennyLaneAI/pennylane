@@ -21,7 +21,7 @@ import pytest
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
-from pennylane.labs.tests.estimator_beta.utils import assert_decomp_equal
+from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -43,7 +43,7 @@ class TestMottonenStatePreparation:
 
         expected = [GateCount(rz, r_count), GateCount(cnot, cnot_count)]
 
-        assert assert_decomp_equal(
+        assert decomp_equal(
             qre.MottonenStatePreparation.resource_decomp(num_wires), expected
         )
 
@@ -96,7 +96,7 @@ class TestCosineWindow:
             GateCount(phase_shift, num_wires),
         ]
 
-        assert assert_decomp_equal(qre.CosineWindow.resource_decomp(num_wires), expected)
+        assert decomp_equal(qre.CosineWindow.resource_decomp(num_wires), expected)
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -239,7 +239,7 @@ class TestSumOfSlatersPrep:
         res = qre.SumOfSlatersPrep.resource_decomp(
             num_coeffs, num_wires, num_bits, stateprep_op, select_swap_depth
         )
-        assert assert_decomp_equal(res, expected_resources)
+        assert decomp_equal(res, expected_resources)
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
