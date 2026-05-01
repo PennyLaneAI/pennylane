@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+
 """
 Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
 """
+
 import functools
 
 
-# pylint: disable=unnecessary-lambda
 class BooleanFn:
     r"""Wrapper for simple callables with Boolean output that can be
     manipulated and combined with bitwise operators.
@@ -35,9 +35,9 @@ class BooleanFn:
 
     .. code-block:: python
 
-        bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
-        smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
-        is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+        bigger_than_4 = qp.BooleanFn(lambda x: x > 4)
+        smaller_than_10 = qp.BooleanFn(lambda x: x < 10)
+        is_int = qp.BooleanFn(lambda x: isinstance(x, int))
 
     >>> bigger_than_4(5.2)
     True
@@ -76,8 +76,8 @@ class BooleanFn:
 
         For example:
 
-        >>> is_int = qml.BooleanFn(lambda x: isinstance(x, int))
-        >>> has_bit_length_3 = qml.BooleanFn(lambda x: x.bit_length()==3)
+        >>> is_int = qp.BooleanFn(lambda x: isinstance(x, int))
+        >>> has_bit_length_3 = qp.BooleanFn(lambda x: x.bit_length()==3)
         >>> (is_int & has_bit_length_3)(4)
         True
 
@@ -85,6 +85,8 @@ class BooleanFn:
         False
 
         >>> (has_bit_length_3 & is_int)(2.3)
+        Traceback (most recent call last):
+            ...
         AttributeError: 'float' object has no attribute 'bit_length'
 
     """

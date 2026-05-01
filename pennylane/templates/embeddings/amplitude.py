@@ -14,13 +14,13 @@
 r"""
 Contains the AmplitudeEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
+from pennylane.decomposition import add_decomps
 from pennylane.ops import StatePrep
-
-# tolerance for normalization
-TOLERANCE = 1e-10
+from pennylane.ops.qubit.state_preparation import _state_prep_decomp
 
 
+# pylint: disable=too-many-arguments
 class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
@@ -48,14 +48,14 @@ class AmplitudeEmbedding(StatePrep):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2))
+                return qp.state()
 
             state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
@@ -76,10 +76,10 @@ class AmplitudeEmbedding(StatePrep):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                return qp.state()
 
             state = circuit(f=[15, 15, 15, 15])
 
@@ -95,20 +95,26 @@ class AmplitudeEmbedding(StatePrep):
 
             from math import sqrt
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
+                return qp.state()
 
             state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
-        >>> state
-        array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+        >>> state # doctest: +SKIP
+        array([0.7071+0.j, 0.7071+0.j, 0.    +0.j, 0.    +0.j])
 
     """
 
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
     def __init__(
-        self, features, wires, pad_with=None, normalize=False, id=None, validate_norm=True
+        self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
     ):
         super().__init__(
             features,
@@ -118,3 +124,6 @@ class AmplitudeEmbedding(StatePrep):
             validate_norm=validate_norm,
             id=id,
         )
+
+
+add_decomps(AmplitudeEmbedding, _state_prep_decomp)

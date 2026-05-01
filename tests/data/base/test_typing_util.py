@@ -15,11 +15,11 @@
 Tests for the :mod:`pennylane.data.base.typing_util` functions.
 """
 
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.data.base.typing_util import UNSET, get_type, get_type_str, resolve_special_type
 from pennylane.qchem import Molecule
 
@@ -38,7 +38,7 @@ pytestmark = pytest.mark.data
         (Optional[int], "Union[int, None]"),
         (Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
         (str, "str"),
-        (Type[str], "type[str]"),
+        (type[str], "type[str]"),
         (Union[list[list[int]], str], "Union[list[list[int]], str]"),
     ],
 )
@@ -55,8 +55,8 @@ def test_get_type_str(type_, expect):
         ([1, 2], list),
         (list, list),
         (list[int], list),
-        (qml.RX, qml.RX),
-        (qml.RX(1, [1]), qml.RX),
+        (qp.RX, qp.RX),
+        (qp.RX(1, [1]), qp.RX),
     ],
 )
 def test_get_type(obj, expect):

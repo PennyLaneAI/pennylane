@@ -16,9 +16,13 @@
 This module provides the implementation of AutoGraph primitives in terms of traceable PennyLane
 functions. The purpose is to convert imperative style code to functional or graph-style code.
 """
+
 import copy
 import functools
-from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
+import operator
+from collections.abc import Callable, Iterator
+from numbers import Number
+from typing import Any, SupportsIndex, Union
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -26,12 +30,14 @@ from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.exceptions import AutoGraphError
 
 has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -41,15 +47,57 @@ __all__ = [
     "for_stmt",
     "while_stmt",
     "converted_call",
+    "and_",
+    "or_",
+    "not_",
+    "set_item",
+    "update_item_with_op",
 ]
 
 
-class AutoGraphWarning(Warning):
-    """Warnings related to PennyLane's AutoGraph submodule."""
+def set_item(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+):
+    """An implementation of the AutoGraph 'set_item' function."""
+
+    if qp.math.is_abstract(target):
+        target = target.at[index].set(x)
+    else:
+        target[index] = x
+
+    return target
 
 
-class AutoGraphError(Exception):
-    """Errors related to PennyLane's AutoGraph submodule."""
+def update_item_with_op(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+    op: str,
+):
+    """An implementation of the AutoGraph 'update_item_with_op' function."""
+
+    ast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    inplace_operation_map = {
+        "mult": "mul",
+        "div": "truediv",
+        "add": "add",
+        "sub": "add",
+        "pow": "pow",
+    }
+    if op == "sub":
+        x = -x
+
+    if qp.math.is_abstract(target):
+        if isinstance(index, slice):
+            target = getattr(target.at[index.start : index.stop : index.step], ast_op_map[op])(x)
+        else:
+            target = getattr(target.at[index], ast_op_map[op])(x)
+    else:
+        # Use Python's in-place operator
+        target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)
+    return target
 
 
 def _assert_results(results, var_names):
@@ -57,7 +105,7 @@ def _assert_results(results, var_names):
 
     assert len(results) == len(var_names)
 
-    for r, v in zip(results, var_names):
+    for r, v in zip(results, var_names, strict=True):
         if isinstance(r, Undefined):
             raise AutoGraphError(f"Some branches did not define a value for variable '{v}'")
 
@@ -69,9 +117,9 @@ def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _num_results: int,
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
@@ -81,7 +129,7 @@ def if_stmt(
     # and want to restore the initial state before entering each branch.
     init_state = get_state()
 
-    @qml.cond(pred)
+    @qp.cond(pred)
     def functional_cond():
         set_state(init_state)
         true_fn()
@@ -148,7 +196,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
     variable was initialized with the wrong type.
     """
 
-    for i, (inp, out) in enumerate(zip(inputs, outputs)):
+    for i, (inp, out) in enumerate(zip(inputs, outputs, strict=True)):
         inp_t, out_t = jax.api_util.shaped_abstractify(inp), jax.api_util.shaped_abstractify(out)
         if inp_t.dtype != out_t.dtype or inp_t.shape != out_t.shape:
             raise AutoGraphError(
@@ -177,7 +225,7 @@ def _call_pennylane_for(
     init_iter_args = get_state()
     _assert_iteration_inputs(init_iter_args, symbol_names)
 
-    @qml.for_loop(start, stop, step)
+    @qp.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
         # Assign tracers to the iteration variables identified by AutoGraph (iter_args in mlir).
         set_state(iter_args)
@@ -203,14 +251,13 @@ def _call_pennylane_for(
     return final_iter_args
 
 
-# pylint: disable=too-many-statements
 def for_stmt(
     iteration_target: Any,
-    _extra_test: Union[Callable[[], bool], None],
+    _extra_test: Callable[[], bool] | None,
     body_fn: Callable[[int], None],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _opts: dict,
 ):
     """An implementation of the AutoGraph 'for .. in ..' statement. The interface is defined by
@@ -230,7 +277,7 @@ def for_stmt(
     # (for example because the user forgot to use a list instead of an array)
     # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
     # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
-    # active qeueing context.
+    # active queuing context.
 
     exception_raised = None
     init_state = get_state()
@@ -245,14 +292,14 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
 
     if exception_raised:
@@ -275,7 +322,7 @@ def for_stmt(
             enum_start,
             iteration_array,
         )
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         # pylint: disable=import-outside-toplevel
         import textwrap
 
@@ -306,7 +353,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         set_state(old)
         return res
 
-    @qml.while_loop(test)
+    @qp.while_loop(test)
     def functional_while(iter_args):
         set_state(iter_args)
         loop_body()
@@ -323,6 +370,39 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
 
     results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
+
+
+def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
+    """A helper function to implement logical operations in a way that is compatible with both
+    JAX and Python. It checks if any of the arguments are undefined, and raises an error if so.
+    Otherwise, it applies the specified logical operation using either JAX or Python functions."""
+
+    values = [arg() if callable(arg) else arg for arg in args]
+
+    if any(qp.math.is_abstract(val) for val in values):
+        result = jax_fn(*values)
+    else:
+        result = python_fn(*values)
+
+    return result
+
+
+def and_(a, b):
+    """A wrapper for the AutoGraph 'and' operator. It returns the result of the logical 'and'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_and, python_fn=lambda x, y: x and y)
+
+
+def or_(a, b):
+    """A wrapper for the AutoGraph 'or' operator. It returns the result of the logical 'or'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_or, python_fn=lambda x, y: x or y)
+
+
+def not_(a):
+    """A wrapper for the AutoGraph 'not' operator. It returns the result of the logical 'not'
+    operation on a value `a`. If `a` is undefined, it raises an error."""
+    return _logical_op(a, jax_fn=jax.numpy.logical_not, python_fn=lambda x: not x)
 
 
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many
@@ -380,32 +460,41 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(
-        (ag_api, "_TRANSPILER", qml.capture.autograph.transformer.TRANSFORMER),
+        (ag_api, "_TRANSPILER", qp.capture.autograph.transformer.TRANSFORMER),
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
-        # Using qml.ops.op_math.adjoint points to the adjoint function
-        # and importing this at the top of the file creates circular imports
-        # pylint: disable=import-outside-toplevel, protected-access
-        from pennylane.ops.op_math.adjoint import _capture_adjoint_transform
-
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            _capture_adjoint_transform,
-            qml.ops.op_math.controlled._capture_ctrl_transform,
-            qml.grad,
-            qml.jacobian,
-            qml.vjp,
-            qml.jvp,
+            qp.adjoint,
+            qp.ctrl,
+            qp.grad,
+            qp.jacobian,
+            qp.vjp,
+            qp.jvp,
         ):
-            assert args and callable(args[0])
+            if not args:
+                raise ValueError(f"{fn.__name__} requires at least one argument")
+
+            is_abstract_operator = qp.math.is_abstract(args[0]) and isinstance(
+                args[0].aval, qp.capture.primitives.AbstractOperator
+            )
+            # If first argument is already an operator, pass it through directly
+            if isinstance(args[0], qp.operation.Operator) or (
+                is_abstract_operator and fn in {qp.adjoint, qp.ctrl}
+            ):
+                return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
+            # Otherwise, handle the callable case
             wrapped_fn = args[0]
+            if not callable(wrapped_fn):
+                raise ValueError(
+                    f"First argument to {fn.__name__} must be callable or an Operation"
+                )
 
             @functools.wraps(wrapped_fn)
-            def passthrough_wrapper(*inner_args, **inner_kwargs):
-                return converted_call(
-                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
-                )
+            def passthrough_wrapper(*args, **kwargs):
+                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
 
             return fn(
                 passthrough_wrapper,
@@ -414,7 +503,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             )
 
         # For QNode calls, we employ a wrapper to forward the quantum function call to autograph
-        if isinstance(fn, qml.QNode):
+        if isinstance(fn, qp.QNode):
 
             @functools.wraps(fn.func)
             def qnode_call_wrapper():
@@ -487,22 +576,22 @@ class PRange:
     def __iter__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__iter__()
 
-    def __getitem__(
-        self, __key: Union[SupportsIndex, slice]
-    ) -> Union[int, range]:  # pragma: no cover
+    def __getitem__(self, __key: SupportsIndex | slice) -> int | range:  # pragma: no cover
         return self.py_range.__getitem__(__key)
 
     def __reversed__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods, super-init-not-called
+# pylint: disable=too-few-public-methods
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """
 
     def __init__(self, iterable, start=0):
+
+        # TODO: original enumerate constructor cannot be called as it causes some tests to break
         self.iteration_target = iterable
         self.start_idx = start
 

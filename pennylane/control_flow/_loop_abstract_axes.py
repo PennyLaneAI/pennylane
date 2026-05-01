@@ -21,16 +21,58 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 """
 
 from collections import namedtuple
-from typing import Any, Callable, Optional
-
-import numpy as np
+from collections.abc import Callable
+from typing import Any
 
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
 
 
-def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
+def promote_consts_to_inputs(f):
+    """This function extracts any closure variables with dynamic shapes from f.__closure__
+    and promotes them to being normal arguments. This produces a new function that
+    takes the original args and the new consts as explicit inputs. It also returns
+    the extracted consts.
+    """
+    indices = []
+    consts = []
+
+    if getattr(f, "__closure__", None) is not None:
+        for ind, cell in enumerate(f.__closure__):
+            val = cell.cell_contents
+            # could have shape attribute without that attribute being tuple of ints, like np.shape
+            if (
+                hasattr(val, "shape")
+                and isinstance(val.shape, tuple)
+                and not all(isinstance(s, int) for s in val.shape)
+            ):
+                indices.append(ind)
+                consts.append(val)
+
+    def new_f(args, new_consts):
+        """A version of f where the consts with dynamic shapes have been promoted to inputs."""
+
+        # even deepcopy does not actually copy the closure for a function
+        # we don't have a way to produce a new function with independent closure
+        # so therefore we just need to make sure to clean up after ourselves after
+        # in-place modifying the closure contents.
+
+        try:
+            for ind, c in zip(indices, new_consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+            f_results = f(*args)
+        finally:
+            for ind, c in zip(indices, consts, strict=True):
+                f.__closure__[ind].cell_contents = c
+
+        return f_results, new_consts
+
+    return new_f, consts
+
+
+def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):  # pragma: no cover
     """Add the abstract shapes at the specified locations to the output of f.
 
     Here we can see that the shapes at argument 0, shape index 0 and
@@ -66,7 +108,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
     return new_f
 
 
-def get_dummy_arg(arg):
+def get_dummy_arg(arg):  # pragma: no cover
     """If any axes are abstract, replace them with an empty numpy array.
 
     Even if abstracted_axes specifies two dimensions as having different dynamic shapes,
@@ -93,25 +135,29 @@ def get_dummy_arg(arg):
     We use numpy instead of jax so the creation of the array will not show up in the jaxpr.
 
     """
+    if not hasattr(arg, "shape"):  # like an int
+        return arg
     if all(isinstance(s, int) for s in arg.shape):
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    return np.empty(shape=shape, dtype=arg.dtype)
+    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
+
+    return empty(shape=shape, dtype=arg.dtype)
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.core.Jaxpr",
+    jaxpr: "jax.extend.core.Jaxpr",
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
-) -> Optional[str]:
+) -> str | None:
     """Validate that all jaxpr outputs that should have the same shape as specified in ``locations``
     continue to have the same shape.  Returns a string with an error message so we can
     either decide to raise the error, or try again with different settings.
     """
     offset = len(locations)  # number of abstract shapes. We start from the first normal arg.
 
-    for locations_list in locations:
+    for locations_list in locations:  # pragma: no cover
         loc0 = locations_list[0]
         first_var = jaxpr.outvars[loc0.arg_idx + offset].aval.shape[loc0.shape_idx]
         for compare_loc in locations_list[1:]:
@@ -123,7 +169,7 @@ def validate_no_resizing_returns(
                     "Detected dynamically shaped arrays being resized independently. "
                     f"\nReturned variables at {loc0.arg_idx} and {compare_loc.arg_idx} must keep the same size "
                     "with allow_array_resizing=False."
-                    f"\nPlease specify allow_array_resizing=True to `qml.{name}` to allow "
+                    f"\nPlease specify allow_array_resizing=True to `qp.{name}` to allow "
                     "dynamically shaped arrays to be reshaped independently. "
                 )
 
@@ -131,7 +177,7 @@ def validate_no_resizing_returns(
 
 
 def _has_dynamic_shape(val):
-    return any(not isinstance(s, int) for s in getattr(val, "shape", ()))
+    return any(not isinstance(s, int) for s in getattr(val, "shape", ()))  # pragma: no cover
 
 
 def handle_jaxpr_error(
@@ -141,7 +187,9 @@ def handle_jaxpr_error(
     about 'Incompatible shapes for broadcasting'."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    if "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes:
+    if (
+        "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes
+    ):  # pragma: no cover
         closures = sum(((fn.__closure__ or ()) for fn in fns), ())
         if any(_has_dynamic_shape(i.cell_contents) for i in closures):
             msg = (
@@ -154,7 +202,7 @@ def handle_jaxpr_error(
         else:
             msg = (
                 "Detected an attempt to combine arrays with two different dynamic shapes. "
-                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qml.{name}`."
+                f"To keep dynamic shapes matching, please specify `allow_array_resizing=False` to `qp.{name}`."
             )
         raise ValueError(msg) from e
     raise e
@@ -175,7 +223,7 @@ class _CalculateLoopAbstractedAxes:
         arg_abstracted_axes = {}
 
         for shape_idx, s in enumerate(getattr(x, "shape", ())):
-            if not isinstance(s, int):  #  if not int, then abstract
+            if not isinstance(s, int):  #  pragma: no cover
                 found = False
                 if not self.allow_array_resizing:
                     for previous_idx, previous_shape in enumerate(self.abstract_shapes):
@@ -188,7 +236,7 @@ class _CalculateLoopAbstractedAxes:
                             break
                 # haven't encountered it, so add it to abstract_axes
                 # and use new number designation
-                if not found:
+                if not found:  # pragma: no cover
                     arg_abstracted_axes[shape_idx] = len(self.abstract_shapes)
                     self.shape_locations.append([AbstractShapeLocation(x_idx, shape_idx)])
                     self.abstract_shapes.append(s)
@@ -261,5 +309,11 @@ def loop_determine_abstracted_axes(
     if not any(calculator.abstracted_axes):
         return None, [], []
 
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, calculator.abstracted_axes)
-    return abstracted_axes, calculator.abstract_shapes, calculator.shape_locations
+    abstracted_axes = jax.tree_util.tree_unflatten(
+        structure, calculator.abstracted_axes
+    )  # pragma: no cover
+    return (
+        abstracted_axes,
+        calculator.abstract_shapes,
+        calculator.shape_locations,
+    )  # pragma: no cover

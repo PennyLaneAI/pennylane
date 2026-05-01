@@ -14,6 +14,7 @@
 """
 Code relevant for performing measurements on a qubit mixed state.
 """
+
 # pylint:disable=too-many-branches, import-outside-toplevel, unused-argument
 
 from collections.abc import Callable
@@ -25,11 +26,10 @@ from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
-    MeasurementValue,
     StateMeasurement,
     StateMP,
 )
-from pennylane.ops import LinearCombination, Sum
+from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -53,7 +53,7 @@ def _reshape_state_as_matrix(state, num_wires):
     return math.reshape(state, shape)
 
 
-def state_diagonalizing_gates(  # pylint: disable=unused-argument
+def state_diagonalizing_gates(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
@@ -77,7 +77,7 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
     if readout_errors is not None and measurementprocess.wires is not None:
         for err_channel_fn in readout_errors:
             for w in measurementprocess.wires:
-                # Here, we assume err_channel_fn(w) returns a quantum operation/channel like qml.BitFlip(...)
+                # Here, we assume err_channel_fn(w) returns a quantum operation/channel like qp.BitFlip(...)
                 error_op = err_channel_fn(w)
                 state = apply_operation(error_op, state, is_state_batched=is_state_batched)
 
@@ -86,7 +86,7 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
     flattened_state = _reshape_state_as_matrix(state, num_wires)
     is_StateMP = isinstance(measurementprocess, StateMP)
     is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
-    if is_StateMP and not is_DensityMatrixMP:  # a pure qml.state()
+    if is_StateMP and not is_DensityMatrixMP:  # a pure qp.state()
         raw_wires = measurementprocess.raw_wires or wires  # incase the None raw_wires case
         measurementprocess = DensityMatrixMP(wires=raw_wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)
@@ -185,7 +185,9 @@ def full_dot_products_density_matrix(
     rhoO = math.matmul(rho, O)  # shape: (batch, dim, dim) if batched, else (dim, dim)
 
     # Take the diagonal and sum to get the trace
-    if math.get_interface(rhoO) == "tensorflow":
+    if (
+        math.get_interface(rhoO) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         diag_elements = tf.linalg.diag_part(rhoO)
@@ -219,7 +221,7 @@ def sum_of_terms_method(
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term
-    return math.sum(
+    return sum(
         measure(
             ExpectationMP(term),
             state,

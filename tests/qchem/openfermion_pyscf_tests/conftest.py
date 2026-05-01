@@ -14,26 +14,12 @@
 """
 Pytest configuration file for PennyLane quantum chemistry open fermion test suite.
 """
+
 import shutil
 
-import numpy as np
 import pytest
-from packaging.version import Version
 
-import pennylane as qml
-
-__all__ = ["xfail_on_numpy2"]
-
-# NumPy 2.0 compatibility detection
-NUMPY_VERSION = Version(np.__version__)
-IS_NUMPY_2 = NUMPY_VERSION >= Version("2.0.0")
-OPENFERMION_XFAIL_INFO = (
-    "This test requires numpy 1.x. Double check OpenFermion compatibility with numpy 2.x."
-)
-xfail_on_numpy2 = pytest.mark.xfail(
-    condition=IS_NUMPY_2,
-    reason=OPENFERMION_XFAIL_INFO,
-)
+import pennylane as qp
 
 
 def cmd_exists(cmd):
@@ -52,7 +38,7 @@ def tol():
     scope="module",
     params=[
         None,
-        qml.wires.Wires(
+        qp.wires.Wires(
             list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
         ),
         list(range(100, 120)),

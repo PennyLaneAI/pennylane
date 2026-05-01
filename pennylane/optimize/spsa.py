@@ -76,6 +76,21 @@ class SPSAOptimizer:
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
 
+    Args:
+        maxiter (int): the maximum number of iterations expected to be performed.
+            Used to determine :math:`A`, if :math:`A` is not supplied, otherwise ignored.
+        alpha (float): a hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
+            for each iteration. Its asymptotically optimal value is 1.0 (default value: 0.602).
+        gamma (float): a hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
+            for each iteration. Its asymptotically optimal value is 1/6 (default value: 0.101).
+        c (float): a hyperparameter related to the expected noise. It should be
+            approximately the standard deviation of the expected noise of the cost function (default value: 0.2).
+        A (float): stability constant. If not provided, it is set to be 10% of the maximum number
+            of expected iterations.
+        a (float): a hyperparameter expected to be small in noisy situations,
+            its value could be picked using `A`, :math:`\alpha` and :math:`\hat{g_0} (\hat{\theta_0})`.
+            For more details, see `Spall (1998b)
+            <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
 
     **Examples:**
 
@@ -83,20 +98,20 @@ class SPSAOptimizer:
 
     >>> from pennylane import numpy as np
     >>> coeffs = [0.2, -0.543, 0.4514]
-    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
-    ...             qml.X(3) @ qml.Z(1)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Hadamard(2),
+    ...             qp.X(3) @ qp.Z(1)]
+    >>> H = qp.Hamiltonian(coeffs, obs)
     >>> num_qubits = 4
-    >>> dev = qml.device("default.qubit", wires=num_qubits)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=num_qubits)
+    >>> @qp.qnode(dev)
     ... def cost(params, num_qubits=1):
-    ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+    ...     qp.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
     ...     for i in range(num_qubits):
-    ...         qml.Rot(*params[i], wires=0)
-    ...         qml.CNOT(wires=[2, 3])
-    ...         qml.CNOT(wires=[2, 0])
-    ...         qml.CNOT(wires=[3, 1])
-    ...     return qml.expval(H)
+    ...         qp.Rot(*params[i], wires=0)
+    ...         qp.CNOT(wires=[2, 3])
+    ...         qp.CNOT(wires=[2, 0])
+    ...         qp.CNOT(wires=[3, 1])
+    ...     return qp.expval(H)
     ...
     >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
 
@@ -104,7 +119,7 @@ class SPSAOptimizer:
     ``step`` or ``step_and_cost`` function of the optimizer:
 
     >>> max_iterations = 100
-    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
+    >>> opt = qp.SPSAOptimizer(maxiter=max_iterations)
     >>> for _ in range(max_iterations):
     ...     params, energy = opt.step_and_cost(cost, params, num_qubits=num_qubits)
     >>> print(energy)
@@ -116,14 +131,14 @@ class SPSAOptimizer:
     >>> import tensorflow as tf
     >>> n_qubits = 1
     >>> max_iterations = 20
-    >>> dev = qml.device("default.qubit", wires=n_qubits)
-    >>> @qml.qnode(dev, interface="tf")
+    >>> dev = qp.device("default.qubit", wires=n_qubits)
+    >>> @qp.qnode(dev, interface="tf")
     ... def layer_fn_spsa(inputs, weights):
-    ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
-    ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qml.expval(qml.Z(0))
+    ...     qp.AngleEmbedding(inputs, wires=range(n_qubits))
+    ...     qp.BasicEntanglerLayers(weights, wires=range(n_qubits))
+    ...     return qp.expval(qp.Z(0))
     ...
-    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
+    >>> opt = qp.SPSAOptimizer(maxiter=max_iterations)
     ... def fn(params, tensor_in, tensor_out):
     ...     with tf.init_scope():
     ...             for _ in range(max_iterations):
@@ -145,24 +160,6 @@ class SPSAOptimizer:
     >>> loss = fn(params, tensor_in, tensor_out)
     >>> print(loss)
     tf.Tensor(-0.9995854230771829, shape=(), dtype=float64)
-
-
-
-    Keyword Args:
-        maxiter (int): the maximum number of iterations expected to be performed.
-            Used to determine :math:`A`, if :math:`A` is not supplied, otherwise ignored.
-        alpha (float): A hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
-            for each iteration. Its asymptotically optimal value is 1.0.
-        gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
-            for each iteration. Its asymptotically optimal value is 1/6.
-        c (float): A hyperparameter related to the expected noise. It should be
-            approximately the standard deviation of the expected noise of the cost function.
-        A (float): The stability constant; if not provided, set to be 10% of the maximum number
-            of expected iterations.
-        a (float): A hyperparameter expected to be small in noisy situations,
-            its value could be picked using `A`, :math:`\alpha` and :math:`\hat{g_0} (\hat{\theta_0})`.
-            For more details, see `Spall (1998b)
-            <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
 
     # pylint: disable-msg=too-many-arguments
@@ -265,7 +262,7 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            # pylint: disable=protected-access
+
             dev_shots = objective_fn.device.shots
 
             shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)

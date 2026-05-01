@@ -15,7 +15,6 @@
 
 from collections import defaultdict
 from functools import singledispatch
-from typing import Union
 
 import numpy as np
 
@@ -25,7 +24,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 
 
-# pylint: disable=too-many-branches
 def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_i}\bra{x_j}``
     to qubit operators as given in :math:`Eq. (6-9)` in `arXiv.1909.12847 <https://arxiv.org/abs/1909.12847>_`.
@@ -40,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 
 
 def binary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -65,17 +63,17 @@ def binary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord({(0, 0): "+"})
-    >>> qml.binary_mapping(w, n_states=4)
+    >>> w = qp.BoseWord({(0, 0): "+"})
+    >>> qp.binary_mapping(w, n_states=4)
     (
         0.6830127018922193 * X(0)
-      + -0.1830127018922193 * X(0) @ Z(1)
+      + -0.1830127018922193 * (X(0) @ Z(1))
       + -0.6830127018922193j * Y(0)
-      + 0.1830127018922193j * Y(0) @ Z(1)
-      + 0.3535533905932738 * X(0) @ X(1)
-      + -0.3535533905932738j * X(0) @ Y(1)
-      + 0.3535533905932738j * Y(0) @ X(1)
-      + (0.3535533905932738+0j) * Y(0) @ Y(1)
+      + 0.1830127018922193j * (Y(0) @ Z(1))
+      + 0.3535533905932738 * (X(0) @ X(1))
+      + -0.3535533905932738j * (X(0) @ Y(1))
+      + 0.3535533905932738j * (Y(0) @ X(1))
+      + (0.3535533905932738+0j) * (Y(0) @ Y(1))
     )
     """
 
@@ -105,7 +103,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         raise ValueError(
             f"Number of allowed bosonic states cannot be less than 2, provided {n_states}."
         )
-    nqub_per_boson = int(np.ceil(np.log2(n_states)))
+    nqub_per_boson = math.ceil_log2(n_states)
 
     creation = np.zeros((n_states, n_states))
     for s in range(n_states - 1):
@@ -118,7 +116,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
     for (_, b_idx), sign in bose_operator.items():
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat[sign])
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat[sign][i][j]
 
             binary_row = list(map(int, bin(i)[2:]))[::-1]
@@ -165,7 +163,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def unary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -190,21 +188,21 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord({(0, 0): "+"})
-    >>> qml.unary_mapping(w, n_states=4)
+    >>> w = qp.BoseWord({(0, 0): "+"})
+    >>> qp.unary_mapping(w, n_states=4)
     (
-        0.25 * X(0) @ X(1)
-      + -0.25j * X(0) @ Y(1)
-      + 0.25j * Y(0) @ X(1)
-      + (0.25+0j) * Y(0) @ Y(1)
-      + 0.3535533905932738 * X(1) @ X(2)
-      + -0.3535533905932738j * X(1) @ Y(2)
-      + 0.3535533905932738j * Y(1) @ X(2)
-      + (0.3535533905932738+0j) * Y(1) @ Y(2)
-      + 0.4330127018922193 * X(2) @ X(3)
-      + -0.4330127018922193j * X(2) @ Y(3)
-      + 0.4330127018922193j * Y(2) @ X(3)
-      + (0.4330127018922193+0j) * Y(2) @ Y(3)
+        0.25 * (X(0) @ X(1))
+      + -0.25j * (X(0) @ Y(1))
+      + 0.25j * (Y(0) @ X(1))
+      + (0.25+0j) * (Y(0) @ Y(1))
+      + 0.3535533905932738 * (X(1) @ X(2))
+      + -0.3535533905932738j * (X(1) @ Y(2))
+      + 0.3535533905932738j * (Y(1) @ X(2))
+      + (0.3535533905932738+0j) * (Y(1) @ Y(2))
+      + 0.4330127018922193 * (X(2) @ X(3))
+      + -0.4330127018922193j * (X(2) @ Y(3))
+      + 0.4330127018922193j * (Y(2) @ X(3))
+      + (0.4330127018922193+0j) * (Y(2) @ Y(3))
     )
     """
 
@@ -257,7 +255,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
 
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat_prod)
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat_prod[i][j]
 
             row = np.zeros(n_states)
@@ -301,7 +299,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def christiansen_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
@@ -341,8 +339,8 @@ def christiansen_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0,0):"+", (1,1): "-"})
-    >>> qml.christiansen_mapping(w)
+    >>> w = qp.bose.BoseWord({(0,0):"+", (1,1): "-"})
+    >>> qp.christiansen_mapping(w)
     (
         0.25 * (X(0) @ X(1))
       + 0.25j * (X(0) @ Y(1))

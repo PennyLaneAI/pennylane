@@ -18,11 +18,12 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.exceptions import DecompositionWarning
 from pennylane.ftqc import (
-    ParametricMidMeasureMP,
-    XMidMeasureMP,
-    YMidMeasureMP,
+    ParametricMidMeasure,
+    XMidMeasure,
+    YMidMeasure,
     cond_measure,
     diagonalize_mcms,
     measure_arbitrary_basis,
@@ -30,7 +31,7 @@ from pennylane.ftqc import (
     measure_y,
     measure_z,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.ops import MeasurementValue
 
 
 class TestCondMeas:
@@ -43,27 +44,27 @@ class TestCondMeas:
         """Test that passing a MeasurementValue and measurement functions
         to cond_measure creates the expected measurements and MeasurementValue"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            m = qml.measure(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            m = qp.measure(0)
             m2 = cond_measure(m, measure_x, measure_y)(
                 wires=wire, reset=reset, postselect=postselect
             )
 
-        ops = qml.tape.QuantumScript.from_queue(q).operations
+        ops = qp.tape.QuantumScript.from_queue(q).operations
 
         assert len(ops) == 3
         conditional_mps = ops[1:]
 
         # the new measurements match the expected properties
         for meas in conditional_mps:
-            assert isinstance(meas, qml.ops.Conditional)
-            assert meas.wires == qml.wires.Wires([wire])
+            assert isinstance(meas, qp.ops.Conditional)
+            assert meas.wires == qp.wires.Wires([wire])
             assert meas.base.reset == reset
             assert meas.base.postselect == postselect
 
         # bases are correct
-        assert isinstance(conditional_mps[0].base, XMidMeasureMP)
-        assert isinstance(conditional_mps[1].base, YMidMeasureMP)
+        assert isinstance(conditional_mps[0].base, XMidMeasure)
+        assert isinstance(conditional_mps[1].base, YMidMeasure)
 
         # they have opposite conditions
         fn_x, fn_y = (m.meas_val.processing_fn for m in conditional_mps)
@@ -82,36 +83,36 @@ class TestCondMeas:
         """Test that passing a MeasurementValue and partials of measurement functions
         executes successfully and creates the expected operator types"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            m = qml.measure(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            m = qp.measure(0)
             cond_measure(
                 m,
                 partial(measure_arbitrary_basis, angle=1.2, plane="ZX"),
                 partial(measure_arbitrary_basis, angle=2.4, plane="XY"),
             )(2)
 
-        ops = qml.tape.QuantumScript.from_queue(q).operations
+        ops = qp.tape.QuantumScript.from_queue(q).operations
 
         assert len(ops) == 3
 
         # expected measurements were created
         for meas in ops[1:]:
-            assert isinstance(meas, qml.ops.Conditional)
-            assert isinstance(meas.base, ParametricMidMeasureMP)
+            assert isinstance(meas, qp.ops.Conditional)
+            assert isinstance(meas.base, ParametricMidMeasure)
         assert ops[1].base.angle == 1.2
         assert ops[1].base.plane == "ZX"
         assert ops[2].base.angle == 2.4
         assert ops[2].base.plane == "XY"
 
-    @pytest.mark.parametrize("val, meas_type", [(1, XMidMeasureMP), (0, YMidMeasureMP)])
+    @pytest.mark.parametrize("val, meas_type", [(1, XMidMeasure), (0, YMidMeasure)])
     def test_condition_is_not_mcm(self, val, meas_type):
         """Test that passing a boolean rather than a MeasurementValue
         simplifies to applying the appropriate measurement"""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             m = cond_measure(val, measure_x, measure_y)(0)
 
-        ops = qml.tape.QuantumScript.from_queue(q).operations
+        ops = qp.tape.QuantumScript.from_queue(q).operations
 
         assert len(ops) == 1
         assert isinstance(ops[0], meas_type)
@@ -123,19 +124,19 @@ class TestCondMeas:
 class TestValidation:
     """Test the errors raised by validation in cond_measure"""
 
-    @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
+    @pytest.mark.parametrize("inp", [1, "string", qp.PauliZ(0)])
     def test_non_callable_raises_error(self, inp):
         """Test that an error is raised when the input is not a callable."""
 
         with pytest.raises(ValueError, match="Only measurement functions can be applied"):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, inp, measure_x)(0)
 
         with pytest.raises(ValueError, match="Only measurement functions can be applied"):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, measure_x, inp)(0)
 
-    @pytest.mark.parametrize("inp", [qml.X, XMidMeasureMP])
+    @pytest.mark.parametrize("inp", [qp.X, XMidMeasure])
     def test_incorrect_callable_raises_error(self, inp):
         """Test that an error is raised when the callable does not return a MeasurementValue"""
 
@@ -143,14 +144,14 @@ class TestValidation:
             ValueError,
             match="Only measurement functions that return a measurement value can be used",
         ):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, inp, measure_x)(0)
 
         with pytest.raises(
             ValueError,
             match="Only measurement functions that return a measurement value can be used",
         ):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, measure_x, inp)(0)
 
     @pytest.mark.parametrize("attribute, inp", [("reset", (True, False)), ("postselect", (0, 1))])
@@ -165,7 +166,7 @@ class TestValidation:
             ValueError,
             match="behaviour must be consistent for both branches",
         ):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, partial(measure_y, **input1), partial(measure_x, **input2))(0)
 
     def test_mismatched_wires_raises_error(self):
@@ -174,39 +175,49 @@ class TestValidation:
             ValueError,
             match="behaviour must be consistent for both branches",
         ):
-            m = qml.measure(0)
+            m = qp.measure(0)
             cond_measure(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 
-    @pytest.mark.jax
-    def test_program_capture_raises_error(self):
-        """Test that a clear error is raised when executing with program capture"""
-        try:
-            qml.capture.enable()
+    @pytest.mark.capture
+    def test_program_capture(self):
+        """Test that program capture works as expected with cond_measure"""
+        import jax
 
-            with pytest.raises(NotImplementedError, match="not compatible with program capture"):
-                m = qml.measure(0)
-                cond_measure(m, measure_x, measure_y)(0)
-        finally:
-            qml.capture.disable()
+        def func():
+            m = qp.measure(0)
+            cond_measure(m, measure_x, measure_y)(0)
+
+        plxpr = jax.make_jaxpr(func)()
+
+        cond_eq = plxpr.eqns[2]
+        assert "cond" in str(cond_eq)
+        cond_branches = cond_eq.params["jaxpr_branches"]
+        assert len(cond_branches) == 2
+        for branch, angle in zip(cond_branches, [0, 1.57]):
+            branch_str = str(branch)
+            assert "measure_in_basis" in branch_str
+            assert "plane=XY" in branch_str
+            assert str(angle) in branch_str
 
 
 class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_execution_in_cond(self, mcm_method, shots):
-        """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
+        """Test that we can execute a QNode with a ParametricMidMeasure applied in a conditional,
         and produce an accurate result"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ():
-            qml.RX(np.pi, 0)
-            m = qml.measure(0)  # always 1
+            qp.RX(np.pi, 0)
+            m = qp.measure(0)  # always 1
 
-            qml.RX(2.345, 1)
+            qp.RX(2.345, 1)
             cond_measure(m == 0, measure_x, measure_y)(1)  # always measure_y
-            return qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(1))
 
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
@@ -218,32 +229,37 @@ class TestWorkflows:
         # without the transform, the mid-circuit measurements are all treated as computational
         # basis measurements, and they are inside Conditional, which doesn't execute correctly,
         # so we return incorrect results, even with a high atol (± ~20-30% of expected outcome)
-        assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        if qp.decomposition.enabled_graph():
+            with pytest.warns(DecompositionWarning):
+                assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
+        else:
+            assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
         """Test a workflow that feeds measurement values from conditional measurements forward
         into subsequent measurements and operations applied in `cond_measure` and `cond`"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ(x_rot, y_rot):
-            qml.RX(np.pi, 0)
-            m = qml.measure(0)  # always 1
+            qp.RX(np.pi, 0)
+            m = qp.measure(0)  # always 1
 
-            qml.RX(np.pi / 2, 1)
+            qp.RX(np.pi / 2, 1)
             m2 = cond_measure(m == 0, measure_x, measure_y)(1)  # always measure_y, always 1
 
-            qml.RY(y_rot, 2)
-            qml.RX(x_rot, 2)
+            qp.RY(y_rot, 2)
+            qp.RX(x_rot, 2)
             cond_measure(m2, measure_z, measure_y)(2)
 
-            qml.cond(m2, qml.X)(3)
+            qp.cond(m2, qp.X)(3)
 
-            return qml.expval(qml.Z(2)), qml.expval(qml.Z(3))
+            return qp.expval(qp.Z(2)), qp.expval(qp.Z(3))
 
-        (x, y) = 1.23, 3.45
+        x, y = 1.23, 3.45
 
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
@@ -255,5 +271,10 @@ class TestWorkflows:
         # this can't be executed without diagonalize_mcms, because without the transform, it
         # tries to get concrete values for measurements that weren't executed when it hits
         # the conditional that depends on m2, and can't find it in the measurements dictionary
-        with pytest.raises(KeyError):
-            circ(x, y)
+        if qp.decomposition.enabled_graph():
+            with pytest.raises(KeyError):
+                with pytest.warns(DecompositionWarning):
+                    circ(x, y)
+        else:
+            with pytest.raises(KeyError):
+                circ(x, y)

@@ -12,119 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.state measurement.
+This module contains the qp.state measurement.
 """
-from collections.abc import Sequence
-from typing import Optional
 
-import pennylane as qml
+from collections.abc import Sequence
+
+from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
-
-
-def state() -> "StateMP":
-    r"""Quantum state in the computational basis.
-
-    This function accepts no observables and instead instructs the QNode to return its state. A
-    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
-    describing all wires in the device.
-
-    Note that the output shape of this measurement process depends on the
-    number of wires defined for the device.
-
-    Returns:
-        StateMP: Measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=1)
-            return qml.state()
-
-    Executing this QNode:
-
-    >>> circuit()
-    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
-
-    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
-    in both :math:`|00\rangle` and :math:`|01\rangle`.
-
-    .. note::
-
-        Differentiating :func:`~pennylane.state` is currently only supported when using the
-        classical backpropagation differentiation method (``diff_method="backprop"``) with a
-        compatible device.
-
-    .. details::
-        :title: Usage Details
-
-        A QNode with the ``qml.state`` output can be used in a cost function which
-        is then differentiated:
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> @qml.qnode(dev, diff_method="backprop")
-        ... def test(x):
-        ...     qml.RY(x, wires=[0])
-        ...     return qml.state()
-        >>> def cost(x):
-        ...     return np.abs(test(x)[0])
-        >>> cost(x)
-        0.9987502603949663
-        >>> qml.grad(cost)(x)
-        tensor(-0.02498958, requires_grad=True)
-    """
-    return StateMP()
-
-
-def density_matrix(wires) -> "DensityMatrixMP":
-    r"""Quantum density matrix in the computational basis.
-
-    This function accepts no observables and instead instructs the QNode to return its density
-    matrix or reduced density matrix. The ``wires`` argument gives the possibility
-    to trace out a part of the system. It can result in obtaining a mixed state, which can be
-    only represented by the reduced density matrix.
-
-    Args:
-        wires (Sequence[int] or int): the wires of the subsystem
-
-    Returns:
-        DensityMatrixMP: Measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Y(0)
-            qml.Hadamard(wires=1)
-            return qml.density_matrix([0])
-
-    Executing this QNode:
-
-    >>> circuit()
-    array([[0.+0.j 0.+0.j]
-        [0.+0.j 1.+0.j]])
-
-    The returned matrix is the reduced density matrix, where system 1 is traced out.
-
-    .. note::
-
-        Calculating the derivative of :func:`~pennylane.density_matrix` is currently only supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device.
-    """
-    wires = Wires(wires)
-    return DensityMatrixMP(wires=wires)
 
 
 class StateMP(StateMeasurement):
@@ -140,15 +38,15 @@ class StateMP(StateMeasurement):
 
     _shortname = "state"
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+    def __init__(self, wires: Wires | None = None, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
@@ -159,7 +57,7 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int]:
         num_wires = len(self.wires) if self.wires else num_device_wires
         return (2**num_wires,)
 
@@ -169,10 +67,12 @@ class StateMP(StateMeasurement):
             dtype = str(state.dtype)
             if "complex" in dtype:
                 return state
-            if qml.math.get_interface(state) == "tensorflow":
-                return qml.math.cast(state, "complex128")
+            if (
+                math.get_interface(state) == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                return math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
-            return qml.math.cast(state, "complex64" if floating_single else "complex128")
+            return math.cast(state, "complex64" if floating_single else "complex128")
 
         if not self.wires or wire_order == self.wires:
             return cast_to_complex(state)
@@ -185,24 +85,24 @@ class StateMP(StateMeasurement):
             )
 
         shape = (2,) * len(wire_order)
-        batch_size = None if qml.math.ndim(state) == 1 else qml.math.shape(state)[0]
+        batch_size = None if math.ndim(state) == 1 else math.shape(state)[0]
         shape = (batch_size,) + shape if batch_size else shape
-        state = qml.math.reshape(state, shape)
+        state = math.reshape(state, shape)
 
         if wires_to_add := Wires(set(self.wires) - set(wire_order)):
             for _ in wires_to_add:
-                state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
+                state = math.stack([state, math.zeros_like(state)], axis=-1)
             wire_order = wire_order + wires_to_add
 
         desired_axes = [wire_order.index(w) for w in self.wires]
         if batch_size:
             desired_axes = [0] + [i + 1 for i in desired_axes]
-        state = qml.math.transpose(state, desired_axes)
+        state = math.transpose(state, desired_axes)
 
         flat_shape = (2 ** len(self.wires),)
         if batch_size:
             flat_shape = (batch_size,) + flat_shape
-        state = qml.math.reshape(state, flat_shape)
+        state = math.reshape(state, flat_shape)
         return cast_to_complex(state)
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
@@ -221,22 +121,22 @@ class DensityMatrixMP(StateMP):
             where the instance has to be identified
     """
 
-    def __init__(self, wires: Wires, id: Optional[str] = None):
+    def __init__(self, wires: Wires, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires, 2**n_wires)
         return shape, complex
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
         return (dim, dim)
 
@@ -245,17 +145,119 @@ class DensityMatrixMP(StateMP):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
+        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
-        return qml.math.reduce_statevector(state, **kwargs)
+        return math.reduce_statevector(state, **kwargs)
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(density_matrix) and qml.math.any(
-            qml.math.iscomplex(density_matrix)
-        ):
+        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
-        return qml.math.reduce_dm(density_matrix, **kwargs)
+        return math.reduce_dm(density_matrix, **kwargs)
+
+
+def state() -> StateMP:
+    r"""Quantum state in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its state. A
+    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
+    describing all wires in the device.
+
+    Note that the output shape of this measurement process depends on the
+    number of wires defined for the device.
+
+    Returns:
+        StateMP: Measurement process instance
+
+    **Example:**
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.Hadamard(wires=1)
+            return qp.state()
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
+    in both :math:`|00\rangle` and :math:`|01\rangle`.
+
+    .. note::
+
+        Differentiating :func:`~pennylane.state` is currently only supported when using the
+        classical backpropagation differentiation method (``diff_method="backprop"``) with a
+        compatible device.
+
+    .. details::
+        :title: Usage Details
+
+        A QNode with the ``qp.state`` output can be used in a cost function which
+        is then differentiated:
+
+        >>> dev = qp.device('default.qubit', wires=2)
+        >>> @qp.qnode(dev, diff_method="backprop")
+        ... def test(x):
+        ...     qp.RY(x, wires=[0])
+        ...     return qp.state()
+        >>> def cost(x):
+        ...     return np.abs(test(x)[0])
+        >>> x = pnp.array(0.54, requires_grad=True)
+        >>> cost(x)
+        tensor(0.963..., requires_grad=True)
+        >>> qp.grad(cost)(x)
+        tensor(-0.13..., requires_grad=True)
+    """
+    return StateMP()
+
+
+def density_matrix(wires) -> DensityMatrixMP:
+    r"""Quantum density matrix in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its density
+    matrix or reduced density matrix. The ``wires`` argument gives the possibility
+    to trace out a part of the system. It can result in obtaining a mixed state, which can be
+    only represented by the reduced density matrix.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    Returns:
+        DensityMatrixMP: Measurement process instance
+
+    **Example:**
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.Y(0)
+            qp.Hadamard(wires=1)
+            return qp.density_matrix([0])
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([[0.+0.j, 0.+0.j],
+           [0.+0.j, 1.+0.j]])
+
+    The returned matrix is the reduced density matrix, where system 1 is traced out.
+
+    .. note::
+
+        Calculating the derivative of :func:`~pennylane.density_matrix` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    wires = Wires(wires)
+    return DensityMatrixMP(wires=wires)

@@ -2,14 +2,14 @@
 # into the repository for historical tracking purposes.
 # 
 # This workflow is designed to check in artifacts to a specified branch and create a pull request to merge the changes 
-# into the master branch on GitHub Actions. 
+# into the main branch on GitHub Actions. 
 # 
 # The workflow is triggered by a workflow call and requires inputs such as the artifact name pattern to match the artifacts, 
-# the path to save the artifacts to, the name of the branch to create from master, the title and body of the pull request, 
+# the path to save the artifacts to, the name of the branch to create from main, the title and body of the pull request, 
 # and additional parameters for the commit message. 
 # 
-# The workflow includes steps to checkout the master branch, download the artifacts, determine if changes have been made, 
-# prepare the commit author, stage the changes, and create a pull request to the master branch. 
+# The workflow includes steps to checkout the main branch, download the artifacts, determine if changes have been made, 
+# prepare the commit author, stage the changes, and create a pull request to the main branch. 
 # The workflow utilizes the GitHub CLI (gh) to interact with the GitHub API for creating the pull request.
 
 name: Check in Artifact
@@ -25,7 +25,7 @@ on:
         required: true
         type: string
       pull_request_head_branch_name:
-        description: The name of the branch to create from master in which the artifacts will be checked in
+        description: The name of the branch to create from main in which the artifacts will be checked in
         required: true
         type: string
       pull_request_title:
@@ -36,8 +36,8 @@ on:
         description: The body of the pull request
         required: true
         type: string
-      master_branch_fetch_depth:
-        description: How many commits to checkout from HEAD of master
+      main_branch_fetch_depth:
+        description: How many commits to checkout from HEAD of main
         required: false
         type: number
         default: 0
@@ -69,16 +69,18 @@ on:
 jobs:
   check_in_artifact:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - name: Checkout master
-        uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v6
         with:
-          fetch-depth: ${{ inputs.master_branch_fetch_depth }}
-          ref: master
+          fetch-depth: ${{ inputs.main_branch_fetch_depth }}
+          ref: main
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ inputs.artifact_name_pattern }}
           path: ${{ inputs.artifact_save_path }}
@@ -123,8 +125,8 @@ jobs:
           git commit --allow-empty -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
           git push -f --set-upstream origin "$HEAD_BRANCH_NAME"
 
-      # Create PR to master
-      - name: Create Pull Request to master
+      # Create PR to main
+      - name: Create Pull Request to main
         if: steps.changed.outputs.has_changes != '0'
         env:
           HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
@@ -132,8 +134,8 @@ jobs:
           PR_TITLE: ${{ inputs.pull_request_title }}
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
-          EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
-          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
+          EXISTING_PR="$(gh pr list --state open --base main --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
+          EXISTING_CLOSED_PR="$(gh pr list --state closed --base main --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
 
           if [ '${{ steps.prep_commit.outputs.branch_exists }}' = 'false' ]; then
             echo "Creating PR..."

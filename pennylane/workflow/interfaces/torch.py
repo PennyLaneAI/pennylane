@@ -48,8 +48,8 @@ To use the ``CustomFunction`` class, we call it with the static ``apply`` method
 >>> res
 tensor(4., grad_fn=<CustomFunctionBackward>)
 >>> res.backward()
->>> val.grad
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
+>>> val.grad
 tensor(4.)
 
 Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
@@ -59,7 +59,8 @@ modifies the output of ``forward`` and the input to ``backward`` to unpack and r
 result object.
 
 """
-# pylint: disable=too-many-arguments,protected-access,abstract-method,unused-argument
+
+# pylint: disable=protected-access
 import inspect
 import logging
 
@@ -67,7 +68,7 @@ import numpy as np
 import torch
 import torch.utils._pytree as pytree
 
-import pennylane as qml
+import pennylane as qp
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -132,14 +133,16 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = [p for t in tapes for p in t.get_parameters()]
-    >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
-    >>> ExecuteTapes.apply(kwargs, *parameters)
+    .. code-block:: python3
+
+        parameters = [p for t in tapes for p in t.get_parameters()]
+        kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
+        ExecuteTapes.apply(kwargs, *parameters)
 
     """
 
     @staticmethod
-    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
+    def forward(ctx, kwargs, *parameters):
         """Implements the forward pass batch tape evaluation."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -214,7 +217,7 @@ def execute(tapes, execute_fn, jpc, device=None):
             tapes,
             (
                 f"\n{inspect.getsource(execute_fn)}\n"
-                if logger.isEnabledFor(qml.logging.TRACE)
+                if logger.isEnabledFor(qp.logging.TRACE)
                 else execute_fn
             ),
             jpc,
@@ -224,7 +227,7 @@ def execute(tapes, execute_fn, jpc, device=None):
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qp.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
     kwargs = {

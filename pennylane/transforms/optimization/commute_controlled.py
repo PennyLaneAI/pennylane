@@ -14,9 +14,9 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
+from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
-from typing import Optional, Sequence
 
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -28,7 +28,7 @@ from .optimization_utils import find_next_gate
 
 
 @lru_cache
-def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -171,11 +171,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 super().interpret_operation(op)
             self.op_deque.clear()
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -237,6 +237,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
     def commute_controlled_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
+        tkwargs = dict(tkwargs)
+
         interpreter = CommuteControlledInterpreter(direction=tkwargs.get("direction", "right"))
 
         def wrapper(*inner_args):
@@ -250,7 +252,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
 
 
-def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[int]:
+def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> int | None:
     """Finds the previous gate index that shares wires."""
 
     return find_next_gate(wires, reversed(prevs_ops))
@@ -396,65 +398,69 @@ def commute_controlled(
             specified direction.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
-
-    >>> dev = qml.device('default.qubit', wires=3)
 
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        @partial(commute_controlled, direction="right")
-        @qml.qnode(device=dev)
+        import pennylane as qp
+
+        dev = qp.device('default.qubit')
+
+        @qp.transforms.commute_controlled(direction="right")
+        @qp.qnode(device=dev)
         def circuit(theta):
-            qml.CZ(wires=[0, 2])
-            qml.X(2)
-            qml.S(wires=0)
+            qp.CZ(wires=[0, 2])
+            qp.X(2)
+            qp.S(wires=0)
 
-            qml.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
-            qml.Y(1)
-            qml.CRY(theta, wires=[0, 1])
-            qml.PhaseShift(theta/2, wires=0)
+            qp.Y(1)
+            qp.CRY(theta, wires=[0, 1])
+            qp.PhaseShift(theta/2, wires=0)
 
-            qml.Toffoli(wires=[0, 1, 2])
-            qml.T(wires=0)
-            qml.RZ(theta/2, wires=1)
+            qp.Toffoli(wires=[0, 1, 2])
+            qp.T(wires=0)
+            qp.RZ(theta/2, wires=1)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-    >>> circuit(0.5)
-    0.9999999999999999
+    >>> print(qp.draw(circuit)(0.5))
+    0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
+    1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
+    2: ─╰Z─────────────────╰X──X─────────────────────┤
 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply this transform to quantum functions.
 
         .. code-block:: python
 
             def qfunc(theta):
-                qml.CZ(wires=[0, 2])
-                qml.X(2)
-                qml.S(wires=0)
+                qp.CZ(wires=[0, 2])
+                qp.X(2)
+                qp.S(wires=0)
 
-                qml.CNOT(wires=[0, 1])
+                qp.CNOT(wires=[0, 1])
 
-                qml.Y(1)
-                qml.CRY(theta, wires=[0, 1])
-                qml.PhaseShift(theta/2, wires=0)
+                qp.Y(1)
+                qp.CRY(theta, wires=[0, 1])
+                qp.PhaseShift(theta/2, wires=0)
 
-                qml.Toffoli(wires=[0, 1, 2])
-                qml.T(wires=0)
-                qml.RZ(theta/2, wires=1)
+                qp.Toffoli(wires=[0, 1, 2])
+                qp.T(wires=0)
+                qp.RZ(theta/2, wires=1)
 
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)(0.5))
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)(0.5))
         0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
         1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
         2: ─╰Z──X───────────────────────────╰X───────────┤
@@ -467,8 +473,8 @@ def commute_controlled(
         far as possible through the controlled operations:
 
         >>> optimized_qfunc = commute_controlled(qfunc, direction="right")
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)(0.5))
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)(0.5))
         0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
         1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
         2: ─╰Z─────────────────╰X──X─────────────────────┤
@@ -485,7 +491,7 @@ def commute_controlled(
     new_tape = tape.copy(operations=op_list)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

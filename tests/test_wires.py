@@ -14,13 +14,15 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
+
 from importlib import import_module, util
 
 import numpy as np
 import pytest
 
-import pennylane as qml
-from pennylane.wires import WireError, Wires
+import pennylane as qp
+from pennylane.exceptions import WireError
+from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -49,12 +51,12 @@ class TestWires:
     @pytest.mark.parametrize(
         "iterable",
         [
-            [qml.RX, qml.RY],
-            [qml.PauliX],
-            (None, qml.expval),
+            [qp.RX, qp.RY],
+            [qp.PauliX],
+            (None, qp.expval),
             (
-                qml.device("default.qubit", wires=range(3)),
-                qml.device("default.gaussian", wires=[qml.RX, 3]),
+                qp.device("default.qubit", wires=range(3)),
+                qp.device("default.gaussian", wires=[qp.RX, 3]),
             ),
         ],
     )
@@ -77,7 +79,7 @@ class TestWires:
         assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
 
     @pytest.mark.parametrize(
-        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "ancilla"]]
+        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
     )
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different

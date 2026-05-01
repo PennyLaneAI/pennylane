@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
+
 import warnings
+from collections.abc import Iterable
 from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable, Union
 
 import numpy as np
 
@@ -36,14 +37,14 @@ from pennylane.wires import Wires
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
+) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
     r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -73,33 +74,28 @@ def lie_closure(
 
     >>> from pennylane import X, Y, Z
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops)
+    >>> dla = qp.lie_closure(ops)
 
     Let us walk through what happens in this simple example of computing the Lie closure of these generators (the transverse field Ising model on two qubits).
     A first round of commutators between all elements yields:
 
-    >>> qml.commutator(X(0) @ X(1), Z(0))
+    >>> qp.commutator(X(0) @ X(1), Z(0))
     -2j * (Y(0) @ X(1))
-    >>> qml.commutator(X(0) @ X(1), Z(1))
+    >>> qp.commutator(X(0) @ X(1), Z(1))
     -2j * (X(0) @ Y(1))
 
     A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
-    >>> qml.commutator(X(0) @ Y(1), Z(0))
+    >>> qp.commutator(X(0) @ Y(1), Z(0))
     -2j * (Y(0) @ Y(1))
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops)
+    >>> dla = qp.lie_closure(ops)
     >>> dla
-    [X(1) @ X(0),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -116,29 +112,24 @@ def lie_closure(
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.lie_closure(ops, pauli=True)
+        >>> dla = qp.lie_closure(ops, pauli=True)
         >>> dla
-        [1.0 * X(0) @ X(1),
-         1.0 * Z(0),
-         1.0 * Z(1),
-         -1.0 * Y(0) @ X(1),
-         -1.0 * X(0) @ Y(1),
-         -1.0 * Y(0) @ Y(1)]
+        [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
-        pennylane.pauli.pauli_arithmetic.PauliSentence
+        <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
         We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
         dimension of the DLA and ``n`` the number of qubits.
 
-        >>> dla = qml.lie_closure(ops, matrix=True)
+        >>> dla = qp.lie_closure(ops, matrix=True)
         >>> dla.shape
         (6, 4, 4)
 
         You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
 
-        >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
+        >>> dla_ops = [qp.pauli_decompose(op) for op in dla]
         >>> dla_ops
         [1.0 * (X(0) @ X(1)),
          1.0 * (Z(0) @ I(1)),
@@ -247,7 +238,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 
 def _lie_closure_matrix(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | np.ndarray],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -284,7 +275,7 @@ def _lie_closure_matrix(
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
-    >>> g_ops = [qml.pauli_decompose(op) for op in g]
+    >>> g_ops = [qp.pauli_decompose(op) for op in g]
 
     **Internal representation**
 

@@ -13,38 +13,63 @@
 # limitations under the License.
 
 """PyTests for the AutoGraph source-to-source transformation feature for
-converting if/else statements to qml.cond."""
+converting if/else statements to qp.cond."""
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import cond, measure
 
-pytestmark = pytest.mark.jax
+pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.exceptions import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 
 
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
-
-
 class TestConditionals:
     """Test that the autograph transformations produce correct results on conditionals."""
+
+    def test_cond_on_known_truthy_values(self):
+        """Test that autograph runs without error with branches if the predicates are known."""
+
+        def f(x):
+            if "abc":  # pylint: disable=using-constant-test
+                return 2 * x
+            return (4 * x, 5)
+
+        ag_f = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        assert len(jaxpr.eqns) == 1
+        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        assert qp.math.allclose(out, 4.0)
+
+    def test_elif_on_known_truthy_values(self):
+        """Test elifs with known truthy values run without error."""
+
+        def f(x):
+            if None:  # pylint: disable=using-constant-test
+                out = 1
+            elif (1, 2):  # pylint: disable=using-constant-test
+                out = 2 * x
+            else:
+                out = 4 + x**2 * 5
+            return out
+
+        ag_f = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        assert len(jaxpr.eqns) == 1
+        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        assert qp.math.allclose(out, 4.0)
 
     def test_simple_cond(self):
         """Test basic function with conditional."""
@@ -132,18 +157,17 @@ class TestConditionals:
         assert res(2) == 4
         assert res(-3) == -3
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_qubit_manipulation_cond(self, autograph):
+    def test_qubit_manipulation_cond(self):
         """Test conditional with quantum operation."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit(x):
             if x > 4:
-                qml.PauliX(wires=0)
+                qp.PauliX(wires=0)
 
             m = measure(wires=0)
 
-            return qml.expval(m)
+            return qp.expval(m)
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
@@ -256,25 +280,25 @@ class TestConditionals:
         """
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val):
+            if val:
                 res = measure(wires=0)
 
-            return qml.expval(res)  # pylint: disable=possibly-used-before-assignment
+            return qp.expval(res)  # pylint: disable=possibly-used-before-assignment
 
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"
         ):
-            qml.capture.autograph.run_autograph(circuit)()
+            jax.make_jaxpr(qp.capture.autograph.run_autograph(circuit))(True)
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val1, val2):
+            if val1:
                 res = 1
-            elif False:
+            elif val2:
                 res = 0.0
             else:
                 res = 2
@@ -282,19 +306,18 @@ class TestConditionals:
             return res
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            run_autograph(circuit)()
+            jax.make_jaxpr(run_autograph(circuit))(True, False)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_multiple_return_different_measurements(self, autograph):
+    def test_multiple_return_different_measurements(self):
         """Test that different measurements be used in the return in different branches, as
         they are all represented by the AbstractMeasurement class."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def f(switch: bool):
             if switch:
-                return qml.expval(qml.PauliY(0))
+                return qp.expval(qp.PauliY(0))
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)

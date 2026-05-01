@@ -33,19 +33,15 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
+
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
-# pylint: disable=abstract-method
-import math
 
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane import math as qml_math
-from pennylane.operation import AnyWires, CVObservable, CVOperation
-
-from .identity import I, Identity  # pylint: disable=unused-import
-from .meta import Snapshot  # pylint: disable=unused-import
+from pennylane import math
+from pennylane.operation import CVObservable, CVOperation
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
@@ -73,7 +69,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return block_diag(1, temp)  # pylint: disable=no-member
+    return block_diag(1, temp)
 
 
 class Rotation(CVOperation):
@@ -667,7 +663,6 @@ class InterferometerUnitary(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = None
     grad_recipe = None
 
@@ -689,7 +684,7 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
+        return InterferometerUnitary(math.T(math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -833,7 +828,6 @@ class GaussianState(CVOperation):
     """
 
     num_params = 2
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, V, r, wires, id=None):
@@ -881,16 +875,16 @@ class FockState(CVOperation):
 
         **Example:**
 
-        >>> qml.FockState(7, wires=0).label()
+        >>> qp.FockState(7, wires=0).label()
         '|7⟩'
 
         """
         if base_label is not None:
             if decimals is None:
                 return base_label
-            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            p = format(math.asarray(self.parameters[0]), ".0f")
             return base_label + f"\n({p})"
-        return f"|{qml_math.asarray(self.parameters[0])}⟩"
+        return f"|{math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
@@ -917,14 +911,14 @@ class FockStateVector(CVOperation):
 
         .. code-block::
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=4)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=4)
 
             state = np.array([0, 0, 1, 0])
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(state, wires=0)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(state, wires=0)
+                return qp.expval(qp.NumberOperator(wires=0))
 
         For multiple modes, the input is the tensor product of single mode
         kets. For example, given a set of :math:`M` single mode vectors of
@@ -935,7 +929,7 @@ class FockStateVector(CVOperation):
             used_wires = [0, 3]
             cutoff_dim = 5
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
 
             state_1 = np.array([0, 1, 0, 0, 0])
             state_2 = np.array([0, 0, 0, 1, 0])
@@ -944,15 +938,14 @@ class FockStateVector(CVOperation):
                 (cutoff_dim, ) * len(used_wires)
             )
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(combined_state, wires=used_wires)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(combined_state, wires=used_wires)
+                return qp.expval(qp.NumberOperator(wires=0))
 
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -973,7 +966,7 @@ class FockStateVector(CVOperation):
 
         **Example:**
 
-        >>> qml.FockStateVector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateVector([1,2,3], wires=(0,1,2)).label()
         '|123⟩'
 
         """
@@ -1001,7 +994,6 @@ class FockDensityMatrix(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -1117,7 +1109,7 @@ class TensorN(CVObservable):
 
         Example for multiple modes:
 
-        >>> cv_obs = qml.TensorN(wires=[0, 1])
+        >>> cv_obs = qp.TensorN(wires=[0, 1])
         >>> cv_obs
         TensorN(wires=[0, 1])
         >>> cv_obs.ev_order is None
@@ -1125,7 +1117,7 @@ class TensorN(CVObservable):
 
         Example for a single mode (yields a :class:`~.NumberOperator`):
 
-        >>> cv_obs = qml.TensorN(wires=[1])
+        >>> cv_obs = qp.TensorN(wires=[1])
         >>> cv_obs
         NumberOperator(wires=[1])
         >>> cv_obs.ev_order
@@ -1133,7 +1125,6 @@ class TensorN(CVObservable):
     """
 
     num_params = 0
-    num_wires = AnyWires
     ev_order = None
 
     def __init__(self, wires):
@@ -1275,7 +1266,7 @@ class QuadOperator(CVObservable):
 
         **Example:**
 
-        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op = qp.QuadOperator(1.234, wires=0)
         >>> op.label()
         'cos(φ)x\n+sin(φ)p'
         >>> op.label(decimals=2)
@@ -1291,7 +1282,7 @@ class QuadOperator(CVObservable):
         if decimals is None:
             p = "φ"
         else:
-            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+            p = format(math.array(self.parameters[0]), f".{decimals}f")
         return f"cos({p})x\n+sin({p})p"
 
 
@@ -1326,7 +1317,6 @@ class PolyXP(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
@@ -1385,7 +1375,6 @@ class FockStateProjector(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = None
     ev_order = None
@@ -1408,7 +1397,7 @@ class FockStateProjector(CVObservable):
 
         **Example:**
 
-        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateProjector([1,2,3], wires=(0,1,2)).label()
         '|123⟩⟨123|'
 
         """
@@ -1421,8 +1410,6 @@ class FockStateProjector(CVObservable):
 
 
 __ops__ = {
-    "Identity",
-    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",

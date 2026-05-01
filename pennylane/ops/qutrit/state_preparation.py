@@ -15,13 +15,15 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+
+# pylint: disable=arguments-differ
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, StatePrepBase
+from pennylane.exceptions import WireError
+from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 state_prep_ops = {"QutritBasisState"}
 
@@ -55,16 +57,15 @@ class QutritBasisState(StatePrepBase):
 
     **Example**
 
-    >>> dev = qml.device('default.qutrit', wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qutrit', wires=2)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.QutritBasisState(np.array([2, 2]), wires=range(2))
-    ...     return qml.state()
+    ...     qp.QutritBasisState(np.array([2, 2]), wires=range(2))
+    ...     return qp.state()
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -89,7 +90,7 @@ class QutritBasisState(StatePrepBase):
 
         **Example:**
 
-        >>> qml.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
+        >>> qp.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
         [QutritBasisStatePreparation(array([1, 0]), wires=[0, 1])]
 
         """

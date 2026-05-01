@@ -15,15 +15,19 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+
 import warnings
 from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.ops import PauliRot, exp
+from pennylane.ops.functions import dot, eigvals
+from pennylane.pauli import is_pauli_word, pauli_word_prefactor, pauli_word_to_string
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -56,7 +60,7 @@ def _assert_has_jax(transform_name):
     if not has_jax:  # pragma: no cover
         raise ImportError(
             f"Module jax is required for the {transform_name} gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
+            "You can install jax via: pip install jax"
         )
 
 
@@ -94,7 +98,7 @@ def _split_evol_ops(op, ob, tau):
     """
     t0, *_, t1 = op.t
     # If there are multiple values for tau, use broadcasting
-    if bcast := qml.math.ndim(tau) > 0:
+    if bcast := math.ndim(tau) > 0:
         # With broadcasting, create a sorted array of [t_0, *sorted(taus), t_1]
         # Use this array for both, the pulse before and after the inserted operation.
         # The way we slice the resulting tape results later on accomodates for the additional
@@ -107,10 +111,10 @@ def _split_evol_ops(op, ob, tau):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
-    if qml.pauli.is_pauli_word(ob):
-        prefactor = qml.pauli.pauli_word_prefactor(ob)
-        word = qml.pauli.pauli_word_to_string(ob)
-        insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
+    if is_pauli_word(ob):
+        prefactor = pauli_word_prefactor(ob)
+        word = pauli_word_to_string(ob)
+        insert_ops = [PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
         with warnings.catch_warnings():
@@ -118,9 +122,11 @@ def _split_evol_ops(op, ob, tau):
                 warnings.filterwarnings(
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
-            eigvals = qml.eigvals(ob)
-        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
-        insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
+            eigenvalues = eigvals(ob)
+        coeffs, shifts = zip(
+            *generate_shift_rule(eigvals_to_frequencies(tuple(eigenvalues))), strict=True
+        )
+        insert_ops = [exp(dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
     ode_kwargs = op.odeint_kwargs
@@ -142,7 +148,7 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
 
     Args:
         tape (QuantumTape): original tape
-        split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
+        split_evolve_ops (tuple[list[qp.Operation]]): The time-split evolution operations as
             created by ``_split_evol_ops``. For each group of operations, a new tape
             is created.
         op_idx (int): index of the operation to replace within the tape
@@ -154,12 +160,12 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx + 1 :]
     return [
-        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
+        QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
         for split in split_evolve_ops
     ]
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _parshift_and_integrate(
     results,
     cjacs,
@@ -234,9 +240,9 @@ def _parshift_and_integrate(
             # and include the rescaling factor from the Monte Carlo integral and from global
             # prefactors of Pauli word generators.
             diff_per_term = jnp.array(
-                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs, strict=True)]
             )
-            return qml.math.sum(diff_per_term, axis=0) * int_prefactor
+            return math.sum(diff_per_term, axis=0) * int_prefactor
 
     else:
         num_shifts = len(psr_coeffs)
@@ -267,13 +273,14 @@ def _parshift_and_integrate(
 
     nesting_layers = (not single_measure) + has_partitioned_shots
     if nesting_layers == 1:
-        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results, strict=True))
     if nesting_layers == 0:
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
     return tuple(
-        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r, strict=True))
+        for r in zip(*results, strict=True)
     )
 
 
@@ -346,7 +353,7 @@ def stoch_pulse_grad(
     Returns:
         tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -386,20 +393,20 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.Z(0) @ qml.Z(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
-        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qp.Z(0) @ qp.Z(1)
+        Y_plus_X = qp.dot([1/5, 3/5], [qp.Y(0), qp.X(1)])
+        H = 0.5 * qp.X(0) + qp.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
-            qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.Y(1))
+            qp.evolve(H)(params, (0.2, 0.4))
+            return qp.expval(qp.Y(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        qnode = qp.QNode(ansatz, dev, interface="jax", diff_method=qp.gradients.stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
@@ -423,11 +430,11 @@ def stoch_pulse_grad(
 
     .. code-block:: python
 
-        qnode = qml.QNode(
+        qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
         )
@@ -443,11 +450,11 @@ def stoch_pulse_grad(
     .. code-block:: python
 
         from time import process_time
-        faster_grad_qnode = qml.QNode(
+        faster_grad_qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
             use_broadcasting=True, # Activate broadcasting
@@ -598,7 +605,7 @@ def stoch_pulse_grad(
         classical Jacobian, which is *not* constant over :math:`\tau`.
         Therefore, it is important to implement pulses in the simplest way possible.
     """
-    # pylint:disable=unused-argument
+
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
@@ -631,6 +638,7 @@ def stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
+# pylint: disable=too-many-positional-arguments
 def _generate_tapes_and_cjacs(
     tape, operation, key, num_split_times, use_broadcasting, par_idx=None
 ):
@@ -764,7 +772,7 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
         _tapes, _cjacs, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
             tape, _operation, key, num_split_times, use_broadcasting, cjac_idx
         )
-        cjacs.append(qml.math.stack(_cjacs))
+        cjacs.append(math.stack(_cjacs))
         tapes.extend(_tapes)
         psr_coeffs.append(_psr_coeffs)
 
@@ -774,7 +782,6 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
     return tapes, data
 
 
-# pylint: disable=too-many-arguments
 def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
@@ -805,7 +812,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
             _tapes, cjacs, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
                 tape, operation, _key, num_split_times, use_broadcasting
             )
-            data = (len(_tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
+            data = (len(_tapes), math.stack(cjacs), int_prefactor, psr_coeffs)
 
         tapes.extend(_tapes)
         gradient_data.append(data)

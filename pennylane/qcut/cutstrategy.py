@@ -18,14 +18,12 @@ Class CutStrategy, for executing (large) circuits on available (comparably small
 import warnings
 from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
-from typing import Any, ClassVar, Union
+from typing import Any, ClassVar
 
-from networkx import MultiDiGraph
-
-import pennylane as qml
+from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut
 
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
+SupportedDeviceAPIs = Device | LegacyDevice
 
 
 @dataclass()
@@ -38,10 +36,10 @@ class CutStrategy:
 
         This class is part of a work-in-progress feature to support automatic cut placement in the
         circuit cutting workflow. Currently only manual placement of cuts is supported,
-        check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        devices (Union[qml.devices.Device, Sequence[qml.devices.Device]]): Single, or Sequence of, device(s).
+        devices (Union[qp.devices.Device, Sequence[qp.devices.Device]]): Single, or Sequence of, device(s).
             Optional only when ``max_free_wires`` is provided.
         max_free_wires (int): Number of wires for the largest available device. Optional only when
             ``devices`` is provided where it defaults to the maximum number of wires among
@@ -73,7 +71,7 @@ class CutStrategy:
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
     at least ``4`` wires:
 
-    >>> cut_strategy = qml.qcut.CutStrategy(
+    >>> cut_strategy = qp.qcut.CutStrategy(
     ...     max_free_wires=6,
     ...     min_free_wires=4,
     ...     num_fragments_probed=(2, 5),
@@ -81,17 +79,17 @@ class CutStrategy:
 
     """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
-    devices: InitVar[Union[SupportedDeviceAPIs, Sequence[SupportedDeviceAPIs]]] = None
+    devices: InitVar[SupportedDeviceAPIs | Sequence[SupportedDeviceAPIs]] = None
 
     #: Number of wires for the largest available device.
     max_free_wires: int = None
     #: Number of wires for the smallest available device.
     min_free_wires: int = None
     #: The potential (range of) number of fragments for the partitioner to attempt.
-    num_fragments_probed: Union[int, Sequence[int]] = None
+    num_fragments_probed: None | int | Sequence[int] = None
     #: Maximum allowed circuit depth for the deepest available device.
     max_free_gates: int = None
     #: Maximum allowed circuit depth for the shallowest available device.
@@ -127,16 +125,16 @@ class CutStrategy:
         if devices is None and self.max_free_wires is None:
             raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
 
-        if isinstance(devices, (qml.devices.LegacyDevice, qml.devices.Device)):
+        if isinstance(devices, (LegacyDevice, Device)):
             devices = (devices,)
 
         if devices is not None:
             if not isinstance(devices, Sequence) or any(
-                (not isinstance(d, (qml.devices.LegacyDevice, qml.devices.Device)) for d in devices)
+                not isinstance(d, (LegacyDevice, Device)) for d in devices
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    "`qml.devices.LegacyDevice` or `qml.devices.Device`"
+                    "`qp.devices.LegacyDevice` or `qp.devices.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
@@ -156,7 +154,7 @@ class CutStrategy:
 
     def get_cut_kwargs(
         self,
-        tape_dag: MultiDiGraph,
+        tape_dag,
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
         exhaustive: bool = True,

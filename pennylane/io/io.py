@@ -15,9 +15,19 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
+
 from collections import defaultdict
+from collections.abc import Callable
 from importlib import metadata
 from sys import version_info
+
+has_openqasm = True
+try:
+    import openqasm3
+
+    from pennylane.io.qasm_interpreter import QasmInterpreter
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -32,7 +42,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 __plugin_devices = (
     defaultdict(tuple, metadata.entry_points())["pennylane.io"]
     if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
+    else metadata.entry_points(group="pennylane.io")
 )
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
@@ -62,14 +72,14 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from qiskit import QuantumCircuit
 
         qc = QuantumCircuit(2, 2)
         qc.rx(0.785, 0)
         qc.ry(1.57, 1)
 
-        my_qfunc = qml.from_qiskit(qc)
+        my_qfunc = qp.from_qiskit(qc)
 
     The ``my_qfunc`` function can now be used within QNodes, as a two-wire quantum
     template. We can also pass ``wires`` when calling the returned template to define
@@ -78,12 +88,12 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             my_qfunc(wires=["a", "b"])
-            return qml.expval(qml.Z("a")), qml.var(qml.Z("b"))
+            return qp.expval(qp.Z("a")), qp.var(qp.Z("b"))
 
     >>> circuit()
     (tensor(0.70738827, requires_grad=True),
@@ -91,10 +101,10 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     The measurements can also be passed directly to the function when creating the
     quantum function, making it possible to create a PennyLane circuit with
-    :class:`qml.QNode <pennylane.QNode>`:
+    :class:`qp.QNode <pennylane.QNode>`:
 
-    >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(1))]
-    >>> circuit = qml.QNode(qml.from_qiskit(qc, measurements), dev)
+    >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(1))]
+    >>> circuit = qp.QNode(qp.from_qiskit(qc, measurements), dev)
     >>> circuit()
     (tensor(0.70738827, requires_grad=True),
     tensor(0.99999937, requires_grad=True))
@@ -109,7 +119,7 @@ def from_qiskit(quantum_circuit, measurements=None):
     If an existing ``QuantumCircuit`` already contains measurements, ``from_qiskit``
     will return those measurements, provided that they are not overridden as shown above.
     These measurements can be used, e.g., for conditioning with
-    :func:`qml.cond() <~.cond>`, or simply included directly within the QNode's return:
+    :func:`qp.cond() <~.cond>`, or simply included directly within the QNode's return:
 
     .. code-block:: python
 
@@ -117,11 +127,11 @@ def from_qiskit(quantum_circuit, measurements=None):
        qc.rx(np.pi, 0)
        qc.measure_all()
 
-       @qml.qnode(dev)
+       @qp.qnode(dev)
        def circuit():
            # Since measurements=None, the measurements present in the QuantumCircuit are returned.
-           measurements = qml.from_qiskit(qc)()
-           return [qml.expval(m) for m in measurements]
+           measurements = qp.from_qiskit(qc)()
+           return [qp.expval(m) for m in measurements]
 
     >>> circuit()
     [tensor(1., requires_grad=True), tensor(0., requires_grad=True)]
@@ -164,13 +174,13 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import numpy as np
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            qfunc = qml.from_qiskit(qc, measurements=qml.expval(qml.Z(0)))
-            circuit = qml.QNode(qfunc, dev)
+            qfunc = qp.from_qiskit(qc, measurements=qp.expval(qp.Z(0)))
+            circuit = qp.QNode(qfunc, dev)
 
         Now, ``circuit`` has a signature of ``(x, y)``. The parameters are ordered alphabetically.
 
@@ -179,7 +189,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> circuit(x, y)
         tensor(0.70710678, requires_grad=True)
 
-        >>> qml.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
+        >>> qp.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
         (array(-0.61237244), array(-0.35355339))
 
         The ``QuantumCircuit`` may also be parametrized with a ``ParameterVector``. These can be
@@ -196,10 +206,10 @@ def from_qiskit(quantum_circuit, measurements=None):
             qc.ry(angles[1], 1)
             qc.cx(1, 0)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(angles):
-                qml.from_qiskit(qc)(angles)
-                return qml.expval(qml.Z(0))
+                qp.from_qiskit(qc)(angles)
+                return qp.expval(qp.Z(0))
 
         >>> angles = [3.1, 0.45]
         >>> circuit(angles)
@@ -216,7 +226,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from qiskit import QuantumCircuit
 
             qc = QuantumCircuit(2, 2)
@@ -232,23 +242,23 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
                 # apply the QuantumCircuit and retrieve the measurements
-                mid_measure0, m0, m1 = qml.from_qiskit(qc)()
+                mid_measure0, m0, m1 = qp.from_qiskit(qc)()
 
                 # conditionally apply an additional operation based on the results
-                qml.cond(mid_measure0==0, qml.RX)(np.pi/2, 0)
+                qp.cond(mid_measure0==0, qp.RX)(np.pi/2, 0)
 
                 # return the expectation value of one of the mid-circuit measurements, and a terminal measurement
-                return qml.expval(mid_measure0), qml.expval(m1)
+                return qp.expval(mid_measure0), qp.expval(m1)
 
         >>> circuit()
         (tensor(0.5, requires_grad=True), tensor(0.5, requires_grad=True))
 
         .. note::
 
-            The order of mid-circuit measurements returned by `qml.from_qiskit()` in the example
+            The order of mid-circuit measurements returned by `qp.from_qiskit()` in the example
             above is determined by the order in which measurements appear in the input Qiskit
             ``QuantumCircuit``.
 
@@ -284,14 +294,14 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            measurements = [qml.expval(qml.Z(i)) for i in range(qc.num_qubits)]
-            cond_circuit = qml.QNode(qml.from_qiskit(qc, measurements=measurements), dev)
+            measurements = [qp.expval(qp.Z(i)) for i in range(qc.num_qubits)]
+            cond_circuit = qp.QNode(qp.from_qiskit(qc, measurements=measurements), dev)
 
         The result is:
 
-        >>> print(qml.draw(cond_circuit)())
+        >>> print(qp.draw(cond_circuit)())
         0: ──H──┤↗├──────────╭||─┤  <Z>
         1: ──────║───X───────├||─┤  <Z>
         2: ──────║───║──Y────├||─┤  <Z>
@@ -356,8 +366,8 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
 
     To convert the ``SparsePauliOp`` into a PennyLane :class:`pennylane.operation.Operator`, use:
 
-    >>> import pennylane as qml
-    >>> qml.from_qiskit_op(qiskit_op)
+    >>> import pennylane as qp
+    >>> qp.from_qiskit_op(qiskit_op)
     I(0) + X(1) @ Y(0)
 
     .. details::
@@ -384,7 +394,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         The ``SparsePauliOp`` can be converted into a PennyLane operator by calling the conversion
         function and specifying the value of each parameter using the ``params`` argument:
 
-        >>> qml.from_qiskit_op(param_qiskit_op, params={a: 2, b: 3, c: 4})
+        >>> qp.from_qiskit_op(param_qiskit_op, params={a: 2, b: 3, c: 4})
         (
             (2+0j) * I(0)
           + (3+0j) * (X(1) @ Z(0))
@@ -397,7 +407,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         >>> wired_qiskit_op
         SparsePauliOp(['XYZ'],
               coeffs=[1.+0.j])
-        >>> qml.from_qiskit_op(wired_qiskit_op, wires=[3, 5, 7])
+        >>> qp.from_qiskit_op(wired_qiskit_op, wires=[3, 5, 7])
         Y(5) @ Z(3) @ X(7)
     """
     try:
@@ -413,14 +423,14 @@ def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
 
     Args:
         noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance.
-        verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qml.QubitChannel``
+        verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qp.QubitChannel``
             is displayed with ``verbose=True``. By default, ``verbose=False`` and only the number of Kraus matrices and
             the number of qubits they act on is displayed for brevity.
         decimal_places (int | None): number of decimal places to round the elements of Kraus matrices when they are being
-            displayed for each ``qml.QubitChannel`` when ``verbose=True``.
+            displayed for each ``qp.QubitChannel`` when ``verbose=True``.
 
     Returns:
-        qml.NoiseModel: The PennyLane noise model converted from the input Qiskit ``NoiseModel`` object.
+        qp.NoiseModel: The PennyLane noise model converted from the input Qiskit ``NoiseModel`` object.
 
     Raises:
         ValueError: When a quantum error present in the noise model cannot be converted.
@@ -448,8 +458,8 @@ def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
 
     This noise model can be converted into PennyLane using:
 
-    >>> import pennylane as qml
-    >>> qml.from_qiskit_noise(noise_model)
+    >>> import pennylane as qp
+    >>> qp.from_qiskit_noise(noise_model)
     NoiseModel({
         OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
         OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
@@ -467,6 +477,24 @@ def from_qasm(quantum_circuit: str, measurements=None):
     Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
+    .. warning::
+
+        ``from_qasm`` returns a **quantum function** that must be called.
+
+        .. code-block:: python
+
+            # INCORRECT: no operations will end up in the circuit
+            @qp.qnode(dev)
+            def circuit_from_qasm():
+                qp.from_qasm(qasm_string)
+                return qp.probs()
+
+            # CORRECT: from_qasm is called
+            @qp.qnode(dev)
+            def circuit_from_qasm():
+                qp.from_qasm(qasm_string)()
+                return qp.probs()
+
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
@@ -475,8 +503,13 @@ def from_qasm(quantum_circuit: str, measurements=None):
             in the input circuit are returned. See *Removing terminal measurements* for details.
 
     Returns:
-        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
+        function: the PennyLane quantum function created based on the QASM string. This function itself returns the
+        mid-circuit measurements plus the terminal measurements by default (``measurements=None``),
+        and returns **only** the measurements from the ``measurements`` argument otherwise.
 
+    .. seealso:: :func:`~.from_qasm3`, which relies on the ``openqasm3`` and ``openqasm3[parser]`` packages
+        instead of ``pennylane-qiskit``, and supports newer syntax features.
+        
     **Example:**
 
     .. code-block:: python
@@ -491,9 +524,9 @@ def from_qasm(quantum_circuit: str, measurements=None):
                     'cx q[0], q[1];' \
                     'measure q -> c;'
 
-        loaded_circuit = qml.from_qasm(qasm_code)
+        loaded_circuit = qp.from_qasm(qasm_code)
 
-    >>> print(qml.draw(loaded_circuit)())
+    >>> print(qp.draw(loaded_circuit)())
     0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├─┤
     1: ───────────────────╰X──┤↗├─┤
 
@@ -504,28 +537,30 @@ def from_qasm(quantum_circuit: str, measurements=None):
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
-    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making
+    it possible to create a PennyLane circuit with :class:`qp.QNode <pennylane.QNode>`.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        measurements = [qml.var(qml.Y(0))]
-        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
+        dev = qp.device("default.qubit")
+        measurements = [qp.var(qp.Y(0))]
+        circuit = qp.QNode(qp.from_qasm(qasm_code, measurements = measurements), dev)
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
     1: ───────────────────╰X─┤
 
     .. details::
         :title: Removing terminal measurements
 
-        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
+        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal
+        measurements and keeps the mid-circuit measurements.
 
         .. code-block:: python
 
-            loaded_circuit = qml.from_qasm(qasm_code, measurements=[])
+            loaded_circuit = qp.from_qasm(qasm_code, measurements=[])
 
-        >>> print(qml.draw(loaded_circuit)())
+        >>> print(qp.draw(loaded_circuit)())
         0: ──H──┤↗├──RZ(0.24)─╭●─┤
         1: ───────────────────╰X─┤
 
@@ -534,18 +569,20 @@ def from_qasm(quantum_circuit: str, measurements=None):
         >>> loaded_circuit()
         []
 
-        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``. This can be exemplified by using the ``loaded_circuit`` without the terminal measurements within a ``QNode``.
+        Note that mid-circuit measurements are always applied, but are only returned when
+        ``measurements=None``. This can be exemplified by using the ``loaded_circuit``
+        without the terminal measurements within a ``QNode``.
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 loaded_circuit()
-                return qml.expval(qml.Z(1))
+                return qp.expval(qp.Z(1))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ──H──┤↗├──RZ(0.24)─╭●─┤
         1: ───────────────────╰X─┤  <Z>
 
@@ -553,19 +590,20 @@ def from_qasm(quantum_circuit: str, measurements=None):
     .. details::
         :title: Using conditional operations
 
-        We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
+        We can take advantage of the mid-circuit measurements inside the QASM code by
+        calling the returned function within a :class:`qp.QNode <pennylane.QNode>`.
 
         .. code-block:: python
 
-            loaded_circuit = qml.from_qasm(qasm_code)
+            loaded_circuit = qp.from_qasm(qasm_code)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 mid_measure, *_ = loaded_circuit()
-                qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
-                return [qml.expval(qml.Z(0))]
+                qp.cond(mid_measure == 0, qp.RX)(np.pi / 2, 0)
+                return [qp.expval(qp.Z(0))]
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
         1: ──────║────────────╰X──┤↗├──║────────┤
                  ╚═════════════════════╝
@@ -586,19 +624,20 @@ def from_qasm(quantum_circuit: str, measurements=None):
                 f.write(qasm_code)
 
             with open("circuit.qasm", "r") as f:
-                loaded_circuit = qml.from_qasm(f.read())
+                loaded_circuit = qp.from_qasm(f.read())
 
-        The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+        The ``loaded_circuit`` function can now be used within a
+        :class:`qp.QNode <pennylane.QNode>` as a two-wire quantum template.
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(x, wires=1)
+                qp.RX(x, wires=1)
                 loaded_circuit(wires=(0, 1))
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit)(1.23))
+        >>> print(qp.draw(circuit)(1.23))
         0: ──H─────────┤↗├──RZ(0.24)─╭●──┤↗├─┤  <Z>
         1: ──RX(1.23)────────────────╰X──┤↗├─┤
     """
@@ -622,16 +661,16 @@ def from_pyquil(pyquil_program):
     >>> program = pyquil.Program()
     >>> program += pyquil.gates.H(0)
     >>> program += pyquil.gates.CNOT(0, 1)
-    >>> my_circuit = qml.from_pyquil(program)
+    >>> my_circuit = qp.from_pyquil(program)
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
+    >>>     qp.RX(x, wires=1)
     >>>     my_circuit(wires=[1, 0])
-    >>>     return qml.expval(qml.Z(0))
+    >>>     return qp.expval(qp.Z(0))
 
     Args:
         pyquil_program (pyquil.Program): a program created in pyQuil
@@ -652,18 +691,19 @@ def from_quil(quil: str):
 
     .. code-block:: python
 
-        >>> quil_str = 'H 0\\n'
-        ...            'CNOT 0 1'
-        >>> my_circuit = qml.from_quil(quil_str)
+        quil_str = 'H 0\\nCNOT 0 1'
+        my_circuit = qp.from_quil(quil_str)
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
 
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
+    .. code-block:: python
+
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.RX(x, wires=1)
+            my_circuit(wires=(1, 0))
+            return qp.expval(qp.Z(0))
 
     Args:
         quil (str): a Quil string containing a valid quantum circuit
@@ -682,16 +722,16 @@ def from_quil_file(quil_filename: str):
 
     **Example:**
 
-    >>> my_circuit = qml.from_quil_file("teleportation.quil")
+    >>> my_circuit = qp.from_quil_file("teleportation.quil")
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
+    >>>     qp.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
+    >>>     return qp.expval(qp.Z(0))
 
     Args:
         quil_filename (str): path to a Quil file containing a valid quantum circuit
@@ -702,3 +742,114 @@ def from_quil_file(quil_filename: str):
     """
     plugin_converter = plugin_converters["quil_file"].load()
     return plugin_converter(quil_filename)
+
+
+def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> Callable:
+    """
+    Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
+
+    .. note::
+
+        The standard library gates, qubit registers, built-in mathematical functions and constants, subroutines,
+        variables, control flow, measurements, inputs, outputs, custom gates and ``end`` statements are all supported.
+        Pulses are not yet supported.
+
+        In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
+        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
+        for directions.
+
+    Args:
+        quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
+        wire_map (Optional[dict]):  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
+
+    Returns:
+        Callable: A quantum function that will execute the program.
+
+
+    **Examples**
+
+    First, we define a QASM 3.0 circuit as a string. In this example, we define three qubits,
+    a few parameterized gates, a subroutine with a measurement, and a control flow statement.
+
+    .. code-block:: python
+
+        qasm_string = '''
+                qubit q0;
+                qubit q1;
+                qubit q2;
+
+                float theta = 0.2;
+                int power = 2;
+
+                ry(theta / 2) q0;
+                rx(theta) q1;
+                pow(power) @ x q0;
+
+                def random(qubit q) -> bit
+                {
+                    bit b = "0";
+                    h q;
+                    measure q -> b;
+                    return b;
+                }
+
+                bit m = random(q2);
+
+                if (m) {
+                    int i = 0;
+                    while (i < 5) {
+                        i = i + 1;
+                        rz(i) q1;
+                        break;
+                    }
+                }
+        '''
+
+    We can convert this circuit into a PennyLane quantum function using:
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device("default.qubit", wires=[0, 1, 2]))
+        def my_circuit():
+            qp.from_qasm3(
+                qasm_string,
+                {'q0': 0, 'q1': 1, 'q2': 2}
+            )()
+            return qp.expval(qp.Z(0))
+
+    Inspecting the circuit, we can see that the operations and measurements have been correctly interpreted.
+
+    >>> print(qp.draw(my_circuit)())
+    0: ──RY(0.10)──X²────────────┤  <Z>
+    1: ──RX(0.20)───────RZ(1.00)─┤
+    2: ──H─────────┤↗├──║────────┤
+                    ╚═══╝
+    """
+    if not has_openqasm:  # pragma: no cover
+        raise ImportWarning(
+            "from_qasm3 requires openqasm3 and 'openqasm3[parser]' to be installed in your environment. "
+            "Please consult the OpenQASM 3.0 installation instructions for more information:"
+            " https://pypi.org/project/openqasm3/."
+        )  # pragma: no cover
+    # parse the QASM program
+    try:
+        ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    except AttributeError as e:  # pragma: no cover
+        raise ImportError(
+            "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
+        ) from e  # pragma: no cover
+    except Exception as e:
+        raise SyntaxError(
+            f"Something went wrong when parsing the provided OpenQASM 3.0 code. "
+            f"Please ensure the code is valid OpenQASM 3.0 syntax. {str(e)}",
+        ) from e
+
+    def interpret_function(**kwargs):
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "global", "wire_map": wire_map}, **kwargs
+        )
+        if context["return"]:
+            return tuple(map(lambda v: v.val, context["return"].values()))
+        return context
+
+    return interpret_function

@@ -1,9 +1,11 @@
 name: Code Security Scan
+permissions:
+  contents: read
 on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 
 concurrency:
   group: code-security-scan-${{ github.workflow }}-${{ github.ref }}
@@ -25,4 +27,3 @@ jobs:
       semgrep-error-on-impact: HIGH
       semgrep-error-on-severity: ERROR
       bandit-error-on-severity: HIGH
-

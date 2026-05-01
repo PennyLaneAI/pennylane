@@ -19,20 +19,19 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 import warnings
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+import pennylane as qp
+from pennylane.operation import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Observable):
+class Hermitian(Operator):
     r"""
     An arbitrary Hermitian observable.
 
@@ -56,9 +55,17 @@ class Hermitian(Observable):
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
+
+    .. warning::
+
+       ``Hermitian`` is not compatible with :func:`~.probs`. When using
+       :func:`~.probs` with a Hermitian observable, the output might be different than
+       expected as the lexicographical ordering of eigenvalues is not guaranteed and
+       the diagonalizing gates may exist in a degenerate subspace.
+
     """
 
-    num_wires = AnyWires
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -71,9 +78,9 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         A = np.array(A) if isinstance(A, list) else A
-        if not qml.math.is_abstract(A):
+        if not qp.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
                     raise ValueError(
@@ -89,7 +96,7 @@ class Hermitian(Observable):
         super().__init__(A, wires=wires, id=id)
 
     @staticmethod
-    def _validate_input(A: TensorLike, expected_mx_shape: Optional[int] = None):
+    def _validate_input(A: TensorLike, expected_mx_shape: int | None = None):
         """Validate the input matrix."""
         if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -102,9 +109,9 @@ class Hermitian(Observable):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -126,15 +133,15 @@ class Hermitian(Observable):
         **Example**
 
         >>> A = np.array([[6+0j, 1-2j],[1+2j, -1]])
-        >>> qml.Hermitian.compute_matrix(A)
-        [[ 6.+0.j  1.-2.j]
-         [ 1.+2.j -1.+0.j]]
+        >>> qp.Hermitian.compute_matrix(A)
+        array([[ 6.+0.j,  1.-2.j],
+               [ 1.+2.j, -1.+0.j]])
         """
-        A = qml.math.asarray(A)
+        A = qp.math.asarray(A)
         Hermitian._validate_input(A)
         return A
 
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(A, format="csr") -> csr_matrix:
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
@@ -152,7 +159,7 @@ class Hermitian(Observable):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
+        Hmat = qp.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -183,23 +190,23 @@ class Hermitian(Observable):
 
         **Examples**
 
-        >>> op = qml.X(0) + qml.Y(1) + 2 * qml.X(0) @ qml.Z(3)
-        >>> op_matrix = qml.matrix(op)
-        >>> qml.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
+        >>> op = qp.X(0) + qp.Y(1) + 2 * qp.X(0) @ qp.Z(3)
+        >>> op_matrix = qp.matrix(op)
+        >>> qp.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
         [(
               1.0 * (I('a') @ Y('b') @ I('aux'))
             + 1.0 * (X('a') @ I('b') @ I('aux'))
             + 2.0 * (X('a') @ I('b') @ Z('aux'))
         )]
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        >>> qml.Hermitian.compute_decomposition(op, wires=0)
+        >>> qp.Hermitian.compute_decomposition(op, wires=0)
         [(
               0.7071067811865475 * X(0)
             + 0.7071067811865475 * Z(0)
         )]
 
         """
-        A = qml.math.asarray(A)
+        A = qp.math.asarray(A)
 
         if isinstance(wires, (int, str)):
             wires = Wires(wires)
@@ -215,12 +222,16 @@ class Hermitian(Observable):
                 UserWarning,
             )
 
-        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)]
+        lincomb = qp.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)
+        if qp.QueuingManager.recording():
+            qp.apply(lincomb)
+
+        return [lincomb]
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
         eigenvectors: TensorLike, wires: WiresLike
-    ) -> list["qml.operation.Operator"]:
+    ) -> list["qp.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -242,14 +253,16 @@ class Hermitian(Observable):
 
         >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
         >>> _, evecs = np.linalg.eigh(A)
-        >>> qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0])
-        [QubitUnitary(tensor([[-0.94915323-0.j,  0.2815786 +0.1407893j ],
-                              [ 0.31481445-0.j,  0.84894846+0.42447423j]], requires_grad=True), wires=[0])]
+        >>> evecs = evecs + 0 # add 0 to normalize signed zeros before printing
+        >>> with np.printoptions(precision=4): # easier to read the matrix
+        ...     print(qp.Hermitian.compute_diagonalizing_gates(evecs, wires=[0]))
+        [QubitUnitary(array([[-0.9492-0.j    ,  0.2816+0.1408j],
+               [ 0.3148-0.j    ,  0.8489+0.4245j]]), wires=[0])]
 
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
 
-    def diagonalizing_gates(self) -> list["qml.operation.Operator"]:
+    def diagonalizing_gates(self) -> list["qp.operation.Operator"]:
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
@@ -260,7 +273,7 @@ class Hermitian(Observable):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Observable):
+class SparseHamiltonian(Operator):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -291,19 +304,19 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.Z(i) for i in wires]
-    >>> H = qml.Hamiltonian(coeffs, observables)
+    >>> observables = [qp.Z(i) for i in wires]
+    >>> H = qp.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
-    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
+    >>> H_sparse = qp.SparseHamiltonian(Hmat, wires)
     """
 
-    num_wires = AnyWires
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, H: csr_matrix, wires: WiresLike, id: str | None = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
@@ -314,20 +327,20 @@ class SparseHamiltonian(Observable):
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
 
-    def __mul__(self, value: Union[int, float]) -> "qml.SparseHamiltonian":
+    def __mul__(self, value: int | float) -> "qp.SparseHamiltonian":
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
-        if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
+        if not isinstance(value, (int, float)) and qp.math.ndim(value) != 0:
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
 
-        return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
+        return qp.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
 
     __rmul__ = __mul__
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -355,16 +368,16 @@ class SparseHamiltonian(Observable):
         >>> from scipy.sparse import csr_matrix
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
         >>> H = csr_matrix(H)
-        >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        >>> res = qp.SparseHamiltonian.compute_matrix(H)
         >>> res
-        [[ 6.+0.j  1.-2.j]
-         [ 1.+2.j -1.+0.j]]
+        array([[ 6.+0.j,  1.-2.j],
+               [ 1.+2.j, -1.+0.j]])
         >>> type(res)
         <class 'numpy.ndarray'>
         """
         return H.toarray()
 
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
@@ -388,19 +401,17 @@ class SparseHamiltonian(Observable):
         >>> from scipy.sparse import csr_matrix
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
         >>> H = csr_matrix(H)
-        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res = qp.SparseHamiltonian.compute_sparse_matrix(H)
         >>> res
-        (0, 0)	(6+0j)
-        (0, 1)	(1-2j)
-        (1, 0)	(1+2j)
-        (1, 1)	(-1+0j)
+        <Compressed Sparse Row sparse matrix of dtype 'complex128'
+            with 4 stored elements and shape (2, 2)>
         >>> type(res)
-        <class 'scipy.sparse.csr_matrix'>
+        <class 'scipy.sparse._csr.csr_matrix'>
         """
         return H
 
 
-class Projector(Observable):
+class Projector(Operator):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -432,21 +443,21 @@ class Projector(Observable):
 
     .. code-block::
 
-        >>> dev = qml.device("default.qubit", wires=2)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit", wires=2)
+        >>> @qp.qnode(dev)
         ... def circuit(state):
-        ...     return qml.expval(qml.Projector(state, wires=[0, 1]))
+        ...     return qp.expval(qp.Projector(state, wires=[0, 1]))
         >>> zero_state = [0, 0]
         >>> circuit(zero_state)
-        1.
+        np.float64(1.0)
         >>> plusplus_state = np.array([1, 1, 1, 1]) / 2
         >>> circuit(plusplus_state)
-        0.25
+        np.float64(0.25000000000000067)
 
     """
 
+    is_verified_hermitian = True
     name = "Projector"
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -460,20 +471,20 @@ class Projector(Observable):
         will be different based on whether the input state is a basis state or a state vector.
         We cache the different types in private class variables so that:
 
+        >>> state = [0, 1]
+        >>> wires = 0
+        >>> basis_state = [0, 1]
+        >>> state_vector = [0, 0, 1, 0]
         >>> Projector(state, wires).__class__ is Projector(state, wires).__class__
         True
-        >>> type(Projector(state, wries)) == type(Projector(state, wires))
+        >>> type(Projector(state, wires)) == type(Projector(state, wires))
         True
         >>> isinstance(Projector(state, wires), type(Projector(state, wires)))
-        True
-        >>> Projector(basis_state, wires).__class__ is Projector._basis_state_type
-        True
-        >>> Projector(state_vector, wires).__class__ is Projector._state_vector_type
         True
 
         """
         wires = Wires(wires)
-        shape = qml.math.shape(state)
+        shape = qp.math.shape(state)
         if len(shape) != 1:
             raise ValueError(f"Input state must be one-dimensional; got shape {shape}.")
 
@@ -490,7 +501,7 @@ class Projector(Observable):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
@@ -503,30 +514,30 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
 
-        if qml.math.get_interface(state) == "jax":
-            dtype = qml.math.dtype(state)
+        if qp.math.get_interface(state) == "jax":
+            dtype = qp.math.dtype(state)
             if not (np.issubdtype(dtype, np.integer) or np.issubdtype(dtype, bool)):
                 raise ValueError("Basis state must consist of integers or booleans.")
         else:
             # state is index into data, rather than data, so cast it to built-ins when
             # no need for tracing
-            state = tuple(qml.math.toarray(state).astype(int))
+            state = tuple(qp.math.toarray(state).astype(int))
             if not set(state).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -570,17 +581,17 @@ class BasisStateProjector(Projector, Operation):
         **Example**
 
         >>> BasisStateProjector.compute_matrix([0, 1])
-        [[0. 0. 0. 0.]
-         [0. 1. 0. 0.]
-         [0. 0. 0. 0.]
-         [0. 0. 0. 0.]]
+        array([[0., 0., 0., 0.],
+               [0., 1., 0., 0.],
+               [0., 0., 0., 0.],
+               [0., 0., 0., 0.]])
         """
         shape = (2 ** len(basis_state), 2 ** len(basis_state))
-        if qml.math.get_interface(basis_state) == "jax":
+        if qp.math.get_interface(basis_state) == "jax":
             idx = 0
             for i, m in enumerate(basis_state):
                 idx = idx + (m << (len(basis_state) - i - 1))
-            mat = qml.math.zeros(shape, like=basis_state)
+            mat = qp.math.zeros(shape, like=basis_state)
             return mat.at[idx, idx].set(1.0)
 
         m = np.zeros(shape)
@@ -612,13 +623,13 @@ class BasisStateProjector(Projector, Operation):
         **Example**
 
         >>> BasisStateProjector.compute_eigvals([0, 1])
-        [0. 1. 0. 0.]
+        array([0., 1., 0., 0.])
         """
-        if qml.math.get_interface(basis_state) == "jax":
+        if qp.math.get_interface(basis_state) == "jax":
             idx = 0
             for i, m in enumerate(basis_state):
                 idx = idx + (m << (len(basis_state) - i - 1))
-            eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
+            eigvals = qp.math.zeros(2 ** len(basis_state), like=basis_state)
             return eigvals.at[idx].set(1.0)
         w = np.zeros(2 ** len(basis_state))
         idx = int("".join(str(i) for i in basis_state), 2)
@@ -629,7 +640,7 @@ class BasisStateProjector(Projector, Operation):
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument
         basis_state: TensorLike,
         wires: WiresLike,
-    ) -> list["qml.operation.Operator"]:
+    ) -> list["qp.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -685,18 +696,18 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -713,17 +724,17 @@ class StateVectorProjector(Projector):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> qml.Projector(state_vector, wires=(0, 1)).label()
+        >>> qp.Projector(state_vector, wires=(0, 1)).label()
         'P'
-        >>> qml.Projector(state_vector, wires=(0, 1)).label(base_label="hi!")
+        >>> qp.Projector(state_vector, wires=(0, 1)).label(base_label="hi!")
         'hi!'
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> @qml.qnode(dev)
-        >>> def circuit(state):
-        ...     return qml.expval(qml.Projector(state, [0]))
-        >>> print(qml.draw(circuit)([1, 0]))
+        >>> dev = qp.device("default.qubit", wires=1)
+        >>> @qp.qnode(dev)
+        ... def circuit(state):
+        ...     return qp.expval(qp.Projector(state, [0]))
+        >>> print(qp.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
-        >>> print(qml.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))
+        >>> print(qp.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))
         0: ───┤  <P(M0)>
         M0 =
         [0.70710678 0.70710678]
@@ -733,8 +744,8 @@ class StateVectorProjector(Projector):
             return base_label
 
         state_vector = self.parameters[0]
-        n_wires = int(qml.math.log2(len(state_vector)))
-        basis_state_idx = qml.math.nonzero(state_vector)[0]
+        n_wires = int(qp.math.log2(len(state_vector)))
+        basis_state_idx = qp.math.nonzero(state_vector)[0]
 
         if len(basis_state_idx) == 1:
             basis_string = f"{basis_state_idx[0]:0{n_wires}b}"
@@ -748,7 +759,7 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_matrix(  # pylint: disable=arguments-differ
         state_vector: TensorLike,
     ) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -769,15 +780,15 @@ class StateVectorProjector(Projector):
         The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
 
         >>> StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
-        [[0. 0.  0.  0.]
-         [0. 0.5 0.5 0.]
-         [0. 0.5 0.5 0.]
-         [0. 0.  0.  0.]]
+        array([[0. , 0. , 0. , 0. ],
+               [0. , 0.5, 0.5, 0. ],
+               [0. , 0.5, 0.5, 0. ],
+               [0. , 0. , 0. , 0. ]])
         """
-        return qml.math.outer(state_vector, qml.math.conj(state_vector))
+        return qp.math.outer(state_vector, qp.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_eigvals(  # pylint: disable=arguments-differ
         state_vector: TensorLike,
     ) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -801,19 +812,19 @@ class StateVectorProjector(Projector):
 
         **Example**
 
-        >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
-        array([1, 0, 0, 0])
+        >>> StateVectorProjector.compute_eigvals(np.array([0, 0, 1, 0]))
+        array([1., 0., 0., 0.])
         """
-        precision = qml.math.get_dtype_name(state_vector)[-2:]
+        precision = qp.math.get_dtype_name(state_vector)[-2:]
         dtype = f"float{precision}" if precision in {"32", "64"} else "float64"
-        w = np.zeros(qml.math.shape(state_vector), dtype=dtype)
+        w = np.zeros(qp.math.shape(state_vector), dtype=dtype)
         w[0] = 1
-        return qml.math.convert_like(w, state_vector)
+        return qp.math.convert_like(w, state_vector)
 
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
         state_vector: TensorLike, wires: WiresLike
-    ) -> list["qml.operation.Operator"]:
+    ) -> list["qp.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -842,26 +853,30 @@ class StateVectorProjector(Projector):
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
 
-        if qml.math.get_interface(state_vector) == "tensorflow":
-            dtype_name = qml.math.get_dtype_name(state_vector)
+        if (
+            qp.math.get_interface(state_vector) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            dtype_name = qp.math.get_dtype_name(state_vector)
             if dtype_name == "int32":
-                state_vector = qml.math.cast(state_vector, np.complex64)
+                state_vector = qp.math.cast(state_vector, np.complex64)
             elif dtype_name == "int64":
-                state_vector = qml.math.cast(state_vector, np.complex128)
+                state_vector = qp.math.cast(state_vector, np.complex128)
 
-        angle = qml.math.angle(state_vector[0])
-        if qml.math.get_interface(angle) == "tensorflow":
-            if qml.math.get_dtype_name(angle) == "float32":
-                angle = qml.math.cast(angle, np.complex64)
+        angle = qp.math.angle(state_vector[0])
+        if (
+            qp.math.get_interface(angle) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            if qp.math.get_dtype_name(angle) == "float32":
+                angle = qp.math.cast(angle, np.complex64)
             else:
-                angle = qml.math.cast(angle, np.complex128)
+                angle = qp.math.cast(angle, np.complex128)
 
-        phase = qml.math.exp(-1.0j * angle)
+        phase = qp.math.exp(-1.0j * angle)
         psi = phase * state_vector
-        denominator = qml.math.sqrt(2 + 2 * psi[0])
-        summed_array = np.zeros(qml.math.shape(psi), dtype=qml.math.get_dtype_name(psi))
+        denominator = qp.math.sqrt(2 + 2 * psi[0])
+        summed_array = np.zeros(qp.math.shape(psi), dtype=qp.math.get_dtype_name(psi))
         summed_array[0] = 1.0
         psi = psi + summed_array
         psi /= denominator
-        u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
+        u = 2 * qp.math.outer(psi, qp.math.conj(psi)) - qp.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]

@@ -29,10 +29,10 @@ For example:
 .. code-block:: python
 
     def qfunc(x, scale_value=1):
-        qml.RX(x * scale_value, wires=0)
+        qp.RX(x * scale_value, wires=0)
         if (1 != 2):
-            qml.S(0)
-        return qml.expval(qml.Z(0)), qml.expval(qml.X(1))
+            qp.S(0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(1))
 
 To convert from a quantum function to a representation of a circuit, we use queuing.
 
@@ -54,35 +54,35 @@ within a ``with`` block.
 Let's take a look at an example. If we query the :class:`~.QueuingManager` outside of an
 :class:`~.AnnotatedQueue`'s context, we can see that nothing is recording and no active context exists.
 
->>> print("Are we recording? ", qml.QueuingManager.recording())
+>>> print("Are we recording? ", qp.QueuingManager.recording())
 Are we recording?  False
->>> print("What's the active context? ", qml.QueuingManager.active_context())
+>>> print("What's the active context? ", qp.QueuingManager.active_context())
 What's the active context?  None
 
 Inside of a context, we can see the active recording context:
 
->>> with qml.queuing.AnnotatedQueue() as q:
-...     print("Are we recording? ", qml.QueuingManager.recording())
-...     print("Is q the active queue? ", q is qml.QueuingManager.active_context())
+>>> with qp.queuing.AnnotatedQueue() as q:
+...     print("Are we recording? ", qp.QueuingManager.recording())
+...     print("Is q the active queue? ", q is qp.QueuingManager.active_context())
 Are we recording?  True
 Is q the active queue?  True
 
 If we have nested :class:`~.AnnotatedQueue` contexts, only the innermost one will be recording.
 Once the currently active queue exits, any outer queue will resume recording.
 
->>> with qml.queuing.AnnotatedQueue() as q1:
-...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
-...     with qml.queuing.AnnotatedQueue() as q2:
-...         print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
-...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+>>> with qp.queuing.AnnotatedQueue() as q1:
+...     print("Is q1 recording? ", q1 is qp.QueuingManager.active_context())
+...     with qp.queuing.AnnotatedQueue() as q2:
+...         print("Is q1 recording? ", q1 is qp.QueuingManager.active_context())
+...     print("Is q1 recording? ", q1 is qp.QueuingManager.active_context())
 Is q1 recording?  True
 Is q1 recording?  False
 Is q1 recording?  True
 
 If we construct an operator inside the recording context, we can see it is added to the queue:
 
->>> with qml.queuing.AnnotatedQueue() as q:
-...     op = qml.X(0)
+>>> with qp.queuing.AnnotatedQueue() as q:
+...     op = qp.X(0)
 >>> q.queue
 [X(0)]
 
@@ -90,29 +90,41 @@ If an operator is constructed outside of the context, we can manually add it to 
 calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
 called upon initialization, but it can also be manually called at a later time.
 
->>> op = qml.X(0)
->>> with qml.queuing.AnnotatedQueue() as q:
-...     op.queue()
+>>> op = qp.X(0)
+
+.. code-block:: python
+
+    with qp.queuing.AnnotatedQueue() as q:
+        op.queue()
+
 >>> q.queue
 [X(0)]
 
 An object can only exist up to *once* in the queue, so calling queue multiple times will
 not do anything.
 
->>> op = qml.X(0)
->>> with qml.queuing.AnnotatedQueue() as q:
-...     op.queue()
-...     op.queue()
+>>> op = qp.X(0)
+
+.. code-block:: python
+
+    with qp.queuing.AnnotatedQueue() as q:
+        op.queue()
+        op.queue()
+
 >>> q.queue
 [X(0)]
 
 The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
 The function queues a copy of the original object if it already in the queue.
 
->>> op = qml.X(0)
->>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.apply(op)
-...     qml.apply(op)
+>>> op = qp.X(0)
+
+.. code-block:: python
+
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.apply(op)
+        qp.apply(op)
+
 >>> q.queue
 [X(0), X(0)]
 >>> q.queue[0] is q.queue[1]
@@ -122,8 +134,8 @@ In the case of operators composed of other operators, like with :class:`~.Symbol
 :class:`~.CompositeOp`, the new nested operation removes its constituents from the queue.
 Only the operators that will end up in the circuit will remain.
 
->>> with qml.queuing.AnnotatedQueue() as q:
-...     base = qml.X(0)
+>>> with qp.queuing.AnnotatedQueue() as q:
+...     base = qp.X(0)
 ...     print(q.queue)
 ...     pow_op = base ** 1.5
 ...     print(q.queue)
@@ -133,42 +145,47 @@ Only the operators that will end up in the circuit will remain.
 Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
 and measurements in the final circuit. This step eliminates any object that has an owner.
 
->>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.StatePrep(np.array([1.0, 0]), wires=0)
-...     base = qml.X(0)
-...     pow_op = base ** 1.5
-...     qml.expval(qml.Z(0) @ qml.X(1))
->>> ops, measurements = qml.queuing.process_queue(q)
+.. code-block:: python
+
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.StatePrep(np.array([1.0, 0]), wires=0)
+        base = qp.X(0)
+        pow_op = base ** 1.5
+        qp.expval(qp.Z(0) @ qp.X(1))
+
+>>> ops, measurements = qp.queuing.process_queue(q)
 >>> ops
-[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), X(0)**1.5]
+[StatePrep(array([1., 0.]), wires=[0]), X(0)**1.5]
 >>> measurements
 [expval(Z(0) @ X(1))]
 
 These lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, measurements)
+>>> qp.tape.QuantumScript(ops, measurements)
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
 use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
->>> with qml.queuing.AnnotatedQueue() as q:
-...     with qml.QueuingManager.stop_recording():
-...         qml.Y(1)
+.. code-block:: python
+
+    with qp.queuing.AnnotatedQueue() as q:
+        with qp.QueuingManager.stop_recording():
+            qp.Y(1)
+
 >>> q.queue
 []
 
 """
 
 import copy
+import warnings
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
 from typing import Optional, Union
 
-
-class QueuingError(Exception):
-    """Exception that is raised when there is a queuing error"""
+from pennylane.exceptions import PennyLaneDeprecationWarning, QueuingError
 
 
 class WrappedObj:
@@ -251,48 +268,48 @@ class QueuingManager:
 
         >>> def list_of_ops(params, wires):
         ...     return [
-        ...         qml.RX(params[0], wires=wires),
-        ...         qml.RY(params[1], wires=wires),
-        ...         qml.RZ(params[2], wires=wires)
+        ...         qp.RX(params[0], wires=wires),
+        ...         qp.RY(params[1], wires=wires),
+        ...         qp.RZ(params[2], wires=wires)
         ...     ]
 
         If executed in a recording context, the operations constructed in the function will be queued:
 
-        >>> dev = qml.device("default.qubit", wires=2)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit", wires=2)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
         ...     ops = list_of_ops(params, wires=0)
-        ...     qml.apply(ops[-1])  # apply the last operation from the list again
-        ...     return qml.expval(qml.Z(0))
-        >>> print(qml.draw(circuit)([1, 2, 3]))
+        ...     qp.apply(ops[-1])  # apply the last operation from the list again
+        ...     return qp.expval(qp.Z(0))
+        >>> print(qp.draw(circuit)([1, 2, 3]))
         0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
 
         Using the ``stop_recording`` context manager, all logic contained inside is not queued or recorded.
 
-        >>> @qml.qnode(dev)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     with qml.QueuingManager.stop_recording():
+        ...     with qp.QueuingManager.stop_recording():
         ...         ops = list_of_ops(params, wires=0)
-        ...     qml.apply(ops[-1])
-        ...     return qml.expval(qml.Z(0))
-        >>> print(qml.draw(circuit)([1, 2, 3]))
+        ...     qp.apply(ops[-1])
+        ...     return qp.expval(qp.Z(0))
+        >>> print(qp.draw(circuit)([1, 2, 3]))
         0: ──RZ(3.00)─┤  <Z>
 
         The context manager can also be used as a decorator on a function:
 
-        >>> @qml.QueuingManager.stop_recording()
+        >>> @qp.QueuingManager.stop_recording()
         ... def list_of_ops(params, wires):
         ...     return [
-        ...         qml.RX(params[0], wires=wires),
-        ...         qml.RY(params[1], wires=wires),
-        ...         qml.RZ(params[2], wires=wires)
+        ...         qp.RX(params[0], wires=wires),
+        ...         qp.RY(params[1], wires=wires),
+        ...         qp.RZ(params[2], wires=wires)
         ...     ]
-        >>> @qml.qnode(dev)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
         ...     ops = list_of_ops(params, wires=0)
-        ...     qml.apply(ops[-1])
-        ...     return qml.expval(qml.Z(0))
-        >>> print(qml.draw(circuit)([1, 2, 3]))
+        ...     qp.apply(ops[-1])
+        ...     return qp.expval(qp.Z(0))
+        >>> print(qp.draw(circuit)([1, 2, 3]))
         0: ──RZ(3.00)─┤  <Z>
 
         """
@@ -415,12 +432,12 @@ class AnnotatedQueue(OrderedDict):
         return super().__contains__(key)
 
 
-def apply(op, context=QueuingManager):
+def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
 
     Args:
         op (.Operator or .MeasurementProcess): the operator or measurement to apply/queue
-        context (.QueuingManager): The queuing context to queue the operator to.
+        context (type[.QueuingManager] | AnnotatedQueue): The queuing context to queue the operator to.
             Note that if no context is specified, the operator is
             applied to the currently active queuing context.
     Returns:
@@ -428,39 +445,39 @@ def apply(op, context=QueuingManager):
 
     **Example**
 
-    In PennyLane, **operations and measurements are 'queued' or added to a circuit
-    when they are instantiated**.
+    In PennyLane, operations and measurements are 'queued' or added to a circuit
+    when they are instantiated.
 
     The ``apply`` function can be used to add operations that might have
     already been instantiated elsewhere to the QNode:
 
     .. code-block:: python
 
-        op = qml.RX(0.4, wires=0)
-        dev = qml.device("default.qubit", wires=2)
+        op = qp.RX(0.4, wires=0)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=0)  # applied during instantiation
-            qml.apply(op)  # manually applied
-            return qml.expval(qml.Z(0))
+            qp.RY(x, wires=0)  # applied during instantiation
+            qp.apply(op)  # manually applied
+            return qp.expval(qp.Z(0))
 
-    >>> print(qml.draw(circuit)(0.6))
-    0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+    >>> print(qp.draw(circuit)(0.6))
+    0: ──RY(0.60)──RX(0.40)─┤  <Z>
 
     It can also be used to apply functions repeatedly:
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.apply(op)
-            qml.RY(x, wires=0)
-            qml.apply(op)
-            return qml.expval(qml.Z(0))
+            qp.apply(op)
+            qp.RY(x, wires=0)
+            qp.apply(op)
+            return qp.expval(qp.Z(0))
 
-    >>> print(qml.draw(circuit)(0.6))
-    0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+    >>> print(qp.draw(circuit)(0.6))
+    0: ──RX(0.40)──RY(0.60)──RX(0.40)─┤  <Z>
 
     .. warning::
 
@@ -469,13 +486,13 @@ def apply(op, context=QueuingManager):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                op = qml.Hadamard(0)
-                qml.apply(op)
-                return qml.expval(qml.Z(0))
+                op = qp.Hadamard(0)
+                qp.apply(op)
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ──H──H─┤  <Z>
 
     .. details::
@@ -486,59 +503,30 @@ def apply(op, context=QueuingManager):
 
         .. code-block:: python
 
-            meas = qml.expval(qml.Z(0) @ qml.Y(1))
-            dev = qml.device("default.qubit", wires=2)
+            meas = qp.expval(qp.Z(0) @ qp.Y(1))
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RY(x, wires=0)
-                qml.CNOT(wires=[0, 1])
-                return qml.apply(meas)
+                qp.RY(x, wires=0)
+                qp.CNOT(wires=[0, 1])
+                return qp.apply(meas)
 
-        >>> print(qml.draw(circuit)(0.6))
-         0: ──RY(0.6)──╭●──╭┤ ⟨Z ⊗ Y⟩
-         1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
+        >>> print(qp.draw(circuit)(0.6))
+        0: ──RY(0.60)─╭●─┤ ╭<Z@Y>
+        1: ───────────╰X─┤ ╰<Z@Y>
 
         By default, ``apply`` will queue operators to the currently
         active queuing context.
 
-        When working with low-level queuing contexts such as quantum tapes,
-        the desired context to queue the operation to can be explicitly
-        passed:
-
-        .. code-block:: python
-
-            with qml.tape.QuantumTape() as tape1:
-                qml.Hadamard(wires=1)
-
-                with qml.tape.QuantumTape() as tape2:
-                    # Due to the nesting behaviour of queuing contexts,
-                    # tape2 will be queued to tape1.
-
-                    # The following PauliX operation will be queued
-                    # to the active queuing context, tape2, during instantiation.
-                    op1 = qml.X(0)
-
-                    # We can use qml.apply to apply the same operation to tape1
-                    # without leaving the tape2 context.
-                    qml.apply(op1, context=tape1)
-
-                    qml.RZ(0.2, wires=0)
-
-                qml.CNOT(wires=[0, 1])
-
-        >>> tape1.operations
-        [H(1), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
-        >>> tape2.operations
-        [X(0), RZ(0.2, wires=[0])]
     """
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    # pylint: disable=unsupported-membership-test
-    if op in getattr(context, "queue", QueuingManager.active_context()):
-        # Queuing contexts can only contain unique objects.
-        # If the object to be queued already exists, copy it.
+    # Always make a copy since we don't want the provided op to be dequeued by a subsequent
+    # PennyLane Operator/Function.
+    # Note that queuing contexts can only contain unique objects.
+    with QueuingManager.stop_recording():
         op = copy.copy(op)
 
     if hasattr(op, "queue"):
@@ -584,14 +572,20 @@ def process_queue(
                 f"{obj} encountered in AnnotatedQueue and is not an object that can "
                 "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
             )
-        if obj._queue_category is not None:
-            if list_order[obj._queue_category] > list_order[current_list]:
-                current_list = obj._queue_category
-            elif list_order[obj._queue_category] < list_order[current_list]:
-                raise ValueError(
-                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                    f"to {current_list[1:]}. Please place earlier in the queue."
-                )
-            lists[obj._queue_category].append(obj)
+        if obj._queue_category is None:
+            warnings.warn(
+                "Preventing an object to get queued with `_queue_category=None` is deprecated.",
+                PennyLaneDeprecationWarning,
+            )
+            continue
+
+        if list_order[obj._queue_category] > list_order[current_list]:
+            current_list = obj._queue_category
+        elif list_order[obj._queue_category] < list_order[current_list]:
+            raise ValueError(
+                f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                f"to {current_list[1:]}. Please place earlier in the queue."
+            )
+        lists[obj._queue_category].append(obj)
 
     return lists["_ops"], lists["_measurements"]

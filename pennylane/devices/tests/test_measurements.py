@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use,pointless-statement, no-member
+
+# pylint: disable=no-self-use,no-member
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementTransform,
@@ -38,31 +40,31 @@ pytestmark = pytest.mark.skip_unsupported
 
 # observables for which device support is tested
 obs = {
-    "Identity": qml.Identity(wires=[0]),
-    "Hadamard": qml.Hadamard(wires=[0]),
-    "H": qml.H(wires=[0]),
-    "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.PauliX(0),
-    "PauliY": qml.PauliY(0),
-    "PauliZ": qml.PauliZ(0),
-    "X": qml.X(0),
-    "Y": qml.Y(0),
-    "Z": qml.Z(0),
+    "Identity": qp.Identity(wires=[0]),
+    "Hadamard": qp.Hadamard(wires=[0]),
+    "H": qp.H(wires=[0]),
+    "Hermitian": qp.Hermitian(np.eye(2), wires=[0]),
+    "PauliX": qp.PauliX(0),
+    "PauliY": qp.PauliY(0),
+    "PauliZ": qp.PauliZ(0),
+    "X": qp.X(0),
+    "Y": qp.Y(0),
+    "Z": qp.Z(0),
     "Projector": [
-        qml.Projector(np.array([1]), wires=[0]),
-        qml.Projector(np.array([0, 1]), wires=[0]),
+        qp.Projector(np.array([1]), wires=[0]),
+        qp.Projector(np.array([0, 1]), wires=[0]),
     ],
-    "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Prod": qml.prod(qml.X(0), qml.Z(1)),
-    "SProd": qml.s_prod(0.1, qml.Z(0)),
-    "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
-    "LinearCombination": qml.ops.LinearCombination([1, 1], [qml.Z(0), qml.X(0)]),
+    "SparseHamiltonian": qp.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "Prod": qp.prod(qp.X(0), qp.Z(1)),
+    "SProd": qp.s_prod(0.1, qp.Z(0)),
+    "Sum": qp.sum(qp.s_prod(0.1, qp.Z(0)), qp.prod(qp.X(0), qp.Z(1))),
+    "LinearCombination": qp.ops.LinearCombination([1, 1], [qp.Z(0), qp.X(0)]),
 }
 
 all_obs = obs.keys()
 
 # All qubit observables should be available to test in the device test suite
-all_available_obs = qml.ops._qubit__obs__.copy().union(  # pylint: disable=protected-access
+all_available_obs = qp.ops._qubit__obs__.copy().union(  # pylint: disable=protected-access
     {"Prod", "SProd", "Sum"}
 )
 # Note that the identity is not technically a qubit observable
@@ -79,21 +81,21 @@ if not set(all_obs) == all_available_obs | {"LinearCombination"}:
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 obs_lst = [
-    qml.X(0) @ qml.Y(1),
-    qml.X(1) @ qml.Y(0),
-    qml.X(1) @ qml.Z(2),
-    qml.X(2) @ qml.Z(1),
-    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.Z(2),
-    qml.Z(0) @ qml.X(1) @ qml.Y(2),
+    qp.X(0) @ qp.Y(1),
+    qp.X(1) @ qp.Y(0),
+    qp.X(1) @ qp.Z(2),
+    qp.X(2) @ qp.Z(1),
+    qp.Identity(wires=0) @ qp.Identity(wires=1) @ qp.Z(2),
+    qp.Z(0) @ qp.X(1) @ qp.Y(2),
 ]
 
 obs_permuted_lst = [
-    qml.Y(1) @ qml.X(0),
-    qml.Y(0) @ qml.X(1),
-    qml.Z(2) @ qml.X(1),
-    qml.Z(1) @ qml.X(2),
-    qml.Z(2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
-    qml.X(1) @ qml.Y(2) @ qml.Z(0),
+    qp.Y(1) @ qp.X(0),
+    qp.Y(0) @ qp.X(1),
+    qp.Z(2) @ qp.X(1),
+    qp.Z(1) @ qp.X(2),
+    qp.Z(2) @ qp.Identity(wires=0) @ qp.Identity(wires=1),
+    qp.X(1) @ qp.Y(2) @ qp.Z(0),
 ]
 
 label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
@@ -101,9 +103,9 @@ label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta"
 
 def sub_routine(label_map):
     """Quantum function to initalize state in tests"""
-    qml.Hadamard(wires=label_map[0])
-    qml.RX(0.12, wires=label_map[1])
-    qml.RY(3.45, wires=label_map[2])
+    qp.Hadamard(wires=label_map[0])
+    qp.RX(0.12, wires=label_map[1])
+    qp.RY(3.45, wires=label_map[2])
 
 
 class TestSupportedObservables:
@@ -113,22 +115,22 @@ class TestSupportedObservables:
     def test_supported_observables_can_be_implemented(self, device_kwargs, observable):
         """Test that the device can implement all its supported observables."""
         device_kwargs["wires"] = 3
-        dev = qml.device(**device_kwargs)
+        dev = qp.device(**device_kwargs)
 
         if dev.shots and observable == "SparseHamiltonian":
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             assert hasattr(dev, "observables")
             if observable not in dev.observables:
                 pytest.skip("observable not supported")
 
         kwargs = {"diff_method": "parameter-shift"} if observable == "SparseHamiltonian" else {}
 
-        @qml.qnode(dev, **kwargs)
+        @qp.qnode(dev, **kwargs)
         def circuit(obs_circ):
-            qml.PauliX(0)
-            return qml.expval(obs_circ)
+            qp.PauliX(0)
+            return qp.expval(obs_circ)
 
         if observable == "Projector":
             for o in obs[observable]:
@@ -140,17 +142,17 @@ class TestSupportedObservables:
         """Test that the device can implement a simple tensor observable.
         This test is skipped for devices that do not support tensor observables."""
         device_kwargs["wires"] = 2
-        dev = qml.device(**device_kwargs)
-        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+        dev = qp.device(**device_kwargs)
+        supports_tensor = isinstance(dev, qp.devices.Device) or get_legacy_capabilities(dev).get(
             "supports_tensor_observables", False
         )
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(0)
-            return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
+            qp.PauliX(0)
+            return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
 
         assert isinstance(circuit(), (float, np.ndarray))
 
@@ -164,43 +166,43 @@ class TestHamiltonianSupport:
         """Tests a simple VQE gradient using parameter-shift rules."""
 
         device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
+        dev = qp.device(**device_kwargs)
         coeffs = np.array([-0.05, 0.17])
         param = np.array(1.7, requires_grad=True)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(coeffs, param):
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
+            qp.RX(param, wires=0)
+            qp.RY(param, wires=0)
+            return qp.expval(
+                qp.Hamiltonian(
                     coeffs,
-                    [qml.X(0), qml.Z(0)],
+                    [qp.X(0), qp.Z(0)],
                 )
             )
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grad = grad_fn(coeffs, param)
 
         def circuit1(param):
             """First Pauli subcircuit"""
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(qml.X(0))
+            qp.RX(param, wires=0)
+            qp.RY(param, wires=0)
+            return qp.expval(qp.X(0))
 
         def circuit2(param):
             """Second Pauli subcircuit"""
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(param, wires=0)
+            qp.RY(param, wires=0)
+            return qp.expval(qp.Z(0))
 
-        half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
-        half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
+        half1 = qp.QNode(circuit1, dev, diff_method="parameter-shift")
+        half2 = qp.QNode(circuit2, dev, diff_method="parameter-shift")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = qml.grad(combine)
+        grad_fn_expected = qp.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad[0], grad_expected[0], atol=tol(dev.shots))
@@ -219,12 +221,12 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Identity(wires=0)), qml.expval(qml.Identity(wires=1))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Identity(wires=0)), qp.expval(qp.Identity(wires=1))
 
         res = circuit()
         assert np.allclose(res, np.array([1, 1]), atol=tol(dev.shots))
@@ -237,12 +239,12 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         res = circuit()
         expected = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
@@ -256,12 +258,12 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RY(theta, wires=[0])
-            qml.RY(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.X(0)), qml.expval(qml.X(1))
+            qp.RY(theta, wires=[0])
+            qp.RY(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.X(0)), qp.expval(qp.X(1))
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
@@ -275,12 +277,12 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Y(0)), qml.expval(qml.Y(1))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Y(0)), qp.expval(qp.Y(1))
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
@@ -294,12 +296,12 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RY(theta, wires=[0])
-            qml.RY(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hadamard(wires=0)), qml.expval(qml.Hadamard(wires=1))
+            qp.RY(theta, wires=[0])
+            qp.RY(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hadamard(wires=0)), qp.expval(qp.Hadamard(wires=1))
 
         res = circuit()
         expected = np.array(
@@ -312,18 +314,18 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.432
         phi = 0.123
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RY(theta, wires=[0])
-            qml.RY(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hermitian(A, wires=0)), qml.expval(qml.Hermitian(A, wires=1))
+            qp.RY(theta, wires=[0])
+            qp.RY(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hermitian(A, wires=0)), qp.expval(qp.Hermitian(A, wires=1))
 
         res = circuit()
 
@@ -341,18 +343,18 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.732
         phi = 0.523
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RY(theta, wires=[0])
-            qml.RY(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Projector(state, wires=[0, 1]))
+            qp.RY(theta, wires=[0])
+            qp.RY(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Projector(state, wires=[0, 1]))
 
         basis_state, state_vector = [0, 0], [1, 0, 0, 0]
         expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
@@ -379,7 +381,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.432
@@ -393,12 +395,12 @@ class TestExpval:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RY(theta, wires=[0])
-            qml.RY(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hermitian(A_, wires=[0, 1]))
+            qp.RY(theta, wires=[0])
+            qp.RY(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hermitian(A_, wires=[0, 1]))
 
         res = circuit()
 
@@ -417,25 +419,25 @@ class TestExpval:
     @pytest.mark.parametrize(
         "o",
         [
-            qml.prod(qml.X(0), qml.Z(1)),
-            qml.s_prod(0.1, qml.Z(0)),
-            qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
+            qp.prod(qp.X(0), qp.Z(1)),
+            qp.s_prod(0.1, qp.Z(0)),
+            qp.sum(qp.s_prod(0.1, qp.Z(0)), qp.prod(qp.X(0), qp.Z(1))),
         ],
     )
     def test_op_arithmetic_matches_default_qubit(self, o, device, tol):
         """Test that devices (which support the observable) match default.qubit results."""
         dev = device(2)
-        if isinstance(dev, qml.devices.LegacyDevice) and o.name not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and o.name not in dev.observables:
             pytest.skip(f"Skipped because device does not support the {o.name} observable.")
 
         def circuit():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            return qml.expval(o)
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.expval(o)
 
-        res_dq = qml.QNode(circuit, qml.device("default.qubit"))()
-        res = qml.QNode(circuit, dev)()
-        assert qml.math.shape(res) == ()
+        res_dq = qp.QNode(circuit, qp.device("default.qubit"))()
+        res = qp.QNode(circuit, dev)()
+        assert qp.math.shape(res) == ()
         assert np.isclose(res, res_dq, atol=tol(dev.shots))
 
 
@@ -447,21 +449,21 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.X(0) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.expval(qp.X(0) @ qp.Y(2))
 
         res = circuit()
 
@@ -472,21 +474,21 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.Z(0) @ qml.Hadamard(wires=1) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.expval(qp.Z(0) @ qp.Hadamard(wires=1) @ qp.Y(2))
 
         res = circuit()
 
@@ -505,24 +507,24 @@ class TestTensorExpval:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.Z(0) @ qml.Y(1)
-        ob2 = qml.Y(1) @ qml.Z(0)
+        ob1 = qp.Z(0) @ qp.Y(1)
+        ob2 = qp.Y(1) @ qp.Z(0)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(obs):
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         circ(ob1) == circ(ob2)
         """
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(ob):
             sub_routine(label_map=range(3))
-            return qml.expval(ob)
+            return qp.expval(ob)
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
@@ -533,26 +535,26 @@ class TestTensorExpval:
 
         For example:
 
-        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
-        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+        dev1 = qp.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qp.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.expval(qml.Z(wire_labels[0]) @ qml.X(wire_labels[2]))
+            return qp.expval(qp.Z(wire_labels[0]) @ qp.X(wire_labels[2]))
 
-        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1, c2 = qp.QNode(circ, dev1), qp.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
             sub_routine(wire_labels)
-            return qml.expval(qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2]))
+            return qp.expval(qp.X(wire_labels[0]) @ qp.Y(wire_labels[1]) @ qp.Z(wire_labels[2]))
 
-        circ_base_label = qml.QNode(circ, device=dev)
-        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+        circ_base_label = qp.QNode(circ, device=dev)
+        circ_custom_label = qp.QNode(circ, device=dev_custom_labels)
 
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
@@ -562,11 +564,11 @@ class TestTensorExpval:
         )
 
     def test_hermitian(self, device, tol, skip_if):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
+        """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -584,14 +586,14 @@ class TestTensorExpval:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.expval(qp.Z(0) @ qp.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -604,11 +606,11 @@ class TestTensorExpval:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_projector(self, device, tol, skip_if):
-        """Test that a tensor product involving qml.Projector works correctly"""
+        """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 
@@ -618,14 +620,14 @@ class TestTensorExpval:
         phi = 0.523
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.Z(0) @ qml.Projector(state, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.expval(qp.Z(0) @ qp.Projector(state, wires=[1, 2]))
 
         basis_state, state_vector = [0, 0], [1, 0, 0, 0]
         expected = (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
@@ -660,7 +662,7 @@ class TestTensorExpval:
         n_wires = 4
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "SparseHamiltonian" not in dev.observables:
                 pytest.skip(
                     "Skipped because device does not support the SparseHamiltonian observable."
@@ -675,14 +677,14 @@ class TestTensorExpval:
         )
         h = csr_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def result():
-            qml.X(0)
-            qml.X(2)
-            qml.SingleExcitation(0.1, wires=[0, 1])
-            qml.SingleExcitation(0.2, wires=[2, 3])
-            qml.SingleExcitation(0.3, wires=[1, 2])
-            return qml.expval(qml.SparseHamiltonian(h, wires=[0, 1, 2, 3]))
+            qp.X(0)
+            qp.X(2)
+            qp.SingleExcitation(0.1, wires=[0, 1])
+            qp.SingleExcitation(0.2, wires=[2, 3])
+            qp.SingleExcitation(0.3, wires=[1, 2])
+            return qp.expval(qp.SparseHamiltonian(h, wires=[0, 1, 2, 3]))
 
         res = result()
         exp_res = 0.019833838076209875
@@ -702,15 +704,15 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.sample(wires=0)
+            qp.X(0)
+            return qp.sample(wires=0)
 
         res = circuit()
-        assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
-        assert qml.math.shape(res) == (dev.shots.total_shots,)
-        assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
+        assert qp.math.allclose(res, 1)  # note, might be violated with a noisy device?
+        assert qp.math.shape(res) == (dev.shots.total_shots, 1)
+        assert qp.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol):
         """Tests if the samples returned by sample have
@@ -722,10 +724,10 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(1.5708, wires=[0])
-            return qml.sample(qml.Z(0))
+            qp.RX(1.5708, wires=[0])
+            return qp.sample(qp.Z(0))
 
         res = circuit()
 
@@ -742,16 +744,16 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         A_ = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            return qml.sample(qml.Hermitian(A_, wires=0))
+            qp.RX(theta, wires=[0])
+            return qp.sample(qp.Hermitian(A_, wires=0))
 
         res = circuit().flatten()
 
@@ -778,15 +780,15 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RX(theta, wires=[0])
-            return qml.sample(qml.Projector(state, wires=0))
+            qp.RX(theta, wires=[0])
+            return qp.sample(qp.Projector(state, wires=0))
 
         expected = np.cos(theta / 2) ** 2
         res_basis = circuit([0]).flatten()
@@ -826,7 +828,7 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.543
@@ -839,12 +841,12 @@ class TestSample:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RY(2 * theta, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Hermitian(A_, wires=[0, 1]))
+            qp.RX(theta, wires=[0])
+            qp.RY(2 * theta, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(qp.Hermitian(A_, wires=[0, 1]))
 
         res = circuit().flatten()
 
@@ -875,17 +877,17 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RX(theta, wires=[0])
-            qml.RY(2 * theta, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Projector(state, wires=[0, 1]))
+            qp.RX(theta, wires=[0])
+            qp.RY(2 * theta, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(qp.Projector(state, wires=[0, 1]))
 
         expected = (np.cos(theta / 2) * np.cos(theta)) ** 2
         res_basis = circuit([0, 0]).flatten()
@@ -933,21 +935,21 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.X(0) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.sample(qp.X(0) @ qp.Y(2))
 
         res = circuit()
 
@@ -977,21 +979,21 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.sample(qp.Z(0) @ qp.Hadamard(wires=[1]) @ qp.Y(2))
 
         res = circuit()
 
@@ -1012,14 +1014,14 @@ class TestTensorSample:
         assert np.allclose(var, expected, atol=tol(False))
 
     def test_hermitian(self, device, tol, skip_if):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
+        """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -1038,14 +1040,14 @@ class TestTensorSample:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.sample(qp.Z(0) @ qp.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -1106,14 +1108,14 @@ class TestTensorSample:
         assert np.allclose(var, expected, atol=tol(False))
 
     def test_projector(self, device, tol, skip_if):  # pylint: disable=too-many-statements
-        """Test that a tensor product involving qml.Projector works correctly"""
+        """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 
@@ -1123,14 +1125,14 @@ class TestTensorSample:
         phi = 1.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.Z(0) @ qml.Projector(state, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.sample(qp.Z(0) @ qp.Projector(state, wires=[1, 2]))
 
         res_basis = circuit([0, 0]).flatten()
         res_state = circuit([1, 0, 0, 0]).flatten()
@@ -1247,13 +1249,13 @@ class TestSumExpval:
         """Test that the device can handle Identity on no wires."""
         dev = device(1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.expval(qml.sum(qml.Z(0) + 3 * qml.I()))
+            qp.X(0)
+            return qp.expval(qp.sum(qp.Z(0) + 3 * qp.I()))
 
         res = circuit()
-        assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
+        assert qp.math.allclose(res, 2.0, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -1270,11 +1272,11 @@ class TestVar:
         phi = 0.543
         theta = 0.6543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(phi, wires=[0])
-            qml.RY(theta, wires=[0])
-            return qml.var(qml.Z(0))
+            qp.RX(phi, wires=[0])
+            qp.RY(theta, wires=[0])
+            return qp.var(qp.Z(0))
 
         res = circuit()
 
@@ -1288,7 +1290,7 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         phi = 0.543
@@ -1296,11 +1298,11 @@ class TestVar:
         # test correct variance for <H> of a rotated state
         H = 0.1 * np.array([[4, -1 + 6j], [-1 - 6j, 2]])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(phi, wires=[0])
-            qml.RY(theta, wires=[0])
-            return qml.var(qml.Hermitian(H, wires=0))
+            qp.RX(phi, wires=[0])
+            qp.RY(theta, wires=[0])
+            return qp.var(qp.Hermitian(H, wires=0))
 
         res = circuit()
 
@@ -1324,18 +1326,18 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         phi = 0.543
         theta = 0.654
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.RX(phi, wires=[0])
-            qml.RY(theta, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Projector(state, wires=[0, 1]))
+            qp.RX(phi, wires=[0])
+            qp.RY(theta, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.Projector(state, wires=[0, 1]))
 
         res_basis = circuit([0, 0])
         res_state = circuit([1, 0, 0, 0])
@@ -1385,21 +1387,21 @@ class TestTensorVar:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.var(qml.X(0) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.var(qp.X(0) @ qp.Y(2))
 
         res = circuit()
 
@@ -1417,21 +1419,21 @@ class TestTensorVar:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.var(qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.var(qp.Z(0) @ qp.Hadamard(wires=[1]) @ qp.Y(2))
 
         res = circuit()
 
@@ -1456,24 +1458,24 @@ class TestTensorVar:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.Z(0) @ qml.Y(1)
-        ob2 = qml.Y(1) @ qml.Z(0)
+        ob1 = qp.Z(0) @ qp.Y(1)
+        ob2 = qp.Y(1) @ qp.Z(0)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(obs):
-            return qml.var(obs)
+            return qp.var(obs)
 
         circ(ob1) == circ(ob2)
         """
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(ob):
             sub_routine(label_map=range(3))
-            return qml.var(ob)
+            return qp.var(ob)
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
@@ -1483,26 +1485,26 @@ class TestTensorVar:
         wires are labelled, as long as they match the device order.
 
         eg:
-        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
-        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+        dev1 = qp.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qp.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.var(qml.Z(wire_labels[0]) @ qml.X(wire_labels[2]))
+            return qp.var(qp.Z(wire_labels[0]) @ qp.X(wire_labels[2]))
 
-        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1, c2 = qp.QNode(circ, dev1), qp.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
             sub_routine(wire_labels)
-            return qml.var(qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2]))
+            return qp.var(qp.X(wire_labels[0]) @ qp.Y(wire_labels[1]) @ qp.Z(wire_labels[2]))
 
-        circ_base_label = qml.QNode(circ, device=dev)
-        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+        circ_base_label = qp.QNode(circ, device=dev)
+        circ_custom_label = qp.QNode(circ, device=dev_custom_labels)
 
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
@@ -1512,11 +1514,11 @@ class TestTensorVar:
         )
 
     def test_hermitian(self, device, tol, skip_if):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
+        """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -1535,14 +1537,14 @@ class TestTensorVar:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.var(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.var(qp.Z(0) @ qp.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -1584,11 +1586,11 @@ class TestTensorVar:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_projector(self, device, tol, skip_if):
-        """Test that a tensor product involving qml.Projector works correctly"""
+        """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
+        if isinstance(dev, qp.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 
@@ -1598,14 +1600,14 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(basis_state):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.var(qml.Z(0) @ qml.Projector(basis_state, wires=[1, 2]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.RX(varphi, wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.var(qp.Z(0) @ qp.Projector(basis_state, wires=[1, 2]))
 
         res_basis = circuit([0, 0])
         res_state = circuit([1, 0, 0, 0])
@@ -1681,6 +1683,12 @@ def _skip_test_for_braket(dev):
         pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
 
 
+def _skip_test_for_ionq(dev):
+    """Skip the specific test because the IonQ plugin does not yet support custom measurement processes."""
+    if "ionq" in getattr(dev, "short_name", dev.name):
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
@@ -1702,13 +1710,13 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return 1
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
+            qp.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         res = circuit()
-        assert qml.math.allequal(res, [1, 1])
+        assert qp.math.allequal(res, [1, 1])
 
     def test_sample_measurement_without_shots(self, device):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
@@ -1726,18 +1734,18 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return 1
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
+            qp.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.raises((ValueError, qml.DeviceError)):
+        with pytest.raises((ValueError, DeviceError)):
             circuit()
 
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
-        if isinstance(dev, qml.devices.Device):
+        if isinstance(dev, qp.devices.Device):
             pytest.skip("test specific for old device interface.")
         _skip_test_for_braket(dev)
 
@@ -1747,15 +1755,15 @@ class TestSampleMeasurement:
                 "sample-based measurements."
             )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.sample(wires=0), qml.sample(wires=1)
+            qp.X(0)
+            return qp.sample(wires=0), qp.sample(wires=1)
 
         circuit.device.measurement_map[SampleMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
-        assert qml.math.allequal(circuit(), [2, 2])
+        assert qp.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:
@@ -1778,9 +1786,9 @@ class TestStateMeasurement:
             def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
+            qp.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1802,9 +1810,9 @@ class TestStateMeasurement:
             def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
+            qp.X(0)
             return MyMeasurement()
 
         with (
@@ -1812,8 +1820,8 @@ class TestStateMeasurement:
                 UserWarning,
                 match="MyMeasurement with finite shots; the returned state information is analytic",
             )
-            if isinstance(dev, qml.devices.LegacyDevice)
-            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
+            if isinstance(dev, qp.devices.LegacyDevice)
+            else pytest.raises(DeviceError, match="not accepted with finite shots")
         ):
             circuit()
 
@@ -1822,13 +1830,13 @@ class TestStateMeasurement:
         dev = device(2)
 
         _skip_test_for_braket(dev)
-        if isinstance(dev, qml.devices.Device):
+        if isinstance(dev, qp.devices.Device):
             pytest.skip("test is specific to old device interface")
 
-        @qml.qnode(dev, interface="autograd", diff_method=None)
+        @qp.qnode(dev, interface="autograd", diff_method=None)
         def circuit():
-            qml.X(0)
-            return qml.state()
+            qp.X(0)
+            return qp.state()
 
         circuit.device.measurement_map[StateMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
@@ -1843,6 +1851,7 @@ class TestCustomMeasurement:
         """Test the execution of a custom measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
+        _skip_test_for_ionq(dev)
 
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""
@@ -1850,16 +1859,16 @@ class TestCustomMeasurement:
             def process(self, tape, device):
                 return 1
 
-        if isinstance(dev, qml.devices.Device):
-            tape = qml.tape.QuantumScript([], [MyMeasurement()])
+        if isinstance(dev, qp.devices.Device):
+            tape = qp.tape.QuantumScript([], [MyMeasurement()])
             try:
                 dev.preprocess_transforms()((tape,))
-            except qml.DeviceError:
+            except DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
+            qp.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1867,7 +1876,7 @@ class TestCustomMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
-        if isinstance(dev, qml.devices.Device):
+        if isinstance(dev, qp.devices.Device):
             pytest.skip("test specific to old device interface.")
         _skip_test_for_braket(dev)
 
@@ -1877,10 +1886,10 @@ class TestCustomMeasurement:
                 "sample-based measurements."
             )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.classical_shadow(wires=0)
+            qp.X(0)
+            return qp.classical_shadow(wires=0)
 
         circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
         circuit.device.test_method = lambda tape: 2

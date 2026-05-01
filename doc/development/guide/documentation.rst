@@ -87,7 +87,7 @@ markup, and are formatted `Google-style <https://www.sphinx-doc.org/en/master/us
 Docstrings are a part of Python; an objects' docstring is stored under the ``__doc__``
 attribute, and accessible to the user via the ``help()`` function. In addition, docstrings
 are automatically extracted and rendered by Sphinx, and inserted into the
-:doc:`API </code/qml>` section of the documentation.
+:doc:`API </code/qp>` section of the documentation.
 
 Guiding principles
 ~~~~~~~~~~~~~~~~~~
@@ -335,7 +335,7 @@ Code examples
 Code examples are very important; they *show* readers how the function or class should be used.
 When writing code examples for docstrings, use the following guidelines:
 
-- You may assume that PennyLane is imported as ``qml`` and NumPy is imported as ``np`` in the code examples.
+- You may assume that PennyLane is imported as ``qp`` and NumPy is imported as ``np`` in the code examples.
   All other imports must be specified explicitly.
 
 - For single line statements and associated output, use Python console syntax (``pycon``):
@@ -349,11 +349,11 @@ When writing code examples for docstrings, use the following guidelines:
 
   .. code-block:: pycon
 
-      >>> dev = qml.device("default.qubit", wires=1)
-      >>> @qml.qnode(dev)
+      >>> dev = qp.device("default.qubit", wires=1)
+      >>> @qp.qnode(dev)
       >>> def circuit(x):
-      ...     qml.RX(x, wires=0)
-      ...     return qml.expval(qml.PauliZ(0))
+      ...     qp.RX(x, wires=0)
+      ...     return qp.expval(qp.PauliZ(0))
       >>> circuit(0.5)
       0.8775825618903726
 
@@ -364,11 +364,11 @@ When writing code examples for docstrings, use the following guidelines:
 
       .. code-block:: python3
 
-          dev = qml.device("default.qubit", wires=1)
-          @qml.qnode(dev)
+          dev = qp.device("default.qubit", wires=1)
+          @qp.qnode(dev)
           def circuit(x):
-              qml.RX(x, wires=0)
-              return qml.expval(qml.PauliZ(0))
+              qp.RX(x, wires=0)
+              return qp.expval(qp.PauliZ(0))
 
       Executing this circuit:
 
@@ -421,6 +421,65 @@ your code easy to follow and understand, keeping to the following guidelines.
   directly. In addition, avoid complex formatting such as tables---these are difficult
   to maintain and modify.
 
+Making Catalyst functionality callable from PennyLane
+-----------------------------------------------------
+
+Our goal is for PennyLane to be the frontend for Catalyst, meaning that you
+should not have to import functionality from the ``catalyst`` package since it
+should be accessible from PennyLane directly. In anticipation of this goal, we
+provide a way for desired Catalyst frontend features to be automatically
+accessible from PennyLane while ensuring that such features' documentation is
+properly sourced from Catalyst and hosted on PennyLane's documentation (the same
+documentation is hosted in Catalyst's documentation, as well).
+
+In the ``setup.py`` file in Catalyst's root directory, there is a dictionary
+named ``entry_points`` whose keys are "groups" and whose values are lists of
+Catalyst features that are desired to be accessible from PennyLane. Generally,
+the convention for the names of groups should be the module path in PennyLane
+that the Catalyst feature is desired to be callable from. For example:
+
+.. code-block:: python3
+
+    entry_points = {
+        "pennylane.drawer": ["draw_graph = catalyst:draw_graph"]
+    }
+
+This indicates that we want the ``catalyst.draw_graph`` function to be callable
+from the ``pennylane.drawer`` module. If you are adding an entry point to a
+feature in Catalyst and a group name in the ``entry_points`` dictionary doesn't
+exist yet, you may add a group name with the associated features in a list as
+shown above. If the desired group name does exist, simply add the feature(s) to
+the list.
+
+If no new group name was added in the previous steps (only individual features
+were added to existing groups), nothing more needs to be done; the feature(s)
+added should be accessible from ``pennylane.<module_path>``. If a new group name
+was indeed added in previous steps, navigate to the module in which the Catalyst
+functionality is desired to be accessed from in PennyLane and open
+``__init__.py``. Import the ``_setup_entry_points`` function from
+``pennylane._entry_point_utils.py`` and assign the ``__all__``, ``__getattr__``,
+and ``__dir__`` dunder methods similar to the example below from
+``pennylane/drawer/__init__.py``:
+
+.. code-block:: python3
+
+    from .._entry_points_utils import _setup_entry_points
+
+    __all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.drawer")
+
+If the features therein are also desired to be accessible from top-level (i.e.,
+``pennylane.<feature>`` as opposed to ``pennylane.<some module>.<feature>``),
+open ``pennylane/__init__.py`` and add the group name to the
+``_entry_point_groups`` variable.
+
+.. code-block:: python3
+
+    # add to _entry_point_groups as new groups are added and desired to be accessed top-level
+    _entry_point_groups = ["pennylane.drawer"]
+
+Once all steps above are completed, the desired features from Catalyst should be
+accessible from PennyLane and the documentation that is part of the feature's
+source code in Catalyst will also render in PennyLane's documentation.
 
 Contributing documentation
 --------------------------
@@ -463,12 +522,12 @@ There are several steps to adding a new module to the documentation:
 1. Make sure your module has a one- to two-line module docstring, that summarizes
    what the module purpose is, and what it contains.
 
-2. Add a file ``doc/code/qml_module_name.rst``, that contains the following:
+2. Add a file ``doc/code/qp_module_name.rst``, that contains the following:
 
    .. literalinclude:: example_module_rst.txt
        :language: rest
 
-3. Add ``code/qml_module_name`` to the table of contents at the bottom of ``doc/index.rst``.
+3. Add ``code/qp_module_name`` to the table of contents at the bottom of ``doc/index.rst``.
 
 
 Adding a new package to the docs
@@ -488,36 +547,29 @@ a module:
 
    All modules should also contain a module docstring that summarizes the module.
 
-3. Add a file ``doc/code/qml_package_name.rst``, that contains the following:
+3. Add a file ``doc/code/qp_package_name.rst``, that contains the following:
 
    .. literalinclude:: example_package_rst.txt
        :language: rest
 
-4. Add ``code/qml_package_name`` to the table of contents at the bottom of ``doc/index.rst``.
+4. Add ``code/qp_package_name`` to the table of contents at the bottom of ``doc/index.rst``.
 
 
 Building the documentation
 --------------------------
 
-To build the documentation, in addition to the standard PennyLane dependencies,
-the following additional packages are required:
+During standard development, developers can rely on the website built by the CI.
 
-* `Sphinx <http://sphinx-doc.org/>`_ == 2.2.2
-* `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`__
-* `pygments-github-lexers <https://github.com/liluo/pygments-github-lexers>`_
-* `m2r <https://github.com/miyakogi/m2r>`_
-* `sphinx-copybutton <https://github.com/ExecutableBookProject/sphinx-copybutton>`_
+.. image:: view_doc_build.jpeg
+    :width: 400px
+    :align: center
 
-In addition, some pages in the documentation have additional dependencies:
-
-* The latest version of PyTorch and TensorFlow are required to build the interface documentation,
-* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation.
-
-These can all be installed via ``pip``:
+To manually build the documentation, additional packages are required.
+All the requirements can be installed via:
 
 .. code-block:: console
 
-    $ pip install -r doc/requirements.txt
+    $ pip install --group docs
 
 To build the HTML documentation, go to the top-level directory and run
 
@@ -529,16 +581,7 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
 .. note::
 
-    To build the interfaces documentation, PyTorch and TensorFlow will need to
+    To build the interfaces documentation, PyTorch will need to
     be installed, see :ref:`install_interfaces`.
 
-.. note::
 
-  If you are running Python3.8 on an M1 Mac you need to set the following environment variables
-  before installing the requirements to be able to install the grpcio package required by TensorFlow
-  (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`):
-
-  .. code-block:: bash
-
-    export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
-    export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1

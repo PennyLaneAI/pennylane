@@ -1,0 +1,147 @@
+name: Documentation Tests
+permissions:
+  contents: read
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_call:
+  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
+
+  documentation-tests:
+    if: github.event.pull_request.draft == false
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+
+    name: Documentation Tests on Python 3.11
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install pip and setuptools
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+
+      - name: Install Catalyst and Lightning (dev)
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+
+      - name: Install dependencies of Catalyst and Lightning
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+
+      - name: Install PennyLane (editable)
+        run: |
+          pip install --group doctest -e . 
+
+      - name: Print Dependencies
+        run: |
+          python -c "import pennylane as qp; qp.about()"
+          python -m pip list
+
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
+      - name: Test 'pennylane' folder
+        run: |
+          WONT_FIX="
+          --ignore=pennylane/labs
+          --ignore=pennylane/logging
+          --ignore=pennylane/workflow/interfaces/tensorflow.py
+          --ignore=pennylane/devices/_legacy_device.py
+          --ignore=pennylane/devices/_qubit_device.py
+          --ignore=pennylane/devices/_qutrit_device.py
+          "
+
+          TO_DO="
+          --ignore=pennylane/pauli/pauli_sparse_matrices.md
+          --ignore=pennylane/control_flow
+          --ignore=pennylane/math
+          --ignore=pennylane/compiler
+          --ignore=pennylane/capture
+          --ignore=pennylane/shadows
+          --ignore=pennylane/gradients
+          --ignore=pennylane/optimize
+          --ignore=pennylane/pulse
+          --ignore=pennylane/io
+          --ignore=pennylane/qnn
+          --ignore=pennylane/qaoa
+          --ignore=pennylane/data
+          --ignore=pennylane/debugging
+          --ignore=pennylane/qcut
+          --ignore=pennylane/qchem
+          "
+
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest pennylane $IGNORE --ignore-glob='*tests*'
+
+      - name: Test 'doc' folder
+        if: always()
+        run: |
+          WONT_FIX="
+          --ignore=doc/code
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
+          "
+          TO_DO="
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/circuits.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/interfaces
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest doc ${IGNORE}
+
+      - name: Test `changelog-dev.md` file
+        if: always()
+        run: |
+          pytest doc/releases/changelog-dev.md

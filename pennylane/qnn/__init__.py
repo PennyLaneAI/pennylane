@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functionality for converting PennyLane QNodes into layers that are compatible
-with PyTorch.
+This module contains tools dedicated to machine learning, including functionality for converting PennyLane QNodes into
+layers that are compatible with PyTorch, and estimators that assist with classically training quantum circuits.
 
 .. note::
 
-    Check out our :doc:`Torch <demos/tutorial_qnn_module_torch>` tutorials for further details.
+    Check out our `Keras <https://pennylane.ai/qml/demos/qnn_module_tf>`__ and `Torch <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`__ tutorials for further details.
 
 
 .. rubric:: Classes
@@ -28,10 +28,17 @@ with PyTorch.
     :template: autosummary/class_no_inherited.rst
 
     ~TorchLayer
-"""
-import importlib
 
-from . import cost
+.. rubric:: Estimators
+
+.. autosummary::
+    :toctree: api
+
+    ~iqp_expval
+"""
+
+import importlib
+from .iqp import iqp_expval
 
 class_map = {"TorchLayer": "torch"}
 mods = "torch"

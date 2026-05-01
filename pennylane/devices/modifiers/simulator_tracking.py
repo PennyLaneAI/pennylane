@@ -12,19 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the ``simulator_tracking`` device modifier."""
+
 from functools import wraps
 
-from pennylane.devices import DefaultExecutionConfig, Device
+from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 from pennylane.tape import QuantumScript
 
-from ..qubit.sampling import get_num_shots_and_executions
+from ..device_api import Device
+from ..execution_config import ExecutionConfig
 
 
 def _track_execute(untracked_execute):
     """Adds default tracking to an execute method."""
 
     @wraps(untracked_execute)
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
+
         results = untracked_execute(self, circuits, execution_config)
         if isinstance(circuits, QuantumScript):
             batch = (circuits,)
@@ -64,7 +67,7 @@ def _track_compute_derivatives(untracked_compute_derivatives):
     """Adds default tracking to a ``compute_derivatives`` method."""
 
     @wraps(untracked_compute_derivatives)
-    def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
         if self.tracker.active:
             if isinstance(circuits, QuantumScript):
                 derivatives = 1
@@ -81,7 +84,9 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
     """Adds default tracking to a ``execute_and_compute_derivatives`` method."""
 
     @wraps(untracked_execute_and_compute_derivatives)
-    def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_derivatives(
+        self, circuits, execution_config: ExecutionConfig | None = None
+    ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -101,7 +106,7 @@ def _track_compute_jvp(untracked_compute_jvp):
     """Adds default tracking to a ``compute_jvp`` method."""
 
     @wraps(untracked_compute_jvp)
-    def compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig | None = None):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(jvp_batches=1, jvps=len(batch))
@@ -115,7 +120,9 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
     """Adds default tracking to a ``execute_and_compute_jvp`` method."""
 
     @wraps(untracked_execute_and_compute_jvp)
-    def execute_and_compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_jvp(
+        self, circuits, tangents, execution_config: ExecutionConfig | None = None
+    ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -132,7 +139,7 @@ def _track_compute_vjp(untracked_compute_vjp):
     """Adds default tracking to a ``compute_vjp`` method."""
 
     @wraps(untracked_compute_vjp)
-    def compute_vjp(self, circuits, cotangents, execution_config=DefaultExecutionConfig):
+    def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig | None = None):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(vjp_batches=1, vjps=len(batch))
@@ -148,7 +155,7 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
 
     @wraps(untracked_execute_and_compute_vjp)
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config=DefaultExecutionConfig
+        self, circuits, cotangents, execution_config: ExecutionConfig | None = None
     ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
@@ -198,29 +205,38 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        import pennylane as qp
+
+        from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+
         @simulator_tracking
         @single_tape_support
-        class MyDevice(qml.devices.Device):
+        class MyDevice(qp.devices.Device):
 
-            def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for c in circuits)
 
     >>> dev = MyDevice()
-    >>> ops = [qml.S(0)]
-    >>> measurements = [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
-    >>> t = qml.tape.QuantumScript(ops, measurements,shots=50)
+    >>> ops = [qp.S(0)]
+    >>> measurements = [qp.expval(qp.X(0)), qp.expval(qp.Z(0))]
+    >>> t = qp.tape.QuantumScript(ops, measurements,shots=50)
     >>> with dev.tracker:
     ...     dev.execute((t, ) )
-    >>> dev.tracker.history
+    (0.0,)
+    >>> import pprint
+    >>> pprint.pprint(dev.tracker.history)
     {'batches': [1],
-    'simulations': [1],
-    'executions': [2],
-    'results': [0.0],
-    'shots': [100],
-    'resources': [Resources(num_wires=1, num_gates=1, gate_types=defaultdict(<class 'int'>, {'S': 1}),
-    gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1, shots=Shots(total_shots=50,
-    shot_vector=(ShotCopies(50 shots x 1),)))],
-    'errors': {}}
+     'errors': [{}],
+     'executions': [2],
+     'resources': [SpecsResources(gate_types={'S': 1},
+                                  gate_sizes={1: 1},
+                                  measurements={'expval(PauliX)': 1,
+                                                'expval(PauliZ)': 1},
+                                  num_allocs=1,
+                                  depth=1)],
+     'results': [0.0],
+     'shots': [100],
+     'simulations': [1]}
 
     """
     if not issubclass(cls, Device):

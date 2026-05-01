@@ -14,11 +14,14 @@
 """
 Contains the MPS template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
+# pylint: disable=too-many-arguments
 import warnings
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):
@@ -90,7 +93,7 @@ class MPS(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
+        The expected number of blocks can be obtained from ``qp.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
         the length of ``template_weights`` argument should match the number of blocks. Whenever either ``n_block_wires``
         is odd or ``offset`` is not :math:`\lfloor \text{n_block_wires}/2  \rfloor`, the template deviates from the maximally
         unbalanced tree architecture described in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
@@ -102,27 +105,27 @@ class MPS(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             def block(weights, wires):
-                qml.CNOT(wires=[wires[0],wires[1]])
-                qml.RY(weights[0], wires=wires[0])
-                qml.RY(weights[1], wires=wires[1])
+                qp.CNOT(wires=[wires[0],wires[1]])
+                qp.RY(weights[0], wires=wires[0])
+                qp.RY(weights[1], wires=wires[1])
 
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
+            n_blocks = qp.MPS.get_n_blocks(range(n_wires),n_block_wires)
             template_weights = [[0.1, -0.3]] * n_blocks
 
-            dev= qml.device('default.qubit',wires=range(n_wires))
-            @qml.qnode(dev)
+            dev= qp.device('default.qubit',wires=range(n_wires))
+            @qp.qnode(dev)
             def circuit(template_weights):
-                qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.Z(n_wires-1))
+                qp.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+                return qp.expval(qp.Z(n_wires-1))
 
-        >>> print(qml.draw(circuit, level='device')(template_weights))
+        >>> print(qp.draw(circuit, level='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -132,36 +135,33 @@ class MPS(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             def block(wires):
-                qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
+                qp.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
 
             n_wires = 8
             n_block_wires = 4
             n_params_block = 2
 
-            dev= qml.device('default.qubit',wires=n_wires)
-            @qml.qnode(dev)
+            dev= qp.device('default.qubit',wires=n_wires)
+            @qp.qnode(dev)
             def circuit():
-                qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
-                return qml.state()
+                qp.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
+                return qp.state()
 
-        >>> print(qml.draw(circuit, level='device')())
-        0: ─╭●─────────────┤  State
-        1: ─├●─╭●──────────┤  State
-        2: ─├●─├●─╭●───────┤  State
-        3: ─╰X─├●─├●─╭●────┤  State
-        4: ────╰X─├●─├●─╭●─┤  State
-        5: ───────╰X─├●─├●─┤  State
-        6: ──────────╰X─├●─┤  State
-        7: ─────────────╰X─┤  State
+        >>> print(qp.draw(circuit, level='device')())
+            0: ─╭●─────────────┤ ╭State
+            1: ─├●─╭●──────────┤ ├State
+            2: ─├●─├●─╭●───────┤ ├State
+            3: ─╰X─├●─├●─╭●────┤ ├State
+            4: ────╰X─├●─├●─╭●─┤ ├State
+            5: ───────╰X─├●─├●─┤ ├State
+            6: ──────────╰X─├●─┤ ├State
+            7: ─────────────╰X─┤ ╰State
 
     """
-
-    num_wires = AnyWires
-    par_domain = "A"
 
     @classmethod
     def _primitive_bind_call(
@@ -209,7 +209,7 @@ class MPS(Operation):
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
         if template_weights is not None:
-            shape = qml.math.shape(template_weights)  # (n_blocks, n_params_block)
+            shape = math.shape(template_weights)  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
@@ -235,7 +235,7 @@ class MPS(Operation):
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, ind_gates=None, block=None, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -254,7 +254,7 @@ class MPS(Operation):
         """
         decomp = []
         itrweights = iter([]) if weights is None else iter(weights)
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         for w in ind_gates:
             weight = next(itrweights, None)
             decomp += (
@@ -262,7 +262,7 @@ class MPS(Operation):
                 if weight is None
                 else block_gen(weights=weight, wires=w, **kwargs)
             )
-        return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
+        return [apply(op) for op in decomp] if QueuingManager.recording() else decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires, offset=None):

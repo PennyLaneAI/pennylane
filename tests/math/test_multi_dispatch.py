@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Assertion test for multi_dispatch function/decorator"""
+
 # pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
 import autoray
 import numpy as onp
 import pytest
 from autoray import numpy as anp
 
-from pennylane import grad as qml_grad
+from pennylane import grad as qp_grad
 from pennylane import math as fn
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -36,7 +36,6 @@ test_multi_dispatch_stack_data = [
     anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
     jnp.array([[1.0, 0.0], [2.0, 3.0]]),
-    tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
 
@@ -82,7 +81,6 @@ test_data0 = [
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
     jnp.array([1, 2, 3]),
-    tf.constant([1, 2, 3]),
 ]
 
 test_data = [(x, x) for x in test_data0]
@@ -107,7 +105,6 @@ test_data_values = [
     [anp.array([1, 2, 3]) for _ in range(5)],
     [torch.tensor([1, 2, 3]) for _ in range(5)],
     [jnp.array([1, 2, 3]) for _ in range(5)],
-    [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
 
 
@@ -134,7 +131,6 @@ def test_unwrap():
     params = [
         [torch.tensor(2)],
         [[3, 4], torch.tensor([5, 6])],
-        tf.Variable([-1.0, -2.0]),
         [jnp.array(0.5), jnp.array([6, 7])],
         torch.tensor(0.5),
     ]
@@ -146,14 +142,11 @@ def test_unwrap():
     assert fn.allclose(out[1][1], np.array([5, 6]))
     assert fn.get_interface(out[1][1]) == "numpy"
 
-    assert fn.allclose(out[2], np.array([-1.0, -2.0]))
-    assert fn.get_interface(out[2]) == "numpy"
+    assert out[2][0] == 0.5
+    assert fn.allclose(out[2][1], np.array([6, 7]))
+    assert fn.get_interface(out[2][1]) == "numpy"
 
-    assert out[3][0] == 0.5
-    assert fn.allclose(out[3][1], np.array([6, 7]))
-    assert fn.get_interface(out[3][1]) == "numpy"
-
-    assert out[4] == 0.5
+    assert out[3] == 0.5
 
 
 @pytest.mark.parametrize(
@@ -193,7 +186,7 @@ def test_dot_autograd():
     assert res.requires_grad
     assert fn.allclose(res, 8)
 
-    assert fn.allclose(qml_grad(fn.dot)(x, y), x)
+    assert fn.allclose(qp_grad(fn.dot)(x, y), x)
 
 
 def test_dot_autograd_with_scalar():
@@ -209,20 +202,6 @@ def test_dot_autograd_with_scalar():
     res = fn.dot(y, x)
     assert isinstance(res, np.tensor)
     assert res.requires_grad
-    assert fn.allclose(res, [2.0, 3.0])
-
-
-def test_dot_tf_with_scalar():
-
-    x = tf.Variable(1.0)
-    y = tf.Variable([2.0, 3.0])
-
-    res = fn.dot(x, y)
-    assert isinstance(res, tf.Tensor)
-    assert fn.allclose(res, [2.0, 3.0])
-
-    res = fn.dot(y, x)
-    assert isinstance(res, tf.Tensor)
     assert fn.allclose(res, [2.0, 3.0])
 
 
@@ -302,18 +281,6 @@ class TestDetach:
         jac = torch.autograd.functional.jacobian(fn.detach, x)
         assert fn.isclose(jac, jac * 0.0)
 
-    def test_tf(self):
-        """Test that detach works with Tensorflow."""
-
-        x = tf.Variable(0.3)
-        assert x.trainable is True
-        detached_x = fn.detach(x)
-        assert not hasattr(detached_x, "trainable")
-        with tf.GradientTape() as t:
-            out = fn.detach(x)
-        jac = t.jacobian(out, x)
-        assert jac is None
-
 
 @pytest.mark.all_interfaces
 class TestNorm:
@@ -322,8 +289,6 @@ class TestNorm:
         (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), {}),
         (torch.tensor([0.5, -1, 2]), "torch", torch.tensor(2), {}),
         (torch.tensor([[5.0, 6.0], [-2.0, 3.0]]), "torch", torch.tensor(11), {"axis": (0, 1)}),
-        (tf.Variable([0.5, -1, 2]), "tensorflow", tf.Variable(2), {}),
-        (tf.Variable([[5, 6], [-2, 3]]), "tensorflow", tf.Variable(11), {"axis": [-2, -1]}),
         (jnp.array([0.5, -1, 2]), "jax", jnp.array(2), {}),
         (jnp.array([[5, 6], [-2, 3]]), "jax", jnp.array(11), {}),
     )
@@ -360,13 +325,13 @@ class TestNorm:
         ],
     )
     def test_autograd_norm_gradient(self, arr):
-        """Test that qml.math.norm has the correct gradient with autograd
+        """Test that qp.math.norm has the correct gradient with autograd
         when the order and axis are not specified."""
         norm = fn.norm(arr)
         expected_norm = onp.linalg.norm(arr)
         assert np.isclose(norm, expected_norm)
 
-        grad = qml_grad(fn.norm)(arr)
+        grad = qp_grad(fn.norm)(arr)
         expected_grad = (norm**-1) * arr.conj()
         assert fn.allclose(grad, expected_grad)
 
@@ -386,10 +351,6 @@ class TestSVD:
         (
             torch.tensor(mat),
             "torch",
-        ),
-        (
-            tf.Variable(mat),
-            "tensorflow",
         ),
         (
             jnp.array(mat),

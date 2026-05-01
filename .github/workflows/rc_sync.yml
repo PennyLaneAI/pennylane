@@ -1,10 +1,10 @@
-# This workflow will sync changes in the release candidate branch to master during a
+# This workflow will sync changes in the release candidate branch to main during a
 # feature freeze. The action is run daily and will only create a pull request when
 # there exists a release candidate branch corresponding to the current package version
 # as declared in pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while
 # the package version is "v0.24.0-dev".
 
-name: Sync release candidate with master
+name: Sync release candidate with main
 
 # Controls when the workflow will run
 on:
@@ -15,25 +15,48 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job to sync the master branch with changes from the rc
+  # This workflow contains a single job to sync the main branch with changes from the rc
   sync:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out the PennyLane repository
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
-          ref: master
+          ref: main
+
+      # Sets up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.9.17
+          enable-cache: true  
+
+      # Ensure setuptools is up-to-date for pyproject.toml processing
+      - name: Install latest setuptools 
+        run: |
+          uv pip install --upgrade pip
+          uv pip install --upgrade setuptools
 
       # Check for the existence of an rc branch for the current PennyLane version
       - name: Check for rc branch
         run: |
           VERSION=$(python setup.py --version)
-          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev[0-9]*}"
+          IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
           RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
           if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_ENV
@@ -53,22 +76,22 @@ jobs:
           echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
           git checkout -b "$BRANCH"
           # Exclude some files known to be divergent during the release process from the PR
-          git checkout master -- pennylane/_version.py
-          git checkout master -- doc/development/release_notes.md
+          git checkout main -- pennylane/_version.py
+          git checkout main -- doc/development/release_notes.md
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git commit -m "exclude files from pr"
-          # check for new changes on the rc branch only, based on the diff between master and rc
-          if ! git diff master HEAD --quiet -- $(git diff --name-only master...HEAD); then
+          # check for new changes on the rc branch only, based on the diff between main and rc
+          if ! git diff main HEAD --quiet -- $(git diff --name-only main...HEAD); then
             echo "new_changes=true" >> $GITHUB_ENV
             git push --set-upstream origin "$BRANCH"
           fi
 
-      # Create PR to master
+      # Create PR to main
       - name: Create pull request
         if: ${{ env.new_changes == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh pr create --title "Daily rc sync to master" --body "" --reviewer "PietropaoloFrisoni,albi3ro"
+          gh pr create --title "Daily rc sync to main" --body "" --reviewer "JerryChen97,albi3ro"

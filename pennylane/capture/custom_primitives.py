@@ -14,10 +14,11 @@
 """
 This submodule offers custom primitives for the PennyLane capture module.
 """
-from enum import Enum
-from typing import Union
 
-import jax
+from enum import Enum
+from typing import Any
+
+from jax.extend.core import Primitive
 
 
 class PrimitiveType(Enum):
@@ -30,10 +31,32 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class QmlPrimitive(jax.core.Primitive):
+def _make_hashable(obj: Any) -> Any:
+    """Convert potentially unhashable objects to hashable equivalents for JAX 0.7.0+.
+
+    JAX 0.7.0 requires all primitive parameters to be hashable. This helper converts
+    common unhashable types (list, dict, slice) to hashable tuples.
+
+    Args:
+        obj: Object to potentially convert to hashable form
+
+    Returns:
+        Hashable version of the object
+    """
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
+    if isinstance(obj, list):
+        return tuple(_make_hashable(item) for item in obj)
+    if isinstance(obj, dict):
+        return tuple((k, _make_hashable(v)) for k, v in obj.items())
+
+    return obj
+
+
+# pylint: disable=abstract-method,too-few-public-methods
+class QpPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
-    classes of primitives."""
+    classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""
 
     _prim_type: PrimitiveType = PrimitiveType.DEFAULT
 
@@ -44,21 +67,16 @@ class QmlPrimitive(jax.core.Primitive):
         return self._prim_type.value
 
     @prim_type.setter
-    def prim_type(self, value: Union[str, PrimitiveType]):
-        """Setter for QmlPrimitive.prim_type."""
+    def prim_type(self, value: str | PrimitiveType):
+        """Setter for QpPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
 
+    def bind(self, *args, **params):
+        """Bind with automatic parameter hashability conversion for JAX 0.7.0+.
 
-# pylint: disable=too-few-public-methods,abstract-method
-class NonInterpPrimitive(QmlPrimitive):
-    """A subclass to JAX's Primitive that works like a Python function
-    when evaluating JVPTracers and BatchTracers."""
-
-    def bind_with_trace(self, trace, args, params):
-        """Bind the ``NonInterpPrimitive`` with a trace.
-
-        If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
-        Otherwise, the bind call of JAX's standard Primitive is used."""
-        if isinstance(trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)):
-            return self.impl(*args, **params)
-        return super().bind_with_trace(trace, args, params)
+        Overrides the parent bind method to automatically convert unhashable parameters
+        (like lists, dicts, and slices) to hashable tuples, which is required by JAX 0.7.0+.
+        """
+        # Convert all parameters to hashable forms
+        hashable_params = {k: _make_hashable(v) for k, v in params.items()}
+        return super().bind(*args, **hashable_params)

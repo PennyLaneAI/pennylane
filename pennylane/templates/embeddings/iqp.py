@@ -14,13 +14,23 @@
 r"""
 Contains the IQPEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
+# pylint: disable=too-many-arguments
 import copy
 from itertools import combinations
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import capture, math
+from pennylane.control_flow import for_loop, while_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operation
+from pennylane.ops import RZ, H, MultiRZ
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class IQPEmbedding(Operation):
@@ -88,14 +98,14 @@ class IQPEmbedding(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=3)
+            dev = qp.device('default.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3))
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3))
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -105,10 +115,10 @@ class IQPEmbedding(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), n_repeats=4)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -123,10 +133,10 @@ class IQPEmbedding(Operation):
 
             pattern = [[1, 2], [0, 2], [1, 0]]
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), pattern=pattern)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -139,10 +149,10 @@ class IQPEmbedding(Operation):
             pattern1 = [[1, 2], [0, 2], [1, 0]]
             pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features, pattern):
-                qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
             res2 = circuit([1., 2., 3.], pattern=pattern2)
@@ -165,11 +175,12 @@ class IQPEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
+    resource_keys = {"pattern_size", "n_repeats", "num_wires"}
+
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
-        shape = qml.math.shape(features)
+        shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
             raise ValueError(
@@ -187,6 +198,14 @@ class IQPEmbedding(Operation):
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "pattern_size": len(self.hyperparameters["pattern"]),
+            "n_repeats": self.hyperparameters["n_repeats"],
+            "num_wires": len(self.wires),
+        }
 
     def map_wires(self, wire_map):
         # pylint: disable=protected-access
@@ -228,7 +247,7 @@ class IQPEmbedding(Operation):
 
         >>> features = torch.tensor([1., 2., 3.])
         >>> pattern = [(0, 1), (0, 2), (1, 2)]
-        >>> qml.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
+        >>> qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
         [H(0), RZ(tensor(1.), wires=[0]),
          H(1), RZ(tensor(2.), wires=[1]),
          H(2), RZ(tensor(3.), wires=[2]),
@@ -238,22 +257,76 @@ class IQPEmbedding(Operation):
          H(2), RZ(tensor(3.), wires=[2]),
          MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
         """
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
         op_list = []
-        if qml.math.ndim(features) > 1:
+        if math.ndim(features) > 1:
             # If broadcasting is used, we want to iterate over the wires axis of the features,
             # not over the broadcasting dimension. The latter is passed on to the rotations.
-            features = qml.math.T(features)
+            features = math.T(features)
 
         for _ in range(n_repeats):
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(qml.Hadamard(wires=wires[i]))
-                op_list.append(qml.RZ(features[i], wires=wires[i]))
+                op_list.append(H(wires=wires[i]))
+                op_list.append(RZ(features[i], wires=wires[i]))
 
             for wire_pair in pattern:
                 # get the position of the wire indices in the array
                 idx1, idx2 = wires.indices(wire_pair)
                 # apply product of two features as entangler
-                op_list.append(qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
+                op_list.append(MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
 
         return op_list
+
+
+def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
+    return {
+        resource_rep(RZ): n_repeats * num_wires,
+        resource_rep(H): n_repeats * num_wires,
+        resource_rep(MultiRZ, num_wires=2): pattern_size * n_repeats,
+    }
+
+
+@register_resources(_iqp_embedding_resources)
+def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
+
+    if has_jax and capture.enabled():
+        wires, pattern, features = jnp.array(wires), jnp.array(pattern), jnp.array(features)
+
+    if math.ndim(features) > 1:
+        features = math.T(features)
+
+    @for_loop(n_repeats)
+    def outer_loop(_):
+
+        @for_loop(len(wires))
+        def single_qubit_loop(i):
+            H(wires=wires[i])
+            RZ(features[i], wires=wires[i])
+
+        single_qubit_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(pattern))
+        def pattern_loop(j):
+
+            @while_loop(lambda curr: wires[curr] != pattern[j][0])
+            def search_loop_1(curr):
+                curr += 1
+                return curr
+
+            idx1 = search_loop_1(0)
+
+            @while_loop(lambda curr: wires[curr] != pattern[j][1])
+            def search_loop_2(curr):
+                curr += 1
+                return curr
+
+            idx2 = search_loop_2(0)
+
+            MultiRZ(features[idx1] * features[idx2], wires=pattern[j])
+
+        pattern_loop()  # pylint: disable=no-value-for-parameter
+
+    outer_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(IQPEmbedding, _iqp_embedding_decomposition)

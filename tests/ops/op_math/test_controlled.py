@@ -35,12 +35,15 @@ from gate_data import (
 )
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.operation import DecompositionUndefinedError, Operation, Operator
+from pennylane.decomposition import gate_sets
+from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
-from pennylane.tape.tape import expand_tape
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods
@@ -55,7 +58,7 @@ def equal_list(lhs, rhs):
         lhs = [lhs]
     if not isinstance(rhs, list):
         rhs = [rhs]
-    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs))
+    return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs))
 
 
 class TempOperator(Operator):
@@ -70,9 +73,9 @@ class OpWithDecomposition(Operation):
     @staticmethod
     def compute_decomposition(*params, wires=None, **_):
         return [
-            qml.Hadamard(wires=wires[0]),
-            qml.S(wires=wires[1]),
-            qml.RX(params[0], wires=wires[0]),
+            qp.Hadamard(wires=wires[0]),
+            qp.S(wires=wires[1]),
+            qp.RX(params[0], wires=wires[0]),
         ]
 
 
@@ -126,9 +129,7 @@ class TestControlledInit:
     def test_nonparametric_ops(self):
         """Test pow initialization for a non parameteric operation."""
 
-        op = Controlled(
-            self.temp_op, (0, 1), control_values=[True, False], work_wires="aux", id="something"
-        )
+        op = Controlled(self.temp_op, (0, 1), control_values=[True, False], work_wires="aux")
 
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
@@ -143,10 +144,9 @@ class TestControlledInit:
         assert op.control_values == [True, False]
         assert op.hyperparameters["control_values"] == [True, False]
 
-        assert op.work_wires == Wires(("aux"))
+        assert op.work_wires == Wires("aux")
 
         assert op.name == "C(TempOperator)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
@@ -208,17 +208,18 @@ class TestControlledProperties:
         """Tests that a controlled op has the correct resource params."""
 
         op = Controlled(
-            qml.MultiRZ(0.5, wires=[0, 1, 2]),
+            qp.MultiRZ(0.5, wires=[0, 1, 2]),
             control_wires=[3, 4],
             control_values=[True, False],
             work_wires=[5],
         )
         assert op.resource_params == {
-            "base_class": qml.MultiRZ,
+            "base_class": qp.MultiRZ,
             "base_params": {"num_wires": 3},
             "num_control_wires": 2,
             "num_zero_control_values": 1,
             "num_work_wires": 1,
+            "work_wire_type": "borrowed",
         }
 
     def test_data(self):
@@ -226,7 +227,7 @@ class TestControlledProperties:
 
         x = pnp.array(1.234)
 
-        base = qml.RX(x, wires="a")
+        base = qp.RX(x, wires="a")
         op = Controlled(base, (0, 1))
 
         assert op.data == (x,)
@@ -261,7 +262,7 @@ class TestControlledProperties:
         assert op.has_matrix is value
 
     @pytest.mark.parametrize(
-        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
+        "base", (qp.RX(1.23, 0), qp.Rot(1.2, 2.3, 3.4, 0), qp.QubitUnitary([[0, 1], [1, 0]], 0))
     )
     def test_ndim_params(self, base):
         """Test that Controlled defers to base ndim_params"""
@@ -281,27 +282,27 @@ class TestControlledProperties:
         """Test that Controlled claims `has_decomposition` to be true if
         only one control wire is used and the base has a `_controlled` method."""
 
-        op = Controlled(qml.RX(0.2, wires=1), 4)
+        op = Controlled(qp.RX(0.2, wires=1), 4)
         assert op.has_decomposition is True
 
     def test_has_decomposition_true_via_pauli_x(self):
         """Test that Controlled claims `has_decomposition` to be true if
         the base is a `PauliX` operator"""
 
-        op = Controlled(qml.PauliX(3), [0, 4])
+        op = Controlled(qp.PauliX(3), [0, 4])
         assert op.has_decomposition is True
 
     def test_has_decomposition_multicontrolled_special_unitary(self):
         """Test that a one qubit special unitary with any number of control
         wires has a decomposition."""
-        op = Controlled(qml.RX(1.234, wires=0), (1, 2, 3, 4, 5))
+        op = Controlled(qp.RX(1.234, wires=0), (1, 2, 3, 4, 5))
         assert op.has_decomposition
 
     def test_has_decomposition_true_via_base_has_decomp(self):
         """Test that Controlled claims `has_decomposition` to be true if
         the base has a decomposition and indicates this via `has_decomposition`."""
 
-        op = Controlled(qml.IsingXX(0.6, [1, 3]), [0, 4])
+        op = Controlled(qp.IsingXX(0.6, [1, 3]), [0, 4])
         assert op.has_decomposition is True
 
     def test_has_decomposition_false_single_cwire(self):
@@ -362,16 +363,17 @@ class TestControlledProperties:
 
         class DummyOp(Operator):
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op = Controlled(DummyOp(1), 0)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
-    def test_map_wires(self):
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_map_wires(self, work_wire_type):
         """Test that we can get and set private wires."""
 
-        base = qml.IsingXX(1.234, wires=(0, 1))
-        op = Controlled(base, (3, 4), work_wires="aux")
+        base = qp.IsingXX(1.234, wires=(0, 1))
+        op = Controlled(base, (3, 4), work_wires="aux", work_wire_type=work_wire_type)
 
         assert op.wires == Wires((3, 4, 0, 1))
 
@@ -379,7 +381,8 @@ class TestControlledProperties:
 
         assert op.base.wires == Wires(("c", "d"))
         assert op.control_wires == Wires(("a", "b"))
-        assert op.work_wires == Wires(("extra"))
+        assert op.work_wires == Wires("extra")
+        assert op.work_wire_type == work_wire_type
 
 
 class TestControlledMiscMethods:
@@ -387,9 +390,9 @@ class TestControlledMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
-        assert repr(Controlled(qml.S(0), [1])) == "Controlled(S(0), control_wires=[1])"
+        assert repr(Controlled(qp.S(0), [1])) == "Controlled(S(0), control_wires=[1])"
 
-        base = qml.S(0) + qml.T(1)
+        base = qp.S(0) + qp.T(1)
         op = Controlled(base, [2])
         assert repr(op) == "Controlled(S(0) + T(1), control_wires=[2])"
 
@@ -401,10 +404,10 @@ class TestControlledMiscMethods:
 
     def test_flatten_unflatten(self):
         """Tests the _flatten and _unflatten methods."""
-        target = qml.S(0)
-        control_wires = qml.wires.Wires((1, 2))
+        target = qp.S(0)
+        control_wires = qp.wires.Wires((1, 2))
         control_values = (0, 0)
-        work_wires = qml.wires.Wires(3)
+        work_wires = qp.wires.Wires(3)
 
         op = Controlled(target, control_wires, control_values=control_values, work_wires=work_wires)
 
@@ -412,13 +415,13 @@ class TestControlledMiscMethods:
         assert data[0] is target
         assert len(data) == 1
 
-        assert metadata == (control_wires, control_values, work_wires)
+        assert metadata == (control_wires, control_values, work_wires, "borrowed")
 
         # make sure metadata is hashable
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        qml.assert_equal(op, new_op)
+        qp.assert_equal(op, new_op)
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):
@@ -428,7 +431,7 @@ class TestControlledMiscMethods:
         param1 = 1.234
         base_wire = "a"
         control_wires = [0, 1]
-        base = qml.RX(param1, base_wire)
+        base = qp.RX(param1, base_wire)
         op = Controlled(base, control_wires, control_values=[0, 1])
 
         copied_op = copy(op)
@@ -443,7 +446,7 @@ class TestControlledMiscMethods:
 
     def test_label(self):
         """Test that the label method defers to the label of the base."""
-        base = qml.U1(1.23, wires=0)
+        base = qp.U1(1.23, wires=0)
         op = Controlled(base, "a")
 
         assert op.label() == base.label()
@@ -453,7 +456,7 @@ class TestControlledMiscMethods:
     def test_label_matrix_param(self):
         """Test that the label method simply returns the label of the base and updates the cache."""
         U = pnp.eye(2)
-        base = qml.QubitUnitary(U, wires=0)
+        base = qp.QubitUnitary(U, wires=0)
         op = Controlled(base, ["a", "b"])
 
         cache = {"matrices": []}
@@ -462,27 +465,27 @@ class TestControlledMiscMethods:
 
     def test_eigvals(self):
         """Test the eigenvalues against the matrix eigenvalues."""
-        base = qml.IsingXX(1.234, wires=(0, 1))
+        base = qp.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (2, 3))
 
         mat = op.matrix()
-        mat_eigvals = pnp.sort(qml.math.linalg.eigvals(mat))
+        mat_eigvals = pnp.sort(qp.math.linalg.eigvals(mat))
 
         eigs = op.eigvals()
         sort_eigs = pnp.sort(eigs)
 
-        assert qml.math.allclose(mat_eigvals, sort_eigs)
+        assert qp.math.allclose(mat_eigvals, sort_eigs)
 
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
-        base = qml.RX(0.5, 0)
+        base = qp.RX(0.5, 0)
         op = Controlled(base, ("b", "c"))
 
         assert op.has_generator is True
 
     def test_has_generator_false(self):
         """Test `has_generator` property carries over when base op does not define a generator."""
-        base = qml.PauliX(0)
+        base = qp.PauliX(0)
         op = Controlled(base, ("b", "c"))
 
         assert op.has_generator is False
@@ -490,17 +493,17 @@ class TestControlledMiscMethods:
     def test_generator(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
-        base = qml.RZ(-0.123, wires="a")
+        base = qp.RZ(-0.123, wires="a")
         control_values = [0, 1]
         op = Controlled(base, ("b", "c"), control_values=control_values)
 
-        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
-        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
+        base_gen, base_gen_coeff = qp.generator(base, format="prefactor")
+        gen_tensor, gen_coeff = qp.generator(op, format="prefactor")
 
         assert base_gen_coeff == gen_coeff
 
         for wire, val in zip(op.control_wires, control_values):
-            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
+            ob = list(op for op in gen_tensor.operands if op.wires == qp.wires.Wires(wire))
             assert len(ob) == 1
             assert ob[0].data == ([val],)
 
@@ -508,14 +511,14 @@ class TestControlledMiscMethods:
         assert len(ob) == 1
         assert ob[0].__class__ is base_gen.__class__
 
-        expected = qml.exp(op.generator(), 1j * op.data[0])
-        assert qml.math.allclose(
+        expected = qp.exp(op.generator(), 1j * op.data[0])
+        assert qp.math.allclose(
             expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
         )
 
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
-        base = qml.PauliX(0)
+        base = qp.PauliX(0)
         op = Controlled(base, (1, 2))
 
         op_gates = op.diagonalizing_gates()
@@ -530,7 +533,7 @@ class TestControlledMiscMethods:
     def test_hash(self):
         """Test that op.hash uniquely describes an op up to work wires."""
 
-        base = qml.RY(1.2, wires=0)
+        base = qp.RY(1.2, wires=0)
         # different control wires
         op1 = Controlled(base, (1, 2), [0, 1])
         op2 = Controlled(base, (2, 1), [0, 1])
@@ -584,10 +587,10 @@ class TestControlledOperationProperties:
     @pytest.mark.parametrize(
         "base, expected",
         [
-            (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
-            (qml.PhaseShift(-2.4, wires=0), [(1,)]),
-            (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
-            (qml.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
+            (qp.RX(1.23, wires=0), [(0.5, 1.0)]),
+            (qp.PhaseShift(-2.4, wires=0), [(1,)]),
+            (qp.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+            (qp.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
         ],
     )
     def test_parameter_frequencies(self, base, expected):
@@ -602,7 +605,7 @@ class TestControlledOperationProperties:
         op = Controlled(base, 2)
 
         with pytest.raises(
-            qml.operation.ParameterFrequenciesUndefinedError,
+            qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
             op.parameter_frequencies
@@ -613,41 +616,41 @@ class TestControlledOperationProperties:
         op = Controlled(base, (2, 3))
 
         with pytest.raises(
-            qml.operation.ParameterFrequenciesUndefinedError,
+            qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
             op.parameter_frequencies
 
 
 class TestControlledSimplify:
-    """Test qml.sum simplify method and depth property."""
+    """Test qp.sum simplify method and depth property."""
 
     def test_depth_property(self):
         """Test depth property."""
-        controlled_op = Controlled(qml.RZ(1.32, wires=0) + qml.Identity(wires=0), control_wires=1)
+        controlled_op = Controlled(qp.RZ(1.32, wires=0) + qp.Identity(wires=0), control_wires=1)
         assert controlled_op.arithmetic_depth == 2
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         controlled_op = Controlled(
-            qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1), control_wires=2
+            qp.RZ(1.32, wires=0) + qp.Identity(wires=0) + qp.RX(1.9, wires=1), control_wires=2
         )
         final_op = Controlled(
-            qml.sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1)),
+            qp.sum(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)),
             control_wires=2,
         )
         simplified_op = controlled_op.simplify()
 
         assert isinstance(simplified_op, Controlled)
         for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
-            qml.assert_equal(s1, s2)
+            qp.assert_equal(s1, s2)
 
     def test_simplify_nested_controlled_ops(self):
         """Test the simplify method with nested control operations on different wires."""
-        controlled_op = Controlled(Controlled(qml.Hadamard(0), 1), 2)
-        final_op = Controlled(qml.Hadamard(0), [2, 1])
+        controlled_op = Controlled(Controlled(qp.Hadamard(0), 1), 2)
+        final_op = Controlled(qp.Hadamard(0), [2, 1])
         simplified_op = controlled_op.simplify()
-        qml.assert_equal(simplified_op, final_op)
+        qp.assert_equal(simplified_op, final_op)
 
 
 class TestControlledQueuing:
@@ -655,18 +658,18 @@ class TestControlledQueuing:
 
     def test_queuing(self):
         """Test that `Controlled` is queued upon initialization and updates base metadata."""
-        with qml.queuing.AnnotatedQueue() as q:
-            base = qml.Rot(1.234, 2.345, 3.456, wires=2)
+        with qp.queuing.AnnotatedQueue() as q:
+            base = qp.Rot(1.234, 2.345, 3.456, wires=2)
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        qml.assert_equal(q.queue[0], op)
+        qp.assert_equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
 
-        base = qml.IsingXX(1.234, wires=(0, 1))
-        with qml.queuing.AnnotatedQueue() as q:
+        base = qp.IsingXX(1.234, wires=(0, 1))
+        with qp.queuing.AnnotatedQueue() as q:
             op = Controlled(base, ("a", "b"))
 
         assert len(q) == 1
@@ -674,19 +677,19 @@ class TestControlledQueuing:
 
 
 base_num_control_mats = [
-    (qml.PauliX("a"), 1, CNOT),
-    (qml.PauliX("a"), 2, Toffoli),
-    (qml.CNOT(["a", "b"]), 1, Toffoli),
-    (qml.PauliY("a"), 1, CY),
-    (qml.PauliZ("a"), 1, CZ),
-    (qml.PauliZ("a"), 2, CCZ),
-    (qml.SWAP(("a", "b")), 1, CSWAP),
-    (qml.Hadamard("a"), 1, CH),
-    (qml.RX(1.234, "b"), 1, CRotx(1.234)),
-    (qml.RY(-0.432, "a"), 1, CRoty(-0.432)),
-    (qml.RZ(6.78, "a"), 1, CRotz(6.78)),
-    (qml.Rot(1.234, -0.432, 9.0, "a"), 1, CRot3(1.234, -0.432, 9.0)),
-    (qml.PhaseShift(1.234, wires="a"), 1, ControlledPhaseShift(1.234)),
+    (qp.PauliX("a"), 1, CNOT),
+    (qp.PauliX("a"), 2, Toffoli),
+    (qp.CNOT(["a", "b"]), 1, Toffoli),
+    (qp.PauliY("a"), 1, CY),
+    (qp.PauliZ("a"), 1, CZ),
+    (qp.PauliZ("a"), 2, CCZ),
+    (qp.SWAP(("a", "b")), 1, CSWAP),
+    (qp.Hadamard("a"), 1, CH),
+    (qp.RX(1.234, "b"), 1, CRotx(1.234)),
+    (qp.RY(-0.432, "a"), 1, CRoty(-0.432)),
+    (qp.RZ(6.78, "a"), 1, CRotz(6.78)),
+    (qp.Rot(1.234, -0.432, 9.0, "a"), 1, CRot3(1.234, -0.432, 9.0)),
+    (qp.PhaseShift(1.234, wires="a"), 1, ControlledPhaseShift(1.234)),
 ]
 
 
@@ -697,7 +700,7 @@ class TestMatrix:
         """Test batching returns a matrix of the correct dimensions"""
 
         x = pnp.array([1.0, 2.0, 3.0])
-        base = qml.RX(x, 0)
+        base = qp.RX(x, 0)
         op = Controlled(base, 1)
         matrix = op.matrix()
         assert matrix.shape == (3, 4, 4)
@@ -706,12 +709,12 @@ class TestMatrix:
     def test_matrix_compare_with_gate_data(self, base, num_control, mat):
         """Test the matrix against matrices provided by `gate_data` file."""
         op = Controlled(base, list(range(num_control)))
-        assert qml.math.allclose(op.matrix(), mat)
+        assert qp.math.allclose(op.matrix(), mat)
 
     def test_aux_wires_included(self):
         """Test that matrix expands to have identity on work wires."""
 
-        base = qml.PauliX(1)
+        base = qp.PauliX(1)
         op = Controlled(
             base,
             0,
@@ -722,13 +725,13 @@ class TestMatrix:
 
     def test_wire_order(self):
         """Test that the ``wire_order`` keyword argument alters the matrix as expected."""
-        base = qml.RX(-4.432, wires=1)
+        base = qp.RX(-4.432, wires=1)
         op = Controlled(base, 0)
 
         method_order = op.matrix(wire_order=(1, 0))
-        function_order = qml.math.expand_matrix(op.matrix(), op.wires, (1, 0))
+        function_order = qp.math.expand_matrix(op.matrix(), op.wires, (1, 0))
 
-        assert qml.math.allclose(method_order, function_order)
+        assert qp.math.allclose(method_order, function_order)
 
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]))
     def test_control_values(self, control_values):
@@ -736,30 +739,30 @@ class TestMatrix:
         to reverse the control values."""
         control_wires = (0, 1, 2)
 
-        base = qml.RX(3.456, wires=3)
+        base = qp.RX(3.456, wires=3)
         op = Controlled(base, control_wires, control_values=control_values)
 
         mat = op.matrix()
-        with qml.queuing.AnnotatedQueue() as q:
-            [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
+        with qp.queuing.AnnotatedQueue() as q:
+            [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
-            [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
-        tape = qml.tape.QuantumScript.from_queue(q)
-        decomp_mat = qml.matrix(tape, wire_order=op.wires)
+            [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
+        tape = qp.tape.QuantumScript.from_queue(q)
+        decomp_mat = qp.matrix(tape, wire_order=op.wires)
 
-        assert qml.math.allclose(mat, decomp_mat)
+        assert qp.math.allclose(mat, decomp_mat)
 
     def test_sparse_matrix_base_defines(self):
         """Check that an op that defines a sparse matrix has it used in the controlled
         sparse matrix."""
 
-        Hmat = (1.0 * qml.PauliX(0)).sparse_matrix()
-        H_sparse = qml.SparseHamiltonian(Hmat, wires="0")
+        Hmat = (1.0 * qp.PauliX(0)).sparse_matrix()
+        H_sparse = qp.SparseHamiltonian(Hmat, wires="0")
         op = Controlled(H_sparse, "a")
 
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
-        assert qml.math.allclose(sparse_mat.toarray(), op.matrix())
+        assert qp.math.allclose(sparse_mat.toarray(), op.matrix())
         assert op.has_sparse_matrix
 
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]))
@@ -767,24 +770,24 @@ class TestMatrix:
         """Check that an base doesn't define a sparse matrix but defines a dense matrix
         still provides a controlled sparse matrix."""
         control_wires = (0, 1, 2)
-        base = qml.U2(1.234, -3.2, wires=3)
+        base = qp.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires, control_values=control_values)
 
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
-        assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+        assert qp.math.allclose(op.sparse_matrix().toarray(), op.matrix())
         assert op.has_sparse_matrix
 
     def test_sparse_matrix_wire_order(self):
         """Check if the user requests specific wire order, sparse_matrix() returns the same as matrix()."""
         control_wires = (0, 1, 2)
-        base = qml.U2(1.234, -3.2, wires=3)
+        base = qp.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires)
 
         op_sparse = op.sparse_matrix(wire_order=[3, 2, 1, 0])
         op_dense = op.matrix(wire_order=[3, 2, 1, 0])
 
-        assert qml.math.allclose(op_sparse.toarray(), op_dense)
+        assert qp.math.allclose(op_sparse.toarray(), op_dense)
 
     def test_no_matrix_defined_sparse_matrix_error(self):
         """Check that if the base gate defines neither a sparse matrix nor a dense matrix, a
@@ -794,12 +797,12 @@ class TestMatrix:
         op = Controlled(base, 2)
         assert not op.has_sparse_matrix
 
-        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+        with pytest.raises(qp.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
 
     def test_sparse_matrix_format(self):
         """Test format keyword determines output type of sparse matrix."""
-        base = qml.PauliX(0)
+        base = qp.PauliX(0)
         op = Controlled(base, 1)
 
         lil_mat = op.sparse_matrix(format="lil")
@@ -807,197 +810,245 @@ class TestMatrix:
 
 
 special_non_par_op_decomps = [
-    (qml.PauliY, [], [0], [1], qml.CY, [qml.CRY(np.pi, wires=[1, 0]), qml.S(1)]),
-    (qml.PauliZ, [], [1], [0], qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
-        qml.Hadamard,
+        qp.Identity,
+        [],
+        [3],
+        [0, 1, 2],
+        (lambda wires: qp.ctrl(qp.Identity(wires[-1]), control=wires[:-1])),
+        [qp.Identity([0, 1, 2, 3])],
+    ),
+    (qp.PauliY, [], [0], [1], qp.CY, [qp.CRY(np.pi, wires=[1, 0]), qp.S(1)]),
+    (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
+    (
+        qp.Hadamard,
         [],
         [1],
         [0],
-        qml.CH,
-        [qml.RY(-np.pi / 4, wires=1), qml.CZ(wires=[0, 1]), qml.RY(np.pi / 4, wires=1)],
+        qp.CH,
+        [qp.RY(-np.pi / 4, wires=1), qp.CZ(wires=[0, 1]), qp.RY(np.pi / 4, wires=1)],
     ),
     (
-        qml.PauliZ,
+        qp.PauliZ,
         [],
         [0],
         [2, 1],
-        qml.CCZ,
+        qp.CCZ,
         [
-            qml.CNOT(wires=[1, 0]),
-            qml.adjoint(qml.T(wires=0)),
-            qml.CNOT(wires=[2, 0]),
-            qml.T(wires=0),
-            qml.CNOT(wires=[1, 0]),
-            qml.adjoint(qml.T(wires=0)),
-            qml.CNOT(wires=[2, 0]),
-            qml.T(wires=0),
-            qml.T(wires=1),
-            qml.CNOT(wires=[2, 1]),
-            qml.Hadamard(wires=0),
-            qml.T(wires=2),
-            qml.adjoint(qml.T(wires=1)),
-            qml.CNOT(wires=[2, 1]),
-            qml.Hadamard(wires=0),
+            qp.CNOT(wires=[1, 0]),
+            qp.adjoint(qp.T(wires=0)),
+            qp.CNOT(wires=[2, 0]),
+            qp.T(wires=0),
+            qp.CNOT(wires=[1, 0]),
+            qp.adjoint(qp.T(wires=0)),
+            qp.CNOT(wires=[2, 0]),
+            qp.T(wires=0),
+            qp.T(wires=1),
+            qp.CNOT(wires=[2, 1]),
+            qp.Hadamard(wires=0),
+            qp.T(wires=2),
+            qp.adjoint(qp.T(wires=1)),
+            qp.CNOT(wires=[2, 1]),
+            qp.Hadamard(wires=0),
         ],
     ),
     (
-        qml.CZ,
+        qp.CZ,
         [],
         [1, 2],
         [0],
-        qml.CCZ,
+        qp.CCZ,
         [
-            qml.CNOT(wires=[1, 2]),
-            qml.adjoint(qml.T(wires=2)),
-            qml.CNOT(wires=[0, 2]),
-            qml.T(wires=2),
-            qml.CNOT(wires=[1, 2]),
-            qml.adjoint(qml.T(wires=2)),
-            qml.CNOT(wires=[0, 2]),
-            qml.T(wires=2),
-            qml.T(wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=2),
-            qml.T(wires=0),
-            qml.adjoint(qml.T(wires=1)),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[2]),
+            qp.CNOT(wires=[1, 2]),
+            qp.adjoint(qp.T(wires=2)),
+            qp.CNOT(wires=[0, 2]),
+            qp.T(wires=2),
+            qp.CNOT(wires=[1, 2]),
+            qp.adjoint(qp.T(wires=2)),
+            qp.CNOT(wires=[0, 2]),
+            qp.T(wires=2),
+            qp.T(wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.Hadamard(wires=2),
+            qp.T(wires=0),
+            qp.adjoint(qp.T(wires=1)),
+            qp.CNOT(wires=[0, 1]),
+            qp.Hadamard(wires=[2]),
         ],
     ),
     (
-        qml.SWAP,
+        qp.SWAP,
         [],
         [1, 2],
         [0],
-        qml.CSWAP,
-        [qml.Toffoli(wires=[0, 2, 1]), qml.Toffoli(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 2, 1])],
+        qp.CSWAP,
+        [qp.CNOT(wires=[2, 1]), qp.Toffoli(wires=[0, 1, 2]), qp.CNOT(wires=[2, 1])],
     ),
 ]
 
 special_par_op_decomps = [
     (
-        qml.RX,
+        qp.RX,
         [0.123],
         [1],
         [0],
-        qml.CRX,
+        qp.CRX,
         [
-            qml.RZ(np.pi / 2, wires=1),
-            qml.RY(0.123 / 2, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.RY(-0.123 / 2, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-np.pi / 2, wires=1),
+            qp.RZ(np.pi / 2, wires=1),
+            qp.RY(0.123 / 2, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.RY(-0.123 / 2, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.RZ(-np.pi / 2, wires=1),
         ],
     ),
     (
-        qml.RY,
+        qp.RY,
         [0.123],
         [1],
         [0],
-        qml.CRY,
+        qp.CRY,
         [
-            qml.RY(0.123 / 2, 1),
-            qml.CNOT(wires=(0, 1)),
-            qml.RY(-0.123 / 2, 1),
-            qml.CNOT(wires=(0, 1)),
+            qp.RY(0.123 / 2, 1),
+            qp.CNOT(wires=(0, 1)),
+            qp.RY(-0.123 / 2, 1),
+            qp.CNOT(wires=(0, 1)),
         ],
     ),
     (
-        qml.RZ,
+        qp.RZ,
         [0.123],
         [0],
         [1],
-        qml.CRZ,
+        qp.CRZ,
         [
-            qml.PhaseShift(0.123 / 2, wires=0),
-            qml.CNOT(wires=[1, 0]),
-            qml.PhaseShift(-0.123 / 2, wires=0),
-            qml.CNOT(wires=[1, 0]),
+            qp.PhaseShift(0.123 / 2, wires=0),
+            qp.CNOT(wires=[1, 0]),
+            qp.PhaseShift(-0.123 / 2, wires=0),
+            qp.CNOT(wires=[1, 0]),
         ],
     ),
     (
-        qml.Rot,
+        qp.Rot,
         [0.1, 0.2, 0.3],
         [1],
         [0],
-        qml.CRot,
+        qp.CRot,
         [
-            qml.RZ((0.1 - 0.3) / 2, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-(0.1 + 0.3) / 2, wires=1),
-            qml.RY(-0.2 / 2, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.RY(0.2 / 2, wires=1),
-            qml.RZ(0.3, wires=1),
+            qp.RZ((0.1 - 0.3) / 2, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.RZ(-(0.1 + 0.3) / 2, wires=1),
+            qp.RY(-0.2 / 2, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.RY(0.2 / 2, wires=1),
+            qp.RZ(0.3, wires=1),
         ],
     ),
     (
-        qml.PhaseShift,
+        qp.PhaseShift,
         [0.123],
         [1],
         [0],
-        qml.ControlledPhaseShift,
+        qp.ControlledPhaseShift,
         [
-            qml.PhaseShift(0.123 / 2, wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.PhaseShift(-0.123 / 2, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.PhaseShift(0.123 / 2, wires=1),
+            qp.PhaseShift(0.123 / 2, wires=0),
+            qp.CNOT(wires=[0, 1]),
+            qp.PhaseShift(-0.123 / 2, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.PhaseShift(0.123 / 2, wires=1),
         ],
     ),
     (
-        qml.GlobalPhase,
+        qp.GlobalPhase,
         [0.123],
         [1],
         [0],
-        (lambda x, wires: qml.ctrl(qml.GlobalPhase(x, wires[-1]), control=wires[:-1])),
-        [qml.PhaseShift(-0.123, wires=0)],
+        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        [qp.PhaseShift(-0.123, wires=0)],
     ),
     (
-        qml.GlobalPhase,
+        qp.GlobalPhase,
         [0.123],
         [3],
         [0, 1, 2],
-        (lambda x, wires: qml.ctrl(qml.GlobalPhase(x, wires[-1]), control=wires[:-1])),
-        [qml.ctrl(qml.PhaseShift(-0.123, wires=2), control=[0, 1])],
+        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        [qp.ctrl(qp.PhaseShift(-0.123, wires=2), control=[0, 1])],
     ),
 ]
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
-pauli_x_based_op_decomps = [
-    (qml.PauliX, [0], [1], [qml.CNOT([1, 0])]),
+pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
+    (qp.PauliX, [0], [1], None, [qp.CNOT([1, 0])]),
     (
-        qml.PauliX,
+        qp.PauliX,
         [2],
         [0, 1],
-        qml.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+        None,
+        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
     ),
     (
-        qml.CNOT,
+        qp.PauliX,
+        [2],
+        [0, 1],
+        ["aux"],
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
+    ),
+    (
+        qp.CNOT,
         [1, 2],
         [0],
-        qml.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+        None,
+        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
     ),
     (
-        qml.PauliX,
+        qp.CNOT,
+        [1, 2],
+        [0],
+        ["aux"],
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
+    ),
+    (
+        qp.PauliX,
         [3],
         [0, 1, 2],
-        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+        None,
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
     ),
     (
-        qml.CNOT,
+        qp.PauliX,
+        [3],
+        [0, 1, 2],
+        ["aux"],
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+    ),
+    (
+        qp.CNOT,
         [2, 3],
         [0, 1],
-        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+        None,
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
     ),
     (
-        qml.Toffoli,
+        qp.CNOT,
+        [2, 3],
+        [0, 1],
+        ["aux"],
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+    ),
+    (
+        qp.Toffoli,
         [1, 2, 3],
         [0],
-        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+        None,
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
+    ),
+    (
+        qp.Toffoli,
+        [1, 2, 3],
+        [0],
+        ["aux"],
+        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
     ),
 ]
 
@@ -1011,17 +1062,17 @@ class TestDecomposition:
             (
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
-                    qml.CH(wires=[2, 0]),
-                    Controlled(qml.S(wires=1), control_wires=2),
-                    qml.CRX(0.123, wires=[2, 0]),
+                    qp.CH(wires=[2, 0]),
+                    Controlled(qp.S(wires=1), control_wires=2),
+                    qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
             (
-                qml.IsingXX(0.123, wires=[0, 1]),
+                qp.IsingXX(0.123, wires=[0, 1]),
                 [
-                    qml.Toffoli(wires=[2, 0, 1]),
-                    qml.CRX(0.123, wires=[2, 0]),
-                    qml.Toffoli(wires=[2, 0, 1]),
+                    qp.Toffoli(wires=[2, 0, 1]),
+                    qp.CRX(0.123, wires=[2, 0]),
+                    qp.Toffoli(wires=[2, 0, 1]),
                 ],
             ),
         ],
@@ -1034,20 +1085,20 @@ class TestDecomposition:
     def test_non_differentiable_one_qubit_special_unitary(self):
         """Assert that a non-differentiable on qubit special unitary uses the bisect decomposition."""
 
-        op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
+        op = qp.ctrl(qp.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
-        assert isinstance(decomp[1], qml.QubitUnitary)
-        qml.assert_equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
-        assert isinstance(decomp[3].base, qml.QubitUnitary)
-        qml.assert_equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
-        assert isinstance(decomp[5], qml.QubitUnitary)
-        qml.assert_equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
-        assert isinstance(decomp[7].base, qml.QubitUnitary)
+        qp.assert_equal(decomp[0], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
+        assert isinstance(decomp[1], qp.QubitUnitary)
+        qp.assert_equal(decomp[2], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
+        assert isinstance(decomp[3].base, qp.QubitUnitary)
+        qp.assert_equal(decomp[4], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
+        assert isinstance(decomp[5], qp.QubitUnitary)
+        qp.assert_equal(decomp[6], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
+        assert isinstance(decomp[7].base, qp.QubitUnitary)
 
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
-        assert qml.math.allclose(op.matrix(), decomp_mat)
+        decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
+        assert qp.math.allclose(op.matrix(), decomp_mat)
 
     def test_differentiable_one_qubit_special_unitary_single_ctrl(self):
         """
@@ -1055,32 +1106,32 @@ class TestDecomposition:
         """
 
         theta = 1.2
-        op = qml.ctrl(qml.RZ(qml.numpy.array(theta), 0), (1))
+        op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(theta / 2), 0))
-        qml.assert_equal(decomp[1], qml.CNOT(wires=(1, 0)))
-        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-theta / 2), 0))
-        qml.assert_equal(decomp[3], qml.CNOT(wires=(1, 0)))
+        qp.assert_equal(decomp[0], qp.PhaseShift(qp.numpy.array(theta / 2), 0))
+        qp.assert_equal(decomp[1], qp.CNOT(wires=(1, 0)))
+        qp.assert_equal(decomp[2], qp.PhaseShift(qp.numpy.array(-theta / 2), 0))
+        qp.assert_equal(decomp[3], qp.CNOT(wires=(1, 0)))
 
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
-        assert qml.math.allclose(op.matrix(), decomp_mat)
+        decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
+        assert qp.math.allclose(op.matrix(), decomp_mat)
 
     def test_differentiable_one_qubit_special_unitary_multiple_ctrl(self):
         """Assert that a differentiable qubit special unitary uses the zyz decomposition with multiple controlled wires."""
 
         theta = 1.2
-        op = qml.ctrl(qml.RZ(qml.numpy.array(theta), 0), (1, 2, 3, 4))
+        op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.CRZ(qml.numpy.array(theta), [4, 0]))
-        qml.assert_equal(decomp[1], qml.MultiControlledX(wires=[1, 2, 3, 0]))
-        qml.assert_equal(decomp[2], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
-        qml.assert_equal(decomp[3], qml.MultiControlledX(wires=[1, 2, 3, 0]))
-        qml.assert_equal(decomp[4], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
+        qp.assert_equal(decomp[0], qp.CRZ(qp.numpy.array(theta), [4, 0]))
+        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 0]))
+        qp.assert_equal(decomp[2], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
+        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 0]))
+        qp.assert_equal(decomp[4], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
 
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
-        assert qml.math.allclose(op.matrix(), decomp_mat)
+        decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
+        assert qp.math.allclose(op.matrix(), decomp_mat)
 
     # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
@@ -1105,14 +1156,14 @@ class TestDecomposition:
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
         assert ctrl_op.decomposition() == expected
-        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
+        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
-        if base_cls != qml.GlobalPhase:
+        if base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
-        mat = qml.matrix(ctrl_op.decomposition, wire_order=active_wires)()
+        mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -1142,30 +1193,30 @@ class TestDecomposition:
         )
 
     @pytest.mark.parametrize(
-        "base_cls, base_wires, ctrl_wires, expected",
+        "base_cls, base_wires, ctrl_wires, work_wires, expected",
         pauli_x_based_op_decomps,
     )
-    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, expected):
+    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, work_wires, expected):
         """Tests decompositions where the base is PauliX"""
 
         base_op = base_cls(wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=Wires("aux"))
+        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=work_wires)
 
         assert ctrl_op.decomposition() == expected
-        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
+        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
 
-        ctrl_op = Controlled(Controlled(qml.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
         expected = [
-            qml.ControlledPhaseShift(0.123 / 2, wires=[2, 0]),
-            qml.Toffoli(wires=[2, 1, 0]),
-            qml.ControlledPhaseShift(-0.123 / 2, wires=[2, 0]),
-            qml.Toffoli(wires=[2, 1, 0]),
+            qp.ControlledPhaseShift(0.123 / 2, wires=[2, 0]),
+            qp.Toffoli(wires=[2, 1, 0]),
+            qp.ControlledPhaseShift(-0.123 / 2, wires=[2, 0]),
+            qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
-        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
+        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
@@ -1183,17 +1234,17 @@ class TestDecomposition:
         op = Controlled(base, control_wires, control_values)
 
         decomp1 = op.decomposition()
-        decomp2 = qml.tape.QuantumScript(op.decomposition()).circuit
+        decomp2 = qp.tape.QuantumScript(op.decomposition()).circuit
 
         for decomp in [decomp1, decomp2]:
-            qml.assert_equal(decomp[0], qml.PauliX(1))
-            qml.assert_equal(decomp[1], qml.PauliX(2))
+            qp.assert_equal(decomp[0], qp.PauliX(1))
+            qp.assert_equal(decomp[1], qp.PauliX(2))
 
             assert isinstance(decomp[2], Controlled)
             assert decomp[2].control_values == [True, True, True]
 
-            qml.assert_equal(decomp[3], qml.PauliX(1))
-            qml.assert_equal(decomp[4], qml.PauliX(2))
+            qp.assert_equal(decomp[3], qp.PauliX(1))
+            qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",
@@ -1211,7 +1262,7 @@ class TestDecomposition:
 
         i = 0
         for ctrl_wire in ctrl_wires:
-            assert decomp[i] == qml.PauliX(wires=ctrl_wire)
+            assert decomp[i] == qp.PauliX(wires=ctrl_wire)
             i += 1
 
         for exp in expected:
@@ -1219,15 +1270,15 @@ class TestDecomposition:
             i += 1
 
         for ctrl_wire in ctrl_wires:
-            assert decomp[i] == qml.PauliX(wires=ctrl_wire)
+            assert decomp[i] == qp.PauliX(wires=ctrl_wire)
             i += 1
 
 
 class TestArithmetic:
     """Test arithmetic decomposition methods."""
 
-    control_wires = qml.wires.Wires((3, 4))
-    work_wires = qml.wires.Wires("aux")
+    control_wires = qp.wires.Wires((3, 4))
+    work_wires = qp.wires.Wires("aux")
     control_values = [True, False]
 
     def test_adjoint(self):
@@ -1280,17 +1331,17 @@ class TestDifferentiation:
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            Controlled(qml.RY(b, wires=1), control_wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            Controlled(qp.RY(b, wires=1), control_wires=0)
+            return qp.expval(qp.PauliX(0))
 
         b = pnp.array(0.123, requires_grad=True)
-        res = qml.grad(circuit)(b)
+        res = qp.grad(circuit)(b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
@@ -1300,16 +1351,16 @@ class TestDifferentiation:
         """Test differentiation using torch"""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = torch.tensor(
             [1.0, -1.0], requires_grad=False, dtype=torch.complex128
         ) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            Controlled(qml.RY(b, wires=1), control_wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            Controlled(qp.RY(b, wires=1), control_wires=0)
+            return qp.expval(qp.PauliX(0))
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
@@ -1321,7 +1372,7 @@ class TestDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1331,14 +1382,14 @@ class TestDifferentiation:
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        @qp.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / pnp.sqrt(2)
-            qml.StatePrep(init_state, wires=0)
-            Controlled(qml.RY(b, wires=1), control_wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            Controlled(qp.RY(b, wires=1), control_wires=0)
+            return qp.expval(qp.PauliX(0))
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
@@ -1351,14 +1402,14 @@ class TestDifferentiation:
         """Test differentiation using TF"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            Controlled(qml.RY(b, wires=1), control_wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            Controlled(qp.RY(b, wires=1), control_wires=0)
+            return qp.expval(qp.PauliX(0))
 
         b = tf.Variable(0.123, dtype=tf.float64)
 
@@ -1438,14 +1489,14 @@ class TestControlledSupportsBroadcasting:
         par = pnp.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(par, wires=wires)
         op = Controlled(base, "wire1")
 
         mat = op.matrix()
         single_mats = [Controlled(cls(p, wires=wires), "wire1").matrix() for p in par]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize("name", single_scalar_multi_wire_ops)
     def test_controlled_single_scalar_multi_wire_ops(self, name):
@@ -1453,10 +1504,10 @@ class TestControlledSupportsBroadcasting:
         on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
         """
         par = pnp.array([0.25, 2.1, -0.42])
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
 
         # Provide up to 6 wires and take as many as the class requires
-        # This assumes that the class does *not* have `num_wires=qml.operation.AnyWires`
+        # This assumes that the class does *not* have `num_wires=None`
         wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
         base = cls(par, wires=wires)
         op = Controlled(base, "wire1")
@@ -1464,7 +1515,7 @@ class TestControlledSupportsBroadcasting:
         mat = op.matrix()
         single_mats = [Controlled(cls(p, wires=wires), "wire1").matrix() for p in par]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
     def test_controlled_two_scalar_single_wire_ops(self, name):
@@ -1474,7 +1525,7 @@ class TestControlledSupportsBroadcasting:
         par = (pnp.array([0.25, 2.1, -0.42]), pnp.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1482,7 +1533,7 @@ class TestControlledSupportsBroadcasting:
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
         single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize("name", three_scalar_single_wire_ops)
     def test_controlled_three_scalar_single_wire_ops(self, name):
@@ -1496,7 +1547,7 @@ class TestControlledSupportsBroadcasting:
         )
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1504,7 +1555,7 @@ class TestControlledSupportsBroadcasting:
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
         single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize("name", three_scalar_multi_wire_ops)
     def test_controlled_three_scalar_multi_wire_ops(self, name):
@@ -1518,7 +1569,7 @@ class TestControlledSupportsBroadcasting:
         )
         wires = ["wire0", 214]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1526,7 +1577,7 @@ class TestControlledSupportsBroadcasting:
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
         single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     def test_controlled_diagonal_qubit_unitary(self):
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
@@ -1534,15 +1585,15 @@ class TestControlledSupportsBroadcasting:
         diag = pnp.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1.0, -1]])
         wires = ["a", 5]
 
-        base = qml.DiagonalQubitUnitary(diag, wires=wires)
+        base = qp.DiagonalQubitUnitary(diag, wires=wires)
         op = Controlled(base, "wire1")
 
         mat = op.matrix()
         single_mats = [
-            Controlled(qml.DiagonalQubitUnitary(d, wires=wires), "wire1").matrix() for d in diag
+            Controlled(qp.DiagonalQubitUnitary(d, wires=wires), "wire1").matrix() for d in diag
         ]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize(
         "pauli_word, wires", [("XYZ", [0, "4", 1]), ("II", [1, 5]), ("X", [7])]
@@ -1552,15 +1603,15 @@ class TestControlledSupportsBroadcasting:
         parameter broadcasting, actually does support broadcasting."""
         par = pnp.array([0.25, 2.1, -0.42])
 
-        base = qml.PauliRot(par, pauli_word, wires=wires)
+        base = qp.PauliRot(par, pauli_word, wires=wires)
         op = Controlled(base, "wire1")
 
         mat = op.matrix()
         single_mats = [
-            Controlled(qml.PauliRot(p, pauli_word, wires=wires), "wire1").matrix() for p in par
+            Controlled(qp.PauliRot(p, pauli_word, wires=wires), "wire1").matrix() for p in par
         ]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
     def test_controlled_multi_rz(self, wires):
@@ -1568,13 +1619,13 @@ class TestControlledSupportsBroadcasting:
         parameter broadcasting, actually does support broadcasting."""
         par = pnp.array([0.25, 2.1, -0.42])
 
-        base = qml.MultiRZ(par, wires=wires)
+        base = qp.MultiRZ(par, wires=wires)
         op = Controlled(base, "wire1")
 
         mat = op.matrix()
-        single_mats = [Controlled(qml.MultiRZ(p, wires=wires), "wire1").matrix() for p in par]
+        single_mats = [Controlled(qp.MultiRZ(p, wires=wires), "wire1").matrix() for p in par]
 
-        assert qml.math.allclose(mat, single_mats)
+        assert qp.math.allclose(mat, single_mats)
 
     @pytest.mark.parametrize(
         "state_, num_wires",
@@ -1585,18 +1636,18 @@ class TestControlledSupportsBroadcasting:
         actually does support broadcasting."""
 
         state = pnp.array([state_])
-        base = qml.StatePrep(state, wires=list(range(num_wires)))
+        base = qp.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
 
         assert op.batch_size == 1
-        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
+        qp.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
         state = pnp.array([state_] * 3)
-        base = qml.StatePrep(state, wires=list(range(num_wires)))
+        base = qp.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 3
-        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
+        qp.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -1608,17 +1659,17 @@ class TestControlledSupportsBroadcasting:
         actually does support broadcasting."""
 
         features = pnp.array([state])
-        base = qml.AmplitudeEmbedding(features, wires=list(range(num_wires)))
+        base = qp.AmplitudeEmbedding(features, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 1
-        qml.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
+        qp.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
         op.decomposition()
 
         features = pnp.array([state] * 3)
-        base = qml.AmplitudeEmbedding(features, wires=list(range(num_wires)))
+        base = qp.AmplitudeEmbedding(features, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 3
-        qml.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
+        qp.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -1633,10 +1684,10 @@ class TestControlledSupportsBroadcasting:
         """Test that AngleEmbedding, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
-        base = qml.AngleEmbedding(angles, wires=list(range(num_wires)))
+        base = qp.AngleEmbedding(angles, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 2
-        qml.AngleEmbedding.compute_decomposition(angles, list(range(num_wires)), rotation=qml.RX)
+        qp.AngleEmbedding.compute_decomposition(angles, list(range(num_wires)), rotation=qp.RX)
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -1651,10 +1702,10 @@ class TestControlledSupportsBroadcasting:
         """Test that IQPEmbedding, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
-        base = qml.IQPEmbedding(features, wires=list(range(num_wires)))
+        base = qp.IQPEmbedding(features, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 2
-        qml.IQPEmbedding.compute_decomposition(
+        qp.IQPEmbedding.compute_decomposition(
             features,
             list(range(num_wires)),
             n_repeats=2,
@@ -1674,32 +1725,35 @@ class TestControlledSupportsBroadcasting:
         """Test that QAOAEmbedding, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
-        base = qml.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
+        base = qp.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == batch_size
-        qml.QAOAEmbedding.compute_decomposition(
-            features, weights, wires=list(range(num_wires)), local_field=qml.RY
+        qp.QAOAEmbedding.compute_decomposition(
+            features, weights, wires=list(range(num_wires)), local_field=qp.RY
         )
         op.decomposition()
 
 
 custom_ctrl_ops = [
-    (qml.PauliY(wires=0), [1], qml.CY(wires=[1, 0])),
-    (qml.PauliZ(wires=0), [1], qml.CZ(wires=[1, 0])),
-    (qml.RX(0.123, wires=0), [1], qml.CRX(0.123, wires=[1, 0])),
-    (qml.RY(0.123, wires=0), [1], qml.CRY(0.123, wires=[1, 0])),
-    (qml.RZ(0.123, wires=0), [1], qml.CRZ(0.123, wires=[1, 0])),
+    (qp.PauliY(wires=0), [1], qp.CY(wires=[1, 0])),
+    (qp.PauliZ(wires=0), [1], qp.CZ(wires=[1, 0])),
+    (qp.RX(0.123, wires=0), [1], qp.CRX(0.123, wires=[1, 0])),
+    (qp.RY(0.123, wires=0), [1], qp.CRY(0.123, wires=[1, 0])),
+    (qp.RZ(0.123, wires=0), [1], qp.CRZ(0.123, wires=[1, 0])),
     (
-        qml.Rot(0.123, 0.234, 0.456, wires=0),
+        qp.Rot(0.123, 0.234, 0.456, wires=0),
         [1],
-        qml.CRot(0.123, 0.234, 0.456, wires=[1, 0]),
+        qp.CRot(0.123, 0.234, 0.456, wires=[1, 0]),
     ),
-    (qml.PhaseShift(0.123, wires=0), [1], qml.ControlledPhaseShift(0.123, wires=[1, 0])),
+    (qp.PhaseShift(0.123, wires=0), [1], qp.ControlledPhaseShift(0.123, wires=[1, 0])),
     (
-        qml.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0),
+        qp.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0),
         [1, 2],
-        qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 2, 0]),
+        qp.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 2, 0]),
     ),
+    (qp.Barrier(), [1], qp.Barrier()),
+    (qp.Barrier(wires=(0, 1)), [2], qp.Barrier(wires=(0, 1))),
+    (qp.Barrier(wires=(0, 1), only_visual=True), [2], qp.Barrier(wires=(0, 1), only_visual=True)),
 ]
 
 
@@ -1709,38 +1763,56 @@ class TestCtrl:
     def test_sparse_qubit_unitary(self):
         """Test that the controlled sparse QubitUnitary works correctly"""
         data = sp.sparse.eye(2)
-        op = qml.QubitUnitary(data, wires=2)
-        c_op = qml.ctrl(op, 3)
+        op = qp.QubitUnitary(data, wires=2)
+        c_op = qp.ctrl(op, 3)
 
         data_dense = data.toarray()
-        op_dense = qml.QubitUnitary(data_dense, wires=2)
-        c_op_dense = qml.ctrl(op_dense, 3)
+        op_dense = qp.QubitUnitary(data_dense, wires=2)
+        c_op_dense = qp.ctrl(op_dense, 3)
 
-        assert qml.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
+        assert qp.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
 
     def test_no_redundant_queue(self):
         """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.ctrl(qml.QubitUnitary(np.eye(2), 0), 1)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1)
 
         assert len(q.queue) == 1
 
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
         with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
-            qml.ctrl(1, control=2)
+            qp.ctrl(1, control=2)
+
+    def test_None_input_error(self):
+        """Test that a special error is raised if the input is None."""
+
+        with pytest.raises(ValueError, match="apply ctrl to the output of a Subroutine"):
+            qp.ctrl(None, control=2)
+
+    def test_ctrl_barrier_queueing(self):
+        """Test that a ctrl Barrier is queued where the ctrl happens."""
+
+        with qp.queuing.AnnotatedQueue() as q:
+            op = qp.Barrier()
+            qp.X(0)
+            qp.ctrl(op, [1])
+
+        assert len(q.queue) == 2
+        assert q.queue[0] == qp.X(0)
+        assert q.queue[1] == qp.Barrier()
 
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
         """Tests custom controlled operations are handled correctly."""
-        assert qml.ctrl(op, control=ctrl_wires) == expected_op
+        assert qp.ctrl(op, control=ctrl_wires) == expected_op
 
     @pytest.mark.parametrize("op, ctrl_wires, _", custom_ctrl_ops)
     def test_custom_controlled_ops_ctrl_on_zero(self, op, ctrl_wires, _):
         """Tests custom controlled ops with control on zero are handled correctly."""
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any control values.")
+        if isinstance(op, (qp.QubitUnitary, qp.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier can accept any control values.")
 
         ctrl_values = [False] * len(ctrl_wires)
 
@@ -1753,7 +1825,7 @@ class TestCtrl:
         else:
             expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
 
-        assert qml.ctrl(op, control=ctrl_wires, control_values=ctrl_values) == expected
+        assert qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values) == expected
 
     @pytest.mark.parametrize("op, ctrl_wires, _", custom_ctrl_ops)
     def test_custom_controlled_ops_wrong_wires(self, op, ctrl_wires, _):
@@ -1762,8 +1834,10 @@ class TestCtrl:
 
         ctrl_wires = ctrl_wires + ["a", "b", "c"]
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
+        if isinstance(op, (qp.QubitUnitary, qp.Barrier)):
+            pytest.skip(
+                "ControlledQubitUnitary and Barrier can accept any number of control wires."
+            )
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,
@@ -1772,21 +1846,25 @@ class TestCtrl:
         else:
             expected = Controlled(op, control_wires=ctrl_wires)
 
-        assert qml.ctrl(op, control=ctrl_wires) == expected
+        assert qp.ctrl(op, control=ctrl_wires) == expected
 
     def test_nested_controls(self):
         """Tests that nested controls are flattened correctly."""
 
-        op = qml.ctrl(
-            Controlled(
-                Controlled(qml.S(wires=[0]), control_wires=[1]),
-                control_wires=[2],
-                control_values=[0],
-            ),
-            control=[3],
-        )
+        with qp.queuing.AnnotatedQueue() as q:
+            op = qp.ctrl(
+                Controlled(
+                    Controlled(qp.S(wires=[0]), control_wires=[1]),
+                    control_wires=[2],
+                    control_values=[0],
+                ),
+                control=[3],
+            )
+
+        assert len(q) == 1
+        assert q.queue[0] is op
         expected = Controlled(
-            qml.S(wires=[0]),
+            qp.S(wires=[0]),
             control_wires=[3, 2, 1],
             control_values=[1, 0, 1],
         )
@@ -1796,8 +1874,8 @@ class TestCtrl:
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
         """Tests that nested controls of custom controlled ops are flattened correctly."""
 
-        if isinstance(ctrl_op, qml.ControlledQubitUnitary):
-            pytest.skip("ControlledQubitUnitary has its own logic")
+        if isinstance(ctrl_op, (qp.ControlledQubitUnitary, qp.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier have their own logic")
 
         expected_base = op.base if isinstance(op, Controlled) else op
         base_ctrl_wires = (
@@ -1808,7 +1886,7 @@ class TestCtrl:
             ctrl_values + op.control_values if isinstance(op, Controlled) else ctrl_values
         )
 
-        op = qml.ctrl(
+        op = qp.ctrl(
             Controlled(
                 ctrl_op,
                 control_wires=["b"],
@@ -1826,98 +1904,141 @@ class TestCtrl:
     def test_nested_ctrl_qubit_unitaries(self):
         """Tests that nested controlled qubit unitaries are flattened correctly."""
 
-        op = qml.ctrl(
+        op = qp.ctrl(
             Controlled(
-                qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 0]),
+                qp.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 0]),
                 control_wires=[2],
                 control_values=[0],
             ),
             control=[3],
         )
-        expected = qml.ControlledQubitUnitary(
+        expected = qp.ControlledQubitUnitary(
             np.array([[0, 1], [1, 0]]), wires=[3, 2, 1, 0], control_values=[1, 0, 1]
         )
         assert op == expected
 
     @pytest.mark.parametrize(
-        "op, ctrl_wires, ctrl_values, expected_op",
+        "op, ctrl_wires, ctrl_values, work_wires, expected_op",
         [
-            (qml.PauliX(wires=[0]), [1], [1], qml.CNOT([1, 0])),
+            (qp.PauliX(wires=[0]), [1], [1], None, qp.CNOT([1, 0])),
             (
-                qml.PauliX(wires=[2]),
+                qp.PauliX(wires=[2]),
                 [0, 1],
                 [1, 1],
-                qml.Toffoli(wires=[0, 1, 2]),
+                None,
+                qp.Toffoli(wires=[0, 1, 2]),
             ),
             (
-                qml.CNOT(wires=[1, 2]),
+                qp.PauliX(wires=[2]),
+                [0, 1],
+                [1, 1],
+                ["aux"],
+                qp.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
+            ),
+            (
+                qp.CNOT(wires=[1, 2]),
                 [0],
                 [1],
-                qml.Toffoli(wires=[0, 1, 2]),
+                None,
+                qp.Toffoli(wires=[0, 1, 2]),
             ),
             (
-                qml.PauliX(wires=[0]),
+                qp.CNOT(wires=[1, 2]),
+                [0],
+                [1],
+                ["aux"],
+                qp.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
+            ),
+            (
+                qp.PauliX(wires=[0]),
                 [1],
                 [0],
-                qml.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=["aux"]),
+                None,
+                qp.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=[]),
             ),
             (
-                qml.PauliX(wires=[2]),
+                qp.PauliX(wires=[0]),
+                [1],
+                [0],
+                ["aux"],
+                qp.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=["aux"]),
+            ),
+            (
+                qp.PauliX(wires=[2]),
                 [0, 1],
                 [1, 0],
-                qml.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=["aux"]),
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=[]),
             ),
             (
-                qml.CNOT(wires=[1, 2]),
-                [0],
-                [0],
-                qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=["aux"]),
+                qp.PauliX(wires=[2]),
+                [0, 1],
+                [1, 0],
+                ["aux"],
+                qp.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=["aux"]),
             ),
             (
-                qml.PauliX(wires=[3]),
+                qp.CNOT(wires=[1, 2]),
+                [0],
+                [0],
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=[]),
+            ),
+            (
+                qp.CNOT(wires=[1, 2]),
+                [0],
+                [0],
+                ["aux"],
+                qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=["aux"]),
+            ),
+            (
+                qp.PauliX(wires=[3]),
                 [0, 1, 2],
                 [1, 1, 1],
-                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
             (
-                qml.CNOT(wires=[2, 3]),
+                qp.CNOT(wires=[2, 3]),
                 [0, 1],
                 [1, 1],
-                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+                ["aux"],
+                qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
             ),
             (
-                qml.Toffoli(wires=[1, 2, 3]),
+                qp.Toffoli(wires=[1, 2, 3]),
                 [0],
                 [1],
-                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
         ],
     )
-    def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, expected_op):
+    def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, work_wires, expected_op):
         """Tests that PauliX-based ops are handled correctly."""
-        op = qml.ctrl(op, control=ctrl_wires, control_values=ctrl_values, work_wires=["aux"])
+        op = qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values, work_wires=work_wires)
         assert op == expected_op
 
     def test_nested_pauli_x_based_ctrl_ops(self):
         """Tests that nested PauliX-based ops are handled correctly."""
 
-        op = qml.ctrl(
+        op = qp.ctrl(
             Controlled(
-                qml.CNOT(wires=[1, 0]),
+                qp.CNOT(wires=[1, 0]),
                 control_wires=[2],
                 control_values=[0],
             ),
             control=[3],
         )
-        expected = qml.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
+        expected = qp.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
         assert op == expected
 
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.ctrl(qml.QSVT, control=0)(qml.X(1), [qml.Z(1)])
-            qml.ctrl(qml.QSVT(qml.X(1), [qml.Z(1)]), control=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ctrl(qp.QSVT, control=0)(qp.X(1), [qp.Z(1)])
+            qp.ctrl(qp.QSVT(qp.X(1), [qp.Z(1)]), control=0)
         for op in q.queue:
             assert op.name == "C(QSVT)"
 
@@ -1935,7 +2056,7 @@ class _Rot(Operation):
 
     @staticmethod
     def compute_decomposition(*params, wires=None):
-        return qml.Rot.compute_decomposition(*params, wires=wires)
+        return qp.Rot.compute_decomposition(*params, wires=wires)
 
     def decomposition(self):
         return self.compute_decomposition(*self.parameters, wires=self.wires)
@@ -1943,10 +2064,10 @@ class _Rot(Operation):
 
 unitaries = (
     [
-        qml.PauliX.compute_matrix(),
-        qml.PauliY.compute_matrix(),
-        qml.PauliZ.compute_matrix(),
-        qml.Hadamard.compute_matrix(),
+        qp.PauliX.compute_matrix(),
+        qp.PauliY.compute_matrix(),
+        qp.PauliZ.compute_matrix(),
+        qp.Hadamard.compute_matrix(),
         pnp.array(
             [
                 [1 + 2j, -3 + 4j],
@@ -1965,179 +2086,191 @@ class TestTapeExpansionWithControlled:
         """Test that control works with control values on a very standard usecase."""
 
         def make_ops():
-            qml.RX(0.123, wires=0)
-            qml.RY(0.456, wires=2)
-            qml.RX(0.789, wires=0)
-            qml.Rot(0.111, 0.222, 0.333, wires=2)
-            qml.PauliX(wires=2)
-            qml.PauliY(wires=4)
-            qml.PauliZ(wires=0)
+            qp.RX(0.123, wires=0)
+            qp.RY(0.456, wires=2)
+            qp.RX(0.789, wires=0)
+            qp.Rot(0.111, 0.222, 0.333, wires=2)
+            qp.PauliX(wires=2)
+            qp.PauliY(wires=4)
+            qp.PauliZ(wires=0)
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qp.queuing.AnnotatedQueue() as q_tape:
             ctrl(make_ops, control=1, control_values=0)()
 
         tape = QuantumScript.from_queue(q_tape)
+
+        # CZ and CY decompose to more controlled ops
+        CZ_CY_decomps = []
+        for op in qp.CY(wires=[1, 4]).decomposition():
+            CZ_CY_decomps += op.decomposition()
+        for op in qp.CZ(wires=[1, 0]).decomposition():
+            CZ_CY_decomps += op.decomposition()
+
         expected = [
-            qml.PauliX(wires=1),
-            *qml.CRX(0.123, wires=[1, 0]).decomposition(),
-            *qml.CRY(0.456, wires=[1, 2]).decomposition(),
-            *qml.CRX(0.789, wires=[1, 0]).decomposition(),
-            *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
-            qml.CNOT(wires=[1, 2]),
-            *qml.CY(wires=[1, 4]).decomposition(),
-            *qml.CZ(wires=[1, 0]).decomposition(),
-            qml.PauliX(wires=1),
+            qp.PauliX(wires=1),
+            *qp.CRX(0.123, wires=[1, 0]).decomposition(),
+            *qp.CRY(0.456, wires=[1, 2]).decomposition(),
+            *qp.CRX(0.789, wires=[1, 0]).decomposition(),
+            *qp.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
+            qp.CNOT(wires=[1, 2]),
+            *CZ_CY_decomps,
+            qp.PauliX(wires=1),
         ]
         assert len(tape) == 9
-        expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
-        assert expanded.circuit == expected
+        [expanded], _ = decompose(
+            tape, gate_set={"X", "RZ", "RY", "CNOT", "PhaseShift", "GlobalPhase"}
+        )
+        actual_matrix = qp.matrix(expanded, wire_order=[0, 1, 2, 3, 4])
+        expected_matrix = qp.matrix(expected, wire_order=[0, 1, 2, 3, 4])
+        assert qp.math.allclose(actual_matrix, expected_matrix)
 
     @pytest.mark.parametrize(
         "op",
         [
-            qml.ctrl(qml.ctrl(_Rot, 7), 3),  # nested control
-            qml.ctrl(_Rot, [3, 7]),  # multi-wire control
+            qp.ctrl(qp.ctrl(_Rot, 7), 3),  # nested control
+            qp.ctrl(_Rot, [3, 7]),  # multi-wire control
         ],
     )
     def test_nested_ctrl(self, op, tol):
         """Tests that nested controlled ops are expanded correctly"""
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qp.queuing.AnnotatedQueue() as q_tape:
             op(0.1, 0.2, 0.3, wires=0)
 
         tape = QuantumScript.from_queue(q_tape)
-        assert tape.expand(depth=1).circuit == [
-            Controlled(qml.RZ(0.1, 0), control_wires=[3, 7]),
-            Controlled(qml.RY(0.2, 0), control_wires=[3, 7]),
-            Controlled(qml.RZ(0.3, 0), control_wires=[3, 7]),
+
+        @register_resources({qp.RZ: 2, qp.RY: 1})
+        def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
+            qp.RZ(phi, wires=wires)
+            qp.RY(theta, wires=wires)
+            qp.RZ(omega, wires=wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
+            [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+
+        assert tape.circuit == [
+            Controlled(qp.RZ(0.1, 0), control_wires=[3, 7]),
+            Controlled(qp.RY(0.2, 0), control_wires=[3, 7]),
+            Controlled(qp.RZ(0.3, 0), control_wires=[3, 7]),
         ]
 
         # Tests that the decomposition of the nested controlled _Rot gate is ultimately
         # equivalent to the decomposition of the controlled CRot
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            for op_ in qml.CRot.compute_decomposition(0.1, 0.2, 0.3, wires=[7, 0]):
-                qml.ctrl(op_, control=3)
+        with qp.queuing.AnnotatedQueue() as q_tape:
+            for op_ in qp.CRot.compute_decomposition(0.1, 0.2, 0.3, wires=[7, 0]):
+                qp.ctrl(op_, control=3)
+
         tape_expected = QuantumScript.from_queue(q_tape)
 
         def stopping_condition(o):
-            return not isinstance(o, Controlled) or not o.has_decomposition
+            return not isinstance(o, Controlled)
 
-        actual = tape.expand(depth=10, stop_at=stopping_condition)
-        expected = tape_expected.expand(depth=10, stop_at=stopping_condition)
-        actual_mat = qml.matrix(actual, wire_order=[3, 7, 0])
-        expected_mat = qml.matrix(expected, wire_order=[3, 7, 0])
-        assert qml.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
+            [actual], _ = decompose(
+                tape,
+                max_expansion=10,
+                stopping_condition=stopping_condition,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            )
+            [expected], _ = decompose(
+                tape_expected,
+                max_expansion=10,
+                stopping_condition=stopping_condition,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            )
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.ctrl(qml.ctrl(qml.S, 7), 3),  # nested control
-            qml.ctrl(qml.S, [3, 7]),  # multi-wire control
-        ],
-    )
-    def test_nested_ctrl_containing_phase_shift(self, op):
-        """Test that nested controlled ops are expanded correctly when phase shift is involved
-
-        The decomposition of S gate contains a PhaseShift. In the nested case, we do not want
-        to apply control to the expanded PhaseShift like how it is typically done for other
-        operations, because the decomposition of PhaseShift contains a GlobalPhase, the controlled
-        version of which we do not have handling for.
-
-        TODO: remove this special case once ControlledGlobalPhase is implemented.
-
-        """
-
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            op(wires=0)
-
-        tape = QuantumScript.from_queue(q_tape)
-        assert tape.expand(depth=1).circuit == [
-            Controlled(qml.PhaseShift(np.pi / 2, wires=[0]), control_wires=[3, 7])
-        ]
-
-        assert tape.expand(depth=2).circuit == [
-            Controlled(qml.RZ(np.pi / 2, wires=[0]), control_wires=[3, 7]),
-            Controlled(qml.GlobalPhase(-np.pi / 4, wires=[]), control_wires=[3, 7]),
-        ]
+        actual_mat = qp.matrix(actual, wire_order=[3, 7, 0])
+        expected_mat = qp.matrix(expected, wire_order=[3, 7, 0])
+        assert qp.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
 
     def test_adjoint_of_ctrl(self):
         """Tests that adjoint(ctrl(fn)) and ctrl(adjoint(fn)) are equivalent"""
 
         def my_op(a, b, c):
-            qml.RX(a, wires=2)
-            qml.RY(b, wires=3)
-            qml.RZ(c, wires=0)
+            qp.RX(a, wires=2)
+            qp.RY(b, wires=3)
+            qp.RZ(c, wires=0)
 
-        with qml.queuing.AnnotatedQueue() as q1:
+        with qp.queuing.AnnotatedQueue() as q1:
             # Execute controlled and adjoint version of my_op.
-            cmy_op_dagger = qml.simplify(qml.adjoint(ctrl(my_op, 5)))
+            cmy_op_dagger = qp.simplify(qp.adjoint(ctrl(my_op, 5)))
             cmy_op_dagger(0.789, 0.123, c=0.456)
         tape1 = QuantumScript.from_queue(q1)
 
-        with qml.queuing.AnnotatedQueue() as q2:
+        with qp.queuing.AnnotatedQueue() as q2:
             # Execute adjoint and controlled version of my_op.
-            cmy_op_dagger = qml.simplify(ctrl(qml.adjoint(my_op), 5))
+            cmy_op_dagger = qp.simplify(ctrl(qp.adjoint(my_op), 5))
             cmy_op_dagger(0.789, 0.123, c=0.456)
         tape2 = QuantumScript.from_queue(q2)
 
         expected = [
-            *qml.CRZ(4 * np.pi - 0.456, wires=[5, 0]).decomposition(),
-            *qml.CRY(4 * np.pi - 0.123, wires=[5, 3]).decomposition(),
-            *qml.CRX(4 * np.pi - 0.789, wires=[5, 2]).decomposition(),
+            *qp.CRZ(4 * np.pi - 0.456, wires=[5, 0]).decomposition(),
+            *qp.CRY(4 * np.pi - 0.123, wires=[5, 3]).decomposition(),
+            *qp.CRX(4 * np.pi - 0.789, wires=[5, 2]).decomposition(),
         ]
-        assert tape1.expand(depth=1).circuit == expected
-        assert tape2.expand(depth=1).circuit == expected
+        expected_matrix = qp.matrix(expected, wire_order=[0, 1, 2, 3, 4, 5])
+
+        [tape1], _ = decompose(tape1, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        actual_matrix = qp.matrix(tape1, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qp.math.allclose(actual_matrix, expected_matrix)
+
+        [tape2], _ = decompose(tape2, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        actual_matrix = qp.matrix(tape2, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qp.math.allclose(actual_matrix, expected_matrix)
 
     def test_ctrl_with_qnode(self):
         """Test ctrl works when in a qnode cotext."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def my_ansatz(params):
-            qml.RY(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(params[2], wires=1)
-            qml.RX(params[3], wires=0)
-            qml.CNOT(wires=[1, 0])
+            qp.RY(params[0], wires=0)
+            qp.RY(params[1], wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RX(params[2], wires=1)
+            qp.RX(params[3], wires=0)
+            qp.CNOT(wires=[1, 0])
 
         def controlled_ansatz(params):
-            qml.CRY(params[0], wires=[2, 0])
-            qml.CRY(params[1], wires=[2, 1])
-            qml.Toffoli(wires=[2, 0, 1])
-            qml.CRX(params[2], wires=[2, 1])
-            qml.CRX(params[3], wires=[2, 0])
-            qml.Toffoli(wires=[2, 1, 0])
+            qp.CRY(params[0], wires=[2, 0])
+            qp.CRY(params[1], wires=[2, 1])
+            qp.Toffoli(wires=[2, 0, 1])
+            qp.CRX(params[2], wires=[2, 1])
+            qp.CRX(params[3], wires=[2, 0])
+            qp.Toffoli(wires=[2, 1, 0])
 
         def circuit(ansatz, params):
-            qml.RX(pnp.pi / 4.0, wires=2)
+            qp.RX(pnp.pi / 4.0, wires=2)
             ansatz(params)
-            return qml.state()
+            return qp.state()
 
         params = [0.123, 0.456, 0.789, 1.345]
-        circuit1 = qml.qnode(dev)(partial(circuit, ansatz=ctrl(my_ansatz, 2)))
-        circuit2 = qml.qnode(dev)(partial(circuit, ansatz=controlled_ansatz))
+        circuit1 = qp.qnode(dev)(partial(circuit, ansatz=ctrl(my_ansatz, 2)))
+        circuit2 = qp.qnode(dev)(partial(circuit, ansatz=controlled_ansatz))
         res1 = circuit1(params=params)
         res2 = circuit2(params=params)
-        assert qml.math.allclose(res1, res2)
+        assert qp.math.allclose(res1, res2)
 
     def test_ctrl_within_ctrl(self):
         """Test using ctrl on a method that uses ctrl."""
 
         def ansatz(params):
-            qml.RX(params[0], wires=0)
-            ctrl(qml.PauliX, control=0)(wires=1)
-            qml.RX(params[1], wires=0)
+            qp.RX(params[0], wires=0)
+            ctrl(qp.PauliX, control=0)(wires=1)
+            qp.RX(params[1], wires=0)
 
         controlled_ansatz = ctrl(ansatz, 2)
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qp.queuing.AnnotatedQueue() as q_tape:
             controlled_ansatz([0.123, 0.456])
 
         tape = QuantumScript.from_queue(q_tape)
-        assert tape.expand(1).circuit == [
-            *qml.CRX(0.123, wires=[2, 0]).decomposition(),
-            *qml.Toffoli(wires=[2, 0, 1]).decomposition(),
-            *qml.CRX(0.456, wires=[2, 0]).decomposition(),
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        assert tape.circuit == [
+            *qp.CRX(0.123, wires=[2, 0]).decomposition(),
+            *qp.Toffoli(wires=[2, 0, 1]).decomposition(),
+            *qp.CRX(0.456, wires=[2, 0]).decomposition(),
         ]
 
     @pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
@@ -2149,73 +2282,90 @@ class TestTapeExpansionWithControlled:
             ctrl_wires = [3, 7]
             for i, j in enumerate(ctrl_val):
                 if not bool(j):
-                    exp_op.append(qml.PauliX(ctrl_wires[i]))
-            exp_op.append(Controlled(qml.PhaseShift(pnp.pi / 2, [0]), [3, 7]))
+                    exp_op.append(qp.PauliX(ctrl_wires[i]))
+            exp_op.append(Controlled(qp.PhaseShift(pnp.pi / 2, [0]), [3, 7]))
             for i, j in enumerate(ctrl_val):
                 if not bool(j):
-                    exp_op.append(qml.PauliX(ctrl_wires[i]))
+                    exp_op.append(qp.PauliX(ctrl_wires[i]))
 
             return exp_op
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            ctrl(qml.S, control=[3, 7], control_values=ctrl_values)(wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qp.S, control=[3, 7], control_values=ctrl_values)(wires=0)
         tape = QuantumScript.from_queue(q_tape)
         assert len(tape.operations) == 1
         op = tape.operations[0]
         assert isinstance(op, Controlled)
-        new_tape = expand_tape(tape, 1)
+        [new_tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         assert equal_list(list(new_tape), expected_ops(ctrl_values))
 
     def test_diagonal_ctrl(self):
         """Test ctrl on diagonal gates."""
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape:
+            qp.ctrl(qp.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
         tape = QuantumScript.from_queue(q_tape)
-        tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
-        assert tape[0] == qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
+        [tape], _ = decompose(
+            tape,
+            max_expansion=3,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: not isinstance(op, Controlled),
+        )
+        assert tape[0] == qp.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
     @pytest.mark.parametrize("M", unitaries)
     def test_qubit_unitary(self, M):
         """Test ctrl on QubitUnitary"""
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            ctrl(qml.QubitUnitary, 1)(M, wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qp.QubitUnitary, 1)(M, wires=0)
 
         tape = QuantumScript.from_queue(q_tape)
-        expected = qml.ControlledQubitUnitary(M, wires=[1, 0])
+        expected = qp.ControlledQubitUnitary(M, wires=[1, 0])
         assert equal_list(list(tape), expected)
 
         # causes decomposition into more basic operators
-        tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+        [tape], _ = decompose(
+            tape,
+            max_expansion=3,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: not isinstance(op, Controlled),
+        )
         assert not equal_list(list(tape), expected)
 
     @pytest.mark.parametrize("M", unitaries)
     def test_controlled_qubit_unitary(self, M):
         """Test ctrl on ControlledQubitUnitary."""
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            ctrl(qml.ControlledQubitUnitary, 1)(M, wires=[2, 0])
+        with qp.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qp.ControlledQubitUnitary, 1)(M, wires=[2, 0])
 
         tape = QuantumScript.from_queue(q_tape)
         # will immediately decompose according to selected decomposition algorithm
-        tape = tape.expand(1, stop_at=lambda op: not isinstance(op, Controlled))
+        [tape], _ = decompose(
+            tape,
+            max_expansion=1,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: not isinstance(op, Controlled),
+        )
 
-        expected = qml.ControlledQubitUnitary(M, wires=[1, 2, 0]).decomposition()
+        expected = qp.ControlledQubitUnitary(M, wires=[1, 2, 0]).decomposition()
         assert tape.circuit == expected
 
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qml.templates.QFT, [], 2, 11),
-            (qml.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
+            (qp.templates.QFT, [], 2, 11),
+            (qp.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )
     def test_ctrl_templates(self, op, params, depth, expected):
         """Test ctrl on two different templates."""
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qp.queuing.AnnotatedQueue() as q_tape:
             ctrl(op, 2)(*params, wires=[0, 1])
         tape = QuantumScript.from_queue(q_tape)
-        expanded_tape = tape.expand(depth=depth)
+        [expanded_tape], _ = decompose(
+            tape, max_expansion=depth, gate_set=gate_sets.ROTATIONS_PLUS_CNOT
+        )
         assert len(expanded_tape.operations) == expected
 
     def test_ctrl_template_and_operations(self):
@@ -2225,14 +2375,19 @@ class TestTapeExpansionWithControlled:
         weights = pnp.ones([3, 2])
 
         def ansatz(weights, wires):
-            qml.PauliX(wires=wires[0])
-            qml.templates.BasicEntanglerLayers(weights, wires=wires)
+            qp.PauliX(wires=wires[0])
+            qp.templates.BasicEntanglerLayers(weights, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qp.queuing.AnnotatedQueue() as q_tape:
             ctrl(ansatz, 0)(weights, wires=[1, 2])
 
         tape = QuantumScript.from_queue(q_tape)
-        tape = tape.expand(depth=1, stop_at=lambda obj: not isinstance(obj, Controlled))
+        [tape], _ = decompose(
+            tape,
+            max_expansion=1,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: not isinstance(op, Controlled),
+        )
         assert len(tape.operations) == 10
         assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
@@ -2245,17 +2400,17 @@ class TestCtrlTransformDifferentiation:
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            qml.ctrl(qml.RY, control=0)(b, wires=[1])
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            qp.ctrl(qp.RY, control=0)(b, wires=[1])
+            return qp.expval(qp.PauliX(0))
 
         b = pnp.array(0.123, requires_grad=True)
-        res = qml.grad(circuit)(b)
+        res = qp.grad(circuit)(b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
@@ -2265,16 +2420,16 @@ class TestCtrlTransformDifferentiation:
         """Test differentiation using torch"""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = torch.tensor(
             [1.0, -1.0], requires_grad=False, dtype=torch.complex128
         ) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            qml.ctrl(qml.RY, control=0)(b, wires=[1])
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            qp.ctrl(qp.RY, control=0)(b, wires=[1])
+            return qp.expval(qp.PauliX(0))
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
@@ -2286,7 +2441,7 @@ class TestCtrlTransformDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -2296,14 +2451,14 @@ class TestCtrlTransformDifferentiation:
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        @qp.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / np.sqrt(2)
-            qml.StatePrep(init_state, wires=0)
-            qml.ctrl(qml.RY, control=0)(b, wires=[1])
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            qp.ctrl(qp.RY, control=0)(b, wires=[1])
+            return qp.expval(qp.PauliX(0))
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
@@ -2316,14 +2471,14 @@ class TestCtrlTransformDifferentiation:
         """Test differentiation using TF"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            qml.ctrl(qml.RY, control=0)(b, wires=[1])
-            return qml.expval(qml.PauliX(0))
+            qp.StatePrep(init_state, wires=0)
+            qp.ctrl(qp.RY, control=0)(b, wires=[1])
+            return qp.expval(qp.PauliX(0))
 
         b = tf.Variable(0.123, dtype=tf.float64)
 

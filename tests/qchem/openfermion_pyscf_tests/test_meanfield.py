@@ -14,11 +14,11 @@
 """
 Unit tests for the ``meanfield`` function.
 """
+
 import os
 
 import numpy as np
 import pytest
-from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 from pennylane import qchem
 
@@ -26,7 +26,6 @@ name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
-@xfail_on_numpy2
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize(("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g")])
 def test_path_to_file(package, basis, tmpdir):
@@ -42,7 +41,6 @@ def test_path_to_file(package, basis, tmpdir):
     assert res_path == exp_path
 
 
-@xfail_on_numpy2
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize("package", ["PySCF"])
 def test_hf_calculations(package, tmpdir, tol):

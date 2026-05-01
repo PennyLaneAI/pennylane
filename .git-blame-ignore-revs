@@ -1,0 +1,49 @@
+# Add commits here that should be ignored in the output of git blame. Include a comment
+# about why the commit is ignored, with a link to the corresponding PR if applicable.
+
+# Update EOL character for many files from CRLF to LF (https://github.com/PennyLaneAI/pennylane/pull/7502)
+c73e73b19c8d38e63b41ca4c8039d9f430c55da1
+
+# Use `ruff` and `pyupgrade` to support `3.11`+ Python language features (https://github.com/PennyLaneAI/pennylane/pull/7860)
+a565cd69ad025796923f0354d084f9ca7267ab18
+
+# Migration from qml alias to new qp alias
+#   https://github.com/PennyLaneAI/pennylane/pull/9310
+#   https://github.com/PennyLaneAI/pennylane/pull/9317
+#   https://github.com/PennyLaneAI/pennylane/pull/9320
+#   https://github.com/PennyLaneAI/pennylane/pull/9315
+#   https://github.com/PennyLaneAI/pennylane/pull/9312
+#   https://github.com/PennyLaneAI/pennylane/pull/9314
+#   https://github.com/PennyLaneAI/pennylane/pull/9319
+#   https://github.com/PennyLaneAI/pennylane/pull/9313
+#   https://github.com/PennyLaneAI/pennylane/pull/9326
+#   https://github.com/PennyLaneAI/pennylane/pull/9331
+#   https://github.com/PennyLaneAI/pennylane/pull/9329
+#   https://github.com/PennyLaneAI/pennylane/pull/9280
+#   https://github.com/PennyLaneAI/pennylane/pull/9327
+#   https://github.com/PennyLaneAI/pennylane/pull/9330
+#   https://github.com/PennyLaneAI/pennylane/pull/9325
+#   https://github.com/PennyLaneAI/pennylane/pull/9358
+#   https://github.com/PennyLaneAI/pennylane/pull/9281
+#   https://github.com/PennyLaneAI/pennylane/pull/9360
+#   https://github.com/PennyLaneAI/pennylane/pull/9376
+#   https://github.com/PennyLaneAI/pennylane/pull/9375
+6a08713922d3aa69c18fd49f92190c4663676543
+82b1345f7cb6909b7f8dcdd74a3662697f9c7879
+9c7b57f5918d7996b327c37a5b4242057afdff19
+54df7dacc50bed50bee94012a9ec8332a944c93d
+9c04988b492f96101f948505ad5dcfdf23a28aea
+311e8bf4e463ababe49d2bade2aedd4f080eba0a
+cd92dea6a332d9e58ebe258e2da468e689fb6755
+fe95348de223be724865ec292ed14dd950780167
+46e4cdc78387e769b977a8e1f51dfa01ef58501f
+ae4295c5ee82790be3d67c471aebe162d571b1d0
+a5132e20f658b9bffd64d75499a2ae2e79d0717e
+07f3fad6bfa8543d9650c8e1cb2b265de5f8cfdf
+d3f4d19a9393537d7a484b22e16155ac19a4dcaf
+975767a42ff2f46a3bd36825425e67c3cebd310d
+b97b5729a1e36e9d9a1bd6e58cbbb1af9e2a2024
+99c8984c697fb112f1c09b0a21d82e7eb0dc6df8
+4c57e8c3bd56b381dddd93c6af1e36499b0c98bd
+894eabf146b314ea94a92cb7e398b9f23e7e1470
+1dc01257f80bb08b9d5f8e3168afc47e6ce66ab1

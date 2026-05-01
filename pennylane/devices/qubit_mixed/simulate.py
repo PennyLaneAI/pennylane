@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
-from typing import Optional
 
-# pylint: disable=protected-access
 from numpy.random import default_rng
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.sampling import jax_random_split
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -57,11 +55,12 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], qp.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -87,13 +86,12 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         # We know they belong at the end because the circuit is in standard wire-order
         # Since it is a dm, we must pad it with 0s on the last row and last column
         current_axis = num_operated_wires + i + is_state_batched
-        state = qml.math.stack(([state] + [qml.math.zeros_like(state)]), axis=current_axis)
-        state = qml.math.stack(([state] + [qml.math.zeros_like(state)]), axis=-1)
+        state = qp.math.stack(([state] + [qp.math.zeros_like(state)]), axis=current_axis)
+        state = qp.math.stack(([state] + [qp.math.zeros_like(state)]), axis=-1)
 
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """Perform the measurements specified in the circuit on the provided state.
 
@@ -137,8 +135,8 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
         # Define a circuit with a PauliZ measurement
         circuit = QuantumScript(
-            ops=[qml.RX(0.5, wires=0), qml.CNOT(wires=[0, 1])],
-            measurements=[qml.expval(qml.PauliZ(wires=0))]
+            ops=[qp.RX(0.5, wires=0), qp.CNOT(wires=[0, 1])],
+            measurements=[qp.expval(qp.PauliZ(wires=0))]
         )
 
         # Simulate measurement
@@ -192,11 +190,10 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def simulate(
-    circuit: qml.tape.QuantumScript,
+    circuit: qp.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     r"""
@@ -244,12 +241,12 @@ def simulate(
 
         # Define a quantum script
         circuit = QuantumScript(
-            ops=[qml.RX(1.2, wires=0)],
-            measurements=[expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
+            ops=[qp.RX(1.2, wires=0)],
+            measurements=[qp.expval(qp.PauliX(0)), qp.probs(wires=(0, 1))]
         )
 
     >>> print(simulate(circuit))
-    (0.0, array([0.68117888, 0.0, 0.31882112, 0.0]))
+    (np.float64(0.0), array([0.68117888, 0.        , 0.31882112, 0.        ]))
 
     .. details::
         :title: Usage Details

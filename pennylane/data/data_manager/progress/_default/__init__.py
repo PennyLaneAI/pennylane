@@ -26,14 +26,14 @@ class Task:
 
     description: str
     completed: float = 0
-    total: Optional[float] = None
+    total: float | None = None
 
     def update(
         self,
         *,
-        advance: Optional[float] = None,
-        completed: Optional[float] = None,
-        total: Optional[float] = None,
+        advance: float | None = None,
+        completed: float | None = None,
+        total: float | None = None,
     ) -> None:
         """Update the state of the progress bar and set the display
         string."""
@@ -76,14 +76,14 @@ class DefaultProgress:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
         traceback: Any,
     ) -> None:
         self._print_final()
         self._active = False
 
-    def add_task(self, description: str, total: Optional[float] = None) -> int:
+    def add_task(self, description: str, total: float | None = None) -> int:
         """Add a task."""
         description = _truncate(description, self._term_info.description_len_max)
         self.tasks.append(Task(description=description, total=total))
@@ -93,7 +93,7 @@ class DefaultProgress:
 
         return len(self.tasks) - 1
 
-    def refresh(self, task_id: Optional[int] = None):
+    def refresh(self, task_id: int | None = None):
         """Refresh display liens for one or all tasks."""
         if task_id is None:
             self._task_display_lines.clear()
@@ -113,9 +113,9 @@ class DefaultProgress:
         self,
         task_id: int,
         *,
-        completed: Optional[float] = None,
-        total: Optional[float] = None,
-        advance: Optional[float] = None,
+        completed: float | None = None,
+        total: float | None = None,
+        advance: float | None = None,
         refresh: bool = False,
     ):
         """Update task with given ``task_id`` and refresh its progress.

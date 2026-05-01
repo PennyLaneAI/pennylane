@@ -2,7 +2,7 @@ name: Tests
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - opened
@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   tests:
+    permissions:
+      contents: read  
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
@@ -45,13 +47,42 @@ jobs:
           || false
          }}
 
-  upload-stable-deps:
+  update-lock-files:
+    permissions:
+      contents: read  
     needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.9.17
+          enable-cache: true   
+          cache-suffix: ${{ github.job }}-${{ matrix.python-version }}          
+          
+      - name: Update lock files
+        run: |
+          uv lock
+
+      - name: Upload frozen requirements 
+        uses: actions/upload-artifact@v6
+        with:
+          name: frozen-lockfile
+          path: uv.lock
+
+  upload-stable-deps:
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: [tests, update-lock-files]
     uses: ./.github/workflows/check_in_artifact.yml
     if: github.event_name == 'schedule'
     with:
-      artifact_name_pattern: "frozen-*"
-      artifact_save_path: ".github/stable/"
+      artifact_name_pattern: "frozen-lockfile"
+      artifact_save_path: "."
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Dependencies Update
       pull_request_title: Update stable dependency files

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+
 import argparse
 import os
 
@@ -19,7 +20,8 @@ import numpy as np
 import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.exceptions import DeviceError
 
 # ==========================================================
 # pytest fixtures
@@ -64,13 +66,27 @@ def init_state():
     return _init_state
 
 
+@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
+def enable_and_disable_graph_decomp(request):
+    """
+    A fixture that parametrizes a test to run twice: once with graph
+    decomposition disabled and once with it enabled.
+
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+    """
+    use_graph_decomp = request.param
+    with qp.decomposition.toggle_graph_ctx(use_graph_decomp):
+        yield
+
+
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
 
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, qp.devices.LegacyDeviceFacade):
         return dev.target_device.capabilities()
 
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qp.devices.LegacyDevice):
         return dev.capabilities()
 
     return {}
@@ -103,7 +119,7 @@ def validate_diff_method(device, diff_method, device_kwargs):
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    config = qml.devices.ExecutionConfig(gradient_method=diff_method)
+    config = qp.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
         pytest.skip(reason="device does not support diff_method")
 
@@ -119,8 +135,8 @@ def fixture_device(device_kwargs):
         device_kwargs["wires"] = wires
 
         try:
-            dev = qml.device(**device_kwargs)
-        except qml.DeviceError:
+            dev = qp.device(**device_kwargs)
+        except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
@@ -171,8 +187,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
@@ -235,7 +249,7 @@ def pytest_generate_tests(metafunc):
     """Set up device_kwargs fixture from command line options.
 
     The fixture defines a dictionary of keyword argument that can be used to instantiate
-    a device via `qml.device(**device_kwargs)` in the test. This allows us to potentially
+    a device via `qp.device(**device_kwargs)` in the test. This allows us to potentially
     change kwargs in the test before creating the device.
     """
 
@@ -278,7 +292,7 @@ def pytest_runtest_makereport(item, call):
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (
-                call.excinfo.type == qml.DeviceError
+                call.excinfo.type == DeviceError
                 and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):

@@ -17,7 +17,7 @@ of operators."""
 import json
 from collections.abc import Sequence
 from functools import lru_cache
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 import numpy as np
 
@@ -51,11 +51,11 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def supported_ops(cls) -> frozenset[Type[Operator]]:
+    def supported_ops(cls) -> frozenset[type[Operator]]:
         """Set of supported operators."""
         return frozenset(
             (
-                # pennylane/ops/qubit/arithmetic_qml.py
+                # pennylane/ops/qubit/arithmetic_qp.py
                 qops.QubitCarry,
                 qops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
@@ -67,7 +67,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 # pennylane/ops/qubit/matrix_ops.py
                 qops.QubitUnitary,
                 qops.DiagonalQubitUnitary,
-                # pennylane/ops/qubit/non_parametric_qml.py
+                # pennylane/ops/qubit/non_parametric_qp.py
                 qops.Hadamard,
                 qops.PauliX,
                 qops.PauliY,
@@ -281,7 +281,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
+    def _supported_ops_dict(cls) -> dict[str, type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
         ops_dict = {op.__name__: op for op in cls.supported_ops()}
         ops_dict["Hamiltonian"] = qops.LinearCombination

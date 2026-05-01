@@ -14,22 +14,23 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
+
 from functools import singledispatch
 
-import pennylane as qml
+from scipy.constants import angstrom, physical_constants
+
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
 
-# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
+# pylint: disable=too-many-branches,too-many-arguments,too-many-locals
 # pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
 # pylint: disable=possibly-used-before-assignment
 
-
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 def electron_integrals(mol, core=None, active=None):
@@ -93,7 +94,7 @@ def electron_integrals(mol, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> electron_integrals(mol)(*args)
     (1.0,
@@ -119,9 +120,9 @@ def electron_integrals(mol, core=None, active=None):
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
         _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
-        one = qml.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
-        two = qml.math.swapaxes(
-            qml.math.einsum(
+        one = qp.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
+        two = qp.math.swapaxes(
+            qp.math.einsum(
                 "ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, repulsion_tensor, coeffs, coeffs
             ),
             1,
@@ -140,12 +141,12 @@ def electron_integrals(mol, core=None, active=None):
         for p in active:
             for q in active:
                 for i in core:
-                    o = qml.math.zeros(one.shape)
+                    o = qp.math.zeros(one.shape)
                     o[p, q] = 1.0
                     one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
 
-        one = one[qml.math.ix_(active, active)]
-        two = two[qml.math.ix_(active, active, active, active)]
+        one = one[qp.math.ix_(active, active)]
+        two = two[qp.math.ix_(active, active, active, active)]
 
         return core_constant, one, two
 
@@ -170,7 +171,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = fermionic_hamiltonian(mol)(*args)
     """
@@ -213,9 +214,9 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jorda
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> h = qml.qchem.diff_hamiltonian(mol)(*args)
+    >>> h = qp.qchem.diff_hamiltonian(mol)(*args)
     >>> h.terms()[0]
     [tensor(0.29817878, requires_grad=True),
     tensor(0.20813366, requires_grad=True),
@@ -315,8 +316,8 @@ def molecular_hamiltonian(*args, **kwargs):
 
     >>> symbols = ['H', 'H']
     >>> coordinates = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    >>> molecule = qml.qchem.Molecule(symbols, coordinates)
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
+    >>> molecule = qp.qchem.Molecule(symbols, coordinates)
+    >>> H, qubits = qp.qchem.molecular_hamiltonian(molecule)
     >>> print(qubits)
     4
     >>> print(H)
@@ -430,6 +431,66 @@ def _(
     )
 
 
+def _dhf_molecular_hamiltonian(
+    symbols,
+    coordinates,
+    *,
+    geometry_dhf,
+    charge,
+    mult,
+    basis,
+    active_electrons,
+    active_orbitals,
+    mapping="jordan_wigner",
+    wires=None,
+    alpha=None,
+    coeff=None,
+    args=None,
+    load_data=False,
+):
+
+    if args is None and isinstance(geometry_dhf, qp.numpy.tensor):
+        geometry_dhf.requires_grad = False
+    mol = qp.qchem.Molecule(
+        symbols,
+        geometry_dhf,
+        charge=charge,
+        mult=mult,
+        basis_name=basis,
+        load_data=load_data,
+        alpha=alpha,
+        coeff=coeff,
+    )
+    core, active = qp.qchem.active_space(
+        mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
+    )
+
+    requires_grad = args is not None
+    interface = qp.math.get_interface(coordinates, alpha, coeff)
+    if interface == "autograd":
+        interface_args = {"like": "autograd", "requires_grad": requires_grad}
+    elif interface in {"numpy", "jax"}:
+        interface_args = {"like": interface}
+    else:
+        raise ValueError(f"unsupported interface {interface} for molecular_hamiltonian")
+    h = (
+        qp.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
+        if requires_grad
+        else qp.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
+    )
+
+    h_as_ps = qp.pauli.pauli_sentence(h)
+    coeffs = qp.math.real(qp.math.array(list(h_as_ps.values()), **interface_args))
+    h_as_ps = qp.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs, strict=True)))
+    h = qp.s_prod(0, qp.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
+
+    if wires:
+        wires_new = qp.qchem.convert._process_wires(wires)
+        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
+        h = qp.map_wires(h, wires_map)
+    return h, 2 * len(active)
+
+
 @_molecular_hamiltonian_dispatch.register(list)
 def _(
     symbols,
@@ -459,7 +520,7 @@ def _(
         )
 
     if coord_unit == "angstrom":
-        coordinates = coordinates / bohr_angs
+        coordinates = coordinates / BOHR_TO_ANG
 
     return _molecular_hamiltonian(
         symbols,
@@ -500,7 +561,7 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-):  # pylint:disable=too-many-arguments, too-many-statements
+):  # pylint: disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule."""
 
     method = method.strip().lower()
@@ -515,19 +576,17 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = qml.math.array(
-            coordinates.reshape(len(symbols), 3), like=qml.math.get_deep_interface(coordinates)
-        )
+        geometry_dhf = coordinates.reshape(len(symbols), 3)
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = qml.math.array(coordinates, like=qml.math.get_deep_interface(coordinates))
+        geometry_dhf = qp.math.array(coordinates, like=qp.math.get_deep_interface(coordinates))
         geometry_hf = coordinates.flatten()
 
     wires_map = None
 
     if wires:
-        wires_new = qml.qchem.convert._process_wires(wires)
-        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+        wires_new = qp.qchem.convert._process_wires(wires)
+        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
 
     if method in ("dhf", "pyscf"):
         n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
@@ -539,64 +598,43 @@ def _molecular_hamiltonian(
             )
 
     if method == "dhf":
-
-        if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
-            geometry_dhf.requires_grad = False
-        mol = qml.qchem.Molecule(
+        return _dhf_molecular_hamiltonian(
             symbols,
-            geometry_dhf,
+            coordinates,
+            geometry_dhf=geometry_dhf,
             charge=charge,
             mult=mult,
-            basis_name=basis,
-            load_data=load_data,
+            basis=basis,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            mapping=mapping,
+            wires=wires,
             alpha=alpha,
             coeff=coeff,
+            args=args,
+            load_data=load_data,
         )
-        core, active = qml.qchem.active_space(
-            mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
-        )
-
-        requires_grad = args is not None
-        use_jax = any(qml.math.get_deep_interface(x) == "jax" for x in [coordinates, alpha, coeff])
-        interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
-            use_jax
-        ]
-        h = (
-            qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
-            if requires_grad
-            else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
-        )
-
-        h_as_ps = qml.pauli.pauli_sentence(h)
-        coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
-        h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
-        h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
-
-        if wires:
-            h = qml.map_wires(h, wires_map)
-        return h, 2 * len(active)
-
     if method == "pyscf":
-        core_constant, one_mo, two_mo = qml.qchem.openfermion_pyscf._pyscf_integrals(
+        core_constant, one_mo, two_mo = qp.qchem.openfermion_pyscf._pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
         )
 
-        hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
+        hf = qp.qchem.fermionic_observable(core_constant, one_mo, two_mo)
 
         qubits = len(hf.wires)
 
         if mapping == "jordan_wigner":
-            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
+            h_pl = qp.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
         elif mapping == "parity":
-            h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+            h_pl = qp.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
         elif mapping == "bravyi_kitaev":
-            h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+            h_pl = qp.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
 
         h_pl = h_pl.simplify()
 
         return h_pl, len(h_pl.wires)
 
-    h_pl = qml.qchem.openfermion_pyscf._openfermion_hamiltonian(
+    h_pl = qp.qchem.openfermion_pyscf._openfermion_hamiltonian(
         symbols,
         geometry_hf,
         name,

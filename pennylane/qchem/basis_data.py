@@ -786,14 +786,14 @@ def load_basisset(basis, element):
 
     >>> basis = '6-31g'
     >>> element = 'He'
-    >>> basis = qml.qchem.load_basisset(basis, element)
+    >>> basis = qp.qchem.load_basisset(basis, element)
     >>> basis
     {'orbitals': ['S', 'S'],
      'exponents': [[38.421634, 5.77803, 1.241774], [0.297964]],
      'coefficients': [[0.04013973935, 0.261246097, 0.7931846246], [1.0]]}
     """
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import basis_set_exchange as bse
     except ImportError as Error:
         raise ImportError(

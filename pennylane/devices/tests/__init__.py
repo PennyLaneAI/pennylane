@@ -72,12 +72,12 @@ For more details on the available arguments, see the :func:`~.test_device` docum
 Functions
 ---------
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments
+
+# pylint: disable=import-outside-toplevel
 import argparse
 import pathlib
 import subprocess
 import sys
-
 
 # determine if running in an interactive environment
 import __main__

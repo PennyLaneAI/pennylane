@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the `qml.workflow.resolution._resolve_diff_method` helper function"""
+"""Unit tests for the `qp.workflow.resolution._resolve_diff_method` helper function"""
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow import _resolve_diff_method
 
 
@@ -27,7 +28,7 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDeviceWithDiffMethod(qml.devices.Device):
+class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines its own derivative."""
 
     def execute(self, circuits, execution_config=None):
@@ -39,7 +40,7 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
 
 
 # pylint: disable=unused-argument, too-few-public-methods
-class CustomDevice(qml.devices.Device):
+class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def execute(self, circuits, execution_config=None):
@@ -47,7 +48,7 @@ class CustomDevice(qml.devices.Device):
 
 
 # pylint: disable=unused-argument
-class DerivativeDevice(qml.devices.Device):
+class DerivativeDevice(qp.devices.Device):
     """A device that says it supports device derivatives."""
 
     def execute(self, circuits, execution_config=None):
@@ -58,7 +59,7 @@ class DerivativeDevice(qml.devices.Device):
 
 
 # pylint: disable=unused-argument
-class BackpropDevice(qml.devices.Device):
+class BackpropDevice(qp.devices.Device):
     """A device that says it supports backpropagation."""
 
     def execute(self, circuits, execution_config=None):
@@ -77,13 +78,13 @@ class TestCustomDeviceIntegration:
         """Test best method for custom device"""
         config = ExecutionConfig(gradient_method="best")
         resolved_config = _resolve_diff_method(config, self.dev)
-        assert resolved_config.gradient_method is qml.gradients.param_shift
+        assert resolved_config.gradient_method is qp.gradients.param_shift
 
     def test_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="adjoint")
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=r"does not support adjoint with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
@@ -92,7 +93,7 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="backprop")
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=r"does not support backprop with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
@@ -117,21 +118,21 @@ class TestResolveDiffMethod:
 
     def test_diff_method_is_none(self):
         """Test that the configuration remains unchanged if the diff_method is None"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method=None)
         resolved_config = _resolve_diff_method(initial_config, dev)
         assert resolved_config == initial_config
 
     def test_transform_dispatcher_as_diff_method(self):
-        """Test when diff_method is of type TransformDispatcher"""
-        dev = qml.device("default.mixed", wires=1)
-        initial_config = ExecutionConfig(gradient_method=qml.gradients.param_shift)
+        """Test when diff_method is of type Transform"""
+        dev = qp.device("default.mixed", wires=1)
+        initial_config = ExecutionConfig(gradient_method=qp.gradients.param_shift)
         resolved_config = _resolve_diff_method(initial_config, dev)
-        assert resolved_config.gradient_method is qml.gradients.param_shift
+        assert resolved_config.gradient_method is qp.gradients.param_shift
 
     def test_best_method_backprop(self):
         """Test that 'backprop' is chosen for 'best' diff_method on default.qubit"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method="best")
         resolved_config = _resolve_diff_method(initial_config, dev)
         assert resolved_config.gradient_method == "backprop"
@@ -145,24 +146,24 @@ class TestResolveDiffMethod:
 
     def test_finite_diff_method(self):
         """Test that the 'finite-diff' method is correctly resolved"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method="finite-diff")
         resolved_config = _resolve_diff_method(initial_config, dev)
-        assert resolved_config.gradient_method is qml.gradients.finite_diff
+        assert resolved_config.gradient_method is qp.gradients.finite_diff
 
     def test_param_shift_method_with_cv_ops(self):
         """Test that 'parameter-shift-cv' is used when CV operations are present."""
-        dev = qml.device("default.gaussian", wires=1)
-        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+        dev = qp.device("default.gaussian", wires=1)
+        tape = qp.tape.QuantumScript([qp.Displacement(0.5, 0.0, wires=0)])
         initial_config = ExecutionConfig(gradient_method="parameter-shift")
         resolved_config = _resolve_diff_method(initial_config, dev, tape=tape)
-        assert resolved_config.gradient_method is qml.gradients.param_shift_cv
+        assert resolved_config.gradient_method is qp.gradients.param_shift_cv
 
-        dev = qml.device("default.gaussian", wires=1)
-        tape = qml.tape.QuantumScript([qml.Identity(wires=0)])
+        dev = qp.device("default.gaussian", wires=1)
+        tape = qp.tape.QuantumScript([qp.Identity(wires=0)])
         initial_config = ExecutionConfig(gradient_method="parameter-shift")
         resolved_config = _resolve_diff_method(initial_config, dev, tape=tape)
-        assert resolved_config.gradient_method is qml.gradients.param_shift
+        assert resolved_config.gradient_method is qp.gradients.param_shift
 
     def test_custom_device_that_supports_backprop(self):
         """Test that a custom device supports backprop derivatives."""
@@ -180,10 +181,10 @@ class TestResolveDiffMethod:
 
     def test_invalid_diff_method(self):
         """Test that an invalid diff method raises an error."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method="invalid-method")
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Differentiation method invalid-method not recognized",
         ):
             _resolve_diff_method(initial_config, dev)
@@ -200,19 +201,19 @@ class TestResolveDiffMethod:
     def test_hadamard_methods(self, diff_method, mode):
         """Test that we can resolve the hadamard methods correctly."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         initial_config = ExecutionConfig(gradient_method=diff_method)
         processed = _resolve_diff_method(initial_config, dev)
-        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_method == qp.gradients.hadamard_grad
         assert processed.gradient_keyword_arguments == {"mode": mode, "device_wires": None}
 
     def test_hadamard_device_wires(self):
         """Test that device wires are added to the gradient keyword args."""
 
-        dev = qml.device("default.qubit", wires=("a", "b"))
+        dev = qp.device("default.qubit", wires=("a", "b"))
         initial_config = ExecutionConfig(gradient_method="hadamard")
         processed = _resolve_diff_method(initial_config, dev)
-        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_method == qp.gradients.hadamard_grad
         assert processed.gradient_keyword_arguments == {
             "mode": "standard",
             "device_wires": dev.wires,
@@ -223,7 +224,7 @@ class TestResolveDiffMethod:
     )
     def test_error_if_specific_hadamard_variant_and_mode(self, diff_method):
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         initial_config = ExecutionConfig(
             gradient_method=diff_method, gradient_keyword_arguments={"mode": "reversed"}
@@ -232,10 +233,10 @@ class TestResolveDiffMethod:
             _resolve_diff_method(initial_config, dev)
 
     def test_specify_hadamard_and_mode(self):
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         initial_config = ExecutionConfig(
             gradient_method="hadamard", gradient_keyword_arguments={"mode": "reversed"}
         )
         processed = _resolve_diff_method(initial_config, dev)
-        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_method == qp.gradients.hadamard_grad
         assert processed.gradient_keyword_arguments == {"mode": "reversed", "device_wires": None}

@@ -14,11 +14,11 @@
 """
 Unit tests for molecular dipole.
 """
+
 # pylint: disable=too-many-arguments, protected-access
 import pytest
-from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
@@ -210,7 +210,6 @@ eig_h2o.append([0.0, 0.0])
 eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     (
         "symbols",
@@ -224,7 +223,20 @@ eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
     ),
     [
         (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2),
-        (h2, x_h2, 0, None, None, "parity", coeffs_h2_parity, ops_h2_parity),
+        pytest.param(
+            h2,
+            x_h2,
+            0,
+            None,
+            None,
+            "parity",
+            coeffs_h2_parity,
+            ops_h2_parity,
+            marks=pytest.mark.xfail(
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
+                strict=True,
+            ),
+        ),
         (h3p, x_h3p, 1, None, None, "jordan_wigner", coeffs_h3p, ops_h3p),
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
@@ -234,8 +246,8 @@ def test_openfermion_molecular_dipole(
 ):
     r"""Test that molecular_dipole returns the correct dipole operator with openfermion backend."""
 
-    molecule = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    dip = qml.qchem.molecular_dipole(
+    molecule = qp.qchem.Molecule(symbols, geometry, charge=charge)
+    dip = qp.qchem.molecular_dipole(
         molecule,
         method="openfermion",
         active_electrons=active_el,
@@ -256,7 +268,7 @@ def test_openfermion_molecular_dipole(
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(
@@ -281,8 +293,8 @@ def test_differentiable_molecular_dipole(
 ):
     r"""Test that molecular_dipole returns the correct eigenvalues with the dhf backend."""
 
-    molecule = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    dip_dhf = qml.qchem.molecular_dipole(
+    molecule = qp.qchem.Molecule(symbols, geometry, charge=charge)
+    dip_dhf = qp.qchem.molecular_dipole(
         molecule,
         method="dhf",
         active_electrons=active_el,
@@ -296,16 +308,15 @@ def test_differentiable_molecular_dipole(
         if not wires:
             eig = [0, 0]
         else:
-            eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
+            eig = qp.eigvals(qp.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("wiremap"),
     [
         ["a", "b", "c", "d"],
-        [0, "z", 3, "ancilla"],
+        [0, "z", 3, "auxiliary"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -356,7 +367,7 @@ def test_molecular_dipole_error():
 @pytest.mark.parametrize(
     ("method", "args"),
     [
-        pytest.param("openfermion", None, marks=xfail_on_numpy2),
+        ("openfermion", None),
         (
             "dhf",
             None,
@@ -388,7 +399,7 @@ def test_real_dipole(method, args, tmpdir):
 @pytest.mark.parametrize(
     ("method"),
     [
-        pytest.param("openfermion", marks=xfail_on_numpy2),
+        "openfermion",
         "dhf",
     ],
 )
@@ -413,4 +424,4 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
         outpath=tmpdir.strpath,
     )
     for o1, o2 in zip(dipole_ang, dipole_bohr):
-        qml.assert_equal(o1, o2)
+        qp.assert_equal(o1, o2)

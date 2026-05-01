@@ -17,6 +17,7 @@ Contains the implementation of quantum fidelity.
 Note: care needs to be taken to make it fully differentiable. An explanation can
 be found in pennylane/math/fidelity_gradient.md
 """
+
 from functools import lru_cache
 
 import autograd
@@ -61,7 +62,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
     >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
-    >>> qml.math.fidelity_statevector(state0, state1)
+    >>> qp.math.fidelity_statevector(state0, state1)
     0.9905158135644924
 
     .. seealso:: :func:`pennylane.math.fidelity`
@@ -71,7 +72,6 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable=protected-access
     if check_state:
         _check_state_vector(state0)
         _check_state_vector(state1)
@@ -124,16 +124,16 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
     inputs first, e.g.:
 
-    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
-    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
-    >>> qml.math.fidelity(state0, state1)
+    >>> state0 = qp.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
+    >>> state1 = qp.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
+    >>> qp.math.fidelity(state0, state1)
     0.9905158135644924
 
     To find the fidelity between two density matrices, they can be passed directly:
 
     >>> state0 = [[1, 0], [0, 0]]
     >>> state1 = [[0, 0], [0, 1]]
-    >>> qml.math.fidelity(state0, state1)
+    >>> qp.math.fidelity(state0, state1)
     0.0
 
     .. seealso:: :func:`pennylane.math.fidelity_statevector`
@@ -143,7 +143,6 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable= protected-access
     if check_state:
         _check_density_matrix(state0)
         _check_density_matrix(state1)
@@ -178,7 +177,9 @@ def _register_vjp(state0, state1):
         _register_jax_vjp()
     elif interface == "torch":
         _register_torch_vjp()
-    elif interface == "tensorflow":
+    elif (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         _register_tf_vjp()
 
 
@@ -325,7 +326,7 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    # pylint: disable=import-outside-toplevel,abstract-method,arguments-differ
+    # pylint: disable=import-outside-toplevel
     import torch
 
     class _TorchFidelity(torch.autograd.Function):
@@ -349,7 +350,7 @@ def _register_torch_vjp():
 
 
 @lru_cache(maxsize=None)
-def _register_tf_vjp():
+def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """
     Register the custom VJP for tensorflow
     """

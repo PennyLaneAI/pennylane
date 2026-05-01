@@ -19,7 +19,9 @@ quantum-classical programs.
 
 .. warning::
 
-    This module is experimental and will change significantly in the future.
+    This module is experimental and will change significantly in the future. In addition,
+    features herein are intended to be used with Catalyst (specifically, with the
+    :func:`~.qjit` decorator).
 
 .. currentmodule:: pennylane.capture
 
@@ -30,18 +32,16 @@ quantum-classical programs.
     ~enable
     ~enabled
     ~pause
-    ~create_operator_primitive
-    ~create_measurement_obs_primitive
-    ~create_measurement_wires_primitive
-    ~create_measurement_mcm_primitive
     ~determine_abstracted_axes
     ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
+    ~disable_autograph
     ~PlxprInterpreter
     ~FlatFn
     ~make_plxpr
     ~register_custom_staging_rule
+    ~subroutine
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -73,22 +73,27 @@ See also:
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
-the switches ``qml.capture.enable`` and ``qml.capture.disable``.
+the switches ``qp.capture.enable`` and ``qp.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
-queried with ``qml.capture.enabled``.
+queried with ``qp.capture.enabled``.
 By default, the mechanism is disabled:
 
 .. code-block:: pycon
 
-    >>> import pennylane as qml
-    >>> qml.capture.enabled()
+    >>> import pennylane as qp
+    >>> qp.capture.enabled()
     False
-    >>> qml.capture.enable()
-    >>> qml.capture.enabled()
+    >>> qp.capture.enable()
+    >>> qp.capture.enabled()
     True
-    >>> qml.capture.disable()
-    >>> qml.capture.enabled()
+    >>> qp.capture.disable()
+    >>> qp.capture.enabled()
     False
+
+.. note::
+    To activate program capture when using :func:`~.qjit`, please set `capture=True`
+    instead of using `qp.capture.enable`. By default, `capture=False`.
+
 
 **Custom Operator Behaviour**
 
@@ -98,7 +103,7 @@ and any keyword arguments are passed as keyword metadata.
 
 .. code-block:: python
 
-    class MyOp1(qml.operation.Operator):
+    class MyOp1(qp.operation.Operator):
 
         def __init__(self, arg1, wires, key=None):
             super().__init__(arg1, wires=wires)
@@ -106,7 +111,7 @@ and any keyword arguments are passed as keyword metadata.
     def qfunc(a):
         MyOp1(a, wires=(0,1), key="a")
 
-    qml.capture.enable()
+    qp.capture.enable()
     print(jax.make_jaxpr(qfunc)(0.1))
 
 .. code-block::
@@ -126,7 +131,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 .. code-block:: python
 
-    class JustMetadataOp(qml.operation.Operator):
+    class JustMetadataOp(qp.operation.Operator):
 
         def __init__(self, metadata):
             super().__init__(wires=[])
@@ -140,7 +145,7 @@ will be called when constructing a new class instance instead of ``type.__call__
     def qfunc():
         JustMetadataOp("Y")
 
-    qml.capture.enable()
+    qp.capture.enable()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
@@ -155,44 +160,48 @@ If needed, developers can also override the implementation method of the primiti
 
 .. code-block:: python
 
-    class MyCustomOp(qml.operation.Operator):
+    class MyCustomOp(qp.operation.Operator):
         pass
 
     @MyCustomOp._primitive.def_impl
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from typing import Callable
+
+from typing import Type
+from collections.abc import Callable
 
 from .switches import disable, enable, enabled, pause
 from .capture_meta import CaptureMeta, ABCCaptureMeta
-from .capture_operators import create_operator_primitive
-from .capture_measurements import (
-    create_measurement_obs_primitive,
-    create_measurement_wires_primitive,
-    create_measurement_mcm_primitive,
-)
 from .flatfn import FlatFn
-from .make_plxpr import make_plxpr, run_autograph
+from .make_plxpr import make_plxpr
+from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
+
+# Import Patcher for contextual patching (preferred over global patches)
+from .patching import Patcher
+from .jax_patches import get_jax_patches
+from .subroutine import subroutine
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
-qnode_prim: "jax.core.Primitive"
-PlxprInterpreter: type  # pylint: disable=redefined-outer-name
-expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
+qnode_prim: "jax.extend.core.Primitive"
+PlxprInterpreter: type
+expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
+QpPrimitive: "Type[jax.extend.core.Primitive]"
 
 
-class CaptureError(Exception):
-    """Errors related to PennyLane's Program Capture execution pipeline."""
-
-
-# pylint: disable=import-outside-toplevel, redefined-outer-name
+# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
+    if key == "QpPrimitive":
+        from .custom_primitives import QpPrimitive
+
+        return QpPrimitive
+
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator
 
@@ -233,10 +242,6 @@ __all__ = (
     "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
-    "create_operator_primitive",
-    "create_measurement_obs_primitive",
-    "create_measurement_wires_primitive",
-    "create_measurement_mcm_primitive",
     "determine_abstracted_axes",
     "expand_plxpr_transforms",
     "register_custom_staging_rule",
@@ -247,4 +252,6 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "get_jax_patches",
 )

@@ -15,15 +15,17 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+
 from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.ops import PauliRot
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
@@ -92,7 +94,7 @@ def _one_parameter_generators(op):
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
-    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in op.data]))
+    U_dagger = math.conj(_compute_matrix([math.detach(d) for d in op.data]))
 
     # Compute U^\dagger @ \partial U / \partial \theta_k
     # For each entry ``j`` in the tuple ``jac``,
@@ -100,10 +102,10 @@ def _one_parameter_generators(op):
     #    U_dagger, which we skipped above.
     # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
     # 3. Move the first two axis to the last two positions.
-    moveax = partial(qml.math.moveaxis, source=(0, 1), destination=(-2, -1))
+    moveax = partial(math.moveaxis, source=(0, 1), destination=(-2, -1))
     return tuple(
-        moveax(qml.math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
-        for j_r, j_i in zip(jac_real, jac_imag)
+        moveax(math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
+        for j_r, j_i in zip(jac_real, jac_imag, strict=True)
     )
 
 
@@ -126,14 +128,14 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         This function includes a prefactor ``2j`` in its output compared to the "standard" Pauli
         basis coefficients. That is, for the effective generator :math:`\frac{1}{3}iX`, which has
         the Pauli basis coefficient :math:`\frac{1}{3}i`, this function will compute the
-        number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
+        number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qp.PauliRot``
         in the pulse generator differentiation pipeline.
 
     """
     # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
     # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
     # we prefer over a complex-valued tensor with vanishing imaginary part
-    return tuple(qml.math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
+    return tuple(math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
 
 
 def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
@@ -150,11 +152,11 @@ def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     words = pauli_basis_strings(num_wires)
     new_coefficients = [[] for _ in coefficients]
     new_words = []
-    for word, *coeffs in zip(words, *coefficients):
-        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
+    for word, *coeffs in zip(words, *coefficients, strict=True):
+        if all(math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
             continue
         new_words.append(word)
-        for new_coeffs, c in zip(new_coefficients, coeffs):
+        for new_coeffs, c in zip(new_coefficients, coeffs, strict=True):
             new_coeffs.append(c)
     return new_coefficients, new_words
 
@@ -165,7 +167,7 @@ def _insert_op(tape, ops, op_idx):
 
     Args:
         tape (`~.QuantumTape`): Original tape.
-        ops (list[qml.Operation]): Operations to insert (individually) at ``op_idx``
+        ops (list[qp.Operation]): Operations to insert (individually) at ``op_idx``
             to produce a new tape each.
         op_idx (int): Index at which to insert the operations in ``ops``.
 
@@ -176,7 +178,7 @@ def _insert_op(tape, ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
+        QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
         for insert in ops
     ]
 
@@ -227,7 +229,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     pauli_rots = [
-        qml.PauliRot(angle, word, wires=op.wires)
+        PauliRot(angle, word, wires=op.wires)
         for word in pauli_words
         for angle in [np.pi / 2, -np.pi / 2]
     ]
@@ -263,21 +265,21 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     def _parshift_and_contract_single(res_list, coeffs):
         """Execute the standard parameter-shift rule on a list of results
         and contract with Pauli basis coefficients."""
-        psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
-        return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+        psr_deriv = ((res := math.stack(res_list))[::2] - res[1::2]) / 2
+        return math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
     if single_measure and single_shot_entry:
         # single measurement and single shot entry
-        return _parshift_and_contract_single(results, qml.math.stack(coeffs))
+        return _parshift_and_contract_single(results, math.stack(coeffs))
     if single_measure or single_shot_entry:
         # single measurement or single shot entry, but not both
         return tuple(
-            _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
+            _parshift_and_contract_single(r, math.stack(coeffs)) for r in zip(*results, strict=True)
         )
 
     return tuple(
-        tuple(_parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r))
-        for r in zip(*results)
+        tuple(_parshift_and_contract_single(_r, math.stack(coeffs)) for _r in zip(*r, strict=True))
+        for r in zip(*results, strict=True)
     )
 
 
@@ -326,7 +328,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
     gradient_tapes = []
     tape_params = tape.get_parameters()
     for idx, param in enumerate(tape_params):
-        shape = qml.math.shape(param)
+        shape = math.shape(param)
 
         if idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
@@ -436,12 +438,12 @@ def pulse_odegen(
             the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
-            ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
+            ``qp.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
         tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -473,9 +475,9 @@ def pulse_odegen(
         from jax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.Y(0)
-            + jnp.polyval * qml.Y(1)
-            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
+            qp.pulse.constant * qp.Y(0)
+            + jnp.polyval * qp.Y(1)
+            + qp.pulse.constant * (qp.Z(0) @ qp.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -485,12 +487,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
+        @qp.qnode(dev, interface="jax", diff_method=qp.gradients.pulse_odegen)
         def circuit(params):
-            op = qml.evolve(H)(params, t)
-            return qml.expval(qml.X(0))
+            op = qp.evolve(H)(params, t)
+            return qp.expval(qp.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -504,9 +506,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape = qp.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
     >>> tape.trainable_params = [0, 1, 2]
-    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
+    >>> tapes, fun = qp.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -533,14 +535,14 @@ def pulse_odegen(
     Note that the order of the tapes follows lexicographical ordering of the inserted
     Pauli rotations, so that :math:`Y_1` is the first of the six words.
 
-    >>> print(qml.drawer.tape_text(tapes[0]))
+    >>> print(qp.drawer.tape_text(tapes[0]))
     0: ─╭RIY─╭ParametrizedEvolution─┤  <X>
     1: ─╰RIY─╰ParametrizedEvolution─┤
 
     Executing the tapes and applying the post-processing function to the results then
     yields the gradient:
 
-    >>> fun(qml.execute(tapes, dev))
+    >>> fun(qp.execute(tapes, dev))
     (Array(1.41897932, dtype=float64),
      Array([0.00164913, 0.00284788], dtype=float64),
      Array(-0.09984584, dtype=float64))

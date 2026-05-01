@@ -20,6 +20,8 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
 
 .. code-block:: python
 
+    jax.config.update("jax_enable_x64", True)
+
     def f(x):
         return x**2
 
@@ -34,13 +36,15 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
-in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
+in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
 Array(4., dtype=float64, weak_type=True)
 
 
 We can do something similar for the VJP as well:
 
 .. code-block:: python
+
+    jax.config.update("jax_enable_x64", True)
 
     def f_fwd(x):
         print("in forward pass: ", x)
@@ -70,13 +74,21 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
 
 .. code-block:: python
 
-    def f_and_jvp(primals, tangents):
+    jax.config.update("jax_enable_x64", True)
+
+    def bad_f_and_jvp(primals, tangents):
         x = primals[0]
-        dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
+        dx = qp.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
 
->>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
+>>> bad_f = jax.custom_jvp(f)
+>>> bad_f.defjvp(bad_f_and_jvp)
+<function bad_f_and_jvp at 0x...>
+>>> jax.grad(bad_f)(jax.numpy.array(2.0))
+Traceback (most recent call last):
+    ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+...
 
 Note that the comment about ``JIT`` is generally a comment about not being able to trace code.
 
@@ -85,7 +97,7 @@ But if we used the VJP instead:
 .. code-block:: python
 
     def f_bwd(residual, dy):
-        dy = qml.math.unwrap(dy)
+        dy = qp.math.unwrap(dy)
         return (dy*2*residual,)
 
 We would be able to calculate the gradient without error.
@@ -98,6 +110,8 @@ between either the VJP or the JVP.
 The trainable arguments for the registered functions can be any valid pytree.
 
 .. code-block:: python
+
+    jax.config.update("jax_enable_x64", True)
 
     def f(x):
         return x['a']**2
@@ -113,7 +127,7 @@ The trainable arguments for the registered functions can be any valid pytree.
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)({'a': jax.numpy.array(2.0)})
-in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>}
+in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<~float64[]:JaxprTrace>}
 {'a': Array(4., dtype=float64, weak_type=True)}
 
 As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.
@@ -123,6 +137,7 @@ time and can store tangents in place of the variables, we can use a batch of tap
 must be a non-pytree non-differentiable argument that accompanies the tree leaves.
 
 """
+
 import dataclasses
 
 # pylint: disable=unused-argument
@@ -132,7 +147,7 @@ from collections.abc import Callable
 import jax
 import jax.numpy as jnp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch
@@ -143,7 +158,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-ExecuteFn = Callable[[QuantumScriptBatch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
 
 
 @dataclasses.dataclass
@@ -172,10 +187,12 @@ def _set_copy_and_unwrap_tape(t, a, unwrap=True):
 
 def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
+    return tuple(
+        _set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params, strict=True)
+    )
 
 
-def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
@@ -186,7 +203,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
         return result
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
-    return result if qml.math.get_interface(result) == "jax" else jnp.array(result)
+    return result if qp.math.get_interface(result) == "jax" else jnp.array(result)
 
 
 def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:

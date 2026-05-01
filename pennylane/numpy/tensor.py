@@ -14,6 +14,7 @@
 """
 This module provides the PennyLane :class:`~.tensor` class.
 """
+
 import numpy as onp
 from autograd import numpy as _np
 from autograd.core import VSpace
@@ -21,6 +22,8 @@ from autograd.extend import defvjp, primitive
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ArrayVSpace, ComplexArrayVSpace
 from autograd.tracer import Box
+
+from pennylane.exceptions import NonDifferentiableError
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
@@ -87,13 +90,14 @@ class tensor(_np.ndarray):
     or in-place by modifying the ``requires_grad`` attribute:
 
     >>> x.requires_grad = False
+    >>> x
     tensor([0, 1, 2], requires_grad=False)
 
     Since tensors are subclasses of ``np.ndarray``, they can be provided as arguments
     to any PennyLane-wrapped NumPy function:
 
     >>> np.sin(x)
-    tensor([0.        , 0.84147098, 0.90929743], requires_grad=True)
+    tensor([0.        , 0.84147098, 0.90929743], requires_grad=False)
 
     When composing functions of multiple tensors, if at least one input tensor is differentiable,
     then the output will also be differentiable:
@@ -125,12 +129,12 @@ class tensor(_np.ndarray):
         string = super().__repr__()
         return string[:-1] + f", requires_grad={self.requires_grad})"
 
-    def __array_wrap__(self, obj):
+    def __array_wrap__(self, obj, context=None, return_scalar=False):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
-        return super().__array_wrap__(out_arr)
+        # pylint:disable=too-many-function-args
+        return super().__array_wrap__(out_arr, context, return_scalar)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        # pylint: disable=no-member,attribute-defined-outside-init
 
         # unwrap any outputs the ufunc might have
         outputs = [i.view(onp.ndarray) for i in kwargs.get("out", ())]
@@ -208,7 +212,7 @@ class tensor(_np.ndarray):
     def __setstate__(self, reduced_obj) -> None:
         # Called when unpickling the object.
         # Set self.requires_grad with the last element in the tuple returned by __reduce__:
-        # pylint: disable=attribute-defined-outside-init,no-member
+        # pylint: disable=attribute-defined-outside-init
         self.requires_grad = reduced_obj[-1]
         # And call parent's __setstate__ without this element:
         super().__setstate__(reduced_obj[:-1])
@@ -241,7 +245,7 @@ class tensor(_np.ndarray):
         >>> x.unwrap()
         1.543
         >>> type(x.unwrap())
-        float
+        <class 'float'>
 
         The underlying data is **not** copied:
 
@@ -275,11 +279,6 @@ class tensor(_np.ndarray):
         This method is an alias for :meth:`~.unwrap`. See :meth:`~.unwrap` for more details.
         """
         return self.unwrap()
-
-
-class NonDifferentiableError(Exception):
-    """Exception raised if attempting to differentiate non-trainable
-    :class:`~.tensor` using Autograd."""
 
 
 def tensor_to_arraybox(x, *args):

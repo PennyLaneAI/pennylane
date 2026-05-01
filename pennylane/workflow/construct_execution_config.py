@@ -12,16 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
-import functools
 
-import pennylane as qml
+from __future__ import annotations
+
+import functools
+from collections.abc import Callable
+from typing import TYPE_CHECKING, ParamSpec
+
+import pennylane as qp
 from pennylane.math import Interface
 
-from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
+P = ParamSpec("P")
 
-def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
+if TYPE_CHECKING:
+    from pennylane.devices.execution_config import ExecutionConfig
+
+    from .qnode import QNode
+
+
+def construct_execution_config(
+    qnode: QNode, resolve: bool | None = True
+) -> Callable[P, ExecutionConfig]:
     """Constructs the execution configuration of a QNode instance.
 
     Args:
@@ -29,16 +42,16 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         resolve (bool): Whether or not to validate and fill in undetermined values like `"best"`. Defaults to ``True``.
 
     Returns:
-        config (qml.devices.ExecutionConfig): the execution configuration
+        config (qp.devices.ExecutionConfig): the execution configuration
 
     **Example**
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
     First, let's import ``pprint`` to make it easier to read the execution configuration objects.
 
@@ -48,7 +61,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     ``resolve=False``. This will leave properties like ``gradient_method`` and ``interface``
     in their unrefined state (e.g. ``"best"`` or ``"auto"`` respectively).
 
-    >>> config = qml.workflow.construct_execution_config(circuit, resolve=False)(1)
+    >>> config = qp.workflow.construct_execution_config(circuit, resolve=False)(1)
     >>> pprint(config)
     ExecutionConfig(grad_on_execution=None,
                     use_device_gradient=None,
@@ -59,30 +72,30 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
                     interface=<Interface.AUTO: 'auto'>,
                     derivative_order=1,
                     mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
-                    convert_to_numpy=True)
+                    convert_to_numpy=True,
+                    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
 
     Specifying ``resolve=True`` will then resolve these properties appropriately for the
     given ``QNode`` configuration that was provided,
 
-    >>> resolved_config = qml.workflow.construct_execution_config(circuit, resolve=True)(1)
+    >>> resolved_config = qp.workflow.construct_execution_config(circuit, resolve=True)(1)
     >>> pprint(resolved_config)
     ExecutionConfig(grad_on_execution=False,
                     use_device_gradient=True,
                     use_device_jacobian_product=False,
                     gradient_method='backprop',
                     gradient_keyword_arguments={},
-                    device_options={'max_workers': None,
-                                    'prng_key': None,
-                                    'rng': Generator(PCG64) at 0x15F6BB680},
+                    device_options={'max_workers': None, 'rng': ..., 'prng_key': None},
                     interface=<Interface.NUMPY: 'numpy'>,
                     derivative_order=1,
-                    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
-                        convert_to_numpy=True)
+                    mcm_config=MCMConfig(mcm_method='deferred', postselect_mode=None),
+                    convert_to_numpy=True,
+                    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
     """
 
     @functools.wraps(qnode)
-    def wrapper(*args, **kwargs):
-        mcm_config = qml.devices.MCMConfig(
+    def wrapper(*args, **kwargs) -> ExecutionConfig:
+        mcm_config = qp.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
@@ -93,7 +106,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         elif grad_on_execution == "best":
             grad_on_execution = None
 
-        config = qml.devices.ExecutionConfig(
+        config = qp.devices.ExecutionConfig(
             interface=qnode.interface,
             gradient_method=qnode.diff_method,
             grad_on_execution=grad_on_execution,
@@ -102,13 +115,17 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             gradient_keyword_arguments=qnode.gradient_kwargs,
             mcm_config=mcm_config,
         )
-
         if resolve:
-            tape = construct_tape(qnode, level=0)(*args, **kwargs)
-            # pylint:disable=protected-access
-            config = _resolve_execution_config(
-                config, qnode.device, (tape,), qnode._transform_program
-            )
+            if type(qnode).__name__ == "TorchLayer":
+                # avoid triggering import of torch if its not needed.
+                x = args[0]
+                kwargs = {
+                    **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+                }
+            shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
+            tape = qp.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            batch, _ = qnode.compile_pipeline((tape,))
+            config = _resolve_execution_config(config, qnode.device, batch)
 
         return config
 

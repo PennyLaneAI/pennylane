@@ -16,8 +16,8 @@
 
 import itertools
 import numbers
+from collections.abc import Callable, Iterable, Sequence
 from functools import reduce
-from typing import Callable, Iterable, Sequence, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
@@ -25,8 +25,8 @@ from scipy.sparse import csr_matrix, eye, kron
 from pennylane import math
 
 
-def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_format="csr"):
-    # pylint: disable=too-many-branches
+# pylint: disable=too-many-branches
+def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="csr"):
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -95,7 +95,7 @@ def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_form
 
     >>> from scipy import sparse
     >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
-    >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
+    >>> qp.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
     array([[0., 1., 0., 0.],
            [1., 0., 0., 0.],
            [0., 0., 0., 1.],

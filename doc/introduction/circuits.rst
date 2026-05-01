@@ -19,10 +19,10 @@ are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
+:doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
 :doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
@@ -40,13 +40,13 @@ For example:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     def my_quantum_function(x, y):
-        qml.RZ(x, wires=0)
-        qml.CNOT(wires=[0,1])
-        qml.RY(y, wires=1)
-        return qml.expval(qml.Z(wires=1))
+        qp.RZ(x, wires=0)
+        qp.CNOT(wires=[0,1])
+        qp.RY(y, wires=1)
+        return qp.expval(qp.Z(wires=1))
 
 .. note::
 
@@ -85,7 +85,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2, shots=1000)
+    dev = qp.device('default.qubit', wires=2)
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
@@ -111,8 +111,6 @@ When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments, and can differ based
 on the device. For a plugin device, refer to the plugin documentation for available device options.
 
-The two most important device options are the ``wires`` and ``shots`` arguments.
-
 Wires
 *****
 
@@ -121,23 +119,23 @@ that you can address by consecutive integer labels ``0, 1, 2, ...``.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=3)
+    dev = qp.device('default.qubit', wires=3)
 
 Alternatively, you can use custom labels by passing an iterable that contains unique labels for the subsystems:
 
 .. code-block:: python
 
-    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
+    dev_unique_wires = qp.device('default.qubit', wires=['aux', 'q1', 'q2'])
 
 In the quantum function you can now use your own labels to address wires:
 
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qml.RZ(x, wires='q1')
-        qml.CNOT(wires=['aux' ,'q1'])
-        qml.RY(y, wires='q2')
-        return qml.expval(qml.PauliZ('q2'))
+        qp.RZ(x, wires='q1')
+        qp.CNOT(wires=['aux' ,'q1'])
+        qp.RY(y, wires='q2')
+        return qp.expval(qp.PauliZ('q2'))
 
 Allowed wire labels can be of any type that is hashable, which allows two wires to be uniquely distinguished.
 
@@ -150,55 +148,9 @@ Allowed wire labels can be of any type that is hashable, which allows two wires 
 .. warning::
 
     In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-    For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
-    will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+    For example, running ``qp.RX(1.1, qp.numpy.array(0))`` on a device initialized with ``wires=[0]``
+    will fail because ``qp.numpy.array(0)`` does not exist in the device's wire map.
 
-Shots
-*****
-
-The ``shots`` argument is an integer that defines how many times the circuit should be evaluated (or "sampled")
-to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
-measurement statistics *exactly*.
-
-Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not
-necessary to manually implement the ``shots`` keyword argument of the quantum function.
-
-It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
-QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
-allowing measurement statistics to be course-grained with a single QNode evaluation.
-
-Consider
-
->>> shots_list = [5, 10, 1000]
->>> dev = qml.device("default.qubit", wires=2, shots=shots_list)
-
-When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
-However, three sets of measurement statistics will be returned; using the first 5 shots,
-second set of 10 shots, and final 1000 shots, separately.
-
-For example:
-
-.. code-block:: python
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
-
-Executing this, we will get an output of shape ``(3, 2)``:
-
->>> results = circuit(0.5)
->>> results
-((array(0.6), array(1.)),
- (array(-0.4), array(1.)),
- (array(0.048), array(0.902)))
-
-We can index into this tuple and retrieve the results computed with only 5 shots:
-
->>> results[0]
-(array(0.6), array(1.))
 
 .. _intro_vcirc_qnode:
 
@@ -214,7 +166,7 @@ A QNode can be explicitly created as follows:
 
     import numpy as np
 
-    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
+    circuit = qp.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
@@ -225,7 +177,7 @@ tensor(0.764, requires_grad=True)
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
 transform,
 
->>> print(qml.draw(circuit)(np.pi/4, 0.7))
+>>> print(qp.draw(circuit)(np.pi/4, 0.7))
 aux: ───────────╭●─┤
  q1: ──RZ(0.79)─╰X─┤
  q2: ──RY(0.70)────┤  <Z>
@@ -233,8 +185,8 @@ aux: ───────────╭●─┤
 or the :func:`~.pennylane.draw_mpl` transform:
 
 >>> import matplotlib.pyplot as plt
->>> qml.drawer.use_style("black_white")
->>> fig, ax = qml.draw_mpl(circuit)(np.pi/4, 0.7)
+>>> qp.drawer.use_style("black_white")
+>>> fig, ax = qp.draw_mpl(circuit)(np.pi/4, 0.7)
 >>> plt.show()
 
 .. image:: ../_static/draw_mpl.png
@@ -252,16 +204,16 @@ but is not limited to, executing on a different quantum device, using a new diff
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
 way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
-used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
+used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the compile pipeline cannot be updated 
 using this method.
 
 For instance, to use a different quantum device, the configuration can be updated with,
 
->>> new_dev = qml.device('lightning.qubit', wires=dev_unique_wires.wires)
+>>> new_dev = qp.device('lightning.qubit', wires=dev_unique_wires.wires)
 >>> new_circuit = circuit.update(device = new_dev)
 >>> print(new_circuit.device.name)
 lightning.qubit
->>> print(qml.draw(new_circuit)(np.pi/4, 0.7))
+>>> print(qp.draw(new_circuit)(np.pi/4, 0.7))
 aux: ───────────╭●─┤     
  q1: ──RZ(0.79)─╰X─┤     
  q2: ──RY(0.70)────┤  <Z>
@@ -282,16 +234,75 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RZ(x, wires=0)
-        qml.CNOT(wires=[0,1])
-        qml.RY(x, wires=1)
-        return qml.expval(qml.PauliZ(1))
+        qp.RZ(x, wires=0)
+        qp.CNOT(wires=[0,1])
+        qp.RY(x, wires=1)
+        return qp.expval(qp.PauliZ(1))
 
     result = circuit(0.543)
+
+Shots
+-----
+
+The shots is an integer that defines how many times the circuit should be evaluated (or "sampled")
+to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
+measurement statistics *exactly*.
+
+The shots can be configured for a QNode using the :func:`~pennylane.set_shots` transform:
+
+.. code-block:: python
+
+    dev = qp.device('default.qubit', wires=2)
+
+    @qp.set_shots(shots=10)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        qp.CNOT([0, 1])
+        return qp.sample(qp.Z(1))
+
+    result = circuit(0.5)
+
+
+This transform can also be used to transform an existing QNode:
+
+>>> new_qnode = qp.set_shots(circuit, shots=100)
+>>> new_qnode(0.5)
+
+It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
+QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
+allowing measurement statistics to be course-grained with a single QNode evaluation.
+
+Consider
+
+.. code-block:: python
+
+    @qp.set_shots(shots=[5, 10, 1000])
+    @qp.qnode(dev)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
+
+When this circuit is executed, a single execution of 1015 shots will be submitted.
+However, three sets of measurement statistics will be returned; using the first 5 shots,
+second set of 10 shots, and final 1000 shots, separately. Therefore, we will get an output
+of shape ``(3, 2)``:
+
+>>> results = circuit(0.5)
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
+
+We can index into this tuple and retrieve the results computed with only 5 shots:
+
+>>> results[0]
+(array(0.6), array(1.))
+
 
 Parameter Broadcasting in QNodes
 --------------------------------
@@ -338,7 +349,7 @@ Importing circuits from other frameworks
 PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
 add the ability to perform analytic differentiation, and interface with machine
-learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+learning libraries such as PyTorch or JAX. Currently, ``QuantumCircuit``
 objects from Qiskit, OpenQASM files, pyQuil ``programs``, and Quil files can
 be loaded by using the following functions:
 
@@ -384,7 +395,7 @@ while using the :class:`~.pennylane.QNode` decorator:
     from qiskit.circuit import Parameter
     import numpy as np
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
     theta = Parameter('θ')
 
@@ -393,10 +404,10 @@ while using the :class:`~.pennylane.QNode` decorator:
     qc.rx(theta, [0])
     qc.cx(0, 1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def quantum_circuit_with_loaded_subcircuit(x):
-        qml.from_qiskit(qc)({theta: x})
-        return qml.expval(qml.PauliZ(0))
+        qp.from_qiskit(qc)({theta: x})
+        return qp.expval(qp.PauliZ(0))
 
     angle = np.pi/2
     result = quantum_circuit_with_loaded_subcircuit(angle)
@@ -407,22 +418,22 @@ and then used multiple times on the ``forest.qpu`` device provided by PennyLane-
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    dev = qml.device('forest.qpu', wires=2)
+    dev = qp.device('forest.qpu', wires=2)
 
     hadamard_qasm = 'OPENQASM 2.0;' \
                     'include "qelib1.inc";' \
                     'qreg q[1];' \
                     'h q[0];'
 
-    apply_hadamard = qml.from_qasm(hadamard_qasm)
+    apply_hadamard = qp.from_qasm(hadamard_qasm)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit_with_hadamards():
         apply_hadamard(wires=[0])
         apply_hadamard(wires=[1])
-        qml.Hadamard(wires=[1])
-        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+        qp.Hadamard(wires=[1])
+        return qp.expval(qp.PauliX(0)), qp.expval(qp.PauliX(1))
 
     result = circuit_with_hadamards()

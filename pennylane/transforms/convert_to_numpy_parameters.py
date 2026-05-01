@@ -16,25 +16,23 @@ This file contains preprocessings steps that may be called internally
 during execution.
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-# pylint: disable=no-member
-def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
+def _convert_op_to_numpy_data(op: qp.operation.Operator) -> qp.operation.Operator:
     if math.get_interface(*op.data) == "numpy":
         return op
     # Use operator method to change parameters when it become available
-    return qml.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
+    return qp.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
 
 
-# pylint: disable=no-member
 def _convert_measurement_to_numpy_data(
-    m: qml.measurements.MeasurementProcess,
-) -> qml.measurements.MeasurementProcess:
+    m: qp.measurements.MeasurementProcess,
+) -> qp.measurements.MeasurementProcess:
     if m.obs is None:
         if m.eigvals() is None or math.get_interface(m.eigvals()) == "numpy":
             return m
@@ -42,11 +40,10 @@ def _convert_measurement_to_numpy_data(
 
     if math.get_interface(*m.obs.data) == "numpy":
         return m
-    new_obs = qml.ops.functions.bind_new_parameters(m.obs, math.unwrap(m.obs.data))
+    new_obs = qp.ops.functions.bind_new_parameters(m.obs, math.unwrap(m.obs.data))
     return type(m)(obs=new_obs)
 
 
-# pylint: disable=protected-access
 @transform
 def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transforms a circuit to one with purely numpy parameters.
@@ -59,9 +56,9 @@ def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch
 
     **Examples:**
 
-    >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
-    >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]
-    >>> circuit = qml.tape.QuantumScript(ops, measurements)
+    >>> ops = [qp.S(0), qp.RX(torch.tensor(0.1234), 0)]
+    >>> measurements = [qp.state(), qp.expval(qp.Hermitian(torch.eye(2), 0))]
+    >>> circuit = qp.tape.QuantumScript(ops, measurements)
     >>> [new_circuit], _ = convert_to_numpy_parameters(circuit)
     >>> new_circuit.circuit
     [S(0),
@@ -89,7 +86,7 @@ def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch
     )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

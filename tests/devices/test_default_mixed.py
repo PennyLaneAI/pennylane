@@ -14,14 +14,23 @@
 """
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
+
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 
-ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
+ML_INTERFACES = ["numpy", "autograd", "torch", "jax"]
+
+
+def test_execution_with_no_execution_config():
+    """Test execution of a tape with no execution config."""
+    dev = qp.device("default.mixed")
+    qs = qp.tape.QuantumScript([qp.X(0)], [qp.expval(qp.PauliZ(0))])
+    result = dev.execute(qs)
+    assert qp.math.allclose(result, -1.0)
 
 
 class TestDefaultMixedInit:
@@ -65,7 +74,7 @@ class TestDefaultMixedInit:
         dev = DefaultMixed(wires=1)
         assert dev.supports_derivatives()
         assert not dev.supports_derivatives(
-            execution_config=qml.devices.execution_config.ExecutionConfig(
+            execution_config=qp.devices.execution_config.ExecutionConfig(
                 gradient_method="finite-diff"
             )
         )
@@ -79,7 +88,7 @@ class TestDefaultMixedInit:
     def test_wire_initialization_list(self):
         """Test initialization with wire list"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        assert dev.wires == qml.wires.Wires(["a", "b", "c"])
+        assert dev.wires == qp.wires.Wires(["a", "b", "c"])
 
     def test_too_many_wires(self):
         """Test error raised when too many wires requested"""
@@ -89,10 +98,74 @@ class TestDefaultMixedInit:
     def test_execute_no_diff_method(self):
         """Test that the execute method is defined"""
         dev = DefaultMixed(wires=[0, 1])
-        execution_config = qml.devices.execution_config.ExecutionConfig(
+        execution_config = qp.devices.execution_config.ExecutionConfig(
             gradient_method="finite-diff"
         )  # in-valid one for this device
         processed_config = dev._setup_execution_config(execution_config)
         assert (
             processed_config.interface is Interface.NUMPY
         ), "The interface should be set to numpy for an invalid gradient method"
+
+
+# pylint: disable=too-few-public-methods
+class TestDefaultMixedTrainability:
+    """Integration tests for DefaultMixed trainable parameters"""
+
+    @pytest.mark.integration
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ML_INTERFACES)
+    def test_trainable_params_interface(self, interface):
+        """Test that the trainable parameters are correctly identified"""
+        dev = DefaultMixed(wires=2)
+        param = qp.math.array(0.5, like=interface)
+
+        # Make a trainable, parametrized circuit
+        def circuit(x):
+            qp.RX(x, wires=0)
+            qp.RY(x, wires=1)
+            return qp.expval(qp.PauliZ(0))
+
+        # Create a QNode with the specified interface
+        circuit = qp.QNode(
+            circuit,
+            dev,
+            interface=interface,
+        )
+        # Execute the circuit
+        result = circuit(param)
+        # Check that the result is a tensor with the correct interface
+        assert isinstance(result, qp.typing.TensorLike)
+        assert qp.math.get_interface(result) == interface
+
+    @pytest.mark.integration
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["torch", "autograd"])
+    def test_trainable_initial_state(self, interface):
+        """Test that the trainable parameters are correctly applied to initial state"""
+        num_qubits = 2
+        dev = DefaultMixed(wires=num_qubits)
+        state = qp.math.array(
+            [
+                1.0,
+            ],
+            like=interface,
+            requires_grad=True,
+        )
+
+        # Make a trainable, parametrized circuit
+        def circuit_StatePrep(state):
+            qp.StatePrep(state=state, wires=list(range(num_qubits)), normalize=True, pad_with=0)
+
+            return [qp.expval(qp.PauliZ(wires=q)) for q in range(num_qubits)]
+
+        # Create a QNode with the specified interface
+        circuit = qp.QNode(
+            circuit_StatePrep,
+            dev,
+            interface=interface,
+        )
+        # Execute the circuit
+        result = circuit(state)
+        # Check that the result is a tensor with the correct interface
+        assert isinstance(result, qp.typing.TensorLike)
+        assert qp.math.get_deep_interface(result) == interface

@@ -13,26 +13,27 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
+from collections.abc import Sequence
 from copy import copy
 from functools import lru_cache, partial
-from typing import Sequence
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import AmplitudeEmbedding
-from pennylane.math import flatten, reshape
+from pennylane.exceptions import DeviceError, TransformError
+from pennylane.math import flatten, is_abstract, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
 # pylint: disable=too-many-statements
 @lru_cache
-def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
+def _get_plxpr_merge_amplitude_embedding():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
-        from jax.core import Jaxpr
+        from jax.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
@@ -47,14 +48,23 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         def __init__(self):
             self._env = {}
+            self.dynamic_wires_encountered = False
             self.previous_ops = []
-            self.state = {"visited_wires": set()}
+            # * visited_wires (set): tracks all wires we have encountered so far.
+            # * dynamic_wires_found (bool): True if we have encountered any non-AmplitudeEmbedding
+            #   ops that have dynamic wires so far.
+            # * ops_found (bool): True if we have encountered any non-AmplitudeEmbedding ops so far.
+            self.state = {"visited_wires": set(), "dynamic_wires_found": False, "ops_found": False}
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
             """Setup the interpreter for a new evaluation."""
             self.previous_ops = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+
+        def cleanup(self) -> None:
+            """Clean up the interpreter after evaluation."""
+            self.state = {"visited_wires": set(), "dynamic_wires_found": False, "ops_found": False}
 
         def interpret_operation(self, op: Operator) -> None:
             """Interpret a PennyLane operation instance.
@@ -75,14 +85,34 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             so the output will not affect later equations in the circuit.
 
             """
+
             if not isinstance(op, AmplitudeEmbedding):
+                if any(is_abstract(w) for w in op.wires):
+                    if self.input_wires:
+                        self._merge_and_insert_at_the_start()
+                    self.interpret_all_previous_ops()
+                    self.state["dynamic_wires_found"] = True
+
+                self.state["ops_found"] = True
                 self.previous_ops.append(op)
                 self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
                 return
 
+            if self.state["dynamic_wires_found"]:
+                raise TransformError(
+                    "Cannot apply qp.AmplitudeEmbedding after operators with dynamic wires as it "
+                    "is indeterminable if the wires overlap."
+                )
+
+            if self.state["ops_found"] and any(is_abstract(w) for w in op.wires):
+                raise TransformError(
+                    "Cannot apply qp.AmplitudeEmbedding with dynamic wires after other operators "
+                    "as it is indeterminable if the wires overlap."
+                )
+
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
-                raise qml.DeviceError(
-                    "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
+                raise TransformError(
+                    "qp.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
 
             self.input_wires.append(op.wires)
@@ -111,10 +141,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 else:
                     final_vector = flatten(final_vector)
 
-            # pylint: disable=protected-access
-            self.previous_ops.insert(
-                0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
-            )
+            with qp.capture.pause():
+                self.previous_ops.insert(0, qp.AmplitudeEmbedding(final_vector, wires=final_wires))
             # Clear history of amplitude embedding gates since we've merged
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
@@ -129,7 +157,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -199,45 +227,58 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
     # Overwrite the cond primitive so that visited wires can be correctly
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
-        args = invals[args_slice]
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
+        args = invals[slice(*args_slice)]
 
         new_jaxprs = []
         new_consts = []
         new_consts_slices = []
         end_const_ind = len(jaxpr_branches)
 
-        # Store seen wires before we begin to process the branches
-        # (create copies as to not accidently mutate the original state)
+        # Store state before we begin to process the branches
+        # (create copies as to not accidently mutate the original state).
+        # We cannot just copy self.state because a shallow copy would not
+        # create a copy of `visited_wires`, which is a set.
+        # We cannot use deepcopy as `visited_wires` may have tracers inside,
+        # which have hashes specific to the instance. Copying these will cause
+        # the dynamic wires in the original and copy to be different.
         initial_wires = copy(self.state["visited_wires"])
-        visited_wires = copy(initial_wires)
+        curr_wires = copy(self.state["visited_wires"])
+        initial_dynamic_wires_found = self.state["dynamic_wires_found"]
+        curr_dynamic_wires_found = self.state["dynamic_wires_found"]
+        initial_ops_found = self.state["ops_found"]
+        curr_ops_found = self.state["ops_found"]
 
-        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
-            consts = invals[const_slice]
-            if jaxpr is None:
-                new_jaxprs.append(None)
-                new_consts_slices.append(slice(0, 0))
-            else:
-                new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
+            consts = invals[slice(*const_slice)]
+            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Update wires we've seen so far so collisions with
-                # newly seen wires from the branches continue to be
-                # detected after the cond
-                visited_wires |= self.state["visited_wires"]
+            # Update state so far so collisions with
+            # newly seen states from the branches continue to be
+            # detected after the cond
+            curr_wires |= self.state["visited_wires"]
+            curr_dynamic_wires_found = curr_dynamic_wires_found or self.state["dynamic_wires_found"]
+            curr_ops_found = curr_ops_found or self.state["ops_found"]
 
-                # Reset visited wires for the next branch so we don't get false positive collisions
-                # (copy so if state mutates we preserved true initial wires)
-                self.state["visited_wires"] = copy(initial_wires)
+            # Reset state for the next branch so we don't get false positive collisions
+            # (copy so if state mutates we preserved true initial state)
+            self.state = {
+                "visited_wires": copy(initial_wires),
+                "dynamic_wires_found": initial_dynamic_wires_found,
+                "ops_found": initial_ops_found,
+            }
 
-                new_jaxprs.append(new_jaxpr.jaxpr)
-                new_consts.extend(new_jaxpr.consts)
-                new_consts_slices.append(
-                    slice(end_const_ind, end_const_ind + len(new_jaxpr.consts))
-                )
-                end_const_ind += len(new_jaxpr.consts)
+            new_jaxprs.append(new_jaxpr.jaxpr)
+            new_consts.extend(new_jaxpr.consts)
+            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            end_const_ind += len(new_jaxpr.consts)
 
-        # Reset visited wires to all wires encountered in the cond
-        self.state["visited_wires"] = visited_wires
+        # Reset state to all updates from all branches in the cond
+        self.state = {
+            "visited_wires": curr_wires,
+            "dynamic_wires_found": curr_dynamic_wires_found,
+            "ops_found": curr_ops_found,
+        }
 
         new_args_slice = slice(end_const_ind, None)
         return cond_prim.bind(
@@ -250,10 +291,13 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
-    def _(self, *invals, **params):
+    def _measure_primitive(self, *invals, **params):
         # Make sure to record that we have visited the wires on this measurement
         # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
+        self.state["dynamic_wires_found"] = any(is_abstract(w) for w in invals)
+        self.state["ops_found"] = True
+
         # pylint: disable=protected-access
         if len(self.input_wires) > 0:
             self._merge_and_insert_at_the_start()
@@ -287,54 +331,81 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=4)
-
-    You can apply the transform directly on :class:`QNode`:
+    You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
 
-        @qml.transforms.merge_amplitude_embedding
-        @qml.qnode(device=dev)
-        def circuit():
-            qml.CNOT(wires = [0,1])
-            qml.AmplitudeEmbedding([0,1], wires = 2)
-            qml.AmplitudeEmbedding([0,1], wires = 3)
-            return qml.state()
+        import pennylane as qp
 
+        dev = qp.device('default.qubit', wires=4)
+
+        @qp.transforms.merge_amplitude_embedding
+        @qp.qnode(device=dev)
+        def circuit():
+            qp.CNOT(wires = [0,1])
+            qp.AmplitudeEmbedding([0, 1], wires = 2)
+            qp.AmplitudeEmbedding([0, 1], wires = 3)
+            return qp.state()
+
+    >>> print(qp.draw(circuit)())
+    0: ─╭●───┤  State
+    1: ─╰X───┤  State
+    2: ─╭|Ψ⟩─┤  State
+    3: ─╰|Ψ⟩─┤  State
     >>> circuit()
-    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+           0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply the transform on a quantum function:
 
         .. code-block:: python
 
             def qfunc():
-                qml.CNOT(wires = [0,1])
-                qml.AmplitudeEmbedding([0,1], wires = 2)
-                qml.AmplitudeEmbedding([0,1], wires = 3)
-                return qml.state()
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
 
         The circuit before compilation will not work because of using two amplitude embedding.
 
         Using the transformation we can join the different amplitude embedding into a single one:
 
-        >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)())
-        0: ─╭●──────────────────────┤  State
-        1: ─╰X──────────────────────┤  State
-        2: ─╭AmplitudeEmbedding(M0)─┤  State
-        3: ─╰AmplitudeEmbedding(M0)─┤  State
-        M0 =
-        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
+
+        You can also apply this transform on quantum functions:
+
+        .. code-block:: python
+
+            def qfunc():
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
+
+        This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
+        Using the transformation we can join the different instances into a single one:
+
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
     """
     new_operations = []
@@ -351,7 +422,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
         # Check the qubits have not been used.
         if len(visited_wires.intersection(wires_set)) > 0:
-            raise qml.DeviceError(
+            raise DeviceError(
                 f"Operation {current_gate.name} cannot be used after other Operation applied in the same qubit "
             )
         input_wires.append(current_gate.wires)
@@ -365,7 +436,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         final_batch_size = input_batch_size[0]
 
         # Merge all parameters and qubits into a single one.
-        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:]):
+        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:], strict=True):
             final_vector = final_vector[..., :, None] * v[..., None, :]
             final_batch_size = final_batch_size or b
             final_wires = final_wires + w
@@ -381,7 +452,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

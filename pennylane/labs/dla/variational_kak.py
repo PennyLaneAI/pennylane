@@ -12,28 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 import warnings
 from datetime import datetime
 from functools import partial
 
-import matplotlib.pyplot as plt
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
+    has_jax = True
 except ImportError:
     has_jax = False
+
+try:
+    import matplotlib.pyplot as plt
+
+    has_plt = True
+except ImportError:
+    has_plt = False
 
 
 def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
@@ -70,18 +77,18 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         def Kc(theta_opt: Iterable[float], k: Iterable[Operator]):
             assert len(theta_opt) == len(k)
             for theta_j, k_j in zip(theta_opt, k):
-                qml.exp(-1j * theta_j * k_j)
+                qp.exp(-1j * theta_j * k_j)
 
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function
 
     .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
-    see eq. (6) therein and our :doc:`demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>` for more details.
+    see eq. (6) therein and our `demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
+    .. seealso:: `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -90,7 +97,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
             with the implicit ordering ``(k, mtilde, a)``.
-        verbose (bool): Plot the optimization
+        verbose (bool): Plot the optimization. Requires matplotlib to be installed (``pip install matplotlib``)
         opt_kwargs (dict): Keyword arguments for the optimization like initial starting values
             for :math:`\theta` of dimension ``(dim_k,)``, given as ``theta0``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
@@ -115,7 +122,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
         import jax.numpy as jnp
         import jax
@@ -137,9 +144,9 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         gens = [X(i) @ X(i + 1) for i in range(n - 1)]
         gens += [Z(i) for i in range(n)]
-        H = qml.sum(*gens)
+        H = qp.sum(*gens)
 
-        g = qml.lie_closure(gens)
+        g = qp.lie_closure(gens)
         g = [op.pauli_rep for op in g]
 
         involution = concurrence_involution
@@ -149,7 +156,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         assert check_cartan_decomp(k, m)
 
         g = k + m
-        adj = qml.structure_constants(g)
+        adj = qp.structure_constants(g)
 
         g, k, mtilde, a, adj = horizontal_cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
 
@@ -177,7 +184,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         m = mtilde + a
         [a_op] = adjvec_to_op([adjvec_a], m)
-        a_m = qml.matrix(a_op, wire_order=range(n))
+        a_m = qp.matrix(a_op, wire_order=range(n))
         assert np.allclose(a_m, a_m.conj().T)
 
     Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
@@ -189,16 +196,16 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         def Kc(theta_opt):
             for th, op in zip(theta_opt, k):
-                qml.exp(-1j * th * op.operation())
+                qp.exp(-1j * th * op.operation())
 
-        Kc_m = qml.matrix(Kc, wire_order=range(n))(theta_opt)
+        Kc_m = qp.matrix(Kc, wire_order=range(n))(theta_opt)
 
         # check Unitary property of Kc
         assert np.allclose(Kc_m.conj().T @ Kc_m, np.eye(2**n))
 
         H_reconstructed = Kc_m @ a_m @ Kc_m.conj().T
 
-        H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+        H_m = qp.matrix(H, wire_order=range(len(H.wires)))
 
         # check Hermitian property of reconstructed Hamiltonian
         assert np.allclose(
@@ -216,8 +223,13 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak_adj. You can install them with pip install jax jaxlib optax."
+            "jax and optax are required for variational_kak_adj. You can install them with pip install jax optax."
         )  # pragma: no cover
+    if verbose >= 1 and not has_plt:  # pragma: no cover
+        print(
+            "variational_kak_adj requires matplotlib to display a figure with the optimization "
+            "progress (for verbose>=1). You can install it with pip install matplotlib"
+        )
 
     if opt_kwargs is None:
         opt_kwargs = {}
@@ -291,7 +303,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     [a_elem] = adjvec_to_op([vec_a], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
 
     if isinstance(a_elem, Operator):
-        a_elem_m = qml.matrix(a_elem, wire_order=range(n))
+        a_elem_m = qp.matrix(a_elem, wire_order=range(n))
     elif isinstance(a_elem, PauliSentence):
         a_elem_m = a_elem.to_mat(wire_order=range(n))
     else:
@@ -304,7 +316,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
     for th, op in zip(theta_opt, k):
-        opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
+        opm = qp.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
@@ -312,7 +324,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # Compute K_c^† a K_c
     H_reconstructed = Km.conj().T @ a_elem_m @ Km
 
-    H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+    H_m = qp.matrix(H, wire_order=range(len(H.wires)))
 
     if verbose:
         print(f"Original matrix: {H_m}")
@@ -381,7 +393,7 @@ def run_opt(
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for run_opt. You can install them with pip install jax jaxlib optax."
+            "jax and optax are required for run_opt. You can install them with pip install jax optax."
         )  # pragma: no cover
 
     if optimizer is None:

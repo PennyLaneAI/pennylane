@@ -14,19 +14,14 @@
 
 r"""
 This module implements utility functions for the decomposition module.
-
 """
 
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import singledispatch
 
-
-class DecompositionError(Exception):
-    """Base class for decomposition errors."""
-
-
-class DecompositionNotApplicable(Exception):
-    """Exception raised when a decomposition is not applicable to the given operator."""
-
+from pennylane.operation import Operator
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -34,6 +29,14 @@ OP_NAME_ALIASES = {
     "Z": "PauliZ",
     "I": "Identity",
     "H": "Hadamard",
+    "measure": "MidMeasureMP",
+    "MidMeasure": "MidMeasureMP",
+    "MidCircuitMeasure": "MidMeasureMP",
+    "ppm": "PauliMeasure",
+    "pauli_measure": "PauliMeasure",
+    "Elbow": "TemporaryAND",
+    "BasisStateProjector": "Projector",
+    "StateVectorProjector": "Projector",
 }
 
 
@@ -41,7 +44,7 @@ def translate_op_alias(op_alias):
     """Translates an operator alias to its proper name."""
     if op_alias in OP_NAME_ALIASES:
         return OP_NAME_ALIASES[op_alias]
-    if match := re.match(r"C\((\w+)\)", op_alias):
+    if match := re.match(r"(?:C|Controlled)\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"C({translate_op_alias(base_op_name)})"
     if match := re.match(r"Adjoint\((\w+)\)", op_alias):
@@ -50,13 +53,42 @@ def translate_op_alias(op_alias):
     if match := re.match(r"Pow\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"Pow({translate_op_alias(base_op_name)})"
+    if match := re.match(r"Conditional\((\w+)\)", op_alias):
+        base_op_name = match.group(1)
+        return f"Conditional({translate_op_alias(base_op_name)})"
+    if match := re.match(r"(\w+)\(\w+\)", op_alias):
+        raise ValueError(
+            f"'{match.group(1)}' is not a valid name for a symbolic operator. Supported "
+            f'names include: "Adjoint", "C", "Controlled", "Pow".'
+        )
     return op_alias
+
+
+@singledispatch
+def to_name(op) -> str:
+    """Get the canocial name of an operation for the graph."""
+    raise NotImplementedError(f"{type(op)} is not a valid type for to_name.")  # pragma: no cover
+
+
+@to_name.register
+def _type_to_name(op: type):
+    return translate_op_alias(op.__name__)
+
+
+@to_name.register
+def _operator_to_name(op: Operator):
+    return translate_op_alias(op.name)
+
+
+@to_name.register
+def _str_to_name(op: str):
+    return translate_op_alias(op)
 
 
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 
-    _GRAPH_DECOMPOSITION = False
+    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=False)
 
     def enable():
         """
@@ -66,9 +98,7 @@ def toggle_graph_decomposition():
 
         When this is enabled, :func:`~pennylane.transforms.decompose` will use the new decompositions system.
         """
-
-        nonlocal _GRAPH_DECOMPOSITION
-        _GRAPH_DECOMPOSITION = True
+        _GRAPH_DECOMPOSITION.set(True)
 
     def disable() -> None:
         """
@@ -77,10 +107,9 @@ def toggle_graph_decomposition():
         decomposition system is disabled by default in PennyLane.
 
         .. seealso:: :func:`~pennylane.decomposition.enable_graph`
-        """
 
-        nonlocal _GRAPH_DECOMPOSITION
-        _GRAPH_DECOMPOSITION = False
+        """
+        _GRAPH_DECOMPOSITION.set(False)
 
     def status() -> bool:
         """
@@ -89,12 +118,21 @@ def toggle_graph_decomposition():
         graph-based decomposition system is disabled by default in PennyLane.
 
         .. seealso:: :func:`~pennylane.decomposition.enable_graph`
+
         """
+        return _GRAPH_DECOMPOSITION.get()
 
-        nonlocal _GRAPH_DECOMPOSITION
-        return _GRAPH_DECOMPOSITION
+    @contextmanager
+    def toggle_ctx(new_state: bool):
+        """A context manager in which graph is enabled or disabled temporarily."""
 
-    return enable, disable, status
+        token = _GRAPH_DECOMPOSITION.set(new_state)
+        try:
+            yield
+        finally:
+            _GRAPH_DECOMPOSITION.reset(token)
+
+    return enable, disable, status, toggle_ctx
 
 
-enable_graph, disable_graph, enabled_graph = toggle_graph_decomposition()
+enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_decomposition()

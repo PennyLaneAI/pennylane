@@ -15,7 +15,7 @@
 types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
-from typing import Generic, Union, overload
+from typing import Generic, overload
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
@@ -23,7 +23,7 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 
-class DatasetList(  # pylint: disable=too-many-ancestors
+class DatasetList(
     Generic[T],
     DatasetAttribute[HDF5Group, Sequence[T], Iterable[T]],
     MutableSequence[T],
@@ -58,7 +58,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
         elements copied.."""
         return self.copy_value()
 
-    def insert(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
+    def insert(self, index: int, value: T | DatasetAttribute[HDF5Any, T, T]):
         """Implements the insert() method."""
         if index < 0:
             index = len(self) + index
@@ -101,7 +101,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
     def __getitem__(self, index: int) -> T:
         pass
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: int | slice):
         if isinstance(index, slice):
             return [self[i] for i in range(len(self))[index]]
 
@@ -113,7 +113,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
 
         return self._mapper[str(index)].get_value()
 
-    def __setitem__(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
+    def __setitem__(self, index: int, value: T | DatasetAttribute[HDF5Any, T, T]):
         if index < 0:
             index = len(self) + index
         if not 0 <= index < len(self):

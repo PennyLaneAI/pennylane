@@ -22,7 +22,7 @@ from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
 
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-arguments
 
 
 def transverse_ising(
@@ -64,7 +64,7 @@ def transverse_ising(
     >>> n_cells = [2,2]
     >>> j = 0.5
     >>> h = 0.1
-    >>> spin_ham = qml.spin.transverse_ising("square", n_cells, coupling=j, h=h)
+    >>> spin_ham = qp.spin.transverse_ising("square", n_cells, coupling=j, h=h)
     >>> spin_ham
     (
     -0.5 * (Z(0) @ Z(1))
@@ -138,7 +138,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     >>> n_cells = [2,2]
     >>> j = np.array([0.5, 0.5, 0.5])
-    >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
+    >>> spin_ham = qp.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
     (
     0.5 * (X(0) @ X(1))
@@ -241,20 +241,20 @@ def fermi_hubbard(
     >>> n_cells = [2]
     >>> t = 0.5
     >>> u = 1.0
-    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=t, coulomb=u)
+    >>> spin_ham = qp.spin.fermi_hubbard("chain", n_cells, hopping=t, coulomb=u)
     >>> spin_ham
     (
-    -0.25 * (Y(0) @ Z(1) @ Y(2))
-    + -0.25 * (X(0) @ Z(1) @ X(2))
-    + 0.5 * I(0)
-    + -0.25 * (Y(1) @ Z(2) @ Y(3))
-    + -0.25 * (X(1) @ Z(2) @ X(3))
-    + -0.25 * Z(1)
-    + -0.25 * Z(0)
-    + 0.25 * (Z(0) @ Z(1))
-    + -0.25 * Z(3)
-    + -0.25 * Z(2)
-    + 0.25 * (Z(2) @ Z(3))
+        -0.25 * (Y(0) @ Z(1) @ Y(2))
+      + -0.25 * (X(0) @ Z(1) @ X(2))
+      + 0.5 * I([0, 1, 2, 3])
+      + -0.25 * (Y(1) @ Z(2) @ Y(3))
+      + -0.25 * (X(1) @ Z(2) @ X(3))
+      + -0.25 * Z(1)
+      + -0.25 * Z(0)
+      + 0.25 * (Z(0) @ Z(1))
+      + -0.25 * Z(3)
+      + -0.25 * Z(2)
+      + 0.25 * (Z(2) @ Z(3))
     )
     """
 
@@ -384,12 +384,12 @@ def emery(
     >>> h = 0.5
     >>> u = 1.0
     >>> v = 0.2
-    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
+    >>> spin_ham = qp.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
     >>> spin_ham
     (
-      -0.25 * (Y(0) @ Z(1) @ Y(2))
+        -0.25 * (Y(0) @ Z(1) @ Y(2))
       + -0.25 * (X(0) @ Z(1) @ X(2))
-      + 0.7000000000000002 * I(0)
+      + 0.7000000000000002 * I([0, 1, 2, 3])
       + -0.25 * (Y(1) @ Z(2) @ Y(3))
       + -0.25 * (X(1) @ Z(2) @ X(3))
       + -0.35 * Z(1)
@@ -403,6 +403,7 @@ def emery(
       + 0.05 * (Z(1) @ Z(2))
       + 0.05 * (Z(1) @ Z(3))
     )
+
 
     """
 
@@ -552,7 +553,7 @@ def haldane(
     >>> h1 = 0.5
     >>> h2 = 1.0
     >>> phi = 0.1
-    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping=h1, hopping_next=h2, phi=phi)
+    >>> spin_ham = qp.spin.haldane("chain", n_cells, hopping=h1, hopping_next=h2, phi=phi)
     >>> spin_ham
     (
       -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -665,7 +666,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     >>> n_cells = [2, 2]
     >>> k = np.array([0.5, 0.6, 0.7])
-    >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
+    >>> spin_ham = qp.spin.kitaev(n_cells, coupling=k)
     >>> spin_ham
     (
       0.5 * (X(0) @ X(1))
@@ -726,29 +727,27 @@ def spin_hamiltonian(lattice):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> lattice = qml.spin.Lattice(
-        ...     n_cells=[2, 2],
-        ...     vectors=[[1, 0], [0, 1]],
-        ...     positions=[[0, 0], [1, 5]],
-        ...     boundary_condition=False,
-        ...     custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
-        ...     custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
-        ... )
-        >>> qml.spin.spin_hamiltonian(lattice=lattice)
-        (
-            0.5 * (X(0) @ X(1))
-          + 0.5 * (X(2) @ X(3))
-          + 0.5 * (X(4) @ X(5))
-          + 0.5 * (X(6) @ X(7))
-          + 0.6 * (Y(1) @ Y(2))
-          + 0.6 * (Y(5) @ Y(6))
-          + 0.7 * (Z(1) @ Z(4))
-          + 0.7 * (Z(3) @ Z(6))
-          + 0.5 * X(0)
-          + 0.3 * Y(1)
-        )
+    >>> lattice = qp.spin.Lattice(
+    ...     n_cells=[2, 2],
+    ...     vectors=[[1, 0], [0, 1]],
+    ...     positions=[[0, 0], [1, 5]],
+    ...     boundary_condition=False,
+    ...     custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+    ...     custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
+    ... )
+    >>> qp.spin.spin_hamiltonian(lattice=lattice)
+    (
+        0.5 * (X(0) @ X(1))
+        + 0.5 * (X(2) @ X(3))
+        + 0.5 * (X(4) @ X(5))
+        + 0.5 * (X(6) @ X(7))
+        + 0.6 * (Y(1) @ Y(2))
+        + 0.6 * (Y(5) @ Y(6))
+        + 0.7 * (Z(1) @ Z(4))
+        + 0.7 * (Z(3) @ Z(6))
+        + 0.5 * X(0)
+        + 0.3 * Y(1)
+    )
 
     """
     if not isinstance(lattice.edges[0][2], tuple):

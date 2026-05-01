@@ -15,11 +15,13 @@
 This submodule contains the qutrit quantum operations that
 accept a unitary matrix as a parameter.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+
 import warnings
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+import pennylane as qp
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -40,18 +42,15 @@ class QutritUnitary(Operation):
 
     **Example**
 
-    >>> dev = qml.device('default.qutrit', wires=1)
+    >>> dev = qp.device('default.qutrit', wires=1)
     >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.QutritUnitary(U, wires=0)
-    ...     return qml.state()
+    ...     qp.QutritUnitary(U, wires=0)
+    ...     return qp.state()
     >>> print(example_circuit())
     [0.70710678+0.j 0.70710678+0.j 0.        +0.j]
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -62,6 +61,8 @@ class QutritUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, *params, wires):
         wires = Wires(wires)
 
@@ -69,7 +70,7 @@ class QutritUnitary(Operation):
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQutritUnitary):
             U = params[0]
-            U_shape = qml.math.shape(U)
+            U_shape = qp.math.shape(U)
 
             dim = 3 ** len(wires)
 
@@ -82,10 +83,10 @@ class QutritUnitary(Operation):
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
             if not (
-                qml.math.is_abstract(U)
-                or qml.math.allclose(
-                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                    qml.math.eye(dim),
+                qp.math.is_abstract(U)
+                or qp.math.allclose(
+                    qp.math.einsum("...ij,...kj->...ik", U, qp.math.conj(U)),
+                    qp.math.eye(dim),
                     atol=1e-6,
                 )
             ):
@@ -96,6 +97,10 @@ class QutritUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -115,7 +120,7 @@ class QutritUnitary(Operation):
         **Example**
 
         >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-        >>> qml.QutritUnitary.compute_matrix(U)
+        >>> qp.QutritUnitary.compute_matrix(U)
         array([[ 0.70710678,  0.70710678,  0.        ],
                [ 0.70710678, -0.70710678,  0.        ],
                [ 0.        ,  0.        ,  1.        ]])
@@ -124,13 +129,13 @@ class QutritUnitary(Operation):
 
     def adjoint(self):
         U = self.matrix()
-        return QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=self.wires)
+        return QutritUnitary(qp.math.conj(qp.math.moveaxis(U, -2, -1)), wires=self.wires)
 
     # TODO: Add compute_decomposition() once parametrized operations are added.
 
     def pow(self, z):
         if isinstance(z, int):
-            return [QutritUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
+            return [QutritUnitary(qp.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
         return super().pow(z)
 
     def _controlled(self, wire):
@@ -138,6 +143,18 @@ class QutritUnitary(Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+def _adjoint_qutrit_unitary_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {resource_rep(QutritUnitary, num_wires=base_params["num_wires"]): 1}
+
+
+@qp.register_resources(_adjoint_qutrit_unitary_resource)
+def _adjoint_qutrit_unitary(U, wires, **_):
+    QutritUnitary(qp.math.conj(qp.math.moveaxis(U, -2, -1)), wires=wires)
+
+
+add_decomps("Adjoint(QutritUnitary)", _adjoint_qutrit_unitary)
 
 
 class ControlledQutritUnitary(QutritUnitary):
@@ -171,7 +188,10 @@ class ControlledQutritUnitary(QutritUnitary):
     both wires ``0`` and ``1``:
 
     >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-    >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1], wires=2)
+    >>> qp.ControlledQutritUnitary(U, control_wires=[0, 1], wires=2)
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2])
 
     By default, controlled operations apply the desired gate if the control qutrit(s)
     are all in the state :math:`\vert 2\rangle`. However, there are some situations where
@@ -183,11 +203,11 @@ class ControlledQutritUnitary(QutritUnitary):
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``2``, we can write:
 
-    >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
+    >>> qp.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2, 3])
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -197,6 +217,8 @@ class ControlledQutritUnitary(QutritUnitary):
 
     grad_method = None
     """Gradient computation method."""
+
+    resource_keys = {"num_u_wires", "num_control_wires"}
 
     def __init__(self, *params, control_wires=None, wires=None, control_values=None):
         if control_wires is None:
@@ -218,6 +240,13 @@ class ControlledQutritUnitary(QutritUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_u_wires": len(self._hyperparameters["u_wires"]),
+            "num_control_wires": len(self._hyperparameters["control_wires"]),
+        }
 
     @staticmethod
     def compute_matrix(
@@ -241,7 +270,7 @@ class ControlledQutritUnitary(QutritUnitary):
         **Example**
 
         >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-        >>> qml.ControlledQutritUnitary.compute_matrix(U, control_wires=[0], u_wires=[1], control_values="1")
+        >>> qp.ControlledQutritUnitary.compute_matrix(U, control_wires=[0], u_wires=[1], control_values="1")
         array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j],
                [ 0.        +0.j,  1.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j],
                [ 0.        +0.j,  0.        +0.j,  1.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j],
@@ -253,7 +282,7 @@ class ControlledQutritUnitary(QutritUnitary):
                [ 0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  1.        +0.j]])
         """
         target_dim = 3 ** len(u_wires)
-        shape = qml.math.shape(U)
+        shape = qp.math.shape(U)
         if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
             raise ValueError(
                 f"Input unitary must be of shape {(target_dim, target_dim)} or "
@@ -264,7 +293,7 @@ class ControlledQutritUnitary(QutritUnitary):
         # blocks where the operation being applied sits in the block positioned at
         # the integer value of the control string.
 
-        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(u_wires)
+        total_wires = qp.wires.Wires(control_wires) + qp.wires.Wires(u_wires)
 
         # if control values unspecified, we control on the all-twos string
         if not control_values:
@@ -287,12 +316,12 @@ class ControlledQutritUnitary(QutritUnitary):
         padding_left = control_int * target_dim
         padding_right = 3 ** len(total_wires) - target_dim - padding_left
 
-        interface = qml.math.get_interface(U)
-        left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
-        right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
-        if len(qml.math.shape(U)) == 3:
-            return qml.math.stack([qml.math.block_diag([left_pad, _U, right_pad]) for _U in U])
-        return qml.math.block_diag([left_pad, U, right_pad])
+        interface = qp.math.get_interface(U)
+        left_pad = qp.math.cast_like(qp.math.eye(padding_left, like=interface), 1j)
+        right_pad = qp.math.cast_like(qp.math.eye(padding_right, like=interface), 1j)
+        if len(qp.math.shape(U)) == 3:
+            return qp.math.stack([qp.math.block_diag([left_pad, _U, right_pad]) for _U in U])
+        return qp.math.block_diag([left_pad, U, right_pad])
 
     @property
     def control_wires(self):
@@ -308,7 +337,7 @@ class ControlledQutritUnitary(QutritUnitary):
         if isinstance(z, int):
             return [
                 ControlledQutritUnitary(
-                    qml.math.linalg.matrix_power(self.data[0], z),
+                    qp.math.linalg.matrix_power(self.data[0], z),
                     control_wires=self.control_wires,
                     wires=self.hyperparameters["u_wires"],
                     control_values=self.hyperparameters["control_values"],
@@ -318,7 +347,7 @@ class ControlledQutritUnitary(QutritUnitary):
 
     def adjoint(self):
         return ControlledQutritUnitary(
-            qml.math.conj(qml.math.moveaxis(self.data[0], -2, -1)),
+            qp.math.conj(qp.math.moveaxis(self.data[0], -2, -1)),
             control_wires=self.control_wires,
             wires=self.hyperparameters["u_wires"],
             control_values=self.hyperparameters["control_values"],
@@ -334,3 +363,27 @@ class ControlledQutritUnitary(QutritUnitary):
             wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
+
+
+def _adjoint_controlled_qu_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {
+        resource_rep(
+            ControlledQutritUnitary,
+            num_u_wires=base_params["num_u_wires"],
+            num_control_wires=base_params["num_control_wires"],
+        ): 1
+    }
+
+
+# pylint: disable=unused-argument
+@register_resources(_adjoint_controlled_qu_resource)
+def _adjoint_controlled_qu(U, wires, base, **_):
+    ControlledQutritUnitary(
+        qp.math.conj(qp.math.moveaxis(U, -2, -1)),
+        wires=base.hyperparameters["u_wires"],
+        control_wires=base.hyperparameters["control_wires"],
+        control_values=base.hyperparameters["control_values"],
+    )
+
+
+add_decomps("Adjoint(ControlledQutritUnitary)", _adjoint_controlled_qu)

@@ -14,13 +14,14 @@
 """
 Tests a function for determining abstracted axes and extracting the abstract shapes.
 """
+
 # pylint: disable=redefined-outer-name, unused-argument
 
 import pytest
 
 from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
-pytestmark = pytest.mark.jax
+pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -149,10 +150,10 @@ class TestDyanmicShapes:
         _ = jax.make_jaxpr(f)(list(range(30)))
 
 
-def test_custom_staging_rule(enable_disable_dynamic_shapes):
+def test_custom_staging_rule_basic(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
-    my_prim = jax.core.Primitive("my_prim")
-    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
+    my_prim = jax.extend.core.Primitive("my_prim")
+    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"])
 
     def f(i):
         return i, jax.numpy.ones(i)
@@ -160,9 +161,42 @@ def test_custom_staging_rule(enable_disable_dynamic_shapes):
     jaxpr = jax.make_jaxpr(f)(2)
 
     def workflow():
-        return my_prim.bind(jaxpr=jaxpr.jaxpr)
+        a, b = my_prim.bind(jaxpr=jaxpr.jaxpr)
+        assert b.shape[0] is a
+        return a, b
 
     jaxpr = jax.make_jaxpr(workflow)()
     assert jaxpr.eqns[0].primitive == my_prim
     assert len(jaxpr.eqns[0].outvars) == 2
     assert jaxpr.eqns[0].outvars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]
+
+    # doesn't return a dynamic shape unless it needs to
+    assert isinstance(jaxpr.jaxpr.outvars[0].aval, jax.core.ShapedArray)
+    assert isinstance(jaxpr.jaxpr.outvars[1].aval, jax.core.DShapedArray)
+
+
+def test_custom_staging_rule_outer_dimension(enable_disable_dynamic_shapes):
+    """Test when a eqn_inputs_to_jaxpr_inputs are provided that the staging rule, inputs are reused when possible."""
+
+    my_prim = jax.extend.core.Primitive("my_prim")
+
+    def setup_env(tracers, params):
+        return {params["jaxpr"].invars[0]: tracers[params["index"]]}
+
+    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"], setup_env)
+
+    def f(i):
+        return i, jax.numpy.ones(i)
+
+    inner_jaxpr = jax.make_jaxpr(f)(2)
+
+    def workflow(a, b, index):
+        return my_prim.bind(a, b, jaxpr=inner_jaxpr.jaxpr, index=index)
+
+    # based on index param, a different input is treated as the input
+    # to the sub-jaxpr
+    jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 0)
+    assert jaxpr.jaxpr.invars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]
+
+    jaxpr = jax.make_jaxpr(workflow, static_argnums=2)(2, 3, 1)
+    assert jaxpr.jaxpr.invars[1] is jaxpr.eqns[0].outvars[1].aval.shape[0]

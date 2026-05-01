@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the ``single_tape_support`` device modifier."""
+
 from functools import wraps
 
-from pennylane.devices import DefaultExecutionConfig, Device
 from pennylane.tape import QuantumScript
+
+from ..device_api import Device
+from ..execution_config import ExecutionConfig
 
 
 def _make_execute(batch_execute):
     """Allows an ``execute`` function to handle individual circuits."""
 
     @wraps(batch_execute)
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -37,7 +40,7 @@ def _make_compute_derivatives(batch_derivatives):
     """Allows an ``compute_derivatives`` method to handle individual circuits."""
 
     @wraps(batch_derivatives)
-    def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -52,7 +55,9 @@ def _make_execute_and_compute_derivatives(batch_execute_and_compute_derivatives)
     """Allows an ``execute_and_compute_derivatives`` method to handle individual circuits."""
 
     @wraps(batch_execute_and_compute_derivatives)
-    def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_derivatives(
+        self, circuits, execution_config: ExecutionConfig | None = None
+    ):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -67,7 +72,7 @@ def _make_compute_jvp(batch_compute_jvp):
     """Allows an ``compute_jvp`` method to handle individual circuits."""
 
     @wraps(batch_compute_jvp)
-    def compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig | None = None):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -84,7 +89,9 @@ def _make_execute_and_compute_jvp(batch_execute_and_compute_jvp):
     """Allows an ``execute_and_compute_jvp`` method to handle individual circuits."""
 
     @wraps(batch_execute_and_compute_jvp)
-    def execute_and_compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_jvp(
+        self, circuits, tangents, execution_config: ExecutionConfig | None = None
+    ):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -102,7 +109,7 @@ def _make_compute_vjp(batch_compute_vjp):
     """Allows an ``execute_and_compute_vjp`` method to handle individual circuits."""
 
     @wraps(batch_compute_vjp)
-    def compute_vjp(self, circuits, cotangents, execution_config=DefaultExecutionConfig):
+    def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig | None = None):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -121,7 +128,7 @@ def _make_execute_and_compute_vjp(batch_execute_and_compute_vjp):
 
     @wraps(batch_execute_and_compute_vjp)
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config=DefaultExecutionConfig
+        self, circuits, cotangents, execution_config: ExecutionConfig | None = None
     ):
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
@@ -149,14 +156,16 @@ def single_tape_support(cls: type) -> type:
 
     .. code-block:: python
 
-        @single_tape_support
-        class MyDevice(qml.devices.Device):
+        import pennylane as qp
 
-            def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        @single_tape_support
+        class MyDevice(qp.devices.Device):
+
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for _ in circuits)
 
     >>> dev = MyDevice()
-    >>> t = qml.tape.QuantumScript()
+    >>> t = qp.tape.QuantumScript()
     >>> dev.execute(t)
     0.0
     >>> dev.execute((t, ))

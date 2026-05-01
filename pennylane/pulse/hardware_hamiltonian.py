@@ -16,12 +16,14 @@ Hardware Hamiltonians"""
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops import Identity, LinearCombination, SProd, X, Y
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -43,7 +45,7 @@ def drive(amplitude, phase, wires):
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
-    To avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    To avoid numerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments.
     Read the usage details for more information on how to choose :math:`\Omega` and :math:`\phi`.
 
@@ -71,18 +73,22 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
+        import jax.numpy as jnp
+
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
+        H_int = sum([qp.X(i) @ qp.X((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
-        H_d = qml.pulse.drive(amplitude, phase, wires)
+        H_d = qp.pulse.drive(amplitude, phase, wires)
 
     >>> H_int
-    (1) [X0 X1]
-    + (1) [X1 X2]
-    + (1) [X2 X3]
-    + (1) [X3 X0]
+    (
+    X(0) @ X(1)
+    + X(1) @ X(2)
+    + X(2) @ X(3)
+    + X(3) @ X(0)
+    )
     >>> H_d
     HardwareHamiltonian:: terms=2
 
@@ -96,20 +102,22 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
+        import jax
+
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_int + H_d)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H_int + H_d)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.32495208, dtype=float64)
+    Array(-0.17375104, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(1.31956098, dtype=float64, weak_type=True)]
+    [Array(13.66916253, dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -118,15 +126,15 @@ def drive(amplitude, phase, wires):
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
-        H_local = qml.pulse.drive(amplitude_local, phase_local, [0, 1])
+        H_local = qp.pulse.drive(amplitude_local, phase_local, [0, 1])
 
         H = H_int + H_d + H_local
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit_local(params):
-            qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
         p_global = 2.4
         p_amp = [1.3, -2.0]
@@ -137,8 +145,8 @@ def drive(amplitude, phase, wires):
     Array(0.37385014, dtype=float64)
     >>> jax.grad(circuit_local)(params)
     (Array(-3.35835837, dtype=float64),
-     [Array(-3.35835837, dtype=float64, weak_type=True),
-      Array(-3.35835837, dtype=float64, weak_type=True)],
+     [Array(-1.02229985, dtype=float64, weak_type=True),
+      Array(2.82368978, dtype=float64, weak_type=True)],
      Array(0.1339487, dtype=float64))
 
     .. details::
@@ -165,7 +173,7 @@ def drive(amplitude, phase, wires):
         levels, is unaffected by this transformation.
 
         Further, note that the factor :math:`\frac{1}{2}` is a matter of convention. We keep it for ``drive()`` as well as :func:`~.rydberg_drive`,
-        but ommit it in :func:`~.transmon_drive`, as is common in the respective fields.
+        but omit it in :func:`~.transmon_drive`, as is common in the respective fields.
 
     .. details::
         **Neutral Atom Rydberg systems**
@@ -179,7 +187,7 @@ def drive(amplitude, phase, wires):
             atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
             wires = [1, 2, 3, 4]
             assert len(wires) == len(atom_coordinates)
-            H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+            H_i = qp.pulse.rydberg_interaction(atom_coordinates, wires)
 
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
 
@@ -188,10 +196,10 @@ def drive(amplitude, phase, wires):
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
 
-            H_d = qml.pulse.drive(amplitude, phase, wires)
+            H_d = qp.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*jnp.pi/4]*len(wires), [qml.Z(i) for i in wires])
+            H_z = qp.dot([-3*jnp.pi/4]*len(wires), [qp.Z(i) for i in wires])
 
 
         The total Hamiltonian of that evolution is given by
@@ -204,11 +212,11 @@ def drive(amplitude, phase, wires):
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=wires)
-            @qml.qnode(dev, interface="jax")
+            dev = qp.device("default.qubit", wires=wires)
+            @qp.qnode(dev, interface="jax")
             def circuit(params):
-                qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
-                return qml.expval(qml.Z(1))
+                qp.evolve(H_i + H_z + H_d)(params, t=[0, 10])
+                return qp.expval(qp.Z(1))
 
         >>> params = [2.4]
         >>> circuit(params)
@@ -221,12 +229,12 @@ def drive(amplitude, phase, wires):
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
-        amplitude_and_phase(qml.math.cos, amplitude, phase),
-        amplitude_and_phase(qml.math.sin, amplitude, phase),
+        amplitude_and_phase(math.cos, amplitude, phase),
+        amplitude_and_phase(math.sin, amplitude, phase),
     ]
 
-    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
-    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
+    drive_x_term = LinearCombination([0.5] * len(wires), [X(wire) for wire in wires])
+    drive_y_term = LinearCombination([-0.5] * len(wires), [Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
@@ -285,7 +293,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
     Keyword Args:
@@ -303,14 +311,14 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         coeffs,
         observables,
         reorder_fn: Callable = _reorder_parameters,
-        pulses: Optional[list["HardwarePulse"]] = None,
-        settings: Optional[Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"]] = None,
+        pulses: list["HardwarePulse"] | None = None,
+        settings: Union["qp.pulse.RydbergSettings", "qp.pulse.TransmonSettings"] | None = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -322,7 +330,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         return super().__call__(params, t)
 
     def __repr__(self):
-        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        return f"HardwareHamiltonian: terms={math.shape(self.coeffs)[0]}"
 
     def __add__(self, other):  # pylint: disable=too-many-return-statements
         if isinstance(other, HardwareHamiltonian):
@@ -355,14 +363,14 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(other, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(other, (LinearCombination, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
 
-        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(other, SProd):
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
             return HardwareHamiltonian(
@@ -382,8 +390,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                     coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
                 )
             new_coeffs = coeffs + [other]
-            with qml.queuing.QueuingManager.stop_recording():
-                new_ops = ops + [qml.Identity(self.wires[0])]
+            with QueuingManager.stop_recording():
+                new_ops = ops + [Identity(self.wires[0])]
 
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
@@ -433,9 +441,9 @@ class HardwarePulse:
             acts on
     """
 
-    amplitude: Union[float, Callable]
-    phase: Union[float, Callable]
-    frequency: Union[float, Callable]
+    amplitude: float | Callable
+    phase: float | Callable
+    frequency: float | Callable
     wires: list[Wires]
 
     def __post_init__(self):

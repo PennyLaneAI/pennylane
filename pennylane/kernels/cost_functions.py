@@ -15,9 +15,11 @@
 This file contains functionalities for kernel related costs.
 See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 """
+
 import numpy as np
 
-from ..math import frobenius_inner_product
+from pennylane.math import frobenius_inner_product
+
 from .utils import square_kernel_matrix
 
 
@@ -66,24 +68,25 @@ def polarity(
 
     Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
 
-    .. code-block :: python
+    .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
     We can then compute the polarity on a set of 4 (random) feature
     vectors ``X`` with labels ``Y`` via
 
-    >>> X = np.random.random((4, 2))
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> X = rng.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.polarity(X, Y, kernel)
-    tensor(0.04361349, requires_grad=True)
+    >>> qp.kernels.polarity(X, Y, kernel)
+    np.float64(0.2196...)
     """
     # pylint: disable=too-many-arguments
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
@@ -142,32 +145,33 @@ def target_alignment(
 
     Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
 
-    .. code-block :: python
+    .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
     We can then compute the kernel-target alignment on a set of 4 (random)
     feature vectors ``X`` with labels ``Y`` via
 
-    >>> X = np.random.random((4, 2))
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> X = rng.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.target_alignment(X, Y, kernel)
-    tensor(0.01124802, requires_grad=True)
+    >>> qp.kernels.target_alignment(X, Y, kernel)
+    np.float64(0.0582...)
 
     We can see that this is equivalent to using ``normalize=True`` in
     ``polarity``:
 
-    >>> target_alignment = qml.kernels.target_alignment(X, Y, kernel)
-    >>> normalized_polarity = qml.kernels.polarity(X, Y, kernel, normalize=True)
-    >>> np.isclose(target_alignment, normalized_polarity)
-    tensor(True, requires_grad=True)
+    >>> target_alignment = qp.kernels.target_alignment(X, Y, kernel)
+    >>> normalized_polarity = qp.kernels.polarity(X, Y, kernel, normalize=True)
+    >>> print(np.isclose(target_alignment, normalized_polarity))
+    True
     """
     return polarity(
         X,

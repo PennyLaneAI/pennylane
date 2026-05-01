@@ -13,8 +13,6 @@
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
 
 from .qng import QNGOptimizer, _flatten_np, _unflatten_np
@@ -44,17 +42,34 @@ class MomentumQNGOptimizer(QNGOptimizer):
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
+
     **Examples:**
 
     Consider an objective function realized as a :class:`~.QNode` that returns the
     expectation value of a Hamiltonian.
 
-    >>> dev = qml.device("default.qubit", wires=(0, 1, "aux"))
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> @qp.qnode(dev)
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     return qml.expval(qml.X(0))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     return qp.expval(qp.X(0))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function. In addition to the standard learning
@@ -62,8 +77,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     >>> eta = 0.01
     >>> rho = 0.93
-    >>> init_params = qml.numpy.array([0.5, 0.23], requires_grad=True)
-    >>> opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
+    >>> init_params = qp.numpy.array([0.5, 0.23], requires_grad=True)
+    >>> opt = qp.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
     tensor([0.50437193, 0.18562052], requires_grad=True)
@@ -82,22 +97,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
-        approx (str): Which approximation of the metric tensor to compute.
+        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qp.qjit``-compatible implementation.
 
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):

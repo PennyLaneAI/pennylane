@@ -16,20 +16,22 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.molecule.Molecule` object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
+
 import collections
 
-# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import warnings
 
-import pennylane as qml
+from scipy.constants import angstrom, physical_constants
+
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 class Molecule:
@@ -129,7 +131,7 @@ class Molecule:
             )
 
         if self.unit == "angstrom":
-            self.coordinates = self.coordinates / bohr_angs
+            self.coordinates = self.coordinates / BOHR_TO_ANG
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
@@ -138,26 +140,26 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
-        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        use_jax = any(qp.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
         interface_args = [{"like": "autograd", "requires_grad": False}, {"like": "jax"}][use_jax]
         if alpha is None:
-            alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
+            alpha = [qp.math.array(i[1], **interface_args) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [qml.math.array(i[2], **interface_args) for i in self.basis_data]
+            coeff = [qp.math.array(i[2], **interface_args) for i in self.basis_data]
 
             if normalize:
                 coeff = [
-                    qml.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
+                    qp.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
                     for i, c in enumerate(coeff)
                 ]
 
         if (
             len(
                 {
-                    qml.math.get_deep_interface(x)
+                    qp.math.get_deep_interface(x)
                     for x in [coordinates, alpha, coeff]
-                    if qml.math.get_deep_interface(x) != "numpy"
+                    if qp.math.get_deep_interface(x) != "numpy"
                 }
             )
             > 1
@@ -210,7 +212,7 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.qchem.Molecule(symbols, geometry)
+        >>> mol = qp.qchem.Molecule(symbols, geometry)
         >>> ao = mol.atomic_orbital(0)
         >>> ao(0.0, 0.0, 0.0)
         0.62824688
@@ -236,12 +238,12 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = qml.math.exp(
-                qml.math.tensordot(
+            e = qp.math.exp(
+                qp.math.tensordot(
                     -alpha, (x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2, axes=0
                 )
             )
-            return c * qml.math.dot(coeff, e)
+            return c * qp.math.dot(coeff, e)
 
         return orbital
 
@@ -258,8 +260,8 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.qchem.Molecule(symbols, geometry)
-        >>> qml.qchem.scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> mol = qp.qchem.Molecule(symbols, geometry)
+        >>> qp.qchem.scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128

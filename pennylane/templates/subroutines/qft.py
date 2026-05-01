@@ -14,15 +14,17 @@
 """
 This submodule contains the template for QFT.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
 
 import functools
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.capture import enabled
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.wires import Wires, WiresLike
 
 
@@ -52,23 +54,21 @@ class QFT(Operation):
 
     The quantum Fourier transform is applied by specifying the corresponding wires:
 
-    .. code-block::
+    .. code-block:: python
 
         wires = 3
 
-        dev = qml.device('default.qubit',wires=wires)
+        dev = qp.device('default.qubit',wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_qft(basis_state):
-            qml.BasisState(basis_state, wires=range(wires))
-            qml.QFT(wires=range(wires))
-            return qml.state()
+            qp.BasisState(basis_state, wires=range(wires))
+            qp.QFT(wires=range(wires))
+            return qp.state()
 
-    .. code-block:: pycon
-
-        >>> circuit_qft(np.array([1.0, 0.0, 0.0]))
-        [ 0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j
-          0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j]
+    >>> circuit_qft(np.array([1.0, 0.0, 0.0])) # doctest: +SKIP
+    array([ 0.3536+0.j, -0.3536+0.j,  0.3536+0.j, -0.3536+0.j,  0.3536+0.j,
+           -0.3536+0.j,  0.3536+0.j, -0.3536+0.j])
 
     .. details::
         :title: Semiclassical Quantum Fourier transform
@@ -80,65 +80,58 @@ class QFT(Operation):
         on the measurement values, allowing to reduce the number of two-qubit gates.
 
         As an example, consider the following circuit implementing addition between two
-        numbers with ``n_wires`` bits (modulo ``2**n_wires``):
+        numbers with ``num_wires`` bits (modulo ``2**num_wires``):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", shots=1)
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
-            def qft_add(m, k, n_wires):
-                qml.BasisEmbedding(m, wires=range(n_wires))
-                qml.adjoint(qml.QFT)(wires=range(n_wires))
-                for j in range(n_wires):
-                    qml.RZ(-k * np.pi / (2**j), wires=j)
-                qml.QFT(wires=range(n_wires))
-                return qml.sample()
+            @qp.qnode(dev, shots=1)
+            def qft_add(m, k, num_wires):
+                qp.BasisEmbedding(m, wires=range(num_wires))
+                qp.adjoint(qp.QFT)(wires=range(num_wires))
+                for j in range(num_wires):
+                    qp.RZ(-k * np.pi / (2**j), wires=j)
+                qp.QFT(wires=range(num_wires))
+                return qp.sample()
 
-        .. code-block:: pycon
-
-            >>> qft_add(7, 3, n_wires=4)
-            [1 0 1 0]
+        >>> qft_add(7, 3, num_wires=4)
+        array([[1, 0, 1, 0]])
 
         The last building block of this circuit is a QFT, so we may replace it by its
         semiclassical counterpart:
 
         .. code-block:: python
 
-            def scFT(n_wires):
+            def scFT(num_wires):
                 '''semiclassical Fourier transform'''
-                for w in range(n_wires-1):
-                    qml.Hadamard(w)
-                    mcm = qml.measure(w)
-                    for m in range(w + 1, n_wires):
-                        qml.cond(mcm, qml.PhaseShift)(np.pi / 2 ** (m + 1), wires=m)
-                qml.Hadamard(n_wires-1)
+                for w in range(num_wires-1):
+                    qp.Hadamard(w)
+                    mcm = qp.measure(w)
+                    for m in range(w + 1, num_wires):
+                        qp.cond(mcm, qp.PhaseShift)(np.pi / 2 ** (m + 1), wires=m)
+                qp.Hadamard(num_wires-1)
 
-            @qml.qnode(dev)
-            def scFT_add(m, k, n_wires):
-                qml.BasisEmbedding(m, wires=range(n_wires))
-                qml.adjoint(qml.QFT)(wires=range(n_wires))
-                for j in range(n_wires):
-                    qml.RZ(-k * np.pi / (2**j), wires=j)
-                scFT(n_wires)
+            @qp.qnode(dev)
+            def scFT_add(m, k, num_wires):
+                qp.BasisEmbedding(m, wires=range(num_wires))
+                qp.adjoint(qp.QFT)(wires=range(num_wires))
+                for j in range(num_wires):
+                    qp.RZ(-k * np.pi / (2**j), wires=j)
+                scFT(num_wires)
                 # Revert wire order because of PL's QFT convention
-                return qml.sample(wires=list(range(n_wires-1, -1, -1)))
+                return qp.sample(wires=list(range(num_wires-1, -1, -1)))
 
-        .. code-block:: pycon
-
-            >>> scFT_add(7, 3, n_wires=4)
-            [1 0 1 0]
+        >>> qp.set_shots(scFT_add, 1)(7, 3, num_wires=4) # doctest: +SKIP
+        array([[1, 1, 1, 0]])
     """
 
-    num_wires = AnyWires
     grad_method = None
-    resource_keys = {
-        "num_wires",
-    }
+    resource_keys = {"num_wires"}
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)
-        self.hyperparameters["n_wires"] = len(wires)
+        self.hyperparameters["num_wires"] = len(wires)
         super().__init__(wires=wires, id=id)
 
     def _flatten(self):
@@ -152,12 +145,12 @@ class QFT(Operation):
         return self.compute_decomposition(wires=self.wires)
 
     @staticmethod
-    @functools.lru_cache()
-    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
-        return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
+    @functools.lru_cache
+    def compute_matrix(num_wires):  # pylint: disable=arguments-differ
+        return np.fft.ifft(np.eye(2**num_wires), norm="ortho")
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -173,7 +166,7 @@ class QFT(Operation):
 
         **Example:**
 
-        >>> qml.QFT.compute_decomposition(wires=(0,1,2))
+        >>> qp.QFT.compute_decomposition(wires=(0,1,2))
         [H(0),
          ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
          ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])),
@@ -184,24 +177,24 @@ class QFT(Operation):
 
         """
         wires = Wires(wires)
-        n_wires = len(wires)
+        num_wires = len(wires)
 
-        shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+        shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
 
         shift_len = len(shifts)
         decomp_ops = []
         for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
+            decomp_ops.append(Hadamard(wire))
 
             for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        first_half_wires = wires[: n_wires // 2]
-        last_half_wires = wires[-(n_wires // 2) :]
+        first_half_wires = wires[: num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
+            swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 
         return decomp_ops
@@ -210,70 +203,43 @@ class QFT(Operation):
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(*wires, n_wires):  # pylint: disable=arguments-differ
-        wires = qml.math.array(wires, like="jax")
-
-        shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
-        shift_len = len(shifts)
-
-        @qml.for_loop(n_wires)
-        def outer_loop(i):
-            qml.Hadamard(wires[i])
-
-            if n_wires > 1:
-
-                @qml.for_loop(shift_len - i)
-                def cphaseshift_loop(j):
-                    qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
-
-                cphaseshift_loop()
-
-        outer_loop()
-
-        @qml.for_loop(n_wires // 2)
-        def swaps(i):
-            qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
-
-        swaps()
-
 
 def _qft_decomposition_resources(num_wires):
     return {
-        qml.Hadamard: num_wires,
-        qml.SWAP: num_wires // 2,
-        qml.ControlledPhaseShift: num_wires * (num_wires - 1) // 2,
+        Hadamard: num_wires,
+        SWAP: num_wires // 2,
+        ControlledPhaseShift: num_wires * (num_wires - 1) // 2,
     }
 
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike, n_wires, **__):
+def _qft_decomposition(wires: WiresLike, num_wires, **__):
 
-    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
-    if qml.capture.enabled():
-        shifts = qml.math.array(shifts, like="jax")
+    shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
+    if enabled():
+        shifts = math.array(shifts, like="jax")
+        wires = math.array(wires, like="jax")
 
     shift_len = len(shifts)
 
-    @qml.for_loop(n_wires)
+    @for_loop(num_wires)
     def outer_loop(i):
-        qml.Hadamard(wires[i])
+        Hadamard(wires[i])
 
-        if n_wires > 1:
+        if num_wires > 1:
 
-            @qml.for_loop(shift_len - i)
+            @for_loop(shift_len - i)
             def cphaseshift_loop(j):
-                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+                ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
             cphaseshift_loop()
 
     outer_loop()
 
-    @qml.for_loop(n_wires // 2)
+    @for_loop(num_wires // 2)
     def swaps(i):
-        qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
+        SWAP(wires=[wires[i], wires[num_wires - i - 1]])
 
     swaps()
 

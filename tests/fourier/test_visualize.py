@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`fourier` visualization functions.
 """
+
 # pylint: disable=too-few-public-methods,too-many-arguments
 
 import pytest
@@ -195,10 +196,10 @@ fig_valid, ax_valid = plt.subplots(2, 1, sharex=True, sharey=True)
 fig_invalid, ax_invalid = plt.subplots(3, 1, sharex=True, sharey=True)
 
 fig_radial_valid, ax_radial_valid = plt.subplots(
-    2, 1, sharex=True, sharey=True, subplot_kw=dict(polar=True)
+    2, 1, sharex=True, sharey=True, subplot_kw={"polar": True}
 )
 fig_radial_invalid, ax_radial_invalid = plt.subplots(
-    3, 1, sharex=True, sharey=True, subplot_kw=dict(polar=True)
+    3, 1, sharex=True, sharey=True, subplot_kw={"polar": True}
 )
 
 fig_panel_valid, ax_panel_valid = plt.subplots(5, 5, sharex=True, sharey=True)

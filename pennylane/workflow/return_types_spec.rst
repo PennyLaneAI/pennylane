@@ -35,35 +35,46 @@ a Tensor-like (Python number, numpy array, ML array), but may also be any other 
 For example, :class:`~.CountsMP` corresponds to a dictionary. We can also imagine a scenario where
 a measurement corresponds to some other type of custom data structure.
 
+>>> import pennylane as qp
+>>> import numpy as np
 >>> def example_value(m):
-...     tape = qml.tape.QuantumScript((), (m,), shots=50)
-...     return qml.device('default.qubit').execute(tape)
->>> example_value(qml.probs(wires=0))
+...     tape = qp.tape.QuantumScript((), (m,), shots=10)
+...     return qp.device('default.qubit').execute(tape)
+>>> example_value(qp.probs(wires=0))
 array([1., 0.])
->>> example_value(qml.expval(qml.Z(0)))
-1.0
->>> example_value(qml.counts(wires=0))
-{'0': 50}
->>> example_value(qml.sample(wires=0))
-array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0])
-
+>>> example_value(qp.expval(qp.Z(0)))
+np.float64(1.0)
+>>> example_value(qp.counts(wires=0))
+{np.str_('0'): np.int64(10)}
+>>> example_value(qp.sample(wires=0))
+array([[0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0]])
 
 Empty Wires
 ^^^^^^^^^^^
 
-Some measurements allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
-or ``qml.state()``. In such a case, the measurement process instance should have empty wires.
+Some measurements allow broadcasting over all available wires, like ``qp.probs()``, ``qp.sample()``,
+or ``qp.state()``. In such a case, the measurement process instance should have empty wires.
 The shape of the result object may be dictated either by the device or the other operations present in the circuit.
 
->>> qml.probs().wires
+>>> qp.probs().wires
 Wires([])
->>> tape = qml.tape.QuantumScript([qml.S(0)], (qml.probs(),))
->>> qml.device('default.qubit').execute(tape)
+>>> tape = qp.tape.QuantumScript([qp.S(0)], (qp.probs(),))
+>>> qp.device('default.qubit').execute(tape)
 array([1., 0.])
->>> qml.device('default.mixed', wires=(0,1,2)).execute(tape)
-array([1., 0., 0., 0., 0., 0., 0., 0.])
+>>> qp.device('default.qubit', wires=(0,1,2)).execute(tape)
+array([1., 0.])
+>>> new_tape = qp.tape.QuantumScript([qp.S(0), qp.S(1)], (qp.probs(),))
+>>> qp.device('default.qubit', wires=(0,1,2)).execute(new_tape)
+array([1., 0., 0., 0.])
 
 Broadcasting
 ^^^^^^^^^^^^
@@ -74,19 +85,19 @@ If the corresponding tape has a ``batch_size`` and the result object is numeric,
 gain a leading dimension.  Note that a batch size of ``1`` is still a batch size,
 and still should correspond to a leading dimension.
 
->>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0)
->>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])
->>> result = qml.device('default.qubit').execute(tape)
+>>> op = qp.RX((0, np.pi/4, np.pi/2), wires=0)
+>>> tape = qp.tape.QuantumScript((op,), [qp.probs(wires=0)])
+>>> result = qp.device('default.qubit').execute(tape)
 >>> result
 array([[1.        , 0.        ],
-       [0.85355339, 0.14644661],
+       [0.853..., 0.1464...],
        [0.5       , 0.5       ]])
 >>> result.shape
 (3, 2)
->>> tape = qml.tape.QuantumScript((op,), [qml.expval(qml.Z(0))])
->>> result = qml.device('default.qubit').execute(tape)
+>>> tape = qp.tape.QuantumScript((op,), [qp.expval(qp.Z(0))])
+>>> result = qp.device('default.qubit').execute(tape)
 >>> result
-array([1.00000000e+00, 7.07106781e-01, 2.22044605e-16])
+array([1.    , 0.7071..., 0.    ])
 >>> result.shape
 (3,)
 
@@ -94,14 +105,15 @@ Non-tensorlike arrays may handle broadcasting in different ways. The ``'default.
 for :class:`~.CountsMP` is a list of dictionaries, but when used in conjunction with
 :func:`~.transforms.broadcast_expand`, the result object becomes a ``numpy.ndarray`` of dtype ``object``.
 
->>> tape = qml.tape.QuantumScript((op,), (qml.counts(),), shots=50)
->>> result = qml.device('default.qubit').execute(tape)
->>> result
-[{'0': 50}, {'0': 46, '1': 4}, {'0': 32, '1': 18}]
->>> batch, fn = qml.transforms.broadcast_expand(tape)
->>> fn(qml.device('default.qubit').execute(batch))
-array([{'0': 50}, {'0': 39, '1': 11}, {'0': 28, '1': 22}], dtype=object)
-
+>>> tape = qp.tape.QuantumScript((op,), (qp.counts(),), shots=50)
+>>> result = qp.device('default.qubit', seed=42).execute(tape)
+>>> print(result)
+[{np.str_('0'): np.int64(50)}, {np.str_('0'): np.int64(49), np.str_('1'): np.int64(1)}, {np.str_('0'): np.int64(28), np.str_('1'): np.int64(22)}]
+>>> batch, fn = qp.transforms.broadcast_expand(tape)
+>>> print(fn(qp.device('default.qubit', seed=42).execute(batch)))
+[{np.str_('0'): np.int64(50)}
+ {np.str_('0'): np.int64(49), np.str_('1'): np.int64(1)}
+ {np.str_('0'): np.int64(28), np.str_('1'): np.int64(22)}]
 
 Single Tape
 -----------
@@ -109,12 +121,12 @@ Single Tape
 If the tape has a single measurement, then the result corresponding to that tape simply obeys the specification
 above.  Otherwise, the result for a single tape is a ``tuple`` where each entry corresponds to each
 of the corresponding measurements. In the below example, the first entry corresponds to the first
-measurement process ``qml.expval(qml.Z(0))``, the second entry corresponds to the second measurement process
-``qml.probs(wires=0)``, and the third result corresponds to the third measurement process ``qml.state()``.
+measurement process ``qp.expval(qp.Z(0))``, the second entry corresponds to the second measurement process
+``qp.probs(wires=0)``, and the third result corresponds to the third measurement process ``qp.state()``.
 
->>> tape = qml.tape.QuantumScript((), (qml.expval(qml.Z(0)), qml.probs(wires=0), qml.state()))
->>> qml.device('default.qubit').execute(tape)
-(1.0, array([1., 0.]), array([1.+0.j, 0.+0.j]))
+>>> tape = qp.tape.QuantumScript((), (qp.expval(qp.Z(0)), qp.probs(wires=0), qp.state()))
+>>> qp.device('default.qubit').execute(tape)
+(np.float64(1.0), array([1., 0.]), array([1.+0.j, 0.+0.j]))
 
 Shot vectors
 ^^^^^^^^^^^^
@@ -122,49 +134,53 @@ Shot vectors
 When a shot vector is present ``shots.has_partitioned_shot``, the measurement instead becomes a
 tuple where each entry corresponds to a different shot value.
 
->>> measurements = (qml.expval(qml.Z(0)), qml.probs(wires=0))
->>> tape = qml.tape.QuantumScript((), measurements, shots=(50,50,50))
->>> result = qml.device('default.qubit').execute(tape)
+>>> measurements = (qp.expval(qp.Z(0)), qp.probs(wires=0))
+>>> tape = qp.tape.QuantumScript((), measurements, shots=(50,50,50))
+>>> result = qp.device('default.qubit').execute(tape)
 >>> result
-((1.0, array([1., 0.])), (1.0, array([1., 0.])), (1.0, array([1., 0.])))
+((np.float64(1.0), array([1., 0.])), (np.float64(1.0), array([1., 0.])), (np.float64(1.0), array([1., 0.])))
 >>> result[0]
-(1.0, array([1., 0.]))
->>> tape = qml.tape.QuantumScript((), [qml.counts(wires=0)], shots=(1, 10, 100))
->>> qml.device('default.qubit').execute(tape)
-({'0': 1}, {'0': 10}, {'0': 100})
+(np.float64(1.0), array([1., 0.]))
+>>> tape = qp.tape.QuantumScript((), [qp.counts(wires=0)], shots=(1, 10, 100))
+>>> qp.device('default.qubit').execute(tape)
+({np.str_('0'): np.int64(1)}, {np.str_('0'): np.int64(10)}, {np.str_('0'): np.int64(100)})
 
 Let's look at an example with all forms of nesting.  Here, we have a tape with a batch size of ``3``, three
 different measurements with different fundamental shapes, and a shot vector with three different values.
 
->>> op = qml.RX((1.2, 2.3, 3.4), 0)
->>> ms = (qml.expval(qml.Z(0)), qml.probs(wires=0), qml.counts())
->>> tape = qml.tape.QuantumScript((op,), ms, shots=(1, 100, 1000))
->>> result = qml.device('default.qubit').execute(tape)
->>> result
-((array([ 1., -1., -1.]),
-array([[1., 0.],
+>>> op = qp.RX((1.2, 2.3, 3.4), 0)
+>>> ms = (qp.expval(qp.Z(0)), qp.probs(wires=0), qp.counts())
+>>> tape = qp.tape.QuantumScript((op,), ms, shots=(1, 100, 1000))
+>>> result = qp.device('default.qubit', seed=42).execute(tape)
+>>> from pprint import pprint
+>>> pprint(result)  # for better readability
+((array([-1., -1., -1.]),
+  array([[0., 1.],
        [0., 1.],
        [0., 1.]]),
-[{'0': 1}, {'1': 1}, {'1': 1}]),
-(array([ 0.3 , -0.66, -0.98]),
-array([[0.61, 0.39],
-       [0.13, 0.87],
-       [0.03, 0.97]]),
-[{'0': 61, '1': 39}, {'0': 13, '1': 87}, {'0': 3, '1': 97}]),
-(array([ 0.364, -0.648, -0.962]),
-array([[0.669, 0.331],
-       [0.165, 0.835],
-       [0.012, 0.988]]),
-[{'0': 669, '1': 331}, {'0': 165, '1': 835}, {'0': 12, '1': 988}]))
-
-
+  [{np.str_('1'): np.int64(1)},
+   {np.str_('1'): np.int64(1)},
+   {np.str_('1'): np.int64(1)}]),
+ (array([ 0.38, -0.6 , -0.98]),
+  array([[0.71, 0.29],
+       [0.19, 0.81],
+       [0.02, 0.98]]),
+  [{np.str_('0'): np.int64(71), np.str_('1'): np.int64(29)},
+   {np.str_('0'): np.int64(19), np.str_('1'): np.int64(81)},
+   {np.str_('0'): np.int64(2), np.str_('1'): np.int64(98)}]),
+ (array([ 0.362, -0.688, -0.964]),
+  array([[0.678, 0.322],
+       [0.164, 0.836],
+       [0.014, 0.986]]),
+  [{np.str_('0'): np.int64(678), np.str_('1'): np.int64(322)},
+   {np.str_('0'): np.int64(164), np.str_('1'): np.int64(836)},
+   {np.str_('0'): np.int64(14), np.str_('1'): np.int64(986)}]))
 >>> result[0][0] # first shot value, first measurement
-array([ 1., -1., -1.])
+array([-1., -1., -1.])
 >>> result[0][0][0] # first shot value, first measurement, and parameter of 1.2
-1.0
+np.float64(-1.0)
 >>> result[1][2] # second shot value, third measurement, all three parameter values
-[{'0': 74, '1': 26}, {'0': 23, '1': 77}, {'1': 100}]
-
+[{np.str_('0'): np.int64(71), np.str_('1'): np.int64(29)}, {np.str_('0'): np.int64(19), np.str_('1'): np.int64(81)}, {np.str_('0'): np.int64(2), np.str_('1'): np.int64(98)}]
 
 Batches
 -------
@@ -172,9 +188,9 @@ Batches
 A batch is a tuple or list of multiple tapes.  In this case, the result should always be a tuple
 where each entry corresponds to the result for the corresponding tape.
 
->>> tape1 = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
->>> tape2 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.counts()], shots=100)
->>> tape3 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
+>>> tape1 = qp.tape.QuantumScript([qp.X(0)], [qp.state()])
+>>> tape2 = qp.tape.QuantumScript([qp.Hadamard(0)], [qp.counts()], shots=100)
+>>> tape3 = qp.tape.QuantumScript([], [qp.expval(qp.Z(0)), qp.expval(qp.X(0))])
 >>> batch = (tape1, tape2, tape3)
->>> qml.device('default.qubit').execute(batch)
-(array([0.+0.j, 1.+0.j]), {'0': 50, '1': 50}, (1.0, 0.0))
+>>> qp.device('default.qubit', seed=42).execute(batch)
+(array([0.+0.j, 1.+0.j]), {np.str_('0'): np.int64(53), np.str_('1'): np.int64(47)}, (np.float64(1.0), np.float64(0.0)))

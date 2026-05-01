@@ -14,7 +14,7 @@
 """
 This module contains the :class:`OperationRecorder`.
 """
-# pylint: disable=too-many-arguments
+
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .tape import QuantumScript
@@ -31,15 +31,14 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
     or quantum functions stores applied operators in the
     recorder, which can then be printed.
 
-    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
+    >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
     >>> weights = np.random.random(shape)
-    >>>
-    >>> with OperationRecorder() as rec:
-    >>>    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+    >>> with OperationRecorder() as rec: # doctest: +SKIP
+    ...    qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly access the applied :class:`~.Operation` and :class:`~.Observable`
+    to directly access the applied :class:`~.Operation` and :class:`~.Operator`
     objects.
     """
 
@@ -48,7 +47,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
         ops=None,
         measurements=None,
         shots=None,
-    ):  # pylint: disable=unused-argument, too-many-arguments
+    ):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots)
         self.ops = None
@@ -70,9 +69,8 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
         for obj, info in self.items():
             QueuingManager.append(obj, **info)
 
-        new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumScript))
-        self.ops = new_tape.operations
-        self.obs = new_tape.observables
+        self.ops = self.operations
+        self.obs = self.observables
 
     def __str__(self):
         return "\n".join(

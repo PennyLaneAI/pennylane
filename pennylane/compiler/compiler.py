@@ -19,15 +19,12 @@ import sys
 from collections import defaultdict
 from importlib import metadata, reload
 from sys import version_info
-from typing import List, Optional
 
 from packaging.version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.11.0")
+from pennylane.exceptions import CompileError
 
-
-class CompileError(Exception):
-    """Error encountered in the compilation phase."""
+PL_CATALYST_MIN_VERSION = Version("0.14.0")
 
 
 @dataclasses.dataclass
@@ -74,7 +71,6 @@ def _refresh_compilers():
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.compilers")
     )
 
@@ -115,7 +111,7 @@ def _reload_compilers():
     _refresh_compilers()
 
 
-def available_compilers() -> List[str]:
+def available_compilers() -> list[str]:
     """Load and return a list of available compilers that are
     installed and compatible with the :func:`~.qjit` decorator.
 
@@ -126,7 +122,7 @@ def available_compilers() -> List[str]:
     `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
-    >>> qml.compiler.available_compilers()
+    >>> qp.compiler.available_compilers()
     ['catalyst']
     """
 
@@ -150,12 +146,12 @@ def available(compiler="catalyst") -> bool:
 
     Before installing the ``pennylane-catalyst`` package:
 
-    >>> qml.compiler.available("catalyst")
+    >>> qp.compiler.available("catalyst")
     False
 
     After installing the ``pennylane-catalyst`` package:
 
-    >>> qml.compiler.available("catalyst")
+    >>> qp.compiler.available("catalyst")
     True
     """
 
@@ -170,7 +166,7 @@ def available(compiler="catalyst") -> bool:
     return compiler in AvailableCompilers.names_entrypoints
 
 
-def active_compiler() -> Optional[str]:
+def active_compiler() -> str | None:
     """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
@@ -189,19 +185,19 @@ def active_compiler() -> Optional[str]:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active_compiler() == "catalyst":
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.Z(0))
+            if qp.compiler.active_compiler() == "catalyst":
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
-    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    >>> qp.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
 
     """
@@ -233,19 +229,19 @@ def active() -> bool:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active():
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.Z(0))
+            if qp.compiler.active():
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
-    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    >>> qp.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
     """
     return active_compiler() is not None

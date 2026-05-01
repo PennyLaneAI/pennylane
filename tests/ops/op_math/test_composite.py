@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+
 import inspect
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
@@ -22,18 +23,18 @@ from copy import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
+import pennylane as qp
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
 from pennylane.wires import Wires
 
 ops = (
-    (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
-    (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
+    (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),
+    (qp.CNOT(wires=[0, 1]), qp.RX(1.23, wires=1), qp.Identity(wires=0)),
     (
-        qml.IsingXX(4.56, wires=[2, 3]),
-        qml.Toffoli(wires=[1, 2, 3]),
-        qml.Rot(0.34, 1.0, 0, wires=0),
+        qp.IsingXX(4.56, wires=[2, 3]),
+        qp.Toffoli(wires=[1, 2, 3]),
+        qp.Rot(0.34, 1.0, 0, wires=0),
     ),
 )
 
@@ -50,10 +51,10 @@ class ValidOp(CompositeOp):
     _math_op = None
 
     def _build_pauli_rep(self):
-        return qml.pauli.PauliSentence({})
+        return qp.pauli.PauliSentence({})
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
@@ -70,7 +71,7 @@ class ValidOp(CompositeOp):
 class TestConstruction:
     """Test the construction of composite ops."""
 
-    simple_operands = (qml.S(0), qml.T(1))
+    simple_operands = (qp.S(0), qp.T(1))
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
@@ -81,7 +82,22 @@ class TestConstruction:
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            _ = ValidOp(qml.PauliX(0))
+            _ = ValidOp(qp.PauliX(0))
+
+    def test_raise_error_with_mcm_input(self):
+        """Test that composite ops of mid-circuit measurements are not supported."""
+        mcm_0 = qp.ops.MidMeasure(0)
+        mcm_1 = qp.ops.MidMeasure(1)
+        ppm = qp.ops.PauliMeasure("XY", wires=[0, 1])
+        op = qp.RX(0.5, 2)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(op, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, op)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(ppm, op)
 
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
@@ -91,17 +107,17 @@ class TestConstruction:
 
     def test_parameters(self):
         """Test that parameters are initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
         """Test that data is initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
         """Test the setter method for data"""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
         new_data = (1.23, 0.0, -1.0, -2.0)
@@ -121,25 +137,25 @@ class TestConstruction:
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no operands have batching."""
-        prod_op = ValidOp(qml.PauliX(0), qml.RX(1.0, wires=0))
+        prod_op = ValidOp(qp.PauliX(0), qp.RX(1.0, wires=0))
         assert prod_op.batch_size is None
 
     def test_batch_size_all_batched(self):
         """Test that the batch_size is correct when all operands are batched."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
         op = ValidOp(base, base, base)
         assert op.batch_size == 3
 
     def test_batch_size_not_all_batched(self):
         """Test that the batch_size is correct when some but not all operands are batched."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qp.RY(1, 0), qp.RZ(np.array([1, 2, 3]), wires=2))
         assert op.batch_size == 3
 
     def test_different_batch_sizes_raises_error(self):
         """Test that an error is raised if the operands have different batch sizes."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qp.RY(1, 0), qp.RZ(np.array([1, 2, 3, 4]), wires=2))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
@@ -154,12 +170,12 @@ class TestConstruction:
 
     def test_diagonalizing_gates_non_overlapping(self):
         """Test that the diagonalizing gates are correct when wires do not overlap."""
-        diag_op = ValidOp(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        diag_op = ValidOp(qp.PauliZ(wires=0), qp.Identity(wires=1))
         assert diag_op.diagonalizing_gates() == []
 
     def test_diagonalizing_gates_overlapping(self):
         """Test that the diagonalizing gates are correct when wires overlap."""
-        diag_op = ValidOp(qml.S(0), qml.PauliX(0))
+        diag_op = ValidOp(qp.S(0), qp.PauliX(0))
         diagonalizing_gates = diag_op.diagonalizing_gates()
 
         assert len(diagonalizing_gates) == 1
@@ -186,13 +202,13 @@ class TestConstruction:
 
     @pytest.mark.parametrize(
         "construct_overlapping_ops, expected_overlapping_ops",
-        [(False, None), (True, [[qml.S(5)], [qml.T(7)]])],
+        [(False, None), (True, [[qp.S(5)], [qp.T(7)]])],
     )
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
         # pylint:disable=attribute-defined-outside-init
-        diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
+        diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops
 
@@ -203,33 +219,42 @@ class TestConstruction:
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
         assert mapped_op.pauli_rep is not diag_op.pauli_rep
-        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
-            {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
+        assert mapped_op.pauli_rep == qp.pauli.PauliSentence(
+            {qp.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
         assert mapped_op._overlapping_ops == expected_overlapping_ops
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
-        assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
+        assert op._build_pauli_rep() == qp.pauli.PauliSentence({})
 
 
-@pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
+@pytest.mark.parametrize("math_op", [qp.prod, qp.sum])
 def test_no_recursion_error_raised(math_op):
     """Tests that no RecursionError is raised from any property of method of a nested op."""
 
-    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    op = qp.RX(np.random.uniform(0, 2 * np.pi), wires=1)
     for _ in range(2000):
-        op = math_op(op, qml.RY(np.random.uniform(0, 2 * np.pi), wires=1))
+        op = math_op(op, qp.RY(np.random.uniform(0, 2 * np.pi), wires=1))
     _assert_method_and_property_no_recursion_error(op)
 
 
 def test_no_recursion_error_raised_sprod():
     """Tests that no RecursionError is raised from any property of method of a nested SProd."""
 
-    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    op = qp.RX(np.random.uniform(0, 2 * np.pi), wires=1)
     for _ in range(5000):
-        op = qml.s_prod(1, op)
+        op = qp.s_prod(1, op)
+    _assert_method_and_property_no_recursion_error(op)
+
+
+def test_no_recursion_error_raised_prod():
+    """Tests that no RecursionError is raised from any property of method of a nested Prod."""
+
+    op = qp.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    for _ in range(5000):
+        op = qp.prod(qp.I(0), op)
     _assert_method_and_property_no_recursion_error(op)
 
 
@@ -237,7 +262,6 @@ def _assert_method_and_property_no_recursion_error(instance):
     """Checks that all methods and properties do not raise a RecursionError when accessed."""
 
     for name, attr in inspect.getmembers(instance.__class__):
-
         if inspect.isfunction(attr) and _is_method_with_no_argument(attr):
             _assert_method_no_recursion_error(instance, name)
 
@@ -292,25 +316,25 @@ class TestMscMethods:
 
     def test_nested_repr(self):
         """Test nested repr values while other nested features such as equality are not ready"""
-        op = ValidOp(qml.PauliX(0), ValidOp(qml.RY(1, wires=1), qml.PauliX(0)))
+        op = ValidOp(qp.PauliX(0), ValidOp(qp.RY(1, wires=1), qp.PauliX(0)))
         assert repr(op) == "X(0) # (RY(1, wires=[1]) # X(0))"
 
     def test_label(self):
         """Test label method."""
-        op = ValidOp(qml.RY(1, wires=1), qml.PauliX(1))
+        op = ValidOp(qp.RY(1, wires=1), qp.PauliX(1))
         assert op.label() == "RY#X"
         with pytest.raises(ValueError):
             op.label(base_label=["only_first"])
 
-        nested_op = ValidOp(qml.PauliX(0), op)
+        nested_op = ValidOp(qp.PauliX(0), op)
         assert nested_op.label() == "X#(RY#X)"
         assert nested_op.label(decimals=2) == "X#(RY\n(1.00)#X)"
         assert nested_op.label(base_label=["x0", ["ry", "x1"]]) == "x0#(ry#x1)"
 
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
-        op = ValidOp(qml.PauliX(0), ValidOp(qml.PauliY(1), qml.QubitUnitary(U, wires=0)))
-        assert op.label(cache=cache) == "X#(Y#U(M0))"
+        op = ValidOp(qp.PauliX(0), ValidOp(qp.PauliY(1), qp.QubitUnitary(U, wires=0)))
+        assert op.label(cache=cache) == "X#(Y#U\n(M0))"
         assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -319,12 +343,11 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         copied_op = copy(op)
 
-        assert op.id == copied_op.id
         assert op.data == copied_op.data
         assert op.wires == copied_op.wires
 
         for o1, o2 in zip(op.operands, copied_op.operands):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
             assert o1 is not o2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -358,7 +381,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(op)._unflatten(*op._flatten())
-        qml.assert_equal(op, new_op)
+        qp.assert_equal(op, new_op)
 
 
 class TestProperties:
@@ -385,41 +408,41 @@ class TestProperties:
 
     def test_depth_property(self):
         """Test depth property."""
-        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        op = ValidOp(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1))
         assert op.arithmetic_depth == 1
 
-        op = ValidOp(qml.PauliX(0), ValidOp(qml.Identity(wires=0), qml.RX(1.9, wires=1)))
+        op = ValidOp(qp.PauliX(0), ValidOp(qp.Identity(wires=0), qp.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 2
 
     def test_overlapping_ops_property(self):
         """Test the overlapping_ops property."""
         valid_op = ValidOp(
-            qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
-            qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
-            qml.prod(qml.PauliX(10), qml.PauliY(2)),
-            qml.PauliY(7),
-            qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
-            qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+            qp.sum(qp.PauliX(0), qp.PauliY(5), qp.PauliZ(10)),
+            qp.sum(qp.PauliX(1), qp.PauliY(4), qp.PauliZ(6)),
+            qp.prod(qp.PauliX(10), qp.PauliY(2)),
+            qp.PauliY(7),
+            qp.Hamiltonian([1, 1], [qp.PauliX(2), qp.PauliZ(7)]),
+            qp.prod(qp.PauliX(4), qp.PauliY(3), qp.PauliZ(8)),
         )
         overlapping_ops = [
             [
-                qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
-                qml.prod(qml.PauliX(10), qml.PauliY(2)),
-                qml.PauliY(7),
-                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
+                qp.sum(qp.PauliX(0), qp.PauliY(5), qp.PauliZ(10)),
+                qp.prod(qp.PauliX(10), qp.PauliY(2)),
+                qp.PauliY(7),
+                qp.Hamiltonian([1, 1], [qp.PauliX(2), qp.PauliZ(7)]),
             ],
             [
-                qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
-                qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+                qp.sum(qp.PauliX(1), qp.PauliY(4), qp.PauliZ(6)),
+                qp.prod(qp.PauliX(4), qp.PauliY(3), qp.PauliZ(8)),
             ],
         ]
         for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
             for op1, op2 in zip(list_op1, list_op2):
-                qml.assert_equal(op1, op2)
+                qp.assert_equal(op1, op2)
 
     def test_overlapping_ops_private_attribute(self):
         """Test that the private `_overlapping_ops` attribute gets updated after a call to
         the `overlapping_ops` property."""
-        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        op = ValidOp(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1))
         overlapping_ops = op.overlapping_ops
         assert op._overlapping_ops == overlapping_ops

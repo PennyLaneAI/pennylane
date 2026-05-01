@@ -17,24 +17,24 @@ environment, so you can go ahead and put your code to the test!
 
 Creating a test
 ~~~~~~~~~~~~~~~
-Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
+Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/main/tests>`__.
 The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
 
-Most tests typically will not require the use of an interface or autodifferentiation framework (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
+Most tests typically will not require the use of an interface or autodifferentiation framework (such as Autograd, PyTorch, and JAX). Tests without an interface will be marked
 as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
 where it is recommended that you follow general `pytest guidelines <https://docs.pytest.org/>`__:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     def test_circuit_expval(self):
         """ Test that the circuit expectation value for PauliX is 0."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         expval = circuit()
 
@@ -69,14 +69,14 @@ Below you can find an example for testing a PennyLane template with Jax:
 .. code-block:: python
 
     def circuit_template(features):
-        qml.AngleEmbedding(features, range(3))
-        return qml.expval(qml.PauliZ(0))
+        qp.AngleEmbedding(features, range(3))
+        return qp.expval(qp.PauliZ(0))
 
     def circuit_decomposed(features):
-        qml.RX(features[0], wires=0)
-        qml.RX(features[1], wires=1)
-        qml.RX(features[2], wires=2)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(features[0], wires=0)
+        qp.RX(features[1], wires=1)
+        qp.RX(features[2], wires=2)
+        return qp.expval(qp.PauliZ(0))
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -87,47 +87,50 @@ Below you can find an example for testing a PennyLane template with Jax:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qp.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qp.QNode(circuit_decomposed, dev, interface="jax")
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
 Another example of a test involving multiple interfaces is shown below:
 
 .. code-block:: python
 
         def circuit(features):
-            qml.AngleEmbedding(features, range(3))
-            return qml.expval(qml.PauliZ(0))
+            qp.AngleEmbedding(features, range(3))
+            return qp.expval(qp.PauliZ(0))
 
-        @pytest.mark.all_interfaces
+        @pytest.mark.parametrize("interface",[
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+        ])
         def test_all_interfaces_gradient_agree(self):
-            """Test the results are similar between torch and tf"""
+            """Test the results are similar between torch and jax"""
             import torch
-            import tensorflow as tf
+            import jax.numpy as jnp
 
-            dev = qml.device("default.qubit", wires=3)
+            dev = qp.device("default.qubit", wires=3)
 
             features_torch = torch.Tensor([1.0, 1.0, 1.0])
-            features_tf = tf.Variable([1.0, 1.0, 1.0], dtype=tf.float64)
+            features_jax = jnp.array([1.0, 1.0, 1.0])
 
-            circuit_torch = qml.QNode(circuit, dev, interface="torch")
-            circuit_tf = qml.QNode(circuit, dev, interface="tf")
+            circuit_torch = qp.QNode(circuit, dev, interface="torch")
+            circuit_jax = qp.QNode(circuit, dev, interface="jax")
 
             res_torch = circuit_torch(features_torch)
-            res_tf = circuit_tf(features_tf)
+            res_jax = circuit_jax(features_torch)
 
-            assert np.allclose(res_torch, res_tf)
+            assert np.allclose(res_torch, res_jax)
 
 
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
+The `tests <https://github.com/PennyLaneAI/pennylane/tree/main/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
 
 .. code-block:: bash
 
@@ -163,12 +166,12 @@ The slowest tests are marked with ``slow`` and can be deselected by:
 
     python -m pytest -m "not slow" tests
 
-The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both Jax and TensorFlow
+The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both JAX and PyTorch
 tests by writing:
 
 .. code-block:: bash
 
-    python -m pytest -m "jax and tf" tests
+    python -m pytest -m "jax and torch" tests
 
 or Jax tests that are not slow:
 

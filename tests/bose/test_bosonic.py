@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Bosonic representation classes."""
+
 import pickle
 from copy import copy, deepcopy
 
@@ -255,9 +256,9 @@ class TestBoseWord:
         bw_3 = BoseWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
         bw_4 = BoseWord({(0, 0): "+", (1, 2): "-"})  # distinct from above
 
-        assert bw_1.__hash__() == bw_2.__hash__()
-        assert bw_1.__hash__() == bw_3.__hash__()
-        assert bw_1.__hash__() != bw_4.__hash__()
+        assert hash(bw_1) == hash(bw_2)
+        assert hash(bw_1) == hash(bw_3)
+        assert hash(bw_1) != hash(bw_4)
 
     @pytest.mark.parametrize("bw", (bw1, bw2, bw3, bw4))
     def test_copy(self, bw):

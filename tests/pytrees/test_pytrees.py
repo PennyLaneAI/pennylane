@@ -14,22 +14,23 @@
 """
 Tests for the pennylane pytrees module.
 """
+
 import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
 
 
 def test_structure_repr_str():
     """Test the repr of the structure class."""
-    op = qml.RX(0.1, wires=0)
-    _, structure = qml.pytrees.flatten(op)
-    expected = "PyTreeStructure(RX, (Wires([0]), ()), [PyTreeStructure()])"
+    op = qp.RX(0.1, wires=0)
+    _, structure = qp.pytrees.flatten(op)
+    expected = "PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),))"
     assert repr(structure) == expected
-    expected_str = "PyTree(RX, (Wires([0]), ()), [Leaf])"
+    expected_str = "PyTree(RX, (Wires([0]), ()), (Leaf,))"
     assert str(structure) == expected_str
 
 
@@ -55,7 +56,7 @@ def test_register_new_class():
 
     data, structure = flatten(obj)
     assert data == [0.5]
-    assert structure == PyTreeStructure(MyObj, None, [leaf])
+    assert structure == PyTreeStructure(MyObj, None, (leaf,))
 
     new_obj = unflatten([1.0], structure)
     assert isinstance(new_obj, MyObj)
@@ -70,7 +71,7 @@ def test_list():
     data, structure = flatten(x)
     assert data == [1, 2, 3, 4]
     assert structure == PyTreeStructure(
-        list, None, [leaf, leaf, PyTreeStructure(list, None, [leaf, leaf])]
+        list, None, (leaf, leaf, PyTreeStructure(list, None, (leaf, leaf)))
     )
 
     new_x = unflatten([5, 6, 7, 8], structure)
@@ -84,7 +85,7 @@ def test_tuple():
     data, structure = flatten(x)
     assert data == [1, 2, 3, 4]
     assert structure == PyTreeStructure(
-        tuple, None, [leaf, leaf, PyTreeStructure(tuple, None, [leaf, leaf])]
+        tuple, None, (leaf, leaf, PyTreeStructure(tuple, None, (leaf, leaf)))
     )
 
     new_x = unflatten([5, 6, 7, 8], structure)
@@ -99,7 +100,7 @@ def test_dict():
     data, structure = flatten(x)
     assert data == [1, 2, 3]
     assert structure == PyTreeStructure(
-        dict, ("a", "b"), [leaf, PyTreeStructure(dict, ("c", "d"), [leaf, leaf])]
+        dict, ("a", "b"), (leaf, PyTreeStructure(dict, ("c", "d"), (leaf, leaf)))
     )
     new_x = unflatten([5, 6, 7], structure)
     assert new_x == {"a": 5, "b": {"c": 6, "d": 7}}
@@ -108,9 +109,9 @@ def test_dict():
 def test_nested_pl_object():
     """Test that we can flatten and unflatten nested pennylane object."""
 
-    tape = qml.tape.QuantumScript(
-        [qml.adjoint(qml.RX(0.1, wires=0))],
-        [qml.expval(2 * qml.X(0))],
+    tape = qp.tape.QuantumScript(
+        [qp.adjoint(qp.RX(0.1, wires=0))],
+        [qp.expval(2 * qp.X(0))],
         shots=50,
         trainable_params=(0, 1),
     )
@@ -118,40 +119,38 @@ def test_nested_pl_object():
     data, structure = flatten(tape)
     assert data == [0.1, 2, None]
 
-    wires0 = qml.wires.Wires(0)
+    wires0 = qp.wires.Wires(0)
     op_structure = PyTreeStructure(
-        tape[0].__class__, (), [PyTreeStructure(qml.RX, (wires0, ()), [leaf])]
+        tape[0].__class__, (), (PyTreeStructure(qp.RX, (wires0, ()), (leaf,)),)
     )
-    list_op_struct = PyTreeStructure(list, None, [op_structure])
+    list_op_struct = PyTreeStructure(list, None, (op_structure,))
 
     sprod_structure = PyTreeStructure(
-        qml.ops.SProd, (), [leaf, PyTreeStructure(qml.X, (wires0, ()), [])]
+        qp.ops.SProd, (), (leaf, PyTreeStructure(qp.X, (wires0, ()), ()))
     )
     meas_structure = PyTreeStructure(
-        qml.measurements.ExpectationMP, (("wires", None),), [sprod_structure, leaf]
+        qp.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
     )
-    list_meas_struct = PyTreeStructure(list, None, [meas_structure])
+    list_meas_struct = PyTreeStructure(list, None, (meas_structure,))
     tape_structure = PyTreeStructure(
-        qml.tape.QuantumScript,
+        qp.tape.QuantumScript,
         (tape.shots, tape.trainable_params),
-        [list_op_struct, list_meas_struct],
+        (list_op_struct, list_meas_struct),
     )
 
     assert structure == tape_structure
 
     new_tape = unflatten([3, 4, None], structure)
-    expected_new_tape = qml.tape.QuantumScript(
-        [qml.adjoint(qml.RX(3, wires=0))],
-        [qml.expval(4 * qml.X(0))],
+    expected_new_tape = qp.tape.QuantumScript(
+        [qp.adjoint(qp.RX(3, wires=0))],
+        [qp.expval(4 * qp.X(0))],
         shots=50,
         trainable_params=(0, 1),
     )
-    qml.assert_equal(new_tape, expected_new_tape)
+    qp.assert_equal(new_tape, expected_new_tape)
 
 
-@pytest.mark.parametrize(
-    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
-)
+@pytest.mark.parametrize("type_,typename", [(list, "builtins.list"), (qp.Hadamard, "qp.Hadamard")])
 def test_get_typename(type_, typename):
     """Test for ``get_typename()``."""
 
@@ -166,9 +165,7 @@ def test_get_typename_invalid():
         get_typename(int)
 
 
-@pytest.mark.parametrize(
-    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
-)
+@pytest.mark.parametrize("type_,typename", [(list, "builtins.list"), (qp.Hadamard, "qp.Hadamard")])
 def test_get_typename_type(type_, typename):
     """Tests for ``get_typename_type()``."""
     assert get_typename_type(typename) is type_
@@ -247,7 +244,7 @@ def test_unflatten_for_structure_is_leaf():
     data, _structure = flatten(items)
     assert data == [1, 2, 3, 4]
     assert _structure == PyTreeStructure(
-        tuple, None, [leaf, leaf, PyTreeStructure(tuple, None, [leaf, leaf])]
+        tuple, None, (leaf, leaf, PyTreeStructure(tuple, None, (leaf, leaf)))
     )
     reconstituted_data = unflatten([5, 6, 7, 8], _structure)
     assert reconstituted_data == (5, 6, (7, 8))
@@ -258,6 +255,6 @@ def test_unflatten_for_structure_is_leaf():
     items = (1, 2, (3, 4))
     data, _structure = flatten(items, z)
     assert data == [1, 2, (3, 4)]
-    assert _structure == PyTreeStructure(tuple, None, [leaf, leaf, leaf])
+    assert _structure == PyTreeStructure(tuple, None, (leaf, leaf, leaf))
     reconstituted_data = unflatten([5, 6, (7, 8)], _structure)
     assert reconstituted_data == (5, 6, (7, 8))

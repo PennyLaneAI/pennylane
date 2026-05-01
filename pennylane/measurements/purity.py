@@ -13,54 +13,15 @@
 # limitations under the License.
 
 """
-This module contains the qml.purity measurement.
+This module contains the qp.purity measurement.
 """
-from collections.abc import Sequence
-from typing import Optional
 
-import pennylane as qml
+from pennylane.math import dm_from_state_vector
+from pennylane.math import purity as math_purity
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
-
-
-def purity(wires) -> "PurityMP":
-    r"""The purity of the system prior to measurement.
-
-    .. math::
-        \gamma = \text{Tr}(\rho^2)
-
-    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
-    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
-    A pure state has a purity of 1.
-
-    Args:
-        wires (Sequence[int] or int): The wires of the subsystem
-
-    Returns:
-        PurityMP: Measurement process instance
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_purity(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=[0,1])
-
-    >>> circuit_purity(0.1)
-    array(0.7048)
-
-    .. seealso:: :func:`pennylane.math.purity`
-    """
-    wires = Wires(wires)
-    return PurityMP(wires=wires)
 
 
 class PurityMP(StateMeasurement):
@@ -79,23 +40,62 @@ class PurityMP(StateMeasurement):
 
     _shortname = "purity"
 
-    def __init__(self, wires: Wires, id: Optional[str] = None):
+    def __init__(self, wires: Wires, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @property
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(self, state: TensorLike, wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
-        state = qml.math.dm_from_state_vector(state)
-        return qml.math.purity(state, indices=indices, c_dtype=state.dtype)
+        state = dm_from_state_vector(state)
+        return math_purity(state, indices=indices, c_dtype=state.dtype)
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
-        return qml.math.purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
+        return math_purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
+
+
+def purity(wires) -> PurityMP:
+    r"""The purity of the system prior to measurement.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+
+    Returns:
+        PurityMP: Measurement process instance
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qp.device("default.mixed", wires=2)
+
+        @qp.qnode(dev)
+        def circuit_purity(p):
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.BitFlip(p, wires=0)
+            qp.BitFlip(p, wires=1)
+            return qp.purity(wires=[0,1])
+
+    >>> print(circuit_purity(0.1))
+    0.7048...
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+    wires = Wires(wires)
+    return PurityMP(wires=wires)

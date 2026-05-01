@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 """
+
 # pylint: disable=protected-access,too-many-arguments,too-few-public-methods
 import math
 
@@ -21,9 +22,10 @@ import pytest
 from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
-from pennylane.wires import WireError, Wires
+from pennylane.exceptions import DeviceError, WireError
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -42,19 +44,19 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(qml.DeviceError, match=msg):
-        qml.device("default.qutrit", wires=1, shots=1, analytic=True)
+    with pytest.raises(DeviceError, match=msg):
+        qp.device("default.qutrit", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(qml.DeviceError, match="Real datatype must be a floating point type."):
-        qml.device("default.qutrit", wires=1, r_dtype=np.complex128)
+    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
+        qp.device("default.qutrit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Complex datatype must be a complex floating point type.",
     ):
-        qml.device("default.qutrit", wires=1, c_dtype=np.float64)
+        qp.device("default.qutrit", wires=1, c_dtype=np.float64)
 
 
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
@@ -69,24 +71,24 @@ class TestApply:
 
     # TODO: Add tests for non-parametric ops after they're implemented
     test_data_no_parameters = [
-        (qml.TShift, [1, 0, 0], np.array([0, 1, 0]), None),
+        (qp.TShift, [1, 0, 0], np.array([0, 1, 0]), None),
         (
-            qml.TShift,
+            qp.TShift,
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0],
             np.array([0, 1 / math.sqrt(2), 1 / math.sqrt(2)]),
             None,
         ),
-        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
-        (qml.TClock, [0, 1, 0], np.array([0, OMEGA, 0]), None),
-        (qml.THadamard, [0, 1, 0], np.array([0, 1, 0]), [0, 2]),
+        (qp.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
+        (qp.TClock, [0, 1, 0], np.array([0, OMEGA, 0]), None),
+        (qp.THadamard, [0, 1, 0], np.array([0, 1, 0]), [0, 2]),
         (
-            qml.THadamard,
+            qp.THadamard,
             [1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
             np.array([1 / np.sqrt(2), 0.5, -0.5]),
             [1, 2],
         ),
-        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)), None),
-        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
+        (qp.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)), None),
+        (qp.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
     ]
 
     @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
@@ -120,9 +122,9 @@ class TestApply:
         qutrit_device_1_wire.apply(
             [
                 (
-                    qml.adjoint(operation(wires=[0]))
+                    qp.adjoint(operation(wires=[0]))
                     if subspace is None
-                    else qml.adjoint(operation(wires=[0], subspace=subspace))
+                    else qp.adjoint(operation(wires=[0], subspace=subspace))
                 )
             ]
         )
@@ -133,15 +135,15 @@ class TestApply:
         assert qutrit_device_1_wire.target_device._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     test_data_two_wires_no_parameters = [
-        (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
+        (qp.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
         (
-            qml.TSWAP,
+            qp.TSWAP,
             [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 0, 1 / math.sqrt(2)],
             np.array([0, 1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)]),
             None,
         ),
         (
-            qml.TSWAP,
+            qp.TSWAP,
             [0, 0, 0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 1j / math.sqrt(3)],
             np.array([0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 0, 0, 1j / math.sqrt(3)]),
             None,
@@ -149,15 +151,15 @@ class TestApply:
     ]
 
     test_data_tadd = [
-        (qml.TAdd, [0, 0, 0, 0, 1, 0, 0, 0, 0], np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]), None),
+        (qp.TAdd, [0, 0, 0, 0, 1, 0, 0, 0, 0], np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]), None),
         (
-            qml.TAdd,
+            qp.TAdd,
             [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0],
             np.array([0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0]),
             None,
         ),
         (
-            qml.TAdd,
+            qp.TAdd,
             [0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j],
             np.array([0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0]),
             None,
@@ -210,9 +212,9 @@ class TestApply:
         qutrit_device_2_wires.apply(
             [
                 (
-                    qml.adjoint(operation(wires=[0, 1]))
+                    qp.adjoint(operation(wires=[0, 1]))
                     if subspace is None
-                    else qml.adjoint(operation(wires=[0, 1], subspace=subspace))
+                    else qp.adjoint(operation(wires=[0, 1], subspace=subspace))
                 )
             ]
         )
@@ -227,29 +229,29 @@ class TestApply:
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
-        (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), [U_thadamard_01], None),
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], [U_x_02], None),
-        (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], [U_z_12], None),
-        (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], [U_x_02], None),
-        (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], [U_z_12], None),
-        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], [TSHIFT], None),
-        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], [TCLOCK], None),
-        (qml.TRX, [1, 0, 0], [1 / math.sqrt(2), -1j / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
-        (qml.TRX, [1, 0, 0], [0, 0, -1j], [math.pi], [0, 2]),
+        (qp.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), [U_thadamard_01], None),
+        (qp.QutritUnitary, [1, 0, 0], [0, 0, 1], [U_x_02], None),
+        (qp.QutritUnitary, [1, 0, 0], [1, 0, 0], [U_z_12], None),
+        (qp.QutritUnitary, [0, 1, 0], [0, 1, 0], [U_x_02], None),
+        (qp.QutritUnitary, [0, 0, 1], [0, 0, -1], [U_z_12], None),
+        (qp.QutritUnitary, [0, 1, 0], [0, 0, 1], [TSHIFT], None),
+        (qp.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], [TCLOCK], None),
+        (qp.TRX, [1, 0, 0], [1 / math.sqrt(2), -1j / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qp.TRX, [1, 0, 0], [0, 0, -1j], [math.pi], [0, 2]),
         (
-            qml.TRX,
+            qp.TRX,
             [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
             [0, 1 / 2 - 1j / 2, 1 / 2 - 1j / 2],
             np.array([math.pi / 2]),
             [1, 2],
         ),
-        (qml.TRY, [1, 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
-        (qml.TRY, [1, 0, 0], [0, 0, 1], [math.pi], [0, 2]),
-        (qml.TRY, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1], [math.pi / 2], [1, 2]),
-        (qml.TRZ, [1, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0], [math.pi / 2], [0, 1]),
-        (qml.TRZ, [1, 0, 0], [-1j, 0, 0], [math.pi], [0, 2]),
+        (qp.TRY, [1, 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qp.TRY, [1, 0, 0], [0, 0, 1], [math.pi], [0, 2]),
+        (qp.TRY, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1], [math.pi / 2], [1, 2]),
+        (qp.TRZ, [1, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0], [math.pi / 2], [0, 1]),
+        (qp.TRZ, [1, 0, 0], [-1j, 0, 0], [math.pi], [0, 2]),
         (
-            qml.TRZ,
+            qp.TRZ,
             [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
             [0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
             [math.pi / 2],
@@ -292,7 +294,7 @@ class TestApply:
         )
 
         kwargs = {} if subspace is None else {"subspace": subspace}
-        qutrit_device_1_wire.apply([qml.adjoint(operation(*par, wires=[0], **kwargs))])
+        qutrit_device_1_wire.apply([qp.adjoint(operation(*par, wires=[0], **kwargs))])
 
         assert np.allclose(
             qutrit_device_1_wire.target_device._state, np.array(expected_output), atol=tol, rtol=0
@@ -301,22 +303,22 @@ class TestApply:
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], [TSWAP]),
+        (qp.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
+        (qp.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], [TSWAP]),
         (
-            qml.QutritUnitary,
+            qp.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
             [TSWAP],
         ),
         (
-            qml.QutritUnitary,
+            qp.QutritUnitary,
             np.multiply(0.5, [0, 1, 1, 0, 0, 0, 0, 1, 1]),
             np.multiply(0.5, [0, 0, 0, 1, 0, 1, 1, 0, 1]),
             [TSWAP],
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [TADD]),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], [TADD]),
+        (qp.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [TADD]),
+        (qp.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], [TADD]),
     ]
 
     @pytest.mark.parametrize(
@@ -353,7 +355,7 @@ class TestApply:
         qutrit_device_2_wires.target_device._state = np.array(
             input, dtype=qutrit_device_2_wires.C_DTYPE
         ).reshape((3, 3))
-        qutrit_device_2_wires.apply([qml.adjoint(operation(*par, wires=[0, 1]))])
+        qutrit_device_2_wires.apply([qp.adjoint(operation(*par, wires=[0, 1]))])
 
         assert np.allclose(
             qutrit_device_2_wires.target_device._state.flatten(),
@@ -372,12 +374,12 @@ class TestApply:
         )
 
         ops = [
-            qml.adjoint(qml.QutritUnitary(TSHIFT, wires=0)),
-            qml.QutritUnitary(U_thadamard_01, wires=0),
+            qp.adjoint(qp.QutritUnitary(TSHIFT, wires=0)),
+            qp.QutritUnitary(U_thadamard_01, wires=0),
         ]
         rotations = [
-            qml.QutritUnitary(U_thadamard_01, wires=0),
-            qml.QutritUnitary(TSHIFT, wires=0),
+            qp.QutritUnitary(U_thadamard_01, wires=0),
+            qp.QutritUnitary(TSHIFT, wires=0),
         ]
 
         qutrit_device_1_wire.apply(ops, rotations)
@@ -387,9 +389,9 @@ class TestApply:
     @pytest.mark.parametrize(
         "operation,expected_output,par",
         [
-            (qml.QutritBasisState, [0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1]),
-            (qml.QutritBasisState, [0, 0, 0, 0, 1, 0, 0, 0, 0], [1, 1]),
-            (qml.QutritBasisState, [0, 0, 0, 0, 0, 0, 0, 1, 0], [2, 1]),
+            (qp.QutritBasisState, [0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1]),
+            (qp.QutritBasisState, [0, 0, 0, 0, 1, 0, 0, 0, 0], [1, 1]),
+            (qp.QutritBasisState, [0, 0, 0, 0, 0, 0, 0, 1, 0], [2, 1]),
         ],
     )
     def test_apply_operation_state_preparation(
@@ -413,21 +415,21 @@ class TestApply:
         with pytest.raises(
             ValueError, match="QutritBasisState parameter must consist of 0, 1 or 2 integers."
         ):
-            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
+            qutrit_device_2_wires.apply([qp.QutritBasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
             ValueError, match="QutritBasisState parameter and wires must be of equal length."
         ):
-            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([0, 1]), wires=[0])])
+            qutrit_device_2_wires.apply([qp.QutritBasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="Operation QutritBasisState cannot be used after other operations have already been applied "
             "on a default.qutrit device.",
         ):
             qutrit_device_2_wires.reset()
             qutrit_device_2_wires.apply(
-                [qml.TClock(wires=0), qml.QutritBasisState(np.array([1, 1]), wires=[0, 1])]
+                [qp.TClock(wires=0), qp.QutritBasisState(np.array([1, 1]), wires=[0, 1])]
             )
 
 
@@ -437,30 +439,30 @@ class TestExpval:
     @pytest.mark.parametrize(
         "observable,state,expected_output,par",
         [
-            (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
-            (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
+            (qp.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qp.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
                 0,
                 [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
-            (qml.GellMann, [1, 0, 0], 0, 1),
-            (qml.GellMann, [0, 0, 1], 0, 1),
-            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
-            (qml.GellMann, [1, 0, 0], 0, 2),
-            (qml.GellMann, [1, 0, 0], 1, 3),
-            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
-            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
-            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
-            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
-            (qml.GellMann, [0, 1, 0], 0, 5),
-            (qml.GellMann, [0, 0, 1], 0, 6),
-            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
-            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
-            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
-            (qml.GellMann, [0, 0, 1], -2 / math.sqrt(3), 8),
-            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
+            (qp.GellMann, [1, 0, 0], 0, 1),
+            (qp.GellMann, [0, 0, 1], 0, 1),
+            (qp.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
+            (qp.GellMann, [1, 0, 0], 0, 2),
+            (qp.GellMann, [1, 0, 0], 1, 3),
+            (qp.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
+            (qp.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
+            (qp.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
+            (qp.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
+            (qp.GellMann, [0, 1, 0], 0, 5),
+            (qp.GellMann, [0, 0, 1], 0, 6),
+            (qp.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
+            (qp.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
+            (qp.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
+            (qp.GellMann, [0, 0, 1], -2 / math.sqrt(3), 8),
+            (qp.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
         ],
     )
     def test_expval_single_wire_with_parameters(
@@ -493,25 +495,25 @@ class TestExpval:
         "observable,state,expected_output,mat",
         [
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 1 / 3,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 2,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 1,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [
                     3.73671170e-01 - 0.00000000e00j,
                     3.73671170e-01 - 8.75889651e-19j,
@@ -527,13 +529,13 @@ class TestExpval:
                 obs_2,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / 3] * 9,
                 0,
                 obs_2,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0],
                 0,
                 obs_2,
@@ -556,11 +558,11 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1, shots=3)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=3)
         def circuit():
-            return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
+            return qp.expval(qp.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         expval = circuit()
 
@@ -575,30 +577,30 @@ class TestVar:
     @pytest.mark.parametrize(
         "observable,state,expected_output,par",
         [
-            (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
-            (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qp.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qp.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
                 2 / 3,
                 [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
-            (qml.GellMann, [1, 0, 0], 1, 1),
-            (qml.GellMann, [0, 0, 1], 0, 1),
-            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
-            (qml.GellMann, [1, 0, 0], 1, 2),
-            (qml.GellMann, [1, 0, 0], 0, 3),
-            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
-            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
-            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
-            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
-            (qml.GellMann, [0, 1, 0], 0, 5),
-            (qml.GellMann, [0, 0, 1], 1, 6),
-            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
-            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
-            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
-            (qml.GellMann, [0, 0, 1], 0, 8),
-            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
+            (qp.GellMann, [1, 0, 0], 1, 1),
+            (qp.GellMann, [0, 0, 1], 0, 1),
+            (qp.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
+            (qp.GellMann, [1, 0, 0], 1, 2),
+            (qp.GellMann, [1, 0, 0], 0, 3),
+            (qp.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
+            (qp.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
+            (qp.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
+            (qp.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
+            (qp.GellMann, [0, 1, 0], 0, 5),
+            (qp.GellMann, [0, 0, 1], 1, 6),
+            (qp.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
+            (qp.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
+            (qp.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
+            (qp.GellMann, [0, 0, 1], 0, 8),
+            (qp.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
         ],
     )
     def test_var_single_wire_with_parameters(
@@ -631,37 +633,37 @@ class TestVar:
         "observable,state,expected_output,mat",
         [
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 10.88888889,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 0,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 9,
                 obs_1,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
                 18,
                 obs_2,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [1 / 3] * 9,
                 30.22222,
                 obs_2,
             ),
             (
-                qml.THermitian,
+                qp.THermitian,
                 [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
                 20,
                 obs_2,
@@ -685,11 +687,11 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the var is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1, shots=3)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=3)
         def circuit():
-            return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
+            return qp.var(qp.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         var = circuit()
 
@@ -704,12 +706,12 @@ class TestSample:
     def test_sample_dtype(self):
         """Test that if the raw samples are requested, they are of dtype int."""
 
-        dev = qml.device("default.qutrit", wires=1, shots=10)
+        dev = qp.device("default.qutrit", wires=1)
 
-        tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
+        tape = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=10)
         res = dev.execute(tape)
-        assert qml.math.get_dtype_name(res)[0:3] == "int"
-        assert res.shape == (10,)
+        assert qp.math.get_dtype_name(res)[0:3] == "int"
+        assert res.shape == (10, 1)
 
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
@@ -719,28 +721,31 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qp.device("default.qutrit", wires=2, shots=1000)
 
-        dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
+        dev.apply([qp.QutritUnitary(TSHIFT, wires=0)])
 
         dev.target_device.shots = 10
         dev.target_device._wires_measured = {0}
         dev.target_device._samples = dev.generate_samples()
-        s1 = dev.sample(qml.THermitian(np.eye(3), wires=0))
+        s1 = dev.sample(qp.THermitian(np.eye(3), wires=0))
         assert np.array_equal(s1.shape, (10,))
 
         dev.reset()
         dev.target_device.shots = 12
         dev.target_device._wires_measured = {1}
         dev.target_device._samples = dev.generate_samples()
-        s2 = dev.sample(qml.THermitian(np.eye(3), wires=1))
+        s2 = dev.sample(qp.THermitian(np.eye(3), wires=1))
         assert np.array_equal(s2.shape, (12,))
 
         dev.reset()
         dev.target_device.shots = 17
         dev.target_device._wires_measured = {0, 1}
         dev.target_device._samples = dev.generate_samples()
-        s3 = dev.sample(qml.THermitian(np.eye(3), wires=0) @ qml.THermitian(np.eye(3), wires=1))
+        s3 = dev.sample(qp.THermitian(np.eye(3), wires=0) @ qp.THermitian(np.eye(3), wires=1))
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, tol):
@@ -751,13 +756,16 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qp.device("default.qutrit", wires=2, shots=1000)
 
-        dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
+        dev.apply([qp.QutritUnitary(TSHIFT, wires=0)])
         dev.target_device._wires_measured = {0}
         dev.target_device._samples = dev.generate_samples()
 
-        s1 = dev.sample(qml.THermitian(np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0))
+        s1 = dev.sample(qp.THermitian(np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0))
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
@@ -771,7 +779,7 @@ class TestDefaultQutritIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
         cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qutrit",
@@ -827,38 +835,41 @@ class TestDefaultQutritIntegration:
     @pytest.mark.parametrize("num_wires, mat, expected_out", state_measurement_data)
     def test_qutrit_circuit_state_measurement(self, num_wires, mat, expected_out, tol):
         """Tests if state returned by state function is correct"""
-        dev = qml.device("default.qutrit", wires=num_wires)
+        dev = qp.device("default.qutrit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(mat):
-            qml.QutritUnitary(mat, wires=list(range(num_wires)))
-            return qml.state()
+            qp.QutritUnitary(mat, wires=list(range(num_wires)))
+            return qp.state()
 
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_qutrit_circuit_adjoint_integration(self):
-        """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
-        dev = qml.device("default.qutrit", wires=3)
+        """Test that using qp.adjoint in a `default.qutrit` qnode works as expected."""
+
+        dev = qp.device("default.qutrit", wires=3)
 
         def ansatz(phi, theta, omega, U):
-            qml.TShift(0)
-            qml.TAdd([0, 1])
-            qml.TRX(phi, wires=2, subspace=(0, 1))
-            qml.TClock(1)
-            qml.TRY(theta, wires=0, subspace=(1, 2))
-            qml.TSWAP([0, 2])
-            qml.QutritUnitary(U, wires=[2, 1])
-            qml.TRZ(omega, wires=1, subspace=(0, 2))
+            qp.TShift(0)
+            qp.TAdd([0, 1])
+            qp.TRX(phi, wires=2, subspace=(0, 1))
+            qp.TClock(1)
+            qp.TRY(theta, wires=0, subspace=(1, 2))
+            qp.TSWAP([0, 2])
+            qp.QutritUnitary(U, wires=[2, 1])
+            qp.ControlledQutritUnitary(U, wires=[2, 1], control_wires=[0])
+            qp.TRZ(omega, wires=1, subspace=(0, 2))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             phi, theta, omega = np.random.rand(3) * 2 * np.pi
             U = unitary_group.rvs(9, random_state=10)
 
             ansatz(phi, theta, omega, U)
-            qml.adjoint(ansatz)(phi, theta, omega, U)
-            return qml.state()
+            qp.adjoint(ansatz)(phi, theta, omega, U)
+            return qp.state()
 
         expected = np.zeros(27)
         expected[0] = 1
@@ -874,16 +885,16 @@ class TestTensorExpval:
     def test_gell_mann_hermitian(self, index, tol):
         """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
         matrix behaves correctly."""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
-        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+        obs = qp.GellMann(wires=0, index=index) @ qp.THermitian(A, wires=1)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
@@ -897,7 +908,7 @@ class TestTensorExpval:
 
     def test_hermitian_hermitian(self, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("default.qutrit", wires=3)
+        dev = qp.device("default.qutrit", wires=3)
 
         A1 = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
 
@@ -905,13 +916,13 @@ class TestTensorExpval:
         B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
         A2 = np.kron(A, B)
 
-        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+        obs = qp.THermitian(A1, wires=[0]) @ qp.THermitian(A2, wires=[1, 2])
 
         dev.apply(
             [
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TADD, wires=[0, 1]),
-                qml.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TADD, wires=[0, 1]),
+                qp.QutritUnitary(TSHIFT, wires=0),
             ],
             obs.diagonalizing_gates(),
         )
@@ -923,19 +934,19 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, tol):
         """Test that a tensor product involving a Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qutrit", wires=3)
+        dev = qp.device("default.qutrit", wires=3)
 
         A = np.array([[-2, 0, 0], [0, 8, 0], [0, 0, -1]])
         Identity = np.eye(3)
         H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.THermitian(H, wires=[2, 1, 0])
+        obs = qp.THermitian(H, wires=[2, 1, 0])
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),
             ],
             obs.diagonalizing_gates(),
         )
@@ -949,21 +960,19 @@ class TestTensorExpval:
     def test_gell_mann_tensor(self, index_1, index_2, tol):
         """Test that the expectation value of the tensor product of two Gell-Mann observables is
         correct"""
-        dev = qml.device("default.qutrit", wires=2)
-        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
+        dev = qp.device("default.qutrit", wires=2)
+        obs = qp.GellMann(wires=0, index=index_1) @ qp.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TADD, wires=[0, 1]),
             ],
             obs.diagonalizing_gates(),
         )
         res = dev.expval(obs)
 
-        obs_mat = np.kron(
-            qml.GellMann.compute_matrix(index_1), qml.GellMann.compute_matrix(index_2)
-        )
+        obs_mat = np.kron(qp.GellMann.compute_matrix(index_1), qp.GellMann.compute_matrix(index_2))
         state = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 0]]) / np.sqrt(2)
         expected = state.conj() @ obs_mat @ state.T
         assert np.isclose(res, expected[0], atol=tol, rtol=0)
@@ -976,15 +985,15 @@ class TestTensorVar:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_tensor(self, index_1, index_2, tol):
         """Test that the variance of tensor products of Gell-Mann observables is correct"""
-        dev = qml.device("default.qutrit", wires=2)
-        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
+        dev = qp.device("default.qutrit", wires=2)
+        obs = qp.GellMann(wires=0, index=index_1) @ qp.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
@@ -1002,16 +1011,16 @@ class TestTensorVar:
     def test_gell_mann_hermitian(self, index, tol):
         """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
         matrix behaves correctly."""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
-        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+        obs = qp.GellMann(wires=0, index=index) @ qp.THermitian(A, wires=1)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
@@ -1027,7 +1036,7 @@ class TestTensorVar:
 
     def test_hermitian(self, tol):
         """Test that the variance of a tensor product of two Hermitian matrices behaves correctly"""
-        dev = qml.device("default.qutrit", wires=3)
+        dev = qp.device("default.qutrit", wires=3)
 
         A1 = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
@@ -1035,14 +1044,14 @@ class TestTensorVar:
         B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
         A2 = np.kron(A, B)
 
-        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+        obs = qp.THermitian(A1, wires=[0]) @ qp.THermitian(A2, wires=[1, 2])
 
         dev.apply(
             [
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TADD, wires=[0, 1]),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(U_thadamard_01, wires=2),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TADD, wires=[0, 1]),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(U_thadamard_01, wires=2),
             ],
             obs.diagonalizing_gates(),
         )
@@ -1067,16 +1076,19 @@ class TestTensorSample:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
         """Test that sampling tensor products involving Gell-Mann observables works correctly"""
-        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qp.device("default.qutrit", wires=2, shots=1_000_000)
 
-        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
+        obs = qp.GellMann(wires=0, index=index_1) @ qp.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
@@ -1108,18 +1120,21 @@ class TestTensorSample:
         correctly"""
 
         np.random.seed(seed)
-        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qp.device("default.qutrit", wires=3, shots=1_000_000)
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
-        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+        obs = qp.GellMann(wires=0, index=index) @ qp.THermitian(A, wires=1)
 
         dev.apply(
             [
-                qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+                qp.QutritUnitary(U_thadamard_01, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=0),
+                qp.QutritUnitary(TSHIFT, wires=1),
+                qp.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
@@ -1159,17 +1174,17 @@ class TestProbabilityIntegration:
     )
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
-        dev_analytic = qml.device("default.qutrit", wires=2, shots=None)
+        dev = qp.device("default.qutrit", wires=2)
+        dev_analytic = qp.device("default.qutrit", wires=2)
 
         def circuit(x):
-            qml.QutritUnitary(x[0], wires=0)
-            qml.QutritUnitary(x[1], wires=0)
-            qml.QutritUnitary(TADD, wires=[0, 1])
-            return qml.probs(wires=[0, 1])
+            qp.QutritUnitary(x[0], wires=0)
+            qp.QutritUnitary(x[1], wires=0)
+            qp.QutritUnitary(TADD, wires=[0, 1])
+            return qp.probs(wires=[0, 1])
 
-        prob = qml.QNode(circuit, dev)
-        prob_analytic = qml.QNode(circuit, dev_analytic)
+        prob = qp.QNode(circuit, dev, shots=1000)
+        prob_analytic = qp.QNode(circuit, dev_analytic)
 
         assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
@@ -1180,7 +1195,10 @@ class TestProbabilityIntegration:
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            dev = qp.device("default.qutrit", wires=2, shots=1000)
         monkeypatch.setattr(dev.target_device, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
@@ -1191,24 +1209,24 @@ class TestProbabilityIntegration:
 
     def test_stateless_analytic_return(self):
         """Test that analytic_probability returns None if device is stateless"""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
         dev.target_device._state = None
 
         assert dev.analytic_probability() is None
 
     def test_marginal_prob_wire_order(self):
         """Tests that marginal_prob rearranges wires as expected."""
-        dev = qml.device("default.qutrit", wires=3)
+        dev = qp.device("default.qutrit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QutritUnitary(U_x_02, wires=[1])  # second wire ("1") set to 2-state
-            return qml.probs(wires=[2, 0, 1])  # third wire ("1") should be in 2-state here
+            qp.QutritUnitary(U_x_02, wires=[1])  # second wire ("1") set to 2-state
+            return qp.probs(wires=[2, 0, 1])  # third wire ("1") should be in 2-state here
 
-        probs = qml.math.reshape(circuit(), (3, 3, 3))
+        probs = qp.math.reshape(circuit(), (3, 3, 3))
         assert probs[0, 0, 2] == 1
         probs[0, 0, 2] = 0
-        assert qml.math.allequal(probs, 0)
+        assert qp.math.allequal(probs, 0)
 
 
 class TestWiresIntegration:
@@ -1216,16 +1234,16 @@ class TestWiresIntegration:
 
     def make_circuit_probs(self, wires):
         """Factory for a qnode returning probabilities using arbitrary wire labels."""
-        dev = qml.device("default.qutrit", wires=wires)
+        dev = qp.device("default.qutrit", wires=wires)
         n_wires = len(wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QutritUnitary(TSHIFT, wires=wires[0 % n_wires])
-            qml.QutritUnitary(TCLOCK, wires=wires[1 % n_wires])
+            qp.QutritUnitary(TSHIFT, wires=wires[0 % n_wires])
+            qp.QutritUnitary(TCLOCK, wires=wires[1 % n_wires])
             if n_wires > 1:
-                qml.QutritUnitary(TSWAP, wires=[wires[0], wires[1]])
-            return qml.probs(wires=wires)
+                qp.QutritUnitary(TSWAP, wires=[wires[0], wires[1]])
+            return qp.probs(wires=wires)
 
         return circuit
 
@@ -1233,9 +1251,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )
@@ -1249,12 +1267,12 @@ class TestWiresIntegration:
 
     def test_wires_not_found_exception(self):
         """Tests that an exception is raised when wires not present on the device are addressed."""
-        dev = qml.device("default.qutrit", wires=["a", "b"])
+        dev = qp.device("default.qutrit", wires=["a", "b"])
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QutritUnitary(np.eye(3), wires="c")
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QutritUnitary(np.eye(3), wires="c")
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         with pytest.raises(WireError, match="Did not find some of the wires"):
             dev.execute(tape)
 
@@ -1268,7 +1286,7 @@ class TestWiresIntegration:
     @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
     def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
-        dev = qml.device("default.qutrit", wires=dev_wires)
+        dev = qp.device("default.qutrit", wires=dev_wires)
 
         original_hits = dev.map_wires.cache_info().hits
         original_misses = dev.map_wires.cache_info().misses
@@ -1291,16 +1309,16 @@ class TestApplyOps:
     gates in DefaultQutrit."""
 
     state = np.arange(3**4, dtype=np.complex128).reshape((3, 3, 3, 3))
-    dev = qml.device("default.qutrit", wires=4)
+    dev = qp.device("default.qutrit", wires=4)
 
     single_qutrit_ops = [
-        (qml.TShift, dev._apply_tshift),
-        (qml.TClock, dev._apply_tclock),
+        (qp.TShift, dev._apply_tshift),
+        (qp.TClock, dev._apply_tclock),
     ]
 
     two_qutrit_ops = [
-        (qml.TAdd, dev._apply_tadd),
-        (qml.TSWAP, dev._apply_tswap),
+        (qp.TAdd, dev._apply_tadd),
+        (qp.TSWAP, dev._apply_tswap),
     ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)
@@ -1340,12 +1358,12 @@ class TestApplyOperationUnit:
     def test_apply_tensordot_case(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qutrit."""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
         test_state = np.array([1, 0, 0])
         wires = [0, 1]
 
-        class TestSwap(qml.operation.Operation):
+        class TestSwap(qp.operation.Operation):
             num_wires = 2
 
             # pylint: disable=unused-argument
@@ -1378,10 +1396,10 @@ class TestApplyOperationUnit:
 
     def test_identity_skipped(self, mocker):
         """Test that applying the identity operation does not perform any additional computations"""
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
         starting_state = np.array([1, 0, 0])
-        op = qml.Identity(0)
+        op = qp.Identity(0)
 
         spy_unitary = mocker.spy(dev, "_apply_unitary")
 
@@ -1399,7 +1417,7 @@ class TestApplyOperationUnit:
         Note: `QutritUnitary` is not in `DefaultQutrit._apply_ops`, and will be
         temporarily added for this test.
         """
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
         # Create a dummy operation
         expected_test_output = np.ones(1)
@@ -1413,7 +1431,7 @@ class TestApplyOperationUnit:
             )
 
             test_state = np.array([1, 0, 0])
-            op = qml.QutritUnitary(TSHIFT, wires=0)
+            op = qp.QutritUnitary(TSHIFT, wires=0)
             spy_unitary = mocker.spy(dev.target_device, "_apply_unitary")
 
             res = dev._apply_operation(test_state, op)
@@ -1439,8 +1457,8 @@ class TestDensityMatrix:
         """Test that the density matrix is correct for the requested wires"""
 
         ops = [
-            qml.QutritUnitary(U_thadamard_01, wires=0),
-            qml.QutritUnitary(TSHIFT, wires=1),
+            qp.QutritUnitary(U_thadamard_01, wires=0),
+            qp.QutritUnitary(TSHIFT, wires=1),
         ]
         qutrit_device_2_wires.apply(ops)
 
@@ -1464,12 +1482,12 @@ class TestQNodeIntegrationJax:
 
         p = jnp.array(0.543)
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qp.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 5))
+            qp.TRX(x, wires=0, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 5))
 
         if use_jit:
             circuit = jax.jit(circuit)
@@ -1486,18 +1504,18 @@ class TestQNodeIntegrationJax:
         if use_jit:
             pytest.skip()
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
         state = dev.state
         expected = np.zeros(3)
         expected[0] = 1
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qp.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(a):
-            qml.THadamard(wires=0)
-            qml.TRZ(a, wires=0)
-            return qml.expval(qml.GellMann(0, 3))
+            qp.THadamard(wires=0)
+            qp.TRZ(a, wires=0)
+            return qp.expval(qp.GellMann(0, 3))
 
         circuit(jnp.array(np.pi / 4))
         state = dev.state
@@ -1518,10 +1536,10 @@ class TestDtypePreservedJax:
     @pytest.mark.parametrize(
         "measurement",
         [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.var(qml.GellMann(0, 2)),
-            qml.probs(wires=[1]),
-            qml.probs(wires=[2, 0]),
+            qp.expval(qp.GellMann(0, 2)),
+            qp.var(qp.GellMann(0, 2)),
+            qp.probs(wires=[1]),
+            qp.probs(wires=[2, 0]),
         ],
     )
     def test_real_dtype(self, enable_x64, r_dtype, measurement, use_jit):
@@ -1532,12 +1550,12 @@ class TestDtypePreservedJax:
 
         jax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
-        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+        dev = qp.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qp.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.apply(measurement)
+            qp.TRX(x, wires=0)
+            return qp.apply(measurement)
 
         if use_jit:
             circuit = jax.jit(circuit)
@@ -1554,12 +1572,12 @@ class TestDtypePreservedJax:
 
         jax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
-        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+        dev = qp.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qp.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.state()
+            qp.TRX(x, wires=0)
+            return qp.state()
 
         if use_jit:
             circuit = jax.jit(circuit)
@@ -1578,14 +1596,14 @@ class TestPassthruIntegrationJax:
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qp.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         if use_jit:
             circuit = jax.jit(circuit)
@@ -1614,14 +1632,14 @@ class TestPassthruIntegrationJax:
         if use_jit:
             pytest.skip()
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qp.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         a = jnp.array(0.12)
         b = jnp.array([0.54, 0.32, 1.2])
@@ -1658,12 +1676,12 @@ class TestQNodeIntegrationTF:
 
         p = tf.Variable(0.543)
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qp.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 5))
+            qp.TRX(x, wires=0, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 5))
 
         expected = -np.sin(p)
 
@@ -1674,13 +1692,13 @@ class TestQNodeIntegrationTF:
         quantum function on the device"""
         import tensorflow as tf
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qp.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(a):
-            qml.THadamard(wires=0)
-            qml.TRZ(a, wires=0)
-            return qml.expval(qml.GellMann(0, 3))
+            qp.THadamard(wires=0)
+            qp.TRZ(a, wires=0)
+            return qp.expval(qp.GellMann(0, 3))
 
         circuit(tf.constant(np.pi / 4))
         state = dev.state
@@ -1700,10 +1718,10 @@ class TestDtypePreservedTF:
     @pytest.mark.parametrize(
         "measurement",
         [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.var(qml.GellMann(0, 2)),
-            qml.probs(wires=[1]),
-            qml.probs(wires=[2, 0]),
+            qp.expval(qp.GellMann(0, 2)),
+            qp.var(qp.GellMann(0, 2)),
+            qp.probs(wires=[1]),
+            qp.probs(wires=[2, 0]),
         ],
     )
     def test_real_dtype(self, r_dtype, measurement):
@@ -1712,12 +1730,12 @@ class TestDtypePreservedTF:
         import tensorflow as tf
 
         p = tf.constant(0.543)
-        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+        dev = qp.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qp.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.apply(measurement)
+            qp.TRX(x, wires=0)
+            return qp.apply(measurement)
 
         res = circuit(p)
         assert res.dtype == r_dtype
@@ -1729,12 +1747,12 @@ class TestDtypePreservedTF:
         import tensorflow as tf
 
         p = tf.constant(0.543)
-        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+        dev = qp.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qp.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.state()
+            qp.TRX(x, wires=0)
+            return qp.state()
 
         res = circuit(p)
         assert res.dtype == c_dtype
@@ -1748,14 +1766,14 @@ class TestPassthruIntegrationTF:
         """Tests that the gradient of the qnode is correct"""
         import tensorflow as tf
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qp.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         a = -0.234
         b = 0.654
@@ -1787,14 +1805,14 @@ class TestPassthruIntegrationTF:
         """Tests that the gradient of the broadcasted qnode is correct"""
         import tensorflow as tf
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qp.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         a = np.array(0.12)
         b = np.array([0.54, 0.32, 1.2])
@@ -1821,7 +1839,7 @@ class TestPassthruIntegrationTF:
 
         jac = tape.jacobian(res, [a_tf, b_tf])
         assert np.allclose(jac[0], expected_jac[0], atol=tol, rtol=0)
-        assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
+        assert np.allclose(qp.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
 
 
 # TORCH integration tests
@@ -1838,12 +1856,12 @@ class TestQNodeIntegrationTorch:
         import torch
 
         p = torch.tensor(0.543)
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qp.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 5))
+            qp.TRX(x, wires=0, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 5))
 
         expected = -np.sin(p)
 
@@ -1854,13 +1872,13 @@ class TestQNodeIntegrationTorch:
         quantum function on the device"""
         import torch
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qp.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(a):
-            qml.THadamard(wires=0)
-            qml.TRZ(a, wires=0)
-            return qml.expval(qml.GellMann(0, 3))
+            qp.THadamard(wires=0)
+            qp.TRZ(a, wires=0)
+            return qp.expval(qp.GellMann(0, 3))
 
         circuit(torch.tensor(np.pi / 4))
         state = dev.state
@@ -1882,10 +1900,10 @@ class TestDtypePreservedTorch:
     @pytest.mark.parametrize(
         "measurement",
         [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.var(qml.GellMann(0, 2)),
-            qml.probs(wires=[1]),
-            qml.probs(wires=[2, 0]),
+            qp.expval(qp.GellMann(0, 2)),
+            qp.var(qp.GellMann(0, 2)),
+            qp.probs(wires=[1]),
+            qp.probs(wires=[2, 0]),
         ],
     )
     def test_real_dtype(self, r_dtype, r_dtype_torch, measurement):
@@ -1900,12 +1918,12 @@ class TestDtypePreservedTorch:
         else:
             r_dtype_torch = torch.float64
 
-        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+        dev = qp.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qp.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.apply(measurement)
+            qp.TRX(x, wires=0)
+            return qp.apply(measurement)
 
         res = circuit(p)
         assert res.dtype == r_dtype_torch
@@ -1926,12 +1944,12 @@ class TestDtypePreservedTorch:
 
         p = torch.tensor(0.543)
 
-        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+        dev = qp.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qp.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
-            qml.TRX(x, wires=0)
-            return qml.state()
+            qp.TRX(x, wires=0)
+            return qp.state()
 
         res = circuit(p)
         assert res.dtype == c_dtype_torch
@@ -1945,14 +1963,14 @@ class TestPassthruIntegrationTorch:
         """Tests that the gradient of the qnode is correct"""
         import torch
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qp.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True)
@@ -1976,14 +1994,14 @@ class TestPassthruIntegrationTorch:
         """Tests that the gradient of the broadcasted qnode is correct"""
         import torch
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qp.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
-            qml.TRX(a, wires=0)
-            qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0, 2])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+            qp.TRX(a, wires=0)
+            qp.TAdd(wires=[0, 1])
+            qp.TRY(b, wires=1, subspace=[0, 2])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 3))
 
         a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
         b = torch.tensor([0.54, 0.32, 1.2], dtype=torch.float64, requires_grad=True)
@@ -2000,4 +2018,4 @@ class TestPassthruIntegrationTorch:
 
         jac = torch.autograd.functional.jacobian(circuit, (a, b))
         assert torch.allclose(jac[0], expected[0], atol=tol, rtol=0)
-        assert torch.allclose(qml.math.diag(jac[1]), expected[1])
+        assert torch.allclose(qp.math.diag(jac[1]), expected[1])

@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments
-
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +14,13 @@
 """
 Contains the drawing function.
 """
+
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -38,16 +38,17 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
+# pylint: disable=too-many-arguments
 def draw(
     qnode,
     wire_order=None,
     show_all_wires=False,
-    decimals=2,
+    decimals: int | None = 2,
     *,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -56,13 +57,13 @@ def draw(
         wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
+        decimals (int | None): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+        level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -71,17 +72,17 @@ def draw(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        @qml.qnode(qml.device('lightning.qubit', wires=2))
+        @qp.qnode(qp.device('lightning.qubit', wires=2))
         def circuit(a, w):
-            qml.Hadamard(0)
-            qml.CRX(a, wires=[0, 1])
-            qml.Rot(*w, wires=[1], id="arbitrary")
-            qml.CRX(-a, wires=[0, 1])
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.Hadamard(0)
+            qp.CRX(a, wires=[0, 1])
+            qp.Rot(*w, wires=[1], id="arbitrary")
+            qp.CRX(-a, wires=[0, 1])
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
-    >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
+    >>> print(qp.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
     0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
     1: ────╰RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╰RX(-2.30)─┤ ╰<Z@Z>
 
@@ -90,35 +91,35 @@ def draw(
 
         By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
-        >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
+        >>> print(qp.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
         0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
         1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
 
         Parameters can be omitted by requesting ``decimals=None``:
 
-        >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
+        >>> print(qp.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
         0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
         1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
 
         If the parameters are not acted upon by classical processing like ``-a``, then
-        ``qml.draw`` can handle string-valued parameters as well:
+        ``qp.draw`` can handle string-valued parameters as well:
 
-        >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
+        >>> @qp.qnode(qp.device('lightning.qubit', wires=1))
         ... def circuit2(x):
-        ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.Z(0))
-        >>> print(qml.draw(circuit2)("x"))
+        ...     qp.RX(x, wires=0)
+        ...     return qp.expval(qp.Z(0))
+        >>> print(qp.draw(circuit2)("x"))
         0: ──RX(x)─┤  <Z>
 
         When requested with ``show_matrices=True`` (the default), matrix valued parameters
         are printed below the circuit. For ``show_matrices=False``, they are not printed:
 
-        >>> @qml.qnode(qml.device('default.qubit', wires=2))
+        >>> @qp.qnode(qp.device('default.qubit', wires=2))
         ... def circuit3():
-        ...     qml.QubitUnitary(np.eye(2), wires=0)
-        ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
-        ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-        >>> print(qml.draw(circuit3)())
+        ...     qp.QubitUnitary(np.eye(2), wires=0)
+        ...     qp.QubitUnitary(-np.eye(4), wires=(0,1))
+        ...     return qp.expval(qp.Hermitian(np.eye(2), wires=1))
+        >>> print(qp.draw(circuit3)())
         0: ──U(M0)─╭U(M1)─┤
         1: ────────╰U(M1)─┤  <𝓗(M0)>
         M0 =
@@ -129,7 +130,7 @@ def draw(
         [-0. -1. -0. -0.]
         [-0. -0. -1. -0.]
         [-0. -0. -0. -1.]]
-        >>> print(qml.draw(circuit3, show_matrices=False)())
+        >>> print(qp.draw(circuit3, show_matrices=False)())
         0: ──U(M0)─╭U(M1)─┤
         1: ────────╰U(M1)─┤  <𝓗(M0)>
 
@@ -138,15 +139,15 @@ def draw(
         .. code-block:: python
 
             rng = np.random.default_rng(seed=42)
-            shape = qml.StronglyEntanglingLayers.shape(n_wires=3, n_layers=3)
+            shape = qp.StronglyEntanglingLayers.shape(n_wires=3, n_layers=3)
             params = rng.random(shape)
 
-            @qml.qnode(qml.device('lightning.qubit', wires=3))
+            @qp.qnode(qp.device('lightning.qubit', wires=3))
             def longer_circuit(params):
-                qml.StronglyEntanglingLayers(params, wires=range(3))
-                return [qml.expval(qml.Z(i)) for i in range(3)]
+                qp.StronglyEntanglingLayers(params, wires=range(3))
+                return [qp.expval(qp.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=65, level="device")(params))
+        >>> print(qp.draw(longer_circuit, max_length=65, level="device")(params))
         0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X ···
         1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰● ···
         2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X─── ···
@@ -157,16 +158,16 @@ def draw(
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
 
-        >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
+        >>> print(qp.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
         1: ────╭RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
         0: ──H─╰●─────────────────────────────────────────╰●─────────┤ ╰<Z@Z>
 
         If the device or ``wire_order`` has wires not used by operations, those wires are omitted
         unless requested with ``show_all_wires=True``
 
-        >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
-        >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
-        >>> print(qml.draw(empty_circuit, show_all_wires=True)())
+        >>> empty_qfunc = lambda : qp.expval(qp.Z(0))
+        >>> empty_circuit = qp.QNode(empty_qfunc, qp.device('lightning.qubit', wires=3))
+        >>> print(qp.draw(empty_circuit, show_all_wires=True)())
         0: ───┤  <Z>
         1: ───┤
         2: ───┤
@@ -175,16 +176,15 @@ def draw(
 
         .. code-block:: python
 
-            from functools import partial
             from pennylane import numpy as np
 
-            @partial(qml.gradients.param_shift, shifts=[(0.1,)])
-            @qml.qnode(qml.device('default.qubit', wires=1))
+            @qp.gradients.param_shift(shifts=[(0.1,)])
+            @qp.qnode(qp.device('default.qubit', wires=1))
             def transformed_circuit(x):
-                qml.RX(x, wires=0)
-                return qml.expval(qml.Z(0))
+                qp.RX(x, wires=0)
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
+        >>> print(qp.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 
@@ -193,9 +193,9 @@ def draw(
         a QNode, such as a sub-function that does not return any measurements.
 
         >>> def qfunc(x):
-        ...     qml.RX(x, wires=[0])
-        ...     qml.CNOT(wires=[0, 1])
-        >>> print(qml.draw(qfunc)(1.1))
+        ...     qp.RX(x, wires=[0])
+        ...     qp.CNOT(wires=[0, 1])
+        >>> print(qp.draw(qfunc)(1.1))
         0: ──RX(1.10)─╭●─┤
         1: ───────────╰X─┤
 
@@ -206,24 +206,24 @@ def draw(
 
         .. code-block:: python
 
-            @qml.transforms.merge_rotations
-            @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
             def circ(weights, order):
-                qml.RandomLayers(weights, wires=(0, 1))
-                qml.Permute(order, wires=(0, 1, 2))
-                qml.PauliX(0)
-                qml.PauliX(0)
-                qml.RX(0.1, wires=0)
-                qml.RX(-0.1, wires=0)
-                return qml.expval(qml.PauliX(0))
+                qp.RandomLayers(weights, wires=(0, 1))
+                qp.Permute(order, wires=(0, 1, 2))
+                qp.PauliX(0)
+                qp.PauliX(0)
+                qp.RX(0.1, wires=0)
+                qp.RX(-0.1, wires=0)
+                return qp.expval(qp.PauliX(0))
 
             order = [2, 1, 0]
-            weights = qml.numpy.array([[1.0, 20]])
+            weights = qp.numpy.array([[1.0, 20]])
 
         One can print the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
 
-        >>> print(qml.draw(circ, level="top")(weights, order))
+        >>> print(qp.draw(circ, level="top")(weights, order))
         0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>
         1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤
         2: ───────────────────╰Permute────────────────────────────┤
@@ -232,24 +232,60 @@ def draw(
 
         Or print the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
 
-        >>> print(qml.draw(circ, level="user", show_matrices=False)(weights, order))
+        >>> print(qp.draw(circ, level="user", show_matrices=False)(weights, order))
         0: ─╭RandomLayers(M0)─╭Permute─┤  <X>
         1: ─╰RandomLayers(M0)─├Permute─┤
         2: ───────────────────╰Permute─┤
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
-        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        >>> print(qp.draw(circ, level="device", show_matrices=False)(weights, order))
         0: ──RY(1.00)──╭SWAP─┤  <X>
         1: ──RX(20.00)─│─────┤
         2: ────────────╰SWAP─┤
 
         Slices can also be passed to the ``level`` argument. So one can, for example, request that only the ``merge_rotations`` transform is applied:
 
-        >>> print(qml.draw(circ, level=slice(1, 2), show_matrices=False)(weights, order))
+        >>> print(qp.draw(circ, level=slice(1, 2), show_matrices=False)(weights, order))
         0: ─╭RandomLayers(M0)─╭Permute──X──X─┤  <X>
         1: ─╰RandomLayers(M0)─├Permute───────┤
         2: ───────────────────╰Permute───────┤
+
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        >>> draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+        >>> print(qp.draw(qp.Snapshot, **draw_kwargs)())
+        0: ──|Snap|─┤
+        1: ──|Snap|─┤
+        2: ──|Snap|─┤
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        This is the case even if they are provided with a subset of all wires:
+
+        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        >>> ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
+        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰●─────────────────┤
 
     """
     if catalyst_qjit(qnode):
@@ -269,7 +305,7 @@ def draw(
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the level argument is ignored.",
+            "When the input to qp.draw is not a QNode, the level argument is ignored.",
             UserWarning,
         )
 
@@ -298,16 +334,17 @@ def draw(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_qnode(
     qnode,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
-    decimals=2,
+    decimals: int | None = 2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -351,16 +388,17 @@ def _draw_qnode(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def draw_mpl(
-    qnode: Union[QNode, Callable],
-    wire_order: Optional[Sequence] = None,
+    qnode: QNode | Callable,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    max_length: Optional[int] = None,
+    max_length: int | None = None,
     fig=None,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
@@ -371,7 +409,7 @@ def draw_mpl(
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int | None): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'pennylane', 'pennylane_sketch', 'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``.
@@ -393,8 +431,8 @@ def draw_mpl(
         show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+        level (str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -412,23 +450,23 @@ def draw_mpl(
 
     .. code-block:: python
 
-        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+        dev = qp.device('lightning.qubit', wires=(0,1,2,3))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, z):
-            qml.QFT(wires=(0,1,2,3))
-            qml.IsingXX(1.234, wires=(0,2))
-            qml.Toffoli(wires=(0,1,2))
-            mcm = qml.measure(1)
-            mcm_out = qml.measure(2)
-            qml.CSWAP(wires=(0,2,3))
-            qml.RX(x, wires=0)
-            qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
-            qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
+            qp.QFT(wires=(0,1,2,3))
+            qp.IsingXX(1.234, wires=(0,2))
+            qp.Toffoli(wires=(0,1,2))
+            mcm = qp.measure(1)
+            mcm_out = qp.measure(2)
+            qp.CSWAP(wires=(0,2,3))
+            qp.RX(x, wires=0)
+            qp.cond(mcm, qp.RY)(np.pi / 4, wires=3)
+            qp.CRZ(z, wires=(3,0))
+            return qp.expval(qp.Z(0)), qp.probs(op=mcm_out)
 
 
-        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+        fig, ax = qp.draw_mpl(circuit)(1.2345,1.2345)
         fig.show()
 
     .. figure:: ../../_static/draw_mpl/main_example.png
@@ -446,13 +484,13 @@ def draw_mpl(
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit2(x, y):
-                qml.RX(x, wires=0)
-                qml.Rot(*y, wires=0)
-                return qml.expval(qml.Z(0))
+                qp.RX(x, wires=0)
+                qp.Rot(*y, wires=0)
+                return qp.expval(qp.Z(0))
 
-            fig, ax = qml.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
+            fig, ax = qp.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/decimals.png
@@ -467,7 +505,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, wire_order=[3,2,1,0])(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, wire_order=[3,2,1,0])(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/wire_order.png
@@ -480,7 +518,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/show_all_wires.png
@@ -494,12 +532,12 @@ def draw_mpl(
 
         .. code-block:: python
 
-            def circuit():
+            def deep_circuit():
                 for _ in range(10):
-                    qml.X(0)
-                return qml.expval(qml.Z(0))
+                    qp.X(0)
+                return qp.expval(qp.Z(0))
 
-            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(circuit, max_length=5)()
+            [(fig1, ax1), (fig2, ax2)] = qp.draw_mpl(deep_circuit, max_length=5)()
 
         .. figure:: ../../_static/draw_mpl/max_length1.png
                 :align: center
@@ -519,7 +557,9 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            import matplotlib.pyplot as plt
+
+            fig, ax = qp.draw_mpl(circuit)(1.2345,1.2345)
             fig.suptitle("My Circuit", fontsize="xx-large")
 
             options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
@@ -542,13 +582,13 @@ def draw_mpl(
         **Formatting:**
 
         PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
-        All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+        All available styles can be determined by evaluating ``qp.drawer.available_styles()``.
         Any available string can then be passed via the kwarg ``style`` to change the settings for
         that plot. This will not affect style settings for subsequent matplotlib plots.
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, style='sketch')(1.2345,1.2345)
             fig.show()
 
 
@@ -560,7 +600,7 @@ def draw_mpl(
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style="rcParams"``:
+        ``plt.rcParams``, ``qp.draw_mpl`` must be run with ``style="rcParams"``:
 
         .. code-block:: python
 
@@ -574,7 +614,7 @@ def draw_mpl(
             plt.rcParams['lines.linewidth'] = 2
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
@@ -588,7 +628,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'teal', 'linewidth': 5},
+            fig, ax = qp.draw_mpl(circuit, wire_options={'color':'teal', 'linewidth': 5},
                         label_options={'size': 20})(1.2345,1.2345)
             fig.show()
 
@@ -608,7 +648,7 @@ def draw_mpl(
                 'linewidth': 5, # all wires but wire 2 will be bold
                 2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
             }
-            fig, ax = qml.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/per_wire_options.png
@@ -623,23 +663,23 @@ def draw_mpl(
 
         .. code-block:: python
 
-            @qml.transforms.merge_rotations
-            @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
             def circ():
-                qml.RandomLayers([[1.0, 20]], wires=(0, 1))
-                qml.Permute([2, 1, 0], wires=(0, 1, 2))
-                qml.PauliX(0)
-                qml.PauliX(0)
-                qml.RX(0.1, wires=0)
-                qml.RX(-0.1, wires=0)
-                return qml.expval(qml.PauliX(0))
+                qp.RandomLayers([[1.0, 20]], wires=(0, 1))
+                qp.Permute([2, 1, 0], wires=(0, 1, 2))
+                qp.PauliX(0)
+                qp.PauliX(0)
+                qp.RX(0.1, wires=0)
+                qp.RX(-0.1, wires=0)
+                return qp.expval(qp.PauliX(0))
 
         One can plot the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level="top")()
+            fig, ax = qp.draw_mpl(circ, level="top")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_top.png
@@ -651,7 +691,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level="user")()
+            fig, ax = qp.draw_mpl(circ, level="user")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_user.png
@@ -659,11 +699,11 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig, ax = qp.draw_mpl(circ, level="device")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_none.png
@@ -675,7 +715,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level=slice(1, 2))()
+            fig, ax = qp.draw_mpl(circ, level=slice(1, 2))()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_slice.png
@@ -683,13 +723,67 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        .. code-block:: python
+
+            draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+            fig, ax = qp.draw_mpl(qp.Snapshot, **draw_kwargs)()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/snapshot.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        .. code-block:: python
+
+            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_no_wires.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        This is the case even if they are provided with a subset of all wires:
+
+        .. code-block:: python
+
+            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_one_wire.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        .. code-block:: python
+
+            ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
+            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
 
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,
@@ -704,7 +798,7 @@ def draw_mpl(
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the level argument is ignored.",
+            "When the input to qp.draw is not a QNode, the level argument is ignored.",
             UserWarning,
         )
 
@@ -734,11 +828,12 @@ def draw_mpl(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_mpl_qnode(
     qnode,
     wire_order=None,
     show_all_wires=False,
-    decimals=None,
+    decimals: int | None = None,
     *,
     level="gradient",
     style="black_white",

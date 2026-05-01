@@ -20,7 +20,7 @@ import pytest
 from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import (
     CNOT,
     ISWAP,
@@ -114,7 +114,7 @@ def get_expected_state(expanded_operator, state, num_q):
 
 
 def expand_matrices(op, num_q, batch_size=0):
-    """Find expanded operator matrices, independent of qml implementation"""
+    """Find expanded operator matrices, independent of qp implementation"""
     pre_wires_identity = np.eye(2 ** op.wires[0])
     post_wires_identity = np.eye(2 ** ((num_q - 1) - op.wires[-1]))
     mat = op.matrix()
@@ -132,31 +132,31 @@ class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     unbroadcasted_ops = [
-        qml.Hadamard(wires=0),
-        qml.RX(np.pi / 3, wires=0),
-        qml.RY(2 * np.pi / 3, wires=1),
-        qml.RZ(np.pi / 6, wires=2),
-        qml.X(wires=0),
-        qml.Z(wires=1),
-        qml.S(wires=2),
-        qml.T(wires=0),
-        qml.PhaseShift(np.pi / 7, wires=1),
-        qml.CNOT(wires=[0, 1]),
-        qml.MultiControlledX(wires=(0, 1, 2), control_values=[1, 0]),
-        qml.SWAP(wires=[0, 1]),
-        qml.CSWAP(wires=[0, 1, 2]),
-        qml.Toffoli(wires=[0, 1, 2]),
-        qml.CZ(wires=[0, 1]),
-        qml.CY(wires=[0, 1]),
-        qml.CH(wires=[0, 1]),
-        qml.GroverOperator(wires=[0, 1, 2]),
-        qml.GroverOperator(wires=[1, 2]),
+        qp.Hadamard(wires=0),
+        qp.RX(np.pi / 3, wires=0),
+        qp.RY(2 * np.pi / 3, wires=1),
+        qp.RZ(np.pi / 6, wires=2),
+        qp.X(wires=0),
+        qp.Z(wires=1),
+        qp.S(wires=2),
+        qp.T(wires=0),
+        qp.PhaseShift(np.pi / 7, wires=1),
+        qp.CNOT(wires=[0, 1]),
+        qp.MultiControlledX(wires=(0, 1, 2), control_values=[1, 0]),
+        qp.SWAP(wires=[0, 1]),
+        qp.CSWAP(wires=[0, 1, 2]),
+        qp.Toffoli(wires=[0, 1, 2]),
+        qp.CZ(wires=[0, 1]),
+        qp.CY(wires=[0, 1]),
+        qp.CH(wires=[0, 1]),
+        qp.GroverOperator(wires=[0, 1, 2]),
+        qp.GroverOperator(wires=[1, 2]),
     ]
     diagonal_ops = [
-        qml.PauliZ(wires=0),  # Most naive one
-        qml.RZ(np.pi / 6, wires=2),  # single-site op, diagonal but complex eigvals
-        qml.IsingZZ(0.5, wires=[0, 1]),  # two site
-        qml.CCZ(wires=[0, 1, 2]),  # three site
+        qp.PauliZ(wires=0),  # Most naive one
+        qp.RZ(np.pi / 6, wires=2),  # single-site op, diagonal but complex eigvals
+        qp.IsingZZ(0.5, wires=[0, 1]),  # two site
+        qp.CCZ(wires=[0, 1, 2]),  # three site
     ]
     num_qubits = [3, 9]
     num_batched = 4
@@ -168,7 +168,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         def circuit():
             op(wires=op.wires)
 
-        matrix_fn = qml.matrix(circuit, wire_order=range(num_q))
+        matrix_fn = qp.matrix(circuit, wire_order=range(num_q))
         if batch_size:
             return [matrix_fn() for _ in range(batch_size)]
         return matrix_fn()
@@ -221,7 +221,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
-        op = qml.Identity(wires=0)
+        op = qp.Identity(wires=0)
         res = apply_operation(op, state)
 
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
@@ -231,7 +231,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
-        op = qml.GlobalPhase(np.pi / 7, wires=0)
+        op = qp.GlobalPhase(np.pi / 7, wires=0)
         res = apply_operation(op, state)
 
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
@@ -308,7 +308,7 @@ class TestApplyGroverOperator:
         """Test that the correct dispatch method is used based on the number of wires."""
         state = random_mixed_state(num_wires)
 
-        op = qml.GroverOperator(wires=range(num_wires))
+        op = qp.GroverOperator(wires=range(num_wires))
 
         spy_einsum = mocker.spy(math, "einsum")
         spy_tensordot = mocker.spy(math, "tensordot")
@@ -331,7 +331,7 @@ class TestApplyGroverOperator:
         """Test that the GroverOperator is applied correctly for various wire numbers."""
         state = random_mixed_state(num_wires)
 
-        op = qml.GroverOperator(wires=range(num_wires))
+        op = qp.GroverOperator(wires=range(num_wires))
         op_mat = op.matrix()
         flat_shape = op_mat.shape
 
@@ -348,7 +348,7 @@ class TestApplyGroverOperator:
         batch_size = 3
         state = np.array([random_mixed_state(num_wires) for _ in range(batch_size)])
 
-        op = qml.GroverOperator(wires=range(num_wires))
+        op = qp.GroverOperator(wires=range(num_wires))
         op_mat = op.matrix()
         # Make new shape, considering the batch dimension as the first
         flat_shape = (batch_size,) + op_mat.shape
@@ -367,7 +367,7 @@ class TestApplyGroverOperator:
         state = random_mixed_state(num_wires)
         state = math.asarray(state, like=interface)
 
-        op = qml.GroverOperator(wires=range(num_wires))
+        op = qp.GroverOperator(wires=range(num_wires))
 
         # Test with bruteforce
         op_mat = op.matrix()
@@ -403,7 +403,7 @@ class TestApplyMultiControlledX:
         # Convert to interface
         state = math.asarray(state, like=interface)
 
-        op = qml.MultiControlledX(wires=range(num_wires))
+        op = qp.MultiControlledX(wires=range(num_wires))
 
         spy_einsum = mocker.spy(math, "einsum")
         spy_tensordot = mocker.spy(math, "tensordot")
@@ -440,7 +440,7 @@ class TestApplyMultiControlledX:
         # Convert to interface
         state = math.asarray(state, like=interface)
 
-        op = qml.MultiControlledX(wires=range(num_wires))
+        op = qp.MultiControlledX(wires=range(num_wires))
 
         spy_einsum = mocker.spy(math, "einsum")
         spy_tensordot = mocker.spy(math, "tensordot")
@@ -462,7 +462,7 @@ class TestApplyMultiControlledX:
         """Test that the MultiControlledX is applied correctly for various wire numbers."""
         state = random_mixed_state(num_wires)
 
-        op = qml.MultiControlledX(wires=range(num_wires))
+        op = qp.MultiControlledX(wires=range(num_wires))
         op_mat = op.matrix()
         flat_shape = op_mat.shape
 
@@ -479,7 +479,7 @@ class TestApplyMultiControlledX:
         batch_size = 3
         state = np.array([random_mixed_state(num_wires) for _ in range(batch_size)])
 
-        op = qml.MultiControlledX(wires=range(num_wires))
+        op = qp.MultiControlledX(wires=range(num_wires))
         op_mat = op.matrix()
         # Make new shape, considering the batch dimension as the first
         flat_shape = (batch_size,) + op_mat.shape
@@ -498,7 +498,7 @@ class TestApplyMultiControlledX:
         state = random_mixed_state(num_wires)
         state = math.asarray(state, like=interface)
 
-        op = qml.MultiControlledX(wires=range(num_wires))
+        op = qp.MultiControlledX(wires=range(num_wires))
 
         result = apply_operation(op, state)
 
@@ -616,23 +616,27 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations are applied correctly."""
 
     broadcasted_ops = [
-        qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
-        qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
-        qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
-        qml.QubitUnitary(
+        qp.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qp.RZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qp.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qp.CRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qp.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qp.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
             wires=[0, 1, 2],
         ),
     ]
 
     unbroadcasted_ops = [
-        qml.PauliX(2),
-        qml.PauliZ(2),
-        qml.CNOT([1, 2]),
-        qml.RX(np.pi, wires=2),
-        qml.PhaseShift(np.pi / 2, wires=2),
-        qml.IsingXX(np.pi / 2, wires=[1, 2]),
-        qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
+        qp.PauliX(2),
+        qp.PauliZ(2),
+        qp.CNOT([1, 2]),
+        qp.RX(np.pi, wires=2),
+        qp.RZ(np.pi, wires=2),
+        qp.PhaseShift(np.pi / 2, wires=2),
+        qp.CRZ(np.pi / 2, wires=[1, 2]),
+        qp.IsingXX(np.pi / 2, wires=[1, 2]),
+        qp.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
 
     @pytest.mark.parametrize("op", broadcasted_ops)
@@ -682,9 +686,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     def test_batch_size_set_if_missing(self, ml_framework):
         """Tests that the batch_size is set on an operator if it was missing before.
         Mostly useful for TF-autograph since it may have batch size set to None."""
-        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
-        op = qml.RX(param, 0)
+        op = qp.RX(param, 0)
         assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
@@ -704,7 +708,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
+        new_state = apply_operation(qp.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
         assert new_state.shape == initial_state.shape
         assert math.allclose(new_state, initial_state)
 
@@ -715,7 +719,7 @@ class TestSnapshot:
 
         debugger = Debugger()
         new_state = apply_operation(
-            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+            qp.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
 
         assert new_state.shape == initial_state.shape
@@ -733,7 +737,7 @@ class TestSnapshot:
         debugger = Debugger()
         tag = "dense"
         new_state = apply_operation(
-            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+            qp.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
 
         assert new_state.shape == initial_state.shape
@@ -752,7 +756,7 @@ class TestSnapshot:
         debugger = Debugger()
 
         new_state = apply_operation(
-            qml.Snapshot(tag, measurement=qml.expval(qml.PauliZ(0))),
+            qp.Snapshot(tag, measurement=qp.expval(qp.PauliZ(0))),
             initial_state,
             debugger=debugger,
             is_state_batched=len(shape) != 2,
@@ -767,21 +771,19 @@ class TestSnapshot:
             assert debugger.snapshots[tag].shape == ()
             # Expected value for PauliZ measurement would depend on the initial state
             # This value should be calculated based on your test state
-            expected_value = measure(qml.expval(qml.PauliZ(0)), initial_state)
+            expected_value = measure(qp.expval(qp.PauliZ(0)), initial_state)
             assert math.allclose(debugger.snapshots[tag], expected_value)
         else:
             assert debugger.snapshots[tag].shape == (2,)
-            expected_values = measure(
-                qml.expval(qml.PauliZ(0)), initial_state, is_state_batched=True
-            )
+            expected_values = measure(qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True)
             assert math.allclose(debugger.snapshots[tag], expected_values)
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize(
         "measurement",
         [
-            qml.sample(wires=[0, 1]),
-            qml.counts(wires=[0, 1]),
+            qp.sample(wires=[0, 1]),
+            qp.counts(wires=[0, 1]),
         ],
     )
     def test_snapshot_with_shots_and_measurement(
@@ -793,11 +795,11 @@ class TestSnapshot:
         tag = "measurement_snapshot"
         is_state_batched = len(shape) != 2
 
-        shots = qml.measurements.Shots(1000)
+        shots = qp.measurements.Shots(1000)
         debugger = Debugger()
 
         new_state = apply_operation(
-            qml.Snapshot(tag, measurement=measurement),
+            qp.Snapshot(tag, measurement=measurement),
             initial_state,
             debugger=debugger,
             is_state_batched=is_state_batched,
@@ -814,7 +816,7 @@ class TestSnapshot:
         snapshot_result = debugger.snapshots[tag]
 
         # Verify snapshot result based on measurement type
-        if isinstance(measurement, qml.measurements.SampleMP):
+        if isinstance(measurement, qp.measurements.SampleMP):
             len_measured_wires = len(measurement.wires)
             assert (
                 snapshot_result.shape == (1000, len_measured_wires)
@@ -822,7 +824,7 @@ class TestSnapshot:
                 else (2, 1000, len_measured_wires)
             )
             assert set(np.unique(snapshot_result)) <= {0, 1}
-        elif isinstance(measurement, qml.measurements.CountsMP):
+        elif isinstance(measurement, qp.measurements.CountsMP):
             if is_state_batched:
                 snapshot_result = snapshot_result[0]
             assert isinstance(snapshot_result, dict)
@@ -854,7 +856,7 @@ class TestDensityMatrix:
         density_matrix = math.asarray(density_matrix, like=ml_framework)
         density_matrix = math.cast(density_matrix, dtype=complex)  # ensure complex
 
-        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+        op = qp.QubitDensityMatrix(density_matrix, wires=range(num_q))
 
         # Create the initial state as zeros in the same framework and ensure complex dtype
         shape = (2,) * (2 * num_q)
@@ -863,7 +865,7 @@ class TestDensityMatrix:
         state = math.cast(state, dtype=complex)
 
         # Apply operation
-        result = qml.devices.qubit_mixed.apply_operation(op, state)
+        result = qp.devices.qubit_mixed.apply_operation(op, state)
 
         # Reshape and cast expected result
         expected = math.reshape(density_matrix, shape)
@@ -879,13 +881,13 @@ class TestDensityMatrix:
         density_matrix = math.asarray(density_matrix, like=ml_framework)
         density_matrix = math.cast(density_matrix, dtype=complex)
 
-        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+        op = qp.QubitDensityMatrix(density_matrix, wires=range(num_q))
 
         shape = (batch_size,) + (2,) * (2 * num_q)
         state = math.zeros(shape, like=ml_framework)
         state = math.cast(state, dtype=complex)
 
-        result = qml.devices.qubit_mixed.apply_operation(op, state, is_state_batched=True)
+        result = qp.devices.qubit_mixed.apply_operation(op, state, is_state_batched=True)
 
         expected_single = math.reshape(density_matrix, (2,) * (2 * num_q))
         expected_single = math.cast(expected_single, dtype=complex)
@@ -893,6 +895,24 @@ class TestDensityMatrix:
         expected = math.stack([expected_single] * batch_size, axis=0)
 
         assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_eigvals(self, num_q, ml_framework):
+        """Test applying density matrix with batched eigenvalues"""
+
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        batched_params = math.asarray([0, 1, 2], like=ml_framework)
+        op = qp.RX(batched_params, wires=0)
+
+        shape = (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = apply_operation(op, state)
+        assert result.shape == (len(batched_params),) + shape
 
     def test_partial_trace_single_qubit_update(self, ml_framework):
         """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""
@@ -909,7 +929,7 @@ class TestDensityMatrix:
         plus_state = math.asarray(plus_state, like=ml_framework)
 
         # Apply QubitDensityMatrix on the first wire (wire=0)
-        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+        op = qp.QubitDensityMatrix(plus_state, wires=[0])
 
         # The expected final state should be |+><+| ⊗ |0><0|
         # |0><0| = [[1,0],[0,0]]
@@ -917,7 +937,7 @@ class TestDensityMatrix:
         expected = np.kron(plus_state, zero_dm)  # shape (4,4)
         expected = math.reshape(expected, [2] * 4)
         # Apply the operation
-        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+        result = qp.devices.qubit_mixed.apply_operation(op, initial_state)
 
         assert math.allclose(result, expected, atol=1e-8)
 
@@ -937,7 +957,7 @@ class TestDensityMatrix:
         plus_state = math.asarray(plus_state, like=ml_framework)
 
         # Apply QubitDensityMatrix on the first wire (wire=0)
-        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+        op = qp.QubitDensityMatrix(plus_state, wires=[0])
 
         # The expected final state should be |+><+| ⊗ |0><0| for each batch
         zero_dm = np.array([[1, 0], [0, 0]], dtype=complex)
@@ -946,6 +966,97 @@ class TestDensityMatrix:
         expected = math.reshape(expected, [batch_size] + [2] * 4)
 
         # Apply the operation
-        result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
+        result = qp.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
 
         assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state(self, ml_framework):
+        """Test partial tracing with state in tensor format (as used by the actual mixed device).
+
+        This test reproduces the bug from GitHub issue #8932 where QubitDensityMatrix
+        fails when applied to a subset of wires because the state is in tensor format
+        (2, 2, ..., 2) rather than 2D matrix format (dim, dim).
+        """
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2) representing |0000><0000|
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the 2-qubit density matrix for GHZ state: (|00> + |11>)/sqrt(2)
+        ghz = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (4, 4)
+        ghz_dm = math.asarray(ghz_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first 2 wires (wires=[0, 1])
+        op = qp.QubitDensityMatrix(ghz_dm, wires=[0, 1])
+
+        # Apply the operation - this should not raise ValueError
+        result = qp.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        # Trace should be 1
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+    def test_partial_trace_tensor_format_state_noncontiguous_wires(self, ml_framework):
+        """Test partial tracing with non-contiguous wire indices in tensor format state."""
+        # Initial 4-qubit state in tensor format (2,2,2,2,2,2,2,2)
+        num_wires = 4
+        initial_state = np.zeros([2] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define a 2-qubit Bell state density matrix
+        bell = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
+        bell_dm = np.outer(bell, np.conj(bell))
+        bell_dm = math.asarray(bell_dm, like=ml_framework)
+
+        # Apply QubitDensityMatrix on non-contiguous wires [0, 2]
+        op = qp.QubitDensityMatrix(bell_dm, wires=[0, 2])
+
+        # Apply the operation
+        result = qp.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (16, 16))
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+
+def test_qubit_density_matrix_qnode_integration():
+    """Integration test for QubitDensityMatrix on subset of wires using QNode.
+
+    This reproduces the exact bug scenario from GitHub issue #8932.
+    """
+    n = 2
+    dev = qp.device("default.mixed", wires=2 * n)
+
+    @qp.qnode(dev)
+    def test_circuit(rho):
+        # Only initialize n of the 2n qubits using with rho
+        qp.QubitDensityMatrix(rho, wires=range(0, n))
+
+        # Apply Hadamard gate to ancilla qubits
+        for a in range(n, 2 * n):
+            qp.H(a)
+
+        return qp.probs(wires=range(n))
+
+    # GHZ state: (|00> + |11>)/sqrt(2)
+    GHZ = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    rho = qp.math.dm_from_state_vector(GHZ)
+
+    # This should not raise ValueError
+    result = test_circuit(rho)
+
+    # Expected: probabilities for GHZ state are [0.5, 0, 0, 0.5]
+    expected = np.array([0.5, 0.0, 0.0, 0.5])
+    assert np.allclose(result, expected, atol=1e-8)

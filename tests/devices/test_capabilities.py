@@ -21,11 +21,10 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
-    InvalidCapabilitiesError,
     OperatorProperties,
     _get_compilation_options,
     _get_measurement_processes,
@@ -37,6 +36,7 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
+from pennylane.exceptions import InvalidCapabilitiesError
 
 
 @pytest.mark.unit
@@ -46,32 +46,51 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             schema = 3
-            
+
+            [compilation]
+
+            supported_mcm_methods = ["blah", "device"]
+            """],
+        indirect=True,
+    )
+    def test_unrecognized_mcm_method(self, request):
+        """Tests that an error is raised if an unrecognized mcm method is being used."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            ValueError, match="The device's supported mcm methods must be a subset of"
+        ):
+            _ = parse_toml_document(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        ["""
+            schema = 3
+
             [operators.gates]
-            
+
             RY = {}
             RZ = {}
             CNOT = {}
-            
+
             [operators.observables]
-            
+
             PauliZ = {}
             Hadamard = {}
-            
+
             [measurement_processes]
 
             ExpectationMP = { }
             SampleMP = { }
-            
+
             [compilation]
 
             qjit_compatible = false
             supported_mcm_methods = ["one-shot", "device"]
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_load_toml_file(self, request):
@@ -103,16 +122,14 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.gates]
 
             PauliX = { properties = ["controllable", "invertible"] }
             RY = { properties = ["controllable", "invertible", "differentiable"] }
             CRY = { properties = ["invertible", "differentiable"] }
             CNOT = { properties = ["invertible"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_operations(self, request):
@@ -135,14 +152,12 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.observables]
-            
+
             PauliX = { }
             Sum = { conditions = ["terms-commute"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_observables(self, request):
@@ -161,16 +176,14 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [measurement_processes]
 
             ExpectationMP = { }
             SampleMP = { }
             CountsMP = { conditions = ["finiteshots"] }
             StateMP = { conditions = ["analytic"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_measurement_processes(self, request):
@@ -191,15 +204,13 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [compilation]
-            
+
             qjit_compatible = true
             supported_mcm_methods = ["one-shot"]
             runtime_code_generation = false
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_compilation_flags(self, request):
@@ -216,15 +227,13 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [pennylane.operators.gates]
-            
+
             PauliX = {}
             PauliY = {}
             PauliZ = {}
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_toml_section(self, request):
@@ -240,15 +249,13 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.gates]
-        
+
             PauliX = {}
             PauliY = {}
             PauliZ = {}
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_get_empty_document_section(self, request):
@@ -261,17 +268,15 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.gates]
-            
+
             PauliX = { invalid_attribute = ["invalid_attribute"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { invalid_attribute = ["invalid_attribute"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_invalid_attributes(self, request):
@@ -293,15 +298,13 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.gates]
-        
+
             PauliX = { properties = ["invalid_property"] }
             PauliY = {}
             PauliZ = {}
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_invalid_properties(self, request):
@@ -317,17 +320,15 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.observables]
-            
+
             Hamiltonian = { conditions = ["invalid_condition"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { conditions = ["invalid_condition"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_unknown_conditions(self, request):
@@ -349,17 +350,15 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [operators.observables]
-            
+
             PauliZ = { conditions = ["terms-commute"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { conditions = ["finiteshots", "analytic"] }
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_invalid_conditions(self, request):
@@ -381,13 +380,11 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [compilation]
-            
+
             unknown_flag = true
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_unknown_compilation_flag(self, request):
@@ -403,14 +400,12 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             [compilation]
-            
+
             overlapping_observables = false
             non_commuting_observables = true
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_invalid_combination_of_flags(self, request):
@@ -426,19 +421,17 @@ class TestTOML:
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file",
-        [
-            """
+        ["""
             schema = 3
-            
+
             [qjit.operators.gates]
-            
+
             PauliX = {}
-            
+
             [compilation]
-            
+
             qjit_compatible = false
-            """
-        ],
+            """],
         indirect=True,
     )
     def test_qjit_incompatible_error(self, request):
@@ -690,35 +683,78 @@ class TestDeviceCapabilities:
         capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
 
         for op in [
-            qml.RY(0.5, wires=0),
-            qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1]),
-            qml.RZ(0.5, wires=0),
-            qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1]),
-            qml.adjoint(qml.RZ(0.5, wires=0)),
-            qml.ops.Adjoint(qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1])),
-            qml.ops.Controlled(qml.ops.Adjoint(qml.RZ(0.5, wires=0)), control_wires=[1]),
-            qml.CNOT(wires=[0, 1]),
-            qml.adjoint(qml.CNOT),
+            qp.RY(0.5, wires=0),
+            qp.ops.Controlled(qp.RY(0.5, wires=0), control_wires=[1]),
+            qp.RZ(0.5, wires=0),
+            qp.ops.Controlled(qp.RZ(0.5, wires=0), control_wires=[1]),
+            qp.adjoint(qp.RZ(0.5, wires=0)),
+            qp.ops.Adjoint(qp.ops.Controlled(qp.RZ(0.5, wires=0), control_wires=[1])),
+            qp.ops.Controlled(qp.ops.Adjoint(qp.RZ(0.5, wires=0)), control_wires=[1]),
+            qp.CNOT(wires=[0, 1]),
+            qp.adjoint(qp.CNOT),
         ]:
             assert capabilities.supports_operation(op.name) is True
 
         for op in [
-            qml.X(0),
-            qml.adjoint(qml.RY(0.5, wires=0)),
-            qml.adjoint(qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1])),
-            qml.ops.Controlled(qml.ops.Adjoint(qml.RY(0.5, wires=0)), control_wires=[1]),
-            qml.ops.Controlled(qml.CNOT(wires=[0, 1]), control_wires=[2]),
+            qp.X(0),
+            qp.adjoint(qp.RY(0.5, wires=0)),
+            qp.adjoint(qp.ops.Controlled(qp.RY(0.5, wires=0), control_wires=[1])),
+            qp.ops.Controlled(qp.ops.Adjoint(qp.RY(0.5, wires=0)), control_wires=[1]),
+            qp.ops.Controlled(qp.CNOT(wires=[0, 1]), control_wires=[2]),
         ]:
             assert capabilities.supports_operation(op.name) is False
 
-        for obs in [qml.X(0), qml.Y(0), qml.Z(0)]:
+        for obs in [qp.X(0), qp.Y(0), qp.Z(0)]:
             assert capabilities.supports_observable(obs.name) is True
 
         for obs in [
-            qml.H(0),
-            qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
+            qp.H(0),
+            qp.Hamiltonian([0.5], [qp.PauliZ(0)]),
         ]:
             assert capabilities.supports_observable(obs.name) is False
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        ["""
+            schema = 3
+
+            [operators.gates]
+
+            CNOT                   = { properties = [ "invertible",                 "differentiable" ] }
+            Rot                    = { properties = [ "invertible", "controllable",                  ] }
+            RX                     = { properties = [ "invertible", "controllable", "differentiable" ] }
+            T                      = { properties = [               "controllable", "differentiable" ] }
+
+            """],
+        indirect=True,
+    )
+    def test_gate_set(self, request):
+        """Tests the gate_set produced from the TOML file."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        assert capabilities.gate_set() == {
+            "CNOT",
+            "Adjoint(CNOT)",
+            "Rot",
+            "Adjoint(Rot)",
+            "C(Rot)",
+            "RX",
+            "Adjoint(RX)",
+            "C(RX)",
+            "T",
+            "C(T)",
+        }
+        assert capabilities.gate_set(differentiable=True) == {
+            "CNOT",
+            "Adjoint(CNOT)",
+            "RX",
+            "Adjoint(RX)",
+            "C(RX)",
+            "T",
+            "C(T)",
+        }
 
 
 def test_observable_stopping_condition_factory():
@@ -735,8 +771,8 @@ def test_observable_stopping_condition_factory():
     }
 
     stopping_condition = observable_stopping_condition_factory(capabilities)
-    assert stopping_condition(qml.X(0)) is True
-    assert stopping_condition(qml.Y(0)) is False
-    assert stopping_condition(0.5 * qml.X(0)) is True
-    assert stopping_condition(0.5 * qml.Z(0) + 0.1 * qml.X(0) @ qml.Z(1)) is True
-    assert stopping_condition(qml.Hamiltonian([0.1, 0.2], [qml.Z(0), qml.X(0) @ qml.Y(1)])) is False
+    assert stopping_condition(qp.X(0)) is True
+    assert stopping_condition(qp.Y(0)) is False
+    assert stopping_condition(0.5 * qp.X(0)) is True
+    assert stopping_condition(0.5 * qp.Z(0) + 0.1 * qp.X(0) @ qp.Z(1)) is True
+    assert stopping_condition(qp.Hamiltonian([0.1, 0.2], [qp.Z(0), qp.X(0) @ qp.Y(1)])) is False

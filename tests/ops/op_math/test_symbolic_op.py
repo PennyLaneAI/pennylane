@@ -12,15 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the SymbolicOp class of qubit operations"""
+
 from copy import copy
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
+
+
+def test_id_deprecation():
+    """Tests that the id kwarg is deprecated"""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = SymbolicOp(qp.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
@@ -43,15 +52,14 @@ class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-def test_intialization():
+def test_initialization():
     """Test initialization for a SymbolicOp"""
     base = Operator("a")
 
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
 
     assert op.base is base
     assert op.hyperparameters["base"] is base
-    assert op.id == "something"
     assert op.name == "Symbolic"
 
 
@@ -74,9 +82,9 @@ def test_copy():
 def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
     # pylint:disable=attribute-defined-outside-init,protected-access
-    op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
+    op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)
     assert op.wires == Wires("a")
@@ -84,7 +92,7 @@ def test_map_wires():
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
     assert mapped_op.pauli_rep is not op.pauli_rep
-    assert mapped_op.pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
+    assert mapped_op.pauli_rep == qp.pauli.PauliSentence({qp.pauli.PauliWord({5: "X"}): 1})
 
 
 class TestProperties:
@@ -141,7 +149,7 @@ class TestProperties:
     def test_has_matrix_hamiltonian(self):
         """Test that it has a matrix if the base is a hamiltonian."""
 
-        H = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        H = qp.Hamiltonian([1.0], [qp.PauliX(0)])
         op = TempScalar(H, 2)
         assert op.has_matrix
 
@@ -150,11 +158,11 @@ class TestProperties:
         """Test that symbolic op is hermitian if the base is hermitian."""
 
         class DummyOp(Operator):
-            is_hermitian = is_herm
+            is_verified_hermitian = is_herm
 
         base = DummyOp("b")
         op = SymbolicOp(base)
-        assert op.is_hermitian == is_herm
+        assert op.is_verified_hermitian == is_herm
 
     @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
@@ -168,7 +176,7 @@ class TestProperties:
 
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
-        w = qml.wires.Wires("a")
+        w = qp.wires.Wires("a")
         base = Operator(w)
         op = SymbolicOp(base)
 
@@ -190,13 +198,22 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.pauli_rep is None
 
+    def test_raise_error_with_mcm_input(self):
+        """Test that symbolic ops of mid-circuit measurements are not supported."""
+        mcm = qp.ops.MidMeasure(0)
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(mcm)
+        ppm = qp.ops.PauliMeasure("XY", wires=[0, 1])
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(ppm)
+
 
 class TestQueuing:
     """Test that Symbolic Operators queue and update base metadata."""
 
     def test_queuing(self):
         """Test symbolic op queues and updates base metadata."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             base = Operator("a")
             op = SymbolicOp(base)
 
@@ -208,7 +225,7 @@ class TestQueuing:
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
 
         base = Operator("b")
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 
         assert len(q) == 1

@@ -20,14 +20,14 @@ import numpy as np
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.resource.error import (
     AlgorithmicError,
     ErrorOperation,
     SpectralNormError,
-    _compute_algo_error,
 )
+from pennylane.resource.error.error import _compute_algo_error
 
 
 class SimpleError(AlgorithmicError):
@@ -35,7 +35,7 @@ class SimpleError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approx_op, other_op):
+    def get_error(approximate_op, exact_op):
         return 0.5  # get simple error is always 0.5
 
 
@@ -59,9 +59,10 @@ class TestAlgorithmicError:
 
             class ErrorNoCombine(AlgorithmicError):
                 @staticmethod
-                def get_error(approx_op, other_op):
+                def get_error(approximate_op, exact_op):
                     return 0.5  # get simple error is always 0.5
 
+            # pylint: disable=abstract-class-instantiated
             _ = ErrorNoCombine(1.23)
 
     @pytest.mark.parametrize("err1", [1.23, 0.45, -6])
@@ -77,16 +78,16 @@ class TestAlgorithmicError:
 
     def test_get_error_not_implemented(self):
         """Test NotImplementedError is raised if the method is not defined."""
-        approx_op = qml.RZ(0.01, 0)
-        exact_op = qml.PauliZ(0)
+        approx_op = qp.RZ(0.01, 0)
+        exact_op = qp.PauliZ(0)
 
         with pytest.raises(NotImplementedError):
             _ = ErrorNoGetError.get_error(approx_op, exact_op)
 
     def test_get_error(self):
         """Test that get_error works as expected"""
-        approx_op = qml.RZ(0.01, 0)
-        exact_op = qml.PauliZ(0)
+        approx_op = qp.RZ(0.01, 0)
+        exact_op = qp.PauliZ(0)
 
         res = SimpleError.get_error(approx_op, exact_op)
         assert res == 0.5
@@ -118,8 +119,8 @@ class TestSpectralNormError:
     )
     def test_get_error(self, phi, expected):
         """Test that get_error works as expected"""
-        approx_op = qml.Hadamard(0)
-        exact_op = qml.RX(phi, 0)
+        approx_op = qp.Hadamard(0)
+        exact_op = qp.RX(phi, 0)
 
         res = SpectralNormError.get_error(approx_op, exact_op)
         assert np.allclose(res, expected)
@@ -142,7 +143,7 @@ class TestSpectralNormError:
                 return np.array([[0.5, 1.0], [1.2, 1.3]])
 
         approx_op = DummyOp(1)
-        exact_op = qml.RX(phi, 1)
+        exact_op = qp.RX(phi, 1)
 
         res = SpectralNormError.get_error(approx_op, exact_op)
         assert np.isclose(res, expected)
@@ -151,13 +152,15 @@ class TestSpectralNormError:
         """Test that get_error fails if the operator matrix is not defined"""
 
         class MyOp(Operation):
+
+            @property
             def name(self):
                 return self.__class__.__name__
 
         approx_op = MyOp(0)
-        exact_op = qml.RX(0.1, 0)
+        exact_op = qp.RX(0.1, 0)
 
-        with pytest.raises(qml.operation.MatrixUndefinedError):
+        with pytest.raises(qp.operation.MatrixUndefinedError):
             SpectralNormError.get_error(approx_op, exact_op)
 
     def test_repr(self):
@@ -233,7 +236,7 @@ class CustomErrorOp2(ErrorOperation):
         return AdditiveError(self.flips)
 
 
-_HAMILTONIAN = qml.dot([1.0, -0.5], [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.Y(1)])
+_HAMILTONIAN = qp.dot([1.0, -0.5], [qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.Y(1)])
 
 
 class TestSpecAndTracker:
@@ -242,42 +245,32 @@ class TestSpecAndTracker:
     # TODO: remove this when support for below is present
     # little hack for stopping device-level decomposition for custom ops
     @staticmethod
-    def preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+    def preprocess(execution_config: qp.devices.ExecutionConfig | None = None):
         """A vanilla preprocesser"""
-        return qml.transforms.core.TransformProgram(), execution_config
+        return qp.CompilePipeline(), execution_config
 
-    dev = qml.device("null.qubit", wires=2)
+    dev = qp.device("null.qubit", wires=2)
     dev.preprocess = preprocess.__func__
 
     @staticmethod
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         """circuit with custom ops"""
-        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+        qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
         CustomErrorOp1(0.31, [0])
         CustomErrorOp2(0.12, [1])
-        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=4)
+        qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=4)
         CustomErrorOp1(0.24, [1])
         CustomErrorOp2(0.73, [0])
-        return qml.state()
+        return qp.state()
 
     errors_types = ["MultiplicativeError", "AdditiveError", "SpectralNormError"]
 
     def test_computation(self):
         """Test that _compute_algo_error are adding up errors as expected."""
 
-        tape = qml.workflow.construct_tape(self.circuit)()
+        tape = qp.workflow.construct_tape(self.circuit)()
         algo_errors = _compute_algo_error(tape)
-        assert len(algo_errors) == 3
-        assert all(error in algo_errors for error in self.errors_types)
-        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
-        assert algo_errors["AdditiveError"].error == 0.73 + 0.12
-        assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
-
-    def test_specs(self):
-        """Test that specs are tracking errors as expected."""
-
-        algo_errors = qml.specs(self.circuit)()["errors"]
         assert len(algo_errors) == 3
         assert all(error in algo_errors for error in self.errors_types)
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
@@ -287,7 +280,7 @@ class TestSpecAndTracker:
     def test_tracker(self):
         """Test that tracker are tracking errors as expected."""
 
-        with qml.Tracker(self.dev) as tracker:
+        with qp.Tracker(self.dev) as tracker:
             self.circuit()
 
         algo_errors = tracker.latest["errors"]
@@ -296,3 +289,188 @@ class TestSpecAndTracker:
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
         assert algo_errors["AdditiveError"].error == 0.73 + 0.12
         assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
+
+
+class TestAlgoError:
+    """Test the qp.resource.algo_error function."""
+
+    dev = qp.device("default.qubit", wires=2)
+
+    def test_basic_usage(self):
+        """Test basic usage of algo_error with TrotterProduct."""
+        Hamiltonian = qp.dot([1.0, -0.5], [qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.Y(1)])
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+            return qp.state()
+
+        errors = qp.resource.algo_error(circuit)()
+        assert "SpectralNormError" in errors
+        assert isinstance(errors["SpectralNormError"], SpectralNormError)
+        assert errors["SpectralNormError"].error > 0
+
+    def test_multiple_error_types(self):
+        """Test algo_error with multiple error types."""
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.31, [0])
+            CustomErrorOp2(0.12, [1])
+            qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=4)
+            CustomErrorOp1(0.24, [1])
+            CustomErrorOp2(0.73, [0])
+            return qp.state()
+
+        errors = qp.resource.algo_error(circuit)()
+        assert len(errors) == 3
+        assert "MultiplicativeError" in errors
+        assert "AdditiveError" in errors
+        assert "SpectralNormError" in errors
+        assert np.isclose(errors["MultiplicativeError"].error, 0.31 * 0.24)
+        assert np.isclose(errors["AdditiveError"].error, 0.73 + 0.12)
+        assert np.isclose(errors["SpectralNormError"].error, 0.25 + 0.17998560822421455)
+
+    def test_no_error_operations(self):
+        """Test algo_error with a circuit containing no ErrorOperations."""
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.RX(0.5, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
+
+        errors = qp.resource.algo_error(circuit)()
+        assert errors == {}
+
+    def test_with_arguments(self):
+        """Test algo_error when the qnode takes arguments."""
+        Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
+
+        @qp.qnode(self.dev)
+        def circuit(time, n):
+            qp.TrotterProduct(Hamiltonian, time=time, n=n, order=2)
+            return qp.state()
+
+        errors1 = qp.resource.algo_error(circuit)(time=1.0, n=4)
+        errors2 = qp.resource.algo_error(circuit)(time=2.0, n=4)
+
+        # Different time values should give different errors
+        assert errors1["SpectralNormError"].error != errors2["SpectralNormError"].error
+
+    def test_level_argument(self):
+        """Test that the level argument affects which operations are analyzed for errors."""
+        Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+            return qp.state()
+
+        # At user level (before device decomposition), TrotterProduct ErrorOperation is present
+        errors_user = qp.resource.algo_error(circuit, level="user")()
+        assert "SpectralNormError" in errors_user
+        assert errors_user["SpectralNormError"].error > 0
+
+        # At device level (after full decomposition), TrotterProduct is decomposed
+        # into basic gates, so the ErrorOperation is no longer present
+        errors_device = qp.resource.algo_error(circuit, level="device")()
+        assert errors_device == {}
+
+        # Test with integer level as well
+        errors_level_0 = qp.resource.algo_error(circuit, level=0)()
+        assert "SpectralNormError" in errors_level_0
+        assert errors_level_0["SpectralNormError"].error == errors_user["SpectralNormError"].error
+
+    def test_invalid_input(self):
+        """Test that algo_error raises an error for invalid input."""
+        with pytest.raises(ValueError, match="can only be applied to a QNode"):
+            qp.resource.algo_error("not_a_qnode")
+
+    def test_with_parameters(self):
+        """Test algo_error with parameterized circuit."""
+        Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
+
+        @qp.qnode(self.dev)
+        def circuit(phi):
+            qp.RX(phi, wires=0)
+            qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+            return qp.state()
+
+        errors = qp.resource.algo_error(circuit)(0.5)
+        assert "SpectralNormError" in errors
+        assert errors["SpectralNormError"].error > 0
+
+    def test_consistency_with_compute_algo_error(self):
+        """Test that algo_error gives the same result as _compute_algo_error."""
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.31, [0])
+            CustomErrorOp2(0.12, [1])
+            return qp.state()
+
+        # Using algo_error
+        algo_error_result = qp.resource.algo_error(circuit)()
+
+        # Using _compute_algo_error directly
+        tape = qp.workflow.construct_tape(circuit)()
+        compute_result = _compute_algo_error(tape)
+
+        # Results should match
+        assert set(algo_error_result.keys()) == set(compute_result.keys())
+        for key in algo_error_result:
+            assert np.isclose(algo_error_result[key].error, compute_result[key].error)
+
+    def test_multi_tape_batch_returns_list(self):
+        """Test that algo_error returns a list when there are multiple tapes."""
+
+        @qp.qnode(self.dev)
+        def circuit():
+            qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.5, [0])
+            return qp.sample()
+
+        # Apply a transform that creates multiple tapes (e.g., split_non_commuting)
+        @qp.transforms.split_non_commuting
+        @qp.qnode(self.dev)
+        def multi_tape_circuit():
+            qp.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.5, [0])
+            # Non-commuting measurements create multiple tapes
+            return qp.expval(qp.X(0)), qp.expval(qp.Y(0))
+
+        errors = qp.resource.algo_error(multi_tape_circuit)()
+
+        # Should return a list of error dicts, one per tape
+        assert isinstance(errors, list)
+        assert len(errors) == 2
+        for tape_errors in errors:
+            assert isinstance(tape_errors, dict)
+            assert "SpectralNormError" in tape_errors
+            assert "MultiplicativeError" in tape_errors
+
+    @pytest.mark.torch
+    def test_torch_layer_support(self):
+        """Test that algo_error works with TorchLayer."""
+        torch = pytest.importorskip("torch")
+        from pennylane.qnn.torch import TorchLayer
+
+        Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
+
+        @qp.qnode(self.dev)
+        def circuit(inputs, weights):
+            qp.RX(inputs[0], wires=0)
+            qp.RY(weights[0], wires=0)
+            qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+            return qp.expval(qp.Z(0))
+
+        weight_shapes = {"weights": (1,)}
+        layer = TorchLayer(circuit, weight_shapes)
+
+        # Pass inputs only - weights are bound to the layer
+        errors = qp.resource.algo_error(layer)(torch.tensor([0.5]))
+        assert "SpectralNormError" in errors
+        assert errors["SpectralNormError"].error > 0

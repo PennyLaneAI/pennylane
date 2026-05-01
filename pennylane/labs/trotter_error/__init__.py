@@ -61,6 +61,7 @@ Functions used to retrieve fragments of various Hamiltonians.
     ~generic_fragments
     ~vibrational_fragments
     ~vibronic_fragments
+    ~sparse_fragments
 
 Harmonic Oscillator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,13 +80,34 @@ Functions for computing Trotter error estimates.
 .. autosummary::
     :toctree: api
 
+    ~bch_expansion
+    ~effective_hamiltonian
     ~perturbation_error
-    ~trotter_error
+
+Product Formula Classes
+~~~~~~~~~~~~~~~~~~~~~~~
+Classes for representing product formulas.
+
+.. autosummary::
+    :toctree: api
+
+    ~ProductFormula
 """
 
 from .abstract import AbstractState, Fragment
-from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
-from .product_formulas import perturbation_error, trotter_error
+from .fragments import (
+    GenericFragment,
+    generic_fragments,
+    vibrational_fragments,
+    vibronic_fragments,
+    sparse_fragments,
+)
+from .product_formulas import (
+    ProductFormula,
+    bch_expansion,
+    effective_hamiltonian,
+    perturbation_error,
+)
 from .realspace import (
     RealspaceCoeffs,
     RealspaceMatrix,

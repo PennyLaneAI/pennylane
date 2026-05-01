@@ -18,7 +18,7 @@ Unit tests for utility functions in the ``decomposition`` module.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.utils import translate_op_alias
 
 
@@ -26,25 +26,42 @@ from pennylane.decomposition.utils import translate_op_alias
 def test_toggle_graph_decomposition():
     """Test the toggling of the graph-based decomposition system."""
 
-    assert not qml.decomposition.enabled_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
+
+
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+def test_graph_ctx():
+    """Tests the context manager for toggling graph."""
+
+    original_status = qp.decomposition.enabled_graph()
+
+    with qp.decomposition.toggle_graph_ctx(True):
+        assert qp.decomposition.enabled_graph()
+
+    assert qp.decomposition.enabled_graph() == original_status
+
+    with qp.decomposition.toggle_graph_ctx(False):
+        assert not qp.decomposition.enabled_graph()
+
+    assert qp.decomposition.enabled_graph() == original_status
 
 
 @pytest.mark.unit
@@ -63,5 +80,13 @@ def test_translate_op_alias(base_op_alias, expected_op_name):
 
     assert translate_op_alias(base_op_alias) == expected_op_name
     assert translate_op_alias(f"C({base_op_alias})") == f"C({expected_op_name})"
+    assert translate_op_alias(f"Controlled({base_op_alias})") == f"C({expected_op_name})"
     assert translate_op_alias(f"Adjoint({base_op_alias})") == f"Adjoint({expected_op_name})"
     assert translate_op_alias(f"Pow({base_op_alias})") == f"Pow({expected_op_name})"
+
+
+def test_translate_op_error():
+    """Tests that an error is raised when the symbolic operator name is not valid."""
+
+    with pytest.raises(ValueError, match="'Adj' is not a valid name for a symbolic operator"):
+        translate_op_alias("Adj(X)")

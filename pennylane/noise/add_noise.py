@@ -1,0 +1,564 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Transform for adding a noise model to a quantum circuit or device"""
+
+from copy import copy
+from functools import lru_cache
+
+from pennylane import math, templates
+from pennylane.decomposition import gate_sets
+from pennylane.devices.preprocess import decompose, null_postprocessing
+from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.ops.functions import equal
+from pennylane.ops.op_math import Adjoint
+from pennylane.tape import make_qscript
+from pennylane.transforms.core import BoundTransform, transform
+from pennylane.workflow import construct_execution_config, resolution
+from pennylane.workflow.qnode import _make_execution_config
+
+
+# pylint: disable=too-many-branches
+@transform
+def add_noise(tape, noise_model, level="user"):
+    """Insert operations according to a provided noise model.
+
+    Circuits passed through this quantum transform will be updated to apply the
+    insertion-based :class:`~.NoiseModel`, which contains mappings
+    ``{BooleanFn: Callable}`` from conditions to the corresponding noise
+    gates for circuit operations and measurements respectively. First, each condition
+    in the first mapping of a noise model will be evaluated on the operations
+    contained within the given circuit. For conditions that evaluate to ``True``,
+    the noisy gates contained within the ``Callable`` will be inserted after the
+    operation under consideration. Similar procedure will be followed for each
+    measurement in the circuit, in case a second mapping is present in the
+    noise model to indicate readout errors.
+
+    Args:
+        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
+            device to be transformed.
+        noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
+        level (str, int, slice): An indication of which stage in the compile pipeline the
+            noise model should be applied to. Only relevant when transforming a ``QNode``. More details
+            on the following permissible values can be found in the :func:`~.workflow.get_compile_pipeline` -
+
+            * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+            * ``int``: how many transforms to include, starting from the front of the program.
+            * ``slice``: a slice to select out components of the compile pipeline.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+        Transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+
+    Raises:
+        ValueError: argument ``noise_model`` is not a valid noise model.
+
+    .. note::
+
+        For a given ``model_map`` and ``meas_map`` within a ``NoiseModel``, if multiple conditionals
+        in the given maps evaluate to ``True`` for an operation or measurement process, then the
+        noise operations defined via their respective noisy quantum functions will be added in the
+        same order in which the conditionals appear in them.
+
+    **Example:**
+
+    The following QNode can be transformed to add noise to the circuit:
+
+    .. code-block:: python
+
+        dev = qp.device("default.mixed", wires=2)
+
+        fcond1 = qp.noise.op_eq(qp.RX) & qp.noise.wires_in([0, 1])
+        noise1 = qp.noise.partial_wires(qp.PhaseDamping, 0.4)
+
+        fcond2 = qp.noise.op_in([qp.RX, qp.RZ])
+        def noise2(op, **kwargs):
+            qp.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
+
+        fcond3 = qp.noise.meas_eq(qp.expval) & qp.noise.wires_in([0, 1])
+        noise3 = qp.noise.partial_wires(qp.PhaseFlip, 0.2)
+
+        noise_model = qp.NoiseModel(
+            {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
+        )
+
+        @qp.noise.add_noise(noise_model=noise_model)
+        @qp.qnode(dev)
+        def circuit(w, x, y, z):
+            qp.RX(w, wires=0)
+            qp.RY(x, wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RY(y, wires=0)
+            qp.RX(z, wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
+
+    Executions of this circuit will differ from the noise-free value:
+
+    >>> circuit(0.9, 0.4, 0.5, 0.6)
+    np.float64(0.5440530007721438)
+    >>> print(qp.draw(circuit)(0.9, 0.4, 0.5, 0.6))
+    0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50) ···
+    1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60) ···
+    <BLANKLINE>
+    0: ··· ──PhaseFlip(0.20)──────────────────────────────────────────────────────────────────┤ ╭<Z@Z>
+    1: ··· ──PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseFlip(0.20)─┤ ╰<Z@Z>
+
+    .. details::
+        :title: Tranform Levels
+        :href: add-noise-levels
+
+        When transforming an already constructed ``QNode``, the ``add_noise`` transform will be
+        added at the end of the "user" transforms by default, i.e., after all the transforms
+        that have been manually applied to the QNode up to that point.
+
+        .. code-block:: python
+
+            dev = qp.device("default.mixed", wires=3)
+
+            @qp.metric_tensor
+            @qp.transforms.undo_swaps
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
+            def circuit(w, x, y, z):
+                qp.RX(w, wires=0)
+                qp.RY(x, wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(y, wires=0)
+                qp.RX(z, wires=1)
+                return qp.expval(qp.Z(0) @ qp.Z(1))
+
+            noisy_circuit = qp.noise.add_noise(circuit, noise_model)
+
+        >>> from pennylane.workflow import get_compile_pipeline
+        >>> print(get_compile_pipeline(circuit)(1,2,3,4))
+         CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] undo_swaps(),
+          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
+          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [6] defer_measurements(allow_postselect=False),
+          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [8] no_sampling(name=backprop + default.mixed),
+          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [11] validate_observables(stopping_condition=..., name=default.mixed)
+        )
+
+        >>> print(get_compile_pipeline(noisy_circuit)(1,2,3,4))
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] undo_swaps(),
+          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
+          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [6] add_noise(...),
+          [7] defer_measurements(allow_postselect=False),
+          [8] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [9] no_sampling(name=backprop + default.mixed),
+          [10] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [11] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [12] validate_observables(stopping_condition=..., name=default.mixed)
+        )
+
+        However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
+        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
+        :func:`get_compile_pipeline<pennylane.workflow.get_compile_pipeline>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] undo_swaps(),
+          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
+          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [6] defer_measurements(allow_postselect=False),
+          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [8] no_sampling(name=backprop + default.mixed),
+          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [11] validate_observables(stopping_condition=..., name=default.mixed),
+          [12] add_noise(..., level=device)
+        )
+
+        Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
+        to an empty compile pipeline, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
+        end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="top").compile_pipeline)
+        CompilePipeline(
+          [1] add_noise(..., level=top)
+        )
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="user").compile_pipeline)
+         CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] undo_swaps(),
+          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
+          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [6] add_noise(..., level=user)
+        )
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] undo_swaps(),
+          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
+          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [6] defer_measurements(allow_postselect=False),
+          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [8] no_sampling(name=backprop + default.mixed),
+          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [11] validate_observables(stopping_condition=..., name=default.mixed),
+          [12] add_noise(..., level=device)
+        )
+
+        Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level=2).compile_pipeline)
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] add_noise(..., level=2)
+        )
+
+        >>> print(qp.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline)
+        CompilePipeline(
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] add_noise(..., level=slice(1, 3, None))
+        )
+
+    """
+    if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
+        raise ValueError(
+            f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
+        )
+
+    if level == "user":  # decompose templates and their adjoints
+
+        def stop_at(obj):
+            if not isinstance(obj, Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
+            return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
+
+        [tape], _ = decompose(
+            tape,
+            target_gates=gate_sets.ALL_OPS,
+            stopping_condition=stop_at,
+            name="add_noise",
+            error=DecompositionUndefinedError,
+        )
+
+    conditions, noises = [], []
+    metadata = noise_model.metadata
+    for condition, noise in noise_model.model_map.items():
+        conditions.append(lru_cache(maxsize=512)(condition))
+        noises.append(make_qscript(noise))
+
+    new_operations = []
+    for operation in tape.operations:
+        curr_ops = [operation]
+        for condition, noise in zip(conditions, noises):
+            if condition(operation):
+                noise_ops = noise(operation, **metadata).operations
+                if any(equal(operation, o) for o in noise_ops):
+                    ops_indx = noise_ops.index(operation)
+                    curr_ops = noise_ops[:ops_indx] + curr_ops + noise_ops[ops_indx + 1 :]
+                else:
+                    curr_ops.extend(noise_ops)
+        new_operations.extend(curr_ops)
+
+    if not noise_model.meas_map:
+        new_tape = tape.copy(operations=new_operations)
+        return [new_tape], null_postprocessing
+
+    meas_conds, meas_funcs = [], []
+    for condition, noise in noise_model.meas_map.items():
+        meas_conds.append(lru_cache(maxsize=512)(condition))
+        meas_funcs.append(make_qscript(noise))
+
+    split_operations, split_measurements = [], [[] for idx in tape.measurements]
+    for midx, measurement in enumerate(tape.measurements):
+        readout_operations = new_operations.copy()
+        for condition, noise in zip(meas_conds, meas_funcs):
+            if condition(measurement):
+                noise_ops = noise(measurement, **metadata).operations
+                readout_operations.extend(noise_ops)
+        if readout_operations not in split_operations:
+            split_operations.append(readout_operations)
+        split_measurements[split_operations.index(readout_operations)].append((midx, measurement))
+
+    split_measurements = split_measurements[: len(split_operations)]
+    split_meas_indexes = math.argsort(
+        [m_ for ms in ([m[0] for m in meas] for meas in split_measurements) for m_ in ms]
+    )
+
+    new_tapes = [
+        tape.copy(operations=operations, measurements=[meas[1] for meas in measurements])
+        for operations, measurements in zip(split_operations, split_measurements)
+    ]
+
+    def post_processing_fn(results):
+        """A postprocessing function returned by a transform that converts the batch of results into a squeezed result."""
+        split_results = []
+        for result in results:
+            getattr(split_results, "append" if not isinstance(result, tuple) else "extend")(result)
+        final_res = [split_results[idx] for idx in split_meas_indexes]
+        return tuple(final_res) if len(final_res) > 1 else final_res[0]
+
+    return new_tapes, post_processing_fn
+
+
+def _get_full_transform_program(qnode, gradient_fn):
+    # NOTE: Copy so as to not mutate
+    program = copy(qnode.compile_pipeline)
+
+    if getattr(gradient_fn, "expand_transform", False):
+        program.add_transform(
+            transform(gradient_fn.expand_transform),
+            **qnode.gradient_kwargs,
+        )
+
+    mcm_config = {
+        "postselect_mode": qnode.execute_kwargs["postselect_mode"],
+        "mcm_method": qnode.execute_kwargs["mcm_method"],
+    }
+
+    config = _make_execution_config(qnode, gradient_fn, mcm_config)
+    config = qnode.device.setup_execution_config(config)
+    return program + qnode.device.preprocess_transforms(config)
+
+
+def _validate_level(
+    level: str | int | slice,
+) -> None:
+    """Check that the level specification is valid.
+
+    Args:
+        level: The level specification from user input
+
+    Raises:
+        ValueError: If the level is not recognized
+    """
+
+    if isinstance(level, (int, slice, str)):
+        return
+
+    raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
+
+
+def _find_level(program, level):
+    found_level = program.get_marker_level(level)
+    if found_level is not None:
+        return found_level
+    raise ValueError(
+        f"Level {level} not found in transform program. "
+        "Builtin options are 'top', 'user', 'device', and 'gradient'."
+        f" Custom levels are {program.markers}."
+    )
+
+
+def _get_transform_program(qnode, level="device", gradient_fn="unset"):
+    """Extract a transform program at a designated level.
+
+    Args:
+        qnode (QNode): the qnode to get the transform program for.
+        level (str, int, slice): An indication of what transforms to use from the full program.
+
+            - ``"device"``: Uses the entire transformation pipeline.
+            - ``"top"``: Ignores transformations and returns the original tape as defined.
+            - ``"user"``: Includes transformations that are manually applied by the user.
+            - ``"gradient"``: Extracts the gradient-level tape.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
+
+        gradient_fn (None, str, Transform): The processed gradient fn for the workflow.
+
+    Returns:
+        CompilePipeline: the transform program corresponding to the requested level.
+
+    .. details::
+        :title: Usage Details
+
+        The transforms are organized as:
+
+        .. image:: ../../_static/transforms_order.png
+            :align: center
+            :width: 800px
+            :target: javascript:void(0);
+
+        where ``transform1`` is first applied to the ``QNode`` followed by ``transform2``.  First, user transforms are run on the tapes,
+        followed by the gradient expansion, followed by the device expansion. "Final" transforms, like ``param_shift`` and ``metric_tensor``,
+        always occur at the end of the program, despite being part of user transforms. Note that when requesting a level by name
+        (e.g. "gradient" or "device"), the preceding levels would be applied as well.
+
+        .. code-block:: python
+
+            dev = qp.device('default.qubit')
+
+            @qp.metric_tensor # final transform
+            @qp.transforms.merge_rotations # transform 2
+            @qp.transforms.cancel_inverses # transform 1
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            def circuit():
+                return qp.expval(qp.Z(0))
+
+        By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
+
+        >>> print(_get_transform_program(circuit))
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [9] validate_device_wires(None, name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand()
+        )
+
+        The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
+        :func:`~.merge_rotations` and :func:`~.metric_tensor`.
+
+        >>> print(_get_transform_program(circuit, level="user"))
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None)
+        )
+
+        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
+        This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
+        it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
+        present at the very end of resulting program.
+
+        >>> print(_get_transform_program(circuit, level="gradient"))
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483)
+        )
+
+        ``"top"`` and ``0`` both return empty transform programs.
+
+        >>> print(_get_transform_program(circuit, level="top"))
+        CompilePipeline()
+        >>> print(_get_transform_program(circuit, level=0))
+        CompilePipeline()
+
+        The ``level`` can also be any integer, corresponding to a number of transforms in the program.
+
+        >>> print(_get_transform_program(circuit, level=2))
+        CompilePipeline(
+          [1] cancel_inverses(),
+          [2] merge_rotations()
+        )
+
+        ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
+        transform program.  This allows you to select different starting transforms or strides.
+        For example, you can skip the first transform or reverse the order:
+
+        >>> print(_get_transform_program(circuit, level=slice(1,3)))
+        CompilePipeline(
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None)
+        )
+        >>> print(_get_transform_program(circuit, level=slice(None, None, -1)))
+        CompilePipeline(
+          [1] _conditional_broadcast_expand(),
+          [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [3] validate_device_wires(None, name=default.qubit),
+          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [5] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [6] defer_measurements(allow_postselect=True),
+          [7] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [8] metric_tensor(device_wires=None),
+          [9] _expand_metric_tensor(device_wires=None),
+          [10] merge_rotations(),
+          [11] cancel_inverses()
+        )
+
+        You can get creative and pick a single category of transforms as follows, excluding
+        any preceding transforms (and the final transform if it exists):
+
+        >>> user_prog = _get_transform_program(circuit, level="user")
+        >>> grad_prog = _get_transform_program(circuit, level="gradient")
+        >>> dev_prog = _get_transform_program(circuit, level="device")
+        >>> print(grad_prog[len(user_prog) - 1 : -1])
+        CompilePipeline(
+          [1] metric_tensor(device_wires=None)
+        )
+        >>> print(dev_prog[len(grad_prog) - 1 : -1])
+        CompilePipeline(
+          [1] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [2] defer_measurements(allow_postselect=True),
+          [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [5] validate_device_wires(None, name=default.qubit),
+          [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
+        )
+
+    """
+    _validate_level(level)
+    if gradient_fn == "unset":
+        config = construct_execution_config(qnode, resolve=False)()
+        # pylint: disable = protected-access
+        config = resolution._resolve_diff_method(config, qnode.device)
+        gradient_fn = config.gradient_method
+    has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
+    full_transform_program = _get_full_transform_program(qnode, gradient_fn)
+
+    num_user = len(qnode.compile_pipeline)
+
+    if level == "device":
+        level = slice(0, None)
+    elif level == "top":
+        level = slice(0, 0)
+    elif level == "user":
+        level = slice(0, num_user)
+    elif level == "gradient":
+        level = num_user + 1 if has_gradient_expand else num_user
+        level = slice(0, level)
+    elif isinstance(level, str):
+        level = slice(0, _find_level(full_transform_program, level))
+    elif isinstance(level, int):
+        level = slice(0, level)
+
+    return full_transform_program[level]
+
+
+# pylint:disable = protected-access
+@add_noise.custom_qnode_transform
+def custom_qnode_wrapper(self, qnode, targs, tkwargs):
+    """QNode execution wrapper for supporting ``add_noise`` with levels"""
+    cqnode = copy(qnode)
+    level = tkwargs.get("level", "user")
+
+    compile_pipeline = _get_transform_program(qnode, level=level)
+
+    cqnode._compile_pipeline = compile_pipeline
+    cqnode.compile_pipeline.append(BoundTransform(self, targs, {**tkwargs}))
+
+    return cqnode

@@ -14,10 +14,9 @@
 """Contains a class for mapping HDF5 groups to Dataset Attributes, and a mixin
 class that provides the mapper class."""
 
-
 from collections.abc import Iterator, Mapping, MutableMapping
 from types import MappingProxyType
-from typing import Any, Optional, Type
+from typing import Any
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -72,8 +71,8 @@ class AttributeTypeMapper(MutableMapping):
         self,
         key: str,
         value: Any,
-        info: Optional[AttributeInfo],
-        require_type: Optional[Type[DatasetAttribute]] = None,
+        info: AttributeInfo | None,
+        require_type: type[DatasetAttribute] | None = None,
     ) -> None:
         """Creates or replaces attribute ``key`` with ``value``, optionally
         including ``info``.

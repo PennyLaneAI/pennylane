@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
+
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import X, Y
+from pennylane.ops.op_math import s_prod
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -30,19 +32,19 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(0.5j, Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    qubit_freq: Union[float, list],
+    qubit_freq: float | list,
     connections: list,
-    coupling: Union[float, list],
+    coupling: float | list,
     wires: list,
     anharmonicity=None,
     d=2,
@@ -109,7 +111,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
+        H = qp.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
 
     The resulting :class:`~.HardwareHamiltonian:` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -124,7 +126,7 @@ def transmon_interaction(
 
         qubit_freqs = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
         couplings= [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(qubit_freq=qubit_freqs,
+        H = qp.pulse.transmon_interaction(qubit_freq=qubit_freqs,
                                            connections=connections,
                                            coupling=couplings,
                                            wires=range(6))
@@ -139,7 +141,7 @@ def transmon_interaction(
             "Currently only supporting qubits. Qutrits and qudits are planned in the future."
         )
 
-    # if wires is None and qml.math.ndim(omega) == 0:
+    # if wires is None and qp.math.ndim(omega) == 0:
     #     raise ValueError(
     #         f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
     #         f"Received wires {wires} and omega of type {type(omega)}"
@@ -160,14 +162,14 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
     elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
 
-    if qml.math.ndim(coupling) == 0:
+    if math.ndim(coupling) == 0:
         coupling = [coupling] * len(connections)
     if len(coupling) != len(connections):
         raise ValueError(
@@ -189,7 +191,7 @@ def transmon_interaction(
 
     # TODO Qudit support. Currently not supported but will be in the future.
     # if d>2:
-    #     if qml.math.ndim(anharmonicity)==0:
+    #     if qp.math.ndim(anharmonicity)==0:
     #         anharmonicity = [anharmonicity] * n_wires
     #     if len(anharmonicity) != n_wires:
     #         raise ValueError(f"Number of qubit anharmonicities anharmonicity = {anharmonicity} does not match the provided wires = {wires}")
@@ -227,16 +229,16 @@ class TransmonSettings:
     """
 
     connections: list
-    qubit_freq: Union[float, Callable]
-    coupling: Union[list, TensorLike, Callable]
-    anharmonicity: Union[float, Callable]
+    qubit_freq: float | Callable
+    coupling: list | TensorLike | Callable
+    anharmonicity: float | Callable
 
     def __eq__(self, other):
         return (
-            qml.math.all(self.connections == other.connections)
-            and qml.math.all(self.qubit_freq == other.qubit_freq)
-            and qml.math.all(self.coupling == other.coupling)
-            and qml.math.all(self.anharmonicity == other.anharmonicity)
+            math.all(self.connections == other.connections)
+            and math.all(self.qubit_freq == other.qubit_freq)
+            and math.all(self.coupling == other.coupling)
+            and math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
@@ -323,7 +325,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         freq = 0
 
-        H = qml.pulse.transmon_drive(amp, phase, freq, 0)
+        H = qp.pulse.transmon_drive(amp, phase, freq, 0)
 
         t = 0.
         A = 1.
@@ -358,23 +360,23 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
-        H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
+        H = qp.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        freq = qml.pulse.constant  # Parametrized constant frequency
+        freq = qp.pulse.constant  # Parametrized constant frequency
         phase = 0.0
         time = 5
 
         for q in range(3):
-            H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
+            H += qp.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
-        dev = qml.device("default.qubit", wires=range(3))
+        dev = qp.device("default.qubit", wires=range(3))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H)(params, time)
-            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
+            qp.evolve(H)(params, time)
+            return qp.expval(qp.Z(0) + qp.Z(1) + qp.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
@@ -407,9 +409,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # TODO: use creation and annihilation operators when introducing qutrits
     # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
-    coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
+    coeffs = [AmplitudeAndPhaseAndFreq(math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.Y(wire) for wire in wires)
+    drive_y_term = sum(Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

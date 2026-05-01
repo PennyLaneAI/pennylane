@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable quantum functions"""
-import functools
 
-# pylint: disable=import-outside-toplevel
+import functools
 import itertools
 from string import ascii_letters
 
@@ -43,7 +42,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Args:
         prob (tensor_like): probability distribution
-        obs (list[.Observable]): a list of observables for which
+        obs (list[.Operator]): a list of observables for which
             to compute the covariance matrix
         diag_approx (bool): if True, return the diagonal approximation
         wires (.Wires): The wire register of the system. If not provided,
@@ -56,8 +55,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Consider the following ansatz and observable list:
 
-    >>> obs_list = [qml.X(0) @ qml.Z(1), qml.Y(2)]
-    >>> ansatz = qml.templates.StronglyEntanglingLayers
+    >>> obs_list = [qp.X(0) @ qp.Z(1), qp.Y(2)]
+    >>> ansatz = qp.templates.StronglyEntanglingLayers
 
     We can construct a QNode to output the probability distribution in the shared eigenbasis of the
     observables:
@@ -66,21 +65,21 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         from pennylane import numpy as np
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(weights):
             ansatz(weights, wires=[0, 1, 2])
             # rotate into the basis of the observables
             for o in obs_list:
                 o.diagonalizing_gates()
-            return qml.probs(wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1, 2])
 
     We can now compute the covariance matrix:
 
-    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
+    >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
     >>> weights = np.random.random(shape, requires_grad=True)
-    >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
+    >>> cov = qp.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
     tensor([[0.98125435, 0.4905541 ],
             [0.4905541 , 0.99920878]], requires_grad=True)
@@ -88,8 +87,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     Autodifferentiation is fully supported using all interfaces.
     Here we use autograd:
 
-    >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
-    >>> qml.grad(cost_fn)(weights)
+    >>> cost_fn = lambda weights: qp.math.cov_matrix(circuit(weights), obs_list)[0, 1]
+    >>> qp.grad(cost_fn)(weights)
     array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
             [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
             [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
@@ -377,7 +376,7 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(col_indices + row_indices, new_col_indices + new_row_indices),
+            zip(col_indices + row_indices, new_col_indices + new_row_indices, strict=True),
             state_indices,
         )
         # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
@@ -715,19 +714,19 @@ def mutual_info(
     The mutual information between subsystems for a state vector can be returned as follows:
 
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
-    >>> x = qml.math.dm_from_state_vector(x)
-    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+    >>> x = qp.math.dm_from_state_vector(x)
+    >>> qp.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
 
     It is also possible to change the log basis.
 
-    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
+    >>> qp.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
     2.0
 
     Similarly the quantum state can be provided as a density matrix:
 
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
-    >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
+    >>> qp.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
 
     .. seealso:: :func:`~.math.vn_entropy` and :func:`pennylane.mutual_info`
@@ -839,11 +838,11 @@ def expectation_value(
     The expectation value for any operator can obtained by passing their matrix representation as an argument.
     For example, for a 2 qubit state, we can compute the expectation value of the operator :math:`Z \otimes I` as
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> import numpy as np
     >>> state_vector = [1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]
-    >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0, 1])
-    >>> qml.math.expectation_value(operator_matrix, state_vector)
+    >>> operator_matrix = qp.matrix(qp.PauliZ(0), wire_order=[0, 1])
+    >>> qp.math.expectation_value(operator_matrix, state_vector)
     tensor(-2.23711432e-17+0.j, requires_grad=True)
 
     .. seealso:: :func:`pennylane.math.fidelity`
@@ -908,19 +907,19 @@ def vn_entanglement_entropy(
     The entanglement entropy between subsystems for a state vector can be returned as follows:
 
     >>> x = np.array([0, -1, 1, 0]) / np.sqrt(2)
-    >>> x = qml.math.dm_from_state_vector(x)
-    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
+    >>> x = qp.math.dm_from_state_vector(x)
+    >>> qp.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
     0.6931471805599453
 
     It is also possible to change the logarithm base:
 
-    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
+    >>> qp.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
     1
 
     Similarly, the quantum state can be provided as a density matrix:
 
     >>> y = np.array([[1, 1, -1, -1], [1, 1, -1, -1], [-1, -1, 1, 1], [-1, -1, 1, 1]]) * 0.25
-    >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
+    >>> qp.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
     0
 
     """
@@ -1073,7 +1072,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                         break
                 Y_prev = Y.copy()
 
-        numerical_error = spla.norm((Y @ Y - mat))
+        numerical_error = spla.norm(Y @ Y - mat)
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
                 f"Convergence threshold not reached after {max_iter} iterations, "
@@ -1172,15 +1171,15 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     The relative entropy between two equal states is always zero:
 
     >>> x = np.array([1, 0])
-    >>> x = qml.math.dm_from_state_vector(x)
-    >>> qml.math.relative_entropy(x, x)
+    >>> x = qp.math.dm_from_state_vector(x)
+    >>> qp.math.relative_entropy(x, x)
     0.0
 
     and the relative entropy between two non-equal pure states is always infinity:
 
     >>> y = np.array([1, 1]) / np.sqrt(2)
-    >>> y = qml.math.dm_from_state_vector(y)
-    >>> qml.math.relative_entropy(x, y)
+    >>> y = qp.math.dm_from_state_vector(y)
+    >>> qp.math.relative_entropy(x, y)
     inf
 
     The quantum states can be provided as density matrices, allowing for computation
@@ -1188,12 +1187,12 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
 
     >>> rho = np.array([[0.3, 0], [0, 0.7]])
     >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-    >>> qml.math.relative_entropy(rho, sigma)
+    >>> qp.math.relative_entropy(rho, sigma)
     0.08228288
 
     It is also possible to change the log base:
 
-    >>> qml.math.relative_entropy(rho, sigma, base=2)
+    >>> qp.math.relative_entropy(rho, sigma, base=2)
     0.1187091
     """
     # Cast as a c_dtype array
@@ -1204,7 +1203,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         state1 = math.cast_like(state1, state0)
 
     if check_state:
-        # pylint: disable=expression-not-assigned
+
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 
@@ -1471,28 +1470,28 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     The trace distance between two equal states is always zero:
 
     >>> x = np.array([[1, 0], [0, 0]])
-    >>> qml.math.trace_distance(x, x)
+    >>> qp.math.trace_distance(x, x)
     0.0
 
     It is possible to use state vectors by first transforming them into density matrices via the
     :func:`~reduce_statevector` function:
 
-    >>> y = qml.math.reduce_statevector(np.array([0.2, np.sqrt(0.96)]), [0])
-    >>> qml.math.trace_distance(x, y)
+    >>> y = qp.math.reduce_statevector(np.array([0.2, np.sqrt(0.96)]), [0])
+    >>> qp.math.trace_distance(x, y)
     0.9797958971132713
 
     The quantum states can also be provided as batches of density matrices:
 
     >>> batch0 = np.array([np.eye(2) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
     >>> batch1 = np.array([np.ones((2, 2)) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
-    >>> qml.math.trace_distance(batch0, batch1)
+    >>> qp.math.trace_distance(batch0, batch1)
     array([0.5, 0. , 0. ])
 
     If only one of the two states represent a single element, then the trace distances are taken
     with respect to that element:
 
     >>> rho = np.ones((2, 2)) / 2
-    >>> qml.math.trace_distance(rho, batch0)
+    >>> qp.math.trace_distance(rho, batch0)
     array([0.5       , 0.        , 0.70710678])
     """
     # Cast as a c_dtype array
@@ -1518,3 +1517,89 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     eigvals = math.abs(math.eigvalsh(state0 - state1))
 
     return math.sum(eigvals, axis=-1) / 2
+
+
+def _check_trace_preserving(Ks):
+    r""" "
+    Check whether a set of Kraus operators ``Ks`` fulfills :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+    """
+    return np.allclose(np.sum([K.conj().T @ K for K in Ks], axis=0), np.eye(len(Ks[0])))
+
+
+def choi_matrix(Ks, check_Ks=False):
+    r"""
+    Compute the Choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
+
+    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|),
+
+    where :math:`|\phi^+ \rangle` is the maximally entangled state
+    :math:`|\phi^+\rangle = \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} |i\rangle \otimes |i\rangle` between the
+    qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size.
+
+    We assume the channel :math:`\mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell` is provided
+    in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence
+    :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+
+    Args:
+        Ks (TensorLike): A list of Kraus operators with size ``(2**n, 2**n)`` that act on ``n`` wires.
+        check_Ks (bool): Whether or not to check if the provided Kraus operators are trace-preserving, i.e. :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`. Default is ``False``.
+
+    Returns:
+        TensorLike: The Choi matrix :math:`\Lambda` of size ``(2**(2n), 2**(2n))``
+
+    **Examples**
+
+    The simplest quantum channel is a single unitary gate. In that case, the Kraus operators reduce to the unitary gate itself.
+
+    >>> import pennylane as qp
+    >>> Ks = [qp.matrix(qp.CNOT((0, 1)))]
+    >>> Lambda = qp.math.choi_matrix(Ks)
+    >>> Lambda.shape
+    (16, 16)
+
+    The resulting Choi matrix is a density matrix, so its trace sums to 1.
+    Because the channel is unitary, the resulting Choi state is pure,
+    which can be seen from :math:`\text{tr}\left( \Lambda^2 \right) = 1`
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(1.0))
+
+
+    We can construct a non-unitary channel by taking different unitary operators and weighting them
+    such that the trace is preserved (i.e., the squares of the coefficients sum to one).
+
+    >>> Ks = [np.sqrt(0.3) * qp.CNOT((0, 1)), np.sqrt(1-0.3) * qp.X(0)]
+    >>> Ks = [qp.matrix(op, wire_order=range(2)) for op in Ks]
+    >>> Lambda = qp.math.choi_matrix(Ks)
+
+    In this case, the resulting Choi matrix does not correspond to a pure state, as seen by
+    :math:`\text{tr}\left( \Lambda^2 \right) < 1`.
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(0.58))
+
+    """
+    d = len(Ks[0])
+
+    if check_Ks:
+        if not _check_trace_preserving(Ks):
+            raise ValueError(
+                r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
+            )
+
+    choi = math.asarray(
+        math.cast_like(np.zeros((d**2, d**2)), Ks), like=Ks[0]
+    )  # TODO: is there a smarter way to get both dtype and interface right?
+
+    aux_basis = math.cast_like(math.eye(d), Ks)  # same dimension as qubit system
+    q_basis = math.cast_like(math.eye(d), Ks)
+
+    for i in aux_basis:
+        for j in q_basis:
+            ketbraij = math.outer(i, j)
+            for K in Ks:
+                choi += math.kron(ketbraij, K @ ketbraij @ math.transpose(math.conj(K)))
+
+    choi = choi / d
+
+    return choi

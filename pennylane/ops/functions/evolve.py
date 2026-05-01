@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.evolve function.
+This module contains the qp.evolve function.
 """
+
 from functools import singledispatch
-from typing import Optional, overload
+from typing import overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
@@ -26,9 +27,9 @@ from pennylane.typing import TensorLike
 @overload
 def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
 @overload
-def evolve(op: Operator, coeff: TensorLike = 1, num_steps: Optional[int] = None) -> Evolution: ...
+def evolve(op: Operator, coeff: TensorLike = 1) -> Evolution: ...
 @singledispatch
-def evolve(*args, **kwargs):  # pylint: disable=unused-argument
+def evolve(*args, **kwargs):
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.
 
     .. raw:: html
@@ -47,20 +48,17 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Args:
         op (.Operator): operator to evolve. This must be passed as a *positional* argument. Passing it as a *keyword* argument will result in an error.
         coeff (float): coefficient multiplying the exponentiated operator
-        num_steps (int): The number of steps used in the decomposition of the exponential operator,
-            also known as the Trotter number. Defaults to `None`. If this value is `None` and the Suzuki-Trotter
-            decomposition is needed, an error will be raised.
 
     Returns:
         .Evolution: evolution operator
 
     **Examples**
 
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
+    We can use ``qp.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.evolve(qml.X(0), coeff=2)
+    >>> op = qp.evolve(qp.X(0), coeff=2)
     >>> op
-    Exp(-2j PauliX)
+    Evolution(-2j PauliX)
 
     .. raw:: html
 
@@ -93,16 +91,16 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     When evolving a :class:`.ParametrizedHamiltonian`, a :class:`.ParametrizedEvolution`
     instance is returned:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         coeffs = [lambda p, t: p * t for _ in range(4)]
-        ops = [qml.X(i) for i in range(4)]
+        ops = [qp.X(i) for i in range(4)]
 
         # ParametrizedHamiltonian
-        H = qml.dot(coeffs, ops)
+        H = qp.dot(coeffs, ops)
 
         # ParametrizedEvolution
-        ev = qml.evolve(H)
+        ev = qp.evolve(H)
 
     >>> ev
     ParametrizedEvolution(wires=[0, 1, 2, 3])
@@ -111,16 +109,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     is evaluated at set parameters. This is done by calling the :class:`.ParametrizedEvolution`, which has the call
     signature ``(p, t)``:
 
-    >>>  qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
-    Array([[ 0.04930558+0.j        ,  0.        -0.03259093j,
-         0.        +0.1052632j ,  0.06957878+0.j        ,
-         0.        -0.01482305j, -0.00979751+0.j        ,
-         0.03164552+0.j        ,  0.        -0.0209179j ,
-         0.        +0.33526757j,  0.22161038+0.j        ,
-         ...
-         ...
-         ...
-         0.        -0.03259093j,  0.04930566+0.j        ]],      dtype=complex64)
+    >>> matrix = qp.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
+    >>> print(matrix.shape)
+    (16, 16)
 
     Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
     along with the parameters, as keyword arguments. These options are:
@@ -140,23 +131,20 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
-    Array(0.86231063, dtype=float64)
+    Array(0.862..., dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.391273, dtype=float64),
-    Array(-9.42415807e-05, dtype=float64),
-    Array(-0.0001049, dtype=float64),
-    Array(-0.00010601, dtype=float64)]
+    [Array(50.63..., dtype=float64), Array(-9.42...e-05, dtype=float64), Array(-0.0001..., dtype=float64), Array(-0.0001..., dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
@@ -164,15 +152,18 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
     """
+    raise ValueError(
+        f"No dispatch rule for first argument of type {type(args[0])}. Options are Operator and ParametrizedHamiltonian"
+    )
 
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-function-docstring
 @evolve.register
 def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
     return ParametrizedEvolution(H=op, **kwargs)
 
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-function-docstring
 @evolve.register
-def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
-    return Evolution(op, coeff, num_steps)
+def evolution(op: Operator, coeff: float = 1):
+    return Evolution(op, coeff)

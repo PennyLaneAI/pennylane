@@ -13,16 +13,13 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
+
 import warnings
 
-import pennylane as qml
 from pennylane import math
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pytrees import flatten, unflatten
 from pennylane.tape import QuantumScript
-
-# pylint: disable=too-few-public-methods
-
 
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
@@ -137,7 +134,7 @@ def choose_trainable_param_indices(tape, argnum=None):
 
     Note that trainable param indices are a **double pointer**.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(0.0, 0), qml.RY(1.0, 0), qml.RZ(2.0, 0)], trainable_params=[1,2])
+    >>> tape = qp.tape.QuantumScript([qp.RX(0.0, 0), qp.RY(1.0, 0), qp.RZ(2.0, 0)], trainable_params=[1,2])
     >>> chose_trainable_param_indices(tape, argnum=[0])
     [0]
     >>> tape.get_operation(0)
@@ -175,7 +172,6 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
 
     """
 
-    # pylint:disable=protected-access
     par_info = tape.par_info[param_index]
 
     if use_graph:
@@ -260,14 +256,14 @@ def _all_zero_grad(tape):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
-    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
+    par_shapes = [math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
-            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
+            sub_list_zeros = math.zeros(par_shapes[0] + shape)
         else:
-            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
+            sub_list_zeros = tuple(math.zeros(sh + shape) for sh in par_shapes)
 
         list_zeros.append(sub_list_zeros)
 
@@ -295,15 +291,15 @@ def _no_trainable_grad(tape):
     warnings.warn(_no_trainable_grad_warning)
     if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(tape.shots.num_copies))
+            return [], lambda _: tuple(math.zeros([0]) for _ in range(tape.shots.num_copies))
         return [], lambda _: tuple(
-            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+            tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
             for _ in range(tape.shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
-        return [], lambda _: qml.math.zeros([0])
-    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+        return [], lambda _: math.zeros([0])
+    return [], lambda _: tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
@@ -424,28 +420,28 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     Each ``qjac`` "leaf" should (after stacking) should correspond to ``(trainable_param_idx, *measurement_process shape)``
     and each ``cjac`` "leaf" should be ``(trainable_param_idx, *qnode_argument_shape)``.
 
-    >>> @qml.qnode(qml.device('default.qubit'))
+    >>> @qp.qnode(qp.device('default.qubit'))
     ... def c(x):
-    ...     qml.RX(x[0]**2, 0)
-    ...     qml.RY(x[1], 0)
-    ...     return qml.expval(qml.Z(0)), qml.expval(qml.Y(0))
+    ...     qp.RX(x[0]**2, 0)
+    ...     qp.RY(x[1], 0)
+    ...     return qp.expval(qp.Z(0)), qp.expval(qp.Y(0))
 
-    >>> x = qml.numpy.array([2.0, 3.0])
-    >>> tape = qml.workflow.construct_tape(c)(x)
-    >>> cjac = qml.gradients.classical_jacobian(c)(x)
+    >>> x = qp.numpy.array([2.0, 3.0])
+    >>> tape = qp.workflow.construct_tape(c)(x)
+    >>> cjac = qp.gradients.classical_jacobian(c)(x)
     >>> cjac
     array([[4., 0.],
         [0., 1.]])
-    >>> qjac = qml.gradients.param_shift(c, hybrid=False)(x)
+    >>> qjac = qp.gradients.param_shift(c, hybrid=False)(x)
     >>> qjac
     ((tensor(-0.74922879, requires_grad=True),
     tensor(0.09224219, requires_grad=True)),
     (tensor(0.65364362, requires_grad=True),
     tensor(2.70003469e-17, requires_grad=True)))
-    >>> qml.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
+    >>> qp.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
     (tensor([-2.99691517,  0.09224219], requires_grad=True),
     tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
-    >>> qml.gradients.param_shift(c)(x)
+    >>> qp.gradients.param_shift(c)(x)
     (tensor([-2.99691517,  0.09224219], requires_grad=True),
     tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
 
@@ -475,14 +471,14 @@ def _single_shots_contraction(qjac, cjac, tape):
 def _single_meas_contraction(qjac, cjac, single_trainable_param):
     if single_trainable_param:
         # return spec squeezed out singleton dimension, so we need to add it back in
-        qjac = qml.math.expand_dims(qjac, axis=0)
-    qjac = qml.math.stack(qjac)
+        qjac = math.expand_dims(qjac, axis=0)
+    qjac = math.stack(qjac)
 
     # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
     cjac_leaves, struct = flatten(cjac)
 
     contracted = [
-        qml.math.tensordot(qjac, cjac_for_arg, axes=[[0], [0]]) for cjac_for_arg in cjac_leaves
+        math.tensordot(qjac, cjac_for_arg, axes=[[0], [0]]) for cjac_for_arg in cjac_leaves
     ]
 
     return unflatten(contracted, struct)

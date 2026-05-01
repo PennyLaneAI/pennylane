@@ -12,23 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Riemannian gradient optimizer"""
+
 import warnings
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import LinearCombination, PauliRot
+from pennylane.ops.functions import evolve
+from pennylane.pauli import pauli_group, pauli_word_to_string
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.templates import ApproxTimeEvolution
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.workflow import QNode
 
 
 def null_postprocessing(results):
-    """A postprocesing function returned by a transform that only converts the batch of results
+    """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
     """
     return results[0]
 
 
-@qml.transform
+@transform
 def append_time_evolution(
     tape: QuantumScript, riemannian_gradient, t, n, exact=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -66,21 +73,21 @@ def append_time_evolution(
         n (int): number of Trotter steps.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     """
     if exact:
-        op = qml.evolve(riemannian_gradient, t)
+        op = evolve(riemannian_gradient, t)
     else:
-        op = qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n)
+        op = ApproxTimeEvolution(riemannian_gradient, t, n)
 
     new_tape = tape.copy(operations=tape.operations + [op])
 
     return [new_tape], null_postprocessing
 
 
-@qml.transform
+@transform
 def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     """Calculate the Riemannian gradient in the Lie algebra with the parameter shift rule
     (see :meth:`RiemannianGradientOptimizer.get_omegas`).
@@ -104,17 +111,15 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     """
 
     wires = list(range(nqubits))
-    paulis_plus = (qml.PauliRot(np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names)
-    paulis_minus = (
-        qml.PauliRot(-np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names
-    )
+    paulis_plus = (PauliRot(np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names)
+    paulis_minus = (PauliRot(-np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names)
 
     tapes_plus = [tape.copy(operations=tape.operations + [op]) for op in paulis_plus]
     tapes_minus = [tape.copy(operations=tape.operations + [op]) for op in paulis_minus]
 
     def calculate_omegas(results):
-        results_plus = qml.math.hstack(results[: len(results) // 2])
-        results_minus = qml.math.hstack(results[len(results) // 2 :])
+        results_plus = math.hstack(results[: len(results) // 2])
+        results_minus = math.hstack(results[len(results) // 2 :])
         return results_plus - results_minus
 
     return tapes_plus + tapes_minus, calculate_omegas
@@ -170,38 +175,39 @@ class RiemannianGradientOptimizer:
     `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
 
     Args:
-        circuit (.QNode): a user defined circuit that does not take any arguments and returns
-            the expectation value of a ``qml.Hamiltonian``.
-        stepsize (float): the user-defined hyperparameter :math:`\epsilon`.
-        restriction (.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
+        circuit (QNode): a user-defined circuit that does not take any arguments and returns
+            the expectation value of a ``qp.Hamiltonian``.
+        stepsize (float): the user-defined hyperparameter :math:`\epsilon` (default value: 0.01).
+        restriction (:class:`~.Hamiltonian`): restrict the Lie algebra to a corresponding subspace of
             the full Lie algebra. This restriction should be passed in the form of a
-            ``qml.Hamiltonian`` that consists only of Pauli words.
-        exact (bool): Flag that indicates wether we approximate the Riemannian gradient with a
-            Trotterization or calculate the exact evolution via a matrix exponential. The latter is
-            not hardware friendly and can only be done in simulation.
+            ``qp.Hamiltonian`` that consists only of Pauli words (default value: None).
+        exact (bool): a flag that indicates whether we approximate the Riemannian gradient with a
+            Trotterization (False) or calculate the exact evolution via a matrix exponential (True). The latter is
+            not hardware friendly and can only be done in simulation (default value: False).
+        trottersteps (int): the number of trotter steps to perform when ``exact = False`` (default value: 1).
 
     **Examples**
 
     Define a Hamiltonian cost function to minimize:
 
     >>> coeffs = [-1., -1., -1.]
-    >>> observables = [qml.X(0), qml.Z(1), qml.Y(0) @ qml.X(1)]
-    >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
+    >>> observables = [qp.X(0), qp.Z(1), qp.Y(0) @ qp.X(1)]
+    >>> hamiltonian = qp.Hamiltonian(coeffs, observables)
 
     Create an initial state and return the expectation value of the Hamiltonian:
 
-    >>> @qml.qnode(qml.device("default.qubit", wires=2))
+    >>> @qp.qnode(qp.device("default.qubit", wires=2))
     ... def quant_fun():
-    ...     qml.RX(0.1, wires=[0])
-    ...     qml.RY(0.5, wires=[1])
-    ...     qml.CNOT(wires=[0,1])
-    ...     qml.RY(0.6, wires=[0])
-    ...     return qml.expval(hamiltonian)
+    ...     qp.RX(0.1, wires=[0])
+    ...     qp.RY(0.5, wires=[1])
+    ...     qp.CNOT(wires=[0,1])
+    ...     qp.RY(0.6, wires=[0])
+    ...     return qp.expval(hamiltonian)
 
     Instantiate the optimizer with the initial circuit and the cost function and set the stepsize
     accordingly:
 
-    >>> opt = qml.RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1)
+    >>> opt = qp.RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 
     Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`:
 
@@ -219,13 +225,12 @@ class RiemannianGradientOptimizer:
 
     >>> circuit()
     -2.2283086057521713
-
     """
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
-        if not isinstance(circuit, qml.QNode):
+        if not isinstance(circuit, QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
 
         self.circuit = circuit.update(diff_method=None)
@@ -235,7 +240,7 @@ class RiemannianGradientOptimizer:
         self.nqubits = len(circuit.device.wires)
 
         self.hamiltonian = circuit.func().obs
-        if not isinstance(self.hamiltonian, qml.ops.LinearCombination):
+        if not isinstance(self.hamiltonian, LinearCombination):
             raise TypeError(
                 f"circuit must return the expectation value of a Hamiltonian,"
                 f"received {type(circuit.func().obs)}"
@@ -248,7 +253,7 @@ class RiemannianGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
-        if restriction is not None and not isinstance(restriction, qml.ops.LinearCombination):
+        if restriction is not None and not isinstance(restriction, LinearCombination):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
@@ -272,14 +277,13 @@ class RiemannianGradientOptimizer:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
             to the step.
         """
-        # pylint: disable=not-callable
 
         cost = self.circuit()
         omegas = self.get_omegas()
         non_zero_omegas = -omegas[omegas != 0]
         nonzero_idx = np.nonzero(omegas)[0]
 
-        lie_gradient = qml.Hamiltonian(
+        lie_gradient = LinearCombination(
             non_zero_omegas,
             [self.lie_algebra_basis_ops[i] for i in nonzero_idx],
         )
@@ -300,8 +304,8 @@ class RiemannianGradientOptimizer:
 
         # construct the corresponding pennylane observables
         wire_map = {i: i for i in range(self.nqubits)}
-        ops = list(restriction.ops) if restriction else list(qml.pauli.pauli_group(self.nqubits))
-        return ops, [qml.pauli.pauli_word_to_string(ps, wire_map=wire_map) for ps in ops]
+        ops = list(restriction.ops) if restriction else list(pauli_group(self.nqubits))
+        return ops, [pauli_word_to_string(ps, wire_map=wire_map) for ps in ops]
 
     def get_omegas(self):
         r"""Measure the coefficients of the Riemannian gradient with respect to a Pauli word basis.

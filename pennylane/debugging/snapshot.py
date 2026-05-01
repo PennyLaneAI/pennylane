@@ -14,18 +14,20 @@
 """
 This file contains the snapshots function which extracts measurements from the qnode.
 """
+
 import warnings
 from functools import partial
 
-import pennylane as qml
+from pennylane.devices import LegacyDeviceFacade
+from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
 def _is_snapshot_compatible(dev):
     # The `_debugger` attribute is a good enough proxy for snapshot compatibility
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, LegacyDeviceFacade):
         return _is_snapshot_compatible(dev.target_device)
     return hasattr(dev, "_debugger")
 
@@ -67,8 +69,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        dictionary (dict) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
     So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
@@ -82,29 +84,35 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     When the transform is applied to a QNode, the ``shots`` configuration is inherited from the device.
     Therefore, the snapshot measurements must be supported by the device's nature. An exception of this are
-    the :func:`qml.state <pennylane.state>` measurements on finite-shot simulators.
+    the :func:`qp.state <pennylane.state>` measurements on finite-shot simulators.
 
     .. warning::
 
         For devices that do not support snapshots (e.g QPUs, external plug-in simulators), be mindful of
         additional costs that you might incur due to the 1 separate execution/snapshot behaviour.
 
+    .. warning::
+
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms
+        (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
+        As a result, the captured state may differ from the original intent.
+
     **Example**
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=None)
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            qml.Snapshot("sample", measurement=qml.sample(), shots=5)
-            return qml.expval(qml.X(0))
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot()
+            qp.Snapshot("sample", measurement=qp.sample(), shots=5)
+            return qp.expval(qp.X(0))
 
-    >>> qml.snapshots(circuit)()
+    >>> qp.snapshots(circuit)()
     {0: 1.0,
     1: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'sample': array([[0, 0],
@@ -116,15 +124,16 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", shots=200, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.snapshots
-        @qml.qnode(dev, interface=None)
+        @qp.set_shots(shots=200)
+        @qp.snapshots
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.Snapshot()
-            qml.CNOT(wires=[0, 1])
-            return qml.counts()
+            qp.Hadamard(wires=0)
+            qp.Snapshot()
+            qp.CNOT(wires=[0, 1])
+            return qp.counts()
 
     >>> circuit()
     {0: array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
@@ -135,15 +144,16 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("lightning.qubit", shots=100, wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.snapshots
-        @qml.qnode(dev)
+        @qp.set_shots(shots=200)
+        @qp.snapshots
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0),
-            qml.Snapshot(qml.counts())
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0),
+            qp.Snapshot(qp.counts())
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         with circuit.device.tracker:
             out = circuit()
@@ -162,27 +172,89 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
       '10': tensor(48, requires_grad=True)},
      'execution_results': tensor(-0.1, requires_grad=True)}
 
+    **Integration with Mid-Circuit Measurements:**
+
+    Mid-circuit measurements can be handled either by executing the circuit ``shots`` times (``mcm_method="one-shot"``),
+    or constructing and executing a tree of all possible branches (``mcm_method="tree-traversal"``).
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device('default.qubit'))
+        def c(y):
+            qp.H(0)
+            qp.Snapshot(measurement=qp.probs(0))
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.RX)(0.5, 0)
+            qp.Snapshot(measurement=qp.probs(0))
+            qp.RY(y, 0)
+            qp.measure(0)
+            qp.Snapshot(measurement=qp.probs(0))
+            return qp.probs(0)
+
+    If we use ``"one-shot"`` together with three shots, you can see that each snapshot has three
+    probabilities in a list.  Each entry corresponds to a different execution of the circuit. Note that
+    postselection will not be applied on snapshots with ``"one-shot"``.
+
+    >>> one_shot = qp.set_shots(c, 3).update(mcm_method="one-shot")
+    >>> qp.snapshots(one_shot)(1.0)
+    {0: [array([0., 1.]), array([0., 1.]), array([1., 0.])],
+    1: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
+    2: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
+    'execution_results': array([1., 0.])}
+
+    Note that for a single shot ``"one-shot"`` execution, the results will not be in a list.
+
+    >>> one_shot = qp.set_shots(c, 1).update(mcm_method="one-shot")
+    >>> qp.snapshots(one_shot)(1.0)
+    {0: array([0., 1.]),
+    1: array([0., 1.]),
+    2: array([0., 1.]),
+    'execution_results': array([0., 1.])}
+
+    With ``"tree-traversal"``, we have different numbers of probabilities based on the number of mcm's earlier
+    in the circuit. Before any mcm's, we have one state. After the first mcm, we have two states.  And after
+    two mcm's, we have four states.
+
+    >>> qp.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
+    {0: [array([0.5, 0.5])],
+    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+    2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
+    'execution_results': array([0.51653561, 0.48346439])}
+
+    Note that without the ``RY`` rotation, the third snapshot only has **three** probabilities, not **four**.
+    This is due to the fact that one of the four branches can never occur.
+
+    >>> qp.snapshots(c.update(mcm_method="tree-traversal"))(0)
+    {0: array([0.5, 0.5]),
+    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+    2: [array([1., 0.]), array([1., 0.]), array([0., 1.])],
+    'execution_results': array([0.53060436, 0.46939564])}
+
+
+    **Application to tapes**
+
     Here you can see the default behaviour of the transform for unsupported devices and you can see how the amount of wires included
     in each resulting tape is minimal:
 
     .. code-block:: python3
 
         ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
+            qp.Snapshot(),
+            qp.Hadamard(wires=0),
+            qp.Snapshot("very_important_state"),
+            qp.CNOT(wires=[0, 1]),
+            qp.Snapshot(),
         ]
 
-        measurements = [qml.expval(qml.PauliX(0))]
+        measurements = [qp.expval(qp.PauliX(0))]
 
-        tape = qml.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-        tapes, collect_results_into_dict = qml.snapshots(tape)
+        tapes, collect_results_into_dict = qp.snapshots(tape)
 
     >>> print(tapes)
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
+
     """
 
     new_tapes = []
@@ -190,7 +262,9 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     snapshot_tags = []
 
     for op in tape.operations:
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, Snapshot):
+            if isinstance(op.tag, int):
+                raise ValueError("User provided Snapshot tags can only be of type 'str'. Got int.")
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
             shots = (
@@ -215,6 +289,30 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 
 
+def _null_postprocessing(results):
+    return results[0]
+
+
+@transform
+def _add_snapshot_tags(tape):
+    """Makes sure every snapshot has a tag.  Snapshots that do not have tags gain a tag corresponding to their
+    index into all snapshots."""
+    new_ops = []
+    num_snapshots = 0
+    for op in tape.operations:
+        if isinstance(op, Snapshot):
+            if op.tag is None:
+                new_ops.append(op.update_tag(num_snapshots))
+            elif isinstance(op.tag, int):
+                raise ValueError("User provided Snapshot tags can only be of type 'str'. Got int.")
+            else:
+                new_ops.append(op)
+            num_snapshots += 1
+        else:
+            new_ops.append(op)
+    return (tape.copy(ops=new_ops),), _null_postprocessing
+
+
 @snapshots.custom_qnode_transform
 def snapshots_qnode(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the snapshot transform :func:`~.snapshots`.
@@ -226,8 +324,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     def get_snapshots(*args, **kwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
-            # pylint: disable=protected-access
-            results = qnode(*args, **kwargs)
+            results = _add_snapshot_tags(qnode)(*args, **kwargs)  # pylint: disable=not-callable
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots

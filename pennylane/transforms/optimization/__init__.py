@@ -22,4 +22,5 @@ from .merge_rotations import merge_rotations
 from .merge_amplitude_embedding import merge_amplitude_embedding
 from .single_qubit_fusion import single_qubit_fusion
 from .undo_swaps import undo_swaps
+from .relative_phases import match_relative_phase_toffoli, match_controlled_iX_gate
 from .pattern_matching import pattern_matching, pattern_matching_optimization

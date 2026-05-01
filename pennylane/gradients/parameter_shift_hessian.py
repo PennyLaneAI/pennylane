@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
+
 import itertools as it
 import warnings
 from functools import partial
@@ -22,10 +23,10 @@ from string import ascii_letters
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import (
@@ -34,7 +35,7 @@ from .general_shift_rules import (
     generate_shifted_tapes,
 )
 from .gradient_transform import find_and_validate_gradient_methods
-from .parameter_shift import _get_operation_recipe
+from .parameter_shift import _expand_transform_param_shift, _get_operation_recipe
 
 
 def _process_jacs(jac, qhess):
@@ -42,22 +43,22 @@ def _process_jacs(jac, qhess):
     Combine the classical and quantum jacobians
     """
     # Check for a Jacobian equal to the identity matrix.
-    if not qml.math.is_abstract(jac):
-        shape = qml.math.shape(jac)
+    if not math.is_abstract(jac):
+        shape = math.shape(jac)
         is_square = len(shape) == 2 and shape[0] == shape[1]
-        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
+        if is_square and math.allclose(jac, math.eye(shape[0])):
             return qhess if len(qhess) > 1 else qhess[0]
 
     hess = []
     for qh in qhess:
         if not isinstance(qh, tuple) or not isinstance(qh[0], tuple):
             # single parameter case
-            qh = qml.math.expand_dims(qh, [0, 1])
+            qh = math.expand_dims(qh, [0, 1])
         else:
             # multi parameter case
-            qh = qml.math.stack([qml.math.stack(row) for row in qh])
+            qh = math.stack([math.stack(row) for row in qh])
 
-        jac_ndim = len(qml.math.shape(jac))
+        jac_ndim = len(math.shape(jac))
 
         # The classical jacobian has shape (num_params, num_qnode_args)
         # The quantum Hessian has shape (num_params, num_params, output_shape)
@@ -68,7 +69,7 @@ def _process_jacs(jac, qhess):
         qnode_ids_0 = ascii_letters[2 : 2 + jac_ndim - 1]
         qnode_ids_1 = ascii_letters[2 + jac_ndim - 1 : 2 + 2 * jac_ndim - 2]
 
-        qh = qml.math.einsum(
+        qh = math.einsum(
             f"ab...,a{qnode_ids_0},b{qnode_ids_1}->{qnode_ids_0}{qnode_ids_1}...",
             qh,
             jac,
@@ -99,13 +100,13 @@ def _process_argnum(argnum, tape):
         # Make single marked parameter an iterable
         argnum = [argnum]
 
-    if len(qml.math.shape(argnum)) == 1:
+    if len(math.shape(argnum)) == 1:
         # If the iterable is 1D, consider all combinations of all marked parameters
-        if not qml.math.array(argnum).dtype == bool:
+        if not math.array(argnum).dtype == bool:
             # If the 1D iterable contains indices, make sure it contains valid indices...
-            if qml.math.max(argnum) >= tape.num_params:
+            if math.max(argnum) >= tape.num_params:
                 raise ValueError(
-                    f"The index {qml.math.max(argnum)} exceeds the number of "
+                    f"The index {math.max(argnum)} exceeds the number of "
                     f"trainable tape parameters ({tape.num_params})." + _trainability_note
                 )
             # ...and translate it to Boolean 1D iterable
@@ -118,12 +119,12 @@ def _process_argnum(argnum, tape):
                 + _trainability_note
             )
         # Finally mark all combinations using the outer product
-        argnum = qml.math.tensordot(argnum, argnum, axes=0)
+        argnum = math.tensordot(argnum, argnum, axes=0)
 
     elif not (
-        qml.math.shape(argnum) == (tape.num_params,) * 2
-        and qml.math.array(argnum).dtype == bool
-        and qml.math.allclose(qml.math.transpose(argnum), argnum)
+        math.shape(argnum) == (tape.num_params,) * 2
+        and math.array(argnum).dtype == bool
+        and math.allclose(math.transpose(argnum), argnum)
     ):
         # If the iterable is 2D, make sure it is Boolean, symmetric and of the correct size
         raise ValueError(
@@ -137,13 +138,13 @@ def _collect_recipes(tape, argnum, method_map, diagonal_shifts, off_diagonal_shi
     r"""Extract second order recipes for the tape operations for the diagonal of the Hessian
     as well as the first-order derivative recipes for the off-diagonal entries.
     """
-    diag_argnum = qml.math.diag(argnum)
-    offdiag_argnum = qml.math.any(argnum ^ qml.math.diag(qml.math.diag(argnum)), axis=0)
+    diag_argnum = math.diag(argnum)
+    offdiag_argnum = math.any(argnum ^ math.diag(math.diag(argnum)), axis=0)
 
     diag_recipes = []
     partial_offdiag_recipes = []
     diag_shifts_idx = offdiag_shifts_idx = 0
-    for i, (d, od) in enumerate(zip(diag_argnum, offdiag_argnum)):
+    for i, (d, od) in enumerate(zip(diag_argnum, offdiag_argnum, strict=True)):
         if not d or method_map[i] == "0":
             # hessian will be set to 0 for this row/column
             diag_recipes.append(None)
@@ -167,6 +168,7 @@ def _collect_recipes(tape, argnum, method_map, diagonal_shifts, off_diagonal_shi
     return diag_recipes, partial_offdiag_recipes
 
 
+# pylint: disable = too-many-positional-arguments
 def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes, coeffs):
     r"""Combine two univariate first order recipes and create
     multi-shifted tapes to compute the off-diagonal entry of the Hessian."""
@@ -200,6 +202,7 @@ def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes
     return add_unshifted, unshifted_coeff
 
 
+# pylint: disable = too-many-positional-arguments
 def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     """Create the required parameter-shifted tapes for a single diagonal entry of
     the Hessian using precomputed second-order shift rules."""
@@ -236,9 +239,9 @@ _no_trainable_hessian_warning = (
 def _no_trainable_hessian(tape):
     warnings.warn(_no_trainable_hessian_warning)
     if len(tape.measurements) == 1:
-        return [], lambda _: qml.math.zeros((0,))
+        return [], lambda _: math.zeros((0,))
 
-    return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
+    return [], lambda _: tuple(math.zeros((0,)) for _ in tape.measurements)
 
 
 def _all_zero_hessian(tape):
@@ -249,7 +252,7 @@ def _all_zero_hessian(tape):
         shape = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
 
         zeros = tuple(
-            tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
+            tuple(math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
         )
         if num_params == 1:
             zeros = zeros[0][0]
@@ -262,6 +265,7 @@ def _all_zero_hessian(tape):
     return [], lambda _: tuple(zeros_list)
 
 
+# pylint: disable = too-many-positional-arguments
 def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_diagonal_shifts, f0):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
@@ -295,7 +299,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
     """
-    # pylint: disable=too-many-arguments, too-many-statements
+    # pylint: disable=too-many-arguments
     h_dim = tape.num_params
 
     unshifted_coeffs = {}
@@ -356,7 +360,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
             if coeffs is None or len(coeffs) == 0:
                 hessian = []
                 for m in range(num_measurements):
-                    hessian.append(qml.math.zeros_like(results[0][m]))
+                    hessian.append(math.zeros_like(results[0][m]))
 
                 hessians.append(tuple(hessian))
                 continue
@@ -370,16 +374,16 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
                 # the res array has shape (num_tapes, num_measurements, *output_dims)
 
                 # first collect all tape results for the individual measurements
-                measure_res = qml.math.stack([r[m] for r in res])
+                measure_res = math.stack([r[m] for r in res])
 
                 # then compute the hessian via parameter-shift
-                coeffs = qml.math.convert_like(coeffs, measure_res)
-                hess = qml.math.tensordot(measure_res, coeffs, [[0], [0]])
+                coeffs = math.convert_like(coeffs, measure_res)
+                hess = math.tensordot(measure_res, coeffs, [[0], [0]])
 
                 if unshifted_coeff is not None:
                     hess = hess + unshifted_coeff * r0[m]
 
-                hess = qml.math.array(hess, like=measure_res)
+                hess = math.array(hess, like=measure_res)
                 hessian.append(hess)
 
             hessians.append(tuple(hessian))
@@ -409,7 +413,6 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
     return hessian_tapes, processing_fn
 
 
-# pylint: disable=too-many-return-statements,too-many-branches
 def contract_qjac_with_cjac(qhess, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
     qhess = (qhess,)
@@ -436,7 +439,24 @@ def contract_qjac_with_cjac(qhess, cjac, tape):
     return hessians[0] if has_single_arg else tuple(hessians)
 
 
-@partial(transform, classical_cotransform=contract_qjac_with_cjac, final_transform=True)
+# pylint: disable=unused-argument
+def _expand_transform_hessian(
+    tape: QuantumScript,
+    argnum=None,
+    diagonal_shifts=None,
+    off_diagonal_shifts=None,
+    f0=None,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Expand function to be applied before parameter shift."""
+    return _expand_transform_param_shift(tape)
+
+
+@partial(
+    transform,
+    classical_cotransform=contract_qjac_with_cjac,
+    final_transform=True,
+    expand_transform=_expand_transform_hessian,
+)
 def param_shift_hessian(
     tape: QuantumScript,
     argnum=None,
@@ -453,7 +473,7 @@ def param_shift_hessian(
     For second-order derivatives of more complicated cost functions, please consider using your
     chosen autodifferentiation framework directly, by chaining gradient computations:
 
-    >>> qml.jacobian(qml.grad(cost))(weights)
+    >>> qp.jacobian(qp.grad(cost))(weights)
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
@@ -482,7 +502,7 @@ def param_shift_hessian(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the number
         of trainable QNode arguments, the output shape(s) of the input QNode itself, and the usage of shot vectors
         in the QNode execution.
@@ -500,15 +520,15 @@ def param_shift_hessian(
     This works best if no classical processing is applied within the
     QNode to operation parameters.
 
-    >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit")
+    >>> @qp.qnode(dev)
     ... def circuit(x):
-    ...     qml.RX(x[0], wires=0)
-    ...     qml.CRY(x[1], wires=[0, 1])
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(x[0], wires=0)
+    ...     qp.CRY(x[1], wires=[0, 1])
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     >>> x = np.array([0.5, 0.2], requires_grad=True)
-    >>> qml.gradients.param_shift_hessian(circuit)(x)
+    >>> qp.gradients.param_shift_hessian(circuit)(x)
     ((array(-0.86883595), array(0.04762358)),
      (array(0.04762358), array(0.05998862)))
 
@@ -519,13 +539,13 @@ def param_shift_hessian(
         the parameter-shifted tapes and a post-processing function to combine the execution
         results of these tapes into the Hessian:
 
-        >>> tape = qml.workflow.construct_tape(circuit)(x)
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
+        >>> tape = qp.workflow.construct_tape(circuit)(x)
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13
-        >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
+        >>> all(isinstance(tape, qp.tape.QuantumTape) for tape in hessian_tapes)
         True
-        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
         ((array(-0.86883595), array(0.04762358)),
          (array(0.04762358), array(0.05998862)))
 
@@ -534,7 +554,7 @@ def param_shift_hessian(
         all 13 tapes here):
 
         >>> for h_tape in hessian_tapes[0:4]:
-        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        ...     print(qp.drawer.tape_text(h_tape, decimals=1))
         0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(-2.6)─╭●───────┤ ╭<Z@Z>
@@ -551,11 +571,11 @@ def param_shift_hessian(
 
         >>> diag_shifts = [(x[0] / 2,), (x[1] / 2, x[1])]
         >>> offdiag_shifts = [(x[0],), (x[1], 2 * x[1])]
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(
         ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
         ... )
         >>> for h_tape in hessian_tapes[0:4]:
-        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        ...     print(qp.drawer.tape_text(h_tape, decimals=1))
         0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
@@ -577,8 +597,8 @@ def param_shift_hessian(
         variational parameters. Note that this indexing refers to trainable tape parameters both
         if ``tape`` is a ``QNode`` and if it is a ``QuantumTape``.
 
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
-        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape, argnum=(1,))
+        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
         ((tensor(0., requires_grad=True), tensor(0., requires_grad=True)),
          (tensor(0., requires_grad=True), array(0.05998862)))
 
@@ -601,9 +621,9 @@ def param_shift_hessian(
 
     bool_argnum = _process_argnum(argnum, tape)
 
-    compare_diag_to = qml.math.sum(qml.math.diag(bool_argnum))
-    offdiag = bool_argnum ^ qml.math.diag(qml.math.diag(bool_argnum))
-    compare_offdiag_to = qml.math.sum(qml.math.any(offdiag, axis=0))
+    compare_diag_to = math.sum(math.diag(bool_argnum))
+    offdiag = bool_argnum ^ math.diag(math.diag(bool_argnum))
+    compare_offdiag_to = math.sum(math.any(offdiag, axis=0))
 
     if diagonal_shifts is not None and len(diagonal_shifts) != compare_diag_to:
         raise ValueError(
@@ -622,13 +642,13 @@ def param_shift_hessian(
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
-    trainable_params = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]
+    trainable_params = math.where(math.any(bool_argnum, axis=0))[0]
     diff_methods = find_and_validate_gradient_methods(tape, method, list(trainable_params))
 
     for i, g in diff_methods.items():
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
-    if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
+    if math.all(~bool_argnum):
         return _all_zero_hessian(tape)
 
     # If any of these argument indices correspond to a finite difference

@@ -15,10 +15,17 @@
 This module contains templates, which are pre-coded routines that can be used in a quantum node.
 """
 
+from .core import (
+    Subroutine,
+    SubroutineOp,
+    AbstractArray,
+    subroutine_resource_rep,
+    adjoint_subroutine_resource_rep,
+)
 from .embeddings import *
 from .layer import layer
-from .layers import *
 from .state_preparations import *
 from .subroutines import *
+from .layers import *
 from .swapnetworks import *
 from .tensornetworks import *

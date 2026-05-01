@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the `run` helper function in the `qml.workflow` module."""
+"""Unit tests for the `run` helper function in the `qp.workflow` module."""
 
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformContainer, TransformProgram
+from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.transforms.optimization import merge_rotations
 from pennylane.workflow import run
 
@@ -30,19 +30,19 @@ class TestNoInterfaceRequired:
 
     def test_numpy_interface(self, seed):
         """Test that tapes are executed correctly with the NumPy interface."""
-        container = TransformContainer(merge_rotations)
-        inner_tp = TransformProgram((container,))
-        device = qml.device("default.qubit", seed=seed)
+        container = BoundTransform(merge_rotations)
+        inner_tp = CompilePipeline(container)
+        device = qp.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
-                [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+                [qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))]
             )
         ]
-        config = ExecutionConfig(interface="numpy", gradient_method=qml.gradients.param_shift)
+        config = ExecutionConfig(interface="numpy", gradient_method=qp.gradients.param_shift)
         results = run(tapes, device, config, inner_tp)
 
-        assert qml.math.get_interface(results) == "numpy"
-        assert qml.math.allclose(results[0], 1.0)
+        assert qp.math.get_interface(results) == "numpy"
+        assert qp.math.allclose(results[0], 1.0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -51,37 +51,33 @@ class TestNoInterfaceRequired:
     )
     def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
-        container = TransformContainer(merge_rotations)
-        inner_tp = TransformProgram((container,))
-        device = qml.device("default.qubit", seed=seed)
+        container = BoundTransform(merge_rotations)
+        inner_tp = CompilePipeline(container)
+        device = qp.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
-                [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+                [qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))]
             )
         ]
         config = ExecutionConfig(interface=interface, gradient_method=gradient_method)
         results = run(tapes, device, config, inner_tp)
 
-        assert qml.math.get_interface(results) == "numpy"
-        assert qml.math.allclose(results[0], 1.0)
+        assert qp.math.get_interface(results) == "numpy"
+        assert qp.math.allclose(results[0], 1.0)
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize(
-    "interface", ["autograd", "jax-jit", "jax", "torch", "tensorflow", "tf-autograph"]
-)
+@pytest.mark.parametrize("interface", ["autograd", "jax-jit", "jax", "torch"])
 def test_grad_on_execution_error(interface):
     """Tests that a ValueError is raised if the config uses grad_on_execution."""
-    inner_tp = TransformProgram()
-    device = qml.device("default.qubit")
+    inner_tp = CompilePipeline()
+    device = qp.device("default.qubit")
     tapes = [
-        QuantumScript(
-            [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
-        )
+        QuantumScript([qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))])
     ]
     config = ExecutionConfig(
         interface=interface,
-        gradient_method=qml.gradients.param_shift,
+        gradient_method=qp.gradients.param_shift,
         grad_on_execution=True,
         use_device_jacobian_product=False,
         use_device_gradient=False,

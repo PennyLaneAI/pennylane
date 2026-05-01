@@ -1,3 +1,4 @@
+# Defines layered software architecture of PennyLane
 layers = ["ui", "tertiary", "auxiliary", "core"]
 
 exclude = [
@@ -12,18 +13,24 @@ source_roots = [
     ".",
 ]
 
-forbid_circular_dependencies = false
+# Forbids circular dependencies to be defined WITHIN this tach.toml file.
+# NOTE: This does not check anything inside the source code for problems.
+forbid_circular_dependencies = true
 
-## TOP LEVEL MODULE
-# Users should only be importing from this module. Nothing in the source code should!
+## UI module(s)
+# Nothing in the source code should be able to import anything from top-level.
+# This access point is restricted as it is here primarily for user convenience.
 
 [[modules]]
 path = "pennylane"
 layer = "ui"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-## CLOSED modules
+## CLOSED module(s)
 # No module can define dependencies to the following set of modules in this tach.toml file.
+
+# NOTE: visibility = [] just means no module in this file can declare
+# `depends_on = [<insert-closed-module>]` within this file.
 
 [[modules]]
 path = "pennylane.ftqc"
@@ -33,8 +40,28 @@ visibility = []
 path = "pennylane.labs"
 visibility = []
 
-## CORE modules
-# These modules are fundamental, and should not have any dependent modulesin lower levels.
+## UTILITY modules
+
+[[modules]]
+path = "pennylane.exceptions"
+utility = true
+depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.concurrency"
+utility = true
+depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane._entry_points_utils"
+utility = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+## CORE module(s)
+# These modules are fundamental to the PennyLane ecosystem and
+# they cannot depend on any module "lower" than them.
 
 [[modules]]
 path = "pennylane.control_flow"
@@ -70,17 +97,6 @@ path = "pennylane.logging"
 depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
-
-[[modules]]
-path = "pennylane.registers"
-depends_on = ["pennylane.wires"]
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
-
-[[modules]]
-path = "pennylane.io"
-layer = "core"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.about"
@@ -134,16 +150,108 @@ path = "pennylane.circuit_graph"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-## AUXILIARY modules
-# These modules can only import from CORE modules.
+[[modules]]
+path = "pennylane.allocation"
+layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.measurements"
+layer = "core"
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+## AUXILIARY module(s)
+# These modules can only import from CORE modules and within their layer.
 
 [[modules]]
 path = "pennylane.shadows"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-## TERTIARY modules
-# These modules can only import from CORE or AUXILIARY modules.
+[[modules]]
+path = "pennylane.gradients"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.optimize"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.pulse"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+# TEMPLATES MODULE
+
+[[modules]]
+path = "pennylane.templates"
+# Once all submodules are cleaned up, uncomment the following and delete the submodules
+# layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.embeddings"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.layers"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.subroutines"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.swapnetworks"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.tensornetworks"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.layer"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+# Bottom two must be addressed in another PR, too large of an effort
+
+# [[modules]]
+# path = "pennylane.templates.state_preparations"
+# layer = "auxiliary"
+# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+## TERTIARY module(s)
+# These modules can only import from CORE, AUXILIARY and modules within their layer.
+
+[[modules]]
+path = "pennylane.registers"
+depends_on = ["pennylane.wires"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+layer = "tertiary"
+
+[[modules]]
+path = "pennylane.io"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.qnn"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.qaoa"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.kernels"
@@ -185,18 +293,34 @@ path = "pennylane.fourier"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-## UNSORTED
-# Due to circular import problems, these modules below have incorrect dependencies 
-# and need to be parsed and fixed accordingly.
-
-# These are left temporarily to depend on ANYTHING but pennylane.ftqc and pennylane.labs
-
 [[modules]]
-path = "pennylane.transforms.core"
+path = "pennylane.noise"
+layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.gradients"
+path = "pennylane.debugging"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.qcut"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.estimator"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+## UNSORTED module(s)
+# Due to circular import problems, these modules below have incorrect dependencies
+# and need to be parsed and fixed accordingly.
+
+# These are left temporarily to depend on ANYTHING but the closed modules at the top of this file.
+
+[[modules]]
+path = "pennylane.transforms.core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
@@ -212,10 +336,6 @@ path = "pennylane.tape"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qcut"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.qchem"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -224,23 +344,12 @@ path = "pennylane.transforms"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qaoa"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.capture"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-[[modules]]
-path = "pennylane.measurements"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.pauli"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.debugging"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
@@ -248,27 +357,7 @@ path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.pulse"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.qnn"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.optimize"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.noise"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.decomposition"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.templates"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
@@ -278,3 +367,4 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.workflow"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+

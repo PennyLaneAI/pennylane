@@ -59,7 +59,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
-    Tracker
 
 Preprocessing Transforms
 ------------------------
@@ -72,11 +71,16 @@ method for devices.
     :toctree: api
 
     decompose
+    device_resolve_dynamic_wires
+    measurements_from_counts
+    measurements_from_samples
+    validate_adjoint_trainable_params
     validate_observables
     validate_measurements
     validate_device_wires
     validate_multiprocessing_workers
     validate_adjoint_trainable_params
+    no_analytic
     no_sampling
 
 Other transforms that may be relevant to device preprocessing include:
@@ -106,29 +110,35 @@ to handle a single circuit. See the documentation for each modifier for more det
 
 .. code-block:: python
 
+    from pennylane.devices import Device
+    from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+
     @simulator_tracking
     @single_tape_support
-    class MyDevice(qml.devices.Device):
+    class MyDevice(Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
+>>> import pennylane as qp
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
 0.0
->>> dev.tracker.history
+>>> import pprint
+>>> pprint.pprint(dev.tracker.history)
 {'batches': [1],
- 'simulations': [1],
+ 'errors': [{}],
  'executions': [1],
+ 'resources': [SpecsResources(gate_types={'S': 1},
+                              gate_sizes={1: 1},
+                              measurements={'expval(PauliX)': 1},
+                              num_allocs=1,
+                              depth=1)],
  'results': [0.0],
- 'resources': [Resources(num_wires=1, num_gates=1,
- gate_types=defaultdict(<class 'int'>, {'S': 1}),
- gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
- shots=Shots(total_shots=None, shot_vector=()))]}
-
+ 'simulations': [1]}
 
 Qubit Simulation Tools
 ----------------------
@@ -155,7 +165,7 @@ Qutrit Mixed-State Simulation Tools
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
-from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .execution_config import ExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
@@ -180,5 +190,4 @@ from ._qutrit_device import QutritDevice
 def __getattr__(name):
     if name == "plugin_devices":
         return device_constructor.plugin_devices
-
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

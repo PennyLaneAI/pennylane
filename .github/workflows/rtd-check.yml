@@ -1,4 +1,6 @@
 name: "Read the Docs check"
+permissions:
+  contents: read
 on:
   merge_group:
     types:
@@ -11,19 +13,19 @@ on:
       - ready_for_review
   push:
     branches:
-      - master
+      - main
 
 jobs:
   rtd_check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: "3.11"
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"
     steps:
     - name: Checkout Repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
 
@@ -34,7 +36,7 @@ jobs:
 
     - name: Setup Python Environment
       id: setup_python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -42,12 +44,11 @@ jobs:
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
-
+        pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
+        pip install --group docs
 
     - name: Build Sphinx HTML
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
-

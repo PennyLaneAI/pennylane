@@ -79,52 +79,50 @@ measurement process must be a real scalar value for it to be differentiable.
 
 Working with mid-circuit measurements
 -------------------------------------
-Mid-circuit measurements can be made using :func:`qml.measure`. The measurement value is returned by ``qml.measure``
+Mid-circuit measurements can be made using :func:`qp.measure`. The measurement value is returned by ``qp.measure``
 and can be used as a condition for classical control. Moreover, multiple measurement values can be combined
 using arithmetic operators for more complex conditioning:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    dev = qml.device("default.qubit", wires=3)
+    dev = qp.device("default.qubit", wires=3)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ(x, y):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=1)
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
 
-        m0 = qml.measure(0)
-        m1 = qml.measure(1)
-        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
-        return qml.expval(qml.Z(2))
+        m0 = qp.measure(0)
+        m1 = qp.measure(1)
+        qp.cond(~m0 & m1 == 0, qp.X)(wires=2)
+        return qp.expval(qp.Z(2))
 
 Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
-reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
+reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qp.measure`` to ``True``.
 
 Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
-``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. ``qml.probs``,
-``qml.sample``, and ``qml.counts`` support sequences of measurement values, ``qml.expval`` and ``qml.var`` do not.
-Statistics of arithmetic combinations of measurement values are supported by all but ``qml.probs``, and only as
+``qp.expval``, ``qp.probs``, ``qp.sample``, ``qp.counts``, and ``qp.var`` are supported. ``qp.probs``,
+``qp.sample``, and ``qp.counts`` support sequences of measurement values, ``qp.expval`` and ``qp.var`` do not.
+Statistics of arithmetic combinations of measurement values are supported by all but ``qp.probs``, and only as
 long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is not supported.
 
 .. code-block:: python
 
-    import pennylane as qml
+    dev = qp.device("default.qubit", seed=42, wires=3)
 
-    dev = qml.device("default.qubit", wires=3)
-
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ(x, y):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=1)
-        m0 = qml.measure(1)
-        return qml.expval(qml.Z(0)), qml.sample(m0)
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        m0 = qp.measure(1)
+        return qp.expval(qp.Z(0)), qp.sample(m0)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
->>> circ(1.0, 2.0, shots=5)
-(0.6, array([1, 1, 1, 0, 1]))
+>>> qp.set_shots(circ, shots=5)(1.0, 2.0)
+(np.float64(0.2), array([0, 0, 1, 0, 1]))
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
 of :func:`~.pennylane.measure`.
@@ -138,7 +136,7 @@ obtained of a given state:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane.measurements import SampleMeasurement
 
     class CountState(SampleMeasurement):
@@ -148,7 +146,7 @@ obtained of a given state:
             super().__init__(wires=wires)
 
         def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-            counts_mp = qml.counts(wires=self._wires)
+            counts_mp = qp.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
             return float(counts.get(self.state, 0))
 
@@ -172,11 +170,12 @@ so that we can verify our results mathematically.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1, shots=10000)
+    dev = qp.device("default.qubit", seed=42, wires=1)
 
-    @qml.qnode(dev)
+    @qp.set_shots(shots=10_000)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
+        qp.RX(x, wires=0)
         return CountState(state="1")
 
 The quantum state before the measurement will be:
@@ -192,8 +191,8 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 :math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`\sin^2(\theta/2) = 0.333`. Using 10000 shots
 we should obtain the excited state 3333 times approximately.
 
->>> circuit(1.23)
-array(3303.)
+>>> print(circuit(1.23)) 
+3264.0
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
@@ -206,9 +205,9 @@ The gradient of the measurement process is
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
->>> x = qml.numpy.array(1.23, requires_grad=True)
->>> qml.grad(circuit)(x)
-4715.000000000001
+>>> x = qp.numpy.array(1.23, requires_grad=True)
+>>> print(qp.grad(circuit)(x)) 
+4711.5...
 
 .. note::
 
@@ -224,8 +223,8 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
     metadata, such as ``seed`` or ``all_outcomes``.
 
-    >>> H = 2.0 * qml.X(0)
-    >>> mp = qml.expval(H)
+    >>> H = 2.0 * qp.X(0)
+    >>> mp = qp.expval(H)
     >>> mp._flatten()
     ((2.0 * X(0), None), (('wires', None),))
     >>> type(mp)._unflatten(*mp._flatten())
@@ -265,29 +264,66 @@ Here are a few more tips for adding measurements:
 
 You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
+
+from pennylane.exceptions import MeasurementShapeError
+
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
 from .measurements import (
     MeasurementProcess,
-    MeasurementShapeError,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
-)
-from .mid_measure import (
-    MeasurementValue,
-    MidMeasureMP,
-    measure,
-    find_post_processed_mcms,
-    get_mcm_predicates,
 )
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots, add_shots
+from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
+
+
+# pylint: disable=import-outside-toplevel
+def __getattr__(name):
+    import pennylane.ops.mid_measure as ops_measure
+
+    # from pennylane.exceptions import PennyLaneDeprecationWarning
+    # import warnings
+
+    if name == "MidMeasureMP":
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been renamed and moved to pennylane.ops.MidMeasure",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, "MidMeasure")
+
+    if name in {"measure", "MidMeasureMP", "MeasurementValue"}:
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, name)
+    if name == "find_post_processed_mcms":
+        # warnings.warn(
+        #    "find_post_processed_mcms has been moved from the measurements module to"
+        #    "qp.devices.qubit.simulate._find_post_processed_mcms"
+        #    "if you need this logic, we recommend code duplication, as it is being made private."
+        #    PennyLaneDeprecationWarning,
+        # )
+        from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
+
+        return _find_post_processed_mcms
+    if name == "get_mcm_predicates":
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, name)
+
+    raise AttributeError(f"module 'pennylane.measurements' has no attribute '{name}'")

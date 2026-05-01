@@ -14,17 +14,18 @@
 """This module contains functions to read the structure of molecules, build a Hartree-Fock state,
 build an active space and generate single and double excitations.
 """
+
 # pylint: disable=too-many-locals
 import os
 import re
 from shutil import copyfile
 
 import numpy as np
+from scipy.constants import angstrom, physical_constants
 
-import pennylane as qml
+import pennylane as qp
 
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 def read_structure(filepath, outpath="."):
@@ -68,7 +69,7 @@ def read_structure(filepath, outpath="."):
             coordinates.append(float(y))
             coordinates.append(float(z))
 
-    return symbols, np.array(coordinates) / bohr_angs
+    return symbols, np.array(coordinates) / BOHR_TO_ANG
 
 
 def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None):
@@ -292,9 +293,9 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     if not fermionic:
         return singles, doubles
 
-    fermionic_singles = [qml.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
+    fermionic_singles = [qp.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
     fermionic_doubles = [
-        qml.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
+        qp.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
         for x in doubles
     ]
 
@@ -312,7 +313,7 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    bin_range = int(np.ceil(np.log2(orbitals)))
+    bin_range = qp.math.ceil_log2(orbitals)
 
     beta = np.array([[1]])
 
@@ -553,7 +554,7 @@ def mol_data(identifier, identifier_type="name"):
     """
 
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import pubchempy as pcp
     except ImportError as Error:
         raise ImportError(
@@ -602,7 +603,7 @@ def mol_data(identifier, identifier_type="name"):
     symbols = [atom["element"] for atom in data_mol["atoms"]]
     geometry = (
         np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in data_mol["atoms"]])
-        / bohr_angs
+        / BOHR_TO_ANG
     )
 
     return symbols, geometry

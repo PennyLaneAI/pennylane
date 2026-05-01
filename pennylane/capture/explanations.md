@@ -1,4 +1,4 @@
-This documentation explains the principles behind `qml.capture.CaptureMeta` and higher order primitives.
+This documentation explains the principles behind `qp.capture.CaptureMeta` and higher order primitives.
 
 
 ```python
@@ -9,7 +9,7 @@ import jax
 
 
 ```python
-my_func_prim = jax.core.Primitive("my_func")
+my_func_prim = jax.extend.core.Primitive("my_func")
 
 @my_func_prim.def_impl
 def _(x):
@@ -65,7 +65,7 @@ def repeat(func: Callable, n: int) -> Callable:
 We can start by creating the primitive itself:
 
 ```python
-repeat_prim = jax.core.Primitive("repeat")
+repeat_prim = jax.extend.core.Primitive("repeat")
 repeat_prim.multiple_results = True
 ```
 
@@ -318,7 +318,7 @@ class PrimitiveMeta(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.core.Primitive(cls.__name__)
+        primitive = jax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -379,8 +379,6 @@ class AbstractPrimitiveClass(jax.core.AbstractValue):
 
     def __hash__(self):
         return hash("AbstractPrimitiveClass")
-
-jax.core.raise_to_shaped_mappings[AbstractPrimitiveClass] = lambda aval, _: aval
 ```
 
 Now we can redefine our class to use this abstract class
@@ -391,7 +389,7 @@ class PrimitiveMeta2(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.core.Primitive(cls.__name__)
+        primitive = jax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -428,6 +426,9 @@ Now in our jaxpr, we can see thet `PrimitiveClass2` returns something of type `A
 
 # Non-interpreted primitives
 
+**WARNING:** THIS EXPLANATION IS SPECIFIC TO JAX 0.4.28 AND NO LONGER APPLIES
+
+
 Some of the primitives in the capture module have a somewhat non-standard requirement for the
 behaviour under differentiation or batching: they should ignore that an input is a differentiation
 or batching tracer and just execute the standard implementation on them.
@@ -450,12 +451,12 @@ def fun(x):
 ```
 
 Now suppose we want to turn this into a primitive. We could just promote it to a standard
-`jax.core.Primitive` as
+`jax.extend.core.Primitive` as
 
 ```python
 import jax
 
-fd_prim = jax.core.Primitive("finite_diff")
+fd_prim = jax.extend.core.Primitive("finite_diff")
 fd_prim.multiple_results = True
 fd_prim.def_impl(finite_diff_impl)
 
@@ -487,7 +488,7 @@ for our finite difference method. We also create the usual method that binds the
 primitive to inputs.
 
 ```python
-class NonInterpPrimitive(jax.core.Primitive):
+class NonInterpPrimitive(jax.extend.core.Primitive):
     """A subclass to JAX's Primitive that works like a Python function
     when evaluating JVPTracers."""
 
@@ -519,7 +520,7 @@ that just repeats the chain rule:
 (Array(1.9375, dtype=float32, weak_type=True), Array(0., dtype=float32, weak_type=True), Array(498., dtype=float32, weak_type=True))
 ```
 
-In addition to the differentiation primitives for `qml.jacobian` and `qml.grad`, quantum operators
+In addition to the differentiation primitives for `qp.jacobian` and `qp.grad`, quantum operators
 have non-interpreted primitives as well. This is because their differentiation is performed
 by the surrounding QNode primitive rather than through the standard chain rule that acts
 "locally" (in the circuit). In short, we only want gates to store their tracers (which will help

@@ -20,6 +20,7 @@ a function is independent of its arguments for the interfaces
 * TensorFlow
 * PyTorch
 """
+
 import warnings
 from functools import partial
 
@@ -96,7 +97,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     and inspecting its signature.
     The first argument of the output of ``jax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
-    ``Partial`` are unequal to ``((),)`.
+    ``Partial`` are unequal to ``((),)`` (JAX < 0.7.0) or ``([],)`` (JAX >= 0.7.0).
     Functions that depend on the input in a trivial manner, i.e., without
     processing it, will go undetected by this. Therefore we also
     test the arguments of the *function* of the above ``Partial``.
@@ -114,7 +115,9 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     mapped_func = partial(func, **kwargs)
 
     _vjp = jax.vjp(mapped_func, *args)[1]
-    if _vjp.args[0].args != ((),):
+
+    # JAX 0.7.0+ changed the VJP structure: args are now ([],) instead of ((),)
+    if _vjp.args[0].args not in (((),), ([],)):
         return False
     if _vjp.args[0].func.args[0][0][0] is not None:
         return False
@@ -122,7 +125,9 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
-def _tf_is_indep_analytic(func, *args, **kwargs):
+def _tf_is_indep_analytic(
+    func, *args, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Test analytically whether a function is independent of its arguments
     using TensorFlow.
 
@@ -178,7 +183,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     that have the same shapes as ``args``.
     """
     width = bounds[1] - bounds[0]
-    if interface == "tf":
+    if interface == "tf":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)
@@ -190,7 +195,7 @@ def _get_random_args(args, interface, num, seed, bounds):
             )
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
-                for _arg, arg in zip(_args, args)
+                for _arg, arg in zip(_args, args, strict=True)
             )
             rnd_args.append(_args)
     elif interface == "torch":
@@ -241,7 +246,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         if is_tuple_valued:
             if not all(
                 np.allclose(new, orig, atol=atol, rtol=rtol)
-                for new, orig in zip(new_output, original_output)
+                for new, orig in zip(new_output, original_output, strict=True)
             ):
                 return False
         else:
@@ -251,7 +256,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-positional-arguments
 def is_independent(
     func,
     interface,
@@ -339,7 +344,7 @@ def is_independent(
 
         >>> x = np.array([0.2, 9.1, -3.2], requires_grad=True)
         >>> weights = np.array([1.1, -0.7, 1.8], requires_grad=True)
-        >>> qml.math.is_independent(lin, "autograd", (x,), {"weights": weights})
+        >>> qp.math.is_independent(lin, "autograd", (x,), {"weights": weights})
         False
 
     However, the Jacobian will not depend on ``x`` because ``lin`` is a
@@ -347,8 +352,8 @@ def is_independent(
 
     .. code-block:: pycon
 
-        >>> jac = qml.jacobian(lin)
-        >>> qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        >>> jac = qp.jacobian(lin)
+        >>> qp.math.is_independent(jac, "autograd", (x,), {"weights": weights})
         True
 
     Note that a function ``f = lambda x: 0.0 * x`` will be counted as *dependent* on ``x``
@@ -359,7 +364,7 @@ def is_independent(
 
     # pylint:disable=too-many-arguments
 
-    if not interface in {"autograd", "jax", "tf", "torch", "tensorflow"}:
+    if interface not in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")
 
     kwargs = kwargs or {}
@@ -372,7 +377,10 @@ def is_independent(
         if not _jax_is_indep_analytic(func, *args, **kwargs):
             return False
 
-    if interface in ("tf", "tensorflow"):
+    if interface in (
+        "tf",
+        "tensorflow",
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         if not _tf_is_indep_analytic(func, *args, **kwargs):
             return False
 

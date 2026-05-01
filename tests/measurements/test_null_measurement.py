@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the mutual_info module"""
+
 # pylint: disable=use-implicit-booleaness-not-comparison
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements.null_measurement import NullMeasurement
 
 
@@ -48,9 +49,9 @@ def test_integration_jax_jit():
     """Test that execution of the null measurement works with jitting."""
     import jax
 
-    @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+    @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
     def c(x):
-        qml.RX(x, 0)
+        qp.RX(x, 0)
         return NullMeasurement()
 
     r = jax.jit(c)(jax.numpy.array(0.5))
@@ -59,14 +60,13 @@ def test_integration_jax_jit():
     assert r.dtype == np.float64
 
 
-# pylint: disable=unused-argument
-@pytest.mark.jax
-def test_capture(enable_disable_plxpr):
+@pytest.mark.capture
+def test_capture():
     """Test that null measurement works with plxpr."""
 
-    @qml.qnode(qml.device("default.qubit", wires=1))
+    @qp.qnode(qp.device("default.qubit", wires=1))
     def c(x):
-        qml.RX(x, 0)
+        qp.RX(x, 0)
         return NullMeasurement()
 
     out = c(0.5)

@@ -16,6 +16,7 @@ This file contains functions and classes to create a
 :class:`~pennylane.spin.Lattice` object. This object stores all
 the necessary information about a lattice.
 """
+
 import itertools
 
 import scipy as sp
@@ -23,7 +24,7 @@ import scipy as sp
 from pennylane import math
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
-# pylint: disable=use-a-generator, too-few-public-methods
+# pylint: disable=too-few-public-methods
 # pylint: disable=too-many-branches
 
 
@@ -102,7 +103,7 @@ class Lattice:
         which defaults to 1. Increasing ``neighbour_order`` will add additional connections
         in the lattice.
 
-        .. code-block :: python
+        .. code-block:: python
 
             positions = [[0.2, 0.5],
                          [0.5, 0.2],
@@ -220,6 +221,7 @@ class Lattice:
                 raise ValueError(
                     "custom_edges cannot be specified if neighbour_order argument is set to a value other than 1."
                 )
+
             lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
@@ -255,7 +257,6 @@ class Lattice:
                             self.lattice_points[i] - self.lattice_points[neighbour]
                         )
                         dist = math.round(dist, 4)
-
                         if dist not in edges:
                             edges[dist] = []
                         edges[dist].append((i, neighbour))
@@ -303,7 +304,7 @@ class Lattice:
             point = math.dot(cell[:-1], self.vectors) + self.positions[cell[-1]]
             node_index = math.dot(math.mod(cell[:-1], self.n_cells), nsites_axis) + cell[-1]
             lattice_points.append(point)
-            lattice_map.append(node_index)
+            lattice_map.append(int(node_index))  # convert from numpy int to inbuilt int
 
         return math.array(lattice_points), lattice_map
 
@@ -326,15 +327,17 @@ class Lattice:
 
         Generates a square lattice with a single diagonal and assigns a different operation
         to horizontal, vertical, and diagonal edges.
+
         >>> n_cells = [3,3]
         >>> vectors = [[1, 0], [0,1]]
         >>> custom_edges = [
-                [(0, 1), ("XX", 0.1)],
-                [(0, 3), ("YY", 0.2)],
-                [(0, 4), ("XY", 0.3)],
-            ]
-        >>> lattice = qml.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
-        >>> lattice.edges
+        ...         [(0, 1), ("XX", 0.1)],
+        ...         [(0, 3), ("YY", 0.2)],
+        ...         [(0, 4), ("XY", 0.3)],
+        ...     ]
+        >>> lattice = qp.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+        >>> from pprint import pprint
+        >>> pprint(lattice.edges)
         [(0, 1, ('XX', 0.1)),
          (1, 2, ('XX', 0.1)),
          (3, 4, ('XX', 0.1)),
@@ -350,23 +353,20 @@ class Lattice:
          (0, 4, ('XY', 0.3)),
          (1, 5, ('XY', 0.3)),
          (3, 7, ('XY', 0.3)),
-         (4, 8, ('XY', 0.3))
-        ]
+         (4, 8, ('XY', 0.3))]
 
         """
 
         for edge in custom_edges:
             if len(edge) not in (1, 2):
-                raise TypeError(
-                    """
+                raise TypeError("""
                     The elements of custom_edges should be lists of length 1 or 2.
                     Inside said lists should be a tuple that contains two lattice
                     indices to represent the edge and, optionally, a tuple that represents
                     the operation and coefficient for that edge.
                     Every tuple must contain two lattice indices to represent the edge
                     and can optionally include a list to represent the operation and coefficient for that edge.
-                    """
-                )
+                    """)
 
             if edge[0][0] >= self.n_sites or edge[0][1] >= self.n_sites:
                 raise ValueError(
@@ -409,7 +409,7 @@ class Lattice:
                 node2_idx = (
                     math.dot(math.mod(cell + translation_vector, self.n_cells), nsites_axis) + v2
                 )
-                edges.append((node1_idx, node2_idx, edge_operation))
+                edges.append((int(node1_idx), int(node2_idx), edge_operation))
 
         return edges
 
@@ -463,7 +463,7 @@ def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order
     >>> shape = 'square'
     >>> n_cells = [2, 2]
     >>> boundary_condition = [True, False]
-    >>> lattice = qml.spin.generate_lattice(shape, n_cells, boundary_condition)
+    >>> lattice = qp.spin.generate_lattice(shape, n_cells, boundary_condition)
     >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 

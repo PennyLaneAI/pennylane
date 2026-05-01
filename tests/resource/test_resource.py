@@ -14,18 +14,22 @@
 """
 Test base Resource class and its associated methods
 """
+
 # pylint: disable=unnecessary-dunder-call
 from collections import defaultdict
 from dataclasses import FrozenInstanceError
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
+    CircuitSpecs,
     Resources,
     ResourcesOperation,
+    SpecsResources,
+    _batch_num_to_letters,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -33,6 +37,7 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    resources_from_tape,
     substitute,
 )
 from pennylane.tape import QuantumScript
@@ -572,9 +577,13 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         initialized without a `resources` method."""
 
         class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that does not implement the resources method."""
+
             num_wires = 2
 
         class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that implements the resources method."""
+
             num_wires = 2
 
             def resources(self):
@@ -584,95 +593,6 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
             _ = CustomOpNoResource(wires=[0, 1])  # pylint:disable=abstract-class-instantiated
 
         assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
-
-
-class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
-    num_wires = 2
-    name = "CustomOp1"
-
-    def resources(self):
-        return Resources(
-            num_wires=self.num_wires,
-            num_gates=3,
-            gate_types={"Identity": 1, "PauliZ": 2},
-            gate_sizes={1: 3},
-            depth=3,
-        )
-
-
-class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
-    num_wires = 2
-    name = "CustomOp2"
-
-
-lst_ops_and_shots = (
-    ([], Shots(None)),
-    ([qml.Hadamard(0), qml.CNOT([0, 1])], Shots(None)),
-    ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], Shots(10)),
-    (
-        [
-            qml.Hadamard(0),
-            qml.RX(1.23, 1),
-            qml.CNOT([0, 1]),
-            qml.RX(4.56, 1),
-            qml.Hadamard(0),
-            qml.Hadamard(1),
-        ],
-        Shots(100),
-    ),
-    ([qml.Hadamard(0), qml.CNOT([0, 1]), _CustomOpWithResource(wires=[1, 0])], Shots(None)),
-    (
-        [
-            qml.PauliZ(0),
-            qml.CNOT([0, 1]),
-            qml.RX(1.23, 2),
-            _CustomOpWithResource(wires=[0, 2]),
-            _CustomOpWithoutResource(wires=[0, 1]),
-        ],
-        Shots((10, (50, 2))),
-    ),
-    (
-        [
-            qml.Hadamard(0),
-            qml.RX(1.23, 1),
-            qml.CNOT([0, 1]),
-            qml.RX(4.56, 1),
-            qml.Hadamard(0),
-            qml.Hadamard(1),
-            _CustomOpWithoutResource(wires=[0, 1]),
-        ],
-        Shots(100),
-    ),
-)
-
-resources_data = (
-    Resources(),
-    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2),
-    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
-    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots(100)),
-    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, {1: 4, 2: 1}, 5),
-    Resources(
-        3,
-        7,
-        {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
-        {1: 5, 2: 2},
-        6,
-        Shots((10, (50, 2))),
-    ),
-    Resources(
-        2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, {1: 5, 2: 2}, 5, Shots(100)
-    ),
-)  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
-
-
-@pytest.mark.parametrize(
-    "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data)
-)
-def test_count_resources(ops_and_shots, expected_resources):
-    """Test the count resources method."""
-    ops, shots = ops_and_shots
-    computed_resources = _count_resources(QuantumScript(ops=ops, shots=shots))
-    assert computed_resources == expected_resources
 
 
 def test_combine_dict():
@@ -695,3 +615,514 @@ def test_scale_dict(scalar):
     result = _scale_dict(d1, scalar)
 
     assert result == expected
+
+
+@pytest.mark.parametrize("compute_depth", (True, False))
+def test_specs_compute_depth(compute_depth):
+    """Test that depth is skipped with `resources_from_tape`."""
+
+    ops = [
+        qp.RX(0.432, wires=0),
+        qp.Rot(0.543, 0, 0.23, wires=0),
+        qp.CNOT(wires=[0, "a"]),
+        qp.RX(0.133, wires=4),
+    ]
+    obs = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+
+    tape = QuantumScript(ops=ops, measurements=obs)
+    resources = resources_from_tape(tape, compute_depth=compute_depth)
+
+    assert resources.depth == (3 if compute_depth else None)
+
+
+###########################################################################
+##  Tests for specs dataclasses
+###########################################################################
+
+
+class TestSpecsResources:
+    """Test the methods and attributes of the SpecsResource class"""
+
+    def example_specs_resource(self):
+        """Generate an example SpecsResources instance."""
+        return SpecsResources(
+            gate_types={"Hadamard": 2, "CNOT": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            depth=2,
+        )
+
+    def test_depth_autoassign(self):
+        """Test that the SpecsResources class auto-assigns depth as None if not provided."""
+
+        s = SpecsResources(
+            gate_types={"Hadamard": 2, "CNOT": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+        )
+
+        assert s.depth is None
+
+    def test_num_gates(self):
+        """Test that the SpecsResources class handles `num_gates` as expected."""
+
+        with pytest.raises(
+            ValueError,
+            match="Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates.",
+        ):
+            # Gate counts don't match
+            _ = SpecsResources(
+                gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
+            )
+
+        s = self.example_specs_resource()
+
+        assert s.num_gates == 3
+
+    def test_immutable(self):
+        """Test that SpecsResources is immutable."""
+
+        s = self.example_specs_resource()
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.gate_types = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.gate_sizes = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.measurements = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.num_allocs = 1
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.depth = 0
+
+    def test_getitem(self):
+        """Test that SpecsResources supports indexing via __getitem__."""
+
+        s = self.example_specs_resource()
+
+        assert s["gate_types"] == s.gate_types
+        assert s["gate_counts"] == s.gate_types
+        assert s["gate_sizes"] == s.gate_sizes
+        assert s["measurements"] == s.measurements
+        assert s["num_allocs"] == s.num_allocs
+        assert s["depth"] == s.depth
+
+        assert s["num_gates"] == s.num_gates
+
+        # Check removed keys
+        with pytest.raises(
+            KeyError,
+            match="shots is no longer included within specs's resources, check the top-level object instead.",
+        ):
+            _ = s["shots"]
+        with pytest.raises(
+            KeyError,
+            match="num_wires has been renamed to num_allocs to more accurate describe what it measures.",
+        ):
+            _ = s["num_wires"]
+
+        # Try nonexistent key
+        with pytest.raises(
+            KeyError,
+            match="key 'potato' not available. Options are ",
+        ):
+            _ = s["potato"]
+
+    def test_str(self):
+        """Test the string representation of a SpecsResources instance."""
+
+        s = self.example_specs_resource()
+
+        expected = "Wire allocations: 2\n"
+        expected += "Total gates: 3\n"
+        expected += "Gate counts:\n"
+        expected += "- Hadamard: 2\n"
+        expected += "- CNOT: 1\n"
+        expected += "Measurements:\n"
+        expected += "- expval(PauliZ): 1\n"
+        expected += "Depth: 2"
+
+        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+
+        assert str(s) == expected
+        assert s.to_pretty_str() == expected
+        assert s.to_pretty_str(preindent=4) == expected_indented
+
+        # Check with no depth, gates, or measurements
+
+        s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
+
+        expected = "Wire allocations: 0\n"
+        expected += "Total gates: 0\n"
+        expected += "Gate counts:\n"
+        expected += "- No gates.\n"
+        expected += "Measurements:\n"
+        expected += "- No measurements.\n"
+        expected += "Depth: Not computed"
+
+        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+
+        assert str(s) == expected
+        assert s.to_pretty_str() == expected
+        assert s.to_pretty_str(preindent=4) == expected_indented
+
+    def test_to_dict(self):
+        """Test the to_dict method of SpecsResources."""
+
+        s = self.example_specs_resource()
+
+        expected = {
+            "gate_types": {"Hadamard": 2, "CNOT": 1},
+            "gate_sizes": {1: 2, 2: 1},
+            "measurements": {"expval(PauliZ)": 1},
+            "num_allocs": 2,
+            "depth": 2,
+            "num_gates": 3,
+        }
+
+        assert s.to_dict() == expected
+
+
+class TestCircuitSpecs:
+
+    def example_specs_result(self):
+        """Generate an example CircuitSpecs instance."""
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=SpecsResources(
+                gate_types={"Hadamard": 2, "CNOT": 1},
+                gate_sizes={1: 2, 2: 1},
+                measurements={"expval(PauliZ)": 1},
+                num_allocs=2,
+                depth=2,
+            ),
+        )
+
+    def example_specs_result_multi(self):
+        """Generate an example CircuitSpecs instance with multiple levels and batches."""
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    gate_types={"Hadamard": 4, "CNOT": 2},
+                    gate_sizes={1: 4, 2: 2},
+                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    num_allocs=2,
+                    depth=2,
+                ),
+                3: [
+                    SpecsResources(
+                        gate_types={"CNOT": 1},
+                        gate_sizes={2: 1},
+                        measurements={"expval(PauliX)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                    SpecsResources(
+                        gate_types={"CNOT": 1},
+                        gate_sizes={2: 1},
+                        measurements={"expval(PauliZ)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                ],
+            },
+        )
+
+    def test_blank_init(self):
+        """Test that CircuitSpecss can be instantiated with no arguments."""
+        r = CircuitSpecs()  # should not raise any errors
+
+        assert r.device_name is None
+        assert r.num_device_wires is None
+        assert r.shots is None
+        assert r.level is None
+        assert r.resources is None
+
+    def test_getitem(self):
+        """Test that CircuitSpecs supports indexing via __getitem__."""
+
+        r = self.example_specs_result()
+
+        assert r["device_name"] == r.device_name
+        assert r["num_device_wires"] == r.num_device_wires
+        assert r["shots"] == r.shots
+        assert r["level"] == r.level
+        assert r["resources"] == r.resources
+
+    def test_getitem_removed_keys(self):
+        """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
+
+        r = self.example_specs_result()
+
+        with pytest.raises(
+            KeyError,
+            match="num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources.",
+        ):
+            _ = r["num_observables"]
+
+        for key in ("interface", "diff_method", "errors", "num_tape_wires"):
+            with pytest.raises(
+                KeyError,
+                match=f"key '{key}' is no longer included in specs.",
+            ):
+                _ = r[key]
+
+        for key in (
+            "gradient_fn",
+            "gradient_options",
+            "num_gradient_executions",
+            "num_trainable_params",
+        ):
+            with pytest.raises(
+                KeyError,
+                match=f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information.",
+            ):
+                _ = r[key]
+
+        # Check nonexistent key
+        with pytest.raises(
+            KeyError,
+            match="key 'potato' not available. Options are ",
+        ):
+            _ = r["potato"]
+
+    def test_to_dict(self):
+        """Test the to_dict method of CircuitSpecs."""
+
+        r = self.example_specs_result()
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": 2,
+            "resources": {
+                "gate_types": {"Hadamard": 2, "CNOT": 1},
+                "gate_sizes": {1: 2, 2: 1},
+                "measurements": {"expval(PauliZ)": 1},
+                "num_allocs": 2,
+                "depth": 2,
+                "num_gates": 3,
+            },
+        }
+
+        assert r.to_dict() == expected
+
+        r = self.example_specs_result_multi()
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": {1: "l1", 2: "l2"},
+            "resources": {
+                1: {
+                    "gate_types": {"Hadamard": 4, "CNOT": 2},
+                    "gate_sizes": {1: 4, 2: 2},
+                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "num_allocs": 2,
+                    "depth": 2,
+                    "num_gates": 6,
+                },
+                3: [
+                    {
+                        "gate_types": {"CNOT": 1},
+                        "gate_sizes": {2: 1},
+                        "measurements": {"expval(PauliX)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": 1,
+                    },
+                    {
+                        "gate_types": {"CNOT": 1},
+                        "gate_sizes": {2: 1},
+                        "measurements": {"expval(PauliZ)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": 1,
+                    },
+                ],
+            },
+        }
+
+        assert r.to_dict() == expected
+
+    def test_str(self):
+        """Test the string representation of a CircuitSpecs instance."""
+
+        r = self.example_specs_result()
+
+        expected = "Device: default.qubit\n"
+        expected += "Device wires: 5\n"
+        expected += "Shots: Shots(total=1000)\n"
+        expected += "Level: 2\n"
+        expected += "\n"
+        expected += r.resources.to_pretty_str()
+
+        assert str(r) == expected
+
+    def test_str_multi_tabular(self):
+        """Test the tabular string representation of a CircuitSpecs instance."""
+
+        r = self.example_specs_result_multi()
+        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
+Device wires: 5
+Shots: Shots(total=1000)
+Levels:
+- 1: l1
+- 2: l2
+
+↓Metric   Level→ |    1 |  2-a |  2-b
+-------------------------------------
+Wire allocations |    2 |    2 |    2
+Total gates      |    6 |    1 |    1
+Gate counts:     |
+- Hadamard       |    4 |    0 |    0
+- CNOT           |    2 |    1 |    1
+Measurements:    |
+- expval(PauliX) |    1 |    1 |    0
+- expval(PauliZ) |    1 |    0 |    1""".split()]
+
+    def test_str_multi_non_tabular(self):
+        """Test the non-tabular string representation of a CircuitSpecs instance."""
+        r = self.example_specs_result_multi()
+
+        expected = "Device: default.qubit\n"
+        expected += "Device wires: 5\n"
+        expected += "Shots: Shots(total=1000)\n"
+        expected += "Levels:\n"
+        expected += "- 1: l1\n"
+        expected += "- 2: l2\n"
+        expected += "\n\n"
+
+        expected += "Level = 1:\n"
+        expected += r.resources[1].to_pretty_str(preindent=4)
+
+        expected += "\n\n" + "-" * 60 + "\n\n"
+
+        expected += "Level = 3:\n"
+        expected += "    Batched tape a:\n"
+        expected += r.resources[3][0].to_pretty_str(preindent=8)
+        expected += "\n\n    Batched tape b:\n"
+        expected += r.resources[3][1].to_pretty_str(preindent=8)
+
+        assert r.to_pretty_str(tabular=False) == expected
+
+
+class TestCountResources:
+    class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+        num_wires = 2
+        name = "CustomOp1"
+
+        def resources(self):
+            return Resources(
+                num_wires=self.num_wires,
+                num_gates=3,
+                gate_types={"Identity": 1, "PauliZ": 2},
+                gate_sizes={1: 3},
+                depth=3,
+            )
+
+    class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
+        num_wires = 2
+        name = "CustomOp2"
+
+    scripts = (
+        QuantumScript(ops=[], measurements=[]),
+        QuantumScript(
+            ops=[qp.Hadamard(0), qp.CNOT([0, 1])], measurements=[qp.expval(qp.PauliZ(0))]
+        ),
+        QuantumScript(
+            ops=[qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)],
+            measurements=[qp.expval(qp.exp(qp.PauliZ(0)))],
+            shots=Shots(10),
+        ),
+        QuantumScript(
+            ops=[
+                qp.PauliZ(0),
+                qp.CNOT([0, 1]),
+                qp.RX(1.23, 2),
+                _CustomOpWithResource(wires=[0, 2]),
+                _CustomOpWithoutResource(wires=[0, 1]),
+            ],
+            measurements=[qp.probs()],
+        ),
+        QuantumScript(
+            ops=[
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(10)),
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(5)),
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=[0]),
+                qp.CNOT([0, 1]),
+                qp.Toffoli([0, 1, 2]),
+                qp.ctrl(op=qp.PauliX(10), control=[0]),
+                qp.ctrl(op=qp.PauliX(10), control=[0, 1]),
+            ],
+            measurements=[qp.probs()],
+        ),
+    )
+
+    expected_resources = (
+        SpecsResources({}, {}, {}, 0, 0),
+        SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval(PauliZ)": 1}, 2, 2),
+        SpecsResources(
+            {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval(Exp(PauliZ))": 1}, 3, 2
+        ),
+        SpecsResources(
+            {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
+            {1: 5, 2: 2},
+            {"probs(all wires)": 1},
+            3,
+            6,
+        ),
+        SpecsResources(
+            {"10C(IsingXX)": 1, "5C(IsingXX)": 1, "C(IsingXX)": 1, "CNOT": 2, "Toffoli": 2},
+            {12: 1, 7: 1, 3: 3, 2: 2},
+            {"probs(all wires)": 1},
+            12,
+            7,
+        ),
+    )  # SpecsResources(gate_types, gate_sizes, measurements, num_allocs, depth)
+
+    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
+    def test_count_resources(self, script, expected_resources):
+        """Test the count resources method."""
+        computed_resources = _count_resources(script)
+        assert computed_resources == expected_resources
+
+    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
+    def test_count_resources_no_depth(self, script, expected_resources):
+        """Test the count resources method with depth disabled."""
+
+        computed_resources = _count_resources(script, compute_depth=False)
+        expected_resources = SpecsResources(
+            gate_types=expected_resources.gate_types,
+            gate_sizes=expected_resources.gate_sizes,
+            measurements=expected_resources.measurements,
+            num_allocs=expected_resources.num_allocs,
+        )
+
+        assert computed_resources == expected_resources
+
+
+def test_batch_num_to_letters():
+    """Test the _batch_num_to_letters helper function."""
+    assert _batch_num_to_letters(0) == "a"
+    assert _batch_num_to_letters(1) == "b"
+    assert _batch_num_to_letters(25) == "z"
+    assert _batch_num_to_letters(26) == "aa"
+    assert _batch_num_to_letters(27) == "ab"
+    assert _batch_num_to_letters(51) == "az"
+    assert _batch_num_to_letters(52) == "ba"

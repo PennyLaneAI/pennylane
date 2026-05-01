@@ -14,13 +14,19 @@
 """
 This module contains code for the main device construction delegation logic.
 """
+
 from importlib import metadata
 from sys import version_info
 
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
-import pennylane as qml
+from pennylane._version import __version__
+from pennylane.configuration import default_config
+from pennylane.exceptions import DeviceError
+
+from ._legacy_device import Device as LegacyDevice
+from .legacy_facade import LegacyDeviceFacade
 
 
 def _get_device_entrypoints():
@@ -30,7 +36,6 @@ def _get_device_entrypoints():
     entries = (
         metadata.entry_points()["pennylane.plugins"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.plugins")
     )
     return {entry.name: entry for entry in entries}
@@ -93,19 +98,16 @@ def device(name, *args, **kwargs):
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run
-    :func:`qml.about <pennylane.about>`.
+    :func:`qp.about <pennylane.about>`.
 
     Args:
         name (str): the name of the device to load
-        wires (int): the number of wires (subsystems) to initialise
-            the device with. Note that this is optional for certain
-            devices, such as ``default.qubit``
+        wires (Wires): the wires (subsystems) to initialize the device with.
+            Note that this is optional for certain devices, such as ``default.qubit``
 
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
-        custom_decomps (Dict[Union(str, Operator), Callable]): Custom
-            decompositions to be applied by the device at runtime.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
@@ -114,12 +116,14 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=5)
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=5)
 
         def circuit():
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[3, 4])
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[3, 4])
             ...
 
     The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
@@ -127,93 +131,39 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+        dev = qp.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
 
         def circuit():
-            qml.Hadamard(wires='q11')
-            qml.Hadamard(wires=['ancilla'])
-            qml.CNOT(wires=['q12', -1])
+            qp.Hadamard(wires='q11')
+            qp.Hadamard(wires=['auxiliary'])
+            qp.CNOT(wires=['q12', -1])
             ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qp.device("default.qubit")
 
-    Most devices accept a ``shots`` argument which specifies how many circuit executions
-    are used to estimate stochastic return values. As an example, ``qml.sample()`` measurements
-    will return as many samples as specified in the shots argument. The shots argument can be
-    changed on a per-call basis using the built-in ``shots`` keyword argument. Note that the
-    ``shots`` argument can be a single integer or a list of shot values.
+    When executing quantum circuits on a device, we can specify the number of times the circuit must be executed
+    to estimate stochastic return values by using the :func:`~pennylane.set_shots` transform.
+    As an example, ``qp.sample()`` measurements will return as many samples as the number of shots specified.
+    Note that ``shots`` can be a single integer or a list of shot values.
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qp.device('default.qubit', wires=1, seed=42)
 
-        @qml.qnode(dev)
+        @qp.set_shots(10)
+        @qp.qnode(dev)
         def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.Z(0))
+            qp.RX(a, wires=0)
+            return qp.sample(qp.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
-    array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
-    >>> circuit(0.8, shots=[3, 4, 4])   # default is overwritten for this call
-    (array([1, 1, 1]), array([ 1, -1,  1,  1]), array([1, 1, 1, 1]))
-    >>> circuit(0.8)  # back to default of 10 samples
-    array([ 1, -1,  1,  1, -1,  1,  1,  1,  1,  1])
-
-    When constructing a device, we may optionally pass a dictionary of custom
-    decompositions to be applied to certain operations upon device execution.
-    This is useful for enabling support of gates on devices where they would normally
-    be unsupported.
-
-    For example, suppose we are running on an ion trap device which does not
-    natively implement the CNOT gate, but we would still like to write our
-    circuits in terms of CNOTs. On a ion trap device, CNOT can be implemented
-    using the ``IsingXX`` gate. We first define a decomposition function
-    (such functions have the signature ``decomposition(*params, wires)``):
-
-    .. code-block:: python
-
-        def ion_trap_cnot(wires, **_):
-            return [
-                qml.RY(np.pi/2, wires=wires[0]),
-                qml.IsingXX(np.pi/2, wires=wires),
-                qml.RX(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[1])
-            ]
-
-    Next, we create a device, and a QNode for testing. When constructing the
-    QNode, we can set the expansion strategy to ``"device"`` to ensure the
-    decomposition is applied and will be viewable when we draw the circuit.
-    Note that custom decompositions should accept keyword arguments even when
-    it is not used.
-
-    .. code-block:: python
-
-        # As the CNOT gate normally has no decomposition, we can use default.qubit
-        # here for expository purposes.
-        dev = qml.device(
-            'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
-        )
-
-        @qml.qnode(dev)
-        def run_cnot():
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.X(1))
-
-    >>> print(qml.draw(run_cnot, level="device")())
-    0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
-    1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
-
-    Some devices may accept additional arguments. For instance,
-    ``default.gaussian`` accepts the keyword argument ``hbar``, to set
-    the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
-    (by default set to 2).
-
-    Please refer to the documentation for the individual devices to see any
-    additional arguments that might be required or supported.
+    array([ 1.,  1., -1.,  1.,  1., -1.,  1.,  1.,  1.,  1.])
+    >>> new_circuit = qp.set_shots(circuit, shots=[3, 4, 4])
+    >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
+    (array([ 1., -1.,  1.]), array([1., 1., 1., 1.]), array([1., 1., 1., 1.]))
     """
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
@@ -225,7 +175,7 @@ def device(name, *args, **kwargs):
         options = {}
 
         # load global configuration settings if available
-        config = kwargs.get("config", qml.default_config)
+        config = kwargs.get("config", default_config)
 
         if config:
             # combine configuration options with keyword arguments.
@@ -234,10 +184,6 @@ def device(name, *args, **kwargs):
             options.update(config["main"])
             options.update(config[name.split(".")[0] + ".global"])
             options.update(config[name])
-
-        # Pop the custom decomposition keyword argument; we will use it here
-        # only and not pass it to the device.
-        custom_decomps = kwargs.pop("custom_decomps", None)
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -255,35 +201,19 @@ def device(name, *args, **kwargs):
 
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
-            current_version = Version(qml.version())
+            current_version = Version(__version__)
             if current_version not in required_versions:
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
-                    f"however PennyLane version {qml.version()} is installed."
+                    f"however PennyLane version {__version__} is installed."
                 )
 
         # Construct the device
         dev = plugin_device_class(*args, **options)
 
-        # Once the device is constructed, we set its custom expansion function if
-        # any custom decompositions were specified.
-        if custom_decomps is not None:
-            if isinstance(dev, qml.devices.LegacyDevice):
-                custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev
-                )
-                dev.custom_expand(custom_decomp_expand_fn)
-            else:
-                custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev
-                )
-                dev.preprocess = custom_decomp_preprocess
-
-        if isinstance(dev, qml.devices.LegacyDevice):
-            dev = qml.devices.LegacyDeviceFacade(dev)
+        if isinstance(dev, LegacyDevice):
+            dev = LegacyDeviceFacade(dev)
 
         return dev
 
-    raise qml.DeviceError(
-        f"Device {name} does not exist. Make sure the required plugin is installed."
-    )
+    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")

@@ -20,17 +20,19 @@ Here, we integrate AutoGraph into PennyLane to improve the UX and allow programm
 Python control flow and other imperative expressions rather than the functional equivalents provided
 by PennyLane.
 """
+
 import copy
 import inspect
 import warnings
+from contextlib import ContextDecorator
 
-from malt.core import converter
+from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
 from . import ag_primitives
-from .ag_primitives import AutoGraphError, AutoGraphWarning
 
 
 class PennyLaneTransformer(PyToPy):
@@ -51,7 +53,7 @@ class PennyLaneTransformer(PyToPy):
         # way to handle these in the future.
         # We may also need to check how this interacts with other common function decorators.
         fn = obj
-        if isinstance(obj, qml.QNode):
+        if isinstance(obj, qp.QNode):
             fn = obj.func
         elif inspect.isfunction(fn) or inspect.ismethod(fn):
             pass
@@ -76,15 +78,16 @@ class PennyLaneTransformer(PyToPy):
             try:
                 new_fn, module, source_map = self.transform_function(fn, user_context)
             except KeyError as e:
-                if "Lambda object" in str(e) and "while_loop" in inspect.getsource(fn):
+                # py3.14: "Lambda(...) is not supported"
+                if "Lambda" in str(e) and "while_loop" in inspect.getsource(fn):
                     raise AutoGraphError(
-                        "AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`."
+                        "AutoGraph currently does not support lambda functions as a loop condition for `qp.while_loop`."
                         " Please define the condition using a named function rather than a lambda function."
                     ) from e
 
         new_obj = new_fn
 
-        if isinstance(obj, qml.QNode):
+        if isinstance(obj, qp.QNode):
             new_obj = copy.copy(obj)
             new_obj.func = new_fn
 
@@ -191,13 +194,12 @@ def run_autograph(fn):
         ] 0 b 1 a
       in (c,) }
     """
-
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)
 
     # needed for autograph_source when examining a converted QNode
-    if isinstance(new_fn, qml.QNode):
+    if isinstance(new_fn, qp.QNode):
         new_fn.func.ag_unconverted = fn.func
 
     new_fn.ag_module = module
@@ -277,7 +279,7 @@ def autograph_source(fn):
         return inspect.getsource(fn)
 
     # Unwrap known objects to get the function actually transformed by autograph.
-    if isinstance(fn, qml.QNode):
+    if isinstance(fn, qp.QNode):
         fn = fn.func
 
     if TRANSFORMER.has_cache(fn):
@@ -290,18 +292,104 @@ def autograph_source(fn):
     )
 
 
+# pylint: disable=too-few-public-methods
+class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
+    """Context decorator that disables AutoGraph for the given function/context.
+
+    .. note::
+
+        A singleton instance is used for discarding parentheses usage:
+
+        @disable_autograph
+        instead of
+        @DisableAutograph()
+
+        with disable_autograph:
+        instead of
+        with DisableAutograph()
+
+    **Example**
+
+    We can see this works by considering a simple example.
+    In this case, we expect to see a ``cond`` primitive captured in the jaxpr from the function ``f``.
+
+    .. code-block::
+
+        import pennylane as qp
+        import jax
+
+        from jax import make_jaxpr
+        from pennylane.capture.autograph import disable_autograph, run_autograph
+
+        qp.capture.enable()
+
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+        def g():
+            x = 2
+            return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let
+        _:bool[] a:i32[] = cond[
+        args_slice=slice(2, None, None)
+        consts_slices=[slice(2, 2, None), slice(2, 2, None)]
+        jaxpr_branches=[{ lambda ; . let  in (True:bool[], 4:i32[]) }, { lambda ; . let  in (True:bool[], 2:i32[]) }]
+        ] True:bool[] True:bool[]
+    in (a,) }
+
+    Now if we add the decorator the function is evaluated and not captured in the jaxpr,
+
+    .. code-block:: python
+
+        @disable_autograph
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
+    Or we can also use the context manager,
+
+    .. code-block:: python
+
+        def g():
+            x = 2
+            with disable_autograph:
+                return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
+    """
+
+    def __init__(self):
+        super().__init__(status=ag_ctx.Status.DISABLED)
+
+
+# Singleton instance of DisableAutograph
+disable_autograph = DisableAutograph()
+
+# converter.Feature.LISTS permits overloading the 'set_item' function in 'ag_primitives.py'
+OPTIONAL_FEATURES = [converter.Feature.BUILTIN_FUNCTIONS, converter.Feature.LISTS]
+
 TOPLEVEL_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=True,
     internal_convert_user_code=True,
-    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
+    optional_features=OPTIONAL_FEATURES,
 )
 
 NESTED_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=False,
     internal_convert_user_code=True,
-    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
+    optional_features=OPTIONAL_FEATURES,
 )
 
 STANDARD_OPTIONS = converter.STANDARD_OPTIONS

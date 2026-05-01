@@ -15,6 +15,7 @@
 This module provides the PennyLane wrapper functions for modifying NumPy,
 such that it accepts the PennyLane :class:`~.tensor` class.
 """
+
 import functools
 from collections.abc import Sequence
 
@@ -82,6 +83,8 @@ def tensor_wrapper(obj):
     array([[1., 1.],
         [1., 1.]])
     >>> ones([2, 2], requires_grad=True)
+    Traceback (most recent call last):
+        ...
     TypeError: ones() got an unexpected keyword argument 'requires_grad'
 
     ``tensor_wrapper`` both enables construction of :class:`~pennylane.numpy.tensor`

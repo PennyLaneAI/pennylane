@@ -18,7 +18,7 @@ datasets bucket.
 
 from collections.abc import Iterable, Iterator, Mapping
 from pathlib import PurePosixPath
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 from .params import Description, ParamArg, ParamVal
 
@@ -81,7 +81,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
         """
         self.__curr_level = __curr_level
 
-    def get_default_key(self) -> Optional[str]:
+    def get_default_key(self) -> str | None:
         """Get the default key for this level of the foldermap.
         Raises a ValueError if it does not have a default.
         """
@@ -90,8 +90,8 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
     def find(
         self,
         data_name: str,
-        missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
-        **params: Union[Iterable[ParamVal], ParamArg],
+        missing_default: ParamArg | None = ParamArg.DEFAULT,
+        **params: Iterable[ParamVal] | ParamArg,
     ) -> list[tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
@@ -106,10 +106,10 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
         except KeyError as exc:
             raise ValueError(f"No datasets with data name: '{data_name}'") from exc
 
-        curr: list[tuple[Description, Union[FolderMapView, DataPath]]] = [
+        curr: list[tuple[Description, FolderMapView | DataPath]] = [
             (Description(()), self[data_name])
         ]
-        todo: list[tuple[Description, Union[FolderMapView, DataPath]]] = []
+        todo: list[tuple[Description, FolderMapView | DataPath]] = []
         done: list[tuple[Description, DataPath]] = []
 
         for param_name in param_names:
@@ -161,7 +161,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
         return done
 
     def __getitem__(
-        self, __key: Union[str, Literal[ParamArg.DEFAULT]]
+        self, __key: str | Literal[ParamArg.DEFAULT]
     ) -> Union["FolderMapView", DataPath]:
         """Gets the item with key. If key is ``ParamArg.DEFAULT``, return the
         item under the default parameter, or raise a ``ValueError`` if no

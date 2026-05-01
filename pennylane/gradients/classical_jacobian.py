@@ -14,10 +14,13 @@
 """
 Contains the classical Jacobian transform.
 """
+
 # pylint: disable=import-outside-toplevel
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane._grad import jacobian
+from pennylane.workflow import construct_tape
 
 
 def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
@@ -43,20 +46,20 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     Consider the following QNode:
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def circuit(weights):
-    ...     qml.RX(weights[0], wires=0)
-    ...     qml.RY(0.2 * weights[0], wires=1)
-    ...     qml.RY(2.5, wires=0)
-    ...     qml.RZ(weights[1] ** 2, wires=1)
-    ...     qml.RX(weights[2], wires=1)
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(weights[0], wires=0)
+    ...     qp.RY(0.2 * weights[0], wires=1)
+    ...     qp.RY(2.5, wires=0)
+    ...     qp.RZ(weights[1] ** 2, wires=1)
+    ...     qp.RX(weights[2], wires=1)
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
     \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
     a given value of the QNode arguments:
 
-    >>> cjac_fn = qml.gradients.classical_jacobian(circuit)
+    >>> cjac_fn = qp.gradients.classical_jacobian(circuit)
     >>> weights = np.array([1., 1., 0.6], requires_grad=True)
     >>> cjac = cjac_fn(weights)
     >>> print(cjac)
@@ -121,14 +124,14 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     **Example with ``argnum``**
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def circuit(x, y, z):
-    ...     qml.RX(qml.math.sin(x), wires=0)
-    ...     qml.CNOT(wires=[0, 1])
-    ...     qml.RY(y ** 2, wires=1)
-    ...     qml.RZ(1 / z, wires=1)
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
-    >>> jac_fn = qml.gradients.classical_jacobian(circuit, argnum=[1, 2])
+    ...     qp.RX(qp.math.sin(x), wires=0)
+    ...     qp.CNOT(wires=[0, 1])
+    ...     qp.RY(y ** 2, wires=1)
+    ...     qp.RZ(1 / z, wires=1)
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
+    >>> jac_fn = qp.gradients.classical_jacobian(circuit, argnum=[1, 2])
     >>> x, y, z = np.array([0.1, -2.5, 0.71])
     >>> jac_fn(x, y, z)
     (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
@@ -141,22 +144,22 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         """Returns the trainable gate parameters for a given QNode input."""
         kwargs.pop("shots", None)
         kwargs.pop("argnums", None)
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        tape = construct_tape(qnode)(*args, **kwargs)
 
         if expand_fn is not None:
             tape = expand_fn(tape)
-        return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
+        return math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     wrapper_argnum = argnum if argnum is not None else None
 
-    def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+    def qnode_wrapper(*args, **kwargs):
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
         if qnode.interface == "autograd":
-            jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
+            jac = jacobian(classical_preprocessing, argnums=wrapper_argnum)(*args, **kwargs)
 
         elif qnode.interface == "torch":
             import torch
@@ -167,12 +170,12 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 torch_argnum = (
                     wrapper_argnum
                     if wrapper_argnum is not None
-                    else qml.math.get_trainable_indices(args)
+                    else math.get_trainable_indices(args)
                 )
                 if np.isscalar(torch_argnum):
                     jac = jac[torch_argnum]
                 else:
-                    jac = tuple((jac[idx] for idx in torch_argnum))
+                    jac = tuple(jac[idx] for idx in torch_argnum)
                 return jac
 
             jac = _jacobian(*args, **kwargs)
@@ -187,7 +190,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        elif qnode.interface == "tf":
+        elif (
+            qnode.interface == "tf"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):
@@ -196,7 +201,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 elif wrapper_argnum is None:
                     sub_args = args
                 else:
-                    sub_args = tuple((args[i] for i in wrapper_argnum))
+                    sub_args = tuple(args[i] for i in wrapper_argnum)
 
                 with tf.GradientTape() as tape:
                     gate_params = classical_preprocessing(*args, **kwargs)

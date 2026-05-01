@@ -14,21 +14,33 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
-import functools
 
-# pylint: disable=unnecessary-lambda-assignment
+import functools
 import itertools
 from collections.abc import Iterable
-from typing import Union
+from typing import TYPE_CHECKING
 
-import networkx as nx
 import rustworkx as rx
 
-import pennylane as qml
+from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
 from pennylane.wires import Wires
 
+if TYPE_CHECKING:
+    from networkx import Graph as nx_Graph
+else:
+    nx_Graph = None
 
-def x_mixer(wires: Union[Iterable, Wires]):
+
+def _validate_graph(graph):
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
+
+
+def x_mixer(wires: Iterable | Wires):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -61,15 +73,15 @@ def x_mixer(wires: Union[Iterable, Wires]):
     wires = Wires(wires)
 
     coeffs = [1 for w in wires]
-    obs = [qml.X(w) for w in wires]
+    obs = [X(w) for w in wires]
 
-    H = qml.Hamiltonian(coeffs, obs)
+    H = LinearCombination(coeffs, obs)
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
     return H
 
 
-def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
+def xy_mixer(graph: nx_Graph | rx.PyGraph):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -114,30 +126,27 @@ def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     + (0.5) [X1 X2]
     + (0.5) [Y1 Y2]
     """
-
-    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
-        )
+    _validate_graph(graph)
 
     is_rx = isinstance(graph, rx.PyGraph)
     edges = graph.edge_list() if is_rx else graph.edges
 
     # In RX each node is assigned to an integer index starting from 0;
     # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+    def get_nvalue(i):
+        return graph.nodes()[i] if is_rx else i
 
     coeffs = 2 * [0.5 for e in edges]
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.X(get_nvalue(node1)) @ qml.X(get_nvalue(node2)))
-        obs.append(qml.Y(get_nvalue(node1)) @ qml.Y(get_nvalue(node2)))
+        obs.append(X(get_nvalue(node1)) @ X(get_nvalue(node2)))
+        obs.append(Y(get_nvalue(node1)) @ Y(get_nvalue(node2)))
 
-    return qml.Hamiltonian(coeffs, obs)
+    return LinearCombination(coeffs, obs)
 
 
-def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
+def bit_flip_mixer(graph: nx_Graph | rx.PyGraph, b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:
@@ -201,11 +210,7 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
       + 0.5 * (X(2) @ Z(1))
     )
     """
-
-    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
-        )
+    _validate_graph(graph)
 
     if b not in [0, 1]:
         raise ValueError(f"'b' must be either 0 or 1, got {b}")
@@ -220,18 +225,19 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
 
     # In RX each node is assigned to an integer index starting from 0;
     # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+    def get_nvalue(i):
+        return graph.nodes()[i] if is_rx else i
 
     for i in graph_nodes:
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.X(get_nvalue(i))]] + [
-            [qml.Identity(get_nvalue(n)), qml.Z(get_nvalue(n))] for n in neighbours
+        n_terms = [[X(get_nvalue(i))]] + [
+            [Identity(get_nvalue(n)), Z(get_nvalue(n))] for n in neighbours
         ]
         n_coeffs = [[1, sign] for _ in neighbours]
 
-        final_terms = [qml.prod(*list(m)).simplify() for m in itertools.product(*n_terms)]
+        final_terms = [prod(*list(m)).simplify() for m in itertools.product(*n_terms)]
 
         final_coeffs = [
             (0.5**degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
@@ -241,4 +247,4 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         coeffs.extend(final_coeffs)
         terms.extend(final_terms)
 
-    return qml.Hamiltonian(coeffs, terms)
+    return LinearCombination(coeffs, terms)

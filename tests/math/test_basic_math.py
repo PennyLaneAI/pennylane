@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the basic functions in qml.math"""
+"""Unit tests for the basic functions in qp.math"""
+
 import numpy as onp
 import pytest
 
@@ -20,10 +21,32 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+
+
+@pytest.mark.parametrize(
+    "n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10)]
+)
+class TestCeilLog2:
+    """Tests for ``qp.math.ceil_log2``."""
+
+    def test_ceil_log2_basic(self, n, exp):
+        """Test ``ceil_log2``, which computes the ceiling of log2, cast to a builtin integer."""
+        out = fn.ceil_log2(n)
+        assert isinstance(out, int)
+        assert out == exp
+        assert fn.ceil_log2(2**out) == out
+
+    def test_ceil_log2_jit(self, n, exp):
+        """Test ``ceil_log2`` with JIT, which computes the ceiling of log2,
+        cast to integer dtype."""
+        out = jax.jit(fn.ceil_log2)(jnp.array(n))
+        assert isinstance(out, jnp.ndarray)
+        assert out.dtype == jnp.int64
+        assert out == exp
+        assert fn.ceil_log2(2**out) == out
 
 
 class TestFrobeniusInnerProduct:
@@ -80,30 +103,6 @@ class TestFrobeniusInnerProduct:
             (
                 torch.tensor([[1.0, 2.3], [-1.3, 2.4]], dtype=torch.complex128),
                 torch.tensor([[0.7, -7.3], [-1.0, -2.9]], dtype=torch.complex128),
-                True,
-                -0.7381450594,
-            ),
-            (
-                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                False,
-                -21.75,
-            ),
-            (
-                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                True,
-                -0.7381450594,
-            ),
-            (
-                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                False,
-                -21.75,
-            ),
-            (
-                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
                 True,
                 -0.7381450594,
             ),

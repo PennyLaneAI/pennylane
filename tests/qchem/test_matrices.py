@@ -14,10 +14,11 @@
 """
 Unit tests for functions needed for computing matrices.
 """
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -143,8 +144,8 @@ class TestOverlapMat:
         r"""Test that the overlap gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[1])(*args)
+        g_alpha = qp.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[0])(*args)
+        g_coeff = qp.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[1])(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -257,8 +258,8 @@ class TestMomentMat:
         r"""Test that the moment matrix gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[1])(*args)
+        g_alpha = qp.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[0])(*args)
+        g_coeff = qp.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1])(*args)
 
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
@@ -375,8 +376,8 @@ class TestKineticMat:
         r"""Test that the kinetic gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[1])(*args)
+        g_alpha = qp.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[0])(*args)
+        g_coeff = qp.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[1])(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -503,8 +504,9 @@ class TestAttractionMat:
         r_basis = mol.coordinates
         args = [mol.coordinates, mol.alpha, mol.coeff, r_basis]
 
-        g_r = qml.jacobian(
-            qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=[0]
+        g_r = qp.jacobian(
+            qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates),
+            argnums=[0],
         )(*args)
         assert np.allclose(g_r, g_r_ref)
 
@@ -660,8 +662,8 @@ class TestCoreMat:
 def generate_symbols_geometry_alpha():
     """Generates symbols, geometry and alpha arrays to be reused for the molecule"""
     symbols = ["H", "H"]
-    geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
-    alpha = qml.math.array(
+    geometry = qp.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+    alpha = qp.math.array(
         [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]], like="jax"
     )
 
@@ -678,7 +680,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         s = qchem.overlap_matrix(mol.basis_set)(*args)
-        assert qml.math.allclose(s, s_ref)
+        assert qp.math.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
@@ -742,20 +744,20 @@ class TestJax:
 
         jax.config.update("jax_enable_x64", True)
 
-        geometry = qml.math.array(geometry, like="jax")
-        alpha = qml.math.array(alpha, like="jax")
-        coeff = qml.math.array(coeff, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
+        alpha = qp.math.array(alpha, like="jax")
+        coeff = qp.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.coordinates, mol.coeff, mol.alpha]
         g_alpha, g_coeff = jax.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[2, 1])(*args)
 
-        assert qml.math.allclose(g_alpha, g_alpha_ref)
-        assert qml.math.allclose(g_coeff, g_coeff_ref)
+        assert qp.math.allclose(g_alpha, g_alpha_ref)
+        assert qp.math.allclose(g_coeff, g_coeff_ref)
 
     def test_moment_matrix_jax(self):
         r"""Test that moment_matrix returns the correct matrix when using jax."""
         symbols, _, alpha = generate_symbols_geometry_alpha()
-        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
+        geometry = qp.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
         e = 1
         idx = 0
         s_ref = np.array([[0.0, 0.4627777], [0.4627777, 2.0]])
@@ -763,7 +765,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
-        assert qml.math.allclose(s, s_ref)
+        assert qp.math.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "e", "idx", "g_alpha_ref", "g_coeff_ref"),
@@ -830,16 +832,16 @@ class TestJax:
 
         jax.config.update("jax_enable_x64", True)
 
-        geometry = qml.math.array(geometry, like="jax")
-        alpha = qml.math.array(alpha, like="jax")
-        coeff = qml.math.array(coeff, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
+        alpha = qp.math.array(alpha, like="jax")
+        coeff = qp.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.coordinates, mol.coeff, mol.alpha]
         g_coeff, g_alpha = jax.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1, 2])(
             *args
         )
-        assert qml.math.allclose(g_alpha, g_alpha_ref)
-        assert qml.math.allclose(g_coeff, g_coeff_ref)
+        assert qp.math.allclose(g_alpha, g_alpha_ref)
+        assert qp.math.allclose(g_coeff, g_coeff_ref)
 
     def test_kinetic_matrix_jax(self):
         r"""Test that kinetic_matrix returns the correct matrix when using jax."""
@@ -854,7 +856,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         t = qchem.kinetic_matrix(mol.basis_set)(*args)
-        assert qml.math.allclose(t, t_ref)
+        assert qp.math.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
@@ -918,14 +920,14 @@ class TestJax:
 
         jax.config.update("jax_enable_x64", True)
 
-        geometry = qml.math.array(geometry, like="jax")
-        alpha = qml.math.array(alpha, like="jax")
-        coeff = qml.math.array(coeff, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
+        alpha = qp.math.array(alpha, like="jax")
+        coeff = qp.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [geometry, mol.coeff, mol.alpha]
         g_alpha, g_coeff = jax.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[2, 1])(*args)
-        assert qml.math.allclose(g_alpha, g_alpha_ref)
-        assert qml.math.allclose(g_coeff, g_coeff_ref)
+        assert qp.math.allclose(g_alpha, g_alpha_ref)
+        assert qp.math.allclose(g_coeff, g_coeff_ref)
 
     def test_core_matrix_diff_positions_jax(self):
         r"""Test that core_matrix returns the correct matrix when positions are differentiable
@@ -941,7 +943,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert qml.math.allclose(c, c_ref)
+        assert qp.math.allclose(c, c_ref)
 
     def test_repulsion_tensor_jax(self):
         r"""Test that repulsion_tensor returns the correct matrix when using jax."""
@@ -962,7 +964,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         e = qchem.repulsion_tensor(mol.basis_set)(*args)
-        assert qml.math.allclose(e, e_ref)
+        assert qp.math.allclose(e, e_ref)
 
     def test_attraction_matrix_diffR_jax(self):
         r"""Test that attraction_matrix returns the correct matrix when positions are
@@ -977,7 +979,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert qml.math.allclose(v, v_ref)
+        assert qp.math.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_r_ref"),
@@ -1012,7 +1014,7 @@ class TestJax:
 
         jax.config.update("jax_enable_x64", True)
 
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates, mol.coordinates, mol.coeff, mol.alpha]
 
@@ -1021,4 +1023,4 @@ class TestJax:
             argnums=[0, 1, 2, 3],
         )(*args)
 
-        assert qml.math.allclose(g_r, g_r_ref)
+        assert qp.math.allclose(g_r, g_r_ref)

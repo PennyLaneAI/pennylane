@@ -1,15 +1,26 @@
 \documentclass{standalone}
-\usepackage{graphicx} % Required for inserting images
-\usepackage{quantikz}
+\usepackage{amsmath,quantikz}
 
+\tikzset{
+    selectctrl/.style={
+        draw,
+        circle,
+        minimum width=3.5pt,
+        inner sep=2.5pt,
+        append after command={
+            \pgfextra {
+                \filldraw[fill=white, color=white] (0, 0)-- (45:3.5pt) arc (45:225:3.5pt) -- cycle;
+                \fill (0, 0)-- (45:3.5pt) arc (45:-135:3.5pt) -- cycle;
+            }
+        }
+    }
+}
 
 \begin{document}
-
 \begin{quantikz}
-    & \ctrl[open]{3} & \ctrl[open]{3} & \ \ldots\ & \ctrl{3} & \qw \\
-     & \ctrl[open]{2} & \ctrl[open]{2} & \ \ldots\ & \ctrl{2} & \qw \\
-     & \ctrl[open]{1} & \ctrl{1} & \ \ldots\ & \ctrl{1} & \qw\\
-    & \gate{U_0}& \gate{U_1} & \ \ldots\ & \gate{U_7} & \qw
+    & |[operator,inner sep=3pt]| & \midstick[4,brackets=none]{=} & |[selectctrl]| & \midstick[4,brackets=none]{=} & \octrl{1} & \octrl{1} & \octrl{1} & \ \ldots \ & \ctrl{1} & \\
+    & |[operator,inner sep=3pt]| & & |[selectctrl]| & & \octrl{1} & \octrl{1} & \ctrl{1} & \ \ldots \ & \ctrl{1} & \\
+    & |[operator,inner sep=3pt]| & & |[selectctrl]| & & \octrl{1} & \ctrl{1} & \octrl{1} & \ \ldots \ & \ctrl{1} & \\
+    & \gate{U_i}\wire[u][3]{q} & & \gate{U_i}\wire[u][3]{q} & & \gate{U_0} & \gate{U_1} & \gate{U_2} & \ \ldots \ & \gate{U_7} &
 \end{quantikz}
-
 \end{document}

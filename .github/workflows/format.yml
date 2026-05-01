@@ -1,4 +1,6 @@
 name: Formatting check
+permissions:
+  contents: read
 on:
   merge_group:
     types:
@@ -9,6 +11,7 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,22 +30,31 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      UV_SYSTEM_PYTHON: 1
 
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install black pylint==2.7.4 isort==5.13.2
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.9.17
+          enable-cache: true        
+        
+      - name: Install Python dependencies
+        run: uv pip install --group dev
 
       - name: Run Black
         run: |
-          black -t py310 -t py311 -t py312 -l 100 pennylane/ --check
-          black -t py310 -t py311 -t py312 -l 100 tests/ --check
+          black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
+          black -t py311 -t py312 -t py313 -l 100 tests/ --check
 
       - name: Run isort
         run: |
@@ -51,8 +63,8 @@ jobs:
 
       - name: Run Pylint (source files)
         if: always()
-        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: python -m pylint --rcfile .pylintrc $(find pennylane -name "*.py")
 
       - name: Run Pylint (test files)
         if: always()
-        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")

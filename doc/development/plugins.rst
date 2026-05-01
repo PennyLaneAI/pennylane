@@ -25,7 +25,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, DefaultExecutionConfig
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
@@ -34,7 +34,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         ):
             # your implementation here.
 
@@ -48,15 +48,15 @@ For example:
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         )
-            return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
+            return 0.0 if isinstance(circuits, qp.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
     dev = MyDevice()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        return qml.state()
+        return qp.state()
 
     circuit()
 
@@ -70,8 +70,8 @@ In a more minimal example, for any initial batch of quantum tapes and a config o
 .. code-block:: python
 
     execution_config = dev.setup_execution_config(initial_config)
-    transform_program = dev.preprocess_transforms(execution_config)
-    circuit_batch, postprocessing = transform_program(initial_circuit_batch)
+    compile_pipeline = dev.preprocess_transforms(execution_config)
+    circuit_batch, postprocessing = compile_pipeline(initial_circuit_batch)
     results = dev.execute(circuit_batch, execution_config)
     final_results = postprocessing(results)
 
@@ -83,16 +83,30 @@ the number of shots specified in the :attr:`~.QuantumScript.shots` property for 
 By pulling shots dynamically for each circuit, users can efficiently distribute a shot budget across batch of
 circuits.
 
->>> tape0 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
->>> tape1 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
->>> dev = qml.device('default.qubit')
+>>> tape0 = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
+>>> tape1 = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=10)
+>>> dev = qp.device('default.qubit')
 >>> dev.execute((tape0, tape1))
-(array([0, 0, 0, 0, 0]), array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+(array([[0],
+        [0],
+        [0],
+        [0],
+        [0]]),
+ array([[0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0]]))
 
 The :class:`~.measurements.Shots` class describes the shots. Users can optionally specify a shot vector, or
 different numbers of shots to use when calculating the final expectation value.
 
->>> tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliX(0))], shots=(5, 500, 1000))
+>>> tape0 = qp.tape.QuantumScript([], [qp.expval(qp.PauliX(0))], shots=(5, 500, 1000))
 >>> tape0.shots.shot_vector
 (ShotCopies(5 shots x 1),
  ShotCopies(500 shots x 1),
@@ -117,24 +131,24 @@ Preprocessing
 
 There are two components of preprocessing circuits for device execution:
 
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
+1) Create a :class:`~.CompilePipeline` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
 2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation.
 
 These two tasks are performed by :meth:`~.devices.Device.setup_execution_config` and :meth:`~.devices.Device.preprocess_transforms`
-respectively. Once the transform program has been applied to a batch of circuits, the result
+respectively. Once the compile pipeline has been applied to a batch of circuits, the result
 circuit batch produced by the program should be run via ``Device.execute`` without error:
 
 .. code-block:: python
 
     execution_config = dev.setup_execution_config(initial_config)
-    transform_program = dev.preprocess_transforms(execution_config)
-    batch, fn = transform_program(initial_batch)
+    compile_pipeline = dev.preprocess_transforms(execution_config)
+    batch, fn = compile_pipeline(initial_batch)
     fn(dev.execute(batch, execution_config))
 
 This section will focus on :meth:`~.devices.Device.preprocess_transforms`, see the section on the :ref:`**Execution Config** <execution_config>`
 below for more information on :meth:`~.devices.Device.setup_execution_config`.
 
-PennyLane can potentially provide a default implementation of a transform program through :meth:`~.devices.Device.preprocess_transforms`,
+PennyLane can potentially provide a default implementation of a compile pipeline through :meth:`~.devices.Device.preprocess_transforms`,
 which should be sufficient for most plugin devices. This requires that a TOML-formatted configuration
 file is defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`.
 The default preprocessing program will be constructed based on what is declared in this file if provided.
@@ -142,28 +156,28 @@ The default preprocessing program will be constructed based on what is declared 
 You could override the :meth:`~.devices.Device.preprocess_transforms` method with a completely
 customized implementation, or extend the default behaviour by adding new transforms.
 
-The :meth:`~.devices.Device.preprocess_transforms` method should start with creating a transform program:
+The :meth:`~.devices.Device.preprocess_transforms` method should start with creating a compile pipeline:
 
 .. code-block:: python
 
-    program = qml.transforms.core.TransformProgram()
+    program = qp.CompilePipeline()
 
-Once a program is created, individual transforms can be added to the program with the :meth:`~.TransformProgram.add_transform` method.
+Once a program is created, individual transforms can be added to the program with the :meth:`~.CompilePipeline.add_transform` method.
 
 .. code-block:: python
 
     from pennylane.devices.preprocess import validate_device_wires, validate_measurements, decompose
 
-    program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
+    program.add_transform(validate_device_wires, wires=qp.wires.Wires((0,1,2)), name="my_device")
     program.add_transform(validate_measurements, name="my_device")
-    program.add_transform(qml.defer_measurements)
-    program.add_transform(qml.transforms.split_non_commuting)
+    program.add_transform(qp.defer_measurements)
+    program.add_transform(qp.transforms.split_non_commuting)
 
     def supports_operation(op): 
         return getattr(op, "name", None) in operation_names
         
     program.add_transform(decompose, stopping_condition=supports_operation, name="my_device")
-    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(qp.transforms.broadcast_expand)
 
 Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
 in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
@@ -173,17 +187,17 @@ gradients are used, the preprocessing transforms are tracked by the machine lear
 ML framework tracking the classical component of preprocessing, the device does not need to manually track the
 classical component of any decompositions or compilation. For example,
 
->>> @qml.qnode(qml.device('reference.qubit', wires=2))
+>>> @qp.qnode(qp.device('reference.qubit', wires=2))
 ... def circuit(x):
-...     qml.IsingXX(x, wires=(0,1))
-...     qml.CH((0,1))
-...     return qml.expval(qml.X(0))
->>> print(qml.draw(circuit, level="device")(0.5))
+...     qp.IsingXX(x, wires=(0,1))
+...     qp.CH((0,1))
+...     return qp.expval(qp.X(0))
+>>> print(qp.draw(circuit, level="device")(0.5))
 0: ─╭●──RX(0.50)─╭●────────────╭●──RY(-1.57)─┤  <Z>
 1: ─╰X───────────╰X──RY(-0.79)─╰Z──RY(0.79)──┤     
 
 Allows the user to see that both ``IsingXX`` and ``CH`` are decomposed by the device, and that
-the diagonalizing gates for ``qml.expval(qml.X(0))`` are applied.
+the diagonalizing gates for ``qp.expval(qp.X(0))`` are applied.
 
 Even with these benefits, devices can still opt to place some transforms inside the ``execute``
 method. For example, ``default.qubit`` maps wires to simulation indices inside ``execute`` instead
@@ -193,12 +207,12 @@ The :meth:`~.devices.Device.execute` method can assume that device preprocessing
 tapes, and has no obligation to re-validate the input or provide sensible error messages. In the below example,
 we see that ``default.qubit`` errors out when unsupported operations and unsupported measurements are present.
 
->>> op = qml.Permute([2,1,0], wires=(0,1,2))
->>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
->>> qml.device('default.qubit').execute(tape)
+>>> op = qp.Permute([2,1,0], wires=(0,1,2))
+>>> tape = qp.tape.QuantumScript([op], [qp.probs(wires=(0,1))])
+>>> qp.device('default.qubit').execute(tape)
 MatrixUndefinedError:
->>> tape = qml.tape.QuantumScript([], [qml.density_matrix(wires=0)], shots=50)
->>> qml.device('default.qubit').execute(tape)
+>>> tape = qp.tape.QuantumScript([], [qp.density_matrix(wires=0)], shots=50)
+>>> qp.device('default.qubit').execute(tape)
 AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 
 Devices may define their own transforms following the description in the :ref:`transforms` module,
@@ -218,6 +232,89 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
+  
+Custom Device Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the compile pipeline that
+decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
+to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
+
+For example, for a device supporting the ``CNOT``, ``RX`` and ``RZ`` gates, the stopping condition and the decompose transform
+can be specified like so:
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import decompose
+
+    def stopping_condition(op):
+        return op.name in {"CNOT", "RX", "RZ"}
+    
+    program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
+
+However, if the device native gate set is unreachable with the default decompositions defined in PennyLane,
+an error will be raised. In this case, you may need to override the decompositions of certain operators
+via the ``decomposer`` argument. 
+
+For example, consider a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
+to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
+(e.g., ``custom_decomposer``) and pass it to the decomposer kwarg:
+
+.. code-block:: python
+
+    def stopping_condition(op):
+        return op.name in {"IsingXX", "RX", "RY"}
+
+    def custom_decomposer(op):
+        if isinstance(op, qp.CNOT):
+            wires = op.wires
+            return [
+                qp.RY(np.pi/2, wires=wires[0]),
+                qp.IsingXX(np.pi/2, wires=wires),
+                qp.RX(-np.pi/2, wires=wires[0]),
+                qp.RY(-np.pi/2, wires=wires[0]),
+                qp.RY(-np.pi/2, wires=wires[1])
+            ]
+        return op.decomposition()
+    
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        name="my_device"
+    )
+
+There is also an experimental graph-based decomposition algorithm (activated via
+:func:`qp.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
+be leveraged when overriding the decompositions of certain operators. To make your device
+compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
+needs to be specified as part of the compile pipeline. Note that the stopping condition function
+defines whether an operator should be decomposed, while the ``target_gates`` defines the set of operator
+types that the graph-based decomposition algorithm needs to target.
+
+In this case, the decomposition for the CNOT needs to be specified as a quantum function, ``decompose_cnot``, and
+registered with ``qp.add_decomps``:
+
+.. code-block:: python
+
+    @qp.register_resources({qp.RY: 3, qp.RX: 1, qp.IsingXX: 1})
+    def decompose_cnot(wires, **_):
+        qp.RY(np.pi/2, wires=wires[0])
+        qp.IsingXX(np.pi/2, wires=wires)
+        qp.RX(-np.pi/2, wires=wires[0])
+        qp.RY(-np.pi/2, wires=wires[0])
+        qp.RY(-np.pi/2, wires=wires[1])
+
+    qp.add_decomps(qp.CNOT, decompose_cnot)
+
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        device_wires=[0, 1],
+        target_gates={qp.IsingXX, "RX", "RY"},
+        name="my_device"
+    )
 
 .. _device_capabilities:
 
@@ -348,7 +445,7 @@ how to fill these fields. All headers and fields are generally required, unless 
     supported_mcm_methods = [ ]
 
 This TOML configuration file is optional for PennyLane but required for Catalyst integration,
-i.e., compatibility with ``qml.qjit``. For more details, see `Custom Devices <https://docs.pennylane.ai/projects/catalyst/en/stable/dev/custom_devices.html>`_.
+i.e., compatibility with ``qp.qjit``. For more details, see `Custom Devices <https://docs.pennylane.ai/projects/catalyst/en/stable/dev/custom_devices.html>`_.
 
 Mid Circuit Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -365,7 +462,7 @@ include ``"one-shot"`` as one of the ``supported_mcm_methods`` in your configura
 ``"one-shot"`` method is requested on the ``QNode``, the :ref:`dynamic one-shot <one_shot_transform>`
 method will be applied.
 
-Both methods mentioned above involve transform programs to be applied on the circuits that prepare
+Both methods mentioned above involve compile pipelines to be applied on the circuits that prepare
 them for device execution and post-processing functions to aggregate the results. Alternatively, if
 your device natively supports all mid-circuit measurement features provided in PennyLane, you should
 include ``"device"`` as one of the ``supported_mcm_methods``.
@@ -383,8 +480,8 @@ Option 2 allows workflows to change the number and labeling of wires over time, 
 to enforce a wire convention and labels. If a user does provide wires, :meth:`~.devices.Device.preprocess_transforms` should
 validate that submitted circuits only have wires in the requested range.
 
->>> dev = qml.device('default.qubit', wires=1)
->>> circuit = qml.tape.QuantumScript([qml.CNOT((0,1))], [qml.state()])
+>>> dev = qp.device('default.qubit', wires=1)
+>>> circuit = qp.tape.QuantumScript([qp.CNOT((0,1))], [qp.state()])
 >>> dev.preprocess_transforms()((circuit,))
 WireError: Cannot run circuit(s) of default.qubit as they contain wires not found on the device.
 
@@ -400,25 +497,25 @@ other constraints can make it so that operations on qubit 1 cannot be arbitraril
 on qubit 2. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
 will be on the user to deliberately map wires if they wish such a thing to occur.
 
->>> qml.device('my_hardware').wires
+>>> qp.device('my_hardware').wires
 <Wires = [0, 1, 2, 3]>
->>> qml.device('my_hardware', wires=(10, 11, 12, 13))
+>>> qp.device('my_hardware', wires=(10, 11, 12, 13))
 TypeError: MyHardware.__init__() got an unexpected keyword argument 'wires'
 
 To implement such validation, a device developer can simply leave ``wires`` from the initialization
 call signature and hard code the ``wires`` property. They should additionally make sure to include
-``validate_device_wires`` in the transform program.
+``validate_device_wires`` in the compile pipeline.
 
 .. code-block:: python
 
-    class MyDevice(qml.devices.Device):
+    class MyDevice(qp.devices.Device):
 
         def __init__(self, shots=None):
             super().__init__(shots=shots)
 
         @property
         def wires(self):
-            return qml.wires.Wires((0,1,2,3))
+            return qp.wires.Wires((0,1,2,3))
 
 .. _execution_config:
 
@@ -439,7 +536,7 @@ with default values on initialization. These values should be placed into the ``
 dictionary in :meth:`~.devices.Device.setup_execution_config`. Note that we do provide a default
 implementation of this method, but you will most likely need to override it yourself.
 
->>> dev = qml.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", c_dtype=np.complex64)
+>>> dev = qp.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", c_dtype=np.complex64)
 >>> dev.setup_execution_config().device_options
 {'contract': 'nonlocal',
  'contraction_optimizer': 'auto-hq',
@@ -453,13 +550,31 @@ Even if the property is stored as an attribute on the device, execution should p
 these properties from the config instead of from the device instance. While not yet integrated at
 the top user level, we aim to allow dynamic configuration of the device.
 
->>> dev = qml.device('default.qubit')
->>> config = qml.devices.ExecutionConfig(device_options={"rng": 42})
->>> tape = qml.tape.QuantumTape([qml.Hadamard(0)], [qml.sample(wires=0)], shots=10)
+>>> dev = qp.device('default.qubit')
+>>> config = qp.devices.ExecutionConfig(device_options={"rng": 42})
+>>> tape = qp.tape.QuantumTape([qp.Hadamard(0)], [qp.sample(wires=0)], shots=10)
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[1],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [0]])
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[0],
+       [1],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0]])
 
 By pulling options from this dictionary instead of from device properties, we unlock two key
 pieces of functionality:
@@ -482,8 +597,8 @@ is ``True``, this takes precedence over calculating the full jacobian. If the de
 jax, ``convert_to_numpy=False`` should be specified. Then the parameters will not be converted, and special
 interface-specific processing (like executing inside a ``jax.pure_callback`` when using ``jax.jit``) will be needed.
 
->>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
->>> processed_config = qml.device('default.qubit').setup_execution_config(config)
+>>> config = qp.devices.ExecutionConfig(gradient_method="adjoint")
+>>> processed_config = qp.device('default.qubit').setup_execution_config(config)
 >>> processed_config.use_device_jacobian_product
 True
 >>> processed_config.use_device_gradient
@@ -514,7 +629,7 @@ to squeeze out singleton dimensions when we have no shot vector or a single meas
 
 .. code-block:: python
 
-    def single_tape_execution(tape) -> qml.typing.Result:
+    def single_tape_execution(tape) -> qp.typing.Result:
         samples = get_samples(tape)
         results = []
         for lower, upper in tape.shots.bins():
@@ -544,13 +659,13 @@ to handle a single circuit. See the documentation for each modifier for more det
 
     @simulator_tracking
     @single_tape_support
-    class MyDevice(qml.devices.Device):
+    class MyDevice(qp.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumTape([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
@@ -573,7 +688,7 @@ The device tracker stores and records information when tracking mode is turned o
 the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
 in a customizable way.
 
-Three aspects of the :class:`~pennylane.devices.Tracker` class are relevant to plugin designers:
+Three aspects of the :class:`~pennylane.Tracker` class are relevant to plugin designers:
 
 * The boolean ``active`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information
@@ -584,7 +699,7 @@ to the device:
 
 .. code-block:: python
 
-    @qml.devices.modifiers.simulator_tracking
+    @qp.devices.modifiers.simulator_tracking
     class MyDevice(Device):
         ...
 
@@ -630,8 +745,8 @@ which allows the device to be initialized in the following way:
 
 .. code-block:: python
 
-    import pennylane as qml
-    dev1 = qml.device(name)
+    import pennylane as qp
+    dev1 = qp.device(name)
 
 where ``name`` is a string that uniquely identifies the device. The ``name``
 should have the form ``pluginname.devicename``, using periods for delimitation.

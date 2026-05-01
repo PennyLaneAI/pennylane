@@ -17,9 +17,14 @@ This submodule contains the template for Qubitization.
 
 import copy
 
-import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
+from pennylane.ops import I, Prod, prod
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from .prepselprep import PrepSelPrep
+from .reflection import Reflection
 
 
 class Qubitization(Operation):
@@ -43,48 +48,55 @@ class Qubitization(Operation):
 
     This operator, when applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
 
-    .. code-block::
+    .. code-block:: python
 
-        H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+        H = qp.dot([0.1, 0.3, -0.3], [qp.Z(0), qp.Z(1), qp.Z(0) @ qp.Z(2)])
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
 
             # initiate the eigenvector
-            qml.PauliX(2)
+            qp.PauliX(2)
 
             # apply QPE
-            measurements = qml.iterative_qpe(
-                qml.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
+            measurements = qp.iterative_qpe(
+                qp.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
             )
-            return qml.probs(op = measurements)
+            return qp.probs(op = measurements)
 
         output = circuit()
 
         # post-processing
         lamb = sum([abs(c) for c in H.terms()[0]])
 
-    .. code-block:: pycon
-
-        >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-        eigenvalue: 0.7
+    >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+    eigenvalue: 0.7
     """
 
     grad_method = None
+
+    resource_keys = {"num_control_wires", "hamiltonian"}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(self, hamiltonian, control, id=None):
-        wires = qml.wires.Wires(control) + hamiltonian.wires
+        wires = Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
             "hamiltonian": hamiltonian,
-            "control": qml.wires.Wires(control),
+            "control": Wires(control),
         }
 
         super().__init__(*hamiltonian.data, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_control_wires": len(self.hyperparameters["control"]),
+            "hamiltonian": self.hyperparameters["hamiltonian"],
+        }
 
     def _flatten(self):
         data = (self.hyperparameters["hamiltonian"],)
@@ -115,8 +127,8 @@ class Qubitization(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
-        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
-            new_op._hyperparameters["hamiltonian"], wire_map
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
+            wire_map
         )
         new_op._hyperparameters["control"] = Wires(
             [wire_map.get(w, w) for w in self._hyperparameters["control"]]
@@ -124,7 +136,7 @@ class Qubitization(Operation):
         return new_op
 
     @staticmethod
-    def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(*_, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -143,11 +155,11 @@ class Qubitization(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane.wires import Wires
 
-        >>> print(qml.Qubitization.compute_decomposition(hamiltonian=0.1 * qml.Z(0), control=Wires(1)))
-        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(coeffs=(0.1,), ops=(Z(0),), control=Wires([1]))]
+        >>> print(qp.Qubitization.compute_decomposition(hamiltonian=0.1 * qp.Z(0), control=Wires(1)))
+        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=Wires([1]))]
         """
 
         hamiltonian = kwargs["hamiltonian"]
@@ -155,9 +167,43 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        identity = qml.prod(*[qml.Identity(wire) for wire in control])
+        identity = prod(*[I(wire) for wire in control])
 
-        decomp_ops.append(qml.Reflection(identity))
-        decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
+        decomp_ops.append(Reflection(identity))
+        decomp_ops.append(PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops
+
+    def queue(self, context=QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
+
+
+def _qubitization_resources(num_control_wires, hamiltonian):
+    return {
+        resource_rep(
+            Reflection,
+            base_class=Prod,
+            base_params={"resources": {resource_rep(I): num_control_wires}},
+            num_wires=1,
+            num_reflection_wires=1,
+        ): 1,
+        resource_rep(
+            PrepSelPrep,
+            op_reps=(resource_rep(type(hamiltonian), **hamiltonian.resource_params),),
+            num_control=num_control_wires,
+        ): 1,
+    }
+
+
+@register_resources(_qubitization_resources)
+def _qubitization_decomposition(*_, **kwargs):
+    hamiltonian = kwargs["hamiltonian"]
+    control = kwargs["control"]
+
+    Reflection(Prod(*[I(wire) for wire in control]))
+    PrepSelPrep(hamiltonian, control=control)
+
+
+add_decomps(Qubitization, _qubitization_decomposition)

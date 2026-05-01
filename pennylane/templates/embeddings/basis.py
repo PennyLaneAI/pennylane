@@ -14,9 +14,13 @@
 r"""
 Contains the BasisEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 
-from pennylane.ops.qubit.state_preparation import BasisState
+from pennylane.decomposition import add_decomps
+from pennylane.ops.qubit.state_preparation import (
+    BasisState,
+    _basis_state_decomp,
+    _jax_jit_basis_state_decomp,
+)
 
 
 class BasisEmbedding(BasisState):
@@ -42,21 +46,21 @@ class BasisEmbedding(BasisState):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=3)
+            dev = qp.device('reference.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(feature_vector):
-                qml.BasisEmbedding(features=feature_vector, wires=range(3))
-                return qml.state()
+                qp.BasisEmbedding(features=feature_vector, wires=range(3))
+                return qp.state()
 
             X = [1,1,1]
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(X))
-        0: ──X─┤  State
-        1: ──X─┤  State
-        2: ──X─┤  State
+        >>> print(qp.draw(circuit, level="device")(X))
+        0: ──X─┤ ╭State
+        1: ──X─┤ ├State
+        2: ──X─┤ ╰State
 
         And, the output state is:
 
@@ -67,5 +71,16 @@ class BasisEmbedding(BasisState):
 
     """
 
+    # renames from state to features so needs to be overwritten
+    # pylint: disable=arguments-renamed
+    @classmethod
+    def _primitive_bind_call(cls, features, wires, **kwargs):
+        return super()._primitive_bind_call(features, wires, **kwargs)
+
     def __init__(self, features, wires, id=None):
         super().__init__(features, wires=wires, id=id)
+
+
+BasisEmbedding._primitive = BasisState._primitive  # pylint: disable=protected-access
+
+add_decomps(BasisEmbedding, _basis_state_decomp, _jax_jit_basis_state_decomp)

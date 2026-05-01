@@ -13,13 +13,17 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
+
 from dataclasses import dataclass
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import Identity, Projector, Z
+from pennylane.ops.op_math import prod
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -73,7 +77,7 @@ def rydberg_interaction(
 
         atom_coordinates = [[0, 0], [0, 5], [0, 10], [5, 0], [5, 5], [5, 10], [10, 0], [10, 5], [10, 10]]
         wires = [1, 5, 0, 2, 4, 3, 8, 6, 7]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
+        H_i = qp.pulse.rydberg_interaction(atom_coordinates, wires=wires)
 
     >>> H_i
     HardwareHamiltonian: terms=36
@@ -90,12 +94,12 @@ def rydberg_interaction(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=9)
+        dev = qp.device("default.qubit", wires=9)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H_i)([], t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H_i)([], t=[0, 10])
+            return qp.expval(qp.Z(0))
 
     >>> circuit()
     Array(1., dtype=float64)
@@ -109,7 +113,7 @@ def rydberg_interaction(
     observables = []
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
         for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
-            atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+            atom_distance = np.linalg.norm(math.array(pos2) - pos1)
             if atom_distance > max_distance:
                 continue
             # factor 2pi converts interaction coefficient from standard to angular frequency
@@ -117,8 +121,8 @@ def rydberg_interaction(
                 2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
             )  # van der Waals potential
             coeffs.append(Vij)
-            with qml.QueuingManager.stop_recording():
-                observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
+            with QueuingManager.stop_recording():
+                observables.append(prod(Projector([1], wire1), Projector([1], wire2)))
                 # Rydberg projectors
 
     settings = RydbergSettings(register, interaction_coeff)
@@ -191,12 +195,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
         wires = [0, 1, 2, 3]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+        H_i = qp.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t) ** 2
         phase = 0.25
         detuning = 1.
-        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+        H_d = qp.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     HardwareHamiltonian: terms=6
@@ -216,11 +220,11 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=wires)
-        @qml.qnode(dev, interface="jax")
+        dev = qp.device("default.qubit", wires=wires)
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_i + H_d)(params, t=[0, 0.5])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H_i + H_d)(params, t=[0, 0.5])
+            return qp.expval(qp.Z(0))
 
     Here we set a maximum amplitude of :math:`2.4 \times 2 \pi \text{MHz}`, and calculate the result of running the pulse program:
 
@@ -239,20 +243,20 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude_local_0 = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) ** 2 + p[1]
         phase_local_0 = jnp.pi / 4
         detuning_local_0 = lambda p, t: p * jnp.exp(-0.25 * t)
-        H_local_0 = qml.pulse.rydberg_drive(amplitude_local_0, phase_local_0, detuning_local_0, [0])
+        H_local_0 = qp.pulse.rydberg_drive(amplitude_local_0, phase_local_0, detuning_local_0, [0])
 
         amplitude_local_1 = lambda p, t: jnp.cos(jnp.pi * t) ** 2 + p
         phase_local_1 = jnp.pi
         detuning_local_1 = lambda p, t: jnp.sin(jnp.pi * t) + p
-        H_local_1 = qml.pulse.rydberg_drive(amplitude_local_1, phase_local_1, detuning_local_1, [1])
+        H_local_1 = qp.pulse.rydberg_drive(amplitude_local_1, phase_local_1, detuning_local_1, [1])
 
         H = H_i + H_d + H_local_0 + H_local_1
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit_local(params):
-            qml.evolve(H)(params, t=[0, 0.5])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=[0, 0.5])
+            return qp.expval(qp.Z(0))
 
         p_global = 2.4
         p_local_amp_0 = [1.3, -2.0]
@@ -273,9 +277,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
      Array(-0.02205843, dtype=float64)]
     """
     wires = Wires(wires)
-    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
+    trivial_detuning = not callable(detuning) and math.isclose(detuning, 0.0)
 
-    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
+    if not callable(amplitude) and math.isclose(amplitude, 0.0):
         if trivial_detuning:
             raise ValueError(
                 "Expected non-zero value for at least one of either amplitude or detuning, but "
@@ -292,9 +296,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         # 2pi factors are to convert detuning frequency to angular frequency
         detuning_obs.append(
             # Global phase from the number operator
-            -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
+            -0.5 * sum(Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.Z(wire) for wire in wires) * np.pi * 2
+            + 0.5 * sum(Z(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 
@@ -321,7 +325,7 @@ class RydbergSettings:
 
     def __eq__(self, other):
         return (
-            qml.math.all(self.register == other.register)
+            math.all(self.register == other.register)
             and self.interaction_coeff == other.interaction_coeff
         )
 
@@ -330,7 +334,7 @@ class RydbergSettings:
             raise ValueError(
                 "Cannot add two `HardwareHamiltonian` instances with an interaction term. "
                 f"Obtained two instances with settings {self} and {other}. "
-                "You most likely tried to add two terms generated by `qml.pulse.rydberg_interaction`"
+                "You most likely tried to add two terms generated by `qp.pulse.rydberg_interaction`"
             )
 
         return self

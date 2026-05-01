@@ -19,8 +19,8 @@ Its differentiable programming paradigm enables the execution and training of qu
 
 PennyLane connects quantum computing with powerful machine learning frameworks
 like `NumPy <https://numpy.org/>`_'s `autograd <https://github.com/HIPS/autograd>`__,
-`JAX <https://github.com/google/jax>`__,
-`PyTorch <https://pytorch.org/>`_, and `TensorFlow <https://www.tensorflow.org/>`_,
+`JAX <https://github.com/google/jax>`__, and
+`PyTorch <https://pytorch.org/>`_,
 making them quantum-aware.
 
 Its central job is to manage the execution of quantum computations, including

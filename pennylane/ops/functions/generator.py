@@ -12,39 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.generator function.
+This module contains the qp.generator function.
 """
-# pylint: disable=protected-access
+
 import inspect
 import warnings
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
-# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~ops.LinearCombination`."""
 
     if isinstance(gen, LinearCombination):
         return gen
 
-    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-        if isinstance(gen, qml.Hermitian):
+    if isinstance(gen, (qp.Hermitian, qp.SparseHamiltonian)):
+        if isinstance(gen, qp.Hermitian):
             mat = gen.parameters[0]
 
-        elif isinstance(gen, qml.SparseHamiltonian):
+        elif isinstance(gen, qp.SparseHamiltonian):
             mat = gen.parameters[0].toarray()
 
-        return qml.pauli_decompose(mat, wire_order=op.wires, hide_identity=True)
+        return qp.pauli_decompose(mat, wire_order=op.wires, hide_identity=True)
 
     if isinstance(gen, (SProd, Prod, Sum)):
         coeffs, ops = gen.terms()
-        return qml.Hamiltonian(coeffs, ops)
+        return qp.Hamiltonian(coeffs, ops)
 
-    return qml.Hamiltonian([1.0], [gen])
+    return qp.Hamiltonian([1.0], [gen])
 
 
 # pylint: disable=no-member
@@ -60,10 +60,10 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    gen = qml.simplify(gen) if isinstance(gen, Prod) else gen
+    gen = qp.simplify(gen) if isinstance(gen, Prod) else gen
 
     if isinstance(gen, LinearCombination):
-        gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
+        gen = qp.dot(gen.coeffs, gen.ops)  # convert to Sum
 
     if isinstance(gen, Prod):
         coeffs, ops = gen.terms()
@@ -72,15 +72,15 @@ def _generator_prefactor(gen):
     if isinstance(gen, Sum):
         ops = [o.base if isinstance(o, SProd) else o for o in gen]
         coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
-        abs_coeffs = list(qml.math.abs(coeffs))
-        if qml.math.allequal(coeffs[0], coeffs):
+        abs_coeffs = list(qp.math.abs(coeffs))
+        if qp.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same
-            return qml.sum(*ops), coeffs[0]
-        if qml.math.allequal(abs_coeffs[0], abs_coeffs):
+            return qp.sum(*ops), coeffs[0]
+        if qp.math.allequal(abs_coeffs[0], abs_coeffs):
             # absolute value of coefficients is the same
             prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in coeffs]
-            return qml.dot(coeffs, ops), prefactor
+            return qp.dot(coeffs, ops), prefactor
 
     elif isinstance(gen, SProd):
         return gen.base, gen.scalar
@@ -97,7 +97,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
     gen = op.generator
 
@@ -105,12 +105,12 @@ def _generator_backcompatibility(op):
         return gen[1] * gen[0](wires=op.wires)
 
     if isinstance(gen[0], np.ndarray) and len(gen[0].shape) == 2:
-        return gen[1] * qml.Hermitian(gen[0], wires=op.wires)
+        return gen[1] * qp.Hermitian(gen[0], wires=op.wires)
 
-    raise qml.operation.GeneratorUndefinedError
+    raise qp.operation.GeneratorUndefinedError
 
 
-def generator(op: qml.operation.Operator, format="prefactor"):
+def generator(op: qp.operation.Operator, format="prefactor"):
     r"""Returns the generator of an operation.
 
     Args:
@@ -120,7 +120,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Operator or tuple[.Observable, float]: The returned generator, with format/type
+        .Operator or tuple[.Operator, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing
@@ -146,16 +146,16 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     **Example**
 
-    Given an operation, ``qml.generator`` returns the generator representation:
+    Given an operation, ``qp.generator`` returns the generator representation:
 
-    >>> op = qml.CRX(0.6, wires=[0, 1])
-    >>> qml.generator(op)
-    (Projector([1], wires=[0]) @ X(1), -0.5)
+    >>> op = qp.CRX(0.6, wires=[0, 1])
+    >>> qp.generator(op)
+    (X(1) @ Projector(array([1]), wires=[0]), np.float64(-0.5))
 
     It can also be used in a functional form:
 
-    >>> qml.generator(qml.CRX)(0.6, wires=[0, 1])
-    (Projector([1], wires=[0]) @ X(1), -0.5)
+    >>> qp.generator(qp.CRX)(0.6, wires=[0, 1])
+    (X(1) @ Projector(array([1]), wires=[0]), np.float64(-0.5))
 
     By default, ``generator`` will return the generator in the format of ``(obs, prefactor)``,
     corresponding to :math:`G=p \hat{O}`, where the observable :math:`\hat{O}` will
@@ -164,20 +164,20 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     By using the ``format`` argument, the returned generator representation can
     be altered:
 
-    >>> op = qml.RX(0.2, wires=0)
-    >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
+    >>> op = qp.RX(0.2, wires=0)
+    >>> qp.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (X(0), -0.5)
-    >>> qml.generator(op, format="hamiltonian")  # output will be a LinearCombination
+    >>> qp.generator(op, format="hamiltonian")  # output will be a LinearCombination
     -0.5 * X(0)
-    >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
-    Projector([1], wires=[0])
-    >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
+    >>> qp.generator(qp.PhaseShift(0.1, wires=0), format="observable")  # output will be a simplified obs where possible
+    Projector(array([1]), wires=[0])
+    >>> qp.generator(op, format="arithmetic")  # output is an instance of `SProd`
     -0.5 * X(0)
     """
 
     def processing_fn(*args, **kwargs):
         if callable(op):
-            with qml.queuing.QueuingManager.stop_recording():
+            with qp.queuing.QueuingManager.stop_recording():
                 gen_op = op(*args, **kwargs)
         else:
             gen_op = op
@@ -194,8 +194,8 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             # versions <=0.22, assume gen_op.generator is a property
             gen = _generator_backcompatibility(gen_op)
 
-        if not gen.is_hermitian:
-            raise qml.QuantumFunctionError(
+        if not gen.is_verified_hermitian:
+            raise QuantumFunctionError(
                 f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
             )
 
@@ -207,7 +207,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
         if format == "arithmetic":
             h = _generator_hamiltonian(gen, gen_op)
-            return qml.dot(h.coeffs, h.ops)
+            return qp.dot(h.coeffs, h.ops)
 
         if format == "observable":
             return gen

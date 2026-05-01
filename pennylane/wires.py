@@ -14,15 +14,17 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
+
 import functools
 import itertools
+import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
-from typing import Union
 
 import numpy as np
 
 from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
 if util.find_spec("jax") is not None:
@@ -37,10 +39,6 @@ if jax_available:
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
-
-
 def _process(wires):
     """Converts the input to a tuple of wire labels.
 
@@ -48,7 +46,7 @@ def _process(wires):
     and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
     The only exception to this are strings, which are always interpreted as a single
-    wire label, so users can address wires with labels such as `"ancilla"`.
+    wire label, so users can address wires with labels such as `"auxiliary"`.
 
     Any type can be a wire label, as long as it is hashable. We need this to establish
     the uniqueness of two labels. For example, `0` and `0.` are interpreted as
@@ -78,7 +76,8 @@ def _process(wires):
             hash(wires)
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
-            if str(e).startswith("unhashable"):
+            # Check for unhashable type error - format changed in Python 3.14
+            if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
@@ -87,7 +86,10 @@ def _process(wires):
         # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
-        if str(e).startswith("unhashable"):
+        # Check for unhashable type error - format changed in Python 3.14
+        # Python 3.13: "unhashable type: 'list'"
+        # Python 3.14: "cannot use 'list' as a set element (unhashable type: 'list')"
+        if "unhashable" in str(e):
             raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):
@@ -112,8 +114,8 @@ class Wires(Sequence):
     .. warning::
 
         In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
-        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+        For example, running ``qp.RX(1.1, qp.numpy.array(0))`` on a device initialized with ``wires=[0]``
+        will fail because ``qp.numpy.array(0)`` does not exist in the device's wire map.
 
     Args:
          wires (Any): the wire label(s)
@@ -211,13 +213,20 @@ class Wires(Sequence):
         other = Wires(other)
         return Wires.all_wires([other, self])
 
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         """Defines a numpy array representation of the Wires object.
+
+        Args:
+            dtype: The desired data-type for the array. Default is ``None``.
+            copy: If ``True``, then force a copy. If ``False``, then ensure that a copy
+                is not made. If ``None`` (default), a copy will only be made if
+                necessary.
 
         Returns:
             ndarray: array representing Wires object
         """
-        return np.array(self._labels)
+        arr = np.array(self._labels, dtype=dtype)
+        return arr.copy() if copy else arr
 
     def __jax_array__(self):
         """Defines a JAX numpy array representation of the Wires object.
@@ -547,7 +556,7 @@ class Wires(Sequence):
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
-        return Wires((set(self.labels) | set(_process(other))))
+        return Wires(set(self.labels) | set(_process(other)))
 
     def __or__(self, other):
         """Return the union of the current Wires object and either another Wires object or an
@@ -598,7 +607,7 @@ class Wires(Sequence):
         >>> wires1 & wires2
         Wires([2, 3])
         """
-        return Wires((set(self.labels) & set(_process(other))))
+        return Wires(set(self.labels) & set(_process(other)))
 
     def __and__(self, other):
         """Return the intersection of the current Wires object and either another Wires object or
@@ -649,7 +658,7 @@ class Wires(Sequence):
         >>> wires1 - wires2
         Wires([1])
         """
-        return Wires((set(self.labels) - set(_process(other))))
+        return Wires(set(self.labels) - set(_process(other)))
 
     def __sub__(self, other):
         """Return the difference of the current Wires object and either another Wires object or
@@ -674,7 +683,7 @@ class Wires(Sequence):
 
     def __rsub__(self, other):
         """Right-hand version of __sub__."""
-        return Wires((set(_process(other)) - set(self.labels)))
+        return Wires(set(_process(other)) - set(self.labels))
 
     def symmetric_difference(self, other):
         """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
@@ -701,7 +710,7 @@ class Wires(Sequence):
         Wires([1, 2, 4, 5])
         """
 
-        return Wires((set(self.labels) ^ set(_process(other))))
+        return Wires(set(self.labels) ^ set(_process(other)))
 
     def __xor__(self, other):
         """Return the symmetric difference of the current Wires object and either another Wires
@@ -726,10 +735,36 @@ class Wires(Sequence):
 
     def __rxor__(self, other):
         """Right-hand version of __xor__."""
-        return Wires((set(_process(other)) ^ set(self.labels)))
+        return Wires(set(_process(other)) ^ set(self.labels))
 
 
-WiresLike = Union[Wires, Iterable[Hashable], Hashable]
+WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
+
+
+class DynamicWire:
+    """A wire whose concrete value will be determined later during a compilation step or execution.
+
+    Multiple dynamic wires can correspond to the same device wire as long as they are properly allocated and
+    deallocated.
+
+    Args:
+        key (uuid.UUID or None): An optional UUID key to identify the dynamic wire. If None, a random UUID will be generated.
+
+    """
+
+    def __init__(self, key: uuid.UUID | None = None):
+        self.key = key or uuid.uuid4()
+
+    def __eq__(self, other):
+        if not isinstance(other, DynamicWire):
+            return False
+        return self.key == other.key
+
+    def __hash__(self):
+        return hash(("DynamicWire", self.key))
+
+    def __repr__(self):
+        return "<DynamicWire>"

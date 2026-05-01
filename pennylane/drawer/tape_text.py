@@ -14,10 +14,8 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
-# pylint: disable=too-many-arguments
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ._add_obj import _add_obj
 from .drawable_layers import drawable_layers
@@ -54,10 +52,10 @@ class _Config:
     cwire_layers: list = field(default_factory=list)
     """A list of layers used (mid measure or conditional) for each classical wire."""
 
-    decimals: Optional[int] = None
+    decimals: int | None = None
     """Specifies how to round the parameters of operators"""
 
-    cache: Optional[dict] = None
+    cache: dict | None = None
     """dictionary that carries information between label calls in the same drawing"""
 
     @property
@@ -191,12 +189,16 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
         config.wire_filler.join([t, s])
-        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
+        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires], strict=True)
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings
     for j, (bt, s) in enumerate(
-        zip(totals.bit_totals, layer_str[config.n_wires : config.n_wires + config.n_bits])
+        zip(
+            totals.bit_totals,
+            layer_str[config.n_wires : config.n_wires + config.n_bits],
+            strict=True,
+        )
     ):
         totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
@@ -252,20 +254,20 @@ def tape_text(
     .. code-block:: python
 
         ops = [
-            qml.QFT(wires=(0, 1, 2)),
-            qml.RX(1.234, wires=0),
-            qml.RY(1.234, wires=1),
-            qml.RZ(1.234, wires=2),
-            qml.Toffoli(wires=(0, 1, "aux"))
+            qp.QFT(wires=(0, 1, 2)),
+            qp.RX(1.234, wires=0),
+            qp.RY(1.234, wires=1),
+            qp.RZ(1.234, wires=2),
+            qp.Toffoli(wires=(0, 1, "aux"))
         ]
         measurements = [
-            qml.expval(qml.Z("aux")),
-            qml.var(qml.Z(0) @ qml.Z(1)),
-            qml.probs(wires=(0, 1, 2, "aux"))
+            qp.expval(qp.Z("aux")),
+            qp.var(qp.Z(0) @ qp.Z(1)),
+            qp.probs(wires=(0, 1, 2, "aux"))
         ]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
+    >>> print(qp.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ─│──┤           ├Probs
@@ -277,7 +279,7 @@ def tape_text(
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
-    >>> print(qml.drawer.tape_text(tape, decimals=2))
+    >>> print(qp.drawer.tape_text(tape, decimals=2))
       0: ─╭QFT──RX(1.23)─╭●─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY(1.23)─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
@@ -289,10 +291,11 @@ def tape_text(
     .. code-block:: python
 
         rng = np.random.default_rng(seed=42)
-        shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
+        shape = qp.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
         params = rng.random(shape)
-        tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
-        print(qml.drawer.tape_text(tape2, max_length=60))
+        op = qp.StronglyEntanglingLayers(params, wires=range(5))
+        tape2 = qp.tape.QuantumScript(op.decomposition())
+        print(qp.drawer.tape_text(tape2, max_length=60))
 
 
     .. code-block:: none
@@ -313,7 +316,7 @@ def tape_text(
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
-    >>> print(qml.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
+    >>> print(qp.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
     aux: ──────────╭X─┤  <Z>      ╭Probs
       2: ─╭QFT──RZ─│──┤           ├Probs
       1: ─├QFT──RY─├●─┤ ╭Var[Z@Z] ├Probs
@@ -321,7 +324,7 @@ def tape_text(
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
-    >>> print(qml.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
+    >>> print(qp.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
       a: ─────────────┤
       b: ─────────────┤
     aux: ──────────╭X─┤  <Z>      ╭Probs
@@ -336,13 +339,13 @@ def tape_text(
     .. code-block:: python
 
         ops = [
-            qml.QubitUnitary(np.eye(2), wires=0),
-            qml.QubitUnitary(np.eye(2), wires=1)
+            qp.QubitUnitary(np.eye(2), wires=0),
+            qp.QubitUnitary(np.eye(2), wires=1)
         ]
-        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
+    >>> print(qp.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -359,7 +362,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, cache=cache))
+    >>> print(qp.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -375,13 +378,13 @@ def tape_text(
     [0. 0. 1. 0.]
     [0. 0. 0. 1.]]
     >>> cache
-    {'matrices': [tensor([[-1., -0., -0.],
-        [-0., -1., -0.],
-        [-0., -0., -1.]], requires_grad=True), tensor([[1., 0.],
-        [0., 1.]], requires_grad=True), tensor([[1., 0., 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., 0., 0., 1.]], requires_grad=True)], 'tape_offset': 0}
+    {'matrices': [array([[-1., -0., -0.],
+           [-0., -1., -0.],
+           [-0., -0., -1.]]), array([[1., 0.],
+           [0., 1.]]), array([[1., 0., 0., 0.],
+           [0., 1., 0., 0.],
+           [0., 0., 1., 0.],
+           [0., 0., 0., 1.]])], 'tape_offset': 0}
 
     When the provided tape has nested tapes inside, this function is called recursively.
     To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
@@ -390,12 +393,12 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            with qml.tape.QuantumTape() as tape_inner:
-                qml.X(0)
+        with qp.tape.QuantumTape() as tape:
+            with qp.tape.QuantumTape() as tape_inner:
+                qp.X(0)
 
         cache = {'tape_offset': 3}
-        print(qml.drawer.tape_text(tape, cache=cache))
+        print(qp.drawer.tape_text(tape, cache=cache))
         print("New tape offset: ", cache['tape_offset'])
 
 
@@ -414,7 +417,7 @@ def tape_text(
     cache.setdefault("matrices", [])
     tape_cache = []
 
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    _, wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
     if n_wires == 0:
@@ -423,11 +426,9 @@ def tape_text(
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
     num_op_layers = len(layers)
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
-
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
     bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
-
     # Collect information needed for drawing layers
     config = _Config(
         wire_map=wire_map,

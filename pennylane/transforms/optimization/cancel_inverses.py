@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
-# pylint: disable=too-many-branches
+
 from functools import lru_cache, partial
 
+from pennylane.math import is_abstract
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -23,23 +25,35 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
 
 
-def _ops_equal(op1, op2):
+def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> bool:
+    """Checks if two data objects are equal, considering abstractness."""
+
+    for d1, d2 in zip(items1, items2, strict=True):
+        if is_abstract(d1) or is_abstract(d2):
+            if d1 is not d2:
+                return False
+        elif d1 != d2:
+            return False
+
+    return True
+
+
+def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
-        and (op1.data == op2.data)
+        and _check_equality(op1.data, op2.data)
         and (op1.hyperparameters == op2.hyperparameters)
-        and (op1.wires == op2.wires)
     )
 
 
-def _are_inverses(op1, op2):
+def _are_inverses(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are inverses of each other
 
     Args:
@@ -49,12 +63,8 @@ def _are_inverses(op1, op2):
     Returns:
         Bool
     """
-    # op1 is self-inverse and the next gate is also op1
+    # op1 is self-inverse and the next gate is of the same type as op1
     if op1 in self_inverses and op1.name == op2.name:
-        return True
-
-    # op1 is an `Adjoint` class and its base is equal to op2
-    if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
         return True
 
     # op2 is an `Adjoint` class and its base is equal to op1
@@ -65,14 +75,13 @@ def _are_inverses(op1, op2):
 
 
 @lru_cache
-def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
-        from pennylane.operation import Operator
 
     except ImportError:  # pragma: no cover
         return None, None
@@ -115,52 +124,56 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
-            # pylint: disable=too-many-branches
             if len(op.wires) == 0:
                 return super().interpret_operation(op)
 
+            # Throughout we will use that any pair of operators we want to cancel must act on the
+            # same set of wires. We use the marker (1) to indicate that we used this fact.
+
+            # previous operator that last acted on first wire of ``op``.
+            # Only need to look at one wire for this (1).
             prev_op = self.previous_ops.get(op.wires[0], None)
-            if prev_op is None:
+            dyn_wires = {w for w in op.wires if is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if prev_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't cancel. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to cancel, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (prev_op is None or other_saved_wires):
+                    self.interpret_all_previous_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return []
 
-            cancel = False
-            if _are_inverses(op, prev_op):
-                # Same wires, cancel
-                if op.wires == prev_op.wires:
-                    cancel = True
-                # Full overlap over wires
-                elif len(Wires.shared_wires([op.wires, prev_op.wires])) == len(op.wires):
-                    # symmetric op + full wire overlap; cancel
-                    if op in symmetric_over_all_wires:
-                        cancel = True
-                    # symmetric over control wires, full overlap over control wires; cancel
-                    elif op in symmetric_over_control_wires and (
-                        len(Wires.shared_wires([op.wires[:-1], prev_op.wires[:-1]]))
-                        == len(op.wires) - 1
-                    ):
-                        cancel = True
-                # No or partial overlap over wires; can't cancel
-
-            if cancel:
+            if _can_cancel(prev_op, op):
+                # If we can cancel the previous op with the current op, we simply don't interpret
+                # either and remove the previous op from `self.previous_ops`. We do not need to
+                # remove ops on any other wires (1).
                 for w in op.wires:
                     self.previous_ops.pop(w)
                 return []
 
+            # If we can't cancel, get all previous ops with wire overlap with `op`, interpret them,
+            # and pop them. They won't cancel with any other operator as `op` blocks them (1).
             previous_ops_on_wires = list(
                 dict.fromkeys(o for w in op.wires if (o := self.previous_ops.get(w)) is not None)
             )
-
+            # pylint: disable=super-with-arguments
+            res = [
+                super(CancelInversesInterpreter, self).interpret_operation(o)
+                for o in previous_ops_on_wires
+            ]
             for o in previous_ops_on_wires:
                 for w in o.wires:
                     self.previous_ops.pop(w)
+
+            # Record `op` as last op that acted on its wires.
             for w in op.wires:
                 self.previous_ops[w] = op
 
-            res = []
-            for o in previous_ops_on_wires:
-                res.append(super().interpret_operation(o))
             return res
 
         def interpret_all_previous_ops(self) -> None:
@@ -174,11 +187,11 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 
             self.previous_ops.clear()
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -186,7 +199,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 
@@ -243,6 +256,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 
     def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``cancel_inverses`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 
@@ -257,43 +271,107 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
 
 
-@partial(transform, plxpr_transform=cancel_inverses_plxpr_to_plxpr)
-def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def _num_shared_wires(wires1, wires2):
+    if any(is_abstract(w) for w in [*wires1, *wires2]):
+        # Rely on `id`s to check object equality instead of value equality for abstract wires
+        wire_ids1 = {id(w) for w in wires1}
+        wire_ids2 = {id(w) for w in wires2}
+        return len(wire_ids1 & wire_ids2)
+    return len(Wires.shared_wires([wires1, wires2]))
+
+
+def _can_cancel(op1, op2):
+    # Make sure that if one of the operators is an adjoint it is the latter
+    if isinstance(op1, Adjoint):
+        op1, op2 = op2, op1
+
+    if _are_inverses(op1, op2):
+        # If the wires are exactly the same, then we can safely remove both
+        if _check_equality(op1.wires, op2.wires):
+            return True
+        # If wires are not exactly equal, they don't have full overlap, or differ by a permutation
+        # 1. There is not full overlap in the wires; we cannot cancel
+        if _num_shared_wires(op1.wires, op2.wires) != len(op1.wires):
+            return False
+        # 2. There is full overlap, but the wires are in a different order.
+        # If the wires are in a different order, gates that are "symmetric"
+        # over all wires (e.g., CZ), can be cancelled.
+        if op1 in symmetric_over_all_wires:
+            return True
+        # For gates that are symmetric over controls and have a single target (e.g., Toffoli),
+        # we can still cancel as long as the target wire is the same
+        if op1 in symmetric_over_control_wires and _check_equality(op1.wires[-1:], op2.wires[-1:]):
+            return True
+    return False
+
+
+def _try_to_cancel_with_next(current_gate, list_copy):
+    cancelled = False
+    next_gate_idx = find_next_gate(current_gate.wires, list_copy)
+    # If no next gate is found: can not cancel
+    if next_gate_idx is None:
+        return list_copy, cancelled
+    # Otherwise, get the next gate
+    next_gate = list_copy[next_gate_idx]
+    if _can_cancel(current_gate, next_gate):
+        list_copy.pop(next_gate_idx)
+        cancelled = True
+    return list_copy, cancelled
+
+
+@partial(
+    transform,
+    plxpr_transform=cancel_inverses_plxpr_to_plxpr,
+    pass_name="cancel-inverses",
+)
+def cancel_inverses(
+    tape: QuantumScript, recursive: bool = True
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
+        recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
+
+            .. note::
+                This argument is not supported within a :func:`~.qjit` workflow.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
 
     You can apply the cancel inverses transform directly on :class:`~.QNode`.
 
-    >>> dev = qml.device('default.qubit', wires=3)
 
     .. code-block:: python
 
-        @cancel_inverses
-        @qml.qnode(device=dev)
-        def circuit(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=2)
-            qml.RY(y, wires=1)
-            qml.X(1)
-            qml.RZ(z, wires=0)
-            qml.RX(y, wires=2)
-            qml.CNOT(wires=[0, 2])
-            qml.X(1)
-            return qml.expval(qml.Z(0))
+        import pennylane as qp
 
-    >>> circuit(0.1, 0.2, 0.3)
-    0.999999999999999
+        dev = qp.device('default.qubit', wires=3)
+
+        @qp.transforms.cancel_inverses
+        @qp.qnode(device=dev)
+        def circuit(x, y, z):
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=0)
+            qp.RX(x, wires=2)
+            qp.RY(y, wires=1)
+            qp.X(1)
+            qp.RZ(z, wires=0)
+            qp.RX(y, wires=2)
+            qp.CNOT(wires=[0, 2])
+            qp.X(1)
+            return qp.expval(qp.Z(0))
+
+    >>> print(qp.draw(circuit)(0.1, 0.2, 0.3))
+    0: ──RZ(0.30)───────────╭●─┤  <Z>
+    1: ──H─────────RY(0.20)─│──┤
+    2: ──RX(0.10)──RX(0.20)─╰X─┤
 
     .. details::
         :title: Usage Details
@@ -303,22 +381,22 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
         .. code-block:: python
 
             def qfunc(x, y, z):
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=1)
-                qml.Hadamard(wires=0)
-                qml.RX(x, wires=2)
-                qml.RY(y, wires=1)
-                qml.X(1)
-                qml.RZ(z, wires=0)
-                qml.RX(y, wires=2)
-                qml.CNOT(wires=[0, 2])
-                qml.X(1)
-                return qml.expval(qml.Z(0))
+                qp.Hadamard(wires=0)
+                qp.Hadamard(wires=1)
+                qp.Hadamard(wires=0)
+                qp.RX(x, wires=2)
+                qp.RY(y, wires=1)
+                qp.X(1)
+                qp.RZ(z, wires=0)
+                qp.RX(y, wires=2)
+                qp.CNOT(wires=[0, 2])
+                qp.X(1)
+                return qp.expval(qp.Z(0))
 
         The circuit before optimization:
 
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)(1, 2, 3))
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)(1, 2, 3))
         0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
         1: ──H─────────RY(2.00)──X────────│───X─┤
         2: ──RX(1.00)──RX(2.00)───────────╰X────┤
@@ -328,12 +406,64 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
         second qubit that should cancel. We can obtain a simplified circuit by running
         the ``cancel_inverses`` transform:
 
-        >>> optimized_qfunc = cancel_inverses(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        >>> optimized_qfunc = qp.transforms.cancel_inverses(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)(1, 2, 3))
         0: ──RZ(3.00)───────────╭●─┤  <Z>
         1: ──H─────────RY(2.00)─│──┤
         2: ──RX(1.00)──RX(2.00)─╰X─┤
+
+    .. details::
+        :title: Usage with qjit
+
+        There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
+
+        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
+
+        * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
+
+          - :class:`qp.Hadamard <pennylane.Hadamard>`,
+          - :class:`qp.PauliX <pennylane.PauliX>`,
+          - :class:`qp.PauliY <pennylane.PauliY>`,
+          - :class:`qp.PauliZ <pennylane.PauliZ>`
+          - :class:`qp.CNOT <pennylane.CNOT>`,
+          - :class:`qp.CY <pennylane.CY>`,
+          - :class:`qp.CZ <pennylane.CZ>`,
+          - :class:`qp.SWAP <pennylane.SWAP>`
+          - :class:`qp.Toffoli <pennylane.Toffoli>`
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
+            def circuit():
+                qp.RX(0.1, wires=0)
+                qp.Hadamard(wires=0)
+                qp.Hadamard(wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+        >>> print(qp.specs(circuit, level=1)())
+        Device: lightning.qubit
+        Device wires: 1
+        Shots: Shots(total=None)
+        Level: cancel-inverses
+        <BLANKLINE>
+        Wire allocations: 1
+        Total gates: 1
+        Gate counts:
+        - RX: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
+        `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.
+
+        For more technical information on how this transform behaves, consult the Catalyst
+        documentation for :func:`catalyst.passes.cancel_inverses`.
 
     """
     # Make a working copy of the list to traverse
@@ -341,61 +471,23 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     operations = []
 
     while len(list_copy) > 0:
-        current_gate = list_copy[0]
-        list_copy.pop(0)
+        current_gate = list_copy.pop(0)
 
-        # Find the next gate that acts on at least one of the same wires
-        next_gate_idx = find_next_gate(current_gate.wires, list_copy)
-
-        # If no such gate is found queue the operation and move on
-        if next_gate_idx is None:
+        list_copy, cancelled = _try_to_cancel_with_next(current_gate, list_copy)
+        if cancelled:
+            if not recursive:
+                continue
+            while cancelled and operations:
+                list_copy, cancelled = _try_to_cancel_with_next(operations[-1], list_copy)
+                if cancelled:
+                    operations.pop(-1)
+        else:
             operations.append(current_gate)
-            continue
-
-        # Otherwise, get the next gate
-        next_gate = list_copy[next_gate_idx]
-
-        # If either of the two flags is true, we can potentially cancel the gates
-        if _are_inverses(current_gate, next_gate):
-            # If the wires are the same, then we can safely remove both
-            if current_gate.wires == next_gate.wires:
-                list_copy.pop(next_gate_idx)
-                continue
-            # If wires are not equal, there are two things that can happen.
-            # 1. There is not full overlap in the wires; we cannot cancel
-            if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
-                current_gate.wires
-            ):
-                operations.append(current_gate)
-                continue
-
-            # 2. There is full overlap, but the wires are in a different order.
-            # If the wires are in a different order, gates that are "symmetric"
-            # over all wires (e.g., CZ), can be cancelled.
-            if current_gate in symmetric_over_all_wires:
-                list_copy.pop(next_gate_idx)
-                continue
-            # For other gates, as long as the control wires are the same, we can still
-            # cancel (e.g., the Toffoli gate).
-            if current_gate in symmetric_over_control_wires:
-                # TODO[David Wierichs]: This assumes single-qubit targets of controlled gates
-                if (
-                    len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
-                    == len(current_gate.wires) - 1
-                ):
-                    list_copy.pop(next_gate_idx)
-                    continue
-        # Apply gate any cases where
-        # - there is no wire symmetry
-        # - the control wire symmetry does not apply because the control wires are not the same
-        # - neither of the flags are_self_inverses and are_inverses are true
-        operations.append(current_gate)
-        continue
 
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

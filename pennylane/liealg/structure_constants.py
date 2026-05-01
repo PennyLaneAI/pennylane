@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
+
 from itertools import combinations, combinations_with_replacement
-from typing import Union
 
 import numpy as np
 
@@ -36,7 +36,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]],
+    g: list[Operator | PauliWord | PauliSentence],
     pauli: bool = False,
     matrix: bool = False,
     is_orthogonal: bool = True,
@@ -103,7 +103,7 @@ def structure_constants(
     Let us confirm those with an example. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
-    >>> adjoint_rep[0, 1, 3]
+    >>> print(adjoint_rep[0, 1, 3])
     -2.0
 
     We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
@@ -256,18 +256,18 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from pennylane import X, Y, Z, I
     >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> gens = [qp.X(i) @ qp.X(i+1) + qp.Y(i) @ qp.Y(i+1) + qp.Z(i) @ qp.Z(i+1) for i in range(n-1)]
+    >>> g = qp.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj = qp.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
@@ -343,15 +343,18 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import keras  # pylint: disable=import-outside-toplevel
 
             pre_diag = keras.ops.diagonal(
                 keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
         else:
-            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = math.diagonal(math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            pre_diag = math.diagonal(
+                math.diagonal(prod, offset=0, axis1=1, axis2=3), offset=0, axis1=0, axis2=1
+            )
 
         gram_diag = math.real(math.sum(pre_diag, axis=0))
 

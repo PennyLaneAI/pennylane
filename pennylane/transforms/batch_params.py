@@ -14,9 +14,8 @@
 """
 Contains the batch dimension transform.
 """
-# pylint: disable=import-outside-toplevel
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -27,10 +26,9 @@ def _nested_stack(res):
     """
     Given a list of identical nested tuple structures, stack the arrays at the leaves
     """
-    # for some reason pylint thinks qml.numpy.builtins is a dict
-    # pylint: disable=no-member
-    if not isinstance(res[0], (tuple, qml.numpy.builtins.SequenceBox)):
-        return qml.math.stack(res)
+    # for some reason pylint thinks qp.numpy.builtins is a dict
+    if not isinstance(res[0], (tuple, qp.numpy.builtins.SequenceBox)):
+        return qp.math.stack(res)
 
     stacked_results = []
     for i in range(len(res[0])):
@@ -55,8 +53,8 @@ def _split_operations(ops, params, split_indices, num_tapes):
             entry of ``params``. Otherwise, the original operator is used.
         num_tapes (int): the number of new tapes to create, which is also equal to the batch size.
     """
-    # for some reason pylint thinks "qml.ops" is a set
-    # pylint: disable=no-member
+    # for some reason pylint thinks "qp.ops" is a set
+
     new_ops = [[] for _ in range(num_tapes)]
     idx = 0
 
@@ -68,7 +66,7 @@ def _split_operations(ops, params, split_indices, num_tapes):
                     params[i][b] if i in split_indices else params[i]
                     for i in range(idx, idx + len(op.data))
                 )
-                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_op = qp.ops.functions.bind_new_parameters(op, new_params)
                 new_ops[b].append(new_op)
         else:
             # no batching in the operator; don't copy
@@ -109,7 +107,7 @@ def batch_params(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the batched results, with the first dimension treated as the batch dimension.
 
     **Example**
@@ -118,37 +116,37 @@ def batch_params(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.batch_params
-        @qml.qnode(dev)
+        @qp.batch_params
+        @qp.qnode(dev)
         def circuit(x, weights):
-            qml.RX(x, wires=0)
-            qml.RY(0.2, wires=1)
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.expval(qml.Hadamard(0))
+            qp.RX(x, wires=0)
+            qp.RY(0.2, wires=1)
+            qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qp.expval(qp.Hadamard(0))
 
-    The ``qml.batch_params`` decorator allows us to pass arguments ``x`` and ``weights``
+    The ``qp.batch_params`` decorator allows us to pass arguments ``x`` and ``weights``
     that have a batch dimension. For example,
 
     >>> batch_size = 3
-    >>> x = np.linspace(0.1, 0.5, batch_size)
+    >>> x = pnp.linspace(0.1, 0.5, batch_size)
     >>> rng = np.random.default_rng(seed=1234)
-    >>> weights = rng.random((batch_size, 10, 3, 3), requires_grad=True)
+    >>> weights = pnp.array(rng.random((batch_size, 10, 3, 3)))
 
     If we evaluate the QNode with these inputs, we will get an output
     of shape ``(batch_size,)``:
 
     >>> circuit(x, weights)
-    tensor([ 0.00800498,  0.2735391 , -0.24395442], requires_grad=True)
+    tensor([ 0.008...,  0.273..., -0.24...], requires_grad=True)
 
     QNodes with a batch dimension remain fully differentiable:
 
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
+    >>> def cost_fn(x, weights): return qp.math.sum(circuit(x, weights))
     >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
-    >>> qml.grad(cost_fn)(x, weights)[0]
-    array([-0.30262974,  0.06320878,  0.00811555])
+    tensor(0.037..., requires_grad=True)
+    >>> qp.grad(cost_fn)(x, weights)[0]
+    array([-0.302...,  0.0632...  0.0081...])
 
     If we pass the ``all_operations`` argument, we can specify that
     *all* operation parameters in the transformed QNode, regardless of whether they
@@ -156,24 +154,22 @@ def batch_params(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.batch_params, all_operations=True)
-        @qml.qnode(dev)
+        @qp.batch_params(all_operations=True)
+        @qp.qnode(dev)
         def circuit(x, weights):
-            qml.RX(x, wires=0)
-            qml.RY([0.2, 0.2, 0.2], wires=1)
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.expval(qml.Hadamard(0))
+            qp.RX(x, wires=0)
+            qp.RY([0.2, 0.2, 0.2], wires=1)
+            qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qp.expval(qp.Hadamard(0))
 
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
+    >>> def cost_fn(x, weights): return qp.math.sum(circuit(x, weights))
     >>> weights.requires_grad = False
     >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
-    >>> qml.grad(cost_fn)(x, weights)[0]
-    -0.30262974103192636
+    tensor(0.037..., requires_grad=True)
+    >>> qp.grad(cost_fn)(x, weights)[0]
+    np.float64(-0.302...)
     """
-    # pylint: disable=protected-access
+
     params = tape.get_parameters(trainable_only=False)
     indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
 
@@ -184,12 +180,12 @@ def batch_params(
         )
 
     try:
-        batch_dim = qml.math.shape(params[indices[0]])[0]
+        batch_dim = qp.math.shape(params[indices[0]])[0]
     except IndexError:
         raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.") from None
 
     for i in indices:
-        shape = qml.math.shape(params[i])
+        shape = qp.math.shape(params[i])
         if len(shape) == 0 or shape[0] != batch_dim:
             raise ValueError(
                 f"Parameter {params[i]} has incorrect batch dimension. Expecting "
@@ -198,7 +194,7 @@ def batch_params(
 
     output_tapes = []
     for ops in _split_operations(tape.operations, params, indices, batch_dim):
-        new_tape = qml.tape.QuantumScript(
+        new_tape = qp.tape.QuantumScript(
             ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
         )
         output_tapes.append(new_tape)

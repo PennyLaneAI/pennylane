@@ -13,7 +13,7 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
@@ -30,10 +30,10 @@ from .utils import is_abstract
 def _i(name):
     """Convenience function to import PennyLane
     interfaces via a string pattern"""
-    if name == "tf":
+    if name == "tf":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return import_module("tensorflow")
 
-    if name == "qml":
+    if name == "qp":
         return import_module("pennylane")
 
     return import_module(name)
@@ -61,7 +61,7 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+# qp.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "coerce", lambda x: x)
 ar.register_function("scipy", "array", lambda x: x)
@@ -163,7 +163,7 @@ def _scatter_numpy(indices, array, shape):
     return new_array
 
 
-def _scatter_element_add_numpy(tensor, index, value):
+def _scatter_element_add_numpy(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     new_tensor = tensor.copy()
@@ -200,7 +200,7 @@ ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x)
 ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 
 # When dispatching to autograd, ensure that autoray will instead call
-# qml.numpy rather than autograd.numpy, to take into account our autograd modification.
+# qp.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))
@@ -213,6 +213,10 @@ ar.register_function("autograd", "unstack", list)
 
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
+    # abstract array comes from PL so is treated as a autograd array
+    if x.__class__.__name__ == "AbstractArray":
+        # will always be a numpy dtype
+        return x.dtype.name
     # this function seems to only get called with x is an arraybox.
     return ar.get_dtype_name(x._value)
 
@@ -222,7 +226,7 @@ ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
 
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
-    _np = _i("qml").numpy
+    _np = _i("qp").numpy
     tensors = [t.reshape((1, len(t))) if len(t.shape) == 1 else t for t in tensors]
     rsizes, csizes = _np.array([t.shape for t in tensors]).T
     all_zeros = [[_np.zeros((rsize, csize)) for csize in csizes] for rsize in rsizes]
@@ -262,11 +266,11 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-def _scatter_element_add_autograd(tensor, index, value):
+def _scatter_element_add_autograd(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
     assignment, we have to be clever and use ravel_multi_index."""
-    pnp = _i("qml").numpy
+    pnp = _i("qp").numpy
     size = tensor.size
     flat_index = pnp.ravel_multi_index(index, tensor.shape)
     if pnp.isscalar(flat_index):
@@ -274,7 +278,7 @@ def _scatter_element_add_autograd(tensor, index, value):
     if pnp.isscalar(value) or len(pnp.shape(value)) == 0:
         value = [value]
     t = [0] * size
-    for _id, val in zip(flat_index, value):
+    for _id, val in zip(flat_index, value, strict=True):
         t[_id] = val
     return tensor + pnp.array(t).reshape(tensor.shape)
 
@@ -283,7 +287,7 @@ ar.register_function("autograd", "scatter_element_add", _scatter_element_add_aut
 
 
 def _take_autograd(tensor, indices, axis=None):
-    indices = _i("qml").numpy.asarray(indices)
+    indices = _i("qp").numpy.asarray(indices)
 
     if axis is None:
         return tensor.flatten()[indices]
@@ -300,7 +304,7 @@ ar.register_function(
     lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x), axis=-1),
 )
 
-ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
+ar.register_function("autograd", "diagonal", lambda x, *args: _i("qp").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
 
 ar.register_function("autograd", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))
@@ -349,7 +353,9 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
-def _coerce_tensorflow_diag(x, **kwargs):
+def _coerce_tensorflow_diag(
+    x, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     x = _tf_convert_to_tensor(x)
     tf = _i("tf")
     nd = len(x.shape)
@@ -363,7 +369,9 @@ def _coerce_tensorflow_diag(x, **kwargs):
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
 
 
-def _tensorflow_allclose(a, b, **kwargs):
+def _tensorflow_allclose(
+    a, b, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if is_abstract(a):
         a = ar.to_numpy(a)
     return ar.autoray.allclose(a, b, **kwargs)
@@ -378,7 +386,9 @@ ar.register_function(
 )
 
 
-def _tf_convert_to_tensor(x, requires_grad=False, **kwargs):
+def _tf_convert_to_tensor(
+    x, requires_grad=False, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
         out = _i("tf").cast(x, **kwargs)
     else:
@@ -420,7 +430,9 @@ ar.register_function(
 )
 
 
-def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
+def _ifft2_tf(
+    a, s=None, axes=(-2, -1), norm=None
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if axes != (-2, -1):
         raise ValueError(
             "TensorFlow does not support passing axes; the ifft "
@@ -445,7 +457,9 @@ def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
 ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
 
 
-def _round_tf(tensor, decimals=0):
+def _round_tf(
+    tensor, decimals=0
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
     tol = 10**decimals
@@ -455,14 +469,16 @@ def _round_tf(tensor, decimals=0):
 ar.register_function("tensorflow", "round", _round_tf)
 
 
-def _ndim_tf(tensor):
+def _ndim_tf(tensor):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
-def _take_tf(tensor, indices, axis=None, **kwargs):
+def _take_tf(
+    tensor, indices, axis=None, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     tf = _i("tf")
     return tf.experimental.numpy.take(tensor, indices, axis=axis, **kwargs)
 
@@ -470,7 +486,9 @@ def _take_tf(tensor, indices, axis=None, **kwargs):
 ar.register_function("tensorflow", "take", _take_tf)
 
 
-def _coerce_types_tf(tensors):
+def _coerce_types_tf(
+    tensors,
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Coerce the dtypes of a list of tensors so that they
     all share the same dtype, without any reduction in information."""
     tf = _i("tf")
@@ -497,7 +515,7 @@ def _coerce_types_tf(tensors):
 ar.register_function("tensorflow", "coerce", _coerce_types_tf)
 
 
-def _block_diag_tf(tensors):
+def _block_diag_tf(tensors):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """TensorFlow implementation of scipy.linalg.block_diag"""
     tf = _i("tf")
     int_dtype = None
@@ -519,20 +537,24 @@ def _block_diag_tf(tensors):
 ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
-def _scatter_tf(indices, array, new_dims):
+def _scatter_tf(
+    indices, array, new_dims
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     import tensorflow as tf
 
     indices = np.expand_dims(indices, 1)
     return tf.scatter_nd(indices, array, new_dims)
 
 
-def _scatter_element_add_tf(tensor, index, value):
+def _scatter_element_add_tf(
+    tensor, index, value, **_
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     import tensorflow as tf
 
     if not isinstance(index[0], int):
-        index = tuple(zip(*index))
+        index = tuple(zip(*index, strict=True))
     indices = tf.expand_dims(index, 0)
     value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
     return tf.tensor_scatter_nd_add(tensor, indices, value)
@@ -542,7 +564,9 @@ ar.register_function("tensorflow", "scatter", _scatter_tf)
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
-def _transpose_tf(a, axes=None):
+def _transpose_tf(
+    a, axes=None
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     import tensorflow as tf
 
     return tf.transpose(a, perm=axes)
@@ -556,7 +580,9 @@ ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b
 ar.register_function("tensorflow", "where", lambda *args, **kwargs: _i("tf").where(*args, **kwargs))
 
 
-def _eigvalsh_tf(density_matrix):
+def _eigvalsh_tf(
+    density_matrix,
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     evs = _i("tf").linalg.eigvalsh(density_matrix)
     evs = _i("tf").math.real(evs)
     return evs
@@ -568,7 +594,7 @@ ar.register_function(
 )
 
 
-def _kron_tf(a, b):
+def _kron_tf(a, b):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     import tensorflow as tf
 
     a_shape = a.shape
@@ -587,7 +613,9 @@ def _kron_tf(a, b):
 ar.register_function("tensorflow", "kron", _kron_tf)
 
 
-def _cond_tf(pred, true_fn, false_fn, args):
+def _cond_tf(
+    pred, true_fn, false_fn, args
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     import tensorflow as tf
 
     return tf.cond(pred, lambda: true_fn(*args), lambda: false_fn(*args))
@@ -741,7 +769,9 @@ def _coerce_types_torch(tensors):
         ]
     else:
         device = device_set.pop()
-        tensors = [torch.as_tensor(t, device=device) for t in tensors]
+        dev_id = dev_indices.pop() if dev_indices else None
+        torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
+        tensors = [torch.as_tensor(t, device=torch_device) for t in tensors]
 
     dtypes = {i.dtype for i in tensors}
 
@@ -779,7 +809,7 @@ def _block_diag_torch(tensors):
     # converted the diagonal indices to row and column indices
     ridx, cidx = np.stack([p - sizes, p]).T
 
-    for t, r, c in zip(tensors, ridx, cidx):
+    for t, r, c in zip(tensors, ridx, cidx, strict=True):
         row = np.arange(*r).reshape(-1, 1)
         col = np.arange(*c).reshape(1, -1)
         res[row, col] = t
@@ -798,7 +828,7 @@ def _scatter_torch(indices, tensor, new_dimensions):
     return new_tensor
 
 
-def _scatter_element_add_torch(tensor, index, value):
+def _scatter_element_add_torch(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Note that Torch only supports index assignments
     on non-leaf nodes; if the node is a leaf, we must clone it first."""
@@ -869,11 +899,13 @@ ar.register_function("torch", "cond", _cond)
 
 
 def _to_numpy_jax(x):
-    from jax.errors import TracerArrayConversionError
+    from jax.core import concrete_or_error
+    from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 
     try:
-        return np.array(getattr(x, "val", x))
-    except TracerArrayConversionError as e:
+        x = concrete_or_error(None, x)
+        return np.array(x)
+    except (ConcretizationTypeError, TracerArrayConversionError) as e:
         raise ValueError(
             "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
         ) from e
@@ -922,7 +954,7 @@ ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: x.at[tuple(index)].add(value),
+    lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda

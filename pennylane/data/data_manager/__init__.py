@@ -22,7 +22,8 @@ from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Optional
+from collections.abc import Iterable, Mapping
 
 from requests import get, head
 
@@ -38,7 +39,6 @@ from .graphql import (
 )
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params, provide_defaults
-
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -67,10 +67,10 @@ S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 def _download_partial(  # pylint: disable=too-many-arguments
     s3_url: str,
     dest: Path,
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     overwrite: bool,
     block_size: int,
-    pbar_task: Optional[progress.Task],
+    pbar_task: progress.Task | None,
 ) -> None:
     """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
 
@@ -113,7 +113,7 @@ def _download_partial(  # pylint: disable=too-many-arguments
         pbar_task.update(completed=file_size, total=file_size)
 
 
-def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]):
+def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: progress.Task | None):
     """Download the full dataset file at ``s3_url`` to ``path``."""
     resp = get(s3_url, timeout=5.0, stream=True)
     resp.raise_for_status()
@@ -131,10 +131,10 @@ def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional
 def _download_dataset(  # pylint: disable=too-many-arguments
     dataset_url: str,
     dest: Path,
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     block_size: int,
     force: bool,
-    pbar_task: Optional[progress.Task],
+    pbar_task: progress.Task | None,
 ) -> None:
     """Downloads the dataset at ``dataset_url`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -164,11 +164,11 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     folder_path: Path,
     dataset_urls: list[str],
     dataset_ids: list[str],
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     force: bool,
     block_size: int,
     num_threads: int,
-    pbar: Optional[progress.Progress],
+    pbar: progress.Progress | None,
 ) -> list[Path]:
     """Downloads the datasets with given ``dataset_urls`` to ``folder_path``.
 
@@ -180,7 +180,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     file_names = [dataset_id + ".h5" for dataset_id in dataset_ids]
     dest_paths = [folder_path / data_name / data_id for data_id in file_names]
 
-    for path_parents in set(path.parent for path in dest_paths):
+    for path_parents in {path.parent for path in dest_paths}:
         path_parents.mkdir(parents=True, exist_ok=True)
 
     if pbar is not None:
@@ -237,13 +237,13 @@ def _validate_attributes(data_name: str, attributes: Iterable[str]):
 
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
-    attributes: Optional[Iterable[str]] = None,
+    attributes: Iterable[str] | None = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
-    progress_bar: Optional[bool] = None,
-    **params: Union[ParamArg, str, list[str]],
+    progress_bar: bool | None = None,
+    **params: ParamArg | str | list[str],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
@@ -272,13 +272,13 @@ def load(  # pylint: disable=too-many-arguments
 
     The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
 
-    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+    >>> H2datasets = qp.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
     >>> print(H2datasets)
     [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
     .. note::
 
-        If not otherwise specified, ``qml.data.load`` will download the
+        If not otherwise specified, ``qp.data.load`` will download the
         default parameter value specified by the dataset.
 
         The default values for attributes are as follows:
@@ -290,7 +290,7 @@ def load(  # pylint: disable=too-many-arguments
     We can load datasets for multiple parameter values by providing a list of values instead of a single value.
     To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
 
-    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+    >>> H2datasets = qp.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
     >>> print(H2datasets)
     [<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
         <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
@@ -304,7 +304,7 @@ def load(  # pylint: disable=too-many-arguments
     can download or load only the molecule and energy of a dataset as
     follows:
 
-    >>> part = qml.data.load(
+    >>> part = qp.data.load(
     ...     "qchem",
     ...     molname="H2",
     ...     basis="STO-3G",
@@ -318,14 +318,14 @@ def load(  # pylint: disable=too-many-arguments
     The loaded data items are fully compatible with PennyLane. We can
     therefore use them directly in a PennyLane circuit as follows:
 
-    >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
-    >>> dev = qml.device("default.qubit",wires=4)
-    >>> @qml.qnode(dev)
+    >>> H2data = qp.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
+    >>> dev = qp.device("default.qubit",wires=4)
+    >>> @qp.qnode(dev)
     ... def circuit():
-    ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+    ...     qp.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
     ...     for op in H2data.vqe_gates:
-    ...         qml.apply(op)
-    ...     return qml.expval(H2data.hamiltonian)
+    ...         qp.apply(op)
+    ...     return qp.expval(H2data.hamiltonian)
     >>> print(circuit())
     -1.0791430411076344
     """
@@ -347,7 +347,7 @@ def load(  # pylint: disable=too-many-arguments
     if dataset_ids_and_urls == []:
         raise ValueError(
             "No datasets exist for the provided configuration.\n"
-            "Please check the available datasets by using the ``qml.data.list_datasets()`` function."
+            "Please check the available datasets by using the ``qp.data.list_datasets()`` function."
         )
 
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
@@ -398,7 +398,7 @@ def list_datasets() -> dict:
     Note that the results of calling this function may differ from this example as more datasets
     are added. For updates on available data see the `datasets website <https://pennylane.ai/datasets>`_.
 
-    >>> available_data = qml.data.list_datasets()
+    >>> available_data = qp.data.list_datasets()
     >>> available_data.keys()
     dict_keys(["qspin", "qchem"])
     >>> available_data["qchem"].keys()
@@ -489,7 +489,7 @@ def load_interactive():
 
     .. code-block :: pycon
 
-        >>> qml.data.load_interactive()
+        >>> qp.data.load_interactive()
         Please select the data name from the following:
             1: qspin
             2: qchem

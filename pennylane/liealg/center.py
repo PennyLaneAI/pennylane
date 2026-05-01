@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
+
 from itertools import combinations
-from typing import Union
 
 import numpy as np
 from scipy.linalg import norm, null_space
@@ -64,8 +64,8 @@ def _center_pauli_words(g, pauli):
 
 
 def center(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
-) -> list[Union[Operator, PauliSentence]]:
+    g: list[Operator | PauliWord | PauliSentence], pauli: bool = False
+) -> list[Operator | PauliSentence]:
     r"""
     Compute the center of a Lie algebra.
 
@@ -91,15 +91,15 @@ def center(
 
     We can compute the center of a DLA ``g``. First we compute the DLA via :func:`~lie_closure`.
 
-    >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
-    >>> g = qml.lie_closure(generators)
+    >>> generators = [qp.X(0), qp.X(0) @ qp.X(1), qp.Y(1)]
+    >>> g = qp.lie_closure(generators)
     >>> g
     [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
 
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.
 
-    >>> qml.center(g)
+    >>> qp.center(g)
     [X(0)]
 
     .. details::

@@ -16,7 +16,21 @@ r"""
 This module contains utility data-structures and algorithms supporting functionality in the
 ftqc module.
 """
+
 from threading import RLock
+
+from pennylane import math
+from pennylane.ops import MeasurementValue
+
+
+def parity(*args):
+    """Get the parity of the arguments"""
+    if isinstance(args[0], MeasurementValue):
+        # special handling needed until we stop casting everything from the pennylane namespace to autograd
+        return math.reduce(math.bitwise_xor, math.array([*args]))
+    return math.reduce(
+        math.bitwise_xor, math.array([*args], like=math.interface_utils.get_interface(args[0]))
+    )
 
 
 class QubitMgr:
@@ -35,19 +49,18 @@ class QubitMgr:
         The following MBQC example workload uses the ``QubitMgr`` to assist with recycling of indices
         between iterations
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            import pennylane as qml
             from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
-            dev = qml.device('null.qubit')
+            dev = qp.device('null.qubit')
 
-            @qml.qnode(dev, mcm_method="one-shot")
+            @qp.qnode(dev, mcm_method="one-shot")
             def circuit_mbqc(start_state, angles):
                 q_mgr = QubitMgr(num_qubits=5, start_idx=0)
                 input_idx = q_mgr.acquire_qubit()
 
                 # prep input node
-                qml.StatePrep(start_state, wires=[input_idx])
+                qp.StatePrep(start_state, wires=[input_idx])
 
                 # prep and consume graph state iteratively
                 for i in range(num_iter):
@@ -58,10 +71,10 @@ class QubitMgr:
                     output_idx = graph_wires[-1]
 
                     # Prepare the state
-                    qml.ftqc.GraphStatePrep(lattice.graph, wires=graph_wires)
+                    qp.ftqc.GraphStatePrep(lattice.graph, wires=graph_wires)
 
                     # entangle input and graph using first qubit
-                    qml.CZ([input_idx, graph_wires[0]])
+                    qp.CZ([input_idx, graph_wires[0]])
 
                     # MBQC Z rotation: X, X, +/- angle, X
                     # Reset operations allow qubits to be returned to the pool
@@ -71,8 +84,8 @@ class QubitMgr:
                     m3 = measure_x(graph_wires[2], reset=True)
 
                     # corrections based on measurement outcomes
-                    qml.cond((m0+m2)%2, qml.Z)(graph_wires[3])
-                    qml.cond((m1+m3)%2, qml.X)(graph_wires[3])
+                    qp.cond((m0+m2)%2, qp.Z)(graph_wires[3])
+                    qp.cond((m1+m3)%2, qp.X)(graph_wires[3])
 
                     # The input qubit can be freed and the output qubit becomes the next iteration's input
                     q_mgr.release_qubit(input_idx)
@@ -82,7 +95,7 @@ class QubitMgr:
                     q_mgr.release_qubits(graph_wires[0:-1])
 
                 # Perform the measurements on the output qubit from the last iteration
-                return qml.expval(X(output_idx)), qml.expval(Y(output_idx)), qml.expval(Z(output_idx))
+                return qp.expval(X(output_idx)), qp.expval(Y(output_idx)), qp.expval(Z(output_idx))
 
         For each loop iteration, the measured and reset wire labels are returned to the ``QubitMgr`` instance, which are then reallocated
         on the next step, which when combined with the MCM resets allows for qubit index recycling.
@@ -95,12 +108,15 @@ class QubitMgr:
         self._lock = RLock()
         self._num_qubits = num_qubits
         self._active = set()
-        is_valid = lambda x: (isinstance(x, int) and x >= 0)
-        if is_valid(num_qubits) and is_valid(start_idx):
+
+        def is_positive_integer(x):
+            return isinstance(x, int) and x >= 0
+
+        if is_positive_integer(num_qubits) and is_positive_integer(start_idx):
             self._inactive = set(range(start_idx, start_idx + num_qubits, 1))
         else:
             raise TypeError(
-                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}"
+                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}."
             )
 
     def __repr__(self):

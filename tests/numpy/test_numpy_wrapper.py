@@ -21,7 +21,8 @@ import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qml
+import pennylane as qp
+import pennylane.exceptions
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox
 
@@ -30,9 +31,10 @@ from pennylane.numpy.tensor import tensor_to_arraybox
 class TestExtractTensors:
     """Tests for the extract_tensors function"""
 
-    def test_empty_terable(self):
+    def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
+        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res == []
 
     def test_iterable_with_strings(self):
@@ -88,12 +90,12 @@ class TestTensor:
     def test_string_representation(self, capsys):
         """Test the string representation is correct"""
         x = np.tensor([0, 1, 2])
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=True)" in captured.out
 
         x.requires_grad = False
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
 
@@ -442,7 +444,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0])
 
         res = grad_fn(arr1)
@@ -456,10 +458,10 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
-        with pytest.raises(np.NonDifferentiableError, match="non-differentiable"):
+        with pytest.raises(pennylane.exceptions.NonDifferentiableError, match="non-differentiable"):
             grad_fn(arr1)
 
 
@@ -534,18 +536,18 @@ class TestNumpyConversion:
     def test_single_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes an
         unwrapped tensor as the argument to a gate taking a single parameter"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for y in phi:
                 for idx, x in enumerate(y):
-                    qml.RX(x, wires=idx)
-            return qml.expval(qml.PauliZ(0))
+                    qp.RX(x, wires=idx)
+            return qp.expval(qp.PauliZ(0))
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        tape = qml.workflow.construct_tape(circuit)(phi)
+        tape = qp.workflow.construct_tape(circuit)(phi)
 
         ops = tape.operations
         assert len(ops) == 4
@@ -558,17 +560,17 @@ class TestNumpyConversion:
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
         as unwrapped tensors to a gate taking multiple parameters"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for idx, x in enumerate(phi):
-                qml.Rot(*x, wires=idx)
-            return qml.expval(qml.PauliZ(0))
+                qp.Rot(*x, wires=idx)
+            return qp.expval(qp.PauliZ(0))
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        tape = qml.workflow.construct_tape(circuit)(phi)
+        tape = qp.workflow.construct_tape(circuit)(phi)
 
         # Test the rotation applied
         ops = tape.operations

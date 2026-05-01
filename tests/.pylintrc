@@ -50,7 +50,12 @@ disable=
   not-callable, # because of qnode decorator
   unexpected-keyword-arg,
   arguments-differ,
-  no-value-for-parameter
+  no-value-for-parameter,
+  too-many-positional-arguments, # because of parameterization
+  unnecessary-lambda-assignment,
+  consider-using-generator, # needs further investigation into performance benefits [sc-96328]
+  use-implicit-booleaness-not-comparison, # we actually prefer explicit comparisons
+  invalid-sequence-index, # type hinting needs to be improved [sc-96329] 
 
 [MISCELLANEOUS]
 

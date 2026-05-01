@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions and variables to be utilized by qutrit mixed state simulator."""
+
 import functools
 from string import ascii_letters as alphabet
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
-from pennylane import numpy as np
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = math.array(list(alphabet))
 
 
 def get_einsum_mapping(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
 ):

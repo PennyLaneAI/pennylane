@@ -21,7 +21,7 @@ import networkx as nx
 import pytest
 import rustworkx as rx
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
 
@@ -222,7 +222,9 @@ class TestQubitGraphsInitialization:
         assert set(qubit0_00.edge_labels) == set(g.edges)
         assert qubit0_00.parent is qubit0
 
+        # pylint: disable=unsupported-assignment-operation
         qubit0[(0, 0)][(0, 0)] = QubitGraph(g)
+        # pylint: disable=unsubscriptable-object
         qubit0_00_00 = qubit0[(0, 0)][(0, 0)]
         assert set(qubit0_00_00.node_labels) == set(g.nodes)
         assert set(qubit0_00_00.edge_labels) == set(g.edges)
@@ -309,10 +311,10 @@ class TestQubitGraphConnectivityAttributes:
 
         assert set(q.neighbors) == set()
 
-        assert set(q[(0, 0)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
-        assert set(q[(0, 1)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q[(1, 0)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q[(1, 1)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
+        assert set(q[(0, 0)].neighbors) == {q[(0, 1)], q[(1, 0)]}
+        assert set(q[(0, 1)].neighbors) == {q[(0, 0)], q[(1, 1)]}
+        assert set(q[(1, 0)].neighbors) == {q[(0, 0)], q[(1, 1)]}
+        assert set(q[(1, 1)].neighbors) == {q[(0, 1)], q[(1, 0)]}
 
 
 class TestQubitGraphOperations:
@@ -361,6 +363,7 @@ class TestQubitGraphOperations:
         assert not q[0][0].has_cycle()
 
         # 3 layers; cyclic
+        # pylint: disable=unsupported-assignment-operation
         q[0][0] = q
         assert q.has_cycle()
         assert q[0].has_cycle()
@@ -670,14 +673,14 @@ class TestQubitGraphWorkflows:
         q0.init_graph_nd_grid((2,))
         q1.init_graph_nd_grid((2,))
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RZ(1.618, wires=q0)
-            qml.CNOT(wires=[q0, q1])
-            qml.RY(1.618, wires=q1)
-            return qml.expval(qml.PauliZ(q1))
+            qp.RZ(1.618, wires=q0)
+            qp.CNOT(wires=[q0, q1])
+            qp.RY(1.618, wires=q1)
+            return qp.expval(qp.PauliZ(q1))
 
         circuit()
         assert True  # Only check that we can execute the circuit without failure

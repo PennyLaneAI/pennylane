@@ -15,16 +15,19 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+
 import itertools
+from collections import Counter
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
 from typing import Union
 
 from scipy.sparse import kron as sparse_kron
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -54,7 +57,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -63,25 +67,27 @@ def prod(*ops, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
+        >>> op = qp.prod(qp.RX(np.array([1, 2, 3]), wires=0), qp.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        >>> qp.prod(np.array([qp.RX(0.5, 0), qp.RZ(0.3, 0)]), qp.Z(0))
+        Traceback (most recent call last):
+            ...
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
-    >>> prod_op = prod(qml.X(0), qml.Z(0))
+    >>> prod_op = prod(qp.X(0), qp.Z(0))
     >>> prod_op
     X(0) @ Z(0)
     >>> prod_op.matrix()
-    array([[ 0, -1],
-           [ 1,  0]])
+    array([[ 0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j]])
     >>> prod_op.simplify()
     -1j * Y(0)
     >>> prod_op.terms()
@@ -91,31 +97,39 @@ def prod(*ops, id=None, lazy=True):
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
     >>> def qfunc(x):
-    ...     qml.RX(x, 0)
-    ...     qml.CNOT([0, 1])
+    ...     qp.RX(x, 0)
+    ...     qp.CNOT([0, 1])
     >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
-    CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
+    (CNOT(wires=[0, 1])) @ RX(1.1, wires=[0])
 
 
     Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
-        if isinstance(ops[0], qml.operation.Operator):
+        if isinstance(ops[0], qp.operation.Operator):
             return ops[0]
 
         fn = ops[0]
 
         if not callable(fn):
-            raise TypeError(f"Unexpected argument of type {type(fn).__name__} passed to qml.prod")
+            raise TypeError(f"Unexpected argument of type {type(fn).__name__} passed to qp.prod")
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+
+            # dequeue operators passed as arguments to the quantum function
+            leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qp.QueuingManager.remove(l)
+
+            qs = qp.tape.make_qscript(fn)(*args, **kwargs)
             if len(qs.operations) == 1:
-                if qml.QueuingManager.recording():
-                    qml.apply(qs[0])
-                return qs[0]
+                op = qs[0]
+                if qp.QueuingManager.recording():
+                    op = qp.apply(op)
+                return op
             return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
@@ -148,16 +162,16 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prod_op = Prod(qml.X(0), qml.PauliZ(1))
+    >>> prod_op = Prod(qp.X(0), qp.PauliZ(1))
     >>> prod_op
     X(0) @ Z(1)
-    >>> qml.matrix(prod_op, wire_order=prod_op.wires)
-    array([[ 0,  0,  1,  0],
-           [ 0,  0,  0, -1],
-           [ 1,  0,  0,  0],
-           [ 0, -1,  0,  0]])
+    >>> qp.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+           [ 0.+0.j,  0.+0.j,  0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j]])
     >>> prod_op.terms()
-    ([1.0], [Z(1) @ X(0)])
+    ([1.0], [X(0) @ Z(1)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -165,7 +179,7 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.X(0), qml.Z(1))
+    >>> op = Prod(qp.X(0), qp.Z(1))
     >>> op.decomposition()
     [Z(1), X(0)]
 
@@ -175,34 +189,34 @@ class Prod(CompositeOp):
         The Prod operator represents both matrix composition and tensor products
         between operators.
 
-        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(0), qml.Z(1))
+        >>> prod_op = Prod(qp.RZ(1.23, wires=0), qp.X(0), qp.Z(1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
-                 0.81677345-0.57695852j,  0.        +0.j        ],
-               [ 0.        +0.j        ,  0.        +0.j        ,
-                 0.        +0.j        , -0.81677345+0.57695852j],
-               [ 0.81677345+0.57695852j,  0.        +0.j        ,
+                 0.816...-0.57...j,  0.        +0.j        ],
+               [ 0.        +0.j        , -0.        +0.j        ,
+                 0.        +0.j        , -0.816...+0.57...j],
+               [ 0.816...+0.57...j,  0.        +0.j        ,
                  0.        +0.j        ,  0.        +0.j        ],
-               [ 0.        +0.j        , -0.81677345-0.57695852j,
-                 0.        +0.j        ,  0.        +0.j        ]])
+               [ 0.        +0.j        , -0.816...-0.57...j,
+                 0.        +0.j        , -0.        +0.j        ]])
 
         The Prod operation can be used inside a `qnode` as an operation which,
         if parametrized, can be differentiated.
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=3)
+            dev = qp.device("default.qubit", wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(theta):
-                qml.prod(qml.Z(0), qml.RX(theta, 1))
-                return qml.expval(qml.Z(1))
+                qp.prod(qp.Z(0), qp.RX(theta, 1))
+                return qp.expval(qp.Z(1))
 
-        >>> par = np.array(1.23, requires_grad=True)
+        >>> par = qp.numpy.array(1.23, requires_grad=True)
         >>> circuit(par)
-        tensor(0.33423773, requires_grad=True)
-        >>> qml.grad(circuit)(par)
-        tensor(-0.9424888, requires_grad=True)
+        tensor(0.334..., requires_grad=True)
+        >>> qp.grad(circuit)(par)
+        tensor(-0.942..., requires_grad=True)
 
         The Prod operation can also be measured as an observable.
         If the circuit is parametrized, then we can also differentiate through the
@@ -210,32 +224,40 @@ class Prod(CompositeOp):
 
         .. code-block:: python
 
-            prod_op = Prod(qml.Z(0), qml.Hadamard(wires=1))
-            dev = qml.device("default.qubit", wires=2)
+            prod_op = Prod(qp.Z(0), qp.Hadamard(wires=1))
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights):
-                qml.RX(weights[0], wires=0)
-                return qml.expval(prod_op)
+                qp.RX(weights[0], wires=0)
+                return qp.expval(prod_op)
 
-        >>> weights = np.array([0.1], requires_grad=True)
-        >>> qml.grad(circuit)(weights)
-        array([-0.07059289])
+        >>> weights = qp.numpy.array([0.1], requires_grad=True)
+        >>> qp.grad(circuit)(weights)
+        array([-0.070...])
 
         Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
 
-        >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
+        >>> op = qp.ops.Prod(qp.X(0), qp.sum(qp.Y(0), qp.Z(1)))
         >>> op.terms()
-        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+        ([1j, 1.0], [Z(0), X(0) @ Z(1)])
 
     """
 
+    resource_keys = frozenset({"resources"})
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        resources = dict(Counter(qp.resource_rep(type(op), **op.resource_params) for op in self))
+        return {"resources": resources}
+
     _op_symbol = "@"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
     grad_method = None
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
@@ -243,9 +265,9 @@ class Prod(CompositeOp):
         must be performed.
         """
         for o1, o2 in combinations(self.operands, r=2):
-            if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
+            if qp.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-        return all(op.is_hermitian for op in self)
+        return all(op.is_verified_hermitian for op in self)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -259,8 +281,8 @@ class Prod(CompositeOp):
         to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
         that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
-        if qml.queuing.QueuingManager.recording():
-            return [qml.apply(op) for op in self[::-1]]
+        if qp.queuing.QueuingManager.recording():
+            return [qp.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
     @handle_recursion_error
@@ -286,7 +308,7 @@ class Prod(CompositeOp):
         if self.batch_size is None:
             full_mat = reduce(math.kron, mats)
         else:
-            full_mat = qml.math.stack(
+            full_mat = qp.math.stack(
                 [
                     reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
                     for i in range(self.batch_size)
@@ -341,7 +363,7 @@ class Prod(CompositeOp):
         return True
 
     def adjoint(self):
-        return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
+        return Prod(*(qp.adjoint(factor) for factor in self[::-1]))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
@@ -382,14 +404,14 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = qml.Identity(self.wires)
+                op = qp.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
-            return op if global_phase == 1 else qml.s_prod(global_phase, op)
+            return op if global_phase == 1 else qp.s_prod(global_phase, op)
 
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
         op = Sum(*factors).simplify()
-        return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
+        return op if global_phase == 1 else qp.s_prod(global_phase, op).simplify()
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
@@ -433,20 +455,18 @@ class Prod(CompositeOp):
 
         **Example**
 
-        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op = qp.X(0) @ (0.5 * qp.X(1) + qp.X(2))
         >>> op.terms()
-        ([0.5, 1.0],
-         [X(1) @ X(0),
-          X(2) @ X(0)])
+        ([np.float64(0.5), 1.0], [X(0) @ X(1), X(0) @ X(2)])
 
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            with qml.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording():
                 ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        with qml.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording():
             global_phase, factors = self._simplify_factors(factors=self.operands)
             factors = list(itertools.product(*factors))
 
@@ -465,6 +485,20 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
+
+
+def _prod_resources(resources):
+    return resources
+
+
+# pylint: disable=unused-argument
+@qp.register_resources(_prod_resources)
+def _prod_decomp(*_, wires=None, operands, **__):
+    for op in reversed(operands):
+        qp.pytrees.unflatten(*qp.pytrees.flatten(op))
+
+
+qp.add_decomps(Prod, _prod_decomp)
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -546,11 +580,11 @@ class _ProductFactorsGrouping:
             self._remove_pauli_factors(wires=wires)
             self._remove_non_pauli_factors(wires=wires)
             self._factors += (factor.operands,)
-        elif not isinstance(factor, qml.Identity):
+        elif not isinstance(factor, qp.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            if isinstance(factor, (qml.Identity, qml.X, qml.Y, qml.Z)):
+            if isinstance(factor, (qp.Identity, qp.X, qp.Y, qp.Z)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
             else:
@@ -593,7 +627,7 @@ class _ProductFactorsGrouping:
             exponent = 1
         op_hash = factor.hash
         old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
-        if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and factor.name == old_op.name:
+        if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [
                 op_hash,
                 old_exponent,
@@ -622,7 +656,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if not isinstance(op, qml.Identity):
+                    if not isinstance(op, qp.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: list[int]):
@@ -639,7 +673,7 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``

@@ -14,6 +14,7 @@
 """
 Unit tests for the CaptureMeta metaclass.
 """
+
 from inspect import signature
 
 # pylint: disable=protected-access, undefined-variable
@@ -23,14 +24,14 @@ from pennylane.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def test_custom_capture_meta():
     """Test that we can capture custom classes with the CaptureMeta metaclass by defining
     the _primitive_bind_call method."""
 
-    p = jax.core.Primitive("p")
+    p = jax.extend.core.Primitive("p")
 
     @p.def_abstract_eval
     def _(a):

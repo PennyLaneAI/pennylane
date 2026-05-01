@@ -15,10 +15,21 @@
 This module contains a helper function to sort operations into layers.
 """
 
-from pennylane.measurements import MeasurementProcess, MidMeasureMP
-from pennylane.ops import Conditional
+from functools import singledispatch
 
-from .utils import default_wire_map
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import (
+    Conditional,
+    GlobalPhase,
+    Identity,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
+
+from .utils import default_wire_map, unwrap_controls
 
 
 def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_layer):
@@ -78,27 +89,15 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
     )
 
 
+# pylint: disable=unused-argument
+@singledispatch
 def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
-    if isinstance(op, MidMeasureMP):
-        mapped_wire = wire_map[op.wires[0]]
+    *_, base = unwrap_controls(op)
 
-        if op in bit_map:
-            min_wire = mapped_wire
-            max_wire = max(wire_map.values())
-            return set(range(min_wire, max_wire + 1))
-
-        return {mapped_wire}
-
-    if isinstance(op, Conditional):
-        mapped_wires = [wire_map[wire] for wire in op.base.wires]
-        min_wire = min(mapped_wires)
-        max_wire = max(wire_map.values())
-        return set(range(min_wire, max_wire + 1))
-
-    if len(op.wires) == 0:
-        # if no wires, then it acts on all wires
-        # for example, qml.state and qml.sample
+    if len(op.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
+        # if no wires, then it acts on all wires. For example qp.state and qp.sample or
+        # (controlled) GlobalPhase or (controlled) Identity
         mapped_wires = set(wire_map.values())
         return mapped_wires
 
@@ -107,6 +106,44 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
     min_wire = min(mapped_wires)
     max_wire = max(mapped_wires)
 
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _occupied_subroutine_op_wires(op: SubroutineOp, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    mvs = (v for v in flatten(op.output)[0] if isinstance(v, MeasurementValue))
+    if any(m in bit_map for mv in mvs for m in mv.measurements):
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register(MidMeasure)
+@_get_op_occupied_wires.register(PauliMeasure)
+def _handle_mid_measure(op: MidMeasure | PauliMeasure, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    if op in bit_map:
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _handle_cond(op: Conditional, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.base.wires]
+    min_wire = min(mapped_wires)
+    max_wire = max(wire_map.values())
     return set(range(min_wire, max_wire + 1))
 
 
@@ -134,10 +171,10 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     From the start, the function cares about the locations the operation altered
     during a drawing, not just the wires the operation acts on. An "occupied" wire
     refers to a wire that will be altered in the drawing of an operation.
-    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
+    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qp.CNOT(wires=(0,2))``
     will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
-    ``qml.X(1)``, will not be pushed to the left
-    of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
+    ``qp.X(1)``, will not be pushed to the left
+    of the ``qp.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
     ordering and makes placement more intuitive.
 
     The ``wire_order`` keyword argument used by user facing functions like :func:`~.draw` maps position
@@ -147,7 +184,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     """
 
-    wire_map = wire_map or default_wire_map(operations)
+    wire_map = wire_map or default_wire_map(operations)[1]
     bit_map = bit_map or {}
 
     # initialize for operation layers
@@ -158,10 +195,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-        if isinstance(op, MidMeasureMP):
-            if len(op.wires) > 1:
-                raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
-
         if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have
             # op.mv != None.
@@ -182,7 +215,15 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             # Find occupied wires of the operator/measurement process and find which layer to
             # put it in.
             op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
-            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
+            try:
+                op_layer = _recursive_find_layer(
+                    max_layer, op_occupied_wires, occupied_wires_per_layer
+                )
+            except RecursionError as e:
+                raise RecursionError(
+                    f"Drawer is currently at depth {max_layer}, which is too deep to handle. "
+                    "Try drawing a smaller subset of your circuit instead."
+                ) from e
             op_occupied_cwires = set()
 
         # see if need to add new layer
