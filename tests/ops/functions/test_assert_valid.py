@@ -68,13 +68,15 @@ class TestDecompositionErrors:
             assert_valid(BadDecompQueueLength(wires=[0, 1]), skip_pickle=True)
 
     def test_bad_decomposition_queuing(self):
-        """Test that an error is raised if decomposition and queuing do not have the same ops."""
+        """Test that an error is raised if decomposition and queuing do not have the same op."""
 
         class BadDecomp(Operator):
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
-                return [qp.RY(2.3, 0)]
+                with qp.QueuingManager.stop_recording():
+                    other_op = qp.RY(2.3, 0)
+                return [other_op]
 
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
