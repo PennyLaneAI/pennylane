@@ -142,7 +142,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    enum_reg := qre.Allocate(6, restored=True),
+                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -163,7 +163,7 @@ class TestSumOfSlatersPrep:
                         ),
                         39,
                     ),
-                    qre.Deallocate(allocated_register=enum_reg),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
             (
@@ -173,7 +173,7 @@ class TestSumOfSlatersPrep:
                 None,
                 1,
                 [
-                    enum_reg := qre.Allocate(6, restored=True),
+                    (alloc_reg := qre.Allocate(6, state="zero", restored=True)),
                     GateCount(resource_rep(qre.MottonenStatePreparation, {"num_wires": 6}), 1),
                     GateCount(
                         resource_rep(
@@ -194,7 +194,7 @@ class TestSumOfSlatersPrep:
                         ),
                         55,
                     ),
-                    qre.Deallocate(allocated_register=enum_reg),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
             (
@@ -204,7 +204,7 @@ class TestSumOfSlatersPrep:
                 resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}),
                 2,
                 [
-                    enum_reg := qre.Allocate(7, restored=True),
+                    (alloc_reg := qre.Allocate(7, state="zero", restored=True)),
                     GateCount(resource_rep(qre.QROMStatePreparation, {"num_state_qubits": 7}), 1),
                     GateCount(
                         resource_rep(
@@ -225,7 +225,7 @@ class TestSumOfSlatersPrep:
                         ),
                         99,
                     ),
-                    qre.Deallocate(allocated_register=enum_reg),
+                    qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
         ],
