@@ -356,7 +356,6 @@ class TestOutMultiplier:
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=True."""
-
         op = qp.OutMultiplier(
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
         )
