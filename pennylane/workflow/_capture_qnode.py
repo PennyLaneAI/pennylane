@@ -82,9 +82,9 @@ from numbers import Number
 from warnings import warn
 
 try:
-    import pennyjax5 as jax
-    from pennyjax5.interpreters import ad, batching, mlir
-    from pennyjax5.interpreters import partial_eval as pe
+    import pennyjax as jax
+    from pennyjax.interpreters import ad, batching, mlir
+    from pennyjax.interpreters import partial_eval as pe
 
 except (ImportError, NameError) as e:  # pragma: no cover
     pass

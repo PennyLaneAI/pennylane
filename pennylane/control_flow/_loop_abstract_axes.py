@@ -79,7 +79,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]): 
     argument 1, shape index 1 are returned alongside the results of ``f``.
 
     .. code-block:: python
-        import pennyjax5.numpy as jnp
+        import pennyjax.numpy as jnp
         def f(x, y): return [x, y]
 
         loc1 = AbstractShapeLocation(arg_idx=0, shape_idx=0)
@@ -141,7 +141,7 @@ def get_dummy_arg(arg):  # pragma: no cover
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    from pennyjax5.numpy import empty  # pylint: disable=import-outside-toplevel
+    from pennyjax.numpy import empty  # pylint: disable=import-outside-toplevel
 
     return empty(shape=shape, dtype=arg.dtype)
 
@@ -185,7 +185,7 @@ def handle_jaxpr_error(
 ):
     """Handle any ValueError's raised by the creation of the jaxpr, adding information to any error
     about 'Incompatible shapes for broadcasting'."""
-    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
     if (
         "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes
@@ -300,7 +300,7 @@ def loop_determine_abstracted_axes(
 
 
     """
-    import pennyjax5 as jax
+    import pennyjax as jax
 
     args, structure = jax.tree_util.tree_flatten(args)
     calculator = _CalculateLoopAbstractedAxes(allow_array_resizing=allow_array_resizing)

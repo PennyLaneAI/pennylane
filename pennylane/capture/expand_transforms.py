@@ -19,7 +19,7 @@ from collections.abc import Callable
 from copy import copy
 from functools import wraps
 
-import pennyjax5 as jax
+import pennyjax as jax
 
 from pennylane.transforms.core.transform import _create_transform_primitive
 

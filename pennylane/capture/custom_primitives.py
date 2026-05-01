@@ -18,7 +18,7 @@ This submodule offers custom primitives for the PennyLane capture module.
 from enum import Enum
 from typing import Any
 
-from pennyjax5.extend.core import Primitive
+from pennyjax.extend.core import Primitive
 
 
 class PrimitiveType(Enum):

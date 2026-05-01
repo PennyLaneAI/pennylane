@@ -22,7 +22,7 @@ from copy import copy
 from functools import partial, wraps
 from importlib.metadata import version
 
-import pennyjax5 as jax
+import pennyjax as jax
 from packaging.version import Version
 
 import pennylane as qp
@@ -115,7 +115,7 @@ class PlxprInterpreter:
 
     .. code-block:: python
 
-        import pennyjax5 as jax
+        import pennyjax as jax
         from pennylane.capture import PlxprInterpreter
 
         class SimplifyInterpreter(PlxprInterpreter):
@@ -698,11 +698,11 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
-jax_version = version("pennyjax5")
+jax_version = version("pennyjax")
 if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
-    from pennyjax5._src.pjit import jit_p as pjit_p
+    from pennyjax._src.pjit import jit_p as pjit_p
 else:  # pragma: no cover
-    from pennyjax5._src.pjit import pjit_p
+    from pennyjax._src.pjit import pjit_p
 
 
 @FlattenedInterpreter.register_primitive(pjit_p)

@@ -27,8 +27,8 @@ from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
-if util.find_spec("pennyjax5") is not None:
-    jax = import_module("pennyjax5")
+if util.find_spec("pennyjax") is not None:
+    jax = import_module("pennyjax")
     jax_available = True
 else:
     jax_available = False

@@ -34,7 +34,7 @@ from ._loop_abstract_axes import (
 
 def _to_bool_cond_fn(cond_fn):
     def _new_cond_fn(*args, **kwargs):
-        from pennyjax5 import numpy as jnp  # pylint: disable=import-outside-toplevel
+        from pennyjax import numpy as jnp  # pylint: disable=import-outside-toplevel
 
         [out] = cond_fn(*args, **kwargs)
         if getattr(out, "dtype", None) == jnp.bool:
@@ -324,7 +324,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
     def _get_jaxprs(self, init_state, allow_array_resizing):
-        import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+        import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
         body_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
 
@@ -366,7 +366,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
     def _call_capture_enabled(self, *init_state):
 
-        import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+        import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
         while_loop_prim = _get_while_loop_qfunc_prim()
 

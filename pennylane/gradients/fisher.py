@@ -249,7 +249,7 @@ def classical_fisher(qnode, argnums=0):
         interface = qnode.interface
 
         if interface in ("jax", "jax-jit"):
-            import pennyjax5 as jax
+            import pennyjax as jax
 
             jac = jax.jacobian(new_qnode, argnums=argnums)
 

@@ -34,7 +34,7 @@ make_vjp = unary_to_nary(_make_vjp)
 
 has_jax = True
 try:
-    import pennyjax5 as jax
+    import pennyjax as jax
 except ImportError:
     has_jax = False
 
@@ -133,7 +133,7 @@ def _args_and_argnums(args, argnums):
             f" positional arguments. Got {len(args)} positional arguments."
         )
 
-    from pennyjax5.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
+    from pennyjax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
 
     flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
     full_in_tree = treedef_tuple(in_trees)
@@ -180,7 +180,7 @@ def _setup_method(method):
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    from pennyjax5.tree_util import tree_flatten, tree_leaves, tree_unflatten
+    from pennyjax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
     method = _setup_method(method)

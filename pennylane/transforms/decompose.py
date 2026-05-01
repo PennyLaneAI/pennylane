@@ -50,7 +50,7 @@ def null_postprocessing(results):
 def _get_plxpr_decompose():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         from pennylane.capture import PlxprInterpreter, make_plxpr, pause
         from pennylane.capture.primitives import ctrl_transform_prim

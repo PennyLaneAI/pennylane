@@ -20,7 +20,7 @@ from pennylane.workflow import QNode
 
 has_jax = True
 try:
-    import pennyjax5 as jax
+    import pennyjax as jax
 except ModuleNotFoundError:
     has_jax = False
 
@@ -68,7 +68,7 @@ class QNGOptimizerQJIT:
     .. code-block:: python
 
         import pennylane as qp
-        import pennyjax5.numpy as jnp
+        import pennyjax.numpy as jnp
 
         @qp.qjit(autograph=True)
         def workflow():
@@ -104,8 +104,8 @@ class QNGOptimizerQJIT:
     .. code-block:: python
 
         import pennylane as qp
-        import pennyjax5.numpy as jnp
-        import pennyjax5 as jax
+        import pennyjax.numpy as jnp
+        import pennyjax as jax
         from functools import partial
 
         dev = qp.device("default.qubit", wires=2)

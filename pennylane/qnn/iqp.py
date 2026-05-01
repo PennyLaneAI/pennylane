@@ -20,8 +20,8 @@ from scipy.sparse import csr_matrix, dok_matrix
 
 has_jax = True
 try:
-    import pennyjax5 as jax
-    import pennyjax5.numpy as jnp
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
 except ImportError as e:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -327,7 +327,7 @@ def iqp_expval(
     .. code-block:: python
 
         from pennylane.qnn import iqp_expval
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         num_wires = 2
         ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1

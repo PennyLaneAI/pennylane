@@ -78,7 +78,7 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
 def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
-        from pennyjax5 import make_jaxpr
+        from pennyjax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim

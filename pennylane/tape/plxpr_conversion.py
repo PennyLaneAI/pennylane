@@ -17,7 +17,7 @@ Defines a function for converting plxpr to a tape.
 
 from copy import copy
 
-import pennyjax5 as jax
+import pennyjax as jax
 import numpy as np
 
 from pennylane import ops, queuing

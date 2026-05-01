@@ -151,7 +151,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
         # measuring the postselected state.
         if prng_key is not None:
             # pylint: disable=import-outside-toplevel
-            from pennyjax5.random import binomial
+            from pennyjax.random import binomial
 
             binomial_fn = partial(binomial, prng_key)
         else:
@@ -364,7 +364,7 @@ def simulate(
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
-            import pennyjax5 as jax
+            import pennyjax as jax
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(

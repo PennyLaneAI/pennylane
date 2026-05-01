@@ -232,7 +232,7 @@ def _get_adjoint_qfunc_prim():
 def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     """Capture compatible way of performing an adjoint transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
     adjoint_prim = _get_adjoint_qfunc_prim()
 

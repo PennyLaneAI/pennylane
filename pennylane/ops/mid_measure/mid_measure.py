@@ -55,7 +55,7 @@ def _create_mid_measure_primitive():
 
     """
     # pylint: disable=import-outside-toplevel
-    import pennyjax5 as jax
+    import pennyjax as jax
 
     from pennylane.capture.custom_primitives import QpPrimitive
 

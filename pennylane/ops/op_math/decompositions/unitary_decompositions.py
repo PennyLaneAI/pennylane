@@ -1100,7 +1100,7 @@ def _cossin_decomposition(U, p):
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
 
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         def scipy_cossin_callback(U_flat, p):
             dim = int(np.sqrt(U_flat.size))

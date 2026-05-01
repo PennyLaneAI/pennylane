@@ -62,7 +62,7 @@ simulating phase optimization circuits with JAX. The usual workflow is:
 
 .. code-block:: python
 
-   import pennyjax5 as jax
+   import pennyjax as jax
 
    from pennylane.labs.phox import (
        CircuitConfig,
@@ -101,7 +101,7 @@ compiled ``expval_fn`` from above.
 
 .. code-block:: python
 
-   import pennyjax5.numpy as jnp
+   import pennyjax.numpy as jnp
 
    from pennylane.labs.phox import TrainingOptions, train
 

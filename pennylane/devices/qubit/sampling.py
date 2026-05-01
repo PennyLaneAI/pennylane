@@ -35,7 +35,7 @@ def jax_random_split(prng_key, num: int = 2):
     if prng_key is None:
         return (None,) * num
     # pylint: disable=import-outside-toplevel
-    from pennyjax5.random import split
+    from pennyjax.random import split
 
     return split(prng_key, num=num)
 
@@ -547,8 +547,8 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     # pylint: disable=import-outside-toplevel
-    import pennyjax5 as jax
-    import pennyjax5.numpy as jnp
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
 
     if prng_key is None:
         prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))

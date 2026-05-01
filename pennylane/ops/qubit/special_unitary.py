@@ -563,7 +563,7 @@ class SpecialUnitary(Operation):
             return qp.math.real(mat), qp.math.imag(mat)
 
         if interface == "jax":
-            import pennyjax5 as jax
+            import pennyjax as jax
 
             theta = qp.math.cast_like(theta, 1j)
             # These lines compute the Jacobian of compute_matrix every time -> to be optimized

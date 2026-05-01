@@ -80,7 +80,7 @@ logger.addHandler(logging.NullHandler())
 if TYPE_CHECKING:
     from numbers import Number
 
-    from pennyjax5.extend.core import Jaxpr
+    from pennyjax.extend.core import Jaxpr
 
     from pennylane.operation import Operator
 
@@ -428,7 +428,7 @@ class DefaultQubit(Device):
 
     .. code-block:: python
 
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         @jax.jit
         def f(x):
@@ -1155,7 +1155,7 @@ class DefaultQubit(Device):
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
         else:
-            import pennyjax5 as jax
+            import pennyjax as jax
 
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
@@ -1168,7 +1168,7 @@ class DefaultQubit(Device):
         return interpreter.eval(jaxpr, consts, *args)
 
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         def _make_zero(tan, arg):
             return (

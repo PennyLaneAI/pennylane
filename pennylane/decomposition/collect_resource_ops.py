@@ -64,7 +64,7 @@ def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disabl
 def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
 
-    import pennyjax5 as jax  # pylint: disable=import-outside-toplevel
+    import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
     invals = invals[shots_len:]
     consts = invals[:n_consts]

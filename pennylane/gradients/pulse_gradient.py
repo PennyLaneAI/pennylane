@@ -45,8 +45,8 @@ from .parameter_shift import _make_zero_rep
 
 has_jax = True
 try:
-    import pennyjax5 as jax
-    import pennyjax5.numpy as jnp
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
 except ImportError:
     has_jax = False
 

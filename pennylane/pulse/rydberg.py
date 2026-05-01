@@ -90,7 +90,7 @@ def rydberg_interaction(
 
     .. code-block:: python
 
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         jax.config.update("jax_enable_x64", True)
 
@@ -216,7 +216,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. code-block:: python
 
-        import pennyjax5 as jax
+        import pennyjax as jax
 
         jax.config.update("jax_enable_x64", True)
 

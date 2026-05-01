@@ -298,8 +298,8 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state
         and its numpy module (jnp).
     """
     # pylint: disable=import-outside-toplevel
-    import pennyjax5 as jax
-    import pennyjax5.numpy as jnp
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
 
     key = prng_key
 

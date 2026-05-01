@@ -42,7 +42,7 @@ from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 
 try:
-    import pennyjax5 as jax
+    import pennyjax as jax
 except ImportError:
     # Handling the case where JAX is not installed is done via _assert_has_jax
     pass
@@ -470,7 +470,7 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        from pennyjax5 import numpy as jnp
+        from pennyjax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
             qp.pulse.constant * qp.Y(0)

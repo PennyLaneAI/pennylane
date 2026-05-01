@@ -25,7 +25,7 @@ is_jax_compatible = True
 REQUIRED_JAX_VERSION = "0.7.1"
 
 try:
-    import pennyjax5 as jax  # pylint: disable=unused-import
+    import pennyjax as jax  # pylint: disable=unused-import
     from packaging import version
 
     jax_version = version.parse(jax.__version__)

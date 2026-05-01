@@ -214,7 +214,7 @@ def _jax_jit_basis_state_cond(**_):
     if qp.capture.enabled() or qp.compiler.active():
         return False
 
-    if find_spec("pennyjax5") is None:
+    if find_spec("pennyjax") is None:
         return False
 
     x = qp.math.array(0.2, like="jax")
@@ -239,7 +239,7 @@ def _basis_state_decomp(state, wires, **__):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
-        import pennyjax5.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import pennyjax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         if not qp.math.is_abstract(state):
             state = jnp.array(state)

@@ -30,7 +30,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
-        from pennyjax5 import make_jaxpr
+        from pennyjax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim

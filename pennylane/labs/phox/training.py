@@ -21,8 +21,8 @@ from functools import partial
 from inspect import signature
 from typing import Any, Callable, Iterator, NamedTuple
 
-import pennyjax5 as jax
-import pennyjax5.numpy as jnp
+import pennyjax as jax
+import pennyjax.numpy as jnp
 
 try:
     import jaxopt

@@ -110,7 +110,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         This is an experimental function and unknown edge
         cases may exist to this two-stage test.
     """
-    import pennyjax5 as jax
+    import pennyjax as jax
 
     mapped_func = partial(func, **kwargs)
 
