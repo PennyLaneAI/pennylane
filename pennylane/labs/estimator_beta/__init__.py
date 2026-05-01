@@ -111,7 +111,7 @@ from .templates import LabsSumOfSlatersPrep
 
 CosineWindow = LabsCosineWindow
 MottonenStatePreparation = LabsMottonenStatePreparation
-SumOfSlatersPrep = Labs SumOfSlatersPrep
+SumOfSlatersPrep = LabsSumOfSlatersPrep
 
 from .templates import (
     OutOfPlaceIntegerComparator,
