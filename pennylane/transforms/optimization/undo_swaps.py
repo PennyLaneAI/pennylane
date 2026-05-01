@@ -28,8 +28,8 @@ def null_postprocessing(results):
 
 @transform
 def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum function transform to remove SWAP gates by running from right
-    to left through the circuit changing the position of the qubits accordingly.
+    """Quantum function transform to remove SWAP gates by running from right to left through the
+    circuit changing the position of the qubits accordingly.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -39,7 +39,7 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
 
     **Example**
 
-    You can apply the transform directly on a :class:`QNode`:
+    You can apply the transform directly on a :class:`QNode`.
 
     .. code-block:: python
 
@@ -91,9 +91,9 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         We can remove the SWAP gates by running the ``undo_swap`` transform, where the wires
         involved in the SWAP gates are interchanged:
 
-        >>> optimized_qfunc = undo_swaps(qfunc)
-        >>> print(qp.draw(optimized_qfunc)())
-        0: ──Y─┤
+        >>> optimized_qnode = undo_swaps(qnode)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ──Y─┤ <Z>
         1: ──H─┤
         2: ──X─┤
 
@@ -108,6 +108,7 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         - wire ``0`` :math:`\rightarrow` ``2`` :math:`\rightarrow` ``1``. This moves the ``H`` gate from wire ``0`` to wire ``1``.
         - wire ``2`` :math:`\rightarrow` ``0``.
         - wire ``1`` :math:`\rightarrow` ``2``. This moves the ``X`` gate from wire ``1`` to wire ``2``.
+
     """
 
     wire_map = {wire: wire for wire in tape.wires}
