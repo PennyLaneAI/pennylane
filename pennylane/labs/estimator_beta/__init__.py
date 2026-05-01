@@ -105,9 +105,13 @@ from .wires_manager import (
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
-from .templates import LabsCosineWindow as CosineWindow
-from .templates import LabsMottonenStatePreparation as MottonenStatePreparation
-from .templates import LabsSumOfSlatersPrep as SumOfSlatersPrep
+from .templates import LabsCosineWindow
+from .templates import LabsMottonenStatePreparation
+from .templates import LabsSumOfSlatersPrep
+
+CosineWindow = LabsCosineWindow
+MottonenStatePreparation = LabsMottonenStatePreparation
+SumOfSlatersPrep = Labs SumOfSlatersPrep
 
 from .templates import (
     OutOfPlaceIntegerComparator,
