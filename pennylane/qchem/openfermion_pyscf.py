@@ -17,9 +17,8 @@
 # pylint: disable=consider-using-generator
 import os
 
-from scipy.constants import physical_constants
-
 import numpy as np
+from scipy.constants import physical_constants
 
 import pennylane as qp
 
