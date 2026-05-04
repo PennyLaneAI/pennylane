@@ -29,15 +29,10 @@ def test_valid_decomp(n):
     consistent with the operator and yields the correct resources."""
 
     registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
-    work_wires = registers["work_wires"]
 
     op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
+        **registers,
         control_values=None,
-        work_wires=work_wires,
         work_wire_type="zeroed",
     )
     _check_decomposition_new(op)
@@ -48,12 +43,9 @@ def test_assert_valid(n):
     """Test that ``MultiTemporaryAND`` satisfies the standard operator validation
     checks (``_flatten``/``_unflatten``, pickling, wire mapping, decomposition, etc.)."""
     registers = qp.registers({"target_wire": 1, "control_wires": n})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
 
     op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
+        **registers,
         control_values=None,
     )
     assert_valid(op)
@@ -63,15 +55,10 @@ def test_assert_valid(n):
 def test_assert_valid_with_work_wires(n):
     """Same as ``test_assert_valid`` but with some zeroed work wires provided"""
     registers = qp.registers({"target_wire": 1, "control_wires": n, "work_wires": n - 2})
-    target_wire = registers["target_wire"]
-    control_wires = registers["control_wires"]
-    work_wires = registers["work_wires"]
 
     op = qp.MultiTemporaryAND(
-        control_wires=control_wires,
-        target_wire=target_wire,
+        **registers,
         control_values=None,
-        work_wires=work_wires,
         work_wire_type="zeroed",
     )
     assert_valid(op)

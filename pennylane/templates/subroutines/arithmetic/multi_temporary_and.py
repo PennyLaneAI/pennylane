@@ -64,7 +64,6 @@ class MultiTemporaryAND(Operation):
     * Number of wires: ``len(control_wires) + 1 + len(work_wires)`` (at least 2 qubits
       are involved in the operation itself, plus any optional work wires).
     * Number of parameters: 0
-    * Gradient recipe: None
 
     Args:
         control_wires (Union[Wires, Sequence[int], int]): the wires the operation is
