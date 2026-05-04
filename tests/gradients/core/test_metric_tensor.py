@@ -574,7 +574,7 @@ class TestMetricTensor:
             qp.RY(weights[1], wires=0)
             qp.CNOT(wires=[0, 1])
             qp.RZ(weights[2], wires=1)
-            qp.RZ(weights[3], wires=0)
+            qp.RX(weights[3], wires=0)
 
         weights = getattr(mod, array_cls)([0.1, 0.2, 0.3, 0.5])
 
