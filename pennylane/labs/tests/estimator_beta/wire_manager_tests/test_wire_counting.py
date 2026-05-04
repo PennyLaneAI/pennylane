@@ -19,10 +19,12 @@ import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
 from pennylane.estimator import GateCount, Resources
-from pennylane.labs.estimator_beta.wires_manager import (
+from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
+)
+from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     _estimate_auxiliary_wires,
     _process_circuit_lst,
     estimate_wires_from_circuit,
