@@ -19,7 +19,7 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qp
-from pennylane import allocation, control_flow, math, ops, queuing
+from pennylane import allocation, compiler, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -458,7 +458,11 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         down_gate = qp.TemporaryAND
         up_gate = ops.adjoint(qp.TemporaryAND)
 
-    @control_flow.for_loop(1, num_work_wires, 1)
+    if compiler.active() or qp.capture.enabled():
+        control_wires = math.array(control_wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
+
+    @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
         up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
@@ -485,7 +489,9 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         loop_down()
 
 
-decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
+decompose_mcx_many_workers_explicit = flip_zero_control(
+    _mcx_many_workers, name="many_explicit_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -506,7 +512,9 @@ def _mcx_many_zeroed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
+decompose_mcx_many_zeroed_workers = flip_zero_control(
+    _mcx_many_zeroed_workers, name="many_zeroed_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -527,7 +535,9 @@ def _mcx_many_borrowed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_workers)
+decompose_mcx_many_borrowed_workers = flip_zero_control(
+    _mcx_many_borrowed_workers, name="many_borrowed_workers"
+)
 
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
@@ -613,7 +623,9 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
+decompose_mcx_two_workers_explicit = flip_zero_control(
+    _mcx_two_workers, name="two_explicit_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -628,7 +640,9 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
+decompose_mcx_two_zeroed_workers = flip_zero_control(
+    _mcx_two_zeroed_workers, name="two_zeroed_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -643,7 +657,9 @@ def _mcx_two_borrowed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_borrowed_workers = flip_zero_control(_mcx_two_borrowed_workers)
+decompose_mcx_two_borrowed_workers = flip_zero_control(
+    _mcx_two_borrowed_workers, name="two_borrowed_workers"
+)
 
 
 def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
@@ -708,7 +724,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
+decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker, name="one_explicit_worker")
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -723,7 +739,9 @@ def _mcx_one_zeroed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
+decompose_mcx_one_zeroed_worker = flip_zero_control(
+    _mcx_one_zeroed_worker, name="one_zeroed_worker"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -738,7 +756,9 @@ def _mcx_one_borrowed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_borrowed_worker = flip_zero_control(_mcx_one_borrowed_worker)
+decompose_mcx_one_borrowed_worker = flip_zero_control(
+    _mcx_one_borrowed_worker, name="one_borrowed_worker"
+)
 
 
 def _decompose_mcx_no_worker_resource(num_control_wires, **__):
@@ -789,7 +809,7 @@ def _decompose_mcx_with_no_worker(wires, **_):
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
 
 
-decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker)
+decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker, "no_workers")
 
 ####################
 # Helper Functions #
@@ -905,12 +925,14 @@ def _convert_to_real_diagonal(q):
     return q * math.reshape(math.exp(-1j * exp_angles), (1, 2))
 
 
-def _param_su2(ar, ai, br, bi):
+def _param_su2(ar, ai, br, bi=0):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
+    return math.stack(
+        [math.stack([ar + 1j * ai, -br + 1j * bi]), math.stack([br + 1j * bi, ar + 1j * -ai])]
+    )
 
 
 def _bisect_compute_a(u):
@@ -934,7 +956,10 @@ def _bisect_compute_a(u):
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1),
+        lambda: math.array([[1 + 0j, -1 + 0j], [1 + 0j, 1 + 0j]]) * 2**-0.5,
+        _compute_a,
+        (),
     )
 
 
@@ -952,7 +977,7 @@ def _bisect_compute_b(u):
 
     b = math.cond(
         math.allclose(s, 0),
-        lambda: 0,
+        lambda: 0.0,
         lambda: math.cond(
             math.allclose(t, 0),
             lambda: (1 / 2 - w / 2) * math.sqrt(2 * w + 2) / s,
@@ -966,7 +991,7 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: 0, lambda: math.sqrt(w), ()),
+            lambda: math.cond(w < 0, lambda: 0.0, lambda: math.sqrt(w), ()),
             lambda: math.sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t,
             (),
         ),
@@ -987,13 +1012,13 @@ def _bisect_compute_b(u):
         math.allclose(s, 0),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0, ()),
+            lambda: math.cond(w < 0, lambda: math.sqrt(-w), lambda: 0.0, ()),
             lambda: math.sqrt(2 - 2 * w) / 2,
             (),
         ),
         lambda: math.cond(
             math.allclose(t, 0),
-            lambda: 0,
+            lambda: 0.0,
             lambda: -math.sqrt(2) * math.sqrt((1 - w) / (s**2 + t**2)) * math.abs(t) / 2,
             (),
         ),
@@ -1076,6 +1101,11 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
+
+    if compiler.active() or qp.capture.enabled():
+        control_wires_x = math.array(control_wires_x, like="jax")
+        control_wires_y = math.array(control_wires_y, like="jax")
+        target_wires = math.array(target_wires, like="jax")
 
     @control_flow.for_loop(0, len(control_wires_x), 1)
     def loop(i):

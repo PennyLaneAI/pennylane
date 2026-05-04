@@ -23,11 +23,12 @@ Importing quantum circuits
 Importing quantum circuits can help you take advantage of PennyLane's various optimization,
 visualization, and interoperability features for existing circuits. For example, you can take a
 `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ from
-Qiskit, import it into PennyLane, and then apply a `circuit-cutting transform
-<https://pennylane.ai/qml/demos/tutorial_quantum_circuit_cutting/>`_ to reduce the number of qubits
-required to implement the circuit. You could also :ref:`compile <intro_ref_compile_worklfows>` the
-circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
-differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
+Qiskit, import it into PennyLane, and then apply a 
+:doc:`circuit-cutting transform <demo:demos/tutorial_quantum_circuit_cutting>` to reduce the
+number of qubits required to implement the circuit. You could also 
+:ref:`compile <intro_ref_compile_worklfows>` the circuit using
+`Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or differentiate
+and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
 :html:`<div class="summary-table">`
 
