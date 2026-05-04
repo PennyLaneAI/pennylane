@@ -1211,8 +1211,7 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
-* Corrected documentation links to external tutorials by adding the missing
-  `https://pennylane.ai/qml/` prefix.
+* Fixed broken documentation links to external demos and tutorials.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
 <h3>Bug fixes 🐛</h3>
