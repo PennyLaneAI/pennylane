@@ -495,13 +495,18 @@
   their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
 
-* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
-  redundant. However, all Pauli-based computation passes can still be accessed from the
-  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
-  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
-  source of truth for documentation of a feature if it is desired to be accessible
-  from both PennyLane and Catalyst.
+* There is now one single source of truth for documentation of Catalyst passes while still
+  maintaining accessibility from both PennyLane and Catalyst. This includes the following
+  transforms: :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+  :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppr_to_ppm`,
+  :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`,
+  :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+  [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+
+  The source code for these passes in PennyLane has been removed as part of this change.  However,
+  all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
+  before (if Catalyst is installed: ``pip install pennylane-catalyst``).
 
 * Added the Catalyst version to :func:`~.about`.
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
@@ -511,7 +516,7 @@
 * Added support to `assert_valid` for decompositions that include mid-circuit measurements and
   added a verification for the length of various compared iterables.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
   `list` or `tuple` types.
   [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
@@ -1223,16 +1228,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
+* Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
-  
+
   - `Pow`
   - `QPE`
   - `GQSP`
   - `estimator.qpe_resources.FirstQuantization`
   - `estimator.qpe_resources.DoubleFactorization`
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
