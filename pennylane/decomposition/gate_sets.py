@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains definitions of common gate sets.
+"""This module contains definitions of common gate sets using the :class:`~.GateSet` class.
 
 .. currentmodule:: pennylane.decomposition.gate_sets
 
