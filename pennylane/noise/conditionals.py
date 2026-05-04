@@ -220,21 +220,24 @@ class OpIn(BooleanFn):
         cs = _get_ops(xs)
 
         try:
-            return all(
-                (
-                    c in self._cops
-                    if isclass(x) or not getattr(x, "arithmetic_depth", 0)
-                    else any(
-                        (
-                            _check_arithmetic_ops(op, x)
-                            if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0)
-                            else cp == _get_ops(x)[0]
-                        )
-                        for op, cp in zip(self._cond, self._cops)
+            for x, c in zip(xs, cs, strict=True):
+                if isclass(x) or not getattr(x, "arithmetic_depth", 0):
+                    if c in self._cops:
+                        continue
+                    return False
+
+                for op, cp in zip(self._cond, self._cops, strict=True):
+                    _cond = (
+                        _check_arithmetic_ops(op, x)
+                        if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0)
+                        else cp == _get_ops(x)[0]
                     )
-                )
-                for x, c in zip(xs, cs)
-            )
+                    if _cond:
+                        break
+                else:
+                    return False
+            return True
+
         except Exception as e:  # pragma: no cover
             raise ValueError(
                 "OpIn does not support arithmetic operations "
@@ -290,7 +293,7 @@ class OpEq(BooleanFn):
                 and _get_ops(xs) == self._cops
                 and all(
                     _check_arithmetic_ops(op, x)
-                    for (op, x) in zip(self._cond, xs)
+                    for (op, x) in zip(self._cond, xs, strict=True)
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
@@ -369,7 +372,7 @@ def _check_arithmetic_ops(op1, op2):
     def _lc_op(x):
         coeffs2, op_terms2 = lc_cop(x).terms()
         sprods2 = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms2]
-        for coeff, sprod in zip(coeffs2, sprods2):
+        for coeff, sprod in zip(coeffs2, sprods2, strict=True):
             present, p_index = False, -1
             while sprod in sprods[p_index + 1 :]:
                 p_index = sprods[p_index + 1 :].index(sprod) + (p_index + 1)
@@ -527,7 +530,7 @@ class MeasEq(BooleanFn):
         if len(cmps) != len(self._cond):
             return False
 
-        return all(mp1 == mp2 for mp1, mp2 in zip(cmps, self._cmps))
+        return all(mp1 == mp2 for mp1, mp2 in zip(cmps, self._cmps, strict=True))
 
 
 def meas_eq(mps):
@@ -713,7 +716,7 @@ def partial_wires(operation, *args, **kwargs):
 
     fsignature = signature(getattr(op_class, "__init__", op_class)).parameters
     parameters = list(fsignature)[int("self" in fsignature) :]
-    arg_params = {**dict(zip(parameters, args)), **kwargs}
+    arg_params = {**dict(zip(parameters, args, strict=False)), **kwargs}
 
     _fargs = {"MeasFunc": "obs", "MetaFunc": "base"}
     if "op" in arg_params:
@@ -752,7 +755,7 @@ def partial_wires(operation, *args, **kwargs):
                     op_args["wires"] = obs.wires
 
             if not is_mappable and (obs := op_args.get(_name, None)) and op_args["wires"]:
-                op_args[_name] = obs.map_wires(dict(zip(obs.wires, op_args["wires"])))
+                op_args[_name] = obs.map_wires(dict(zip(obs.wires, op_args["wires"], strict=True)))
 
         for key, val in op_args.items():
             if key in parameters:  # pragma: no cover
@@ -766,7 +769,7 @@ def partial_wires(operation, *args, **kwargs):
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)
 
         if is_mappable and operation.wires is not None:
-            wire_map = dict(zip(operation.wires, op_args.pop("wires")))
+            wire_map = dict(zip(operation.wires, op_args.pop("wires"), strict=True))
             return map_wires(operation, wire_map, queue=QueuingManager.recording())
 
         if "wires" not in parameters or (
