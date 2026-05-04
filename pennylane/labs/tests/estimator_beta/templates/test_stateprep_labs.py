@@ -246,7 +246,7 @@ class TestSumOfSlatersPrep:
                             {
                                 "num_bitstrings": 16,
                                 "size_bitstring": 20,
-                                "restored": False,
+                                "borrow_qubits": False,
                                 "select_swap_depth": 1,
                             },
                         ),
@@ -275,8 +275,6 @@ class TestSumOfSlatersPrep:
         res = qre.SumOfSlatersPrep.resource_decomp(
             num_coeffs, num_wires, num_bits, stateprep_op, select_swap_depth
         )
-        print(res)
-        print(expected_resources)
         assert decomp_equal(res, expected_resources)
 
     def test_resource_params(self):
