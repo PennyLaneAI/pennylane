@@ -232,16 +232,6 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
-def _add_allocation(layer_str, config):
-    for row, extent in config.wire_extent.items():
-        if extent[0] == config.cur_layer:
-            layer_str[row] = "├"
-        if extent[1] == config.cur_layer:
-            layer_str[row] = "┤"
-
-    return layer_str
-
-
 # pylint: disable=too-many-arguments
 def tape_text(
     tape,
@@ -472,7 +462,6 @@ def tape_text(
         config.cur_layer = cur_layer
         layer_str = _initialize_layer_str(config)
 
-        layer_str = _add_allocation(layer_str, config)
         for op in layer:
             layer_str = _add_obj(op, layer_str, config, tape_cache)
 

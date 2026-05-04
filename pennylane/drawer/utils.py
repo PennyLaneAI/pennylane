@@ -30,24 +30,23 @@ from pennylane.templates import SubroutineOp
 
 def wire_extent(layers: list[list], wire_map: dict) -> dict:
     """Determine the extent of wires."""
-    dynamic_wire_layers = defaultdict(list)
+    extent = {}
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if not isinstance(op, (Allocate, Deallocate)):
+            if isinstance(op, Allocate):
                 for w in op.wires:
-                    if isinstance(w, DynamicWire):
-                        dynamic_wire_layers[w].append(layer_idx)
-    dyn = {w: (min(l) - 1, max(l) + 1) for w, l in dynamic_wire_layers.items()}
-    unused_dynamic_wires = []
-    for wire in wire_map:
-        if wire not in dyn:
-            if isinstance(wire, DynamicWire):
-                # unused dynamic wire, just pop
-                unused_dynamic_wires.append(wire)
-                dyn[wire] = (-2, -2)
+                    extent[w] = (layer_idx,)
+            if isinstance(op, Deallocate):
+                for w in op.wires:
+                    extent[w] = (extent[w][0], layer_idx)
+    for w in wire_map:
+        if w not in extent:
+            if isinstance(w, DynamicWire):
+                extent[w] = (-2, -2)
             else:
-                dyn[wire] = (-1, len(layers))
-    return {wire_map[w]: value for w, value in dyn.items()}
+                extent[w] = (-1, len(layers))
+
+    return {wire_map[w]: v for w, v in extent.items()}
 
 
 def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:

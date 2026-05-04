@@ -17,6 +17,7 @@ This module contains a helper function to sort operations into layers.
 
 from functools import singledispatch
 
+from pennylane.allocation import Allocate, DynamicWire
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import (
     Conditional,
@@ -192,50 +193,69 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
     used_cwires_per_layer = [set()]
+    waiting_dynamic_wires = {}
 
     # loop over operations
     for op in operations:
-        if isinstance(op, MeasurementProcess) and op.mv is not None:
-            # Only terminal measurements that collect mid-circuit measurement statistics have
-            # op.mv != None.
-            # Get the occupied classical wires of the measurement process and find which layer
-            # to put it in.
-            op_occupied_wires = set()
-            mapped_cwires = (
-                [bit_map[m.measurements[0]] for m in op.mv]
-                if isinstance(op.mv, list)
-                else [bit_map[m] for m in op.mv.measurements]
-            )
-            op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
-            op_layer = _recursive_find_mcm_stats_layer(
-                max_layer, op_occupied_cwires, used_cwires_per_layer
-            )
-
+        if isinstance(op, Allocate):
+            op_layer = 0
+            queue = [op]
+            for w in op.wires:
+                waiting_dynamic_wires[w] = queue
+        elif all(w in waiting_dynamic_wires for w in op.wires):
+            print(op)
+            op_layer = 0
+            for w in op.wires:
+                waiting_dynamic_wires[w].append(op)
         else:
-            # Find occupied wires of the operator/measurement process and find which layer to
-            # put it in.
-            op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
-            try:
-                op_layer = _recursive_find_layer(
-                    max_layer, op_occupied_wires, occupied_wires_per_layer
+            if isinstance(op, MeasurementProcess) and op.mv is not None:
+                # Only terminal measurements that collect mid-circuit measurement statistics have
+                # op.mv != None.
+                # Get the occupied classical wires of the measurement process and find which layer
+                # to put it in.
+                op_occupied_wires = set()
+                mapped_cwires = (
+                    [bit_map[m.measurements[0]] for m in op.mv]
+                    if isinstance(op.mv, list)
+                    else [bit_map[m] for m in op.mv.measurements]
                 )
-            except RecursionError as e:
-                raise RecursionError(
-                    f"Drawer is currently at depth {max_layer}, which is too deep to handle. "
-                    "Try drawing a smaller subset of your circuit instead."
-                ) from e
-            op_occupied_cwires = set()
+                op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
+                op_layer = _recursive_find_mcm_stats_layer(
+                    max_layer, op_occupied_cwires, used_cwires_per_layer
+                )
 
-        # see if need to add new layer
-        if op_layer > max_layer:
-            max_layer += 1
-            occupied_wires_per_layer.append(set())
-            ops_in_layer.append([])
-            used_cwires_per_layer.append(set())
+            else:
+                # Find occupied wires of the operator/measurement process and find which layer to
+                # put it in.
+                op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
+                try:
+                    op_layer = _recursive_find_layer(
+                        max_layer, op_occupied_wires, occupied_wires_per_layer
+                    )
+                except RecursionError as e:
+                    raise RecursionError(
+                        f"Drawer is currently at depth {max_layer}, which is too deep to handle. "
+                        "Try drawing a smaller subset of your circuit instead."
+                    ) from e
+                op_occupied_cwires = set()
 
-        # add to op_layer
-        ops_in_layer[op_layer].append(op)
-        occupied_wires_per_layer[op_layer].update(op_occupied_wires)
-        used_cwires_per_layer[op_layer].update(op_occupied_cwires)
+                for w in op.wires:
+                    if w in waiting_dynamic_wires:
+                        allocation = waiting_dynamic_wires[w][0]
+                        ops_in_layer[op_layer - 1].append(allocation)
+                        for w in allocation.wires:
+                            del waiting_dynamic_wires[w]
+
+            # see if need to add new layer
+            if op_layer > max_layer:
+                max_layer += 1
+                occupied_wires_per_layer.append(set())
+                ops_in_layer.append([])
+                used_cwires_per_layer.append(set())
+
+            # add to op_layer
+            ops_in_layer[op_layer].append(op)
+            occupied_wires_per_layer[op_layer].update(op_occupied_wires)
+            used_cwires_per_layer[op_layer].update(op_occupied_cwires)
 
     return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]

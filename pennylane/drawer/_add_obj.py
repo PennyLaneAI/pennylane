@@ -166,8 +166,16 @@ def _add_obj(
 
 
 @_add_obj.register(Allocate)
+def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    for w in obj.wires:
+        layer_str[config.wire_map[w]] += "├"
+    return layer_str
+
+
 @_add_obj.register(Deallocate)
 def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    for w in obj.wires:
+        layer_str[config.wire_map[w]] += "┤"
     return layer_str
 
 
