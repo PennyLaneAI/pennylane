@@ -30,11 +30,11 @@ where it is recommended that you follow general `pytest guidelines <https://docs
 
     def test_circuit_expval(self):
         """ Test that the circuit expectation value for PauliX is 0."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         expval = circuit()
 
@@ -69,14 +69,14 @@ Below you can find an example for testing a PennyLane template with Jax:
 .. code-block:: python
 
     def circuit_template(features):
-        qml.AngleEmbedding(features, range(3))
-        return qml.expval(qml.PauliZ(0))
+        qp.AngleEmbedding(features, range(3))
+        return qp.expval(qp.PauliZ(0))
 
     def circuit_decomposed(features):
-        qml.RX(features[0], wires=0)
-        qml.RX(features[1], wires=1)
-        qml.RX(features[2], wires=2)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(features[0], wires=0)
+        qp.RX(features[1], wires=1)
+        qp.RX(features[2], wires=2)
+        return qp.expval(qp.PauliZ(0))
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -87,22 +87,22 @@ Below you can find an example for testing a PennyLane template with Jax:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qp.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qp.QNode(circuit_decomposed, dev, interface="jax")
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
 Another example of a test involving multiple interfaces is shown below:
 
 .. code-block:: python
 
         def circuit(features):
-            qml.AngleEmbedding(features, range(3))
-            return qml.expval(qml.PauliZ(0))
+            qp.AngleEmbedding(features, range(3))
+            return qp.expval(qp.PauliZ(0))
 
         @pytest.mark.parametrize("interface",[
             pytest.param("jax", marks=pytest.mark.jax),
@@ -113,13 +113,13 @@ Another example of a test involving multiple interfaces is shown below:
             import torch
             import jax.numpy as jnp
 
-            dev = qml.device("default.qubit", wires=3)
+            dev = qp.device("default.qubit", wires=3)
 
             features_torch = torch.Tensor([1.0, 1.0, 1.0])
             features_jax = jnp.array([1.0, 1.0, 1.0])
 
-            circuit_torch = qml.QNode(circuit, dev, interface="torch")
-            circuit_jax = qml.QNode(circuit, dev, interface="jax")
+            circuit_torch = qp.QNode(circuit, dev, interface="torch")
+            circuit_jax = qp.QNode(circuit, dev, interface="jax")
 
             res_torch = circuit_torch(features_torch)
             res_jax = circuit_jax(features_torch)

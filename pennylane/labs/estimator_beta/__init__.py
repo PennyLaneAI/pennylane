@@ -47,6 +47,18 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
+State Preparation
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~LabsMottonenStatePreparation
+    ~LabsCosineWindow
+    ~LabsSumOfSlatersPrep
+
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,6 +73,9 @@ Alternate Decompositions
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
+    ~mcx_one_clean_aux_resource_decomp
+    ~mcx_one_dirty_aux_resource_decomp
+    ~mcx_many_clean_aux_resource_decomp
 
 Templates
 ~~~~~~~~~
@@ -72,24 +87,36 @@ Templates
 
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
+    ~LabsQROM
 
 """
 
+import numpy as np
+
+import pennylane as qp
 from pennylane.estimator import *
+
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
-from .wires_manager import (
+from .wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
     MarkQubits,
+)
+from .wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
 from .resource_config import LabsResourceConfig
+from .templates import LabsCosineWindow
+from .templates import LabsMottonenStatePreparation
+from .templates import LabsSumOfSlatersPrep
 
 from .templates import (
+    LabsQROM,
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
@@ -100,7 +127,14 @@ from .ops import (
     hadamard_controlled_resource_decomp,
     hadamard_toffoli_based_controlled_decomp,
     paulirot_controlled_resource_decomp,
+    mcx_one_clean_aux_resource_decomp,
+    mcx_one_dirty_aux_resource_decomp,
+    mcx_many_clean_aux_resource_decomp,
 )
+
+CosineWindow = LabsCosineWindow
+MottonenStatePreparation = LabsMottonenStatePreparation
+SumOfSlatersPrep = LabsSumOfSlatersPrep
 
 
 @apply_controlled.register
@@ -119,3 +153,46 @@ def _(action: Deallocate):
         return action.allocated_register
 
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
+
+
+@_map_to_resource_op.register
+def _(op: qp.QROM):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    op_wires = op.hyperparameters["control_wires"] + op.hyperparameters["target_wires"]
+    return LabsQROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        borrow_qubits=not (op.hyperparameters["clean"]),
+        wires=op_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.CosineWindow):
+    return CosineWindow(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qp.MottonenStatePreparation):
+    return MottonenStatePreparation(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qp.SumOfSlatersPrep):
+    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
+        select_sos_rows,
+    )
+
+    indices = op.hyperparameters["indices"]
+    n = len(op.wires)
+    v_bits = qp.math.int_to_binary(np.array(indices), n).T
+    selector_ids, _ = select_sos_rows(v_bits)
+    return SumOfSlatersPrep(
+        num_coeffs=len(indices), num_wires=len(op.wires), num_bits=len(selector_ids), wires=op.wires
+    )
+
+
+## Monkey Patching:
+QROM = LabsQROM

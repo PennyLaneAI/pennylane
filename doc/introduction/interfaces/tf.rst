@@ -5,9 +5,8 @@ TensorFlow interface
 
 .. warning::
 
-    Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
-    Future versions of PennyLane are not guaranteed to work with TensorFlow.
-    Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
+    As of PennyLane v0.44, TensorFlow support is no longer maintained.
+    We recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
     machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
     a comprehensive guide on JAX and PyTorch: 
     :doc:`Turning quantum nodes into Torch Layers <demo:demos/tutorial_qnn_module_torch>` and 

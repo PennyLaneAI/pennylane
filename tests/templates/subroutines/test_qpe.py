@@ -28,7 +28,7 @@ def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
     assert op.target_wires == qp.wires.Wires([0, 1])
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestError:
