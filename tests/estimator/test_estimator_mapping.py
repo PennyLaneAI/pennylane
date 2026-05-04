@@ -69,6 +69,10 @@ class TestMapToResourceOp:
         [
             (qp.Identity(0), re_ops.Identity()),
             (qp.GlobalPhase(0), re_ops.GlobalPhase()),
+            (
+                qp.BasisState([0, 1, 0], wires=[0, 1, 2]),
+                re_temps.BasisState(num_wires=3, wires=[0, 1, 2]),
+            ),
             # Single-Qubit Gates
             (qp.Hadamard(0), re_ops.Hadamard()),
             (qp.S(0), re_ops.S()),
