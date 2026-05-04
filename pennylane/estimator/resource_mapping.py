@@ -421,6 +421,11 @@ def _(op: qops.BasisState):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.BasisEmbedding):
+    return re_temps.BasisEmbedding(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
     res_base = _map_to_resource_op(op.hyperparameters["base"])
     num_control_wires = len(op.hyperparameters["control_wires"])
