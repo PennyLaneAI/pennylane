@@ -310,7 +310,9 @@ class Prod(CompositeOp):
         else:
             full_mat = qp.math.stack(
                 [
-                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    reduce(
+                        math.kron, [m[i] if b else m for m, b in zip(mats, batched, strict=True)]
+                    )
                     for i in range(self.batch_size)
                 ]
             )

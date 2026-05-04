@@ -1760,7 +1760,7 @@ class MultiControlledX(ControlledOp):
 
         work_wires = work_wires or []
 
-        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
@@ -1769,7 +1769,7 @@ class MultiControlledX(ControlledOp):
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
-        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         return flips1 + decomp + flips2
 
@@ -1794,7 +1794,9 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     elif len(wires) == 2:
         qp.CNOT(wires=wires)
     elif len(wires) == 3:
-        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        zero_control_wires = [
+            w for w, val in zip(control_wires, control_values, strict=True) if not val
+        ]
         for w in zero_control_wires:
             qp.PauliX(w)
         qp.Toffoli(wires=wires)

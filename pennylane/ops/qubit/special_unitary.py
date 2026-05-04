@@ -487,7 +487,7 @@ class SpecialUnitary(Operation):
             _ = next(matrices)
             A = sum(
                 t * qp.math.asarray(reduce(qp.math.kron, pauli_ops), like=qp.math.get_interface(t))
-                for t, pauli_ops in zip(theta, matrices)
+                for t, pauli_ops in zip(theta, matrices, strict=True)
             )
         else:
             A = qp.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
@@ -685,7 +685,8 @@ class SpecialUnitary(Operation):
 
             # Apply Pauli rotations that yield the Pauli basis derivatives
             paulirots = [
-                TmpPauliRot(zero, word, wires=self.wires) for zero, word in zip(zeros, words)
+                TmpPauliRot(zero, word, wires=self.wires)
+                for zero, word in zip(zeros, words, strict=True)
             ]
             return paulirots + [SpecialUnitary(detached_theta, wires=self.wires)]
 

@@ -663,7 +663,7 @@ class GridIterator:
             except (ValueError, ZeroDivisionError):  # pragma: no cover
                 break
 
-        for s, k in zip(int_s + [ZOmega(d=1)], init_k + [0]):
+        for s, k in zip(int_s + [ZOmega(d=1)], init_k + [0], strict=True):
             yield s, k
 
     def solve_two_dim_problem(
@@ -698,7 +698,7 @@ class GridIterator:
         # Check if it is easier to solve problem for either of x-or-y-interval.
         # Based on this, we can try to first solve for alpha-or-beta and then refine for other.
         # If both of them are balanced, rely on doing naive search over both.
-        bbox_zip = list(zip((bbox11, bbox12), (bbox21, bbox22)))
+        bbox_zip = list(zip((bbox11, bbox12), (bbox21, bbox22), strict=True))
         num_x1, num_x2 = (self.bbox_grid_points(bb1[:2] + bb2[:2]) for bb1, bb2 in bbox_zip)
         num_y1, num_y2 = (self.bbox_grid_points(bb1[2:] + bb2[2:]) for bb1, bb2 in bbox_zip)
         num_b1 = [num_x1 > num_points * num_y1, num_y1 > num_points * num_x1]
