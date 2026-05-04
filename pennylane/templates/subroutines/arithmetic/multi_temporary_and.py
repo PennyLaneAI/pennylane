@@ -141,21 +141,6 @@ class MultiTemporaryAND(Operation):
 
     name = "MultiTemporaryAND"
 
-    @staticmethod
-    def _validate_control_values(control_values):
-        if control_values is None:
-            return
-        if isinstance(control_values, (bool, int, str)):
-            return
-        if isinstance(control_values, (list, tuple)) and all(
-            isinstance(val, (bool, int)) for val in control_values
-        ):
-            return
-        raise ValueError(
-            f"control_values must be a bool, int, str, or a sequence of bools/ints. "
-            f"Got: {control_values!r}"
-        )
-
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
@@ -166,9 +151,9 @@ class MultiTemporaryAND(Operation):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         id=None,
     ):
-        control_wires = Wires(() if control_wires is None else control_wires)
-        target_wire = Wires(() if target_wire is None else target_wire)
-        work_wires = Wires(() if work_wires is None else work_wires)
+        control_wires = Wires(control_wires)
+        target_wire = Wires(target_wire)
+        work_wires = Wires(work_wires)
 
         if len(control_wires) == 0:
             raise ValueError("MultiTemporaryAND requires at least one control wire; got 0.")
@@ -181,10 +166,7 @@ class MultiTemporaryAND(Operation):
                 f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
             )
 
-        self._validate_control_values(control_values)
-        control_values = tuple(
-            bool(v) for v in _check_and_convert_control_values(control_values, control_wires)
-        )
+        control_values = tuple(_check_and_convert_control_values(control_values, control_wires))
 
         if len(Wires.shared_wires([control_wires, target_wire])) != 0:
             raise ValueError("Target wire must be different from the control wires.")
@@ -193,13 +175,11 @@ class MultiTemporaryAND(Operation):
                 "Work wires must be different from the control wires and the target wire."
             )
 
-        self._hyperparameters = {
-            "control_wires": control_wires,
-            "target_wire": target_wire,
-            "control_values": control_values,
-            "work_wires": work_wires,
-            "work_wire_type": work_wire_type,
-        }
+        self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["target_wire"] = target_wire
+        self.hyperparameters["control_values"] = control_values
+        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["work_wire_type"] = work_wire_type
 
         all_wires = control_wires + target_wire + work_wires
         super().__init__(wires=all_wires, id=id)

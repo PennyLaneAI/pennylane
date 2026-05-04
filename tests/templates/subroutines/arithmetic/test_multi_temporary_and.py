@@ -140,7 +140,7 @@ class TestConstruction:
         op2 = qp.MultiTemporaryAND(control_wires=[0, 1], target_wire=2, control_values=[0, 1])
         assert (
             repr(op2)
-            == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[False, True])"
+            == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[0, 1])"
         )
 
 
