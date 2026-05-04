@@ -248,9 +248,7 @@ class TestCaptureIntegration:
             "restored": True,
         }
         assert len(jaxpr.eqns[0].outvars) == 2
-        assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
-        for v in jaxpr.eqns[0].outvars:
-            assert v.aval.dtype == jax.numpy.int64
+        assert all(isinstance(v.aval, qp.allocation.AbstractQubit) for v in jaxpr.eqns[0].outvars)
 
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
         assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
@@ -283,9 +281,7 @@ class TestCaptureIntegration:
             "restored": False,
         }
         assert len(jaxpr.eqns[0].outvars) == 1
-        assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
-        for v in jaxpr.eqns[0].outvars:
-            assert v.aval.dtype == jax.numpy.int64
+        assert all(isinstance(v.aval, qp.allocation.AbstractQubit) for v in jaxpr.eqns[0].outvars)
 
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
 
