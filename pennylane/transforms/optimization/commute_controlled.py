@@ -403,13 +403,15 @@ def commute_controlled(
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=3)
-
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        @commute_controlled(direction="right")
+        import pennylane as qp
+
+        dev = qp.device('default.qubit')
+
+        @qp.transforms.commute_controlled(direction="right")
         @qp.qnode(device=dev)
         def circuit(theta):
             qp.CZ(wires=[0, 2])
@@ -428,13 +430,15 @@ def commute_controlled(
 
             return qp.expval(qp.Z(0))
 
-    >>> circuit(0.5)
-    np.float64(0.999...)
+    >>> print(qp.draw(circuit)(0.5))
+    0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
+    1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
+    2: ─╰Z─────────────────╰X──X─────────────────────┤
 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply this transform to quantum functions.
 
         .. code-block:: python
 
