@@ -26,7 +26,11 @@ jnp = pytest.importorskip("jax.numpy")
 try:
     from pennylane.labs.phox.expval_functions import (
         CircuitConfig,
+        _compute_control_variate_mean,
+        _cv_mean_general,
+        _cv_mean_z_only,
         _parse_generator_dict,
+        _prep_observables,
         build_expval_func,
     )
 except ImportError:
@@ -379,3 +383,393 @@ def test_parse_generator_dict_index_error():
 
     with pytest.raises(IndexError):
         _parse_generator_dict(circuit_def, n_qubits)
+
+
+def _input_state_pauli_expval(n_qubits, init_state_spec, obs_ints):
+    """Compute <psi_in | P_a | psi_in> exactly using PennyLane (ground truth)."""
+    state = _prepare_pennylane_state(n_qubits, init_state_spec)
+
+    expval_ops = []
+    for i, op in enumerate(obs_ints):
+        if op == 1:
+            expval_ops.append(qp.X(i))
+        elif op == 2:
+            expval_ops.append(qp.Y(i))
+        elif op == 3:
+            expval_ops.append(qp.Z(i))
+        elif op == 0:
+            expval_ops.append(qp.Identity(i))
+    expval_op = qp.prod(*expval_ops)
+
+    dev = qp.device("default.qubit", wires=n_qubits)
+
+    @qp.qnode(dev)
+    def circuit():
+        qp.StatePrep(np.array(state), wires=range(n_qubits))
+        return qp.expval(expval_op)
+
+    return float(np.real(circuit()))
+
+
+class TestControlVariate:
+    """Tests for the closed-form control-variate variance-reduction option."""
+
+    @pytest.mark.parametrize(
+        "obs_strings, init_state_spec",
+        [
+            (["Z", "Z"], None),
+            (["X", "Y"], None),
+            (["Z", "X", "Z"], None),
+            ([["Z", "Z"], ["X", "X"], ["Y", "Y"]], None),
+            (
+                ["Z", "Z"],
+                ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
+            ),
+            (
+                ["X", "X"],
+                ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
+            ),
+            (
+                [["Z", "Z"], ["X", "X"], ["Y", "Y"]],
+                ([[0, 0], [0, 1], [1, 1]], [0.5, np.sqrt(0.5), 0.5]),
+            ),
+            (
+                ["X", "Z", "Y"],
+                ([[1, 0, 1], [0, 1, 1], [1, 1, 0]], [0.6, 0.6, np.sqrt(1 - 2 * 0.36)]),
+            ),
+            (["Z", "Z", "Z"], [1, 0, 1]),
+        ],
+    )
+    def test_control_variate_mean_matches_pennylane(self, obs_strings, init_state_spec):
+        """The closed-form CV mean must equal <psi_in | P_a | psi_in> exactly."""
+        obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
+
+        bitflips, mask_XY, y_phase = _prep_observables(obs_batch)
+        state_elems, state_amps = _prepare_jax_state(init_state_spec)
+
+        cv_mean = _compute_control_variate_mean(
+            bitflips, mask_XY, y_phase, state_elems, state_amps
+        )
+
+        expected = np.array(
+            [_input_state_pauli_expval(n_qubits, init_state_spec, obs) for obs in obs_batch]
+        )
+
+        assert np.allclose(np.imag(cv_mean), 0.0, atol=1e-10)
+        assert np.allclose(np.real(cv_mean), expected, atol=1e-10)
+
+    @pytest.mark.parametrize(
+        "obs_strings, generators_pl, params, init_state_spec",
+        [
+            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.37, 0.95, 0.73], None),
+            (["Z", "Z", "Z"], [[0, 1], [1, 2]], [0.1, 0.2], None),
+            ([["Z", "Z"], ["X", "X"]], [[0], [1]], [0.1, 0.2], None),
+            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.2, 0.8, 0.4], [1, 0, 1]),
+            (
+                ["Z", "Z"],
+                [[0, 1]],
+                [0.1],
+                ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
+            ),
+            (
+                [["Z", "Z"], ["X", "X"], ["Y", "Y"]],
+                [[0], [1], [0, 1]],
+                [0.3, 0.4, 0.5],
+                ([[0, 0], [0, 1], [1, 1]], [0.5, np.sqrt(0.5), 0.5]),
+            ),
+        ],
+    )
+    def test_control_variate_unbiased_vs_pennylane(
+        self, obs_strings, generators_pl, params, init_state_spec
+    ):
+        """The CV estimator must remain unbiased: it agrees with PennyLane up to MC error."""
+        obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
+        pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
+
+        exact_vals = _run_pennylane_ground_truth(generators_pl, params, obs_batch, pl_state)
+
+        gates = {i: [wires] for i, wires in enumerate(generators_pl)}
+
+        n_samples = 10000
+        atol = 4.0 / np.sqrt(n_samples)
+        key = jax.random.PRNGKey(7)
+
+        config_cv = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+            control_variate=True,
+        )
+        approx_val, _ = build_expval_func(config_cv)(jnp.array(params))
+
+        assert np.allclose(exact_vals, approx_val, atol=atol)
+
+    def test_control_variate_zero_params_is_exact(self):
+        """At gates_params=0 the CV estimator returns the input-state moment with zero MC variance."""
+        n_qubits = 3
+        init_state_elems = jnp.array([[0, 0, 1], [1, 1, 0], [0, 1, 1]])
+        init_state_amps = jnp.array([0.6, np.sqrt(0.5), np.sqrt(1 - 0.36 - 0.5)])
+        obs_batch = [[3, 3, 3], [1, 1, 0], [3, 0, 0]]
+        n_samples = 64
+
+        config_cv = CircuitConfig(
+            gates={0: [[0, 1]], 1: [[1, 2]]},
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=jax.random.PRNGKey(0),
+            n_qubits=n_qubits,
+            init_state_elems=init_state_elems,
+            init_state_amps=init_state_amps,
+            control_variate=True,
+        )
+        zero_params = jnp.zeros(2)
+        approx_val, std_err = build_expval_func(config_cv)(zero_params)
+
+        init_state_spec = (np.array(init_state_elems), np.array(init_state_amps))
+        expected = np.array(
+            [_input_state_pauli_expval(n_qubits, init_state_spec, obs) for obs in obs_batch]
+        )
+
+        assert np.allclose(approx_val, expected, atol=1e-10)
+        assert np.allclose(std_err, 0.0, atol=1e-10)
+
+    def test_control_variate_reduces_variance_for_small_angles(self):
+        """For sparse data states and small theta, the CV estimator must have much smaller std_err."""
+        n_qubits = 4
+        rng = np.random.default_rng(0)
+        # asymmetric sparse data state to avoid symmetry-induced exact cancellations
+        init_state_elems = jnp.array(rng.binomial(1, 0.5, size=(6, n_qubits)))
+        amps = rng.uniform(0.5, 1.5, size=6)
+        init_state_amps = jnp.array(amps / np.linalg.norm(amps))
+        obs_batch = [[3, 3, 0, 0], [3, 0, 0, 3], [0, 3, 3, 0], [3, 3, 3, 3]]
+        gates = {0: [[0, 1]], 1: [[1, 2]], 2: [[2, 3]], 3: [[0, 3]]}
+        n_samples = 4000
+        key = jax.random.PRNGKey(123)
+
+        small_theta = 0.01
+        small_params = jnp.full(4, small_theta)
+
+        kwargs = dict(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state_elems=init_state_elems,
+            init_state_amps=init_state_amps,
+        )
+        _, std_err_plain = build_expval_func(CircuitConfig(**kwargs, control_variate=False))(
+            small_params
+        )
+        _, std_err_cv = build_expval_func(CircuitConfig(**kwargs, control_variate=True))(
+            small_params
+        )
+
+        # For small theta the CV variance is O(theta^2) per sample versus O(1)
+        # for the plain estimator. With theta=0.01 the ratio should be at least
+        # two orders of magnitude. Skip degenerate observables for which the
+        # plain estimator already has zero variance.
+        meaningful = std_err_plain > 1e-4
+        assert meaningful.any(), "test setup degenerate: plain std_err uniformly zero"
+        ratio = std_err_cv[meaningful] / std_err_plain[meaningful]
+        assert np.all(ratio < 0.05)
+
+    def test_control_variate_reduces_variance_across_seeds(self):
+        """Independent estimator variance across PRNG seeds must drop significantly with CV."""
+        n_qubits = 3
+        rng = np.random.default_rng(42)
+        init_state_elems = jnp.array(rng.binomial(1, 0.5, size=(5, n_qubits)))
+        amps = rng.uniform(0.5, 1.5, size=5)
+        init_state_amps = jnp.array(amps / np.linalg.norm(amps))
+        obs_batch = [[3, 0, 3], [0, 3, 3]]
+        gates = {0: [[0, 1]], 1: [[1, 2]]}
+        params = jnp.array([0.05, 0.05])
+        n_samples = 2000
+
+        n_seeds = 30
+        seeds = jax.random.split(jax.random.PRNGKey(0), n_seeds)
+
+        def _estimates(use_cv):
+            config = CircuitConfig(
+                gates=gates,
+                observables=obs_batch,
+                n_samples=n_samples,
+                key=seeds[0],
+                n_qubits=n_qubits,
+                init_state_elems=init_state_elems,
+                init_state_amps=init_state_amps,
+                control_variate=use_cv,
+            )
+            f = build_expval_func(config)
+            vals = np.stack([np.asarray(f(params, key=seeds[k])[0]) for k in range(n_seeds)])
+            return vals
+
+        vals_plain = _estimates(False)
+        vals_cv = _estimates(True)
+
+        var_plain = vals_plain.var(axis=0, ddof=1)
+        var_cv = vals_cv.var(axis=0, ddof=1)
+
+        meaningful = var_plain > 1e-10
+        assert meaningful.any()
+        assert np.all(var_cv[meaningful] < 0.1 * var_plain[meaningful])
+
+    def test_control_variate_no_init_state_z_observable(self):
+        r"""For pure-Z observables on |0...0>, CV adds the constant mu_Y=1 and is consistent."""
+        n_qubits = 3
+        gates = {0: [[0, 1]], 1: [[1, 2]]}
+        params = jnp.array([0.3, 0.6])
+        obs_batch = [[3, 3, 3], [3, 0, 3]]
+        n_samples = 4000
+        key = jax.random.PRNGKey(2)
+
+        kwargs = dict(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+        )
+        plain_val, _ = build_expval_func(CircuitConfig(**kwargs, control_variate=False))(params)
+        cv_val, _ = build_expval_func(CircuitConfig(**kwargs, control_variate=True))(params)
+
+        assert np.allclose(plain_val, cv_val, atol=1e-10)
+
+    def test_control_variate_gradient_matches_plain(self):
+        """Gradients of the CV estimator match plain gradients (up to MC error from shared samples)."""
+        n_qubits = 3
+        init_state_elems = jnp.array([[0, 0, 0], [1, 1, 0], [0, 1, 1]])
+        init_state_amps = jnp.array([0.7, 0.5, np.sqrt(1 - 0.49 - 0.25)])
+        obs_batch = [[3, 3, 3], [1, 0, 0], [0, 3, 3]]
+        gates = {0: [[0, 1]], 1: [[1, 2]], 2: [[0, 2]]}
+        params = jnp.array([0.21, 0.13, 0.45])
+        n_samples = 50000
+        key = jax.random.PRNGKey(11)
+
+        kwargs = dict(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state_elems=init_state_elems,
+            init_state_amps=init_state_amps,
+        )
+
+        def make_loss(use_cv):
+            f = build_expval_func(CircuitConfig(**kwargs, control_variate=use_cv))
+            return lambda p: jnp.sum(f(p)[0])
+
+        grad_plain = jax.grad(make_loss(False))(params)
+        grad_cv = jax.grad(make_loss(True))(params)
+
+        atol = 4.0 * len(obs_batch) / np.sqrt(n_samples)
+        assert np.allclose(grad_plain, grad_cv, atol=atol)
+
+    def test_cv_fast_path_matches_general_path_on_z_only(self):
+        """The O(l*N) Z-only fast path must match the general O(l*N^2) closed form."""
+        rng = np.random.default_rng(7)
+        n_qubits = 5
+        N = 6
+        X = jnp.array(rng.binomial(1, 0.5, size=(N, n_qubits)), dtype=jnp.int32)
+        amps = rng.uniform(0.5, 1.5, size=N)
+        P = jnp.array(amps / np.linalg.norm(amps))
+
+        # All-Z observable batch (mask_XY identically zero).
+        obs_batch = [
+            [3, 0, 3, 3, 0],
+            [0, 3, 3, 0, 3],
+            [3, 3, 3, 3, 3],
+        ]
+        bitflips, mask_XY, y_phase = _prep_observables(obs_batch)
+        assert int(jnp.all(mask_XY == 0))
+
+        fast = _cv_mean_z_only(bitflips, mask_XY, y_phase, X, P)
+        general = _cv_mean_general(bitflips, mask_XY, y_phase, X, P)
+        dispatched = _compute_control_variate_mean(bitflips, mask_XY, y_phase, X, P)
+
+        assert np.allclose(fast, general, atol=1e-12)
+        assert np.allclose(fast, dispatched, atol=1e-12)
+
+    def test_cv_fast_path_handles_duplicate_bitstrings(self):
+        """Fast path must aggregate amplitudes when init_state_elems contains repeats."""
+        n_qubits = 4
+        X = jnp.array(
+            [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 1]],
+            dtype=jnp.int32,
+        )
+        P = jnp.array([0.4, 0.3, 0.5, np.sqrt(1 - 0.16 - 0.09 - 0.25)])
+
+        obs_batch = [
+            [3, 0, 0, 0],
+            [3, 3, 0, 0],
+            [3, 3, 3, 3],
+            [0, 0, 3, 3],
+        ]
+        bitflips, mask_XY, y_phase = _prep_observables(obs_batch)
+
+        fast = _cv_mean_z_only(bitflips, mask_XY, y_phase, X, P)
+        general = _cv_mean_general(bitflips, mask_XY, y_phase, X, P)
+
+        assert np.allclose(fast, general, atol=1e-12)
+        # Sanity: the duplicated |0000> contributes (P[0] + P[1])^2 to <III...I>,
+        # which differs from the naive sum P[0]^2 + P[1]^2 + P[2]^2 + P[3]^2 = 1.
+        identity_obs = jnp.array([[0, 0, 0, 0]])
+        bf_id, mxy_id, yp_id = _prep_observables(identity_obs.tolist())
+        identity_val = _cv_mean_z_only(bf_id, mxy_id, yp_id, X, P)
+        expected_norm_sq = (
+            (float(P[0]) + float(P[1])) ** 2 + float(P[2]) ** 2 + float(P[3]) ** 2
+        )
+        assert np.isclose(float(np.real(identity_val[0])), expected_norm_sq, atol=1e-12)
+
+    def test_cv_dispatch_falls_back_for_non_z_observables(self):
+        """When mask_XY contains a non-zero entry, dispatch must use the general path."""
+        rng = np.random.default_rng(11)
+        n_qubits = 4
+        N = 5
+        X = jnp.array(rng.binomial(1, 0.5, size=(N, n_qubits)), dtype=jnp.int32)
+        amps = rng.uniform(0.5, 1.5, size=N)
+        P = jnp.array(amps / np.linalg.norm(amps))
+
+        # Mixed Z/X/Y batch (non-zero mask_XY in at least one observable).
+        obs_batch = [
+            [3, 3, 0, 0],
+            [1, 0, 0, 1],
+            [3, 2, 0, 0],
+        ]
+        bitflips, mask_XY, y_phase = _prep_observables(obs_batch)
+        assert int(jnp.any(mask_XY != 0))
+
+        general = _cv_mean_general(bitflips, mask_XY, y_phase, X, P)
+        dispatched = _compute_control_variate_mean(bitflips, mask_XY, y_phase, X, P)
+
+        assert np.allclose(general, dispatched, atol=1e-12)
+
+    def test_control_variate_jit_compatible(self):
+        """The CV-enabled expval function must be jit-compilable."""
+        n_qubits = 2
+        init_state_elems = jnp.array([[0, 0], [1, 1]])
+        init_state_amps = jnp.array([1 / np.sqrt(2), 1 / np.sqrt(2)])
+        obs_batch = [[3, 3], [1, 1]]
+
+        config = CircuitConfig(
+            gates={0: [[0, 1]]},
+            observables=obs_batch,
+            n_samples=512,
+            key=jax.random.PRNGKey(0),
+            n_qubits=n_qubits,
+            init_state_elems=init_state_elems,
+            init_state_amps=init_state_amps,
+            control_variate=True,
+        )
+        f = jax.jit(build_expval_func(config))
+        params = jnp.array([0.1])
+
+        val_a, _ = f(params)
+        val_b, _ = f(params)
+        assert np.allclose(val_a, val_b)

@@ -38,6 +38,16 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         init_state_elems (ArrayLike | None): Elements of the initial state (X) - fixed binary matrix.
         init_state_amps (ArrayLike | None): Amplitudes of the initial state (P) - continuous trainable params.
         phase_fn (Callable | None): Optional phase layer function.
+        control_variate (bool): If ``True``, apply a closed-form control variate to
+            reduce the Monte-Carlo variance of the expectation-value estimator.
+            The control variate is the per-sample integrand evaluated at
+            ``gates_params == 0`` (and ``phase_fn_params == 0``); its known mean
+            is the input-state expectation value :math:`\\langle\\psi_{\\text{in}}|P_a|\\psi_{\\text{in}}\\rangle`,
+            computable exactly from the sparse input state. The estimator is
+            unbiased and asymptotically equivalent to the standard one, but its
+            variance scales as :math:`\\mathcal{O}(\\|\\boldsymbol{\\theta}\\|^{2})`
+            rather than :math:`\\Theta(1)` in the small-angle regime, which is
+            particularly useful at initialization. Defaults to ``False``.
     """
 
     gates: dict[int, list[list[int]]]
@@ -48,6 +58,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_elems: ArrayLike | None = None
     init_state_amps: ArrayLike | None = None
     phase_fn: Callable | None = None
+    control_variate: bool = False
 
 
 def bitflip_expval(
@@ -135,7 +146,144 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     return bitflips, mask_XY, y_phase
 
 
-# pylint: disable=too-many-arguments
+def _cv_mean_z_only(
+    bitflips: jnp.ndarray,
+    mask_XY: jnp.ndarray,  # pylint: disable=unused-argument
+    y_phase: jnp.ndarray,
+    X: jnp.ndarray,
+    P: jnp.ndarray,
+) -> jnp.ndarray:
+    r"""Fast control-variate mean for all-Z observable batches.
+
+    When ``mask_XY`` is identically zero, the constraint
+    :math:`x_i \oplus x_j = m_{XY}(a) = 0` reduces to :math:`x_i = x_j`,
+    so the double sum collapses to a single ``(l, N)`` mat-vec against
+    the per-row weight
+
+    .. math::
+
+        w_i \;=\; \psi_{x_i}\!\!\!\sum_{j:\,x_j = x_i}\!\!\psi_{x_j}^{*},
+
+    yielding
+
+    .. math::
+
+        \langle P_a \rangle \;=\; \sum_i w_i \,(-1)^{b_a\cdot x_i}.
+
+    Computing :math:`w` requires the ``(N, N)`` row-equality mask but
+    avoids the ``(l, N, N)`` per-observable matching tensor of the
+    general path. For unique support points (the typical case after
+    ``np.unique``-style preprocessing) :math:`w_i = |\psi_{x_i}|^2` and
+    this reduces to the basis-state probability moment. The ``mask_XY``
+    argument is kept for ``jax.lax.cond`` signature parity with
+    :func:`_cv_mean_general`.
+    """
+    same = jnp.all(X[:, jnp.newaxis, :] == X[jnp.newaxis, :, :], axis=-1)
+    grouped_conj = same.astype(P.dtype) @ jnp.conj(P)
+    weighted_psi = P * grouped_conj
+    coef = 1 - 2 * ((bitflips @ X.T) % 2)
+    mu_no_phase = coef.astype(weighted_psi.dtype) @ weighted_psi
+    return y_phase[:, 0] * mu_no_phase
+
+
+def _cv_mean_general(
+    bitflips: jnp.ndarray,
+    mask_XY: jnp.ndarray,
+    y_phase: jnp.ndarray,
+    X: jnp.ndarray,
+    P: jnp.ndarray,
+) -> jnp.ndarray:
+    r"""General :math:`O(l\cdot N^2\cdot n)` control-variate mean.
+
+    Materialises the ``(l, N, N)`` boolean matching tensor that picks out
+    pairs ``(x_i, x_j)`` with ``x_i XOR x_j == mask_XY[a]`` for each
+    observable, then contracts with the outer product of the amplitudes.
+    Required for batches that contain X or Y Paulis (non-zero ``mask_XY``).
+    """
+    diff = jnp.abs(X[:, jnp.newaxis, :] - X[jnp.newaxis, :, :])
+    match = jnp.all(
+        diff[jnp.newaxis, :, :, :] == mask_XY[:, jnp.newaxis, jnp.newaxis, :], axis=-1
+    )
+
+    coef = 1 - 2 * ((bitflips @ X.T) % 2)
+    PP = P[:, jnp.newaxis] * jnp.conj(P)[jnp.newaxis, :]
+
+    weighted = jnp.sum(match * PP[jnp.newaxis, :, :], axis=2)
+    mu_no_phase = jnp.sum(coef * weighted, axis=1)
+
+    return y_phase[:, 0] * mu_no_phase
+
+
+def _compute_control_variate_mean(
+    bitflips: jnp.ndarray,
+    mask_XY: jnp.ndarray,
+    y_phase: jnp.ndarray,
+    init_state_elems: ArrayLike | None,
+    init_state_amps: ArrayLike | None,
+) -> jnp.ndarray:
+    r"""Closed-form input-state expectation values used as control-variate offsets.
+
+    Returns, for each Pauli observable :math:`P_a` in the batch, the exact
+    expectation value :math:`\langle\psi_{\text{in}}|P_a|\psi_{\text{in}}\rangle`
+    evaluated against the (sparse) input state. This is the mean of the
+    per-sample integrand evaluated at ``gates_params = 0`` and
+    ``phase_fn_params = 0``, and serves as the closed-form control-variate
+    offset when :class:`CircuitConfig.control_variate` is enabled.
+
+    For :math:`|0\dots0\rangle` input (``init_state_*`` is ``None``) this is
+    :math:`(-i)^{c_Y(a)}` when ``mask_XY[a]`` is the zero vector and ``0``
+    otherwise. For a sparse data state
+    :math:`|\psi_{\text{in}}\rangle = \sum_{x\in\mathcal X}\psi_x|x\rangle`,
+    the closed form is
+
+    .. math::
+
+        \langle P_a\rangle \;=\; (-i)^{c_Y(a)}\!\!\!\!\!\sum_{x_i,\,x_j\in\mathcal X:\,x_i\oplus x_j=m_{XY}(a)}\!\!\psi_{x_i}\,\psi_{x_j}^{*}\,(-1)^{b_a\cdot x_i},
+
+    derived by averaging the per-sample integrand over the uniform
+    distribution on :math:`\boldsymbol{z}\in\{0,1\}^n`.
+
+    A runtime ``jax.lax.cond`` dispatches to a fast :math:`O(l\cdot N)`
+    diagonal mat-vec when ``mask_XY`` is identically zero (i.e. all Pauli
+    observables in the batch are products of ``I`` and ``Z``). This
+    branch typically dominates training on Z-correlation losses (e.g.
+    :class:`MMDConfig`-based training and Hamming-weight penalties) and
+    avoids the ``(l, N, N)`` matching-tensor allocation of the general
+    path.
+
+    Args:
+        bitflips: Integer ``(l, n)`` mask, ``1`` at sites where the Pauli is Z or Y.
+        mask_XY: Integer ``(l, n)`` mask, ``1`` at sites where the Pauli is X or Y.
+        y_phase: Complex ``(l, 1)`` array equal to ``(-1j) ** count_Y``.
+        init_state_elems: ``(N, n)`` sparse support of the input state, or ``None``.
+        init_state_amps: ``(N,)`` amplitudes of the input state, or ``None``.
+
+    Returns:
+        Complex array of shape ``(l,)``. Its real part is the exact input-state
+        expectation value of each observable; the imaginary part is zero up to
+        floating-point error (Pauli observables are Hermitian).
+    """
+    if init_state_elems is None or init_state_amps is None:
+        is_diagonal = jnp.all(mask_XY == 0, axis=-1)
+        zero = jnp.zeros_like(y_phase[:, 0])
+        return jnp.where(is_diagonal, y_phase[:, 0], zero)
+
+    X = jnp.asarray(init_state_elems)
+    P = jnp.asarray(init_state_amps)
+
+    return jax.lax.cond(
+        jnp.all(mask_XY == 0),
+        _cv_mean_z_only,
+        _cv_mean_general,
+        bitflips,
+        mask_XY,
+        y_phase,
+        X,
+        P,
+    )
+
+
+# pylint: disable=too-many-arguments,too-many-locals
 def _core_expval_execution(
     gates_params: ArrayLike,
     phase_fn_params: ArrayLike | None,
@@ -146,8 +294,18 @@ def _core_expval_execution(
     generators: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
+    use_control_variate: bool = False,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """The pure mathematical core of the expectation value computation."""
+    """The pure mathematical core of the expectation value computation.
+
+    When ``use_control_variate`` is ``True``, the per-sample integrand is
+    centered by subtracting its closed-form value at zero parameters
+    (``phases * H``); the exact mean of that subtraction is then added back as
+    a constant offset. The result is an unbiased estimator with strictly lower
+    variance whenever the centered integrand is positively correlated with
+    the original, and asymptotically ``O(\\|theta\\|^2)`` variance instead of
+    ``Theta(1)`` near zero parameters.
+    """
     bitflips, mask_XY, y_phase = obs_data
 
     s_f = samples.astype(jnp.float32)
@@ -166,10 +324,27 @@ def _core_expval_execution(
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
 
-    if init_state_elems is None or init_state_amps is None:
-        expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
+    if use_control_variate:
+        offset = jnp.real(
+            _compute_control_variate_mean(
+                bitflips, mask_XY, y_phase, init_state_elems, init_state_amps
+            )
+        )
     else:
-        M = phases * jnp.exp(1j * E)
+        offset = jnp.zeros(bitflips.shape[0])
+
+    if init_state_elems is None or init_state_amps is None:
+        if use_control_variate:
+            cos_term = jnp.cos(E) - 1
+        else:
+            cos_term = jnp.cos(E)
+        expvals = jnp.real(phases) * cos_term - jnp.imag(phases) * jnp.sin(E)
+    else:
+        if use_control_variate:
+            phase_factor = jnp.exp(1j * E) - 1
+        else:
+            phase_factor = jnp.exp(1j * E)
+        M = phases * phase_factor
         X = init_state_elems
         P = init_state_amps
         F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
@@ -181,7 +356,7 @@ def _core_expval_execution(
 
     std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
 
-    return jnp.mean(expvals, axis=1), std_err
+    return jnp.mean(expvals, axis=1) + offset, std_err
 
 
 def build_expval_func(
@@ -192,6 +367,7 @@ def build_expval_func(
     The returned closure can optionally take runtime overrides for key, observables, etc.
     """
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
+    use_control_variate = config.control_variate
 
     vmapped_phase_func = None
     if config.phase_fn is not None:
@@ -267,6 +443,7 @@ def build_expval_func(
             generators,
             param_map,
             vmapped_phase_func,
+            use_control_variate=use_control_variate,
         )
 
     return expval_execution

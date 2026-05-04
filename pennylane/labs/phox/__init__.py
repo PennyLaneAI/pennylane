@@ -159,6 +159,22 @@ dataclass.
 
    print("Final MMD loss:", float(mmd_result.losses[-1]))
 
+
+When the ``CircuitConfig`` includes a phase function, supply its trainable
+parameters via the ``phase_fn_params`` keyword. The MMD loss forwards them to
+the underlying expval function and is differentiable with respect to either or
+both of ``params`` and ``phase_fn_params``:
+
+.. code-block:: python
+
+   loss_kwargs = {
+       "params": gate_params,
+       "circuit_config": config_with_phase_fn,
+       "mmd_config": mmd_config,
+       "target_data": target_data,
+       "phase_fn_params": phase_params,
+   }
+
 """
 
 from .expval_functions import CircuitConfig, bitflip_expval, build_expval_func

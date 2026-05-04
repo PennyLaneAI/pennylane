@@ -441,6 +441,63 @@ class TestMMDLossAPI:
         res = mmd_loss(params, config, mmd_cfg, data)
         assert res.shape == () and np.isfinite(float(res))
 
+    def test_mmd_loss_default_phase_fn_params_is_none(self):
+        """Unspecified ``phase_fn_params`` is forwarded as ``None`` (no phase fn)."""
+        config = CircuitConfig(
+            gates={0: [[0, 1]]},
+            observables=[[3, 3]],
+            n_samples=100,
+            key=jax.random.PRNGKey(0),
+            n_qubits=2,
+        )
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=10)
+        data = jnp.array([[0, 0], [1, 1]])
+        params = jnp.array([0.5])
+
+        res_default = mmd_loss(params, config, mmd_cfg, data)
+        res_explicit_none = mmd_loss(params, config, mmd_cfg, data, phase_fn_params=None)
+        assert np.isclose(float(res_default), float(res_explicit_none), atol=1e-12)
+
+    def test_mmd_loss_with_phase_fn_params(self):
+        """``phase_fn_params`` should flow through to the phase function and be differentiable."""
+
+        def phase_fn(params, z):
+            hamming = jnp.sum(z.astype(jnp.float32))
+            return jnp.sum(params * jnp.array([1.0, hamming, hamming**2]))
+
+        n_qubits = 2
+        config = CircuitConfig(
+            gates={0: [[0, 1]]},
+            observables=[[3, 3]],
+            n_samples=200,
+            key=jax.random.PRNGKey(7),
+            n_qubits=n_qubits,
+            phase_fn=phase_fn,
+        )
+        mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=20)
+        data = jnp.array([[0, 0], [1, 1], [0, 1], [1, 0]])
+        params = jnp.array([0.3])
+        zero_phase = jnp.zeros(3)
+        phase_params = jnp.array([0.1, 0.2, 0.05])
+
+        # A zero phase is differentiable w.r.t. the phase params and yields a
+        # finite scalar loss.
+        res_zero = mmd_loss(params, config, mmd_cfg, data, phase_fn_params=zero_phase)
+        assert res_zero.shape == () and np.isfinite(float(res_zero))
+
+        # Non-trivial phase parameters change the loss value.
+        res_phase = mmd_loss(params, config, mmd_cfg, data, phase_fn_params=phase_params)
+        assert res_phase.shape == () and np.isfinite(float(res_phase))
+        assert not np.isclose(float(res_zero), float(res_phase), atol=1e-3)
+
+        # Gradient w.r.t. ``phase_fn_params`` is finite and non-zero.
+        grad_phase = jax.grad(
+            lambda p: mmd_loss(params, config, mmd_cfg, data, phase_fn_params=p)
+        )(phase_params)
+        assert grad_phase.shape == phase_params.shape
+        assert np.all(np.isfinite(np.asarray(grad_phase)))
+        assert float(jnp.linalg.norm(grad_phase)) > 0.0
+
 
 class TestMMDLossStatistical:
     """Statistical (Z-test) validation of the phox MMD estimator.

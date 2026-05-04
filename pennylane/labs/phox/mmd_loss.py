@@ -129,6 +129,7 @@ def _compute_loss_for_bandwidth(
     target_data: jnp.ndarray,
     effective_init_state_elems: jnp.ndarray | None,
     effective_init_state_amps: jnp.ndarray | None,
+    phase_fn_params,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
@@ -152,6 +153,7 @@ def _compute_loss_for_bandwidth(
 
     model_expvals, model_expvals_std_err = expval_func(
         gates_params=params,
+        phase_fn_params=phase_fn_params,
         observables=pauli_obs,
         key=eval_key,
         n_samples=effective_samples,
@@ -174,15 +176,24 @@ def mmd_loss(
     circuit_config: CircuitConfig,
     mmd_config: MMDConfig,
     target_data: ArrayLike,
+    phase_fn_params=None,
     key: ArrayLike | None = None,
 ) -> jnp.ndarray | list[jnp.ndarray]:
     """Estimate MMD loss using configuration dataclasses.
 
     Args:
-        params (ArrayLike): Trainable circuit parameters.
+        params (ArrayLike): Trainable gate parameters of the circuit. May be an
+            empty array when the circuit has no parametrized gates and only a
+            trainable phase function.
         circuit_config (CircuitConfig): Circuit configuration used to build the expval function.
+            If ``circuit_config.phase_fn`` is set, the corresponding ``phase_fn_params``
+            argument should also be provided.
         mmd_config (MMDConfig): Hyperparameters for the MMD computation.
         target_data (ArrayLike): Binary target samples with shape ``(m, n_qubits)``.
+        phase_fn_params (Any | None): Optional trainable parameters for the
+            phase function set on ``circuit_config.phase_fn``. Forwarded to the
+            expval function as a pytree. ``None`` (default) reproduces the
+            previous behaviour where no phase parameters are used.
         key (ArrayLike | None): Optional runtime PRNG key override for the training loop.
 
     Returns:
@@ -222,6 +233,7 @@ def mmd_loss(
             target_data=target_data,
             effective_init_state_elems=circuit_config.init_state_elems,
             effective_init_state_amps=circuit_config.init_state_amps,
+            phase_fn_params=phase_fn_params,
             n_ops=mmd_config.n_ops,
             n_qubits=n_qubits,
             wire_tuple=wire_tuple,
