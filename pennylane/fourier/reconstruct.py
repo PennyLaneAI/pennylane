@@ -397,11 +397,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     `Wierichs, Izaac, Wang and Lin (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__ .
     An introduction to the concept of quantum circuits as Fourier series can also be found in
     the
-    `Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`__
-    and
-    `General parameter-shift rules <demos/tutorial_general_parshift>`__
-    demos as well as the
-    :mod:`qp.fourier <pennylane.fourier>` module docstring.
+    :doc:`Quantum models as Fourier series <demo:demos/tutorial_expressivity_fourier_series>`
+    and :doc:`General parameter-shift rules <demo:demos/tutorial_general_parshift>` demos as well
+    as the :mod:`qp.fourier <pennylane.fourier>` module docstring.
 
     **Example**
 

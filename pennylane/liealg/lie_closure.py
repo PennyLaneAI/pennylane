@@ -72,7 +72,9 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
         :class:`~.Operator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
 
-    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso::
+        :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`,
+        and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
 
@@ -256,7 +258,7 @@ def _lie_closure_matrix(
     .. seealso::
 
         For details on the mathematical definitions, see :func:`~lie_closure` and our
-        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+        :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
