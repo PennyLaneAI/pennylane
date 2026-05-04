@@ -75,7 +75,6 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        #return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
         return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")

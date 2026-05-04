@@ -740,7 +740,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             set,
             *array_types,
         )
-        #breakpoint()
+
         # process wires so that we can handle them either as a final argument or as a keyword argument.
         # Stick `n_wires` as a keyword argument so we have enough information to repack them during
         # the implementation call defined by `primitive.def_impl`.
