@@ -680,6 +680,10 @@
   and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
+* Added various alternate resource decomposition functions for operators which make use of the phase
+  gradient trick to accurately track auxiliary qubits using the new qubit management features.
+  [(#9391)](https://github.com/PennyLaneAI/pennylane/pull/9391)
+
 <h3>Breaking changes 💔</h3>
 
 * ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
