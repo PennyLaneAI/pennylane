@@ -495,13 +495,18 @@
   their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
 
-* The source code in PennyLane for Pauli-based computation passes was removed, as it is now
-  redundant. However, all Pauli-based computation passes can still be accessed from the
-  :mod:`pennylane.transforms` module as before (if Catalyst is installed:
-  ``pip install pennylane-catalyst``). The reason for the removal is for there to be one single
-  source of truth for documentation of a feature if it is desired to be accessible
-  from both PennyLane and Catalyst.
+* There is now one single source of truth for documentation of Catalyst passes while still
+  maintaining accessibility from both PennyLane and Catalyst. This includes the following
+  transforms: :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+  :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppr_to_ppm`,
+  :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`,
+  :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
+  [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+
+  The source code for these passes in PennyLane has been removed as part of this change.  However,
+  all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
+  before (if Catalyst is installed: ``pip install pennylane-catalyst``).
 
 * Added the Catalyst version to :func:`~.about`.
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
@@ -511,7 +516,7 @@
 * Added support to `assert_valid` for decompositions that include mid-circuit measurements and
   added a verification for the length of various compared iterables.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Enhanced capture support of `StatePrep` and `BasisState` to accept `state` arguments of
   `list` or `tuple` types.
   [(#9338)](https://github.com/PennyLaneAI/pennylane/pull/9338)
@@ -674,6 +679,10 @@
 * Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
   and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
+
+* Added various alternate resource decomposition functions for operators which make use of the phase
+  gradient trick to accurately track auxiliary qubits using the new qubit management features.
+  [(#9391)](https://github.com/PennyLaneAI/pennylane/pull/9391)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1103,6 +1112,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the README to better introduce PennyLane.
+  [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
+
 * Update TensorFlow related documentation to clarify that maintenance support has been dropped since
   PennyLane v0.44.
   [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
@@ -1211,6 +1223,9 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
+* Fixed broken documentation links to external demos and tutorials.
+  [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
@@ -1220,16 +1235,16 @@
   layers.
   [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
 
-* Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
+* Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
-  
+
   - `Pow`
   - `QPE`
   - `GQSP`
   - `estimator.qpe_resources.FirstQuantization`
   - `estimator.qpe_resources.DoubleFactorization`
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
-  
+
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
@@ -1390,6 +1405,9 @@
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
+  making ``base`` argument optional in ``Controlled.__new__``
+  [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
 
@@ -1413,8 +1431,9 @@ Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
-Gabriela Sanchez Diaz,
+Alex Preciado,
 David D.W. Ren,
+Gabriela Sanchez Diaz,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
