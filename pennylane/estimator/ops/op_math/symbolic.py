@@ -665,7 +665,7 @@ class Prod(ResourceOperator):
                 "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts, zip=True))
+        self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts, strict=True))
 
         if wires:  # User defined wires take precedent
             self.wires = Wires(wires)
