@@ -70,7 +70,8 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`,
+        and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
 
@@ -239,7 +240,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
+    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our :doc:`g-sim demo <demo:demos/tutorial_liesim>`.
 
     Args:
         g (np.array): The (dynamical) Lie algebra provided as matrix matrices, as generated from :func:`~lie_closure`.

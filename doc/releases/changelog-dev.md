@@ -1211,6 +1211,9 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
+* Fixed broken documentation links to external demos and tutorials.
+  [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the 
@@ -1406,8 +1409,9 @@ Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
-Gabriela Sanchez Diaz,
+Alex Preciado,
 David D.W. Ren,
+Gabriela Sanchez Diaz,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
