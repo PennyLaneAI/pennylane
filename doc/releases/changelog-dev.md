@@ -1136,6 +1136,9 @@
   after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
 
+* The docstring for :func:`pennylane.qjit` has been updated to match :func:`catalyst.qjit`.
+  [(#8485)](https://github.com/PennyLaneAI/pennylane/pull/8485)
+
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
