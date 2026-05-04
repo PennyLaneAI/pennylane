@@ -19,7 +19,6 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
-from jax.core import AbstractValue
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.math import is_abstract
@@ -29,12 +28,29 @@ from pennylane.wires import DynamicWire, Wires
 has_jax = True
 try:
     import jax
+    from jax.core import AbstractValue
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
 except ImportError:
     jax = None
     has_jax = False
+
+if jax:
+
+    class AbstractQubit(AbstractValue):
+        """An aval representing an allocated qubit"""
+
+        hash_value = hash("AbstractQubit")
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractQubit)
+
+        def __hash__(self):
+            return self.hash_value
+
+        def _iter(self):
+            return
 
 
 class AllocateState(StrEnum):
@@ -43,19 +59,6 @@ class AllocateState(StrEnum):
     ZERO = "zero"
     ANY = "any"
 
-
-class AbstractQubit(AbstractValue):
-    """An aval representing an allocated qubit"""
-    hash_value = hash("AbstractQubit")
-
-    def __eq__(self, other):
-        return isinstance(other, AbstractQubit)
-
-    def __hash__(self):
-        return self.hash_value
-
-    def _iter(self):
-        return
 
 if not has_jax:
     allocate_prim = None
