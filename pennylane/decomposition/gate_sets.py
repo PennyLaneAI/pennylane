@@ -24,6 +24,7 @@
    ~CLIFFORD_T_PLUS_RZ
    ~ROTATIONS_PLUS_CNOT
    ~MBQC_GATES
+   ~PYZX
    ~ALL_QUBIT_OPS
    ~ALL_OPS
 
@@ -57,15 +58,22 @@ _CLIFFORD_T = _CLIFFORD_T_ORIGINAL | _ADJOINT_CLIFFORD_T
 _MID_MEASURE = GateSet({ops.MidMeasure})
 
 IDENTITY = GateSet({ops.Identity: 0.0, ops.GlobalPhase: 0.0}, name="Identity")
-"""The gate set that contains only the ``Identity`` and the ``GlobalPhase``."""
+"""The gate set that contains only the ``Identity`` and the ``GlobalPhase``.
+
+Note that ``Identity`` and ``GlobalPhase`` both have weights of ``0``, indicating they are
+essentially free.
+"""
 
 CLIFFORD_T = _CLIFFORD_T | IDENTITY | _MID_MEASURE
 """The standard Clifford+T gate set.
 
 The Clifford+T gate set contains the following gates: ``PauliX``, ``PauliY``, ``PauliZ``, 
 ``Hadamard``, ``S``, ``SX``, ``T``, ``CNOT``, ``CY``, ``CZ``, ``SWAP``, and ``ISWAP``, as 
-well as the ``Identity`` and ``GlobalPhase``. The ``MidMeasure`` operator is also included.
+well as the ``Identity`` and ``GlobalPhase``. The ``MidMeasure`` operator and all adjoints
+are also included. 
 
+The ``Identity`` and ``GlobalPhase`` ops have weights of ``0``, indicating they are
+essentially free.
 """
 
 CLIFFORD_T.name = "Clifford+T"
@@ -78,13 +86,15 @@ gate set, and all parametrized operators to the Clifford+T gate set and an ``RZ`
 is typically useful when preparing for a discretization step such as ``gridsynth`` which
 completes the Clifford+T decomposition of a circuit.
 
+Note that the ``RZ`` operator has a weight of ``100``, indicating it is ``100`` times more expensive
+that the other operators. ``Identity`` and ``GlobalPhase`` have weights of ``0``.
+
 """
 
 
 CLIFFORD_T_PLUS_RZ.name = "Clifford+T+RZ"
 
-# All the PennyLane gates that are supported by PyZX. Note that PyZX also supports many more gates,
-# detailed here: https://pyzx.readthedocs.io/en/latest/notebooks/gates.html
+
 PYZX = GateSet(
     {
         ops.Z,
@@ -110,11 +120,16 @@ PYZX = GateSet(
         ops.CSWAP,
         ops.Toffoli,
         ops.CCZ,
-    }
+    },
+    name="PYZX",
 )
+"""
+All the PennyLane gates that are supported by PyZX. Note that PyZX also supports many more gates,
+detailed on the `pyzx docs <https://pyzx.readthedocs.io/en/latest/notebooks/gates.html>`_.
+"""
 
 ROTATIONS_PLUS_CNOT = GateSet({ops.RX, ops.RY, ops.RZ, ops.CNOT}) | IDENTITY | _MID_MEASURE
-"""The gate set that contains single-qubit rotations and ``CNOT``."""
+"""The gate set that contains single-qubit rotations, ``CNOT``, ``Identity``, ``GlobalPhase``, and ``MidMeasure``."""
 
 ROTATIONS_PLUS_CNOT.name = "Rotations+CNOT"
 

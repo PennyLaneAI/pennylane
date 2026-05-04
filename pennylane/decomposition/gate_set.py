@@ -22,7 +22,60 @@ from .utils import to_name
 
 
 class GateSet(Mapping):
-    """Stores the target gate set of a decomposition pass."""
+    """Stores the target gate set of a decomposition pass.
+
+    Args:
+        gate_set (Iterable | Mapping): the contents
+        name (str): a shorthand to use in the str and repr
+
+    While the ``decompose`` transform can accept any iterable for it's ``gate_set``
+    argument, the ``GateSet`` class provides some helpful tools.
+    This includes a ``name`` argument for improved inspection and condensed reprs,
+    immutability for improved protection when used as a global variable, and conversion
+    between class and string based representations of operators.
+
+    We can create a gateset using both :class:`~.Operator` subclasses or strings, and use
+    both classes and strings to check inclusion in the gateset
+
+    >>> from pennylane.decomposition import GateSet
+    >>> gateset = GateSet({"X", qp.RX, "Adjoint(RX)"})
+    >>> gateset
+    GateSet({RX, PauliX, Adjoint(RX)})
+    >>> qp.X in gateset
+    True
+    >>> "RX" in gateset
+    True
+
+    We can also provide a ``name`` for improved inspection.
+
+    >>> gateset_name = GateSet({qp.RX, qp.RY, qp.RZ}, name="Rotations")
+    >>> print(gateset_name)
+    Rotations
+    >>> qp.decompose(gate_set=gateset_name)
+    <decompose(gate_set=Rotations)>
+
+    Gate sets can be combined with ``|``:
+
+    >>> gateset | {qp.RX, qp.RY, qp.RZ}
+    GateSet({RX, PauliX, Adjoint(RX), RY, RZ})
+
+    Items can be removed with ``-``:
+
+    >>> gateset - {qp.RX}
+    GateSet({PauliX, Adjoint(RX)})
+
+    Weights can also be provided for use in calculating costs and choosing optimal decompositions:
+
+    >>> weighted_gateset = GateSet({qp.I: 0, qp.RX: 1, qp.CNOT: 3})
+
+    If not provided, weights default to ``1``:
+
+    >>> print("\n".join(f"{k}={v}" for k, v in gateset.items()))
+    RX=1.0
+    PauliX=1.0
+    Adjoint(RX)=1.0
+
+    """
 
     def __init__(self, gate_set: Iterable | Mapping, name=""):
         if not isinstance(gate_set, Mapping):
