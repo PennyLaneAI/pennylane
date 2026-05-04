@@ -196,7 +196,7 @@
   Depth: Not computed
 
   ```
-  
+
 * :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
   This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
@@ -230,7 +230,7 @@
 
 <h4>Decompositions 🍏</h4>
 
-* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this 
+* Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
   or zeroed output target qubits for `Adjoint(TemporaryAND)`.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
@@ -356,7 +356,7 @@
 * The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
-  
+
 * A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
@@ -658,10 +658,22 @@
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
+  decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
+  [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
+
+  - :func:`~.labs.estimator_beta.mcx_many_clean_aux_resource_decomp`, uses multiple clean qubits to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
+
 * Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
   for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+
+* Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
+  and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
+  [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
 <h3>Breaking changes 💔</h3>
 
@@ -911,14 +923,6 @@
   function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` in reversed or standard mode has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
-
-* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
-  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
-
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
@@ -1126,6 +1130,11 @@
   [(#9376)](https://github.com/PennyLaneAI/pennylane/pull/9376)
   [(#9375)](https://github.com/PennyLaneAI/pennylane/pull/9375)
   [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
+  [(#9397)](https://github.com/PennyLaneAI/pennylane/pull/9397)
+
+* Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
+  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
+  [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
@@ -1187,6 +1196,10 @@
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
 
+* The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
+  to outline what the transform does when used with Catalyst.
+  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
+
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
   documentation still resided in the PennyLane repository.
@@ -1197,6 +1210,9 @@
 
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
+
+* Fixed broken documentation links to external demos and tutorials.
+  [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -1222,8 +1238,8 @@
 * Fixed a bug where `debug_state`, `debug_probs`, and `debug_expval` all mutated the circuit they participated in,
   leading to incorrect results.
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
-  
-* :class:`~.MultiControlledX` is now compatible with ``qjit``. 
+
+* :class:`~.MultiControlledX` is now compatible with ``qjit``.
   Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
@@ -1259,7 +1275,7 @@
 * Fixed a bug where the data file `transforms/sign_expand/sign_expand_data.json` was not included in
   the source distribution, causing errors when using `qp.transforms.sign_expand` in a production
   environment.
-  [(#9197)](https://github.com/PennyLaneAI/pennylane/pull/9197)
+  [(#9210)](https://github.com/PennyLaneAI/pennylane/pull/9210)
 
 * Fixed a bug where `qp.math.givens_decomposition` modified the input in place when using `qjit`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
@@ -1370,6 +1386,9 @@
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
+  making ``base`` argument optional in ``Controlled.__new__``
+  [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
 
@@ -1393,8 +1412,9 @@ Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
-Gabriela Sanchez Diaz,
+Alex Preciado,
 David D.W. Ren,
+Gabriela Sanchez Diaz,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,
