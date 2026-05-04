@@ -236,7 +236,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         stateprep_op (ResourceOperator | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
             is provided, the resources will be computed assuming the condensed state preparation is performed using
             :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
@@ -384,7 +384,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
                 perform the condensed state preparation. If :code:`None`
                 is provided, the resources will be computed assuming the condensed state preparation is performed
                 using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
             The resources were obtained from Sec. III A of
@@ -423,7 +423,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
             {
                 "num_bitstrings": num_coeffs,
                 "size_bitstring": num_wires,
-                "restored": False,
+                "borrow_qubits": False,
                 "select_swap_depth": select_swap_depth,
             },
         )

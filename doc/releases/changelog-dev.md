@@ -658,6 +658,14 @@
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
+  decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
+  [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
+
+  - :func:`~.labs.estimator_beta.mcx_many_clean_aux_resource_decomp`, uses multiple clean qubits to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
+
 * Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
   for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
