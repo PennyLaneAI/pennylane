@@ -72,7 +72,7 @@ class TestConstruction:
         assert op.control_wires == qp.wires.Wires([0, 1, 2])
         assert op.target_wire == qp.wires.Wires([3])
         assert op.target_wires == qp.wires.Wires([3])
-        assert op.control_values == (True, True, True)
+        assert op.control_values == [True, True, True]
         assert op.work_wires == qp.wires.Wires([])
         assert op.work_wire_type == "borrowed"
         assert op.wires == qp.wires.Wires([0, 1, 2, 3])
@@ -86,15 +86,15 @@ class TestConstruction:
         )
         assert op.work_wires == qp.wires.Wires([4, 5])
         assert op.work_wire_type == "zeroed"
-        assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5])
+        assert op.wires == qp.wires.Wires([0, 1, 2, 3])
 
     def test_control_values_string(self):
         op = qp.MultiTemporaryAND(control_wires=[0, 1, 2], target_wire=3, control_values="101")
-        assert op.control_values == (True, False, True)
+        assert op.control_values == [True, False, True]
 
     def test_control_values_list_of_ints(self):
         op = qp.MultiTemporaryAND(control_wires=[0, 1, 2], target_wire=3, control_values=[1, 0, 0])
-        assert op.control_values == (True, False, False)
+        assert op.control_values == [True, False, False]
 
     def test_empty_control_wires_raises(self):
         with pytest.raises(ValueError, match="at least one control wire"):
@@ -105,7 +105,9 @@ class TestConstruction:
             qp.MultiTemporaryAND(control_wires=[0, 1], target_wire=[2, 3])
 
     def test_target_overlaps_controls_raises(self):
-        with pytest.raises(ValueError, match="Target wire must be different"):
+        with pytest.raises(
+            ValueError, match="The control wires must be different from the base operation wires."
+        ):
             qp.MultiTemporaryAND(control_wires=[0, 1], target_wire=0)
 
     def test_work_overlaps_controls_raises(self):
@@ -117,7 +119,9 @@ class TestConstruction:
             qp.MultiTemporaryAND(control_wires=[0, 1], target_wire=2, work_wire_type="spam")
 
     def test_bad_control_values_raises(self):
-        with pytest.raises(ValueError, match="Length of control values"):
+        with pytest.raises(
+            ValueError, match="Length of control values must equal number of control wires"
+        ):
             qp.MultiTemporaryAND(control_wires=[0, 1, 2], target_wire=3, control_values="11")
 
     def test_repr(self):
@@ -127,7 +131,7 @@ class TestConstruction:
         op2 = qp.MultiTemporaryAND(control_wires=[0, 1], target_wire=2, control_values=[0, 1])
         assert (
             repr(op2)
-            == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[0, 1])"
+            == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[False, True])"
         )
 
 

@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,17 +25,16 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
+from pennylane.operation import MatrixUndefinedError
 from pennylane.ops import X, ctrl
-from pennylane.ops.op_math.controlled_ops import (
-    _check_and_convert_control_values,
-)
+from pennylane.ops.op_math.controlled import ControlledOp
+from pennylane.ops.op_math.controlled_ops import _check_and_convert_control_values
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
 
 
-class MultiTemporaryAND(Operation):
+class MultiTemporaryAND(ControlledOp):
     r"""A multi-controlled ``X`` gate whose decomposition is realised through a ladder of
     :class:`~.TemporaryAND` operations when enough work wires are available.
 
@@ -96,7 +95,7 @@ class MultiTemporaryAND(Operation):
         qp.decomposition.enable_graph()
 
         control_wires = [f"control{i}" for i in range(4)]
-        target_wire = [f"target{i}" for i in range(1)]
+        target_wire = ["target"]
         work_wires = [f"work{i}" for i in range(3)]
 
         @qp.transforms.decompose(
@@ -122,7 +121,7 @@ class MultiTemporaryAND(Operation):
     control3: ─│──│──╭●─┤  State
        work0: ─╰⊕─├●─│──┤  State
        work1: ────╰⊕─├●─┤  State
-     target0: ───────╰⊕─┤  State
+      target: ───────╰⊕─┤  State
     """
 
     num_params = 0
@@ -131,28 +130,46 @@ class MultiTemporaryAND(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
-
     name = "MultiTemporaryAND"
+
+    has_matrix = False
+
+    @staticmethod
+    def compute_matrix(*args, **kwargs):
+        raise MatrixUndefinedError
+
+    def matrix(self, wire_order=None):
+        raise MatrixUndefinedError
+
+    @staticmethod
+    def _validate_control_values(control_values):
+        if control_values is None:
+            return
+        if isinstance(control_values, (bool, int, str)):
+            return
+        if isinstance(control_values, (list, tuple)) and all(
+            isinstance(val, (bool, int)) for val in control_values
+        ):
+            return
+        raise ValueError(
+            f"control_values must be a bool, int, str, or a sequence of bools/ints. "
+            f"Got: {control_values!r}"
+        )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         control_wires: WiresLike,
         target_wire: WiresLike,
-        control_values: None | bool | list[bool] | int | list[int] | str = None,
+        control_values=None,
         work_wires: WiresLike = (),
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         id=None,
     ):
         control_wires = Wires(control_wires)
         target_wire = Wires(target_wire)
-        work_wires = Wires(work_wires)
+
+        control_values = _check_and_convert_control_values(control_values, control_wires)
 
         if len(control_wires) == 0:
             raise ValueError("MultiTemporaryAND requires at least one control wire; got 0.")
@@ -160,35 +177,27 @@ class MultiTemporaryAND(Operation):
             raise ValueError(
                 f"MultiTemporaryAND requires exactly one target wire; got {len(target_wire)}."
             )
-        if work_wire_type not in {"zeroed", "borrowed"}:
-            raise ValueError(
-                f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
-            )
 
-        control_values = tuple(_check_and_convert_control_values(control_values, control_wires))
+        # Similar to MultiControlledX we set X as the implicit base
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(X, wires=target_wire)
 
-        if len(Wires.shared_wires([control_wires, target_wire])) != 0:
-            raise ValueError("Target wire must be different from the control wires.")
-        if len(Wires.shared_wires([work_wires, control_wires + target_wire])) != 0:
-            raise ValueError(
-                "Work wires must be different from the control wires and the target wire."
-            )
-
-        self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["target_wire"] = target_wire
-        self.hyperparameters["control_values"] = control_values
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["work_wire_type"] = work_wire_type
-
-        all_wires = control_wires + target_wire + work_wires
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(
+            base,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+            id=id,
+        )
 
     def __repr__(self):
-        cv = self.hyperparameters["control_values"]
-        ww = self.hyperparameters["work_wires"]
+        cv = self.control_values
+        ww = self.work_wires
         base = (
             f"MultiTemporaryAND(control_wires={self.control_wires.tolist()}, "
-            f"target_wire={self.target_wire.tolist()}"
+            f"target_wire={self.target_wires.tolist()}"
         )
         if not all(cv):
             base += f", control_values={list(cv)}"
@@ -196,12 +205,13 @@ class MultiTemporaryAND(Operation):
             base += f", work_wires={ww.tolist()}, work_wire_type={self.work_wire_type!r}"
         return base + ")"
 
+    # override _un/flatten so control_wires and target_wire are correctly mapped
     def _flatten(self):
         hp = self.hyperparameters
         metadata = (
             hp["control_wires"],
-            hp["target_wire"],
-            hp["control_values"],
+            self.target_wires,  # = base.wires, but semantically our "target_wire"
+            tuple(hp["control_values"]),
             hp["work_wires"],
             hp["work_wire_type"],
         )
@@ -224,47 +234,17 @@ class MultiTemporaryAND(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @property
-    def control_wires(self) -> Wires:
-        """The wires that the operation is controlled on."""
-        return self.hyperparameters["control_wires"]
-
-    @property
     def target_wire(self) -> Wires:
-        """The single target wire the ``X`` gate is applied to."""
-        return self.hyperparameters["target_wire"]
+        """The single target wire the ``X`` gate is applied to.
 
-    @property
-    def target_wires(self) -> Wires:
-        """Alias for :attr:`target_wire`, matching the :class:`~.ControlledOp` interface."""
-        return self.hyperparameters["target_wire"]
-
-    @property
-    def control_values(self) -> tuple[bool, ...]:
-        """The control values for each control wire."""
-        return self.hyperparameters["control_values"]
-
-    @property
-    def work_wires(self) -> Wires:
-        """The work wires that may be used in the decomposition."""
-        return self.hyperparameters["work_wires"]
-
-    @property
-    def work_wire_type(self) -> str:
-        """Whether the work wires are ``"zeroed"`` or ``"borrowed"``."""
-        return self.hyperparameters["work_wire_type"]
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": sum(1 for v in self.control_values if not v),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
+        Alias for ``target_wires`` (inherited from :class:`~.ControlledOp`),
+        kept for API clarity since this gate has exactly one target.
+        """
+        return self.target_wires  # inherited: returns self.base.wires
 
     def map_wires(self, wire_map: dict) -> "MultiTemporaryAND":
         new_control_wires = [wire_map.get(w, w) for w in self.control_wires]
-        new_target_wire = [wire_map.get(w, w) for w in self.target_wire]
+        new_target_wire = [wire_map.get(w, w) for w in self.target_wires]
         new_work_wires = [wire_map.get(w, w) for w in self.work_wires]
         return MultiTemporaryAND(
             control_wires=new_control_wires,
@@ -273,9 +253,6 @@ class MultiTemporaryAND(Operation):
             work_wires=new_work_wires,
             work_wire_type=self.work_wire_type,
         )
-
-
-# Decomposition rule:
 
 
 def _multi_temporary_and_resources(num_control_wires, **__):
@@ -291,24 +268,27 @@ def _multi_temporary_and_resources(num_control_wires, **__):
 )
 @register_resources(_multi_temporary_and_resources)
 def _multi_temporary_and_decomp_with_work_wires(  # pylint: disable=unused-argument,too-many-arguments
-    wires,
     control_wires,
-    target_wire,
     control_values,
     work_wires,
     work_wire_type,
+    base,
     **__,
 ):
     """Decomposition using a :class:`~.TemporaryAND` ladder.
 
     Needs ``len(control_wires) - 1`` work wires (or zero work wires when there is a
     single control wire, in which case the operation reduces to a single (X or CNOT)).
+
+    Note: The decomposition is called with ``**op.hyperparameters`` which for a
+    ``ControlledOp`` includes ``base``, ``control_wires``, ``control_values``,
+    ``work_wires``, ``work_wire_type``.  The target wire is ``base.wires``.
     """
+    target_wires = base.wires
     c = len(control_wires)
     if c == 1:
-        # Reduces to (X or CNOT) depending on the control value.
         ctrl(
-            X(target_wire),
+            X(target_wires),
             control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -325,7 +305,7 @@ def _multi_temporary_and_decomp_with_work_wires(  # pylint: disable=unused-argum
         _wires = (
             [work_wires[i - 1], control_wires[i + 1], work_wires[i]]
             if i < num_needed - 1
-            else [work_wires[i - 1], control_wires[i + 1], target_wire[0]]
+            else [work_wires[i - 1], control_wires[i + 1], target_wires[0]]
         )
         TemporaryAND(
             wires=_wires,

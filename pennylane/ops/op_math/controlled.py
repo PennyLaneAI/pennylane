@@ -623,6 +623,7 @@ class Controlled(SymbolicOp):
         if control_values is None:
             control_values = [True] * len(control_wires)
         else:
+            print(control_values)
             control_values = (
                 [bool(control_values)]
                 if isinstance(control_values, int)
