@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* A new `Template` for Fast Fermionic Fourier Transforms has been added to enable 
+  quantum materials and chemistry.
+  [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
+
 <h4>Sum of Slaters State Preparation 🆘</h4>
 
 * A new state preparation method called :class:`~.SumOfSlatersPrep` is now available.
