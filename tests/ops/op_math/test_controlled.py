@@ -127,6 +127,8 @@ class TestControlledInheritance:
             qp.prod(qp.X(0), qp.X(1)),  # Prod -> CompositeOp
             qp.X(0) + qp.Y(1),  # Sum  -> CompositeOp
             2.0 * qp.X(0),  # SProd
+            qp.ctrl(qp.X(0), control=[1]),
+            qp.ctrl(qp.H(0), control=[1]),
         ],
     )
     def test_pickle_roundtrip_composite_base(self, base):
@@ -139,7 +141,7 @@ class TestControlledInheritance:
         ``Controlled`` branch.
         """
         op = Controlled(base, control_wires=[2], work_wires=[3])
-        assert isinstance(op, Controlled)  # check that we're on the non-Operation branch
+        assert isinstance(op, Controlled)
 
         roundtripped = pickle.loads(pickle.dumps(op))
         qp.assert_equal(op, roundtripped)
@@ -234,7 +236,7 @@ class TestControlledInit:
     def test_standard_validity_composite_base(self, base):
         """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
         op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        qp.ops.functions.assert_valid(op)
 
 
 class TestControlledProperties:

@@ -1735,15 +1735,95 @@ class TestDecomposition:
         qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_prod_decomposition_new(self):
-        """The registered ``C(Prod)`` rule decomposes controlled products."""
+    @pytest.mark.parametrize(
+        "control_values",
+        [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]],
+    )
+    @pytest.mark.parametrize(
+        "work_wires",
+        [[7, 8, 9], [7]],
+    )
+    def test_controlled_prod_decomposition_new(self, control_values, work_wires):
+        """The registered ``C(Prod)`` rule decomposes controlled products.
+
+        Covers both rules (many work wires and single work wire) as well as the
+        ``flip_zero_control`` wrapper for arbitrary ``control_values``.
+        """
         from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
         op = qp.ops.Controlled(
             qp.prod(qp.X(0), qp.X(1), qp.X(2)),
             control_wires=[4, 5, 6],
-            control_values=[1, 1, 1],
-            work_wires=[7, 8, 9],
+            control_values=control_values,
+            work_wires=work_wires,
         )
         for rule in qp.list_decomps("C(Prod)"):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires",
+        [(3, 1), (3, 2), (4, 1), (5, 3)],
+    )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed"])
+    def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
+        """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.
+
+        Decompositions this test targets:
+        - _controlled_product_with_work_wires
+        - _controlled_product_with_one_work_wire
+
+        Mirrors the pattern used in
+        ``tests/ops/op_math/test_controlled_decompositions.py::TestMCXDecomposition::test_mcx_qjit``
+        so that the ``TemporaryAND`` ladder inside the ``C(Prod)`` rule is exercised
+        under the Catalyst compiler without ``control_values`` being traced (they
+        are treated as static so that ``flip_zero_control`` can branch on them).
+        """
+
+        from catalyst.device.decomposition import catalyst_decompose
+
+        qp.decomposition.enable_graph()
+
+        gate_set = {
+            "X": 1,
+            "CNOT": 1,
+            "TemporaryAND": 4,
+            "Adjoint(TemporaryAND)": 1,
+            "Cond": 1,
+            "HybridAdjoint": 1,
+            "ForLoop": 1,
+            "GlobalPhase": 1,
+            "MultiControlledX": 1000,
+        }
+
+        num_base_wires = 3
+        control_wires = list(range(num_control_wires))
+        base_wires = list(range(num_control_wires, num_control_wires + num_base_wires))
+        work_wires = list(
+            range(
+                num_control_wires + num_base_wires,
+                num_control_wires + num_base_wires + num_work_wires,
+            )
+        )
+        total_wires = int(num_control_wires + num_base_wires + num_work_wires)
+        cvals = (1, 0, 1, 1, 0, 0, 1)[:num_control_wires]
+
+        @qp.qjit(capture=False, static_argnums=3)
+        @catalyst_decompose(capabilities=None, target_gates=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=total_wires))
+        def circuit(control_wires, base_wires, work_wires, cvals):
+            qp.ctrl(
+                qp.prod(
+                    qp.X(base_wires[0]),
+                    qp.X(base_wires[1]),
+                    qp.X(base_wires[2]),
+                ),
+                control=[control_wires[i] for i in range(num_control_wires)],
+                control_values=cvals,
+                work_wires=[work_wires[i] for i in range(num_work_wires)],
+                work_wire_type=work_wire_type,
+            )
+            return qp.probs()
+
+        result = circuit(control_wires, base_wires, work_wires, cvals)
+        assert result is not None
