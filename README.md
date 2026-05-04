@@ -26,8 +26,8 @@
 </p>
 
 <p align="center">
-  <a href="https://pennylane.ai">PennyLane</a> is an open-source quantum software platform
-  <a href="https://pennylane.ai/qml/quantum-computing/">quantum computing</a>,
+  <a href="https://pennylane.ai">PennyLane</a> is an open-source quantum software platform for
+<a href="https://pennylane.ai/qml/quantum-computing/">quantum computing</a>,
   <a href="https://pennylane.ai/topics/quantum-machine-learning">quantum machine learning</a>,
   and
   <a href="https://pennylane.ai/topics/hamiltonian-simulation">quantum chemistry</a>.
@@ -51,7 +51,7 @@
 
 - <strong>*Inspiration to implementation, quickly.*</strong>
 
-  Quantum computing can be complex — PennyLane makes it natural. Leverage the world’s largest library of [research demos](https://pennylane.ai/qml/demonstrations), [interactive tutorials](https://pennylane.ai/codebook/), and state-of-the-art components to build algorithms in [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html), quantum information, optimization, and [quantum machine learning](https://pennylane.ai/topics/quantum-machine-learning).
+  Quantum computing can be complex — PennyLane makes it natural. Leverage the world’s largest library of [research demos](https://pennylane.ai/qml/demonstrations), [interactive tutorials](https://pennylane.ai/codebook/), and state-of-the-art components to build algorithms in [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html), quantum information, [optimization](https://pennylane.ai/qml/demos/tutorial_dqi), and [quantum machine learning](https://pennylane.ai/topics/quantum-machine-learning).
 
 - <strong>*Fast where it matters. Scalable where it counts.*</strong>
 
@@ -59,7 +59,7 @@
 
 - <strong>*Hardware agnostic, hardware ready.*</strong>
 
-  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://staging.pennylane.ai/topics/quantum-compilation) specifically for the hardware devices of today—and tomorrow!
+  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://staging.pennylane.ai/topics/quantum-compilation) specifically for the [hardware devices](https://pennylane.ai/topics/quantum-hardware) of today—and tomorrow!
 
 - <strong>*Participate, collaborate, innovate.*</strong>
 
