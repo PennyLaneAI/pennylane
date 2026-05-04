@@ -284,7 +284,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         new_tapes.append(tape.copy(operations=accumulated_ops))
 
     def postprocessing_fn(results, snapshot_tags):
-        return dict(zip(snapshot_tags, results, zip=True))
+        return dict(zip(snapshot_tags, results, strict=True))
 
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 
