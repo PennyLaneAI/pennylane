@@ -35,7 +35,10 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
         key (ArrayLike): Random key for JAX.
         n_qubits (int): Number of qubits.
-        init_state_elems (ArrayLike | None): Elements of the initial state (X) - fixed binary matrix.
+        init_state_elems (ArrayLike | None): Elements of the initial state (X) - fixed binary
+            matrix of shape ``(N, n_qubits)``. Rows must be distinct (i.e. the standard
+            ``np.unique``-deduplicated form); duplicates are not detected and produce
+            silently incorrect results when ``control_variate`` is enabled.
         init_state_amps (ArrayLike | None): Amplitudes of the initial state (P) - continuous trainable params.
         phase_fn (Callable | None): Optional phase layer function.
         control_variate (bool): If ``True``, apply a closed-form control variate to
@@ -48,6 +51,19 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
             variance scales as :math:`\\mathcal{O}(\\|\\boldsymbol{\\theta}\\|^{2})`
             rather than :math:`\\Theta(1)` in the small-angle regime, which is
             particularly useful at initialization. Defaults to ``False``.
+
+            .. warning::
+
+                Only supported for batches of Z-type observables (Pauli labels
+                in ``{I=0, Z=3}``) and for ``init_state_elems`` with distinct
+                rows. Passing X or Y observables, or duplicated input-state
+                support points, while ``control_variate`` is ``True`` yields
+                silently incorrect offsets; the caller is responsible for
+                enforcing both restrictions. They let the implementation
+                reduce the offset to an :math:`O(l \\cdot N)` mat-vec and
+                avoid the ``(l, N, N)`` matching tensor and ``(N, N)``
+                row-equality mask, which otherwise dominate GPU memory for
+                sparse input states with many support points.
     """
 
     gates: dict[int, list[list[int]]]
@@ -148,76 +164,33 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
 
 def _cv_mean_z_only(
     bitflips: jnp.ndarray,
-    mask_XY: jnp.ndarray,  # pylint: disable=unused-argument
-    y_phase: jnp.ndarray,
     X: jnp.ndarray,
     P: jnp.ndarray,
 ) -> jnp.ndarray:
-    r"""Fast control-variate mean for all-Z observable batches.
+    r"""Control-variate mean for all-Z observable batches on a sparse input state.
 
-    When ``mask_XY`` is identically zero, the constraint
-    :math:`x_i \oplus x_j = m_{XY}(a) = 0` reduces to :math:`x_i = x_j`,
-    so the double sum collapses to a single ``(l, N)`` mat-vec against
-    the per-row weight
-
-    .. math::
-
-        w_i \;=\; \psi_{x_i}\!\!\!\sum_{j:\,x_j = x_i}\!\!\psi_{x_j}^{*},
-
-    yielding
+    With Z-only observables the constraint
+    :math:`x_i \oplus x_j = m_{XY}(a) = 0` reduces to :math:`x_i = x_j`.
+    Assuming the support points :math:`\{x_i\}` are unique (the contract on
+    :class:`CircuitConfig.init_state_elems` when control-variate is enabled),
+    the double sum further collapses to
 
     .. math::
 
-        \langle P_a \rangle \;=\; \sum_i w_i \,(-1)^{b_a\cdot x_i}.
+        \langle P_a \rangle \;=\; \sum_i |\psi_{x_i}|^{2}\,(-1)^{b_a\cdot x_i},
 
-    Computing :math:`w` requires the ``(N, N)`` row-equality mask but
-    avoids the ``(l, N, N)`` per-observable matching tensor of the
-    general path. For unique support points (the typical case after
-    ``np.unique``-style preprocessing) :math:`w_i = |\psi_{x_i}|^2` and
-    this reduces to the basis-state probability moment. The ``mask_XY``
-    argument is kept for ``jax.lax.cond`` signature parity with
-    :func:`_cv_mean_general`.
+    i.e.\ the basis-state probability moment of the Pauli string. The
+    computation is :math:`O(l \cdot N)` and never materialises an
+    ``(N, N)`` tensor, so it scales to the large sparse input states
+    typical of MMD-style training.
     """
-    same = jnp.all(X[:, jnp.newaxis, :] == X[jnp.newaxis, :, :], axis=-1)
-    grouped_conj = same.astype(P.dtype) @ jnp.conj(P)
-    weighted_psi = P * grouped_conj
+    weighted_psi = (P * jnp.conj(P)).real
     coef = 1 - 2 * ((bitflips @ X.T) % 2)
-    mu_no_phase = coef.astype(weighted_psi.dtype) @ weighted_psi
-    return y_phase[:, 0] * mu_no_phase
-
-
-def _cv_mean_general(
-    bitflips: jnp.ndarray,
-    mask_XY: jnp.ndarray,
-    y_phase: jnp.ndarray,
-    X: jnp.ndarray,
-    P: jnp.ndarray,
-) -> jnp.ndarray:
-    r"""General :math:`O(l\cdot N^2\cdot n)` control-variate mean.
-
-    Materialises the ``(l, N, N)`` boolean matching tensor that picks out
-    pairs ``(x_i, x_j)`` with ``x_i XOR x_j == mask_XY[a]`` for each
-    observable, then contracts with the outer product of the amplitudes.
-    Required for batches that contain X or Y Paulis (non-zero ``mask_XY``).
-    """
-    diff = jnp.abs(X[:, jnp.newaxis, :] - X[jnp.newaxis, :, :])
-    match = jnp.all(
-        diff[jnp.newaxis, :, :, :] == mask_XY[:, jnp.newaxis, jnp.newaxis, :], axis=-1
-    )
-
-    coef = 1 - 2 * ((bitflips @ X.T) % 2)
-    PP = P[:, jnp.newaxis] * jnp.conj(P)[jnp.newaxis, :]
-
-    weighted = jnp.sum(match * PP[jnp.newaxis, :, :], axis=2)
-    mu_no_phase = jnp.sum(coef * weighted, axis=1)
-
-    return y_phase[:, 0] * mu_no_phase
+    return coef.astype(weighted_psi.dtype) @ weighted_psi
 
 
 def _compute_control_variate_mean(
     bitflips: jnp.ndarray,
-    mask_XY: jnp.ndarray,
-    y_phase: jnp.ndarray,
     init_state_elems: ArrayLike | None,
     init_state_amps: ArrayLike | None,
 ) -> jnp.ndarray:
@@ -230,57 +203,50 @@ def _compute_control_variate_mean(
     ``phase_fn_params = 0``, and serves as the closed-form control-variate
     offset when :class:`CircuitConfig.control_variate` is enabled.
 
-    For :math:`|0\dots0\rangle` input (``init_state_*`` is ``None``) this is
-    :math:`(-i)^{c_Y(a)}` when ``mask_XY[a]`` is the zero vector and ``0``
-    otherwise. For a sparse data state
+    .. note::
+
+        Only supported for batches of Z-type observables (Pauli labels in
+        ``{I=0, Z=3}``) and for input states whose support points are
+        distinct (the standard ``np.unique``-deduplicated form). The caller
+        is responsible for enforcing both restrictions; passing X or Y
+        observables, or duplicated rows in ``init_state_elems``, yields
+        silently incorrect offsets. These restrictions reduce the offset
+        computation to an :math:`O(l \cdot N)` mat-vec and avoid the
+        ``(l, N, N)`` matching tensor and ``(N, N)`` row-equality mask of
+        the general path, which otherwise blow up memory and exceed the
+        CUDA grid-size limit on GPU for sparse input states with many
+        support points.
+
+    For :math:`|0\dots0\rangle` input (``init_state_*`` is ``None``) the
+    expectation value of any Z-only Pauli string is ``1``. For a sparse
+    data state with unique support
     :math:`|\psi_{\text{in}}\rangle = \sum_{x\in\mathcal X}\psi_x|x\rangle`,
     the closed form is
 
     .. math::
 
-        \langle P_a\rangle \;=\; (-i)^{c_Y(a)}\!\!\!\!\!\sum_{x_i,\,x_j\in\mathcal X:\,x_i\oplus x_j=m_{XY}(a)}\!\!\psi_{x_i}\,\psi_{x_j}^{*}\,(-1)^{b_a\cdot x_i},
+        \langle P_a\rangle \;=\; \sum_{x\in\mathcal X}|\psi_x|^{2}\,(-1)^{b_a\cdot x},
 
     derived by averaging the per-sample integrand over the uniform
-    distribution on :math:`\boldsymbol{z}\in\{0,1\}^n`.
-
-    A runtime ``jax.lax.cond`` dispatches to a fast :math:`O(l\cdot N)`
-    diagonal mat-vec when ``mask_XY`` is identically zero (i.e. all Pauli
-    observables in the batch are products of ``I`` and ``Z``). This
-    branch typically dominates training on Z-correlation losses (e.g.
-    :class:`MMDConfig`-based training and Hamming-weight penalties) and
-    avoids the ``(l, N, N)`` matching-tensor allocation of the general
-    path.
+    distribution on :math:`\boldsymbol{z}\in\{0,1\}^n` and specialising
+    to the all-Z, unique-support case.
 
     Args:
-        bitflips: Integer ``(l, n)`` mask, ``1`` at sites where the Pauli is Z or Y.
-        mask_XY: Integer ``(l, n)`` mask, ``1`` at sites where the Pauli is X or Y.
-        y_phase: Complex ``(l, 1)`` array equal to ``(-1j) ** count_Y``.
-        init_state_elems: ``(N, n)`` sparse support of the input state, or ``None``.
+        bitflips: Integer ``(l, n)`` mask, ``1`` at sites where the Pauli is Z.
+        init_state_elems: ``(N, n)`` sparse support of the input state with
+            distinct rows, or ``None``.
         init_state_amps: ``(N,)`` amplitudes of the input state, or ``None``.
 
     Returns:
-        Complex array of shape ``(l,)``. Its real part is the exact input-state
-        expectation value of each observable; the imaginary part is zero up to
-        floating-point error (Pauli observables are Hermitian).
+        Real array of shape ``(l,)`` with the exact input-state expectation
+        value of each observable.
     """
     if init_state_elems is None or init_state_amps is None:
-        is_diagonal = jnp.all(mask_XY == 0, axis=-1)
-        zero = jnp.zeros_like(y_phase[:, 0])
-        return jnp.where(is_diagonal, y_phase[:, 0], zero)
+        return jnp.ones(bitflips.shape[0])
 
     X = jnp.asarray(init_state_elems)
     P = jnp.asarray(init_state_amps)
-
-    return jax.lax.cond(
-        jnp.all(mask_XY == 0),
-        _cv_mean_z_only,
-        _cv_mean_general,
-        bitflips,
-        mask_XY,
-        y_phase,
-        X,
-        P,
-    )
+    return _cv_mean_z_only(bitflips, X, P)
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -325,11 +291,7 @@ def _core_expval_execution(
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
 
     if use_control_variate:
-        offset = jnp.real(
-            _compute_control_variate_mean(
-                bitflips, mask_XY, y_phase, init_state_elems, init_state_amps
-            )
-        )
+        offset = _compute_control_variate_mean(bitflips, init_state_elems, init_state_amps)
     else:
         offset = jnp.zeros(bitflips.shape[0])
 
