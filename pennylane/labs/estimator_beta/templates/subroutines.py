@@ -614,7 +614,7 @@ def qrom_state_preparation_phase_grad_resource_decomp(
         The resources for QROMStatePreparation are according to the decomposition as described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
         :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
-        load the rotation angles. These rotations gates are implmented using an inplace
+        load the rotation angles. These rotations gates are implemented using an inplace
         controlled-adder operation (see Figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_)
         to phase gradient.
 
