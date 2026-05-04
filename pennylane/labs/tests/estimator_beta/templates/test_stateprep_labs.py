@@ -246,7 +246,7 @@ class TestSumOfSlatersPrep:
                             {
                                 "num_bitstrings": 16,
                                 "size_bitstring": 20,
-                                "restored": False,
+                                "borrow_qubits": False,
                                 "select_swap_depth": 1,
                             },
                         ),
