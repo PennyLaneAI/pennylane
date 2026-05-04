@@ -1386,6 +1386,9 @@
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
+  making ``base`` argument optional in ``Controlled.__new__``
+  [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
 

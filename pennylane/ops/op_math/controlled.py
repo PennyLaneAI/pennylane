@@ -566,8 +566,20 @@ class Controlled(SymbolicOp):
         return new_sig
 
     # pylint: disable=unused-argument
-    def __new__(cls, base, *_, **__):
-        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
+    def __new__(cls, *args, **kwargs):
+        """
+            Choose the concrete class to allocate for a controlled operator.
+
+        Operation bases should be allocated as ``ControlledOp`` instances, while
+        non-Operation operator bases should remain plain ``Controlled`` instances.
+        """
+        base = args[0] if args else kwargs.get("base")
+
+        # Pickle reconstruction may construct without base arguments.
+        if base is None:
+            return object.__new__(cls)
+
+        # If base is an ``Operation``, then a ``ControlledOp`` should be used instead.
         if isinstance(base, Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
