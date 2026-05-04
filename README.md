@@ -59,11 +59,11 @@
 
 - <strong>*Hardware agnostic, hardware ready.*</strong>
 
-  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://staging.pennylane.ai/topics/quantum-compilation) specifically for the [hardware devices](https://pennylane.ai/topics/quantum-hardware) of today—and tomorrow!
+  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://pennylane.ai/topics/quantum-compilation) specifically for the [hardware devices](https://pennylane.ai/topics/quantum-hardware) of today—and tomorrow!
 
 - <strong>*Participate, collaborate, innovate.*</strong>
 
-  PennyLane is the world’s most [active quantum community](https://staging.pennylane.ai/get-involved). You're part of a global network of [researchers](https://pennylane.ai/research), [developers](https://pennylane.ai/features), and [educators](https://pennylane.ai/education) actively defining the frontier of quantum computing. Whether quantum is your day job or you’re getting your first taste at a [hackathon](https://pennylane.ai/challenges), you’re backed by the [most responsive community](https://discuss.pennylane.ai) in the field.
+  PennyLane is the world’s most [active quantum community](https://pennylane.ai/get-involved). You're part of a global network of [researchers](https://pennylane.ai/research), [developers](https://pennylane.ai/features), and [educators](https://pennylane.ai/education) actively defining the frontier of quantum computing. Whether quantum is your day job or you’re getting your first taste at a [hackathon](https://pennylane.ai/challenges), you’re backed by the [most responsive community](https://discuss.pennylane.ai) in the field.
 
 For more details and additional features, please see the [PennyLane website](https://pennylane.ai/features/) and our most recent [release notes](https://docs.pennylane.ai/en/stable/development/release_notes.html).
 
