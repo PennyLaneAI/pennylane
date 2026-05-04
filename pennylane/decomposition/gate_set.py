@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
+from pennylane.operation import Operator
+
 from .utils import to_name
 
 
@@ -61,7 +63,11 @@ class GateSet(Mapping):
 
     Items can be removed with ``-``:
 
-    >>> gateset - {qp.RX}
+    >>> gateset - {qp.RX, qml.RY}
+    GateSet({PauliX, Adjoint(RX)})
+    >>> gateset - qp.RX
+    GateSet({PauliX, Adjoint(RX)})
+    >>> gateset - "RX"
     GateSet({PauliX, Adjoint(RX)})
 
     Weights can also be provided for use in calculating costs and choosing optimal decompositions:
@@ -116,6 +122,8 @@ class GateSet(Mapping):
         return GateSet(self._gate_set | other._gate_set)
 
     def __sub__(self, other: Set | Mapping) -> GateSet:
+        if (isinstance(other, type) and issubclass(other, Operator)) or isinstance(other, str):
+            other = GateSet({other})
         if not isinstance(other, (Mapping, Set)):
             return NotImplemented
         if not isinstance(other, GateSet):
@@ -137,10 +145,10 @@ class GateSet(Mapping):
     def __str__(self) -> str:
         if self.name:
             return self.name
-        inner_str = ", ".join(list(self))
+        inner_str = ", ".join(str(k) if v == 1 else f"{k}={v}" for k, v in self.items())
         return f"{{{inner_str}}}"
 
     def __repr__(self) -> str:
-        gate_set_str = ", ".join(list(self._gate_set))
+        gate_set_str = ", ".join(str(k) if v == 1 else f"{k}={v}" for k, v in self.items())
         name_str = f", name='{self.name}'" if self.name else ""
         return f"GateSet({{{gate_set_str}}}{name_str})"
