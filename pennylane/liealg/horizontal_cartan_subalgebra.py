@@ -324,7 +324,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
             op_j.simplify()
             res.append(op_j)
         return res
@@ -336,7 +336,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
             op_j = simplify(op_j)
             res.append(op_j)
         return res
