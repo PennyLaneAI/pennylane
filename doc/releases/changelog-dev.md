@@ -663,6 +663,14 @@
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
+* Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
+  decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
+  [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
+
+  - :func:`~.labs.estimator_beta.mcx_many_clean_aux_resource_decomp`, uses multiple clean qubits to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
+  - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
+
 * Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
   for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
   Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
@@ -1208,6 +1216,9 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
+* Fixed broken documentation links to external demos and tutorials.
+  [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
@@ -1380,6 +1391,9 @@
   when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
+* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
+  making ``base`` argument optional in ``Controlled.__new__``
+  [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
 
@@ -1403,8 +1417,9 @@ Anton Naim Ibrahim,
 Oumarou Oumarou,
 Mudit Pandey,
 Andrija Paurevic,
-Gabriela Sanchez Diaz,
+Alex Preciado,
 David D.W. Ren,
+Gabriela Sanchez Diaz,
 Omkar Sarkar,
 Jay Soni,
 Nate Stemen,

@@ -41,9 +41,9 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
-`how-to on collecting statistics of mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_collect_mcm_stats>`_,
-and `how-to on creating dynamic circuits with mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
+:doc:`Introduction to mid-circuit measurements <demo:demos/tutorial_mcm_introduction>`,
+:doc:`how-to on collecting statistics of mid-circuit measurements <demo:demos/tutorial_how_to_collect_mcm_stats>`,
+and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demo:demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 Resetting qubits
 ****************
@@ -131,8 +131,7 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
-and the `how-to on creating dynamic circuits with mid-circuit measurements
-<https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
+and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demo:demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 .. _mid_circuit_measurements_statistics:
 

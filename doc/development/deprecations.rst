@@ -456,8 +456,8 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_
-  or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demo:demos/tutorial_qnn_module_torch>`
+  or :doc:`JAX <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
@@ -943,9 +943,8 @@ Completed deprecation cycles
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
   is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
   ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
-  :mod:`pennylane.fermi` module documentation and the
-  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
-  tutorial for more details.
+  :mod:`pennylane.fermi` module documentation, and the
+  :doc:`Fermionic Operator <demo:demos/tutorial_fermionic_operators>` tutorial for more details.
 
   - Deprecated in v0.32
   - Removed in v0.33
