@@ -1228,13 +1228,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
-  instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
-  (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This
-  previously caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear`
-  layers.
-  [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
-
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
 

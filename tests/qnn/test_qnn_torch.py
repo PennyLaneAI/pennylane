@@ -606,21 +606,21 @@ def test_forward_tuple_batched_expval():
 
     This is a regression test for a bug where TorchLayer._evaluate_qnode fails
     with 'shape is invalid for input of size N' when the QNode returns multiple
-    qml.expval as a tuple and receives batched inputs. The output should have
+    qp.expval as a tuple and receives batched inputs. The output should have
     shape (batch_size, n_measurements) so it can feed into nn.Linear downstream.
     """
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="torch")
+    @qp.qnode(dev, interface="torch")
     def circuit(inputs, weights):
-        qml.templates.AngleEmbedding(inputs, wires=range(2))
-        qml.RY(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        qp.templates.AngleEmbedding(inputs, wires=range(2))
+        qp.RY(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
     weight_shapes = {"weights": 2}
-    qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
+    qlayer = qp.qnn.TorchLayer(circuit, weight_shapes)
     batch = torch.rand(5, 2, requires_grad=True)
 
     result = qlayer(batch)
