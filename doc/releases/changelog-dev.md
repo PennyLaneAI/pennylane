@@ -12,6 +12,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added usage of the `strict` keyword argument throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
