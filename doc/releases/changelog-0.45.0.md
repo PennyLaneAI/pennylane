@@ -697,8 +697,7 @@
     (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an
     operator that contains :class:`~.SemiAdder`, the resource representation of :class:`~.SemiAdder`
     must also receive these new arguments.
-
-   These changes are relevant only with :func:`~decomposition.enable_graph`.
+  - These changes are relevant only with :func:`~.decomposition.enable_graph`.
 
 * All ``Operator`` classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
@@ -873,7 +872,7 @@
 
 * The :func:`pennylane.workflow.get_transform_program` function has been deprecated and will be
   removed in v0.46. Instead, please use the improved
-  :func:`pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline of a QNode.
+  :func:`pennylane.workflow.get_compile_pipeline` to retrieve the compilation pipeline of a QNode.
   [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
 
 * The ``id`` keyword argument to several classes has been renamed or removed entirely, and those
@@ -911,7 +910,7 @@
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate for
     :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-    ```py
+    
     # Legacy method (deprecated):
     qp.RX(0.5, wires=0, id="x0")
 
@@ -941,7 +940,7 @@
   v0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
 
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46. Instead,
+* The ``qp.transforms.create_expand_fn`` function has been deprecated and will be removed in v0.46. Instead,
   please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing
   circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
